@@ -128,15 +128,19 @@ wellinformed report --room homelab     # see what's new
 ## Real numbers
 
 ```
-ArXiv:         10 papers
-Simon Willison: 20 blog posts
-Hacker News:   13 stories
-Codebase:      55 source files
-Dependencies:  14 packages
-Git:           11 commits + 1 submodule
-─────────────────────────
-Total:         154 nodes, 30+ edges, <100ms search
-Dedup re-run:  0 new (all skipped)
+ArXiv:            10 papers
+Simon Willison:   20 blog posts
+Hacker News:      13 stories
+Lil Log:          20 posts (discovered by keyword match)
+Latent Space:     20 posts (discovered by keyword match)
+GitHub Trending:  10 repos (qdrant/fastembed, RAG_Techniques, etc.)
+Codebase:         62 source files
+Dependencies:     15 packages
+Git:              28 commits + 1 submodule
+──────────────────────────
+Total:            492 nodes, 264 edges, <100ms search
+Sources:          8 active (3 original + 5 auto-discovered)
+Dedup re-run:     unchanged items skipped
 ```
 
 <details>
