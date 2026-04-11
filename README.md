@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.svg" alt="wellinformed" width="600" />
+  <img src="docs/logo.png" alt="wellinformed" width="600" />
 </p>
 
 <p align="center">
