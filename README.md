@@ -3,268 +3,247 @@
 </p>
 
 <p align="center">
-  <strong>A Claude Code plugin that feeds your research into a queryable knowledge graph — rooms-scoped, embeddings-backed, always current.</strong>
+  <strong>MCP gave your agent hands. wellinformed gives it a library.</strong>
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick start</a> &middot;
-  <a href="#how-it-works">How it works</a> &middot;
-  <a href="#cli-reference">CLI</a> &middot;
+  <a href="https://github.com/SaharBarak/wellinformed/stargazers"><img src="https://img.shields.io/github/stars/SaharBarak/wellinformed?style=flat&color=4E79A7" alt="GitHub Stars" /></a>
+  <a href="https://github.com/SaharBarak/wellinformed/blob/main/LICENSE"><img src="https://img.shields.io/github/license/SaharBarak/wellinformed?color=59A14F" alt="License" /></a>
+  <img src="https://img.shields.io/badge/MCP-11%20tools-4E79A7" alt="MCP Tools" />
+  <img src="https://img.shields.io/badge/tests-27%20passing-59A14F" alt="Tests" />
+  <img src="https://img.shields.io/badge/platforms-Claude%20Code%20%7C%20Codex%20%7C%20OpenClaw-F28E2B" alt="Platforms" />
+</p>
+
+<p align="center">
+  <a href="#what-your-agent-gains">What your agent gains</a> &middot;
+  <a href="#install">Install</a> &middot;
   <a href="#mcp-tools">MCP tools</a> &middot;
+  <a href="#source-adapters">Sources</a> &middot;
+  <a href="#cli">CLI</a> &middot;
   <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
 ---
 
-Set up a research room, point it at ArXiv, Hacker News, RSS feeds, or any URL. wellinformed fetches, chunks, embeds, and indexes everything into a persistent knowledge graph partitioned by **rooms** (homelab, fundraise, ml-papers — whatever you're tracking). Claude Code queries the graph live via MCP. A background daemon keeps it current.
+An **MCP-native skill** for AI coding agents — Claude Code, Codex, OpenClaw, and any MCP-compatible harness. It fetches research from ArXiv, Hacker News, RSS feeds, and any URL, indexes your codebase (source files, deps, git history), chunks and embeds everything locally, and exposes the graph through **11 MCP tools** your agent calls mid-conversation.
 
-Cross-room connections ("tunnels") surface when two topics in different rooms are semantically close — the thing rooms exist to produce.
+Your agent stops guessing and starts citing.
+
+> **Think of it as persistent research memory for your agent.** Not key-value storage like claude-mem. Not a flat markdown file. A rooms-scoped knowledge graph with embeddings, semantic search, cross-domain tunnel detection, and active source fetching — the difference between an agent that forgot what you read yesterday and one that can say "you bookmarked a paper about this on ArXiv last Tuesday."
+
+## What your agent gains
+
+Without wellinformed, when you ask Claude *"what's the best approach for vector search dedup?"* it guesses from training data.
+
+With wellinformed installed, Claude calls `search` and gets:
 
 ```
-wellinformed init                              # seed a room interactively
-wellinformed trigger --room homelab            # fetch + index all sources
-wellinformed ask "knowledge graph embeddings"  # semantic search from terminal
+→ sqlite-vec dep, vector-index.ts (your own code)
+→ "Knowledge Graph Embeddings" (HN story, 2024)
+→ Simon Willison's "Syntaqlite Playground" (blog, April 2026)
+→ "Impact of Dimensionality on Node Embeddings" (ArXiv, April 2026)
 ```
 
-## Quick start
+Your agent now answers from **your research + your code + live external sources** instead of its training data. It cites the source. It knows what room the context belongs to.
+
+### Multi-platform
+
+| Platform | How it connects |
+|---|---|
+| **Claude Code** | Auto-discovered via `.claude-plugin/plugin.json`. Zero config. |
+| **Codex** | MCP server — `wellinformed mcp start` as a tool provider |
+| **OpenClaw** | MCP bridge via `pluginToolsMcpBridge` or direct MCP registration |
+| **Any MCP host** | `wellinformed mcp start` speaks stdio JSON-RPC |
+
+## Install
 
 ```bash
-# clone
-git clone https://github.com/saharbarak/wellinformed.git
-cd wellinformed
-
-# install + bootstrap graphify sidecar
-npm install
-bash scripts/bootstrap.sh
-
-# verify
-node bin/wellinformed.js doctor
+git clone https://github.com/SaharBarak/wellinformed.git && cd wellinformed
+npm install && bash scripts/bootstrap.sh
+node bin/wellinformed.js doctor        # 7 checks, all should pass
 ```
 
+Then seed a room and index your project:
+
+```bash
+wellinformed init                      # interactive — asks what you're researching
+wellinformed trigger --room homelab    # fetch from ArXiv, HN, RSS
+wellinformed index                     # index your own codebase
 ```
-[ ok ] Node.js >= 20                found 25.6.1
-[ ok ] Python >= 3.10               python3.13 3.13
-[ ok ] plugin manifest              .claude-plugin/plugin.json present
-[ ok ] graphify submodule           vendor/graphify present
-[ ok ] wellinformed venv            ~/.wellinformed/venv/bin/python
-[ ok ] graphify importable          OPTIONAL_NODE_FIELDS = embedding_id,fetched_at,room,source_uri,wing
-[ ok ] wellinformed schema patch    room/wing/source_uri/fetched_at/embedding_id
-```
+
+Your agent now has a research library. Every MCP-compatible harness that discovers the plugin can query it.
+
+## MCP tools
+
+These are the capabilities your agent gains. Not CLI commands for you — **tools the agent calls autonomously** when it needs context.
+
+| Tool | When the agent calls it |
+|---|---|
+| `search` | *"What do I know about X?"* — room-scoped semantic k-NN, <100ms |
+| `ask` | *"Give me context for this question"* — search + assembled context block |
+| `get_node` | *"Show me everything about this specific source"* — full node attributes |
+| `get_neighbors` | *"What connects to this?"* — graph traversal from a node |
+| `list_rooms` | *"What research domains are tracked?"* — rooms with counts |
+| `find_tunnels` | *"Any surprising cross-domain connections?"* — semantic similarity across rooms |
+| `trigger_room` | *"Refresh the research for this room"* — fetch + embed + index |
+| `graph_stats` | *"How big is the knowledge graph?"* — node/edge/vector counts |
+| `room_create` | *"Start tracking a new research area"* — create a room on the fly |
+| `room_list` | *"What rooms exist?"* — registry with metadata |
+| `sources_list` | *"What feeds am I pulling from?"* — configured source descriptors |
+
+### vs other agent memory tools
+
+| | wellinformed | claude-mem | memsearch | mcp-memory-service | Cognee |
+|---|---|---|---|---|---|
+| **Structure** | Knowledge graph + vector index | Key-value | Markdown files | Generic graph | Application graph |
+| **Active fetching** | ArXiv, HN, RSS, URLs | No | No | No | No |
+| **Codebase indexing** | Source files, deps, git, submodules | No | No | No | No |
+| **Room scoping** | Partitioned domains + tunnels | No | No | No | No |
+| **Dedup** | Content-hash (sha256) | None | Filename | None | None |
+| **Local embeddings** | all-MiniLM-L6-v2 (ONNX, no API) | N/A | N/A | Optional | Cloud |
+| **Source discovery** | Keyword-matched RSS/ArXiv/HN suggestions | No | No | No | No |
+| **Multi-platform** | Claude Code, Codex, OpenClaw, any MCP | Claude only | Claude only | Any MCP | Any |
 
 ## How it works
 
 ```
-Sources (ArXiv, HN, RSS, URLs)
-    │
-    ▼
-  fetch → parse → chunk → embed (all-MiniLM-L6-v2, 384d)
-    │                              │
-    ▼                              ▼
-  graph.json                   vectors.db
-  (NetworkX node-link)         (sqlite-vec, room-scoped k-NN)
-    │                              │
-    └──────────┬───────────────────┘
-               ▼
-        MCP server (11 tools)
-         ↕           ↕
-    Claude Code    CLI (ask, report)
+  External sources                     Your codebase
+  ┌──────────────────────┐              ┌──────────────────────┐
+  │ ArXiv  HN  RSS  URLs │              │ .ts files  deps  git │
+  └──────────┬───────────┘              └──────────┬───────────┘
+             │                                     │
+             ▼                                     ▼
+         fetch + parse                      AST extract
+             │                                     │
+             └──────────────┬──────────────────────┘
+                            ▼
+                   chunk (paragraph-aware, ~80 LoC, no deps)
+                            │
+                            ▼
+                   embed (all-MiniLM-L6-v2, 384d, local ONNX)
+                            │
+                  ┌─────────┴─────────┐
+                  ▼                   ▼
+            graph.json           vectors.db
+            (NetworkX)           (sqlite-vec, room-scoped k-NN)
+                  │                   │
+                  └─────────┬─────────┘
+                            ▼
+                    MCP server (11 tools)
+                     ↕        ↕         ↕
+               Claude Code  Codex    OpenClaw
 ```
 
-**Rooms** partition your knowledge. Each room is an independent research context with its own sources, nodes, and embeddings. Rooms don't see each other — except through **tunnels**, cross-room pairs of semantically similar nodes that surface surprising connections.
+### Rooms & tunnels
 
-**Dedup** is content-hash based. Re-running `trigger` on the same sources skips unchanged items (sha256 of normalized text). If an article is rewritten in place, only the changed content is re-indexed.
+**Rooms** partition the graph. `homelab` doesn't see `fundraise`. Each room has its own sources, nodes, and search scope.
 
-**Graph format** is NetworkX node-link JSON — the same format graphify reads and writes. Five optional fields are added to each node: `room`, `wing`, `source_uri`, `fetched_at`, `embedding_id`.
+**Tunnels** are the exception — when nodes in *different* rooms are semantically close, wellinformed flags them. This is the feature rooms exist to produce: surprising connections between domains your agent tracks separately.
 
-## CLI reference
+### Dedup
 
-| Command | Description |
-|---|---|
-| `doctor [--fix]` | Check runtime prerequisites. `--fix` bootstraps the Python venv. |
-| `init` | Interactive room seeding wizard. Suggests sources from your keywords. |
-| `room list\|create\|switch\|current\|describe` | Manage the room registry. |
-| `sources list\|add\|remove\|enable\|disable` | Manage source descriptors. |
-| `trigger [--room R]` | Fetch + chunk + embed + index all enabled sources for a room. |
-| `index [--room R]` | Index the project codebase, deps, submodules, and git history. |
-| `ask "<query>" [--room R] [--k N]` | Semantic search + formatted context output. |
-| `report [--room R] [--since DATE]` | Generate a markdown report: new nodes, god nodes, tunnels. |
-| `discover [--room R] [--auto]` | Suggest new sources matching room keywords. |
-| `daemon start\|stop\|status` | Background daemon that triggers on a schedule. |
-| `mcp start` | Start the MCP stdio server (Claude Code auto-spawns this). |
+`sha256(normalized_text)` on every item. Re-triggering is free — unchanged content is skipped. If a source rewrites an article in place, only the changed content re-indexes.
 
 ## Source adapters
 
-| Kind | What it fetches | Config |
-|---|---|---|
-| `generic_rss` | Any RSS 2.0 or Atom 1.0 feed | `{ "feed_url": "https://..." }` |
-| `arxiv` | ArXiv API (Atom responses) | `{ "query": "abs:embeddings OR abs:rag" }` |
-| `hn_algolia` | Hacker News via Algolia search | `{ "query": "knowledge graph", "tags": "story" }` |
-| `generic_url` | One URL, extracted via Readability | `{ "url": "https://..." }` |
-| `codebase` | TypeScript/JS source files (exports, imports, docs) | `{ "root": "." }` |
-| `package_deps` | package.json dependencies with descriptions | `{ "root": ".", "include_dev": true }` |
-| `git_submodules` | .gitmodules entries with URL, branch, SHA | `{ "root": "." }` |
-| `git_log` | Recent git commits with changed file lists | `{ "root": ".", "max_commits": 50 }` |
+Eight adapters — four for external research, four for project self-indexing:
+
+| Kind | What it fetches |
+|---|---|
+| `generic_rss` | Any RSS 2.0 / Atom 1.0 feed |
+| `arxiv` | ArXiv API search (Atom) |
+| `hn_algolia` | Hacker News stories (Algolia JSON) |
+| `generic_url` | One URL, article-extracted via Readability |
+| `codebase` | TypeScript/JS source files — exports, imports, doc comments |
+| `package_deps` | package.json dependencies with descriptions |
+| `git_submodules` | .gitmodules entries with URL, branch, SHA |
+| `git_log` | Recent commits with changed file lists |
 
 ```bash
-# Add a source manually
-wellinformed sources add my-feed \
-  --kind generic_rss \
-  --room homelab \
-  --config '{"feed_url":"https://selfh.st/rss/","max_items":20}'
-
-# Or let discovery suggest sources from your keywords
+# Source discovery suggests feeds from your room's keywords
 wellinformed discover --room homelab --auto
+# → adds selfh.st RSS, ArXiv homelab query, HN search
 ```
 
-## MCP tools
+## CLI
 
-When Claude Code discovers the `.claude-plugin/plugin.json` manifest, it spawns `wellinformed mcp start` and gains access to 11 tools:
+The CLI is the admin surface — for seeding rooms, managing sources, and running the daemon. Your agent uses MCP; you use the CLI to set things up.
 
-| Tool | What it does |
+| Command | What it does |
 |---|---|
-| `search` | Room-scoped semantic k-NN search |
-| `ask` | Search + assembled context block for LLM consumption |
-| `get_node` | Full attributes of a node by ID |
-| `get_neighbors` | Direct neighbors with edge details |
-| `list_rooms` | All rooms with counts and sample labels |
-| `find_tunnels` | Cross-room pairs below a distance threshold |
-| `sources_list` | Show configured source descriptors |
-| `trigger_room` | Run one ingest iteration from within Claude Code |
-| `graph_stats` | Node/edge/room/vector counts |
-| `room_create` | Create a new room |
-| `room_list` | List the room registry |
+| `init` | Interactive room seeding wizard |
+| `index [--room R]` | Index project: source files, deps, submodules, git |
+| `trigger [--room R]` | Fetch + embed + index from enabled sources |
+| `ask "<query>"` | Terminal-level semantic search |
+| `report [--room R]` | Markdown report: new nodes, god nodes, tunnels |
+| `discover [--room R]` | Suggest new sources |
+| `sources list\|add\|remove` | Source registry |
+| `room list\|create\|switch` | Room registry |
+| `daemon start\|stop\|status` | Background research daemon |
+| `doctor [--fix]` | Check prerequisites |
+| `mcp start` | Start MCP server (auto-spawned by Claude Code) |
+
+## Real-world results
+
+wellinformed indexing itself — its own codebase + 3 live external sources:
+
+```
+External (ArXiv + HN + Simon Willison)    43 items
+Project self-index                         81 items (55 files, 14 deps, 1 submodule, 11 commits)
+                                          ─────────
+Total                                     154 nodes, 30+ edges, <100ms search
+```
+
+```
+$ wellinformed ask "MCP server sqlite vector"
+
+→ sqlite-vec (npm dep)
+→ vector-index.ts (your code)
+→ Simon Willison's "Syntaqlite Playground" (external blog post)
+```
+
+A search for "sqlite vector" returns your code AND an external blog post about the same topic. Cross-source connections for free.
 
 ## Architecture
 
 ```
 src/
-  domain/           pure types + ops, no I/O, no throws
-    graph.ts         Graph value + immutable upsert/bfs/dfs/shortestPath
-    vectors.ts       Vec math, L2, cosine, findTunnels
-    chunks.ts        recursive paragraph splitter (~80 LoC, no deps)
-    feeds.ts         RSS 2.0 + Atom normaliser (~140 LoC, no deps)
-    rooms.ts         RoomMeta, registry, validation
-    sources.ts       Source port + SourceDescriptor + SourceRun
-    content.ts       ContentItem, FingerprintedItem
-    errors.ts        tagged GraphError / VectorError / EmbeddingError
-
-  infrastructure/    ports + adapters
-    graph-repository.ts      JSON file (atomic tmp+rename writes)
-    vector-index.ts          better-sqlite3 + sqlite-vec
-    embedders.ts             Xenova (ONNX) + fixture (tests)
-    rooms-config.ts          room registry JSON
-    sources-config.ts        source registry JSON
-    config-loader.ts         YAML config with typed defaults
-    http/fetcher.ts          native fetch + file:// for tests
-    parsers/                 html-extractor (Readability+linkedom)
-                             xml-parser (fast-xml-parser)
-    sources/                 generic-rss, arxiv, hn-algolia, generic-url
-                             registry (hydrates descriptors → Sources)
-
-  application/       orchestration — use cases as closures over deps
-    use-cases.ts     indexNode, searchByRoom, searchGlobal, findTunnels
-    ingest.ts        ingestSource, triggerRoom (lazy sequential pipeline)
-    report.ts        generateReport, renderReport
-    discover.ts      suggest new sources from room keywords
-
-  daemon/
-    loop.ts          setInterval + PID file + round-robin rooms
-
-  mcp/
-    server.ts        11 MCP tools over stdio
-
-  cli/
-    runtime.ts       wires the live dependency graph
-    commands/        doctor, init, room, sources, trigger, ask, report,
-                     discover, daemon, mcp, help, version
+  domain/           pure functions, no I/O, no throws, Result monads
+  infrastructure/   ports + adapters (sqlite-vec, Readability, fast-xml-parser)
+  application/      use cases (indexNode, triggerRoom, findTunnels, discover)
+  daemon/           setInterval loop + PID file
+  mcp/              11 MCP tools over stdio
+  cli/              admin commands
 ```
 
-Every fallible operation returns `Result<T, E>` or `ResultAsync<T, E>` via [neverthrow](https://github.com/supermacro/neverthrow). No classes in domain or application layers — pure functions and interface-driven factories.
+Functional DDD. Every fallible op returns `Result<T, E>` via [neverthrow](https://github.com/supermacro/neverthrow). No classes in domain/application. All libraries verified via `gh api` + [ossinsight.io](https://ossinsight.io) before selection.
 
-## Dependencies
+## Star history
 
-| Package | Purpose | Stars | Last commit |
-|---|---|---|---|
-| `neverthrow` | Result monad for error handling | 6k+ | active |
-| `@xenova/transformers` | ONNX embeddings (all-MiniLM-L6-v2) | 12k+ | active |
-| `better-sqlite3` | SQLite bindings | 6k+ | active |
-| `sqlite-vec` | Vector search extension for SQLite | 5k+ | active |
-| `@mozilla/readability` | Article extraction (Firefox Reader View) | 11k | active |
-| `linkedom` | Lightweight DOM for server-side parsing | 2k | active |
-| `fast-xml-parser` | RSS/Atom/ArXiv XML parsing | 3k | daily commits |
-| `@modelcontextprotocol/sdk` | MCP server protocol | 12k | active |
-| `yaml` | YAML config parsing | 1.6k | active |
-| `zod` | Tool input schemas | 35k+ | active |
+<a href="https://www.star-history.com/#SaharBarak/wellinformed&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=SaharBarak/wellinformed&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=SaharBarak/wellinformed&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=SaharBarak/wellinformed&type=Date" />
+  </picture>
+</a>
 
-All libraries verified via `gh api repos/<owner>/<repo>` and ossinsight.io before selection.
+## Contributing
 
-## Runtime state
+The highest-impact contributions right now:
 
-All per-user state lives under `~/.wellinformed/` (override with `WELLINFORMED_HOME`):
+1. **New source adapters** — GitHub trending, Reddit, Twitter/X, Telegram capture. Each is one file under `src/infrastructure/sources/`.
+2. **New platform integrations** — Cursor, Copilot, Gemini CLI support for the MCP server.
+3. **Worked examples** — Run wellinformed on a real research corpus, share the graph stats and what surprised you.
 
-```
-~/.wellinformed/
-  graph.json          knowledge graph (NetworkX node-link JSON)
-  vectors.db          sqlite-vec vector index (384-dim, room-scoped)
-  rooms.json          room registry
-  sources.json        source descriptors
-  config.yaml         daemon + tunnel config (optional, defaults apply)
-  venv/               Python venv with graphify sidecar
-  reports/            generated markdown reports
-  models/             cached ONNX embedding model
-  daemon.pid          PID file when daemon is running
-  daemon.log          daemon log
-```
-
-## Config
-
-Copy `config/config.example.yaml` to `~/.wellinformed/config.yaml` and adjust:
-
-```yaml
-daemon:
-  interval_seconds: 86400     # 1 day between runs
-  round_robin_rooms: true     # one room per tick vs all-at-once
-
-rooms:
-  tunnels:
-    enabled: true
-    similarity_threshold: 0.80
-```
-
-## Dogfood results
-
-wellinformed indexing itself — external sources + its own codebase:
-
-```
-# External sources (ArXiv, HN, Simon Willison)
-room=wellinformed-dev  sources=3
-  [ ok ] arxiv              seen= 10 new= 10
-  [ ok ] simon-willison     seen= 20 new= 20
-  [ ok ] hn                 seen= 13 new= 13
-
-# Project self-index
-  [ ok ] codebase           seen= 55 new= 55    (every .ts file)
-  [ ok ] package_deps       seen= 14 new= 14    (all npm deps)
-  [ ok ] git_submodules     seen=  1 new=  1    (graphify fork)
-  [ ok ] git_log            seen= 11 new= 11    (full commit history)
-
-154 nodes, 30+ edges, <100ms search latency
-```
-
-```bash
-$ wellinformed ask "GraphClient upsert BFS traversal"
-# → graph-repository.ts, graph.ts, phase1 test, phase1 commit
-
-$ wellinformed ask "neverthrow Result monad error handling"
-# → neverthrow dep, errors.ts, phase2 commit (sequenceLazy fix)
-
-$ wellinformed ask "MCP server sqlite vector"
-# → sqlite-vec dep, better-sqlite3 dep, vector-index.ts,
-#   Simon Willison's "Syntaqlite Playground" blog post
-```
-
-Cross-source connections surface automatically — a search for "sqlite vector" returns both the code file and an external blog post about SQLite.
+We respond within 48 hours.
 
 ## License
 
 MIT
+
+---
+
+<p align="center">
+  <strong>If your agent is smarter with wellinformed installed, give it a ⭐</strong>
+</p>
