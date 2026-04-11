@@ -18,6 +18,8 @@ import { init } from './commands/init.js';
 import { room } from './commands/room.js';
 import { ask } from './commands/ask.js';
 import { report } from './commands/report.js';
+import { daemon } from './commands/daemon.js';
+import { discoverCmd } from './commands/discover.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -36,11 +38,11 @@ const commands: Record<string, CommandFn> = {
   room,
   ask,
   report,
+  daemon,
+  discover: discoverCmd,
 };
 
 const futureCommands = new Set([
-  'daemon',
-  'discover',
   'telegram',
 ]);
 
