@@ -307,6 +307,31 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     },
   );
 
+  // ─────────────── discover_loop ─────────
+
+  server.registerTool(
+    'discover_loop',
+    {
+      description:
+        'Recursive source expansion. Discovers new sources from room keywords, indexes them, extracts new keywords from the content, discovers more. Repeats until no new sources found or max iterations hit.',
+      inputSchema: {
+        room: z.string().describe('The room to expand'),
+        max_iterations: z.number().int().min(1).max(10).default(3),
+      },
+    },
+    async ({ room, max_iterations }) => {
+      const { discoveryLoop } = await import('../application/discovery-loop.js');
+      const deps = {
+        ingestDeps: runtime.ingestDeps,
+        rooms: runtime.rooms,
+        sources: runtime.sources,
+      };
+      const result = await discoveryLoop(deps)(room, { maxIterations: max_iterations });
+      if (result.isErr()) return errText(result.error);
+      return okJson(result.value);
+    },
+  );
+
   return server;
 };
 
@@ -315,6 +340,13 @@ export const startMcpServer = async (runtime: Runtime): Promise<void> => {
   const server = buildMcpServer(runtime);
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  // Keep the process alive until the transport closes (stdin EOF / SIGTERM).
+  // Without this, main().then(code => process.exit(code)) kills the process
+  // immediately after connect() resolves — before any messages are processed.
+  await new Promise<void>((resolve) => {
+    transport.onclose = resolve;
+  });
 };
 
 // ─────────────── helpers ────────────────
