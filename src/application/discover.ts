@@ -43,14 +43,68 @@ interface KnownFeed {
 }
 
 const KNOWN_FEEDS: readonly KnownFeed[] = [
+  // AI / ML
   { keywords: ['ai', 'ml', 'machine-learning', 'deep-learning', 'llm', 'embeddings'], url: 'https://rsshub.app/papers-with-code/latest', name: 'Papers With Code' },
   { keywords: ['ai', 'ml', 'llm', 'gpt', 'claude', 'transformer'], url: 'https://simonwillison.net/atom/everything/', name: 'Simon Willison' },
+  { keywords: ['ai', 'ml', 'llm', 'agent', 'mcp'], url: 'https://lilianweng.github.io/index.xml', name: 'Lil Log (Lilian Weng)' },
+  { keywords: ['ai', 'ml', 'research', 'deep-learning'], url: 'https://distill.pub/rss.xml', name: 'Distill.pub' },
+  { keywords: ['ai', 'agent', 'mcp', 'claude', 'openai'], url: 'https://www.latent.space/feed', name: 'Latent Space' },
+  // Dev tools / languages
   { keywords: ['kubernetes', 'k8s', 'devops', 'cloud', 'infra'], url: 'https://kubernetes.io/feed.xml', name: 'Kubernetes Blog' },
   { keywords: ['rust', 'systems', 'programming'], url: 'https://blog.rust-lang.org/feed.xml', name: 'Rust Blog' },
-  { keywords: ['homelab', 'selfhost', 'self-hosted', 'proxmox', 'docker'], url: 'https://selfh.st/rss/', name: 'selfh.st' },
-  { keywords: ['security', 'infosec', 'vulnerability', 'cve'], url: 'https://krebsonsecurity.com/feed/', name: 'Krebs on Security' },
-  { keywords: ['crypto', 'web3', 'defi', 'ethereum', 'safe', 'multisig'], url: 'https://blog.ethereum.org/feed.xml', name: 'Ethereum Blog' },
   { keywords: ['typescript', 'javascript', 'node', 'deno', 'bun'], url: 'https://devblogs.microsoft.com/typescript/feed/', name: 'TypeScript Blog' },
+  { keywords: ['go', 'golang', 'cloud', 'backend'], url: 'https://go.dev/blog/feed.atom', name: 'Go Blog' },
+  { keywords: ['python', 'pip', 'django', 'flask', 'fastapi'], url: 'https://blog.python.org/feeds/posts/default?alt=rss', name: 'Python Blog' },
+  // Homelab / self-hosted
+  { keywords: ['homelab', 'selfhost', 'self-hosted', 'proxmox', 'docker'], url: 'https://selfh.st/rss/', name: 'selfh.st' },
+  // Security
+  { keywords: ['security', 'infosec', 'vulnerability', 'cve'], url: 'https://krebsonsecurity.com/feed/', name: 'Krebs on Security' },
+  { keywords: ['security', 'appsec', 'devsecops'], url: 'https://portswigger.net/research/rss', name: 'PortSwigger Research' },
+  // Web3 / crypto
+  { keywords: ['crypto', 'web3', 'defi', 'ethereum', 'safe', 'multisig'], url: 'https://blog.ethereum.org/feed.xml', name: 'Ethereum Blog' },
+  // Open source / GitHub
+  { keywords: ['open-source', 'github', 'oss', 'stars', 'trending'], url: 'https://github.blog/feed/', name: 'GitHub Blog' },
+  { keywords: ['open-source', 'oss', 'npm', 'packages'], url: 'https://blog.npmjs.org/rss', name: 'npm Blog' },
+];
+
+/**
+ * Known research channel adapters — non-RSS sources that the discovery
+ * loop can suggest based on room keywords. Each maps to an adapter
+ * kind (oss_insight, github_trending) with a keyword-derived config.
+ */
+interface KnownChannel {
+  readonly keywords: readonly string[];
+  readonly kind: SourceKind;
+  readonly name: string;
+  readonly buildConfig: (roomKeywords: readonly string[]) => Readonly<Record<string, unknown>>;
+}
+
+const KNOWN_CHANNELS: readonly KnownChannel[] = [
+  {
+    keywords: ['github', 'oss', 'open-source', 'stars', 'trending', 'repos'],
+    kind: 'oss_insight',
+    name: 'OSS Insight (trending repos)',
+    buildConfig: (kw) => ({ keyword: kw.slice(0, 3).join(' '), max_items: 10 }),
+  },
+  {
+    keywords: ['github', 'oss', 'open-source', 'typescript', 'javascript', 'python', 'rust', 'go'],
+    kind: 'github_trending',
+    name: 'GitHub Trending (search API)',
+    buildConfig: (kw) => ({ query: kw.slice(0, 3).join(' '), sort: 'stars', max_items: 10 }),
+  },
+  // Generic — any room with >2 keywords gets offered these
+  {
+    keywords: ['ai', 'ml', 'embeddings', 'vector', 'rag', 'knowledge-graph', 'agent', 'mcp', 'llm'],
+    kind: 'oss_insight',
+    name: 'OSS Insight (AI/ML repos)',
+    buildConfig: (kw) => ({ keyword: kw.filter(k => ['ai', 'ml', 'embeddings', 'vector', 'rag', 'llm', 'agent'].includes(k)).slice(0, 3).join(' ') || kw[0], max_items: 10 }),
+  },
+  {
+    keywords: ['ai', 'ml', 'embeddings', 'vector', 'rag', 'knowledge-graph', 'agent', 'mcp', 'llm'],
+    kind: 'github_trending',
+    name: 'GitHub Trending (AI/ML)',
+    buildConfig: (kw) => ({ query: kw.filter(k => ['ai', 'ml', 'embeddings', 'vector', 'rag', 'llm', 'agent'].includes(k)).slice(0, 3).join(' ') || kw[0], sort: 'stars', max_items: 10 }),
+  },
 ];
 
 // ─────────────── use case ───────────────
@@ -72,7 +126,6 @@ export const discover =
           .map((allSources): readonly Suggestion[] => {
             const existing = forRoom(allSources, roomId);
             const existingKinds = new Set(existing.map((s) => s.kind));
-            const existingConfigs = existing.map((s) => JSON.stringify(s.config));
 
             const suggestions: Suggestion[] = [];
 
@@ -98,9 +151,6 @@ export const discover =
                 room.keywords.some((rk) => rk.toLowerCase().includes(fk) || fk.includes(rk.toLowerCase())),
               );
               if (!matches) continue;
-              // Skip if already registered (compare by URL)
-              const cfg = JSON.stringify({ feed_url: feed.url, max_items: 20 });
-              if (existingConfigs.includes(cfg)) continue;
               if (existing.some((s) => s.kind === 'generic_rss' && (s.config as { feed_url?: string }).feed_url === feed.url)) continue;
               suggestions.push({
                 descriptor: {
@@ -111,6 +161,28 @@ export const discover =
                   config: { feed_url: feed.url, max_items: 20 },
                 },
                 reason: `${feed.name} matches keywords: ${feed.keywords.filter((fk) => room.keywords.some((rk) => rk.toLowerCase().includes(fk))).join(', ')}`,
+              });
+            }
+
+            // Research channel adapters (OSS Insight, GitHub Trending, etc.)
+            for (const channel of KNOWN_CHANNELS) {
+              const matches = channel.keywords.some((ck) =>
+                room.keywords.some((rk) => rk.toLowerCase().includes(ck) || ck.includes(rk.toLowerCase())),
+              );
+              if (!matches) continue;
+              const channelId = `${roomId}-${slugify(channel.name)}`;
+              if (existing.some((s) => s.id === channelId)) continue;
+              if (existing.some((s) => s.kind === channel.kind && s.room === roomId)) continue;
+              const config = channel.buildConfig(room.keywords);
+              suggestions.push({
+                descriptor: {
+                  id: channelId,
+                  kind: channel.kind,
+                  room: roomId,
+                  enabled: true,
+                  config,
+                },
+                reason: `${channel.name} matches keywords: ${channel.keywords.filter((ck) => room.keywords.some((rk) => rk.toLowerCase().includes(ck))).join(', ')}`,
               });
             }
 

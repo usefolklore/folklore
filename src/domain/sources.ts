@@ -28,7 +28,9 @@ export type SourceKind =
   | 'codebase'
   | 'package_deps'
   | 'git_submodules'
-  | 'git_log';
+  | 'git_log'
+  | 'oss_insight'
+  | 'github_trending';
 
 /**
  * One registered source in the user's sources.json. The shape of

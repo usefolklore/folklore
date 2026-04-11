@@ -23,6 +23,8 @@ import { codebaseSource } from './codebase.js';
 import { packageDepsSource } from './package-deps.js';
 import { gitSubmodulesSource } from './git-submodules.js';
 import { gitLogSource } from './git-log.js';
+import { ossInsightSource } from './oss-insight.js';
+import { githubTrendingSource } from './github-trending.js';
 
 export interface SourceRegistryDeps {
   readonly http: HttpFetcher;
@@ -54,6 +56,8 @@ export const sourceRegistry = (deps: SourceRegistryDeps): SourceRegistry => {
     package_deps: packageDepsSource(),
     git_submodules: gitSubmodulesSource(),
     git_log: gitLogSource(),
+    oss_insight: ossInsightSource({ http: deps.http }),
+    github_trending: githubTrendingSource({ http: deps.http }),
   };
 
   const build = (descriptor: SourceDescriptor): Result<Source, GraphError> => {
