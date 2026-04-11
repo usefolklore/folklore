@@ -22,6 +22,7 @@ commands:
   daemon <sub>            start | stop | status — background research daemon
   discover [--room R]     suggest new sources for a room (--auto to add)
   discover-loop [--room R] recursive: discover + index + extract keywords + repeat
+  publish auth|tweet|thread|launch|preview  post to X/Twitter (OAuth 2.0)
   claude install|uninstall  make Claude Code use the graph automatically (hook + CLAUDE.md)
   mcp start               run the MCP server (Claude Code auto-spawns this)
 

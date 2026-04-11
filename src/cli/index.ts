@@ -23,6 +23,7 @@ import { discoverCmd } from './commands/discover.js';
 import { indexProject } from './commands/index-project.js';
 import { claudeInstall } from './commands/claude-install.js';
 import { discoverLoopCmd } from './commands/discover-loop.js';
+import { publish } from './commands/publish.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -46,6 +47,7 @@ const commands: Record<string, CommandFn> = {
   index: indexProject,
   claude: claudeInstall,
   'discover-loop': discoverLoopCmd,
+  publish,
 };
 
 const futureCommands = new Set([

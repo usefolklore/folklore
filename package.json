@@ -49,6 +49,7 @@
     "linkedom": "^0.18.12",
     "neverthrow": "^8.2.0",
     "sqlite-vec": "^0.1.9",
+    "twitter-api-v2": "^1.29.0",
     "yaml": "^2.8.3",
     "zod": "^4.3.6"
   }
