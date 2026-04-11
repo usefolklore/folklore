@@ -23,11 +23,9 @@ commands:
   discover [--room R]     suggest new sources for a room (--auto to add)
   discover-loop [--room R] recursive: discover + index + extract keywords + repeat
   publish auth|tweet|thread|launch|preview  post to X/Twitter (OAuth 2.0)
+  telegram setup|test|start  Telegram bot (inbound capture + commands + digests)
   claude install|uninstall  make Claude Code use the graph automatically (hook + CLAUDE.md)
   mcp start               run the MCP server (Claude Code auto-spawns this)
-
-commands (roadmap, not yet implemented):
-  telegram <sub>          setup / test / capture-start / digest-test
 `.trimStart();
 
 export function printHelp(_args: string[]): number {

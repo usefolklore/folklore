@@ -24,6 +24,7 @@ import { indexProject } from './commands/index-project.js';
 import { claudeInstall } from './commands/claude-install.js';
 import { discoverLoopCmd } from './commands/discover-loop.js';
 import { publish } from './commands/publish.js';
+import { telegram } from './commands/telegram.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -48,11 +49,10 @@ const commands: Record<string, CommandFn> = {
   claude: claudeInstall,
   'discover-loop': discoverLoopCmd,
   publish,
+  telegram,
 };
 
-const futureCommands = new Set([
-  'telegram',
-]);
+const futureCommands = new Set<string>([]);
 
 async function main(): Promise<number> {
   const [cmd, ...rest] = process.argv.slice(2);
