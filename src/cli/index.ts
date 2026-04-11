@@ -25,6 +25,8 @@ import { claudeInstall } from './commands/claude-install.js';
 import { discoverLoopCmd } from './commands/discover-loop.js';
 import { publish } from './commands/publish.js';
 import { telegram } from './commands/telegram.js';
+import { viz } from './commands/viz.js';
+import { exportObsidian } from './commands/export-obsidian.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -50,6 +52,8 @@ const commands: Record<string, CommandFn> = {
   'discover-loop': discoverLoopCmd,
   publish,
   telegram,
+  viz,
+  export: exportObsidian,
 };
 
 const futureCommands = new Set<string>([]);
