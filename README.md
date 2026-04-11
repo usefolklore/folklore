@@ -69,9 +69,9 @@ After `wellinformed claude install`, a PreToolUse hook fires before every Glob/G
 
 > *"wellinformed: Knowledge graph exists (425 nodes). Consider using search, ask, get_node before searching raw files."*
 
-Claude then calls the MCP tools instead of grepping. 11 tools available:
+Claude then calls the MCP tools instead of grepping. 12 tools available:
 
-`search` · `ask` · `get_node` · `get_neighbors` · `find_tunnels` · `trigger_room` · `graph_stats` · `room_create` · `room_list` · `sources_list`
+`search` · `ask` · `get_node` · `get_neighbors` · `find_tunnels` · `trigger_room` · `discover_loop` · `graph_stats` · `room_create` · `room_list` · `sources_list`
 
 Works with **Claude Code** (auto-discovered), **Codex**, **OpenClaw**, and any MCP host.
 
@@ -80,6 +80,28 @@ Works with **Claude Code** (auto-discovered), **Codex**, **OpenClaw**, and any M
 Rooms partition the graph. `homelab` doesn't see `fundraise`. Each room has its own sources and search scope.
 
 **Tunnels** are the exception — when nodes in different rooms are semantically close, wellinformed flags them. A paper about embedding quantization in `ml-papers` connects to a memory issue in `homelab`. That connection is what rooms exist to produce.
+
+## Discovery loop
+
+```bash
+wellinformed discover-loop --room homelab --max-iterations 3
+# iteration 1: found 4 sources from room keywords
+# iteration 2: found 2 more from extracted keywords ("VFIO", "iommu")
+# iteration 3: found 0 new — converged
+# total: 6 new sources, 42 new nodes
+```
+
+The discovery loop agent expands your sources recursively: discover feeds from keywords, index them, extract new keywords from the content, discover more. Converges when nothing new is found.
+
+## Publish to X/Twitter
+
+```bash
+export X_CLIENT_ID="your_client_id"    # from developer.x.com
+wellinformed publish auth              # OAuth 2.0 — opens browser
+wellinformed publish preview           # see what would be posted
+wellinformed publish launch            # post the launch thread
+wellinformed publish tweet "text"      # post a single tweet
+```
 
 ## Background daemon
 
@@ -112,7 +134,7 @@ src/
   infrastructure/   Ports + adapters (sqlite-vec, Readability, fast-xml-parser)
   application/      Use cases (indexNode, triggerRoom, findTunnels, discover)
   daemon/           setInterval loop + PID file
-  mcp/              11 MCP tools over stdio
+  mcp/              12 MCP tools over stdio
   cli/              Admin commands
 ```
 
