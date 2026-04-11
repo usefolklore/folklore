@@ -7,7 +7,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SaharBarak/wellinformed/stargazers"><img src="https://img.shields.io/github/stars/SaharBarak/wellinformed?style=flat&color=4E79A7" alt="GitHub Stars" /></a>
+  <a href="https://github.com/SaharBarak/wellinformed/stargazers"><img src="https://img.shields.io/github/stars/SaharBarak/wellinformed?style=social" alt="Stars" /></a>&nbsp;&nbsp;
+  <a href="https://github.com/SaharBarak/wellinformed/network/members"><img src="https://img.shields.io/github/forks/SaharBarak/wellinformed?style=social" alt="Forks" /></a>&nbsp;&nbsp;
+  <a href="https://github.com/SaharBarak/wellinformed/watchers"><img src="https://img.shields.io/github/watchers/SaharBarak/wellinformed?style=social" alt="Watchers" /></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/SaharBarak/wellinformed/blob/main/LICENSE"><img src="https://img.shields.io/github/license/SaharBarak/wellinformed?color=59A14F" alt="License" /></a>
   <img src="https://img.shields.io/badge/MCP-11%20tools-4E79A7" alt="MCP Tools" />
   <img src="https://img.shields.io/badge/tests-27%20passing-59A14F" alt="Tests" />
