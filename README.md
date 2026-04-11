@@ -36,7 +36,7 @@ npm install && bash scripts/bootstrap.sh
 
 ```bash
 wellinformed init                      # create a room, pick your sources
-wellinformed trigger --room homelab    # fetch from ArXiv, HN, RSS
+wellinformed trigger --room homelab    # fetch from ArXiv, HN, RSS, blogs, any URL
 wellinformed index                     # index your codebase + deps + git
 wellinformed claude install            # make Claude use the graph automatically
 ```
@@ -49,12 +49,13 @@ That last command is the key one. After `claude install`, Claude checks your kno
 |---|---|
 | **ArXiv** | Papers matching your keywords, chunked and embedded |
 | **Hacker News** | Stories via Algolia search |
-| **RSS / Atom** | Any feed URL — blogs, newsletters, release notes |
-| **Any URL** | Article-extracted via Readability |
-| **Your .ts/.js files** | Exports, imports, doc comments |
-| **package.json** | Every dependency with version and description |
+| **RSS / Atom** | Any feed — blogs, newsletters, release notes, podcasts |
+| **Any URL** | Article-extracted via Mozilla Readability |
+| **Your .ts/.js files** | Exports, imports, doc comments per file |
+| **package.json** | Every dependency with version, description, homepage |
 | **Git history** | Recent commits with changed file lists |
 | **Git submodules** | Remote URL, branch, HEAD SHA |
+| **Discovery loop** | Recursively finds MORE sources from indexed content keywords |
 
 Source discovery suggests new feeds automatically from your room's keywords:
 
