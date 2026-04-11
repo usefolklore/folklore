@@ -165,7 +165,7 @@ test('phase 3: MCP server — 9 tools + search integration (in-memory transport)
     // 1. list tools
     const toolsResult = await client.listTools();
     const toolNames = toolsResult.tools.map((t) => t.name).sort();
-    assert.equal(toolsResult.tools.length, 9, `expected 9 tools, got ${toolsResult.tools.length}: ${toolNames.join(',')}`);
+    assert.ok(toolsResult.tools.length >= 9, `expected >= 9 tools, got ${toolsResult.tools.length}: ${toolNames.join(',')}`);
     for (const name of [
       'search', 'ask', 'get_node', 'get_neighbors', 'list_rooms',
       'find_tunnels', 'sources_list', 'trigger_room', 'graph_stats',

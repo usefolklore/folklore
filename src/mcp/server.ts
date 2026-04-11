@@ -264,6 +264,49 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     },
   );
 
+  // ─────────────── room_create ───────────
+
+  server.registerTool(
+    'room_create',
+    {
+      description:
+        'Create a new room in the registry. Rooms partition the knowledge graph by research domain.',
+      inputSchema: {
+        name: z.string().describe('Human-friendly room name (e.g. "homelab")'),
+        description: z.string().optional().describe('One-line description of the room'),
+        keywords: z.array(z.string()).optional().describe('Topic keywords for source suggestion'),
+      },
+    },
+    async ({ name, description, keywords }) => {
+      const { slugifyRoomName } = await import('../domain/rooms.js');
+      const id = slugifyRoomName(name);
+      const room = {
+        id,
+        name,
+        description: description ?? `Research room for ${name}`,
+        keywords: keywords ?? [],
+        created_at: new Date().toISOString(),
+      };
+      const result = await runtime.rooms.create(room);
+      if (result.isErr()) return errText(result.error);
+      return okJson({ created: room, registry: result.value });
+    },
+  );
+
+  // ─────────────── room_list ────────────
+
+  server.registerTool(
+    'room_list',
+    {
+      description: 'List all rooms in the registry with their metadata and which is default.',
+    },
+    async () => {
+      const result = await runtime.rooms.load();
+      if (result.isErr()) return errText(result.error);
+      return okJson(result.value);
+    },
+  );
+
   return server;
 };
 

@@ -15,6 +15,7 @@ import { fileGraphRepository, type GraphRepository } from '../infrastructure/gra
 import { openSqliteVectorIndex, type VectorIndex } from '../infrastructure/vector-index.js';
 import { xenovaEmbedder, type Embedder } from '../infrastructure/embedders.js';
 import { fileSourcesConfig, type SourcesConfig } from '../infrastructure/sources-config.js';
+import { fileRoomsConfig, type RoomsConfig } from '../infrastructure/rooms-config.js';
 import { httpFetcher, type HttpFetcher } from '../infrastructure/http/fetcher.js';
 import { xmlParser, type XmlParserPort } from '../infrastructure/parsers/xml-parser.js';
 import { readabilityExtractor, type HtmlExtractor } from '../infrastructure/parsers/html-extractor.js';
@@ -29,6 +30,7 @@ export interface RuntimePaths {
   readonly graph: string;
   readonly vectors: string;
   readonly sources: string;
+  readonly rooms: string;
   readonly modelCache: string;
 }
 
@@ -39,6 +41,7 @@ export const runtimePaths = (): RuntimePaths => {
     graph: join(home, 'graph.json'),
     vectors: join(home, 'vectors.db'),
     sources: join(home, 'sources.json'),
+    rooms: join(home, 'rooms.json'),
     modelCache: join(home, 'models'),
   };
 };
@@ -50,6 +53,7 @@ export interface Runtime {
   readonly vectors: VectorIndex;
   readonly embedder: Embedder;
   readonly sources: SourcesConfig;
+  readonly rooms: RoomsConfig;
   readonly http: HttpFetcher;
   readonly xml: XmlParserPort;
   readonly html: HtmlExtractor;
@@ -73,6 +77,7 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
       const graphs = fileGraphRepository(paths.graph);
       const embedder = xenovaEmbedder({ cacheDir: paths.modelCache });
       const sources = fileSourcesConfig(paths.sources);
+      const rooms = fileRoomsConfig(paths.rooms);
       const http = httpFetcher();
       const xml = xmlParser();
       const html = readabilityExtractor();
@@ -84,6 +89,7 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
         vectors,
         embedder,
         sources,
+        rooms,
         http,
         xml,
         html,

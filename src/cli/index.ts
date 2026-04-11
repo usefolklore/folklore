@@ -14,6 +14,8 @@ import { printHelp } from './commands/help.js';
 import { trigger } from './commands/trigger.js';
 import { sources } from './commands/sources.js';
 import { mcp } from './commands/mcp.js';
+import { init } from './commands/init.js';
+import { room } from './commands/room.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -28,11 +30,11 @@ const commands: Record<string, CommandFn> = {
   trigger,
   sources,
   mcp,
+  init,
+  room,
 };
 
 const futureCommands = new Set([
-  'init',
-  'room',
   'daemon',
   'discover',
   'telegram',
