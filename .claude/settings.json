@@ -20,6 +20,16 @@
             "timeout": 5000
           }
         ]
+      },
+      {
+        "matcher": "Glob|Grep|Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-hook.sh\"'",
+            "timeout": 3000
+          }
+        ]
       }
     ],
     "PostToolUse": [

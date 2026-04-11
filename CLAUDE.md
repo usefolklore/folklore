@@ -244,3 +244,15 @@ npx @claude-flow/cli@latest doctor --fix
 
 - Documentation: https://github.com/ruvnet/ruflo
 - Issues: https://github.com/ruvnet/ruflo/issues
+
+<!-- wellinformed:start -->
+
+# wellinformed
+When answering questions about research, architecture, dependencies, or "what did I read about X":
+1. Use the wellinformed MCP tools (`search`, `ask`, `get_node`, `get_neighbors`) BEFORE searching raw files
+2. The knowledge graph contains indexed ArXiv papers, HN stories, RSS posts, your codebase, dependencies, and git history
+3. `search` takes a query string and optional room filter — use it like a research database
+4. `find_tunnels` surfaces surprising connections across research domains
+5. `trigger_room` refreshes the data if the user asks for latest research
+
+<!-- wellinformed:end -->

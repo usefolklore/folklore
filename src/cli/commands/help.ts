@@ -21,6 +21,7 @@ commands:
   index [--room R]        index the project codebase, deps, submodules, git history
   daemon <sub>            start | stop | status — background research daemon
   discover [--room R]     suggest new sources for a room (--auto to add)
+  claude install|uninstall  make Claude Code use the graph automatically (hook + CLAUDE.md)
   mcp start               run the MCP server (Claude Code auto-spawns this)
 
 commands (roadmap, not yet implemented):

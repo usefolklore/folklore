@@ -21,6 +21,7 @@ import { report } from './commands/report.js';
 import { daemon } from './commands/daemon.js';
 import { discoverCmd } from './commands/discover.js';
 import { indexProject } from './commands/index-project.js';
+import { claudeInstall } from './commands/claude-install.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -42,6 +43,7 @@ const commands: Record<string, CommandFn> = {
   daemon,
   discover: discoverCmd,
   index: indexProject,
+  claude: claudeInstall,
 };
 
 const futureCommands = new Set([
