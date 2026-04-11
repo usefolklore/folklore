@@ -307,6 +307,85 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     },
   );
 
+  // ─────────────── deep_search (multi-hop) ─────
+
+  server.registerTool(
+    'deep_search',
+    {
+      description:
+        'Multi-hop graph search — like Cognee\'s chain-of-thought traversal. Searches semantically, then expands via graph neighbors, then re-ranks. Finds connections that flat k-NN misses.',
+      inputSchema: {
+        query: z.string().describe('The search query'),
+        room: z.string().optional().describe('Room filter'),
+        k: z.number().int().min(1).max(20).default(5),
+        hops: z.number().int().min(1).max(3).default(2).describe('Graph expansion depth'),
+      },
+    },
+    async ({ query, room, k, hops }) => {
+      // Hop 1: semantic search
+      const initial = room
+        ? await searchByRoom(deps)({ room, text: query, k })
+        : await searchGlobal(deps)({ text: query, k });
+      if (initial.isErr()) return errText(initial.error);
+
+      const graph = await runtime.graphs.load();
+      if (graph.isErr()) return errText(graph.error);
+
+      // Hop 2+: expand via graph neighbors
+      const seen = new Set(initial.value.map((m) => m.node_id));
+      const expanded: Array<{ node_id: string; distance: number; hop: number; via: string }> = [];
+
+      for (const match of initial.value) {
+        expanded.push({ node_id: match.node_id, distance: match.distance, hop: 0, via: 'semantic' });
+        if (hops >= 1) {
+          const neigh = neighbors(graph.value, match.node_id);
+          for (const n of neigh) {
+            if (!seen.has(n.id)) {
+              seen.add(n.id);
+              expanded.push({ node_id: n.id, distance: match.distance + 0.1, hop: 1, via: match.node_id });
+            }
+          }
+        }
+      }
+
+      // Hop 3: neighbors of neighbors
+      if (hops >= 2) {
+        const hop1Nodes = expanded.filter((e) => e.hop === 1);
+        for (const h1 of hop1Nodes.slice(0, 10)) {
+          const neigh2 = neighbors(graph.value, h1.node_id);
+          for (const n of neigh2) {
+            if (!seen.has(n.id)) {
+              seen.add(n.id);
+              expanded.push({ node_id: n.id, distance: h1.distance + 0.1, hop: 2, via: h1.node_id });
+            }
+          }
+        }
+      }
+
+      // Re-rank by distance and build rich results
+      const sorted = expanded.sort((a, b) => a.distance - b.distance).slice(0, k * 2);
+      const results = sorted.map((e) => {
+        const node = getNode(graph.value, e.node_id);
+        return {
+          node_id: e.node_id,
+          label: node?.label ?? e.node_id,
+          room: node?.room ?? 'unknown',
+          source_uri: node?.source_uri ?? node?.source_file,
+          distance: e.distance,
+          hop: e.hop,
+          via: e.via,
+        };
+      });
+
+      return okJson({
+        query,
+        hops,
+        total_explored: seen.size,
+        results: results.slice(0, k),
+      });
+    },
+  );
+
   // ─────────────── discover_loop ─────────
 
   server.registerTool(

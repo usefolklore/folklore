@@ -109,6 +109,11 @@
             "type": "command",
             "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/auto-memory-hook.mjs\" sync'",
             "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "sh -c 'exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-session-capture.sh\"'",
+            "timeout": 5000
           }
         ]
       }
