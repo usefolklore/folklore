@@ -56,6 +56,19 @@ That last command is the key one. After `claude install`, Claude checks your kno
 | **Git history** | Recent commits with changed file lists |
 | **Git submodules** | Remote URL, branch, HEAD SHA |
 | **Discovery loop** | Recursively finds MORE sources from indexed content keywords |
+| **X / Twitter** | Posts and threads via OAuth 2.0 (publish + ingest) |
+
+**Research channels** — wellinformed also connects to the GitHub analytics ecosystem for tracking trends, competitors, and emerging tools:
+
+| Channel | What it tracks |
+|---|---|
+| [star-history.com](https://www.star-history.com/) | Star trajectories over time |
+| [Daily Stars Explorer](https://github.com/emanuelef/daily-stars-explorer) | Top daily star gainers |
+| [OSS Insight](https://ossinsight.io) | Per-repo activity: commits, PRs, contributors |
+| [Repohistory](https://github.com/repohistory/repohistory) | Historical star/fork/issue trends |
+| [RepoBeats](https://repobeats.axiom.co/) | Contributor + PR activity analytics |
+| [Gitstar Ranking](https://gitstar-ranking.com/) | Top repos by star count |
+| [Ecosyste.ms Timeline](https://timeline.ecosyste.ms/) | Package release timelines across registries |
 
 Source discovery suggests new feeds automatically from your room's keywords:
 
