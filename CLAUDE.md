@@ -248,11 +248,17 @@ npx @claude-flow/cli@latest doctor --fix
 <!-- wellinformed:start -->
 
 # wellinformed
-When answering questions about research, architecture, dependencies, or "what did I read about X":
+- **wellinformed** (`.claude/skills/wellinformed/SKILL.md`) — knowledge graph research skill. Trigger: `/wellinformed`
+When the user types `/wellinformed`, or asks about research, sources, rooms, tunnels, or their knowledge graph, invoke the Skill tool with `skill: "wellinformed"` before doing anything else.
+
+Rules:
 1. Use the wellinformed MCP tools (`search`, `ask`, `get_node`, `get_neighbors`) BEFORE searching raw files
-2. The knowledge graph contains indexed ArXiv papers, HN stories, RSS posts, your codebase, dependencies, and git history
-3. `search` takes a query string and optional room filter — use it like a research database
-4. `find_tunnels` surfaces surprising connections across research domains
-5. `trigger_room` refreshes the data if the user asks for latest research
+2. ALWAYS narrate operations with visible progress (banners, per-source status, summaries) — never silently call MCP tools
+3. The knowledge graph contains indexed ArXiv papers, HN stories, RSS posts, GitHub Trending repos, your codebase, dependencies, and git history
+4. `search` takes a query string and optional room filter — use it like a research database
+5. `find_tunnels` surfaces surprising connections across research domains
+6. `trigger_room` refreshes the data if the user asks for latest research
+7. `discover_loop` recursively expands sources from indexed content keywords
+8. After any operation, show the current graph state (nodes, edges, vectors, sources)
 
 <!-- wellinformed:end -->
