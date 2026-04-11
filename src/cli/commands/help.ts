@@ -14,16 +14,16 @@ commands:
   help                    this message
   init                    interactive room seeding wizard
   room <sub>              list | create | switch | current | describe
-  trigger [--room R]      fetch and index content from enabled sources for a room
-  sources <sub>           list | add | remove | enable | disable the source registry
+  trigger [--room R]      fetch and index content from enabled sources
+  sources <sub>           list | add | remove | enable | disable
+  ask "<query>"           semantic search + context output
+  report [--room R]       generate a knowledge graph report
   mcp start               run the MCP server (Claude Code auto-spawns this)
 
 commands (roadmap, not yet implemented):
   daemon <sub>            start / stop / status / trigger
   discover [--room R]     force a discovery iteration
   telegram <sub>          setup / test / capture-start / digest-test
-  report [date] [--room]  read a report
-  ask "<query>"           semantic search + summarize
 `.trimStart();
 
 export function printHelp(_args: string[]): number {

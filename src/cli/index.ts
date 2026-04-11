@@ -16,6 +16,8 @@ import { sources } from './commands/sources.js';
 import { mcp } from './commands/mcp.js';
 import { init } from './commands/init.js';
 import { room } from './commands/room.js';
+import { ask } from './commands/ask.js';
+import { report } from './commands/report.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -32,14 +34,14 @@ const commands: Record<string, CommandFn> = {
   mcp,
   init,
   room,
+  ask,
+  report,
 };
 
 const futureCommands = new Set([
   'daemon',
   'discover',
   'telegram',
-  'report',
-  'ask',
 ]);
 
 async function main(): Promise<number> {
