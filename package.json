@@ -1,7 +1,7 @@
 {
   "name": "wellinformed",
-  "version": "0.0.1",
-  "description": "Claude Code plugin — queryable, embeddings-backed knowledge graph fed by a research daemon and your daily scroll (via Telegram). Rooms-scoped, shared tools.",
+  "version": "1.0.0",
+  "description": "MCP skill that gives AI coding agents persistent research memory — ArXiv, HN, RSS, GitHub Trending, codebase indexing, 12 MCP tools. Claude Code / Codex / OpenClaw.",
   "type": "module",
   "bin": {
     "wellinformed": "./bin/wellinformed.js"
