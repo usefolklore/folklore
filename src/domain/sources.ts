@@ -30,7 +30,16 @@ export type SourceKind =
   | 'git_submodules'
   | 'git_log'
   | 'oss_insight'
-  | 'github_trending';
+  | 'github_trending'
+  | 'reddit'
+  | 'devto'
+  | 'product_hunt'
+  | 'ecosystems_timeline'
+  | 'github_releases'
+  | 'npm_trending'
+  | 'twitter_search'
+  | 'youtube_transcript'
+  | 'podcast_rss';
 
 /**
  * One registered source in the user's sources.json. The shape of

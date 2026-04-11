@@ -25,6 +25,15 @@ import { gitSubmodulesSource } from './git-submodules.js';
 import { gitLogSource } from './git-log.js';
 import { ossInsightSource } from './oss-insight.js';
 import { githubTrendingSource } from './github-trending.js';
+import { redditSource } from './reddit.js';
+import { devtoSource } from './devto.js';
+import { productHuntSource } from './product-hunt.js';
+import { ecosystemsTimelineSource } from './ecosystems-timeline.js';
+import { githubReleasesSource } from './github-releases.js';
+import { npmTrendingSource } from './npm-trending.js';
+import { twitterSearchSource } from './twitter-search.js';
+import { youtubeTranscriptSource } from './youtube-transcript.js';
+import { podcastRssSource } from './podcast-rss.js';
 
 export interface SourceRegistryDeps {
   readonly http: HttpFetcher;
@@ -58,6 +67,15 @@ export const sourceRegistry = (deps: SourceRegistryDeps): SourceRegistry => {
     git_log: gitLogSource(),
     oss_insight: ossInsightSource({ http: deps.http }),
     github_trending: githubTrendingSource({ http: deps.http }),
+    reddit: redditSource({ http: deps.http }),
+    devto: devtoSource({ http: deps.http }),
+    product_hunt: productHuntSource({ http: deps.http }),
+    ecosystems_timeline: ecosystemsTimelineSource({ http: deps.http }),
+    github_releases: githubReleasesSource({ http: deps.http }),
+    npm_trending: npmTrendingSource({ http: deps.http }),
+    twitter_search: twitterSearchSource(),
+    youtube_transcript: youtubeTranscriptSource({ http: deps.http, xml: deps.xml }),
+    podcast_rss: podcastRssSource({ http: deps.http, xml: deps.xml }),
   };
 
   const build = (descriptor: SourceDescriptor): Result<Source, GraphError> => {
