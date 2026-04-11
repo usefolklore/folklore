@@ -12,8 +12,31 @@ You have access to the wellinformed knowledge graph via MCP tools. Use this skil
 - User types `/wellinformed`
 - User asks "what do I know about X", "search my research", "what did I read"
 - User asks to trigger, discover, index, or manage rooms/sources
-- PreToolUse hook fires with "wellinformed: Knowledge graph exists"
+- PreToolUse hook fires with "wellinformed:" prefix
 - User asks about architecture, dependencies, or prior research
+- **PROACTIVE:** When answering ANY technical question, check the graph FIRST
+- **PROACTIVE:** When reviewing code, search for related nodes before giving advice
+- **PROACTIVE:** When the user mentions a technology or concept, search the graph for context
+- **PROACTIVE:** At the START of every conversation, call `graph_stats` to show the user their graph is alive
+
+## Proactive Behavior (CRITICAL)
+
+**wellinformed is NOT passive.** Don't wait for the user to ask. Search the graph whenever:
+
+1. You're about to answer a technical question → call `search` first
+2. You're about to write code in a file → call `search` with the module/concept name
+3. The user mentions a library, framework, or concept → call `search` to see if it's in the graph
+4. The user starts a new conversation → call `graph_stats` and mention the graph
+
+**Pattern for every response involving research or code:**
+```
+1. User asks something
+2. YOU call search("relevant terms") BEFORE answering
+3. If results found → weave them into your answer with citations
+4. If no results → answer normally, then suggest: "Want me to trigger a fetch for this topic?"
+```
+
+**NEVER say "I don't have information about X" if you haven't searched the graph first.**
 
 ## Operation Visibility Rules
 
