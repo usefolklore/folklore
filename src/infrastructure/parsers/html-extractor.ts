@@ -86,10 +86,22 @@ export const readabilityExtractor = (): HtmlExtractor => {
     );
   };
 
+  const esc = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
   const extract = (html: string, url: string): ResultAsync<ExtractedArticle, GraphError> =>
     loadDeps().andThen(({ linkedom, readability }) => {
       try {
-        const dom = linkedom.parseHTML(html);
+        // For non-HTML content (markdown, plain text), wrap in minimal HTML so
+        // Readability can extract the text. Detects by checking for a leading
+        // HTML tag or doctype — if absent, wraps as a <pre> block inside a
+        // proper document structure. This lets file:// markdown sources work.
+        const looksLikeHtml = /^\s*(<[!a-z])/i.test(html);
+        const wrappedHtml = looksLikeHtml
+          ? html
+          : `<!DOCTYPE html><html><head><title>${esc(url)}</title></head><body><article><pre>${esc(html)}</pre></article></body></html>`;
+
+        const dom = linkedom.parseHTML(wrappedHtml);
         const reader = new readability.Readability(dom.document, { debug: false });
         const parsed = reader.parse();
         if (!parsed) {

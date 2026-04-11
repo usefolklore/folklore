@@ -19,8 +19,16 @@ import type { AppError } from './errors.js';
 import type { ContentItem } from './content.js';
 import type { Room, Wing } from './graph.js';
 
-/** The kinds of source adapter wellinformed ships in Phase 2. */
-export type SourceKind = 'generic_rss' | 'arxiv' | 'hn_algolia' | 'generic_url';
+/** Source adapter kinds. Phase 2: external feeds. Project indexing: codebase, deps, submodules, git. */
+export type SourceKind =
+  | 'generic_rss'
+  | 'arxiv'
+  | 'hn_algolia'
+  | 'generic_url'
+  | 'codebase'
+  | 'package_deps'
+  | 'git_submodules'
+  | 'git_log';
 
 /**
  * One registered source in the user's sources.json. The shape of

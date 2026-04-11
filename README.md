@@ -85,6 +85,7 @@ Sources (ArXiv, HN, RSS, URLs)
 | `room list\|create\|switch\|current\|describe` | Manage the room registry. |
 | `sources list\|add\|remove\|enable\|disable` | Manage source descriptors. |
 | `trigger [--room R]` | Fetch + chunk + embed + index all enabled sources for a room. |
+| `index [--room R]` | Index the project codebase, deps, submodules, and git history. |
 | `ask "<query>" [--room R] [--k N]` | Semantic search + formatted context output. |
 | `report [--room R] [--since DATE]` | Generate a markdown report: new nodes, god nodes, tunnels. |
 | `discover [--room R] [--auto]` | Suggest new sources matching room keywords. |
@@ -99,6 +100,10 @@ Sources (ArXiv, HN, RSS, URLs)
 | `arxiv` | ArXiv API (Atom responses) | `{ "query": "abs:embeddings OR abs:rag" }` |
 | `hn_algolia` | Hacker News via Algolia search | `{ "query": "knowledge graph", "tags": "story" }` |
 | `generic_url` | One URL, extracted via Readability | `{ "url": "https://..." }` |
+| `codebase` | TypeScript/JS source files (exports, imports, docs) | `{ "root": "." }` |
+| `package_deps` | package.json dependencies with descriptions | `{ "root": ".", "include_dev": true }` |
+| `git_submodules` | .gitmodules entries with URL, branch, SHA | `{ "root": "." }` |
+| `git_log` | Recent git commits with changed file lists | `{ "root": ".", "max_commits": 50 }` |
 
 ```bash
 # Add a source manually
@@ -228,18 +233,37 @@ rooms:
 
 ## Dogfood results
 
-wellinformed running on itself with 3 live sources:
+wellinformed indexing itself — external sources + its own codebase:
 
 ```
+# External sources (ArXiv, HN, Simon Willison)
 room=wellinformed-dev  sources=3
-  [ ok ] wellinformed-dev-arxiv          seen= 10 new= 10
-  [ ok ] wellinformed-dev-simon-willison seen= 20 new= 20
-  [ ok ] wellinformed-dev-hn             seen= 13 new= 13
+  [ ok ] arxiv              seen= 10 new= 10
+  [ ok ] simon-willison     seen= 20 new= 20
+  [ ok ] hn                 seen= 13 new= 13
 
-73 nodes, 30 edges, <100ms search latency
+# Project self-index
+  [ ok ] codebase           seen= 55 new= 55    (every .ts file)
+  [ ok ] package_deps       seen= 14 new= 14    (all npm deps)
+  [ ok ] git_submodules     seen=  1 new=  1    (graphify fork)
+  [ ok ] git_log            seen= 11 new= 11    (full commit history)
+
+154 nodes, 30+ edges, <100ms search latency
 ```
 
-`ask "knowledge graph embeddings"` returns HN stories from 2017-2024 about KG embeddings. `ask "MCP protocol Claude Code"` returns Simon Willison's Claude Code posts. Dedup correctly skips unchanged items on re-run.
+```bash
+$ wellinformed ask "GraphClient upsert BFS traversal"
+# → graph-repository.ts, graph.ts, phase1 test, phase1 commit
+
+$ wellinformed ask "neverthrow Result monad error handling"
+# → neverthrow dep, errors.ts, phase2 commit (sequenceLazy fix)
+
+$ wellinformed ask "MCP server sqlite vector"
+# → sqlite-vec dep, better-sqlite3 dep, vector-index.ts,
+#   Simon Willison's "Syntaqlite Playground" blog post
+```
+
+Cross-source connections surface automatically — a search for "sqlite vector" returns both the code file and an external blog post about SQLite.
 
 ## License
 

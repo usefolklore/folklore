@@ -19,6 +19,10 @@ import { genericRssSource } from './generic-rss.js';
 import { arxivSource } from './arxiv.js';
 import { hnAlgoliaSource } from './hn-algolia.js';
 import { genericUrlSource } from './generic-url.js';
+import { codebaseSource } from './codebase.js';
+import { packageDepsSource } from './package-deps.js';
+import { gitSubmodulesSource } from './git-submodules.js';
+import { gitLogSource } from './git-log.js';
 
 export interface SourceRegistryDeps {
   readonly http: HttpFetcher;
@@ -46,6 +50,10 @@ export const sourceRegistry = (deps: SourceRegistryDeps): SourceRegistry => {
     arxiv: arxivSource({ http: deps.http, xml: deps.xml }),
     hn_algolia: hnAlgoliaSource({ http: deps.http }),
     generic_url: genericUrlSource({ http: deps.http, html: deps.html }),
+    codebase: codebaseSource(),
+    package_deps: packageDepsSource(),
+    git_submodules: gitSubmodulesSource(),
+    git_log: gitLogSource(),
   };
 
   const build = (descriptor: SourceDescriptor): Result<Source, GraphError> => {

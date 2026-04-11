@@ -18,6 +18,7 @@ commands:
   sources <sub>           list | add | remove | enable | disable
   ask "<query>"           semantic search + context output
   report [--room R]       generate a knowledge graph report
+  index [--room R]        index the project codebase, deps, submodules, git history
   daemon <sub>            start | stop | status — background research daemon
   discover [--room R]     suggest new sources for a room (--auto to add)
   mcp start               run the MCP server (Claude Code auto-spawns this)
