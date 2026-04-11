@@ -27,6 +27,7 @@ import { publish } from './commands/publish.js';
 import { telegram } from './commands/telegram.js';
 import { viz } from './commands/viz.js';
 import { exportObsidian } from './commands/export-obsidian.js';
+import { dashboard } from './commands/dashboard.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -54,6 +55,7 @@ const commands: Record<string, CommandFn> = {
   telegram,
   viz,
   export: exportObsidian,
+  dashboard,
 };
 
 const futureCommands = new Set<string>([]);

@@ -8,7 +8,7 @@
  * new source kind in a later phase only touches one file.
  */
 
-import { Result, err, ok } from 'neverthrow';
+import { Result, err, ok, okAsync } from 'neverthrow';
 import type { GraphError } from '../../domain/errors.js';
 import { GraphError as GE } from '../../domain/errors.js';
 import type { Source, SourceDescriptor, SourceKind } from '../../domain/sources.js';
@@ -44,6 +44,15 @@ export interface SourceRegistryDeps {
 /** Known source kinds and their adapter factories. */
 type Factory = (descriptor: SourceDescriptor) => Source;
 
+/** Stub adapter for not-yet-implemented source kinds. */
+const stubAdapter: Factory = (descriptor) => ({
+  descriptor,
+  fetch: () => okAsync([]),
+});
+
+// keep okAsync import used
+void ok;
+
 export interface SourceRegistry {
   /** Build a live Source from a descriptor, or error if the kind is unknown. */
   build(descriptor: SourceDescriptor): Result<Source, GraphError>;
@@ -76,6 +85,11 @@ export const sourceRegistry = (deps: SourceRegistryDeps): SourceRegistry => {
     twitter_search: twitterSearchSource(),
     youtube_transcript: youtubeTranscriptSource({ http: deps.http, xml: deps.xml }),
     podcast_rss: podcastRssSource({ http: deps.http, xml: deps.xml }),
+    // Multimodal stubs — return empty until adapter files are built
+    image_metadata: stubAdapter,
+    image_ocr: stubAdapter,
+    audio_transcript: stubAdapter,
+    pdf_text: stubAdapter,
   };
 
   const build = (descriptor: SourceDescriptor): Result<Source, GraphError> => {

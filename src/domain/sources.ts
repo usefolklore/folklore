@@ -39,7 +39,11 @@ export type SourceKind =
   | 'npm_trending'
   | 'twitter_search'
   | 'youtube_transcript'
-  | 'podcast_rss';
+  | 'podcast_rss'
+  | 'image_metadata'
+  | 'image_ocr'
+  | 'audio_transcript'
+  | 'pdf_text';
 
 /**
  * One registered source in the user's sources.json. The shape of
