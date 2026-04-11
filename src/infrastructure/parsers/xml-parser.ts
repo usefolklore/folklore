@@ -30,6 +30,14 @@ const parser = new FxpParser({
   parseAttributeValue: true,
   trimValues: true,
   cdataPropName: '#cdata',
+  htmlEntities: true,
+  // Simon Willison's Atom feed has ~1700 HTML entities in full-content
+  // entries. fast-xml-parser defaults to maxTotalExpansions=1000 which
+  // is too low for real-world blog feeds. 10k is generous and still safe.
+  processEntities: {
+    enabled: true,
+    maxTotalExpansions: 10_000,
+  },
 });
 
 export const xmlParser = (): XmlParserPort => {

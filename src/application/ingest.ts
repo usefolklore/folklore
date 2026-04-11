@@ -35,8 +35,8 @@ import { Result, ResultAsync, errAsync, okAsync } from 'neverthrow';
 import type { AppError } from '../domain/errors.js';
 import { chunk as chunkText } from '../domain/chunks.js';
 import type { ContentItem } from '../domain/content.js';
-import type { Graph, GraphNode, Room } from '../domain/graph.js';
-import { getNode } from '../domain/graph.js';
+import type { Graph, GraphEdge, GraphNode, Room } from '../domain/graph.js';
+import { getNode, upsertEdge } from '../domain/graph.js';
 import type { Source, SourceDescriptor, SourceRun, RoomRun } from '../domain/sources.js';
 import { emptyRun, forRoom } from '../domain/sources.js';
 import type { GraphRepository } from '../infrastructure/graph-repository.js';
@@ -237,7 +237,31 @@ const indexChunksFor = (
         wing: descriptor.wing,
       }).map(() => undefined),
     ),
-  ).map(() => undefined);
+  ).andThen(() => {
+    // Add sequential edges between chunks of multi-chunk articles so
+    // graph traversal can follow the reading order.
+    if (chunks.length <= 1) return okAsync<void, AppError>(undefined);
+    return deps.graphs
+      .load()
+      .mapErr((e): AppError => e)
+      .andThen((graph) => {
+        let g = graph;
+        for (let i = 0; i < chunks.length - 1; i++) {
+          const srcId = `${item.source_uri}#chunk-${i}`;
+          const tgtId = `${item.source_uri}#chunk-${i + 1}`;
+          const edge: GraphEdge = {
+            source: srcId,
+            target: tgtId,
+            relation: 'next_chunk',
+            confidence: 'EXTRACTED',
+            source_file: item.source_uri,
+          };
+          const result = upsertEdge(g, edge);
+          if (result.isOk()) g = result.value;
+        }
+        return deps.graphs.save(g).mapErr((e): AppError => e);
+      });
+  });
 };
 
 /**
