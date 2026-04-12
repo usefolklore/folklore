@@ -51,6 +51,10 @@ import {
   unregisterSearchProtocol,
   type SearchRegistry,
 } from '../infrastructure/search-sync.js';
+import {
+  createHealthTracker,
+  type HealthTracker,
+} from '../infrastructure/connection-health.js';
 
 // ─────────────── types ──────────────────
 
@@ -63,6 +67,8 @@ export interface DaemonDeps {
   readonly config: DaemonConfig;
   readonly homePath: string;
   readonly shareSync?: ShareSyncRegistry | null;   // Phase 16 — null until libp2p starts
+  /** Phase 18: in-memory connection health tracker. Undefined until libp2p starts. */
+  readonly healthTracker?: HealthTracker | null;
 }
 
 export interface TickResult {
@@ -226,6 +232,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
   let liveNode: Libp2p | null = null;
   let liveSync: ShareSyncRegistry | null = null;
   let liveSearch: SearchRegistry | null = null; // Phase 17
+  let liveHealthTracker: HealthTracker | null = null; // Phase 18
   const identityPath = join(deps.homePath, 'peer-identity.json');
   if (existsSync(identityPath)) {
     try {
@@ -249,6 +256,43 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
             daemonLog(deps.homePath, `share sync skipped — libp2p: ${formatError(nodeRes.error)}`);
           } else {
             liveNode = nodeRes.value;
+
+            // ── Phase 18: connection health tracker ──────────────────────────
+            // Create the in-memory tracker and register the connection:close
+            // listener. Pitfall 7: relay-TTL expiry fires connection:close with
+            // conn.limits !== undefined — these are EXPECTED closures, NOT
+            // genuine disconnects. Log as audit-only; do NOT mark degraded.
+            liveHealthTracker = createHealthTracker();
+            const healthTracker = liveHealthTracker;  // non-null ref for closure
+            liveNode.addEventListener('connection:close', (evt) => {
+              const conn = evt.detail;
+              const peerId = conn.remotePeer.toString();
+              if (conn.limits !== undefined) {
+                // Relay TTL expiry — expected, not a genuine disconnect.
+                // Pitfall 7: conn.limits is set on relay-with-TTL closures.
+                // Log as audit-only; do NOT call recordDisconnect here.
+                daemonLog(deps.homePath, `relay TTL expiry for ${peerId} (limits set, not marking degraded)`);
+                return;
+              }
+              healthTracker.recordDisconnect(peerId);
+              daemonLog(deps.homePath, `connection:close peer=${peerId}`);
+            });
+            daemonLog(deps.homePath, 'connection health tracker registered');
+
+            // ── Phase 18: relay pre-dial ──────────────────────────────────────
+            // Best-effort dial of each configured relay multiaddr. Failures are
+            // logged but never crash the daemon — relay is an optional transport.
+            if (cfgRes.value.peer.relays.length > 0) {
+              for (const relayAddr of cfgRes.value.peer.relays) {
+                try {
+                  await dialAndTag(liveNode, relayAddr);
+                  daemonLog(deps.homePath, `relay pre-dial ok: ${relayAddr}`);
+                } catch (e) {
+                  daemonLog(deps.homePath, `relay pre-dial failed (non-fatal): ${relayAddr} — ${(e as Error).message}`);
+                }
+              }
+            }
+
             // Best-effort dial of every known peer so streams open on first tick.
             const peersRes = await loadPeers(join(deps.homePath, 'peers.json'));
             if (peersRes.isOk()) {
@@ -269,6 +313,8 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
               homePath: deps.homePath,
               graphRepo: deps.graphs,
               patterns: buildPatterns(cfgRes.value.security.secrets_patterns),
+              maxUpdatesPerSecPerPeerPerRoom:
+                cfgRes.value.peer.bandwidth.max_updates_per_sec_per_peer_per_room,
             });
             const reg = await registerShareProtocol(liveSync);
             if (reg.isErr()) {
@@ -303,8 +349,8 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
     }
   }
 
-  // Splice the live registry into deps so runOneTick sees it.
-  const tickDeps: DaemonDeps = { ...deps, shareSync: liveSync };
+  // Splice the live registry and health tracker into deps so runOneTick sees them.
+  const tickDeps: DaemonDeps = { ...deps, shareSync: liveSync, healthTracker: liveHealthTracker };
 
   const cleanup = async (): Promise<void> => {
     // Cleanup order: search → share → node.stop (per plan spec)
