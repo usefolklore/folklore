@@ -45,6 +45,12 @@ import {
   unregisterShareProtocol,
   type ShareSyncRegistry,
 } from '../infrastructure/share-sync.js';
+import {
+  createSearchRegistry,
+  registerSearchProtocol,
+  unregisterSearchProtocol,
+  type SearchRegistry,
+} from '../infrastructure/search-sync.js';
 
 // ─────────────── types ──────────────────
 
@@ -219,6 +225,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
   // This keeps the daemon's network footprint zero for users who never use P2P.
   let liveNode: Libp2p | null = null;
   let liveSync: ShareSyncRegistry | null = null;
+  let liveSearch: SearchRegistry | null = null; // Phase 17
   const identityPath = join(deps.homePath, 'peer-identity.json');
   if (existsSync(identityPath)) {
     try {
@@ -232,8 +239,11 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
           daemonLog(deps.homePath, `share sync skipped — identity: ${formatError(idRes.error)}`);
         } else {
           const nodeRes = await createNode(idRes.value, {
-            listenPort: 0,           // ephemeral — daemon does not need a fixed port for v1
+            listenPort: 0, // ephemeral — daemon does not need a fixed port for v1
             listenHost: '127.0.0.1',
+            mdns: cfgRes.value.peer.mdns,
+            dhtEnabled: cfgRes.value.peer.dht.enabled,
+            peersPath: join(deps.homePath, 'peers.json'), // enables peer:discovery persistence
           });
           if (nodeRes.isErr()) {
             daemonLog(deps.homePath, `share sync skipped — libp2p: ${formatError(nodeRes.error)}`);
@@ -267,6 +277,24 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
             } else {
               daemonLog(deps.homePath, `share sync registered: /wellinformed/share/1.0.0`);
             }
+
+            // Phase 17: register federated search protocol alongside share protocol.
+            // Uses the SAME live libp2p node — separate protocol lifecycles per CONTEXT.md
+            // locked decision, but one libp2p node hosts both. Independent of share success.
+            liveSearch = createSearchRegistry(
+              liveNode,
+              deps.homePath,
+              deps.vectors,
+              cfgRes.value.peer.search_rate_limit.rate_per_sec,
+              cfgRes.value.peer.search_rate_limit.burst,
+            );
+            const searchReg = await registerSearchProtocol(liveSearch);
+            if (searchReg.isErr()) {
+              daemonLog(deps.homePath, `search protocol register failed: ${formatError(searchReg.error)}`);
+              liveSearch = null;
+            } else {
+              daemonLog(deps.homePath, `search protocol registered: /wellinformed/search/1.0.0`);
+            }
           }
         }
       }
@@ -279,6 +307,10 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
   const tickDeps: DaemonDeps = { ...deps, shareSync: liveSync };
 
   const cleanup = async (): Promise<void> => {
+    // Cleanup order: search → share → node.stop (per plan spec)
+    if (liveSearch) {
+      try { await unregisterSearchProtocol(liveSearch); } catch { /* benign */ }
+    }
     if (liveSync) {
       try { await unregisterShareProtocol(liveSync); } catch { /* benign */ }
     }
