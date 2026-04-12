@@ -96,6 +96,18 @@ export interface PeerRecord {
   readonly addedAt: string;
   /** optional human-readable alias */
   readonly label?: string;
+  /**
+   * How this peer was discovered. Optional for backward compatibility with
+   * pre-Phase 17 peers.json files (absence means 'manual' — the only pre-17 path).
+   *   - 'manual' : `wellinformed peer add <multiaddr>`
+   *   - 'mdns'   : libp2p mDNS peer:discovery event
+   *   - 'dht'    : kad-dht FIND_NODE response (Phase 17 wiring, off by default)
+   *
+   * Pitfall 6 (17-RESEARCH.md): This field is OPTIONAL. Strict type assertions
+   * on legacy files would fail — keep it optional and treat absence as 'manual'
+   * in `peer list` rendering.
+   */
+  readonly discovery_method?: 'manual' | 'mdns' | 'dht';
 }
 
 export interface PeersFile {

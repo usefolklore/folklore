@@ -42,6 +42,19 @@ export interface PeerConfig {
    * accept remote peer connections.
    */
   readonly listen_host: string;
+  /** mDNS LAN auto-discovery. Default true (enabled) per DISC-02 locked decision. */
+  readonly mdns: boolean;
+  /** Kademlia DHT. Wired but off by default per DISC-03 locked decision. */
+  readonly dht: {
+    readonly enabled: boolean;
+    /** Optional multiaddr list fed to @libp2p/bootstrap as DHT seed peers. */
+    readonly bootstrap_peers: readonly string[];
+  };
+  /** Token bucket for inbound federated-search requests (per-peer). */
+  readonly search_rate_limit: {
+    readonly rate_per_sec: number;
+    readonly burst: number;
+  };
 }
 
 export interface SecurityConfig {
@@ -77,7 +90,13 @@ const DEFAULT_TUNNELS: TunnelsConfig = {
   min_cluster_size: 3,
 };
 
-const DEFAULT_PEER: PeerConfig = { port: 0, listen_host: '127.0.0.1' };
+const DEFAULT_PEER: PeerConfig = {
+  port: 0,
+  listen_host: '127.0.0.1',
+  mdns: true,
+  dht: { enabled: false, bootstrap_peers: [] },
+  search_rate_limit: { rate_per_sec: 10, burst: 30 },
+};
 
 const DEFAULT_SECURITY: SecurityConfig = { secrets_patterns: [] };
 
@@ -121,6 +140,30 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
       const peer: PeerConfig = {
         port: num(peerRaw.port, DEFAULT_PEER.port),
         listen_host: str(peerRaw.listen_host, DEFAULT_PEER.listen_host),
+        mdns: bool(peerRaw.mdns, DEFAULT_PEER.mdns),
+        dht: {
+          enabled: bool(
+            (peerRaw.dht as Record<string, unknown> | undefined)?.enabled,
+            DEFAULT_PEER.dht.enabled,
+          ),
+          bootstrap_peers: Array.isArray(
+            (peerRaw.dht as Record<string, unknown> | undefined)?.bootstrap_peers,
+          )
+            ? ((peerRaw.dht as Record<string, unknown>).bootstrap_peers as unknown[]).filter(
+                (x): x is string => typeof x === 'string',
+              )
+            : DEFAULT_PEER.dht.bootstrap_peers,
+        },
+        search_rate_limit: {
+          rate_per_sec: num(
+            (peerRaw.search_rate_limit as Record<string, unknown> | undefined)?.rate_per_sec,
+            DEFAULT_PEER.search_rate_limit.rate_per_sec,
+          ),
+          burst: num(
+            (peerRaw.search_rate_limit as Record<string, unknown> | undefined)?.burst,
+            DEFAULT_PEER.search_rate_limit.burst,
+          ),
+        },
       };
       const security: SecurityConfig = {
         secrets_patterns: Array.isArray(securityRaw.secrets_patterns)
