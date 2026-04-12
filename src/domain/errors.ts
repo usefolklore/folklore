@@ -135,9 +135,39 @@ export const ScanError = {
   }),
 } as const;
 
+// ─────────────────────── ShareError ───────────────────────
+
+/**
+ * Errors from the room-sharing bounded context (Phase 16).
+ *
+ * - ShareAuditBlocked        — `share room X` aborted because auditRoom found flagged nodes
+ * - YDocLoadError / SaveError — .ydoc file I/O failures (binary Yjs state)
+ * - SyncProtocolError        — libp2p stream / sync handshake failure with a specific peer
+ * - InboundUpdateRejected    — secrets scanner blocked an update arriving from a peer (logged + dropped, no back-prop)
+ * - ShareStoreReadError / WriteError — shared-rooms.json I/O (mirrors PeerStoreReadError pattern)
+ */
+export type ShareError =
+  | { readonly type: 'ShareAuditBlocked';     readonly room: string; readonly blockedCount: number }
+  | { readonly type: 'YDocLoadError';         readonly path: string; readonly message: string }
+  | { readonly type: 'YDocSaveError';         readonly path: string; readonly message: string }
+  | { readonly type: 'SyncProtocolError';     readonly peer: string; readonly message: string }
+  | { readonly type: 'InboundUpdateRejected'; readonly peer: string; readonly room: string; readonly reason: string }
+  | { readonly type: 'ShareStoreReadError';   readonly path: string; readonly message: string }
+  | { readonly type: 'ShareStoreWriteError';  readonly path: string; readonly message: string };
+
+export const ShareError = {
+  shareAuditBlocked:     (room: string, blockedCount: number): ShareError => ({ type: 'ShareAuditBlocked', room, blockedCount }),
+  ydocLoadError:         (path: string, message: string): ShareError => ({ type: 'YDocLoadError', path, message }),
+  ydocSaveError:         (path: string, message: string): ShareError => ({ type: 'YDocSaveError', path, message }),
+  syncProtocolError:     (peer: string, message: string): ShareError => ({ type: 'SyncProtocolError', peer, message }),
+  inboundUpdateRejected: (peer: string, room: string, reason: string): ShareError => ({ type: 'InboundUpdateRejected', peer, room, reason }),
+  shareStoreReadError:   (path: string, message: string): ShareError => ({ type: 'ShareStoreReadError', path, message }),
+  shareStoreWriteError:  (path: string, message: string): ShareError => ({ type: 'ShareStoreWriteError', path, message }),
+} as const;
+
 // ─────────────────────── AppError union ───────────────────
 
-export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError;
+export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError;
 
 /** Render a tagged error as a one-line human-readable string. */
 export const formatError = (e: AppError): string => {
@@ -190,5 +220,19 @@ export const formatError = (e: AppError): string => {
       return `invalid multiaddr '${e.addr}': ${e.message}`;
     case 'SecretDetected':
       return `secret detected in node ${e.nodeId}: ${e.matches.map((m) => `${m.field}/${m.patternName}`).join(', ')}`;
+    case 'ShareAuditBlocked':
+      return `share blocked: room '${e.room}' has ${e.blockedCount} flagged node(s)`;
+    case 'YDocLoadError':
+      return `ydoc load error at ${e.path}: ${e.message}`;
+    case 'YDocSaveError':
+      return `ydoc save error at ${e.path}: ${e.message}`;
+    case 'SyncProtocolError':
+      return `sync protocol error with peer ${e.peer}: ${e.message}`;
+    case 'InboundUpdateRejected':
+      return `inbound update rejected from ${e.peer} (room ${e.room}): ${e.reason}`;
+    case 'ShareStoreReadError':
+      return `share store read error at ${e.path}: ${e.message}`;
+    case 'ShareStoreWriteError':
+      return `share store write error at ${e.path}: ${e.message}`;
   }
 };
