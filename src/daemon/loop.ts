@@ -29,10 +29,22 @@ import { triggerRoom } from '../application/ingest.js';
 import { generateReport, renderReport } from '../application/report.js';
 import type { IngestDeps } from '../application/ingest.js';
 import type { DaemonConfig } from '../infrastructure/config-loader.js';
+import { loadConfig } from '../infrastructure/config-loader.js';
 import type { RoomsConfig } from '../infrastructure/rooms-config.js';
 import type { GraphRepository } from '../infrastructure/graph-repository.js';
 import type { VectorIndex } from '../infrastructure/vector-index.js';
 import type { SourcesConfig } from '../infrastructure/sources-config.js';
+import type { Libp2p } from '@libp2p/interface';
+import { loadOrCreateIdentity, createNode, dialAndTag } from '../infrastructure/peer-transport.js';
+import { loadPeers } from '../infrastructure/peer-store.js';
+import { buildPatterns } from '../domain/sharing.js';
+import {
+  createShareSyncRegistry,
+  registerShareProtocol,
+  runShareSyncTick,
+  unregisterShareProtocol,
+  type ShareSyncRegistry,
+} from '../infrastructure/share-sync.js';
 
 // ─────────────── types ──────────────────
 
@@ -44,6 +56,7 @@ export interface DaemonDeps {
   readonly sources: SourcesConfig;
   readonly config: DaemonConfig;
   readonly homePath: string;
+  readonly shareSync?: ShareSyncRegistry | null;   // Phase 16 — null until libp2p starts
 }
 
 export interface TickResult {
@@ -113,12 +126,13 @@ export const runOneTick = (deps: DaemonDeps): ResultAsync<TickResult, AppError> 
     .mapErr((e): AppError => e)
     .andThen((registry) => {
       const allRooms = roomIds(registry);
+      const picked: string[] = [];
       if (allRooms.length === 0) {
-        return okAsync<TickResult, AppError>({ rooms: [], reports_written: [] });
+        // no rooms — still tick share sync if available
+        return runRooms(deps, picked);
       }
 
       // Pick rooms for this tick
-      const picked: string[] = [];
       if (deps.config.round_robin_rooms) {
         picked.push(allRooms[roundRobinIndex % allRooms.length]);
         roundRobinIndex++;
@@ -127,6 +141,20 @@ export const runOneTick = (deps: DaemonDeps): ResultAsync<TickResult, AppError> 
       }
 
       return runRooms(deps, picked);
+    })
+    .andThen((tickResult) => {
+      if (!deps.shareSync) {
+        return okAsync<TickResult, AppError>(tickResult);
+      }
+      return runShareSyncTick(deps.shareSync)
+        .map((sync) => {
+          daemonLog(deps.homePath, `share sync tick: opened=${sync.opened}`);
+          return tickResult;
+        })
+        .orElse((e) => {
+          daemonLog(deps.homePath, `share sync error: ${formatError(e)}`);
+          return okAsync<TickResult, AppError>(tickResult);
+        });
     });
 
 const runRooms = (
@@ -185,20 +213,91 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
   writePid(deps.homePath);
   daemonLog(deps.homePath, `daemon started (pid=${process.pid}, interval=${deps.config.interval_seconds}s)`);
 
-  const cleanup = (): void => {
+  // ───── Phase 16: optional libp2p + share sync bootstrap ─────
+  // Only start a libp2p node if the user has already created an identity
+  // (i.e. they have run `wellinformed peer status` or `peer add` at least once).
+  // This keeps the daemon's network footprint zero for users who never use P2P.
+  let liveNode: Libp2p | null = null;
+  let liveSync: ShareSyncRegistry | null = null;
+  const identityPath = join(deps.homePath, 'peer-identity.json');
+  if (existsSync(identityPath)) {
+    try {
+      const cfgPath = join(deps.homePath, 'config.yaml');
+      const cfgRes = await loadConfig(cfgPath);
+      if (cfgRes.isErr()) {
+        daemonLog(deps.homePath, `share sync skipped — config: ${formatError(cfgRes.error)}`);
+      } else {
+        const idRes = await loadOrCreateIdentity(identityPath);
+        if (idRes.isErr()) {
+          daemonLog(deps.homePath, `share sync skipped — identity: ${formatError(idRes.error)}`);
+        } else {
+          const nodeRes = await createNode(idRes.value, {
+            listenPort: 0,           // ephemeral — daemon does not need a fixed port for v1
+            listenHost: '127.0.0.1',
+          });
+          if (nodeRes.isErr()) {
+            daemonLog(deps.homePath, `share sync skipped — libp2p: ${formatError(nodeRes.error)}`);
+          } else {
+            liveNode = nodeRes.value;
+            // Best-effort dial of every known peer so streams open on first tick.
+            const peersRes = await loadPeers(join(deps.homePath, 'peers.json'));
+            if (peersRes.isOk()) {
+              for (const p of peersRes.value.peers) {
+                for (const addr of p.addrs) {
+                  try {
+                    await dialAndTag(liveNode, addr);
+                    daemonLog(deps.homePath, `dialed peer ${p.id} via ${addr}`);
+                    break;  // one successful addr is enough
+                  } catch {
+                    // continue to next addr
+                  }
+                }
+              }
+            }
+            liveSync = createShareSyncRegistry({
+              node: liveNode,
+              homePath: deps.homePath,
+              graphRepo: deps.graphs,
+              patterns: buildPatterns(cfgRes.value.security.secrets_patterns),
+            });
+            const reg = await registerShareProtocol(liveSync);
+            if (reg.isErr()) {
+              daemonLog(deps.homePath, `share sync register failed: ${formatError(reg.error)}`);
+              liveSync = null;
+            } else {
+              daemonLog(deps.homePath, `share sync registered: /wellinformed/share/1.0.0`);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      daemonLog(deps.homePath, `share sync bootstrap threw: ${(e as Error).message}`);
+    }
+  }
+
+  // Splice the live registry into deps so runOneTick sees it.
+  const tickDeps: DaemonDeps = { ...deps, shareSync: liveSync };
+
+  const cleanup = async (): Promise<void> => {
+    if (liveSync) {
+      try { await unregisterShareProtocol(liveSync); } catch { /* benign */ }
+    }
+    if (liveNode) {
+      try { await liveNode.stop(); } catch { /* benign */ }
+    }
     removePid(deps.homePath);
     daemonLog(deps.homePath, 'daemon stopped');
     process.exit(0);
   };
-  process.on('SIGTERM', cleanup);
-  process.on('SIGINT', cleanup);
+  process.on('SIGTERM', () => { void cleanup(); });
+  process.on('SIGINT', () => { void cleanup(); });
 
   // Run immediately on start
-  await runOneTick(deps);
+  await runOneTick(tickDeps);
 
   // Then schedule
   const interval = setInterval(async () => {
-    await runOneTick(deps);
+    await runOneTick(tickDeps);
   }, deps.config.interval_seconds * 1000);
 
   // Keep the process alive
