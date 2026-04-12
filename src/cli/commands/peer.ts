@@ -18,7 +18,7 @@ import {
 } from '../../infrastructure/peer-transport.js';
 import {
   loadPeers,
-  savePeers,
+  mutatePeers,
   addPeerRecord,
   removePeerRecord,
 } from '../../infrastructure/peer-store.js';
@@ -55,7 +55,10 @@ const add = async (rest: readonly string[]): Promise<number> => {
     return 1;
   }
 
-  const nodeResult = await createNode(idResult.value, { listenPort: cfg.peer.port });
+  const nodeResult = await createNode(idResult.value, {
+    listenPort: cfg.peer.port,
+    listenHost: cfg.peer.listen_host,
+  });
   if (nodeResult.isErr()) {
     console.error(`peer add: ${formatError(nodeResult.error)}`);
     return 1;
@@ -70,23 +73,28 @@ const add = async (rest: readonly string[]): Promise<number> => {
     }
     const peerId = dialResult.value;
 
-    const peersResult = await loadPeers(peersPath());
-    if (peersResult.isErr()) {
-      console.error(`peer add: ${formatError(peersResult.error)}`);
-      return 1;
-    }
-    const updated = addPeerRecord(peersResult.value, {
-      id: peerId,
-      addrs: [rawAddr],
-      addedAt: new Date().toISOString(),
+    // Use mutatePeers for a locked read-modify-write transaction so two
+    // concurrent `peer add` invocations cannot clobber each other.
+    let wasExisting = false;
+    const mutateResult = await mutatePeers(peersPath(), (current) => {
+      const existing = current.peers.find((p) => p.id === peerId);
+      wasExisting = existing !== undefined;
+      return addPeerRecord(current, {
+        id: peerId,
+        addrs: [rawAddr],
+        addedAt: existing?.addedAt ?? new Date().toISOString(),
+      });
     });
-    const saveResult = await savePeers(peersPath(), updated);
-    if (saveResult.isErr()) {
-      console.error(`peer add: ${formatError(saveResult.error)}`);
+    if (mutateResult.isErr()) {
+      console.error(`peer add: ${formatError(mutateResult.error)}`);
       return 1;
     }
 
-    console.log(`added peer ${peerId}`);
+    if (wasExisting) {
+      console.log(`updated addrs for existing peer ${peerId}`);
+    } else {
+      console.log(`added peer ${peerId}`);
+    }
     console.log(`  addr: ${rawAddr}`);
     return 0;
   } finally {
@@ -101,34 +109,62 @@ const remove = async (rest: readonly string[]): Promise<number> => {
   }
   const targetId = rest[0];
 
+  // First check existence without the lock (cheap short-circuit so we
+  // don't grab the lock just to report "not found").
   const peersResult = await loadPeers(peersPath());
   if (peersResult.isErr()) {
     console.error(`peer remove: ${formatError(peersResult.error)}`);
     return 1;
   }
-  const existing = peersResult.value;
-  if (!existing.peers.some((p) => p.id === targetId)) {
+  if (!peersResult.value.peers.some((p) => p.id === targetId)) {
     console.error(`peer remove: peer '${targetId}' not found in peers.json`);
     return 1;
   }
 
-  const updated = removePeerRecord(existing, targetId);
-  const saveResult = await savePeers(peersPath(), updated);
-  if (saveResult.isErr()) {
-    console.error(`peer remove: ${formatError(saveResult.error)}`);
+  // Transactional remove — guards against a concurrent `peer add` that
+  // re-added the same peer between our check and our write.
+  const mutateResult = await mutatePeers(peersPath(), (current) =>
+    removePeerRecord(current, targetId),
+  );
+  if (mutateResult.isErr()) {
+    console.error(`peer remove: ${formatError(mutateResult.error)}`);
     return 1;
   }
   console.log(`removed peer ${targetId}`);
   return 0;
 };
 
-const list = async (): Promise<number> => {
+const list = async (rest: readonly string[]): Promise<number> => {
+  const jsonOutput = rest.includes('--json');
+
   const peersResult = await loadPeers(peersPath());
   if (peersResult.isErr()) {
     console.error(`peer list: ${formatError(peersResult.error)}`);
     return 1;
   }
   const { peers } = peersResult.value;
+
+  if (jsonOutput) {
+    // Machine-readable output for agent consumption (Phase 16+)
+    // Phase 15 scope: stored peers only — no live status/latency/shared rooms
+    console.log(
+      JSON.stringify(
+        {
+          count: peers.length,
+          peers: peers.map((p) => ({
+            id: p.id,
+            addrs: p.addrs,
+            addedAt: p.addedAt,
+            label: p.label,
+          })),
+        },
+        null,
+        2,
+      ),
+    );
+    return 0;
+  }
+
   if (peers.length === 0) {
     console.log('no known peers. try `wellinformed peer add <multiaddr>`.');
     return 0;
@@ -174,7 +210,7 @@ const USAGE = `usage: wellinformed peer <add|remove|list|status>
 subcommands:
   add <multiaddr>   connect to a remote peer
   remove <id>       disconnect and remove a known peer
-  list              show all known peers (stored — live status in Phase 18)
+  list [--json]     show all known peers (stored — live status in Phase 18)
   status            show own identity and peer count`;
 
 // ─────────────────────── entry ────────────────────────────
@@ -184,7 +220,7 @@ export const peer = async (args: string[]): Promise<number> => {
   switch (sub) {
     case 'add':    return add(rest);
     case 'remove': return remove(rest);
-    case 'list':   return list();
+    case 'list':   return list(rest);
     case 'status': return status();
     default:
       console.error(sub ? `peer: unknown subcommand '${sub}'` : 'peer: missing subcommand');
