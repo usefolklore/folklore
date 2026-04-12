@@ -21,6 +21,7 @@
  * returned as MCP error content — never thrown.
  */
 
+import { join } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -38,6 +39,11 @@ import {
   findTunnels,
 } from '../application/use-cases.js';
 import { triggerRoom } from '../application/ingest.js';
+import { runFederatedSearch } from '../application/federated-search.js';
+import { loadOrCreateIdentity, createNode, dialAndTag } from '../infrastructure/peer-transport.js';
+import { loadPeers } from '../infrastructure/peer-store.js';
+import { loadConfig } from '../infrastructure/config-loader.js';
+import { wellinformedHome } from '../cli/runtime.js';
 import type { Runtime } from '../cli/runtime.js';
 
 /**
@@ -207,6 +213,94 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
       const result = await findTunnels(deps)({ threshold, restrictToRoom: room });
       if (result.isErr()) return errText(result.error);
       return okJson(result.value);
+    },
+  );
+
+  // ─────────────── federated_search ─────
+
+  server.registerTool(
+    'federated_search',
+    {
+      description:
+        'Search the P2P network — queries the local knowledge graph AND all connected peers\' shared rooms. ' +
+        'Returns results annotated with _source_peer (null = local, peerId string = remote). ' +
+        'Also surfaces cross-room tunnels found in the merged result set. ' +
+        'PRIVACY NOTE: connected peers see your query embedding (a 384-dim float32 vector) and optional room filter — not the raw query text. ' +
+        'Embeddings are not plaintext but are partially correlatable. Private Information Retrieval (PIR) is a v3 feature. ' +
+        'When no peers are connected, returns local results with peers_queried: 0 (no error).',
+      inputSchema: {
+        query: z.string().describe('The natural-language search query'),
+        room: z.string().optional().describe('Restrict to this room on all peers'),
+        limit: z.number().int().min(1).max(50).default(5).describe('Number of results to return'),
+      },
+    },
+    async ({ query, room, limit }) => {
+      // 1. Embed locally
+      const embedRes = await runtime.embedder.embed(query);
+      if (embedRes.isErr()) return errText(embedRes.error);
+
+      // 2. Spin a short-lived libp2p node for this query
+      const identityPath = join(wellinformedHome(), 'peer-identity.json');
+      const peersPath = join(wellinformedHome(), 'peers.json');
+      const configPath = join(wellinformedHome(), 'config.yaml');
+
+      const cfgRes = await loadConfig(configPath);
+      if (cfgRes.isErr()) return errText(cfgRes.error);
+
+      const idRes = await loadOrCreateIdentity(identityPath);
+      if (idRes.isErr()) return errText(idRes.error);
+
+      const nodeRes = await createNode(idRes.value, {
+        listenPort: 0,
+        listenHost: '127.0.0.1',
+        mdns: cfgRes.value.peer.mdns,
+        dhtEnabled: cfgRes.value.peer.dht.enabled,
+        peersPath,
+      });
+      if (nodeRes.isErr()) return errText(nodeRes.error);
+      const node = nodeRes.value;
+
+      try {
+        // 3. Best-effort dial of known peers so fan-out has targets
+        const peersRes = await loadPeers(peersPath);
+        if (peersRes.isOk()) {
+          await Promise.all(
+            peersRes.value.peers.map(async (p) => {
+              for (const addr of p.addrs) {
+                try {
+                  await dialAndTag(node, addr);
+                  break;
+                } catch {
+                  /* next */
+                }
+              }
+            }),
+          );
+        }
+
+        // 4. Run federated search
+        const result = await runFederatedSearch(
+          { node, vectorIndex: runtime.vectors },
+          { embedding: embedRes.value, k: limit, room },
+        );
+
+        return okJson({
+          query,
+          room: room ?? null,
+          peers_queried: result.peers_queried,
+          peers_responded: result.peers_responded,
+          peers_timed_out: result.peers_timed_out,
+          peers_errored: result.peers_errored,
+          matches: result.matches,
+          tunnels: result.tunnels,
+        });
+      } finally {
+        try {
+          await node.stop();
+        } catch {
+          /* benign */
+        }
+      }
     },
   );
 

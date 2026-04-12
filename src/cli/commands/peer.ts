@@ -146,7 +146,7 @@ const list = async (rest: readonly string[]): Promise<number> => {
 
   if (jsonOutput) {
     // Machine-readable output for agent consumption (Phase 16+)
-    // Phase 15 scope: stored peers only — no live status/latency/shared rooms
+    // Phase 17: discovery_method field added — undefined rendered as 'manual' for legacy peers
     console.log(
       JSON.stringify(
         {
@@ -156,6 +156,7 @@ const list = async (rest: readonly string[]): Promise<number> => {
             addrs: p.addrs,
             addedAt: p.addedAt,
             label: p.label,
+            discovery_method: p.discovery_method ?? 'manual',
           })),
         },
         null,
@@ -175,8 +176,9 @@ const list = async (rest: readonly string[]): Promise<number> => {
     for (const a of p.addrs) {
       console.log(`    addr: ${a}`);
     }
-    console.log(`    added: ${p.addedAt}`);
-    if (p.label) console.log(`    label: ${p.label}`);
+    console.log(`    added:     ${p.addedAt}`);
+    console.log(`    discovery: ${p.discovery_method ?? 'manual'}`);
+    if (p.label) console.log(`    label:     ${p.label}`);
     console.log('');
   }
   return 0;
