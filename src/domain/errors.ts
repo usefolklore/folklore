@@ -157,7 +157,9 @@ export type ShareError =
   | { readonly type: 'SyncProtocolError';     readonly peer: string; readonly message: string }
   | { readonly type: 'InboundUpdateRejected'; readonly peer: string; readonly room: string; readonly reason: string }
   | { readonly type: 'ShareStoreReadError';   readonly path: string; readonly message: string }
-  | { readonly type: 'ShareStoreWriteError';  readonly path: string; readonly message: string };
+  | { readonly type: 'ShareStoreWriteError';  readonly path: string; readonly message: string }
+  /** NET-02: per-peer-per-room token bucket exhausted — outbound update rejected. */
+  | { readonly type: 'BandwidthExceeded';     readonly peer: string; readonly room: string };
 
 export const ShareError = {
   shareAuditBlocked:     (room: string, blockedCount: number): ShareError => ({ type: 'ShareAuditBlocked', room, blockedCount }),
@@ -167,6 +169,7 @@ export const ShareError = {
   inboundUpdateRejected: (peer: string, room: string, reason: string): ShareError => ({ type: 'InboundUpdateRejected', peer, room, reason }),
   shareStoreReadError:   (path: string, message: string): ShareError => ({ type: 'ShareStoreReadError', path, message }),
   shareStoreWriteError:  (path: string, message: string): ShareError => ({ type: 'ShareStoreWriteError', path, message }),
+  bandwidthExceeded:     (peer: string, room: string): ShareError => ({ type: 'BandwidthExceeded', peer, room }),
 } as const;
 
 // ─────────────────────── SearchError ──────────────────────

@@ -300,7 +300,7 @@ export const syncNodeIntoYDoc = (
           reason: 'rate_limit_exceeded',
         }),
         () => SE.shareStoreWriteError(logPath, 'audit log append failed'),
-      ).andThen(() => okAsync<void, ShareError>(undefined));
+      ).andThen(() => errAsync<void, ShareError>(SE.bandwidthExceeded(ownPeerId, room)));
     }
   }
 
