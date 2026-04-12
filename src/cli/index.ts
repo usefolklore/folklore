@@ -30,6 +30,7 @@ import { exportObsidian } from './commands/export-obsidian.js';
 import { dashboard } from './commands/dashboard.js';
 import { peer } from './commands/peer.js';
 import { share } from './commands/share.js';
+import { unshare } from './commands/unshare.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -60,6 +61,7 @@ const commands: Record<string, CommandFn> = {
   dashboard,
   peer,
   share,
+  unshare,
 };
 
 const futureCommands = new Set<string>([]);
