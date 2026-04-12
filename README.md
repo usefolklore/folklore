@@ -38,10 +38,20 @@ npm install && bash scripts/bootstrap.sh
 wellinformed init                      # create a room, pick your sources
 wellinformed trigger --room homelab    # fetch from ArXiv, HN, RSS, blogs, any URL
 wellinformed index                     # index your codebase + deps + git
-wellinformed claude install            # make Claude use the graph automatically
 ```
 
-That last command is the key one. After `claude install`, Claude checks your knowledge graph before every file search — no explicit ask needed.
+## Wire it into Claude Code (once, globally)
+
+Register wellinformed as a **user-scoped MCP server** so every project gets it automatically — no `.mcp.json` per repo, no restart for each new project:
+
+```bash
+claude mcp add --scope user wellinformed -- wellinformed mcp
+wellinformed claude install            # PreToolUse hook — Claude checks the graph first
+```
+
+After this, opening any project in Claude Code has `search`, `ask`, `get_node`, `get_neighbors`, `find_tunnels` available immediately. Claude checks your knowledge graph before every file search — no explicit ask needed.
+
+> If you only want it in the current project, skip `--scope user` and a `.mcp.json` will be written locally instead.
 
 ## What it indexes
 
@@ -94,6 +104,23 @@ Works with **Claude Code** (auto-discovered), **Codex**, **OpenClaw**, and any M
 Rooms partition the graph. `homelab` doesn't see `fundraise`. Each room has its own sources and search scope.
 
 **Tunnels** are the exception — when nodes in different rooms are semantically close, wellinformed flags them. A paper about embedding quantization in `ml-papers` connects to a memory issue in `homelab`. That connection is what rooms exist to produce.
+
+## P2P knowledge sharing (v2.0, Phase 15)
+
+Every wellinformed instance has a cryptographic identity and can manually add peers. All peer traffic is encrypted via libp2p Noise; peers authenticate via ed25519 signatures during the handshake.
+
+```bash
+wellinformed peer status                          # show your PeerId + public key
+wellinformed peer add /ip4/1.2.3.4/tcp/9001      # connect to a remote peer
+wellinformed peer list                            # known peers (--json for agents)
+wellinformed share audit --room homelab           # see exactly what would be shared
+```
+
+**Before** a room can be shared, `share audit` scans every node in it against **14 secret patterns** — API keys (OpenAI, GitHub, Stripe, AWS, Slack, Google), bearer tokens (JWT-anchored), private key blocks, env vars — and hard-blocks the room if anything matches. The scan covers `id`, `label`, `room`, `source_uri`, `fetched_at`, and `embedding_id` fields.
+
+Shared nodes carry **only** metadata — `id`, `label`, `room`, `embedding_id`, `source_uri`, `fetched_at`. No raw text, no file paths, no file contents, and **no raw embedding vectors** (to prevent embedding-inversion attacks). Cross-peer semantic search re-embeds locally on the receiving side.
+
+Room-level sync (Phase 16), federated search (Phase 17), and production networking with NAT traversal (Phase 18) ship in the v2.0 series.
 
 ## Discovery loop
 
@@ -149,12 +176,12 @@ wellinformed report --room homelab     # see what's new
 ╚═══════════════════════════════════════════════════════════╝
 ```
 
-Reproduce: `npm test` — runs 33 tests including the ONNX benchmark.
+Reproduce: `npm test` — runs 87 tests including the ONNX benchmark and the Phase 15 P2P + secrets scanner suite.
 
 ## Real numbers
 
 ```
-497 nodes │ 264 edges │ 23 adapters │ 13 MCP tools │ 48 commits │ 33 tests
+1400+ nodes │ 23 adapters │ 13 MCP tools │ 14 secret patterns │ 87 tests │ 4 phases shipped
 ```
 
 <details>
