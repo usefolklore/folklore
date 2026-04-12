@@ -28,6 +28,8 @@ import { telegram } from './commands/telegram.js';
 import { viz } from './commands/viz.js';
 import { exportObsidian } from './commands/export-obsidian.js';
 import { dashboard } from './commands/dashboard.js';
+import { peer } from './commands/peer.js';
+import { share } from './commands/share.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -56,6 +58,8 @@ const commands: Record<string, CommandFn> = {
   viz,
   export: exportObsidian,
   dashboard,
+  peer,
+  share,
 };
 
 const futureCommands = new Set<string>([]);
