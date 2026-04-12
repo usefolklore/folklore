@@ -24,6 +24,29 @@ import { dirname } from 'node:path';
 import type { PeerError } from '../domain/errors.js';
 import { PeerError as PE } from '../domain/errors.js';
 
+/**
+ * Identity file format marker. Bumped when the on-disk layout changes
+ * in a way that is not forward-compatible with `privateKeyFromRaw`.
+ *
+ * ed25519-raw-v1:
+ *   { format: 'ed25519-raw-v1', privateKeyB64: string, peerId: string, createdAt: string }
+ *   privateKeyB64 is base64-encoded 64 bytes (32 priv + 32 pub) exactly as
+ *   returned by Ed25519PrivateKey.raw in libp2p 3.x.
+ *
+ * Legacy files (no `format` field, written by the initial Phase 15 implementation)
+ * are accepted on read as if they were ed25519-raw-v1 and upgraded in place
+ * on the next write path (silent migration — old installs keep working).
+ */
+const IDENTITY_FORMAT_CURRENT = 'ed25519-raw-v1' as const;
+type IdentityFormat = typeof IDENTITY_FORMAT_CURRENT;
+
+interface IdentityFile {
+  readonly format?: IdentityFormat;
+  readonly privateKeyB64: string;
+  readonly peerId: string;
+  readonly createdAt?: string;
+}
+
 export interface PeerIdentity {
   readonly privateKey: Ed25519PrivateKey;
   readonly peerId: string;
@@ -31,6 +54,13 @@ export interface PeerIdentity {
 
 export interface TransportConfig {
   readonly listenPort: number;
+  /**
+   * Interface to bind the TCP listener to. Default '127.0.0.1' — local-only.
+   * Set to '0.0.0.0' in config.yaml to accept remote peer connections.
+   * Defaulting to localhost means a user who runs `peer status` or `peer add`
+   * on an untrusted network does not accidentally expose a libp2p endpoint.
+   */
+  readonly listenHost?: string;
 }
 
 /**
@@ -48,14 +78,47 @@ export const loadOrCreateIdentity = (
       readFile(identityPath, 'utf8'),
       (e) => PE.identityReadError(identityPath, (e as Error).message),
     ).andThen((text) => {
+      let stored: IdentityFile;
       try {
-        const stored = JSON.parse(text) as { privateKeyB64: string; peerId: string };
-        const rawBytes = Uint8Array.from(Buffer.from(stored.privateKeyB64, 'base64'));
-        const privateKey = privateKeyFromRaw(rawBytes) as Ed25519PrivateKey;
-        return okAsync({ privateKey, peerId: stored.peerId } satisfies PeerIdentity);
+        stored = JSON.parse(text) as IdentityFile;
       } catch (e) {
-        return errAsync(PE.identityParseError(identityPath, (e as Error).message));
+        return errAsync<PeerIdentity, PeerError>(
+          PE.identityParseError(identityPath, `JSON parse failed: ${(e as Error).message}`),
+        );
       }
+      if (!stored || typeof stored.privateKeyB64 !== 'string' || typeof stored.peerId !== 'string') {
+        return errAsync<PeerIdentity, PeerError>(
+          PE.identityParseError(identityPath, "missing 'privateKeyB64' or 'peerId' fields"),
+        );
+      }
+      // Accept legacy files with no format marker as ed25519-raw-v1
+      // (they were written by the initial Phase 15 implementation).
+      // Reject any explicit format that is not the current one so
+      // accidental migrations are loud instead of silent.
+      if (stored.format && stored.format !== IDENTITY_FORMAT_CURRENT) {
+        return errAsync<PeerIdentity, PeerError>(
+          PE.identityParseError(
+            identityPath,
+            `unsupported identity format '${stored.format}' (expected '${IDENTITY_FORMAT_CURRENT}')`,
+          ),
+        );
+      }
+      let privateKey: Ed25519PrivateKey;
+      try {
+        const rawBytes = Uint8Array.from(Buffer.from(stored.privateKeyB64, 'base64'));
+        const pk = privateKeyFromRaw(rawBytes);
+        if (pk.type !== 'Ed25519') {
+          return errAsync<PeerIdentity, PeerError>(
+            PE.identityParseError(identityPath, `expected Ed25519 key, got ${pk.type}`),
+          );
+        }
+        privateKey = pk as Ed25519PrivateKey;
+      } catch (e) {
+        return errAsync<PeerIdentity, PeerError>(
+          PE.identityParseError(identityPath, `key decode failed: ${(e as Error).message}`),
+        );
+      }
+      return okAsync({ privateKey, peerId: stored.peerId } satisfies PeerIdentity);
     });
   }
 
@@ -64,7 +127,8 @@ export const loadOrCreateIdentity = (
     (e) => PE.identityGenerateError((e as Error).message),
   ).andThen((privateKey) => {
     const peerId = peerIdFromPrivateKey(privateKey).toString();
-    const stored = {
+    const stored: IdentityFile = {
+      format: IDENTITY_FORMAT_CURRENT,
       privateKeyB64: Buffer.from(privateKey.raw).toString('base64'),
       peerId,
       createdAt: new Date().toISOString(),
@@ -97,14 +161,18 @@ export const createNode = (
 ): ResultAsync<Libp2p, PeerError> =>
   ResultAsync.fromPromise(
     (async () => {
+      const host = cfg.listenHost ?? '127.0.0.1';
       const node = await createLibp2p({
         privateKey: identity.privateKey,
-        addresses: { listen: [`/ip4/0.0.0.0/tcp/${cfg.listenPort}`] },
+        addresses: { listen: [`/ip4/${host}/tcp/${cfg.listenPort}`] },
         transports: [tcp()],
         connectionEncrypters: [noise()],
         streamMuxers: [yamux()],
+        // Retry aggressively to match the "persistent connection" contract.
+        // Infinity + exponential backoff caps at reconnectRetryInterval * factor^attempts,
+        // so retries slow down to minutes-scale for long-flapped peers but never stop.
         connectionManager: {
-          reconnectRetries: 5,
+          reconnectRetries: Infinity,
           reconnectRetryInterval: 2000,
           reconnectBackoffFactor: 2,
         },
