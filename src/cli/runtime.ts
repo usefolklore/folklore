@@ -32,6 +32,7 @@ export interface RuntimePaths {
   readonly sources: string;
   readonly rooms: string;
   readonly modelCache: string;
+  readonly codeGraph: string;
 }
 
 export const runtimePaths = (): RuntimePaths => {
@@ -43,6 +44,7 @@ export const runtimePaths = (): RuntimePaths => {
     sources: join(home, 'sources.json'),
     rooms: join(home, 'rooms.json'),
     modelCache: join(home, 'models'),
+    codeGraph: join(home, 'code-graph.db'),
   };
 };
 
