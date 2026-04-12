@@ -6,14 +6,15 @@
  * instances, no `throw` — errors flow through neverthrow's `Result` and
  * `ResultAsync`, so they are values you compose, not exceptions.
  *
- * The three families mirror the three bounded contexts:
+ * The error families mirror the bounded contexts:
  *
  *   - `GraphError`      — node/edge validation, missing references, I/O
  *   - `VectorError`     — dimension mismatch, sqlite/sqlite-vec failures
  *   - `EmbeddingError`  — transformers runtime, model load, inference
+ *   - `PeerError`       — P2P identity, peer store I/O, transport, dial
+ *   - `ScanError`       — secrets detection at the sharing boundary
  *
- * A fourth union `AppError` combines them so use cases can return a
- * single error type across layers without losing specificity.
+ * `AppError` is the top-level union used by CLI and application layers.
  */
 
 // ─────────────────────── GraphError ───────────────────────
@@ -71,9 +72,72 @@ export const EmbeddingError = {
   inference: (message: string): EmbeddingError => ({ type: 'InferenceError', message }),
 } as const;
 
+// ─────────────────────── ScanMatch ────────────────────────
+
+/** A single pattern match found during secret scanning. */
+export interface ScanMatch {
+  /** The ShareableNode field where the match was found (e.g. 'label'). */
+  readonly field: string;
+  /** The pattern name that triggered (e.g. 'openai-key'). */
+  readonly patternName: string;
+}
+
+// ─────────────────────── PeerError ────────────────────────
+
+/**
+ * Errors from the P2P peer bounded context.
+ *
+ * Split into identity errors (peer-transport.ts: key generation,
+ * read/write of peer-identity.json) and store errors (peer-store.ts:
+ * read/write of peers.json) — callers can distinguish them precisely.
+ *
+ * PeerStoreReadError / PeerStoreWriteError are separate from
+ * PeerIdentityReadError / PeerIdentityWriteError so that a caller
+ * handling the peers.json store does not accidentally catch identity
+ * key errors (two different files, two different failure modes).
+ */
+export type PeerError =
+  | { readonly type: 'PeerIdentityReadError';     readonly path: string; readonly message: string }
+  | { readonly type: 'PeerIdentityWriteError';    readonly path: string; readonly message: string }
+  | { readonly type: 'PeerIdentityParseError';    readonly path: string; readonly message: string }
+  | { readonly type: 'PeerIdentityGenerateError'; readonly message: string }
+  | { readonly type: 'PeerStoreReadError';        readonly path: string; readonly message: string }
+  | { readonly type: 'PeerStoreWriteError';       readonly path: string; readonly message: string }
+  | { readonly type: 'PeerDialError';             readonly addr: string; readonly message: string }
+  | { readonly type: 'PeerNotFound';              readonly id: string }
+  | { readonly type: 'PeerTransportError';        readonly message: string }
+  | { readonly type: 'InvalidMultiaddr';          readonly addr: string; readonly message: string };
+
+export const PeerError = {
+  identityReadError:     (path: string, message: string): PeerError => ({ type: 'PeerIdentityReadError', path, message }),
+  identityWriteError:    (path: string, message: string): PeerError => ({ type: 'PeerIdentityWriteError', path, message }),
+  identityParseError:    (path: string, message: string): PeerError => ({ type: 'PeerIdentityParseError', path, message }),
+  identityGenerateError: (message: string): PeerError              => ({ type: 'PeerIdentityGenerateError', message }),
+  storeReadError:        (path: string, message: string): PeerError => ({ type: 'PeerStoreReadError', path, message }),
+  storeWriteError:       (path: string, message: string): PeerError => ({ type: 'PeerStoreWriteError', path, message }),
+  dialError:             (addr: string, message: string): PeerError => ({ type: 'PeerDialError', addr, message }),
+  notFound:              (id: string): PeerError                   => ({ type: 'PeerNotFound', id }),
+  transportError:        (message: string): PeerError              => ({ type: 'PeerTransportError', message }),
+  invalidMultiaddr:      (addr: string, message: string): PeerError => ({ type: 'InvalidMultiaddr', addr, message }),
+} as const;
+
+// ─────────────────────── ScanError ────────────────────────
+
+/** Errors from the secrets-scanning boundary. */
+export type ScanError =
+  | { readonly type: 'SecretDetected'; readonly nodeId: string; readonly matches: readonly ScanMatch[] };
+
+export const ScanError = {
+  secretDetected: (nodeId: string, matches: readonly ScanMatch[]): ScanError => ({
+    type: 'SecretDetected',
+    nodeId,
+    matches,
+  }),
+} as const;
+
 // ─────────────────────── AppError union ───────────────────
 
-export type AppError = GraphError | VectorError | EmbeddingError;
+export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError;
 
 /** Render a tagged error as a one-line human-readable string. */
 export const formatError = (e: AppError): string => {
@@ -104,5 +168,27 @@ export const formatError = (e: AppError): string => {
       return `embedding model load failed (${e.model}): ${e.message}`;
     case 'InferenceError':
       return `embedding inference failed: ${e.message}`;
+    case 'PeerIdentityReadError':
+      return `peer identity read error at ${e.path}: ${e.message}`;
+    case 'PeerIdentityWriteError':
+      return `peer identity write error at ${e.path}: ${e.message}`;
+    case 'PeerIdentityParseError':
+      return `peer identity parse error at ${e.path}: ${e.message}`;
+    case 'PeerIdentityGenerateError':
+      return `peer identity generation failed: ${e.message}`;
+    case 'PeerStoreReadError':
+      return `peer store read error at ${e.path}: ${e.message}`;
+    case 'PeerStoreWriteError':
+      return `peer store write error at ${e.path}: ${e.message}`;
+    case 'PeerDialError':
+      return `peer dial error for ${e.addr}: ${e.message}`;
+    case 'PeerNotFound':
+      return `peer not found: ${e.id}`;
+    case 'PeerTransportError':
+      return `peer transport error: ${e.message}`;
+    case 'InvalidMultiaddr':
+      return `invalid multiaddr '${e.addr}': ${e.message}`;
+    case 'SecretDetected':
+      return `secret detected in node ${e.nodeId}: ${e.matches.map((m) => `${m.field}/${m.patternName}`).join(', ')}`;
   }
 };

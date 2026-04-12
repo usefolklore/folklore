@@ -32,9 +32,25 @@ export interface TunnelsConfig {
   readonly min_cluster_size: number;
 }
 
+export interface PeerConfig {
+  /** Listening port for the libp2p TCP transport. 0 = OS-assigned (default). */
+  readonly port: number;
+}
+
+export interface SecurityConfig {
+  /**
+   * Extra secrets patterns to append to the 10 built-ins.
+   * Each entry must have a `name` (for diagnostics) and a `pattern`
+   * (ECMAScript regex string — the 'g' flag is added automatically).
+   */
+  readonly secrets_patterns: ReadonlyArray<{ readonly name: string; readonly pattern: string }>;
+}
+
 export interface AppConfig {
   readonly daemon: DaemonConfig;
   readonly tunnels: TunnelsConfig;
+  readonly peer: PeerConfig;
+  readonly security: SecurityConfig;
   /** The full raw parsed object — callers can drill into sections we don't type. */
   readonly raw: Readonly<Record<string, unknown>>;
 }
@@ -54,9 +70,15 @@ const DEFAULT_TUNNELS: TunnelsConfig = {
   min_cluster_size: 3,
 };
 
+const DEFAULT_PEER: PeerConfig = { port: 0 };
+
+const DEFAULT_SECURITY: SecurityConfig = { secrets_patterns: [] };
+
 const DEFAULT_CONFIG: AppConfig = {
   daemon: DEFAULT_DAEMON,
   tunnels: DEFAULT_TUNNELS,
+  peer: DEFAULT_PEER,
+  security: DEFAULT_SECURITY,
   raw: {},
 };
 
@@ -75,6 +97,8 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
       const daemonRaw = (raw.daemon ?? {}) as Record<string, unknown>;
       const roomsRaw = (raw.rooms ?? {}) as Record<string, unknown>;
       const tunnelsRaw = (roomsRaw.tunnels ?? {}) as Record<string, unknown>;
+      const peerRaw = (raw.peer ?? {}) as Record<string, unknown>;
+      const securityRaw = (raw.security ?? {}) as Record<string, unknown>;
 
       const daemon: DaemonConfig = {
         interval_seconds: num(daemonRaw.interval_seconds, DEFAULT_DAEMON.interval_seconds),
@@ -87,8 +111,16 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
         similarity_threshold: num(tunnelsRaw.similarity_threshold, DEFAULT_TUNNELS.similarity_threshold),
         min_cluster_size: num(tunnelsRaw.min_cluster_size, DEFAULT_TUNNELS.min_cluster_size),
       };
+      const peer: PeerConfig = {
+        port: num(peerRaw.port, DEFAULT_PEER.port),
+      };
+      const security: SecurityConfig = {
+        secrets_patterns: Array.isArray(securityRaw.secrets_patterns)
+          ? (securityRaw.secrets_patterns as Array<{ name: string; pattern: string }>)
+          : DEFAULT_SECURITY.secrets_patterns,
+      };
 
-      return okAsync<AppConfig, GraphError>({ daemon, tunnels, raw });
+      return okAsync<AppConfig, GraphError>({ daemon, tunnels, peer, security, raw });
     } catch (e) {
       return errAsync<AppConfig, GraphError>(GE.parseError(path, (e as Error).message));
     }
