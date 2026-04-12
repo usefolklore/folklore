@@ -26,6 +26,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { formatError } from '../domain/errors.js';
+import { openCodeGraph } from '../infrastructure/code-graph.js';
+import type { CodeNodeKind } from '../domain/codebase.js';
 import {
   type Graph,
   getNode,
@@ -502,6 +504,70 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
       const result = await discoveryLoop(deps)(room, { maxIterations: max_iterations });
       if (result.isErr()) return errText(result.error);
       return okJson(result.value);
+    },
+  );
+
+  // ─────────────── code_graph_query ─────────
+  // Phase 19 — 15th MCP tool. Queries ~/.wellinformed/code-graph.db independently
+  // of the research graph. Claude calls this when the task is code-structural
+  // (find all functions named X, list all classes in codebase Y, etc.).
+
+  server.registerTool(
+    'code_graph_query',
+    {
+      description:
+        'Query the structured code graph (Phase 19). Returns code nodes (classes, functions, methods, interfaces, types, imports, exports) from indexed codebases. SEPARATE from `search` / `ask` — those query research content (ArXiv, HN, RSS, etc.). This tool queries the structured code graph stored in ~/.wellinformed/code-graph.db, built by `wellinformed codebase index <path>`. Supports filtering by codebase id, node kind, and name substring.',
+      inputSchema: {
+        codebase_id: z
+          .string()
+          .optional()
+          .describe('Restrict to a single codebase id (16-char hex). Omit to search all indexed codebases.'),
+        kind: z
+          .enum([
+            'file',
+            'module',
+            'class',
+            'interface',
+            'function',
+            'method',
+            'import',
+            'export',
+            'type_alias',
+          ])
+          .optional()
+          .describe('Restrict to one node kind. Omit to return all kinds.'),
+        name_pattern: z
+          .string()
+          .optional()
+          .describe('Substring match on the node name (wrapped in SQL LIKE %...%). Omit for no name filter.'),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(200)
+          .default(20)
+          .describe('Maximum number of code nodes to return (1-200).'),
+      },
+    },
+    async ({ codebase_id, kind, name_pattern, limit }) => {
+      const repoRes = await openCodeGraph({ path: runtime.paths.codeGraph });
+      if (repoRes.isErr()) return errText(repoRes.error);
+      const repo = repoRes.value;
+      try {
+        const res = await repo.searchNodes({
+          codebase_id: codebase_id as undefined | (string & { __brand: 'CodebaseId' }),
+          kind: kind as CodeNodeKind | undefined,
+          name_pattern: name_pattern ? `%${name_pattern}%` : undefined,
+          limit,
+        });
+        if (res.isErr()) return errText(res.error);
+        return okJson({
+          count: res.value.length,
+          nodes: res.value,
+        });
+      } finally {
+        repo.close();
+      }
     },
   );
 

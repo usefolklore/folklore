@@ -31,6 +31,7 @@ import { dashboard } from './commands/dashboard.js';
 import { peer } from './commands/peer.js';
 import { share } from './commands/share.js';
 import { unshare } from './commands/unshare.js';
+import { codebase } from './commands/codebase.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -62,6 +63,7 @@ const commands: Record<string, CommandFn> = {
   peer,
   share,
   unshare,
+  codebase,
 };
 
 const futureCommands = new Set<string>([]);
