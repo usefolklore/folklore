@@ -32,6 +32,18 @@ export interface TunnelsConfig {
   readonly min_cluster_size: number;
 }
 
+export interface BandwidthConfig {
+  /** Per-peer-per-room token bucket rate for outbound share updates (default 50). */
+  readonly max_updates_per_sec_per_peer_per_room: number;
+  /** Daemon-tick semaphore on concurrent outbound share syncs (default 10). */
+  readonly max_concurrent_share_syncs: number;
+}
+
+export interface BandwidthOverride {
+  readonly max_updates_per_sec_per_peer_per_room?: number;
+  readonly max_concurrent_share_syncs?: number;
+}
+
 export interface PeerConfig {
   /** Listening port for the libp2p TCP transport. 0 = OS-assigned (default). */
   readonly port: number;
@@ -55,6 +67,30 @@ export interface PeerConfig {
     readonly rate_per_sec: number;
     readonly burst: number;
   };
+  /**
+   * Known-reliable relay multiaddrs (empty by default — CONTEXT.md locked).
+   * When non-empty, /p2p-circuit is added to addresses.listen in Plan 02,
+   * and the daemon dials each relay on startup (Plan 03).
+   * NO hardcoded IPFS bootstrap nodes — users opt in explicitly.
+   */
+  readonly relays: readonly string[];
+  /**
+   * UPnP port mapping. Default true — @libp2p/upnp-nat is a no-op on
+   * listen_host=127.0.0.1 (Pitfall 2 from 18-RESEARCH.md) and catches
+   * all errors internally, so wiring unconditionally is safe.
+   */
+  readonly upnp: boolean;
+  /**
+   * Layered bandwidth limits (CONTEXT.md locked defaults):
+   *   - max_updates_per_sec_per_peer_per_room: 50
+   *   - max_concurrent_share_syncs: 10
+   */
+  readonly bandwidth: BandwidthConfig;
+  /**
+   * Optional per-peer overrides keyed by PeerId string.
+   * Phase 18 ships with plumbing only — CLI to edit comes later.
+   */
+  readonly bandwidth_overrides?: Readonly<Record<string, BandwidthOverride>>;
 }
 
 export interface SecurityConfig {
@@ -96,6 +132,13 @@ const DEFAULT_PEER: PeerConfig = {
   mdns: true,
   dht: { enabled: false, bootstrap_peers: [] },
   search_rate_limit: { rate_per_sec: 10, burst: 30 },
+  relays: [],
+  upnp: true,
+  bandwidth: {
+    max_updates_per_sec_per_peer_per_room: 50,
+    max_concurrent_share_syncs: 10,
+  },
+  // bandwidth_overrides intentionally omitted (optional, undefined by default)
 };
 
 const DEFAULT_SECURITY: SecurityConfig = { secrets_patterns: [] };
@@ -164,6 +207,24 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
             DEFAULT_PEER.search_rate_limit.burst,
           ),
         },
+        relays: Array.isArray(peerRaw.relays)
+          ? (peerRaw.relays as unknown[]).filter((x): x is string => typeof x === 'string')
+          : DEFAULT_PEER.relays,
+        upnp: bool(peerRaw.upnp, DEFAULT_PEER.upnp),
+        bandwidth: {
+          max_updates_per_sec_per_peer_per_room: num(
+            (peerRaw.bandwidth as Record<string, unknown> | undefined)?.max_updates_per_sec_per_peer_per_room,
+            DEFAULT_PEER.bandwidth.max_updates_per_sec_per_peer_per_room,
+          ),
+          max_concurrent_share_syncs: num(
+            (peerRaw.bandwidth as Record<string, unknown> | undefined)?.max_concurrent_share_syncs,
+            DEFAULT_PEER.bandwidth.max_concurrent_share_syncs,
+          ),
+        },
+        bandwidth_overrides:
+          peerRaw.bandwidth_overrides && typeof peerRaw.bandwidth_overrides === 'object'
+            ? (peerRaw.bandwidth_overrides as Readonly<Record<string, BandwidthOverride>>)
+            : undefined,
       };
       const security: SecurityConfig = {
         secrets_patterns: Array.isArray(securityRaw.secrets_patterns)
