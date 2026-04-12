@@ -59,6 +59,7 @@ import { upsertNode } from '../domain/graph.js';
 import { loadYDoc, saveYDoc } from './ydoc-store.js';
 import { loadSharedRooms } from './share-store.js';
 import type { GraphRepository } from './graph-repository.js';
+import { createRateLimiter, makePerPeerRoomKey, type RateLimiter } from './bandwidth-limiter.js';
 
 // ─────────────────────── constants ────────────────────────────────────────────
 
@@ -166,7 +167,7 @@ interface ShareLogEntry {
   readonly peer: string;
   readonly room: string;
   readonly nodeId: string;
-  readonly action: 'inbound' | 'outbound';
+  readonly action: 'inbound' | 'outbound' | 'bandwidth_limited';
   readonly allowed: boolean;
   readonly reason?: string;
 }
@@ -258,10 +259,14 @@ const attachOutboundObserver = (
 };
 
 /**
- * Sync a single GraphNode into a Y.Doc after secrets scanning.
+ * Sync a single GraphNode into a Y.Doc after secrets scanning and
+ * optional bandwidth gating (NET-02).
  *
- * This is the OUTBOUND security gate. Local nodes that pass the scan are
- * upserted into the Y.Map; flagged nodes are blocked and logged.
+ * This is the OUTBOUND security + rate-limit gate. Local nodes that pass
+ * the scan are upserted into the Y.Map; flagged nodes are blocked and logged.
+ * If a `limiter` is provided and `consume()` returns false the update is
+ * dropped with a `bandwidth_limited` audit entry — never propagated to the
+ * peer so the remote side cannot infer the rate-limit verdict.
  *
  * Uses `undefined` as transactionOrigin (default) for locally-originated
  * edits so the outbound observer fires AND broadcasts. REMOTE_ORIGIN is
@@ -274,7 +279,32 @@ export const syncNodeIntoYDoc = (
   logPath: string,
   ownPeerId: string,
   room: string,
+  /** Optional per-peer-per-room rate limiter. Absent = no gating (backward-compat). */
+  limiter?: RateLimiter,
 ): ResultAsync<void, ShareError> => {
+  // ── Bandwidth gate (NET-02) ──────────────────────────────────────────────────
+  // Check BEFORE secrets scan — if we are rate-limited there is no point
+  // scanning. The limiter key is scoped to the outgoing peer identity + room
+  // so each (peer, room) pair gets its own independent token budget.
+  if (limiter !== undefined) {
+    const key = makePerPeerRoomKey(ownPeerId, room);
+    if (!limiter.consume(key)) {
+      return ResultAsync.fromPromise(
+        appendShareLog(logPath, {
+          timestamp: new Date().toISOString(),
+          peer: ownPeerId,
+          room,
+          nodeId: node.id,
+          action: 'bandwidth_limited',
+          allowed: false,
+          reason: 'rate_limit_exceeded',
+        }),
+        () => SE.shareStoreWriteError(logPath, 'audit log append failed'),
+      ).andThen(() => okAsync<void, ShareError>(undefined));
+    }
+  }
+
+  // ── Secrets scan ────────────────────────────────────────────────────────────
   const scanResult = scanNode(node, patterns);
   if (scanResult.isErr()) {
     const reason = scanResult.error.matches.map((m) => `${m.field}/${m.patternName}`).join(',');
@@ -454,6 +484,13 @@ export interface ShareSyncRegistry {
   readonly logPath: string;                            // share-log.jsonl
   readonly ydocsDir: string;                           // ~/.wellinformed/ydocs
   readonly sharedRoomsPath: string;                    // shared-rooms.json
+  /**
+   * Optional per-peer-per-room outbound rate limiter (NET-02).
+   * When absent, the bandwidth gate is a no-op — existing tests remain
+   * backward-compatible without providing a limiter. Set by the daemon
+   * via createShareSyncRegistry when `config.peer.bandwidth` is present.
+   */
+  readonly limiter?: RateLimiter;
 }
 
 export const createShareSyncRegistry = (deps: {
@@ -461,6 +498,8 @@ export const createShareSyncRegistry = (deps: {
   homePath: string;
   graphRepo: GraphRepository;
   patterns: ReturnType<typeof buildPatterns>;
+  /** Rate limit for outbound share updates. Omit to skip bandwidth gating (backward-compat). */
+  maxUpdatesPerSecPerPeerPerRoom?: number;
 }): ShareSyncRegistry => ({
   node: deps.node,
   homePath: deps.homePath,
@@ -471,6 +510,10 @@ export const createShareSyncRegistry = (deps: {
   logPath: join(deps.homePath, 'share-log.jsonl'),
   ydocsDir: join(deps.homePath, 'ydocs'),
   sharedRoomsPath: join(deps.homePath, 'shared-rooms.json'),
+  limiter:
+    deps.maxUpdatesPerSecPerPeerPerRoom !== undefined
+      ? createRateLimiter(deps.maxUpdatesPerSecPerPeerPerRoom, deps.maxUpdatesPerSecPerPeerPerRoom)
+      : undefined,
 });
 
 const ydocPathFor = (registry: ShareSyncRegistry, room: string): string =>

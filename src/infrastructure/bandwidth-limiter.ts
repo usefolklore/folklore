@@ -14,6 +14,14 @@
 export { createRateLimiter, type RateLimiter } from './search-sync.js';
 
 /**
+ * Compose a canonical per-peer-per-room rate-limiter key.
+ * Format: `<peerId>::<roomId>` — matches the stream registry key convention
+ * used throughout share-sync.ts so keys are consistent across subsystems.
+ */
+export const makePerPeerRoomKey = (peerId: string, room: string): string =>
+  `${peerId}::${room}`;
+
+/**
  * Counting semaphore — bounded concurrency primitive.
  * Used by runShareSyncTick to cap `max_concurrent_share_syncs` in-flight streams.
  *
