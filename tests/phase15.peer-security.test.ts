@@ -10,7 +10,7 @@
  */
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -20,6 +20,7 @@ import { loadOrCreateIdentity } from '../src/infrastructure/peer-transport.js';
 import {
   loadPeers,
   savePeers,
+  mutatePeers,
   addPeerRecord,
   removePeerRecord,
 } from '../src/infrastructure/peer-store.js';
@@ -38,9 +39,9 @@ const makeNode = (overrides: Partial<GraphNode> = {}): GraphNode => ({
 
 const patterns = buildPatterns();
 
-// ─────────────────────── SEC-01: all 10 secret patterns detected ──────────
+// ─────────────────────── SEC-01: all 14 secret patterns detected ──────────
 
-describe('SEC-01: secrets scanner detects all 10 built-in patterns', () => {
+describe('SEC-01: secrets scanner detects all 14 built-in patterns', () => {
   const secretSamples: Array<{
     patternName: string;
     field: 'label' | 'source_uri';
@@ -62,6 +63,12 @@ describe('SEC-01: secrets scanner detects all 10 built-in patterns', () => {
       value: 'oauth gho_REDACTED_TEST_VALUE_36CHARS_AAAAAAAA',
     },
     {
+      patternName: 'github-pat-fine',
+      field: 'label',
+      value:
+        'pat github_pat_11ABCDEFG0ABCDEFG1234567_aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ0123456',
+    },
+    {
       patternName: 'aws-key-id',
       field: 'source_uri',
       value: 'https://s3.aws?key=AKIA-REDACTED-AB',
@@ -72,9 +79,27 @@ describe('SEC-01: secrets scanner detects all 10 built-in patterns', () => {
       value: 'sk_live_REDACTEDTEST24CHARS_Q',
     },
     {
+      // Real JWT shape: eyJ... . ... . ... — tightened to avoid flagging
+      // research notes that merely mention "Bearer tokens"
       patternName: 'bearer-token',
       field: 'label',
-      value: 'Bearer eyJhbGciOiJIUzI1NiIsI',
+      value:
+        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmNkZWYiLCJuYW1lIjoiSm9obiJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+    },
+    {
+      patternName: 'google-api-key',
+      field: 'label',
+      value: 'GOOGLE_KEY=AIzaSyA1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7R',
+    },
+    {
+      patternName: 'slack-token',
+      field: 'label',
+      value: 'slack xoxb-1234567890-abcdefghij',
+    },
+    {
+      patternName: 'private-key-block',
+      field: 'label',
+      value: '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIB...',
     },
     {
       patternName: 'password-kv',
@@ -112,14 +137,25 @@ describe('SEC-01: secrets scanner detects all 10 built-in patterns', () => {
     });
   }
 
-  test('buildPatterns returns exactly 10 built-in patterns', () => {
-    assert.equal(patterns.length, 10);
+  test('buildPatterns returns exactly 14 built-in patterns', () => {
+    assert.equal(patterns.length, 14);
   });
 
   test('buildPatterns merges custom patterns with built-ins', () => {
     const custom = buildPatterns([{ name: 'custom', pattern: 'CUSTOM_\\d+' }]);
-    assert.equal(custom.length, 11);
-    assert.equal(custom[10].name, 'custom');
+    assert.equal(custom.length, 15);
+    assert.equal(custom[14].name, 'custom');
+  });
+
+  // Bearer-token false-positive guard: legitimate research prose about
+  // JWT/Bearer auth should NOT trigger the scanner now that the pattern
+  // anchors to actual JWT shape (ey[JK]... . ... . ...)
+  test('does NOT flag research notes mentioning "Bearer tokens" in prose', () => {
+    const node = makeNode({
+      label: 'The paper discusses Bearer token authentication schemes in depth',
+    });
+    const result = scanNode(node, patterns);
+    assert.ok(result.isOk(), 'expected ok for prose mention of Bearer token');
   });
 
   test('scanNode returns ok for a clean node', () => {
@@ -470,5 +506,239 @@ describe('Regression: regex lastIndex must be reset between scanNode calls', () 
     const r2 = scanNode(clean, patterns);
     assert.ok(r1.isErr(), 'dirty node must be blocked');
     assert.ok(r2.isOk(), 'clean node after dirty must still be allowed');
+  });
+});
+
+// ─────────────────────── Scan scope expansion (SEC-01 hardening) ──────────
+
+describe('Scan scope: id, room, and embedding_id are also scanned', () => {
+  test('secret in id field is detected and blocked', () => {
+    const node = makeNode({
+      id: 'sk-abcdefghij1234567890xx',
+      label: 'normal label',
+    });
+    const result = scanNode(node, patterns);
+    assert.ok(result.isErr(), 'secret in id must be blocked');
+    assert.ok(
+      result.error.matches.some((m) => m.field === 'id'),
+      'match.field should be id',
+    );
+  });
+
+  test('secret in room field is detected and blocked', () => {
+    const node = makeNode({
+      id: 'safe-1',
+      label: 'normal',
+      room: 'ghp_REDACTED_TEST_VALUE_36CHARS_AAAAAAAA',
+    });
+    const result = scanNode(node, patterns);
+    assert.ok(result.isErr(), 'secret in room must be blocked');
+    assert.ok(result.error.matches.some((m) => m.field === 'room'));
+  });
+
+  test('secret in embedding_id field is detected and blocked', () => {
+    const node = makeNode({
+      id: 'safe-2',
+      label: 'normal',
+      embedding_id: 'sk_live_REDACTEDTEST24CHARS_Q',
+    });
+    const result = scanNode(node, patterns);
+    assert.ok(result.isErr(), 'secret in embedding_id must be blocked');
+    assert.ok(result.error.matches.some((m) => m.field === 'embedding_id'));
+  });
+});
+
+// ─────────────────────── Identity format marker (Phase 15.1 fix) ──────────
+
+describe('Identity file has format marker for future migration safety', () => {
+  test('newly generated identity file contains format: ed25519-raw-v1', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'wi-idfmt-'));
+    try {
+      const idPath = join(tmp, 'peer-identity.json');
+      const result = await loadOrCreateIdentity(idPath);
+      assert.ok(result.isOk());
+      const stored = JSON.parse(readFileSync(idPath, 'utf8'));
+      assert.equal(stored.format, 'ed25519-raw-v1');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test('legacy identity file (no format field) still loads correctly', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'wi-idlegacy-'));
+    try {
+      const idPath = join(tmp, 'peer-identity.json');
+      // First generate a current-format file
+      const r1 = await loadOrCreateIdentity(idPath);
+      assert.ok(r1.isOk());
+      const current = JSON.parse(readFileSync(idPath, 'utf8'));
+
+      // Rewrite as legacy (no format field)
+      const legacy = {
+        privateKeyB64: current.privateKeyB64,
+        peerId: current.peerId,
+        createdAt: current.createdAt,
+      };
+      writeFileSync(idPath, JSON.stringify(legacy, null, 2));
+
+      // Load — should succeed and match the original PeerId
+      const r2 = await loadOrCreateIdentity(idPath);
+      assert.ok(r2.isOk(), 'legacy identity must still load');
+      assert.equal(r2.value.peerId, r1.value.peerId);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test('identity file with unknown future format is rejected loudly', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'wi-idfuture-'));
+    try {
+      const idPath = join(tmp, 'peer-identity.json');
+      const futureFile = {
+        format: 'ed25519-raw-v99',
+        privateKeyB64: Buffer.from(new Uint8Array(64)).toString('base64'),
+        peerId: '12D3KooWPlaceholder',
+      };
+      writeFileSync(idPath, JSON.stringify(futureFile, null, 2));
+      const result = await loadOrCreateIdentity(idPath);
+      assert.ok(result.isErr(), 'unknown format must fail');
+      assert.equal(result.error.type, 'PeerIdentityParseError');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
+
+// ─────────────────────── peers.json corrupt-JSON regression ───────────────
+
+describe('loadPeers surfaces corrupt peers.json instead of swallowing it', () => {
+  test('corrupt JSON in peers.json returns PeerStoreReadError', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'wi-corrupt-'));
+    try {
+      const peersPath = join(tmp, 'peers.json');
+      writeFileSync(peersPath, 'garbage{not valid json');
+      const result = await loadPeers(peersPath);
+      assert.ok(result.isErr(), 'corrupt JSON must error, not silently return empty');
+      assert.equal(result.error.type, 'PeerStoreReadError');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test('peers.json missing the peers array returns PeerStoreReadError', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'wi-noarray-'));
+    try {
+      const peersPath = join(tmp, 'peers.json');
+      writeFileSync(peersPath, JSON.stringify({ version: 1, wrong_field: [] }));
+      const result = await loadPeers(peersPath);
+      assert.ok(result.isErr(), 'shape mismatch must error');
+      assert.equal(result.error.type, 'PeerStoreReadError');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test('peers.json with future version is rejected', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'wi-futver-'));
+    try {
+      const peersPath = join(tmp, 'peers.json');
+      writeFileSync(peersPath, JSON.stringify({ version: 99, peers: [] }));
+      const result = await loadPeers(peersPath);
+      assert.ok(result.isErr(), 'future version must error');
+      assert.equal(result.error.type, 'PeerStoreReadError');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test('peers.json savePeers → loadPeers roundtrip preserves version field', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'wi-ver-'));
+    try {
+      const peersPath = join(tmp, 'peers.json');
+      const file: PeersFile = {
+        version: 1,
+        peers: [{ id: '12D3KooWRoundtrip', addrs: ['/ip4/1.2.3.4/tcp/9001'], addedAt: '2026-04-12T00:00:00Z' }],
+      };
+      const saveResult = await savePeers(peersPath, file);
+      assert.ok(saveResult.isOk());
+      const loadResult = await loadPeers(peersPath);
+      assert.ok(loadResult.isOk());
+      assert.equal(loadResult.value.version, 1);
+      assert.equal(loadResult.value.peers.length, 1);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
+
+// ─────────────────────── Cross-process mutation lock ──────────────────────
+
+describe('mutatePeers provides atomic read-modify-write under concurrent load', () => {
+  test('10 concurrent mutations all land — no lost writes', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'wi-lock-'));
+    try {
+      const peersPath = join(tmp, 'peers.json');
+
+      // Launch 10 concurrent adds. Without the lock, most of these would
+      // race against each other and lose peers due to read-modify-write
+      // conflicts. With the lock, all 10 must land.
+      const mutations = Array.from({ length: 10 }, (_, i) =>
+        mutatePeers(peersPath, (current) =>
+          addPeerRecord(current, {
+            id: `12D3KooWConcurrent${i.toString().padStart(2, '0')}`,
+            addrs: [`/ip4/10.0.0.${i + 1}/tcp/9001`],
+            addedAt: new Date().toISOString(),
+          }),
+        ),
+      );
+
+      const results = await Promise.all(mutations);
+      for (const r of results) {
+        assert.ok(r.isOk(), `mutation failed: ${JSON.stringify(r.isErr() ? r.error : 'ok')}`);
+      }
+
+      // Final state must contain all 10 unique peers
+      const finalResult = await loadPeers(peersPath);
+      assert.ok(finalResult.isOk());
+      assert.equal(
+        finalResult.value.peers.length,
+        10,
+        'all 10 concurrent mutations must be preserved (no lost writes)',
+      );
+
+      // Verify each peer id is distinct
+      const ids = new Set(finalResult.value.peers.map((p) => p.id));
+      assert.equal(ids.size, 10);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test('mutatePeers releases lock even on transform errors', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'wi-lockrel-'));
+    try {
+      const peersPath = join(tmp, 'peers.json');
+      // First mutation succeeds
+      const r1 = await mutatePeers(peersPath, (current) =>
+        addPeerRecord(current, {
+          id: '12D3KooWLockRel',
+          addrs: ['/ip4/1.2.3.4/tcp/9001'],
+          addedAt: '2026-04-12T00:00:00Z',
+        }),
+      );
+      assert.ok(r1.isOk());
+
+      // Lock file should NOT exist between mutations (was released)
+      assert.ok(!existsSync(`${peersPath}.lock`), 'lock file must not linger');
+
+      // Second mutation must succeed (lock was released properly)
+      const r2 = await mutatePeers(peersPath, (current) =>
+        removePeerRecord(current, '12D3KooWLockRel'),
+      );
+      assert.ok(r2.isOk());
+      assert.equal(r2.value.peers.length, 0);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });
