@@ -36,7 +36,18 @@ import { ScanError as SE } from './errors.js';
  * Intentionally excludes:
  *   - `file_type`   (SEC-03: reveals internal classification)
  *   - `source_file` (SEC-03: reveals local filesystem paths)
+ *   - `embedding_vector` (raw float arrays) — see SEC-03 design note below
  *   - raw text / content fields (always excluded at this boundary)
+ *
+ * SEC-03 design note — why embedding_id, not embedding_vector:
+ * The project requirements originally listed "embedding vector" as shareable.
+ * Phase 15 ships `embedding_id` (a reference) instead of the raw float array
+ * after review: embedding-inversion attacks can recover approximate source
+ * text from sentence-transformer vectors (see Morris et al. 2023, "Text
+ * Embeddings Reveal Almost As Much As Text"). Sharing the vector would make
+ * the metadata boundary porous. Cross-peer semantic search (Phase 17) must
+ * re-embed from source_uri + label on the receiving side, not trust imported
+ * vectors. REQUIREMENTS.md SEC-03 has been updated to reflect this choice.
  */
 export interface ShareableNode {
   readonly id: string;
@@ -58,25 +69,47 @@ export interface AuditResult {
 // ─────────────────────── patterns ─────────────────────────
 
 /**
- * 10 built-in secret patterns. All use the 'g' flag — callers MUST
+ * 14 built-in secret patterns. All use the 'g' flag — callers MUST
  * reset re.lastIndex = 0 before each test() invocation.
+ *
+ * Pattern hardening notes:
+ *   - bearer-token now anchors to JWT shape (ey[JK]... . ... . ...)
+ *     to avoid flagging research notes that merely mention "Bearer tokens"
+ *   - private-key-block covers RSA/EC/OPENSSH/PGP/ENCRYPTED/DSA headers
+ *   - google-api-key, slack-token, github-pat-fine added per review feedback
  */
 const BUILT_IN_PATTERNS: ReadonlyArray<{ readonly name: string; readonly re: RegExp }> =
   Object.freeze([
-    { name: 'openai-key',   re: /sk-[a-zA-Z0-9]{20,}/g },
-    { name: 'github-token', re: /ghp_[a-zA-Z0-9]{36}/g },
-    { name: 'github-oauth', re: /gho_[a-zA-Z0-9]{36}/g },
-    { name: 'aws-key-id',   re: /AKIA[0-9A-Z]{16}/g },
-    { name: 'stripe-live',  re: /sk_live_[a-zA-Z0-9]{24}/g },
-    { name: 'bearer-token', re: /Bearer\s+[a-zA-Z0-9._-]{20,}/g },
-    { name: 'password-kv',  re: /password\s*[=:]\s*\S{6,}/gi },
-    { name: 'api-key-kv',   re: /api[_-]?key\s*[=:]\s*["']?[a-zA-Z0-9._-]{10,}/gi },
-    { name: 'env-token',    re: /[A-Z_]{3,}_TOKEN=[^\s"']{8,}/g },
-    { name: 'env-secret',   re: /[A-Z_]{3,}_SECRET=[^\s"']{8,}/g },
+    { name: 'openai-key',        re: /sk-[a-zA-Z0-9]{20,}/g },
+    { name: 'github-token',      re: /ghp_[a-zA-Z0-9]{36}/g },
+    { name: 'github-oauth',      re: /gho_[a-zA-Z0-9]{36}/g },
+    { name: 'github-pat-fine',   re: /github_pat_[A-Za-z0-9_]{82}/g },
+    { name: 'aws-key-id',        re: /AKIA[0-9A-Z]{16}/g },
+    { name: 'stripe-live',       re: /sk_live_[a-zA-Z0-9]{24}/g },
+    { name: 'bearer-token',      re: /Bearer\s+ey[JK][A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g },
+    { name: 'google-api-key',    re: /AIza[0-9A-Za-z_-]{35}/g },
+    { name: 'slack-token',       re: /xox[baprs]-[A-Za-z0-9-]{10,}/g },
+    { name: 'private-key-block', re: /-----BEGIN (RSA |EC |OPENSSH |PGP |ENCRYPTED |DSA )?PRIVATE KEY-----/g },
+    { name: 'password-kv',       re: /password\s*[=:]\s*\S{6,}/gi },
+    { name: 'api-key-kv',        re: /api[_-]?key\s*[=:]\s*["']?[a-zA-Z0-9._-]{10,}/gi },
+    { name: 'env-token',         re: /[A-Z_]{3,}_TOKEN=[^\s"']{8,}/g },
+    { name: 'env-secret',        re: /[A-Z_]{3,}_SECRET=[^\s"']{8,}/g },
   ]);
 
-/** Fields of ShareableNode that are scanned for secrets. */
-const SCANNABLE_FIELDS: ReadonlyArray<keyof ShareableNode> = ['label', 'source_uri', 'fetched_at'];
+/**
+ * Fields of ShareableNode that are scanned for secrets.
+ * Includes id/room/embedding_id defensively — those fields are rare
+ * sources of leaks but cheap to scan, and a user-derived id could
+ * accidentally contain token-shaped content.
+ */
+const SCANNABLE_FIELDS: ReadonlyArray<keyof ShareableNode> = [
+  'id',
+  'label',
+  'room',
+  'source_uri',
+  'fetched_at',
+  'embedding_id',
+];
 
 // ─────────────────────── public API ───────────────────────
 
