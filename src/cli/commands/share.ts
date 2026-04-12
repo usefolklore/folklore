@@ -3,8 +3,7 @@
  *
  * Subcommands:
  *   audit --room <name> [--json]   show what would be shared (allowed + blocked nodes)
- *
- * Phase 16 will add: room <name> (enable sharing), unshare <name>.
+ *   room <name>                    mark a room as shared (runs audit; blocks on flagged nodes)
  */
 
 import { join } from 'node:path';
@@ -14,8 +13,12 @@ import { nodesInRoom } from '../../domain/graph.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
 import { fileGraphRepository } from '../../infrastructure/graph-repository.js';
 import { runtimePaths, wellinformedHome } from '../runtime.js';
+import { mutateSharedRooms, addSharedRoom } from '../../infrastructure/share-store.js';
+import { loadYDoc, saveYDoc } from '../../infrastructure/ydoc-store.js';
+import { syncNodeIntoYDoc } from '../../infrastructure/share-sync.js';
 
 const configPath = (): string => join(wellinformedHome(), 'config.yaml');
+const sharedRoomsPath = (): string => join(wellinformedHome(), 'shared-rooms.json');
 
 // ─────────────────────── subcommands ──────────────────────
 
@@ -104,16 +107,107 @@ const audit = async (rest: readonly string[]): Promise<number> => {
   return 0;
 };
 
+// ─────────────────────── share room <name> ───────────────
+
+const roomCmd = async (rest: readonly string[]): Promise<number> => {
+  const roomId = rest[0];
+  if (!roomId) {
+    console.error('share room: missing <name>. usage: wellinformed share room <name>');
+    return 1;
+  }
+
+  const configResult = await loadConfig(configPath());
+  if (configResult.isErr()) {
+    console.error(`share room: ${formatError(configResult.error)}`);
+    return 1;
+  }
+  const cfg = configResult.value;
+
+  const paths = runtimePaths();
+  const graphRepo = fileGraphRepository(paths.graph);
+  const graphResult = await graphRepo.load();
+  if (graphResult.isErr()) {
+    console.error(`share room: ${formatError(graphResult.error)}`);
+    return 1;
+  }
+  const graph = graphResult.value;
+
+  // SECRETS GATE — auditRoom must pass before adding the room to the registry.
+  // This is the SHARE-01 hard-block (no override, mirrors `share audit` semantics).
+  const roomNodes = nodesInRoom(graph, roomId);
+  const patterns = buildPatterns(cfg.security.secrets_patterns);
+  const auditRes = auditRoom(roomNodes, patterns);
+
+  if (auditRes.blocked.length > 0) {
+    console.error(`share room: BLOCKED — ${auditRes.blocked.length} node(s) in room '${roomId}' contain secrets`);
+    for (const b of auditRes.blocked) {
+      const reasons = b.matches.map((m) => `${m.field}:${m.patternName}`).join(', ');
+      console.error(`  ${b.nodeId.slice(0, 12).padEnd(14)} [${reasons}]`);
+    }
+    console.error(`\nrun 'wellinformed share audit --room ${roomId}' for full details.`);
+    return 1;
+  }
+
+  // Persist to shared-rooms.json under cross-process lock.
+  const record: { name: string; sharedAt: string } = {
+    name: roomId,
+    sharedAt: new Date().toISOString(),
+  };
+  const writeResult = await mutateSharedRooms(sharedRoomsPath(), (file) =>
+    addSharedRoom(file, record),
+  );
+  if (writeResult.isErr()) {
+    console.error(`share room: ${formatError(writeResult.error)}`);
+    return 1;
+  }
+
+  // SHARE-04 — populate the Y.Doc with existing room nodes so peers see content
+  // on the FIRST sync, not just future ingests. Loads the room's Y.Doc (or creates
+  // one), iterates the allowed GraphNode objects (full node, not the ShareableNode
+  // projection) and calls syncNodeIntoYDoc which applies the secrets gate internally.
+  // saveYDoc commits the populated state.
+  // syncNodeIntoYDoc enforces the SHARE-04 metadata boundary: only ShareableNode
+  // keys propagate. Raw source text never enters the Y.Doc.
+  const allowedIds = new Set(auditRes.allowed.map((s) => s.id));
+  const allowedNodes = roomNodes.filter((n) => allowedIds.has(n.id));
+  const ydocPath = join(wellinformedHome(), 'ydocs', `${roomId}.ydoc`);
+  const logPath = join(wellinformedHome(), 'share-log.jsonl');
+  const ydocLoad = await loadYDoc(ydocPath);
+  if (ydocLoad.isErr()) {
+    console.error(`share room: ${formatError(ydocLoad.error)}`);
+    return 1;
+  }
+  const ydoc = ydocLoad.value;
+  for (const node of allowedNodes) {
+    const populated = await syncNodeIntoYDoc(ydoc, node, patterns, logPath, 'local', roomId);
+    if (populated.isErr()) {
+      console.error(`share room: failed to seed Y.Doc for node ${node.id}: ${formatError(populated.error)}`);
+      return 1;
+    }
+  }
+  const ydocSave = await saveYDoc(ydocPath, ydoc);
+  if (ydocSave.isErr()) {
+    console.error(`share room: ${formatError(ydocSave.error)}`);
+    return 1;
+  }
+
+  const noun = auditRes.allowed.length === 1 ? 'node' : 'nodes';
+  if (auditRes.allowed.length === 0) {
+    console.log(`share room '${roomId}': now public (0 nodes — empty room recorded for future sync)`);
+  } else {
+    console.log(`share room '${roomId}': now public (${auditRes.allowed.length} ${noun} shareable)`);
+  }
+  console.log("  run 'wellinformed daemon start' (or restart it) so peers can sync this room");
+  return 0;
+};
+
 // ─────────────────────── usage ────────────────────────────
 
-const USAGE = `usage: wellinformed share <audit>
+const USAGE = `usage: wellinformed share <audit|room>
 
 subcommands:
   audit --room <name> [--json]   show what would be shared before enabling
-
-future (Phase 16):
-  room <name>                    mark a room as shared
-  unshare <name>                 make a room private again`;
+  room <name>                    mark a room as shared (runs audit; blocks on flagged nodes)`;
 
 // ─────────────────────── entry ────────────────────────────
 
@@ -121,6 +215,7 @@ export const share = async (args: string[]): Promise<number> => {
   const [sub, ...rest] = args;
   switch (sub) {
     case 'audit': return audit(rest);
+    case 'room':  return roomCmd(rest);
     default:
       console.error(sub ? `share: unknown subcommand '${sub}'` : 'share: missing subcommand');
       console.error(USAGE);
