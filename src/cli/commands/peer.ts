@@ -147,6 +147,8 @@ const list = async (rest: readonly string[]): Promise<number> => {
   if (jsonOutput) {
     // Machine-readable output for agent consumption (Phase 16+)
     // Phase 17: discovery_method field added — undefined rendered as 'manual' for legacy peers
+    // Phase 18: health field added — always 'unknown' in CLI (tracker lives in daemon
+    //   process memory; Phase 19+ will expose it via MCP tool or daemon IPC).
     console.log(
       JSON.stringify(
         {
@@ -157,6 +159,7 @@ const list = async (rest: readonly string[]): Promise<number> => {
             addedAt: p.addedAt,
             label: p.label,
             discovery_method: p.discovery_method ?? 'manual',
+            health: 'unknown',  // populated via daemon IPC/MCP in Phase 19+
           })),
         },
         null,
@@ -178,6 +181,9 @@ const list = async (rest: readonly string[]): Promise<number> => {
     }
     console.log(`    added:     ${p.addedAt}`);
     console.log(`    discovery: ${p.discovery_method ?? 'manual'}`);
+    // Phase 18: health is tracked in-memory in the daemon; CLI shows 'unknown'
+    // until Phase 19+ daemon IPC or MCP tool exposes the live health state.
+    console.log(`    health:    unknown`);
     if (p.label) console.log(`    label:     ${p.label}`);
     console.log('');
   }
