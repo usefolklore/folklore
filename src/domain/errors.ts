@@ -13,6 +13,8 @@
  *   - `EmbeddingError`  — transformers runtime, model load, inference
  *   - `PeerError`       — P2P identity, peer store I/O, transport, dial
  *   - `ScanError`       — secrets detection at the sharing boundary
+ *   - `ShareError`      — room sharing, Y.js CRDT sync, shared-rooms.json I/O
+ *   - `SearchError`     — federated search fan-out, rate limiting, auth (Phase 17)
  *
  * `AppError` is the top-level union used by CLI and application layers.
  */
@@ -165,9 +167,35 @@ export const ShareError = {
   shareStoreWriteError:  (path: string, message: string): ShareError => ({ type: 'ShareStoreWriteError', path, message }),
 } as const;
 
+// ─────────────────────── SearchError ──────────────────────
+
+/**
+ * Errors from the federated search bounded context (Phase 17).
+ *
+ * - SearchDimensionMismatch — inbound embedding length != 384 (local model dim)
+ * - SearchUnauthorized      — peer requested a room not in local shared-rooms.json
+ * - SearchRateLimited       — peer exceeded token bucket (10 req/s, burst 30)
+ * - SearchProtocolError     — libp2p stream/dial/frame decode failure
+ * - SearchTimeout           — per-peer 2s deadline exceeded during outbound fan-out
+ */
+export type SearchError =
+  | { readonly type: 'SearchDimensionMismatch'; readonly expected: number; readonly got: number }
+  | { readonly type: 'SearchUnauthorized';      readonly peer: string; readonly room: string }
+  | { readonly type: 'SearchRateLimited';       readonly peer: string }
+  | { readonly type: 'SearchProtocolError';     readonly peer: string; readonly message: string }
+  | { readonly type: 'SearchTimeout';           readonly peer: string; readonly elapsedMs: number };
+
+export const SearchError = {
+  dimensionMismatch: (expected: number, got: number): SearchError => ({ type: 'SearchDimensionMismatch', expected, got }),
+  unauthorized:      (peer: string, room: string): SearchError    => ({ type: 'SearchUnauthorized', peer, room }),
+  rateLimited:       (peer: string): SearchError                  => ({ type: 'SearchRateLimited', peer }),
+  protocolError:     (peer: string, message: string): SearchError => ({ type: 'SearchProtocolError', peer, message }),
+  timeout:           (peer: string, elapsedMs: number): SearchError => ({ type: 'SearchTimeout', peer, elapsedMs }),
+} as const;
+
 // ─────────────────────── AppError union ───────────────────
 
-export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError;
+export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError;
 
 /** Render a tagged error as a one-line human-readable string. */
 export const formatError = (e: AppError): string => {
@@ -234,5 +262,15 @@ export const formatError = (e: AppError): string => {
       return `share store read error at ${e.path}: ${e.message}`;
     case 'ShareStoreWriteError':
       return `share store write error at ${e.path}: ${e.message}`;
+    case 'SearchDimensionMismatch':
+      return `search dimension mismatch: expected ${e.expected}, got ${e.got}`;
+    case 'SearchUnauthorized':
+      return `search unauthorized: peer ${e.peer} requested unshared room '${e.room}'`;
+    case 'SearchRateLimited':
+      return `search rate limited for peer ${e.peer}`;
+    case 'SearchProtocolError':
+      return `search protocol error with peer ${e.peer}: ${e.message}`;
+    case 'SearchTimeout':
+      return `search timeout for peer ${e.peer} after ${e.elapsedMs}ms`;
   }
 };
