@@ -35,6 +35,13 @@ export interface TunnelsConfig {
 export interface PeerConfig {
   /** Listening port for the libp2p TCP transport. 0 = OS-assigned (default). */
   readonly port: number;
+  /**
+   * Interface to bind the TCP listener to. Default '127.0.0.1' (localhost only)
+   * so ephemeral CLI commands do not expose a libp2p endpoint on public
+   * interfaces. Set to '0.0.0.0' when running as a daemon that should
+   * accept remote peer connections.
+   */
+  readonly listen_host: string;
 }
 
 export interface SecurityConfig {
@@ -70,7 +77,7 @@ const DEFAULT_TUNNELS: TunnelsConfig = {
   min_cluster_size: 3,
 };
 
-const DEFAULT_PEER: PeerConfig = { port: 0 };
+const DEFAULT_PEER: PeerConfig = { port: 0, listen_host: '127.0.0.1' };
 
 const DEFAULT_SECURITY: SecurityConfig = { secrets_patterns: [] };
 
@@ -113,6 +120,7 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
       };
       const peer: PeerConfig = {
         port: num(peerRaw.port, DEFAULT_PEER.port),
+        listen_host: str(peerRaw.listen_host, DEFAULT_PEER.listen_host),
       };
       const security: SecurityConfig = {
         secrets_patterns: Array.isArray(securityRaw.secrets_patterns)
@@ -129,3 +137,4 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
 
 const num = (v: unknown, def: number): number => (typeof v === 'number' ? v : def);
 const bool = (v: unknown, def: boolean): boolean => (typeof v === 'boolean' ? v : def);
+const str = (v: unknown, def: string): string => (typeof v === 'string' && v.length > 0 ? v : def);
