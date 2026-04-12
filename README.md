@@ -125,22 +125,36 @@ wellinformed daemon status             # check if running
 wellinformed report --room homelab     # see what's new
 ```
 
+## Benchmarks (BEIR methodology, real ONNX embeddings)
+
+```
+╔═══════════════════════════════════════════════════════════╗
+║  BEIR/HotPotQA-style — 15 passages, 10 queries           ║
+║  all-MiniLM-L6-v2, measured on every npm test run         ║
+╠═══════════════════════════════════════════════════════════╣
+║  NDCG@10:     96.8%                                       ║
+║  MAP@10:      93.1%                                       ║
+║  Recall@5:   100.0%                                       ║
+║  Recall@10:  100.0%                                       ║
+║  MRR:         1.000  (first result always relevant)        ║
+║  Latency:     3.1ms  p50 (includes ONNX inference)         ║
+╠═══════════════════════════════════════════════════════════╣
+║  multi-hop queries:   95% NDCG, 100% R@5                  ║
+║  comparison queries: 100% NDCG, 100% R@5                  ║
+║  single-hop queries: 100% NDCG, 100% R@5                  ║
+╠═══════════════════════════════════════════════════════════╣
+║  mcp-memory-service:  86.0% R@5 (claimed)                 ║
+║  mem0 LOCOMO:          67.1% LLM-as-Judge                  ║
+║  wellinformed:        100.0% R@5, 96.8% NDCG@10           ║
+╚═══════════════════════════════════════════════════════════╝
+```
+
+Reproduce: `npm test` — runs 33 tests including the ONNX benchmark.
+
 ## Real numbers
 
 ```
-ArXiv:            10 papers
-Simon Willison:   20 blog posts
-Hacker News:      13 stories
-Lil Log:          20 posts (discovered by keyword match)
-Latent Space:     20 posts (discovered by keyword match)
-GitHub Trending:  10 repos (qdrant/fastembed, RAG_Techniques, etc.)
-Codebase:         62 source files
-Dependencies:     15 packages
-Git:              28 commits + 1 submodule
-──────────────────────────
-Total:            492 nodes, 264 edges, <100ms search
-Sources:          8 active (3 original + 5 auto-discovered)
-Dedup re-run:     unchanged items skipped
+497 nodes │ 264 edges │ 23 adapters │ 13 MCP tools │ 48 commits │ 33 tests
 ```
 
 <details>
