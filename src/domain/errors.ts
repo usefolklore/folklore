@@ -193,9 +193,42 @@ export const SearchError = {
   timeout:           (peer: string, elapsedMs: number): SearchError => ({ type: 'SearchTimeout', peer, elapsedMs }),
 } as const;
 
+// ─────────────────────── CodebaseError ───────────────────
+
+/**
+ * Errors from the structured codebase indexing bounded context (Phase 19).
+ *
+ * Split by failure surface:
+ *   - DbOpenError / DbReadError / DbWriteError — code-graph.db I/O at infrastructure boundary
+ *   - GrammarMissingError / ParseError        — tree-sitter grammar load + parse failures
+ *   - CodebaseNotFoundError                   — lookup miss in codebases table
+ *   - AttachFailedError                       — codebase_rooms join table mutations
+ *   - InvalidPathError                        — user supplied path does not exist or is not a directory
+ */
+export type CodebaseError =
+  | { readonly type: 'CodebaseDbOpenError';         readonly path: string; readonly message: string }
+  | { readonly type: 'CodebaseDbReadError';         readonly message: string }
+  | { readonly type: 'CodebaseDbWriteError';        readonly table: string; readonly message: string }
+  | { readonly type: 'CodebaseGrammarMissingError'; readonly language: string; readonly message: string }
+  | { readonly type: 'CodebaseParseError';          readonly file_path: string; readonly message: string }
+  | { readonly type: 'CodebaseNotFoundError';       readonly codebase_id: string }
+  | { readonly type: 'CodebaseAttachFailedError';   readonly codebase_id: string; readonly room_id: string; readonly message: string }
+  | { readonly type: 'CodebaseInvalidPathError';    readonly path: string; readonly message: string };
+
+export const CodebaseError = {
+  dbOpenError:         (path: string, message: string): CodebaseError => ({ type: 'CodebaseDbOpenError', path, message }),
+  dbReadError:         (message: string): CodebaseError               => ({ type: 'CodebaseDbReadError', message }),
+  dbWriteError:        (table: string, message: string): CodebaseError => ({ type: 'CodebaseDbWriteError', table, message }),
+  grammarMissingError: (language: string, message: string): CodebaseError => ({ type: 'CodebaseGrammarMissingError', language, message }),
+  parseError:          (file_path: string, message: string): CodebaseError => ({ type: 'CodebaseParseError', file_path, message }),
+  notFound:            (codebase_id: string): CodebaseError           => ({ type: 'CodebaseNotFoundError', codebase_id }),
+  attachFailed:        (codebase_id: string, room_id: string, message: string): CodebaseError => ({ type: 'CodebaseAttachFailedError', codebase_id, room_id, message }),
+  invalidPath:         (path: string, message: string): CodebaseError => ({ type: 'CodebaseInvalidPathError', path, message }),
+} as const;
+
 // ─────────────────────── AppError union ───────────────────
 
-export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError;
+export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError;
 
 /** Render a tagged error as a one-line human-readable string. */
 export const formatError = (e: AppError): string => {
@@ -272,5 +305,21 @@ export const formatError = (e: AppError): string => {
       return `search protocol error with peer ${e.peer}: ${e.message}`;
     case 'SearchTimeout':
       return `search timeout for peer ${e.peer} after ${e.elapsedMs}ms`;
+    case 'CodebaseDbOpenError':
+      return `code graph db open error at ${e.path}: ${e.message}`;
+    case 'CodebaseDbReadError':
+      return `code graph db read error: ${e.message}`;
+    case 'CodebaseDbWriteError':
+      return `code graph db write error (table=${e.table}): ${e.message}`;
+    case 'CodebaseGrammarMissingError':
+      return `tree-sitter grammar missing for language '${e.language}': ${e.message}`;
+    case 'CodebaseParseError':
+      return `code parse error in ${e.file_path}: ${e.message}`;
+    case 'CodebaseNotFoundError':
+      return `codebase not found: ${e.codebase_id}`;
+    case 'CodebaseAttachFailedError':
+      return `attach failed for codebase ${e.codebase_id} to room ${e.room_id}: ${e.message}`;
+    case 'CodebaseInvalidPathError':
+      return `invalid codebase path '${e.path}': ${e.message}`;
   }
 };
