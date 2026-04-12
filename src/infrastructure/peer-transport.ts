@@ -12,10 +12,13 @@
 import { generateKeyPair, privateKeyFromRaw } from '@libp2p/crypto/keys';
 import { peerIdFromPrivateKey } from '@libp2p/peer-id';
 import type { Ed25519PrivateKey, Libp2p } from '@libp2p/interface';
+import type { PeerInfo } from '@libp2p/interface';
 import { createLibp2p } from 'libp2p';
 import { tcp } from '@libp2p/tcp';
 import { noise } from '@libp2p/noise';
 import { yamux } from '@libp2p/yamux';
+import { mdns } from '@libp2p/mdns';
+import { kadDHT } from '@libp2p/kad-dht';
 import { multiaddr } from '@multiformats/multiaddr';
 import { ResultAsync, okAsync, errAsync } from 'neverthrow';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -23,6 +26,7 @@ import { existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { PeerError } from '../domain/errors.js';
 import { PeerError as PE } from '../domain/errors.js';
+import { mutatePeers, addPeerRecord } from './peer-store.js';
 
 /**
  * Identity file format marker. Bumped when the on-disk layout changes
@@ -61,6 +65,12 @@ export interface TransportConfig {
    * on an untrusted network does not accidentally expose a libp2p endpoint.
    */
   readonly listenHost?: string;
+  /** mDNS LAN discovery. Default true. Set false via PeerConfig.mdns. */
+  readonly mdns?: boolean;
+  /** kad-dht wiring. Default false. Set true via PeerConfig.dht.enabled. */
+  readonly dhtEnabled?: boolean;
+  /** Path to peers.json for peer:discovery persistence. REQUIRED when mdns is true. */
+  readonly peersPath?: string;
 }
 
 /**
@@ -147,13 +157,25 @@ export const loadOrCreateIdentity = (
 };
 
 /**
- * Create a libp2p node with TCP + Noise + Yamux.
+ * Create a libp2p node with TCP + Noise + Yamux + optional mDNS + optional kad-dht.
  * Calls node.start() explicitly — omitting this is a known pitfall
  * (the node is constructed but not listening until started).
  *
  * connectionEncrypters: [noise()] satisfies SEC-05 (all traffic encrypted).
  * Noise handshake authenticates peers via ed25519 signatures (SEC-06) —
  * zero custom crypto required.
+ *
+ * mDNS (DISC-02): enabled by default. Pitfall 2 (17-RESEARCH.md) — Docker/WSL2
+ * multicast bind failure must NOT crash createNode. Wrapped in try/catch.
+ *
+ * kad-dht (DISC-03): off by default. Pitfall 4 (17-RESEARCH.md) — DHT ideally
+ * needs identify to populate its routing table. Since @libp2p/identify is not
+ * available as a transitive dep, clientMode:true is used without identify.
+ *
+ * peer:discovery (Pitfall 1, 17-RESEARCH.md): mDNS does NOT auto-dial. The
+ * peer:discovery event handler MUST call node.dial() explicitly. Without this,
+ * peers appear in peer list but 0 are connected (connectionManager.minConnections
+ * is not set — we do NOT rely on auto-dial).
  */
 export const createNode = (
   identity: PeerIdentity,
@@ -162,12 +184,46 @@ export const createNode = (
   ResultAsync.fromPromise(
     (async () => {
       const host = cfg.listenHost ?? '127.0.0.1';
+      const mdnsEnabled = cfg.mdns !== false;   // default true per DISC-02
+      const dhtOn = cfg.dhtEnabled === true;    // default false per DISC-03
+
+      // Build peerDiscovery array conditionally. mDNS failures in Docker/WSL
+      // (multicast not forwarded) must not crash createNode — wrap in try.
+      let peerDiscovery: ReturnType<typeof mdns>[] = [];
+      if (mdnsEnabled) {
+        try {
+          peerDiscovery = [mdns({ interval: 20000 })];
+        } catch (e) {
+          // Pitfall 2 (17-RESEARCH.md): Docker bridge / WSL2 non-mirrored
+          // multicast bind failure. Log and continue without mDNS.
+          // mDNS unavailable — user must use manual 'peer add' or enable Docker --network host / WSL2 mirrored mode.
+          process.stderr.write(
+            `wellinformed: mDNS unavailable (${(e as Error).message}). ` +
+            `Continuing without LAN discovery. ` +
+            `Use manual 'peer add' or enable Docker --network host / WSL2 mirrored mode.\n`,
+          );
+          peerDiscovery = [];
+        }
+      }
+
+      // Pitfall 4 (17-RESEARCH.md): DHT ideally needs identify to populate its routing table.
+      // @libp2p/identify is NOT available as a transitive dep from libp2p@3.2.0 (confirmed Phase 17
+      // Plan 01). DHT runs in clientMode:true which does not require identify — it queries the
+      // routing table passively without advertising itself, so routing-table population from
+      // identify is optional for the client-mode use case.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const services: Record<string, any> = dhtOn
+        ? { dht: kadDHT({ clientMode: true, protocol: '/wellinformed/kad/1.0.0' }) }
+        : {};
+
       const node = await createLibp2p({
         privateKey: identity.privateKey,
         addresses: { listen: [`/ip4/${host}/tcp/${cfg.listenPort}`] },
         transports: [tcp()],
         connectionEncrypters: [noise()],
         streamMuxers: [yamux()],
+        peerDiscovery,
+        services,
         // Retry aggressively to match the "persistent connection" contract.
         // Infinity + exponential backoff caps at reconnectRetryInterval * factor^attempts,
         // so retries slow down to minutes-scale for long-flapped peers but never stop.
@@ -178,6 +234,47 @@ export const createNode = (
         },
       });
       await node.start();
+
+      // Pitfall 1 (17-RESEARCH.md): mDNS peer:discovery only populates peerStore.
+      // We MUST explicitly (a) persist with discovery_method:'mdns' AND (b) dial.
+      // Both sides — persist is safe (atomic lock), dial is best-effort.
+      // NOTE: we do NOT set minConnections — no auto-dial; this explicit handler is required.
+      if (mdnsEnabled && cfg.peersPath) {
+        const peersPath = cfg.peersPath;
+        node.addEventListener('peer:discovery', (evt: CustomEvent<PeerInfo>) => {
+          // Defensive: evt.detail type is inferred from libp2p; runtime check.
+          const detail = evt.detail;
+          if (!detail || !detail.id || !Array.isArray(detail.multiaddrs)) return;
+          const peerIdStr = detail.id.toString();
+          const addrs = detail.multiaddrs.map((m) => m.toString());
+
+          // Persist the discovery via the locked peers.json mutation path.
+          // Best-effort: failures here must not break the event loop.
+          void mutatePeers(peersPath, (current) =>
+            addPeerRecord(current, {
+              id: peerIdStr,
+              addrs,
+              addedAt: new Date().toISOString(),
+              discovery_method: 'mdns',
+            }),
+          ).match(
+            () => undefined,
+            (e) => process.stderr.write(`wellinformed: peer:discovery persist failed: ${e.type}\n`),
+          );
+
+          // Explicit dial — only if not already connected (avoid dial storms on
+          // rediscovery intervals). getPeers() returns currently-connected PeerIds.
+          const already = node.getPeers().some((p) => p.toString() === peerIdStr);
+          if (!already && detail.multiaddrs.length > 0) {
+            void node.dial(detail.multiaddrs[0]).catch(() => {
+              // Best-effort — a dial can fail for many reasons (firewall, race
+              // with peer going offline). The next discovery interval (20s)
+              // retries automatically.
+            });
+          }
+        });
+      }
+
       return node;
     })(),
     (e) => PE.transportError((e as Error).message),
