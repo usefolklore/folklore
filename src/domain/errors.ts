@@ -15,6 +15,8 @@
  *   - `ScanError`       — secrets detection at the sharing boundary
  *   - `ShareError`      — room sharing, Y.js CRDT sync, shared-rooms.json I/O
  *   - `SearchError`     — federated search fan-out, rate limiting, auth (Phase 17)
+ *   - `CodebaseError`   — structured codebase indexing, tree-sitter, code-graph.db (Phase 19)
+ *   - `NetError`        — production networking: relay, hole-punch, UPnP, bandwidth (Phase 18)
  *
  * `AppError` is the top-level union used by CLI and application layers.
  */
@@ -226,9 +228,39 @@ export const CodebaseError = {
   invalidPath:         (path: string, message: string): CodebaseError => ({ type: 'CodebaseInvalidPathError', path, message }),
 } as const;
 
+// ─────────────────────── NetError ────────────────────────
+
+/**
+ * Errors from the production networking bounded context (Phase 18).
+ *
+ * Split by failure surface:
+ *   - RelayDialFailed      — explicit dial of a config.peer.relays entry failed
+ *   - HolePunchTimeout     — dcutr direct-upgrade did not complete in time
+ *   - UPnPMapFailed        — @libp2p/upnp-nat reported a non-recoverable mapping failure (note: the service catches most errors internally — this is only for cases that surface)
+ *   - BandwidthExceeded    — per-peer-per-room token bucket rejected an outbound update
+ *   - HealthDegraded       — connection-health tracker flipped a peer to 'degraded'
+ *   - RelayNotConfigured   — caller asked for /p2p-circuit behaviour but config.peer.relays is empty
+ */
+export type NetError =
+  | { readonly type: 'RelayDialFailed';    readonly addr: string; readonly message: string }
+  | { readonly type: 'HolePunchTimeout';   readonly peer: string; readonly elapsedMs: number }
+  | { readonly type: 'UPnPMapFailed';      readonly message: string }
+  | { readonly type: 'BandwidthExceeded';  readonly peer: string; readonly room: string }
+  | { readonly type: 'HealthDegraded';     readonly peer: string; readonly reason: 'disconnects' | 'idle' }
+  | { readonly type: 'RelayNotConfigured' };
+
+export const NetError = {
+  relayDialFailed:    (addr: string, message: string): NetError    => ({ type: 'RelayDialFailed', addr, message }),
+  holePunchTimeout:   (peer: string, elapsedMs: number): NetError  => ({ type: 'HolePunchTimeout', peer, elapsedMs }),
+  upnpMapFailed:      (message: string): NetError                  => ({ type: 'UPnPMapFailed', message }),
+  bandwidthExceeded:  (peer: string, room: string): NetError       => ({ type: 'BandwidthExceeded', peer, room }),
+  healthDegraded:     (peer: string, reason: 'disconnects' | 'idle'): NetError => ({ type: 'HealthDegraded', peer, reason }),
+  relayNotConfigured: (): NetError                                 => ({ type: 'RelayNotConfigured' }),
+} as const;
+
 // ─────────────────────── AppError union ───────────────────
 
-export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError;
+export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError;
 
 /** Render a tagged error as a one-line human-readable string. */
 export const formatError = (e: AppError): string => {
@@ -321,5 +353,17 @@ export const formatError = (e: AppError): string => {
       return `attach failed for codebase ${e.codebase_id} to room ${e.room_id}: ${e.message}`;
     case 'CodebaseInvalidPathError':
       return `invalid codebase path '${e.path}': ${e.message}`;
+    case 'RelayDialFailed':
+      return `relay dial failed for ${e.addr}: ${e.message}`;
+    case 'HolePunchTimeout':
+      return `hole punch timeout for peer ${e.peer} after ${e.elapsedMs}ms`;
+    case 'UPnPMapFailed':
+      return `UPnP port mapping failed: ${e.message}`;
+    case 'BandwidthExceeded':
+      return `bandwidth limit exceeded for peer ${e.peer} in room '${e.room}'`;
+    case 'HealthDegraded':
+      return `peer ${e.peer} health degraded (${e.reason})`;
+    case 'RelayNotConfigured':
+      return `no relays configured in peer.relays — set config.yaml peer.relays to enable /p2p-circuit`;
   }
 };
