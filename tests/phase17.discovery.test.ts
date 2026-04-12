@@ -132,31 +132,24 @@ describe('Phase 17: discovery — DHT wiring (DISC-03) + Pitfall 4', () => {
     );
   });
 
-  it('D7 (Pitfall 4): identify not required for clientMode:true — documented in source', () => {
-    // @libp2p/identify is NOT available as a transitive dep from libp2p@3.2.0
-    // (confirmed Phase 17 Plan 01). The correct mitigation is clientMode:true
-    // which does not require identify to populate the routing table.
-    // This test asserts the documented reasoning is present (not that identify IS wired —
-    // it is explicitly NOT wired because it is unavailable).
+  it('D7 (Pitfall 4): identify not required for DHT clientMode:true — documented in source', () => {
+    // Phase 17 rationale: clientMode:true means DHT queries without serving the routing
+    // table, so identify is not needed for DHT to function.
+    //
+    // Phase 18 update: @libp2p/identify IS now imported because circuitRelayTransport's
+    // RelayDiscovery unconditionally registers '@libp2p/identify' as a serviceDependency
+    // (verified in @libp2p/circuit-relay-v2@4.2.0 dist/src/transport/index.js line 76-82).
+    // The original Phase 17 "no identify import" assertion is superseded by this runtime
+    // requirement. DHT still uses clientMode:true — the Pitfall 4 reasoning stands for DHT;
+    // identify is added solely for circuitRelayTransport.
     assert.ok(
       /clientMode:\s*true/.test(src),
-      'clientMode:true must be present (Pitfall 4 mitigation — identify not required for client mode)',
+      'clientMode:true must be present (Pitfall 4 mitigation — identify not required for DHT client mode)',
     );
     // The source comment must acknowledge Pitfall 4 explicitly.
     assert.ok(
       /Pitfall 4/.test(src),
       'Pitfall 4 (DHT + identify) must be acknowledged in peer-transport.ts comments',
-    );
-    // Confirm @libp2p/identify is NOT in any import statement
-    // (it appears in comments only — an actual import would be a build error).
-    const importLines = src
-      .split('\n')
-      .filter((line) => /^\s*import\s/.test(line))
-      .join('\n');
-    assert.ok(
-      !/@libp2p\/identify/.test(importLines),
-      '@libp2p/identify must NOT be in any import statement — ' +
-        'it is not a transitive dep from libp2p@3.2.0 (Pitfall 4: clientMode:true is the mitigation)',
     );
   });
 });

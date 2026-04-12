@@ -19,6 +19,15 @@ import { noise } from '@libp2p/noise';
 import { yamux } from '@libp2p/yamux';
 import { mdns } from '@libp2p/mdns';
 import { kadDHT } from '@libp2p/kad-dht';
+import { circuitRelayTransport } from '@libp2p/circuit-relay-v2';
+import { dcutr } from '@libp2p/dcutr';
+import { uPnPNAT } from '@libp2p/upnp-nat';
+// @libp2p/identify is required by circuitRelayTransport at runtime — its
+// RelayDiscovery always initialises and registers '@libp2p/identify' as a
+// serviceDependency. Without it createLibp2p throws on capability checks.
+// The Phase 17 decision to omit identify was correct when only tcp/noise/yamux
+// were wired; it becomes mandatory the moment circuitRelayTransport is added.
+import { identify } from '@libp2p/identify';
 import { multiaddr } from '@multiformats/multiaddr';
 import { ResultAsync, okAsync, errAsync } from 'neverthrow';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -71,6 +80,18 @@ export interface TransportConfig {
   readonly dhtEnabled?: boolean;
   /** Path to peers.json for peer:discovery persistence. REQUIRED when mdns is true. */
   readonly peersPath?: string;
+  /**
+   * Known-reliable relay multiaddrs for circuit-relay-v2 client mode.
+   * When non-empty, `/p2p-circuit` is appended to addresses.listen
+   * (Pattern 1, 18-RESEARCH.md). Empty default — no /p2p-circuit listener.
+   */
+  readonly relays?: readonly string[];
+  /**
+   * UPnP port mapping. Default true. Silent no-op on listen_host=127.0.0.1
+   * (Pitfall 2 — UPnP requires non-loopback listen address; the service
+   * catches its own errors internally and will not throw from createLibp2p).
+   */
+  readonly upnp?: boolean;
 }
 
 /**
@@ -211,17 +232,52 @@ export const createNode = (
       // Plan 01). DHT runs in clientMode:true which does not require identify — it queries the
       // routing table passively without advertising itself, so routing-table population from
       // identify is optional for the client-mode use case.
+      //
+      // Phase 18 NET-03: circuit-relay-v2 client + dcutr + UPnP composed into the
+      // existing services block alongside optional DHT (Phase 17). Wire order:
+      // DHT first (conditional), dcutr unconditional (auto-activates on relay
+      // connections — Pitfall 4), uPnPNAT conditional on cfg.upnp (default true,
+      // silent no-op on loopback — Pitfall 2).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const services: Record<string, any> = dhtOn
-        ? { dht: kadDHT({ clientMode: true, protocol: '/wellinformed/kad/1.0.0' }) }
-        : {};
+      const services: Record<string, any> = {
+        ...(dhtOn ? { dht: kadDHT({ clientMode: true, protocol: '/wellinformed/kad/1.0.0' }) } : {}),
+        // identify() is required by circuitRelayTransport — RelayDiscovery always
+        // registers '@libp2p/identify' as a serviceDependency regardless of init opts.
+        // Safe to run unconditionally: it adds the /ipfs/id/1.0.0 protocol handler
+        // and provides peer information exchange, which benefits DHT and dcutr too.
+        identify: identify(),
+        // dcutr() takes no required args — registers as a libp2p service and
+        // hooks the /libp2p/dcutr protocol. Auto-upgrades relay→direct on any
+        // limited connection. No effect when no relay connections exist.
+        dcutr: dcutr(),
+        // uPnPNAT() catches all errors internally (verified in @libp2p/upnp-nat@4.0.15
+        // dist/src/upnp-nat.js — the service wraps mapIpAddresses in try/catch and
+        // calls this.log.error). Enabled by default; set cfg.upnp=false to opt out.
+        // Pitfall 2: UPnP is a no-op on 127.0.0.1 — user must set listen_host:'0.0.0.0'.
+        // autoConfirmAddress:true skips the @libp2p/autonat serviceDependency check —
+        // the UPnP mapping itself is authoritative enough without a second autonat round-trip.
+        ...(cfg.upnp !== false ? { upnpNAT: uPnPNAT({ autoConfirmAddress: true }) } : {}),
+      };
+
+      // Phase 18 NET-03: conditional /p2p-circuit listen. Only add when the user
+      // has configured relays explicitly — adding /p2p-circuit without configured
+      // relays causes the transport to search for ANY relay peer, producing noisy
+      // dial attempts (Anti-Pattern from 18-RESEARCH.md line 331).
+      const listenAddrs: string[] = [`/ip4/${host}/tcp/${cfg.listenPort}`];
+      if (cfg.relays && cfg.relays.length > 0) {
+        listenAddrs.push('/p2p-circuit');
+      }
 
       const node = await createLibp2p({
         privateKey: identity.privateKey,
-        addresses: { listen: [`/ip4/${host}/tcp/${cfg.listenPort}`] },
-        transports: [tcp()],
+        addresses: { listen: listenAddrs },
+        // Phase 18 NET-01/NET-03: circuitRelayTransport() goes in transports[]
+        // (CLIENT — dial via relays). The hop-relay server variant is
+        // explicitly out of scope per CONTEXT.md (deferred to v3).
+        // NET-01 multiplexed streams are preserved via yamux() below.
+        transports: [tcp(), circuitRelayTransport()],
         connectionEncrypters: [noise()],
-        streamMuxers: [yamux()],
+        streamMuxers: [yamux()],  // NET-01 multiplexed streams
         peerDiscovery,
         services,
         // Retry aggressively to match the "persistent connection" contract.
