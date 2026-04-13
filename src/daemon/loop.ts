@@ -38,6 +38,7 @@ import type { Libp2p } from '@libp2p/interface';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../infrastructure/peer-transport.js';
 import { loadPeers } from '../infrastructure/peer-store.js';
 import { buildPatterns } from '../domain/sharing.js';
+import { ensureSessionsRoom, enforceRetention } from '../application/session-ingest.js';
 import {
   createShareSyncRegistry,
   registerShareProtocol,
@@ -133,9 +134,18 @@ let roundRobinIndex = 0;
  * this directly without starting the timer or writing PID files.
  */
 export const runOneTick = (deps: DaemonDeps): ResultAsync<TickResult, AppError> =>
-  deps.rooms
-    .load()
-    .mapErr((e): AppError => e)
+  // Phase 20 — auto-provision sessions room + register claude_sessions source.
+  // Idempotent: rooms.create deduplicates, sources.add deduplicates, mutateSharedRooms deduplicates.
+  ensureSessionsRoom({ rooms: deps.rooms, sources: deps.sources, homePath: deps.homePath })
+    .orElse((e) => {
+      daemonLog(deps.homePath, `ensureSessionsRoom failed: ${formatError(e)}`);
+      return okAsync<void, AppError>(undefined);
+    })
+    .andThen(() =>
+      deps.rooms
+        .load()
+        .mapErr((e): AppError => e),
+    )
     .andThen((registry) => {
       const allRooms = roomIds(registry);
       const picked: string[] = [];
@@ -165,6 +175,33 @@ export const runOneTick = (deps: DaemonDeps): ResultAsync<TickResult, AppError> 
         })
         .orElse((e) => {
           daemonLog(deps.homePath, `share sync error: ${formatError(e)}`);
+          return okAsync<TickResult, AppError>(tickResult);
+        });
+    })
+    .andThen((tickResult) => {
+      // Phase 20 retention pass — prune old session nodes lacking key signals.
+      // Load config.yaml for retention_days; fall back to 30 on error.
+      return loadConfig(join(deps.homePath, 'config.yaml'))
+        .mapErr((e): AppError => e)
+        .andThen((cfg) => {
+          const retentionDays = cfg.sessions?.retention_days ?? 30;
+          return enforceRetention({ graphs: deps.graphs }, retentionDays)
+            .map((dropped) => {
+              if (dropped > 0) {
+                daemonLog(
+                  deps.homePath,
+                  `retention: dropped ${dropped} session nodes older than ${retentionDays} days`,
+                );
+              }
+              return tickResult;
+            })
+            .orElse((e): ResultAsync<TickResult, AppError> => {
+              daemonLog(deps.homePath, `retention error: ${formatError(e)}`);
+              return okAsync<TickResult, AppError>(tickResult);
+            });
+        })
+        .orElse((e): ResultAsync<TickResult, AppError> => {
+          daemonLog(deps.homePath, `retention config error: ${formatError(e)}`);
           return okAsync<TickResult, AppError>(tickResult);
         });
     });

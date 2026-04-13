@@ -146,10 +146,13 @@ test('daemon: runOneTick triggers rooms and writes reports', async () => {
 
     const tick = (await runOneTick(daemonDeps))._unsafeUnwrap();
 
-    // Should have processed one room
-    assert.equal(tick.rooms.length, 1);
-    assert.equal(tick.rooms[0].room, 'homelab');
-    assert.ok(tick.rooms[0].runs[0].items_new >= 2, `expected >= 2 new items, got ${tick.rooms[0].runs[0].items_new}`);
+    // Should have processed homelab (Phase 20: sessions room also auto-provisioned and ticked)
+    assert.ok(tick.rooms.length >= 1, `expected at least 1 room, got ${tick.rooms.length}`);
+    const homelabRun = tick.rooms.find((r) => r.room === 'homelab');
+    assert.ok(homelabRun, 'homelab room must be in tick results');
+    // homelabRun is guaranteed non-null by the assert.ok above
+    const homelabItems = homelabRun!.runs[0].items_new;
+    assert.ok(homelabItems >= 2, `expected >= 2 new items, got ${homelabItems}`);
 
     // Report should have been written
     assert.ok(tick.reports_written.length >= 1, 'should write at least one report');

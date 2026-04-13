@@ -20,6 +20,8 @@ import { httpFetcher, type HttpFetcher } from '../infrastructure/http/fetcher.js
 import { xmlParser, type XmlParserPort } from '../infrastructure/parsers/xml-parser.js';
 import { readabilityExtractor, type HtmlExtractor } from '../infrastructure/parsers/html-extractor.js';
 import { sourceRegistry, type SourceRegistry } from '../infrastructure/sources/registry.js';
+import { loadConfig } from '../infrastructure/config-loader.js';
+import { buildPatterns } from '../domain/sharing.js';
 import type { IngestDeps } from '../application/ingest.js';
 
 export const wellinformedHome = (): string =>
@@ -70,46 +72,56 @@ export interface Runtime {
  * Build the default runtime — opens sqlite, constructs all adapters,
  * hands back everything the CLI commands need. Call once per command
  * invocation.
+ *
+ * Loads config.yaml for secrets patterns (passed to the claude-sessions
+ * source adapter for pre-ingest redaction). loadConfig returns typed
+ * defaults when the file does not exist — it never fails on a missing file.
  */
 export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
   const paths = runtimePaths();
-  return openSqliteVectorIndex({ path: paths.vectors })
+  const cfgPath = join(paths.home, 'config.yaml');
+
+  return loadConfig(cfgPath)
     .mapErr((e): AppError => e)
-    .map((vectors): Runtime => {
-      const graphs = fileGraphRepository(paths.graph);
-      const embedder = xenovaEmbedder({ cacheDir: paths.modelCache });
-      const sources = fileSourcesConfig(paths.sources);
-      const rooms = fileRoomsConfig(paths.rooms);
-      const http = httpFetcher();
-      const xml = xmlParser();
-      const html = readabilityExtractor();
-      const registry = sourceRegistry({
-        http,
-        xml,
-        html,
-        claudeSessions: {
-          homePath: paths.home,
-          patterns: [],
-          scanUserMessages: false,
-          nowMs: () => Date.now(),
-        },
-      });
-      const ingestDeps: IngestDeps = { graphs, vectors, embedder, sources, registry };
-      return {
-        paths,
-        graphs,
-        vectors,
-        embedder,
-        sources,
-        rooms,
-        http,
-        xml,
-        html,
-        registry,
-        ingestDeps,
-        close: () => vectors.close(),
-      };
-    });
+    .andThen((cfg) =>
+      openSqliteVectorIndex({ path: paths.vectors })
+        .mapErr((e): AppError => e)
+        .map((vectors): Runtime => {
+          const graphs = fileGraphRepository(paths.graph);
+          const embedder = xenovaEmbedder({ cacheDir: paths.modelCache });
+          const sources = fileSourcesConfig(paths.sources);
+          const rooms = fileRoomsConfig(paths.rooms);
+          const http = httpFetcher();
+          const xml = xmlParser();
+          const html = readabilityExtractor();
+          const registry = sourceRegistry({
+            http,
+            xml,
+            html,
+            claudeSessions: {
+              homePath: paths.home,
+              patterns: buildPatterns(cfg.security.secrets_patterns),
+              scanUserMessages: cfg.sessions.scan_user_messages,
+              nowMs: () => Date.now(),
+            },
+          });
+          const ingestDeps: IngestDeps = { graphs, vectors, embedder, sources, registry };
+          return {
+            paths,
+            graphs,
+            vectors,
+            embedder,
+            sources,
+            rooms,
+            http,
+            xml,
+            html,
+            registry,
+            ingestDeps,
+            close: () => vectors.close(),
+          };
+        }),
+    );
 };
 
 // Silence strict-linting on the unused errAsync import — kept for
