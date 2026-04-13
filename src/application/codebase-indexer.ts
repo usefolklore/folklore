@@ -55,6 +55,7 @@ export interface IndexReport {
   readonly indexed_files: number;
   readonly skipped_files: number;      // unsupported extensions
   readonly unchanged_files: number;    // incremental reindex only — hash matched
+  readonly parse_errors: number;       // files that failed to parse — logged, not thrown
   readonly node_count: number;
   readonly edge_count: number;
   readonly by_kind: Readonly<Record<string, number>>;
@@ -70,16 +71,40 @@ export interface IndexReport {
  * that are noise for structured code analysis.
  */
 const DEFAULT_EXCLUDE = new Set<string>([
+  // JS/TS
   'node_modules',
   'dist',
-  'vendor',
-  '.git',
-  '.claude',
-  '.claude-flow',
-  '.planning',
   'build',
   'coverage',
   '.next',
+  // Python
+  '.venv',
+  'venv',
+  '__pycache__',
+  '.pytest_cache',
+  '.mypy_cache',
+  '.ruff_cache',
+  'site-packages',
+  // Rust
+  'target',
+  // Go
+  'bin',
+  'pkg',
+  // tooling + vcs
+  'vendor',
+  '.git',
+  '.svn',
+  '.hg',
+  '.claude',
+  '.claude-flow',
+  '.planning',
+  '.idea',
+  '.vscode',
+  '.cache',
+  '.turbo',
+  '.parcel-cache',
+  '.yarn',
+  '.pnpm-store',
 ]);
 
 // ─────────────────────── file walk ───────────────────────
@@ -219,6 +244,8 @@ const runIndex = (
       let indexedFiles = 0;
       let skippedFiles = 0;
       let unchangedFiles = 0;
+      let parseErrors = 0;
+      const parseErrorSamples: string[] = [];
       const fileHashes: string[] = [];
 
       // ── PASS 1: parse every changed file ──────────────────────────────────
@@ -248,8 +275,15 @@ const runIndex = (
 
         const parseRes = parseFile(deps.registry, abs, opts.rootPath, opts.codebaseId, buf);
         if (parseRes.isErr()) {
-          // Bubble up parse errors as hard failures — a malformed file is a blocker.
-          throw new Error(`parseError:${relPath}:${parseRes.error.type}`);
+          // Parse errors are NON-FATAL — tree-sitter grammars don't cover every
+          // language feature in every version (e.g. bleeding-edge TS syntax).
+          // Log + skip + continue so a single unparseable file doesn't abort
+          // an otherwise valid index pass.
+          parseErrors++;
+          if (parseErrorSamples.length < 5) {
+            parseErrorSamples.push(`${relPath} (${parseRes.error.type})`);
+          }
+          continue;
         }
         const { nodes, edges, callsPending } = parseRes.value;
         allNodes.push(...nodes);
@@ -332,6 +366,13 @@ const runIndex = (
       const eRes = await deps.repo.upsertEdges(allEdges);
       if (eRes.isErr()) throw new Error(`edges upsert: ${eRes.error.type}`);
 
+      if (parseErrors > 0) {
+        // Surface a short sample to stderr — indexing continues, user gets the diagnostic
+        process.stderr.write(
+          `wellinformed codebase: ${parseErrors} file(s) skipped due to parse errors (e.g. ${parseErrorSamples.join(', ')})\n`,
+        );
+      }
+
       return {
         codebase_id: opts.codebaseId,
         name: opts.name,
@@ -339,6 +380,7 @@ const runIndex = (
         indexed_files: indexedFiles,
         skipped_files: skippedFiles,
         unchanged_files: unchangedFiles,
+        parse_errors: parseErrors,
         node_count: allNodes.length,
         edge_count: allEdges.length,
         by_kind: byKind,

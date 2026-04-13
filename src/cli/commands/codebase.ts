@@ -92,6 +92,9 @@ const indexSub = async (rest: readonly string[]): Promise<number> => {
     console.log(`  root:            ${r.root_path}`);
     console.log(`  indexed files:   ${r.indexed_files}`);
     console.log(`  skipped files:   ${r.skipped_files}`);
+    if (r.parse_errors > 0) {
+      console.log(`  parse errors:    ${r.parse_errors} (skipped, non-fatal)`);
+    }
     console.log(`  nodes:           ${r.node_count}`);
     console.log(`  edges:           ${r.edge_count}`);
     console.log(`  languages:       ${Object.entries(r.by_language).map(([l, n]) => `${l}:${n}`).join(', ')}`);
@@ -237,6 +240,9 @@ const reindexSub = async (rest: readonly string[]): Promise<number> => {
     console.log(`  changed files:   ${r.indexed_files}`);
     console.log(`  unchanged files: ${r.unchanged_files}`);
     console.log(`  skipped files:   ${r.skipped_files}`);
+    if (r.parse_errors > 0) {
+      console.log(`  parse errors:    ${r.parse_errors} (skipped, non-fatal)`);
+    }
     console.log(`  nodes total:     ${r.node_count}`);
     console.log(`  edges total:     ${r.edge_count}`);
     return 0;
