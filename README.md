@@ -181,29 +181,41 @@ wellinformed daemon status             # check if running
 wellinformed report --room homelab     # see what's new
 ```
 
-## Benchmarks (BEIR methodology, real ONNX embeddings)
+## Benchmarks — full BEIR v1 (reproducible)
+
+Real retrieval quality measured against the canonical BEIR datasets using wellinformed's runtime pipeline (ONNX `all-MiniLM-L6-v2` + sqlite-vec). Numbers are directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
 
 ```
-╔═══════════════════════════════════════════════════════════╗
-║  BEIR/HotPotQA-style — 15 passages, 10 queries           ║
-║  all-MiniLM-L6-v2, measured on every npm test run         ║
-╠═══════════════════════════════════════════════════════════╣
-║  NDCG@10:     96.8%                                       ║
-║  MAP@10:      93.1%                                       ║
-║  Recall@5:   100.0%                                       ║
-║  Recall@10:  100.0%                                       ║
-║  MRR:         1.000  (first result always relevant)        ║
-║  Latency:     3.1ms  p50 (includes ONNX inference)         ║
-╠═══════════════════════════════════════════════════════════╣
-║  multi-hop queries:   95% NDCG, 100% R@5                  ║
-║  comparison queries: 100% NDCG, 100% R@5                  ║
-║  single-hop queries: 100% NDCG, 100% R@5                  ║
-╚═══════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════════╗
+║  BEIR SciFact (test)   — 5,183 corpus, 300 queries            ║
+║  all-MiniLM-L6-v2 + sqlite-vec (wellinformed runtime stack)   ║
+╠═══════════════════════════════════════════════════════════════╣
+║  NDCG@10:   64.82%  (vs BM25 66.5%, ref MiniLM 56-62%)        ║
+║  MAP@10:    59.57%                                            ║
+║  Recall@5:  74.84%                                            ║
+║  Recall@10: 79.53%                                            ║
+║  MRR:        0.604                                            ║
+║  Latency:    p50=2ms  p95=3ms  p99=3ms                        ║
+╠═══════════════════════════════════════════════════════════════╣
+║  BEIR NFCorpus (test) — 3,633 corpus, 323 queries (biomed)    ║
+╠═══════════════════════════════════════════════════════════════╣
+║  NDCG@10:   31.35%  (vs BM25 32.5%, ref MiniLM 28-32%)        ║
+║  MAP@10:    22.60%                                            ║
+║  Latency:    p50=1ms  p95=2ms  p99=2ms                        ║
+╚═══════════════════════════════════════════════════════════════╝
 ```
 
-Reproduce: `npm test` — runs 243 tests including the ONNX benchmark, full P2P suite (peer/share/federated/networking), and the structured codebase indexing suite. See [`.planning/BENCH-v2.md`](.planning/BENCH-v2.md) for the full v2.0 benchmark (CLI latency, warm p99, indexing throughput, 10-peer libp2p mesh) and [`.planning/BENCH-COMPETITORS.md`](.planning/BENCH-COMPETITORS.md) for the verified competitive landscape (mem0, Graphiti/Zep, Letta, Mastra, Engram, cognee, memobase, Honcho, MemPalace, mcp-memory-service, Aider, Continue, SCIP, LanceDB).
+**Both results match the published `all-MiniLM-L6-v2` ceiling on the BEIR leaderboard** — we extract the full retrieval quality the model is capable of. Bigger transformers (BGE-Large, E5-Large) beat us by 5-10 NDCG points at 3-5× memory / latency cost; that's a deliberate tradeoff for the local-first use case.
 
-**Competitive landscape disclosure:** The AI memory benchmark space (LOCOMO in particular) is actively disputed between mem0 and Zep, with three different LOCOMO numbers for the same system. wellinformed's benchmark is a mini-BEIR harness (15 passages × 10 queries) — small sample, but embedded in `npm test` and reproducible. We do not claim SOTA on a shared leaderboard.
+Reproduce:
+```bash
+node scripts/bench-beir.mjs scifact    # 5.2K × 300, ~4 min
+node scripts/bench-beir.mjs nfcorpus   # 3.6K × 323, ~3 min
+```
+
+See [`.planning/BENCH-v2.md`](.planning/BENCH-v2.md) for the full v2.0 benchmark (CLI latency, warm p99, indexing throughput, 10-peer libp2p mesh) and [`.planning/BENCH-COMPETITORS.md`](.planning/BENCH-COMPETITORS.md) for the verified competitive landscape (mem0, Graphiti/Zep, Letta, Mastra, Engram, cognee, memobase, Honcho, MemPalace, mcp-memory-service).
+
+**Honest disclosure:** A prior version of this README cited a 96.8% NDCG@10 from a 15-passage × 10-query mini-harness. That sample was too small to produce leaderboard-comparable numbers. The BEIR SciFact / NFCorpus results above are the real numbers on full-size datasets, and they match the published baseline for our embedding model. We do not claim SOTA.
 
 ## Real numbers
 
