@@ -571,6 +571,54 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     },
   );
 
+  // ─────────────── recent_sessions ─────────
+  // Phase 20 — 16th MCP tool. Returns structured rollups of recent Claude
+  // Code sessions from the local `sessions` room so the agent can recover
+  // context across restarts. The `sessions` room is NEVER shared over
+  // libp2p — session data stays local.
+
+  server.registerTool(
+    'recent_sessions',
+    {
+      description:
+        'Return structured rollups of recent Claude Code sessions from the local `sessions` room. ' +
+        'Each rollup contains {id, started_at, duration_ms, tool_calls, files_touched, ' +
+        'final_assistant_message, git_branch, node_count}. ' +
+        'Use this tool at the start of a new session to recover what the previous session was doing. ' +
+        'The `sessions` room is NEVER shared over libp2p — session data stays local.',
+      inputSchema: {
+        hours: z
+          .number()
+          .int()
+          .min(1)
+          .max(168)
+          .default(24)
+          .describe('Look-back window in hours (1-168, default 24)'),
+        project: z
+          .string()
+          .optional()
+          .describe('Filter sessions whose cwd contains this substring'),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .default(10)
+          .describe('Maximum number of sessions to return (default 10)'),
+      },
+    },
+    async ({ hours, project, limit }) => {
+      const graphRes = await runtime.graphs.load();
+      if (graphRes.isErr()) return errText(graphRes.error);
+      const { nodesInRoom: nodesInRoomFn } = await import('../domain/graph.js');
+      const { rollupSessions } = await import('../cli/commands/recent-sessions.js');
+      const nodes = nodesInRoomFn(graphRes.value, 'sessions');
+      const cutoffMs = Date.now() - hours * 60 * 60 * 1000;
+      const rollups = rollupSessions(nodes, cutoffMs, project).slice(0, limit);
+      return okJson({ count: rollups.length, sessions: rollups });
+    },
+  );
+
   return server;
 };
 

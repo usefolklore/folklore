@@ -32,6 +32,7 @@ import { peer } from './commands/peer.js';
 import { share } from './commands/share.js';
 import { unshare } from './commands/unshare.js';
 import { codebase } from './commands/codebase.js';
+import { recentSessions } from './commands/recent-sessions.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -64,6 +65,7 @@ const commands: Record<string, CommandFn> = {
   share,
   unshare,
   codebase,
+  'recent-sessions': recentSessions,
 };
 
 const futureCommands = new Set<string>([]);
