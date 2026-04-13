@@ -20,38 +20,55 @@ import { spawnSync } from 'node:child_process';
 import { xenovaEmbedder } from '../dist/infrastructure/embedders.js';
 import { openSqliteVectorIndex } from '../dist/infrastructure/vector-index.js';
 
-const DATASET = process.argv[2] ?? 'scifact';
-const BATCH_SIZE = 32;
+// Usage: node bench-beir.mjs <dataset> [--model <hf-id>] [--dim <n>] [--doc-prefix 'str'] [--query-prefix 'str']
+const args = process.argv.slice(2);
+const DATASET = args[0] ?? 'scifact';
+const getArg = (flag) => {
+  const i = args.indexOf(flag);
+  return i >= 0 ? args[i + 1] : undefined;
+};
+const MODEL = getArg('--model') ?? 'Xenova/all-MiniLM-L6-v2';
+const DIM = parseInt(getArg('--dim') ?? '384', 10);
+const DOC_PREFIX = getArg('--doc-prefix') ?? '';
+const QUERY_PREFIX = getArg('--query-prefix') ?? '';
+const BATCH_SIZE = parseInt(getArg('--batch') ?? '32', 10);
 const K = 10;
 
 const CACHE_ROOT = join(homedir(), '.wellinformed', 'bench');
-const CACHE_DIR = join(CACHE_ROOT, DATASET);
+// Cache dir includes model slug so different runs don't collide
+const MODEL_SLUG = MODEL.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+const CACHE_DIR = join(CACHE_ROOT, `${DATASET}__${MODEL_SLUG}`);
 const DB_PATH = join(CACHE_DIR, 'vectors.db');
-const CORPUS_JSONL = join(CACHE_DIR, DATASET, 'corpus.jsonl');
-const QUERIES_JSONL = join(CACHE_DIR, DATASET, 'queries.jsonl');
-const QRELS_TSV = join(CACHE_DIR, DATASET, 'qrels', 'test.tsv');
+const DATASET_DIR = join(CACHE_ROOT, DATASET);  // raw data shared across model runs
+const CORPUS_JSONL = join(DATASET_DIR, DATASET, 'corpus.jsonl');
+const QUERIES_JSONL = join(DATASET_DIR, DATASET, 'queries.jsonl');
+const QRELS_TSV = join(DATASET_DIR, DATASET, 'qrels', 'test.tsv');
 const DATASET_URL = `https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/${DATASET}.zip`;
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(` wellinformed — BEIR ${DATASET.toUpperCase()} Benchmark`);
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(` Dataset: BeIR/${DATASET} (BEIR v1, test split)`);
-console.log(` Model:   Xenova/all-MiniLM-L6-v2 (384 dim)`);
+console.log(` Model:   ${MODEL} (${DIM} dim)`);
+if (DOC_PREFIX || QUERY_PREFIX) {
+  console.log(` Prefixes: doc="${DOC_PREFIX}"  query="${QUERY_PREFIX}"`);
+}
 console.log(` Cache:   ${CACHE_DIR}`);
 console.log('');
 
-// ─── step 1: download + extract dataset ──────────────────────────
+// ─── step 1: download + extract dataset (shared across models) ──
 mkdirSync(CACHE_DIR, { recursive: true });
+mkdirSync(DATASET_DIR, { recursive: true });
 if (!existsSync(CORPUS_JSONL)) {
   console.log(`[1/5] Downloading ${DATASET}.zip...`);
-  const zipPath = join(CACHE_DIR, `${DATASET}.zip`);
+  const zipPath = join(DATASET_DIR, `${DATASET}.zip`);
   const r = spawnSync('curl', ['-fsSL', '-o', zipPath, DATASET_URL], { stdio: 'inherit' });
   if (r.status !== 0) {
     console.error(`[fail] download failed from ${DATASET_URL}`);
     process.exit(1);
   }
   console.log('[1/5] Extracting...');
-  const unzip = spawnSync('unzip', ['-oq', zipPath, '-d', CACHE_DIR], { stdio: 'inherit' });
+  const unzip = spawnSync('unzip', ['-oq', zipPath, '-d', DATASET_DIR], { stdio: 'inherit' });
   if (unzip.status !== 0) {
     console.error('[fail] unzip failed');
     process.exit(1);
@@ -75,7 +92,8 @@ const loadJsonl = async (path) => {
 const corpusRaw = await loadJsonl(CORPUS_JSONL);
 const corpus = corpusRaw.map((r) => ({
   id: String(r._id),
-  text: (r.title ? r.title + '. ' : '') + (r.text ?? ''),
+  // Canonical BEIR: title + text. Prepend DOC_PREFIX for models that require it (nomic uses "search_document: ")
+  text: DOC_PREFIX + (r.title ? r.title + '. ' : '') + (r.text ?? ''),
 }));
 
 const queriesRaw = await loadJsonl(QUERIES_JSONL);
@@ -94,7 +112,7 @@ for (const line of qrelsText.split('\n').slice(1)) {
 const testQids = new Set(qrels.keys());
 const queries = queriesRaw
   .filter((q) => testQids.has(String(q._id)))
-  .map((q) => ({ id: String(q._id), text: q.text }));
+  .map((q) => ({ id: String(q._id), text: QUERY_PREFIX + q.text }));
 
 console.log(`  corpus:  ${corpus.length.toLocaleString()} passages`);
 console.log(`  queries: ${queries.length.toLocaleString()} (test split)`);
@@ -107,8 +125,8 @@ if (existsSync(DB_PATH)) {
   spawnSync('rm', ['-f', DB_PATH, DB_PATH + '-shm', DB_PATH + '-wal']);
 }
 
-const embedder = xenovaEmbedder({});
-const idxRes = await openSqliteVectorIndex({ path: DB_PATH, dim: 384 });
+const embedder = xenovaEmbedder({ model: MODEL, dim: DIM });
+const idxRes = await openSqliteVectorIndex({ path: DB_PATH, dim: DIM });
 if (idxRes.isErr()) {
   console.error('vector index open failed:', idxRes.error);
   process.exit(1);
@@ -234,7 +252,7 @@ console.log(` BEIR ${DATASET.toUpperCase()} — Final Results`);
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(` Corpus:    ${corpus.length.toLocaleString()} passages`);
 console.log(` Queries:   ${queries.length.toLocaleString()} (test split)`);
-console.log(` Model:     Xenova/all-MiniLM-L6-v2 (384 dim, ONNX)`);
+console.log(` Model:     ${MODEL} (${DIM} dim, ONNX)`);
 console.log(` Index:     sqlite-vec (vec0 virtual table)`);
 console.log('');
 console.log(' Retrieval:');
@@ -258,8 +276,10 @@ index.close();
 const result = {
   dataset: `BeIR/${DATASET}`,
   split: 'test',
-  model: 'Xenova/all-MiniLM-L6-v2',
-  dim: 384,
+  model: MODEL,
+  dim: DIM,
+  doc_prefix: DOC_PREFIX,
+  query_prefix: QUERY_PREFIX,
   corpus_size: corpus.length,
   query_count: queries.length,
   metrics: { ndcg_at_10: ndcg10, map_at_10: map10, recall_at_5: r5, recall_at_10: r10, mrr },
