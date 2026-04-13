@@ -260,7 +260,14 @@ export const parseFile = (
   const kindMap = kindMapFor(lang);
 
   // 2) Walk the AST
-  const walk = (node: TsSyntaxNode, parentId: string): void => {
+  // parentSyntaxNode is tracked so arrow_function nodes can look up their
+  // enclosing variable_declarator name (`const foo = () => {}` should emit
+  // a function named `foo`, not `<anonymous>`).
+  const walk = (
+    node: TsSyntaxNode,
+    parentId: string,
+    parentSyntaxNode: TsSyntaxNode | null,
+  ): void => {
     const mapped: CodeNodeKind | undefined = kindMap[node.type];
 
     // Capture call sites regardless of whether the surrounding node was mapped.
@@ -287,7 +294,14 @@ export const parseFile = (
     }
 
     if (mapped) {
-      const nameNode = node.childForFieldName('name');
+      let nameNode = node.childForFieldName('name');
+      // Arrow functions carry no name field — look up the enclosing
+      // variable_declarator ('const foo = () => {}') or pair (Python dict lambdas).
+      // Without this, all arrow functions become `<anonymous>` which breaks
+      // `codebase search createNode` on files that export arrow functions.
+      if (!nameNode && node.type === 'arrow_function' && parentSyntaxNode?.type === 'variable_declarator') {
+        nameNode = parentSyntaxNode.childForFieldName('name') ?? null;
+      }
       const name = nameNode?.text ?? '<anonymous>';
       const lineNum = node.startPosition.row + 1;
       const nodeId = computeNodeId(codebaseId, relPath, mapped, name, lineNum);
@@ -370,15 +384,15 @@ export const parseFile = (
 
       // Recurse into the body of class/function nodes so methods + nested calls
       // know their parent
-      for (const child of node.children) walk(child, nodeId);
+      for (const child of node.children) walk(child, nodeId, node);
       return;
     }
 
     // Unmapped node — recurse with same parentId
-    for (const child of node.children) walk(child, parentId);
+    for (const child of node.children) walk(child, parentId, node);
   };
 
-  walk(tree.rootNode, fileNodeId);
+  walk(tree.rootNode, fileNodeId, null);
 
   return ok({ nodes, edges, callsPending });
 };
