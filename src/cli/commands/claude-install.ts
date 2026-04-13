@@ -23,22 +23,55 @@ import { join } from 'node:path';
 const HOOK_SCRIPT_NAME = 'wellinformed-hook.sh';
 
 const HOOK_SCRIPT = `#!/bin/sh
-# wellinformed PreToolUse hook — reminds Claude that the knowledge graph exists.
-# Fires before Glob, Grep, Read. If graph.json is present, inject a context hint.
+# wellinformed PreToolUse + SessionStart hook.
+# Fires before Glob|Grep|Read (legacy hint) and on SessionStart (Phase 20 — recent session summary).
 GRAPH="\${WELLINFORMED_HOME:-$HOME/.wellinformed}/graph.json"
+
+# ── SessionStart branch (Phase 20) ──────────────────────────────────────────
+if [ "\${CLAUDE_HOOK_EVENT:-}" = "SessionStart" ]; then
+  if command -v wellinformed >/dev/null 2>&1; then
+    RECENT=$(wellinformed recent-sessions --hours 24 --limit 1 --json 2>/dev/null || echo '{"count":0,"sessions":[]}')
+    COUNT=$(printf '%s' "$RECENT" | grep -c '"id":' 2>/dev/null || echo 0)
+    if [ "$COUNT" -gt 0 ]; then
+      SID=$(printf '%s' "$RECENT" | grep -m1 '"id":' | sed 's/.*"id": *"\\([^"]*\\)".*/\\1/')
+      STARTED=$(printf '%s' "$RECENT" | grep -m1 '"started_at":' | sed 's/.*"started_at": *"\\([^"]*\\)".*/\\1/')
+      FINAL=$(printf '%s' "$RECENT" | grep -m1 '"final_assistant_message":' | sed 's/.*"final_assistant_message": *"\\([^"]*\\)".*/\\1/')
+      BRANCH=$(printf '%s' "$RECENT" | grep -m1 '"git_branch":' | sed 's/.*"git_branch": *"\\([^"]*\\)".*/\\1/')
+      MSG="wellinformed: Previous session $SID (started $STARTED, branch $BRANCH). Last assistant: \${FINAL:-<none>}. Call the recent_sessions MCP tool for the full rollup."
+      printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}\\n' "$MSG"
+    fi
+  fi
+  exit 0
+fi
+
+# ── Legacy PreToolUse branch — unchanged output ──────────────────────────────
 if [ -f "$GRAPH" ]; then
   NODES=$(grep -c '"id"' "$GRAPH" 2>/dev/null || echo 0)
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"wellinformed: Knowledge graph exists ('"$NODES"' nodes). Before searching raw files, consider using the wellinformed MCP tools: search (semantic k-NN), ask (search + context assembly), get_node (lookup by ID), get_neighbors (graph traversal). These return your indexed research + codebase + external sources in one query."}}'
 fi
 `;
 
-const HOOK_CONFIG = {
+// PreToolUse hook config — fires before Glob, Grep, Read.
+// Sets CLAUDE_HOOK_EVENT so the script takes the legacy branch.
+const HOOK_CONFIG_PRE_TOOL_USE = {
   matcher: 'Glob|Grep|Read',
   hooks: [
     {
       type: 'command',
-      command: `sh -c 'exec sh "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/${HOOK_SCRIPT_NAME}"'`,
+      command: `sh -c 'CLAUDE_HOOK_EVENT=PreToolUse exec sh "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/${HOOK_SCRIPT_NAME}"'`,
       timeout: 3000,
+    },
+  ],
+};
+
+// SessionStart hook config — fires when Claude Code starts a new session.
+// Sets CLAUDE_HOOK_EVENT=SessionStart so the script takes the Phase 20 branch.
+const HOOK_CONFIG_SESSION_START = {
+  hooks: [
+    {
+      type: 'command',
+      command: `sh -c 'CLAUDE_HOOK_EVENT=SessionStart exec sh "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/${HOOK_SCRIPT_NAME}"'`,
+      timeout: 5000,
     },
   ],
 };
@@ -81,14 +114,23 @@ const install = (projectDir: string): number => {
   }
 
   const hooks = (settings.hooks ?? {}) as Record<string, unknown[]>;
-  const preToolUse = Array.isArray(hooks.PreToolUse) ? hooks.PreToolUse : [];
 
-  // Remove any existing wellinformed hook
-  const filtered = preToolUse.filter(
+  // PreToolUse — idempotent: filter by HOOK_SCRIPT_NAME then re-append
+  const preToolUse = Array.isArray(hooks.PreToolUse) ? hooks.PreToolUse : [];
+  const preFiltered = preToolUse.filter(
     (h) => !JSON.stringify(h).includes(HOOK_SCRIPT_NAME),
   );
-  filtered.push(HOOK_CONFIG);
-  hooks.PreToolUse = filtered;
+  preFiltered.push(HOOK_CONFIG_PRE_TOOL_USE);
+  hooks.PreToolUse = preFiltered;
+
+  // SessionStart — Phase 20 — same idempotency discipline
+  const sessionStart = Array.isArray(hooks.SessionStart) ? hooks.SessionStart : [];
+  const ssFiltered = sessionStart.filter(
+    (h) => !JSON.stringify(h).includes(HOOK_SCRIPT_NAME),
+  );
+  ssFiltered.push(HOOK_CONFIG_SESSION_START);
+  hooks.SessionStart = ssFiltered;
+
   settings.hooks = hooks;
   writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
   console.log(`  updated ${settingsPath} (PreToolUse hook added)`);
@@ -132,15 +174,25 @@ const uninstall = (projectDir: string): number => {
     console.log(`  removed ${hookPath}`);
   }
 
-  // 2. Remove from settings.json
+  // 2. Remove from settings.json (both PreToolUse and SessionStart — Phase 20 symmetry)
   if (existsSync(settingsPath)) {
     try {
       const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
       const hooks = settings.hooks ?? {};
+      let changed = false;
       if (Array.isArray(hooks.PreToolUse)) {
         hooks.PreToolUse = hooks.PreToolUse.filter(
           (h: unknown) => !JSON.stringify(h).includes(HOOK_SCRIPT_NAME),
         );
+        changed = true;
+      }
+      if (Array.isArray(hooks.SessionStart)) {
+        hooks.SessionStart = hooks.SessionStart.filter(
+          (h: unknown) => !JSON.stringify(h).includes(HOOK_SCRIPT_NAME),
+        );
+        changed = true;
+      }
+      if (changed) {
         settings.hooks = hooks;
         writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
         console.log(`  updated ${settingsPath} (hook removed)`);

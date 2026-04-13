@@ -13,7 +13,7 @@ import { nodesInRoom } from '../../domain/graph.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
 import { fileGraphRepository } from '../../infrastructure/graph-repository.js';
 import { runtimePaths, wellinformedHome } from '../runtime.js';
-import { mutateSharedRooms, addSharedRoom } from '../../infrastructure/share-store.js';
+import { mutateSharedRooms, addSharedRoom, loadSharedRooms } from '../../infrastructure/share-store.js';
 import { loadYDoc, saveYDoc } from '../../infrastructure/ydoc-store.js';
 import { syncNodeIntoYDoc } from '../../infrastructure/share-sync.js';
 
@@ -114,6 +114,29 @@ const roomCmd = async (rest: readonly string[]): Promise<number> => {
   if (!roomId) {
     console.error('share room: missing <name>. usage: wellinformed share room <name>');
     return 1;
+  }
+
+  // Phase 20 — Defence-in-depth: hard-refuse the `sessions` room.
+  // Check 1: hardcoded literal — catches the case where shared-rooms.json
+  //   is absent, corrupt, or the flag was somehow stripped.
+  if (roomId === 'sessions') {
+    console.error(
+      `share room 'sessions': refused — the sessions room contains personal Claude Code transcripts and is marked non-shareable. Session data must never cross libp2p.`,
+    );
+    return 1;
+  }
+
+  // Check 2: persisted shareable flag — catches any non-shareable room
+  //   (not just `sessions`) that was explicitly flagged in share-store.
+  const existingSharedRes = await loadSharedRooms(sharedRoomsPath());
+  if (existingSharedRes.isOk()) {
+    const existing = existingSharedRes.value.rooms.find((r) => r.name === roomId);
+    if (existing && existing.shareable === false) {
+      console.error(
+        `share room '${roomId}': refused — room is marked non-shareable (shared-rooms.json).`,
+      );
+      return 1;
+    }
   }
 
   const configResult = await loadConfig(configPath());
