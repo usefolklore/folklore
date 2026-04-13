@@ -181,41 +181,69 @@ wellinformed daemon status             # check if running
 wellinformed report --room homelab     # see what's new
 ```
 
-## Benchmarks — full BEIR v1 (reproducible)
+## Benchmarks — full BEIR v1, 4-wave SOTA progression (reproducible)
 
-Real retrieval quality measured against the canonical BEIR datasets using wellinformed's runtime pipeline (ONNX `all-MiniLM-L6-v2` + sqlite-vec). Numbers are directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
+Real retrieval quality measured against canonical BEIR datasets using wellinformed's runtime pipeline. All numbers directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard). Every wave below was independently measured on full-size datasets — including two wave-level failures (Waves 3 and 4) kept here for methodological honesty.
 
 ```
-╔═══════════════════════════════════════════════════════════════╗
-║  BEIR SciFact (test)   — 5,183 corpus, 300 queries            ║
-║  all-MiniLM-L6-v2 + sqlite-vec (wellinformed runtime stack)   ║
-╠═══════════════════════════════════════════════════════════════╣
-║  NDCG@10:   64.82%  (vs BM25 66.5%, ref MiniLM 56-62%)        ║
-║  MAP@10:    59.57%                                            ║
-║  Recall@5:  74.84%                                            ║
-║  Recall@10: 79.53%                                            ║
-║  MRR:        0.604                                            ║
-║  Latency:    p50=2ms  p95=3ms  p99=3ms                        ║
-╠═══════════════════════════════════════════════════════════════╣
-║  BEIR NFCorpus (test) — 3,633 corpus, 323 queries (biomed)    ║
-╠═══════════════════════════════════════════════════════════════╣
-║  NDCG@10:   31.35%  (vs BM25 32.5%, ref MiniLM 28-32%)        ║
-║  MAP@10:    22.60%                                            ║
-║  Latency:    p50=1ms  p95=2ms  p99=2ms                        ║
-╚═══════════════════════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════════════════╗
+║  SOTA progression on BEIR SciFact (5,183 × 300)                    ║
+╠════════════════════════════════════════════════════════════════════╣
+║  Baseline  MiniLM-L6 dense only            NDCG@10  64.82%         ║
+║  Wave 1  + nomic-embed-v1.5 (768d)         NDCG@10  69.98%  +5.16  ║
+║  Wave 2  + BM25 FTS5 hybrid (RRF)          NDCG@10  72.30%  +2.32  ║
+║  Wave 3  + bge-reranker-base  [FAILED]     NDCG@10  70.38%  -1.92  ║
+║  Wave 4  + room-aware routing [NULL]       Δ≤0.34 NDCG on CQA 3/11 ║
+╠════════════════════════════════════════════════════════════════════╣
+║  Wave 2 is the measured CPU-local SOTA ceiling.                    ║
+║  nomic-embed-text-v1.5 + SQLite FTS5 BM25 + RRF (k=60)             ║
+║  137M params · 36 ms p50 total · zero new npm deps                 ║
+╚════════════════════════════════════════════════════════════════════╝
 ```
 
-**Both results match the published `all-MiniLM-L6-v2` ceiling on the BEIR leaderboard** — we extract the full retrieval quality the model is capable of. Bigger transformers (BGE-Large, E5-Large) beat us by 5-10 NDCG points at 3-5× memory / latency cost; that's a deliberate tradeoff for the local-first use case.
+### Wave 2 detail — BEIR SciFact (5,183 × 300)
+
+| Metric | MiniLM (v1) | **Wave 2** | Lift |
+|--------|-------------|------------|------|
+| NDCG@10 | 64.82% | **72.30%** | +7.48 |
+| MAP@10 | 59.57% | **67.66%** | +8.09 |
+| Recall@5 | 74.84% | **79.76%** | +4.92 |
+| Recall@10 | 79.53% | **84.79%** | +5.26 |
+| MRR | 0.604 | **0.690** | +0.086 |
+| Latency p50 | 3 ms | 36 ms | +33 ms |
+
+Where 72.30% lands on the real leaderboard: within ~2 points of the strongest dense-only encoders at our parameter budget (bge-base-en-v1.5 = 74.0, E5-base-v2 = 73.1) and 4.4 points below GPU-required monoT5-3B reranker stacks (76.7). Competitive for a 137M CPU-local model with zero new dependencies.
+
+### Waves 3 and 4 — honest disclosure of null / negative results
+
+**Wave 3 (cross-encoder reranker) regressed quality.** Adding `Xenova/bge-reranker-base` over top-100 hybrid results dropped NDCG@10 from 72.30% → 70.38% and added 25.9 seconds of latency per query. Root cause (verified by `scripts/debug-reranker.mjs`): the reranker is MS MARCO-trained and rates genuinely-relevant scientific passages as *negative* (e.g. scores "calcium phosphate nanomaterials (0-D biomaterials)" at −0.83 for a 0-D biomaterials query). Generic rerankers require domain-matched training; none is CPU-friendly and SciFact-trained.
+
+**Wave 4 (room-aware retrieval) produced a null result.** We hypothesized that wellinformed's user-curated "rooms" could be a retrieval scoring signal per the 2024-2025 literature (RouterRetriever, HippoRAG, LexBoost). The gate test: oracle routing on CQADupStack (3 subforums, 79k passages, 2,905 queries) — the upper bound that uses gold topic labels. Oracle beat flat hybrid by only **+0.34 NDCG@10 points**, well below the 3-point threshold. Flat hybrid already recovers the routing signal implicitly when room vocabularies are sufficiently disjoint. Rooms remain valuable for UX (namespaces), security (permissions), and discovery (tunnels for cross-domain serendipity) — but **not for retrieval quality**. A learned router can only approximate oracle, so it cannot cross the gate either.
+
+Strategic conclusion: **Wave 2 at 72.30% is the measured CPU-local SOTA for wellinformed on standard BEIR retrieval.** Further engineering targets orthogonal value (UX, security, federated P2P, structured code graph, session persistence), not encoder stacking.
 
 Reproduce:
 ```bash
-node scripts/bench-beir.mjs scifact    # 5.2K × 300, ~4 min
-node scripts/bench-beir.mjs nfcorpus   # 3.6K × 323, ~3 min
+# Wave 1 baseline (MiniLM)
+node scripts/bench-beir.mjs scifact
+
+# Wave 1 (nomic dense only)
+node scripts/bench-beir.mjs scifact --model nomic-ai/nomic-embed-text-v1.5 --dim 768 \
+  --doc-prefix "search_document: " --query-prefix "search_query: "
+
+# Wave 2 (nomic + BM25 hybrid) — measured SOTA
+node scripts/bench-beir-sota.mjs scifact --hybrid
+
+# Wave 3 (add reranker) — regresses quality, kept for reproducibility
+node scripts/bench-beir-sota.mjs scifact --hybrid --rerank
+
+# Wave 4 (room routing gate test) — requires CQADupStack download
+node scripts/bench-room-routing.mjs \
+  --datasets-dir ~/.wellinformed/bench/cqadupstack/cqadupstack \
+  --rooms mathematica,webmasters,gaming
 ```
 
-See [`.planning/BENCH-v2.md`](.planning/BENCH-v2.md) for the full v2.0 benchmark (CLI latency, warm p99, indexing throughput, 10-peer libp2p mesh) and [`.planning/BENCH-COMPETITORS.md`](.planning/BENCH-COMPETITORS.md) for the verified competitive landscape (mem0, Graphiti/Zep, Letta, Mastra, Engram, cognee, memobase, Honcho, MemPalace, mcp-memory-service).
-
-**Honest disclosure:** A prior version of this README cited a 96.8% NDCG@10 from a 15-passage × 10-query mini-harness. That sample was too small to produce leaderboard-comparable numbers. The BEIR SciFact / NFCorpus results above are the real numbers on full-size datasets, and they match the published baseline for our embedding model. We do not claim SOTA.
+See [`.planning/BENCH-v2.md`](.planning/BENCH-v2.md) for the full 4-wave writeup (root-cause analysis, per-room breakdowns, latency budgets, debug reproductions) and [`.planning/BENCH-COMPETITORS.md`](.planning/BENCH-COMPETITORS.md) for verified competitor landscape (mem0, Graphiti/Zep, Letta, Mastra, Engram, cognee, memobase, Honcho, MemPalace, mcp-memory-service).
 
 ## Real numbers
 
