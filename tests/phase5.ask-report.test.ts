@@ -67,7 +67,12 @@ test('phase 5: report generation + search from seeded graph', async () => {
     const http = httpFetcher();
     const xml = xmlParser();
     const html = readabilityExtractor();
-    const reg = sourceRegistry({ http, xml, html });
+    const reg = sourceRegistry({
+      http,
+      xml,
+      html,
+      claudeSessions: { homePath: '/tmp', patterns: [], scanUserMessages: false, nowMs: () => Date.now() },
+    });
     const ingestDeps: IngestDeps = { graphs, vectors, embedder, sources, registry: reg };
 
     // Seed source + trigger

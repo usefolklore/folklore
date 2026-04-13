@@ -43,7 +43,8 @@ export type SourceKind =
   | 'image_metadata'
   | 'image_ocr'
   | 'audio_transcript'
-  | 'pdf_text';
+  | 'pdf_text'
+  | 'claude_sessions';
 
 /**
  * One registered source in the user's sources.json. The shape of

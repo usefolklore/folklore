@@ -188,7 +188,12 @@ test('MCP: room_create + room_list tools work via in-memory transport', async ()
     const http = httpFetcher();
     const xml = xmlParser();
     const html = readabilityExtractor();
-    const registry = sourceRegistry({ http, xml, html });
+    const registry = sourceRegistry({
+      http,
+      xml,
+      html,
+      claudeSessions: { homePath: '/tmp', patterns: [], scanUserMessages: false, nowMs: () => Date.now() },
+    });
     const ingestDeps: IngestDeps = { graphs, vectors, embedder, sources, registry };
 
     const runtime: Runtime = {

@@ -34,11 +34,16 @@ import { npmTrendingSource } from './npm-trending.js';
 import { twitterSearchSource } from './twitter-search.js';
 import { youtubeTranscriptSource } from './youtube-transcript.js';
 import { podcastRssSource } from './podcast-rss.js';
+import { claudeSessionsSource, type ClaudeSessionsDeps } from './claude-sessions.js';
 
 export interface SourceRegistryDeps {
   readonly http: HttpFetcher;
   readonly xml: XmlParserPort;
   readonly html: HtmlExtractor;
+  /** Phase 20 — session adapter deps. Required even for projects that never use
+   *  claude_sessions (stub values are fine — the adapter never fetches unless a
+   *  descriptor with kind 'claude_sessions' is built). */
+  readonly claudeSessions: ClaudeSessionsDeps;
 }
 
 /** Known source kinds and their adapter factories. */
@@ -90,6 +95,8 @@ export const sourceRegistry = (deps: SourceRegistryDeps): SourceRegistry => {
     image_ocr: stubAdapter,
     audio_transcript: stubAdapter,
     pdf_text: stubAdapter,
+    // Phase 20 — Claude session transcript ingestion
+    claude_sessions: claudeSessionsSource(deps.claudeSessions),
   };
 
   const build = (descriptor: SourceDescriptor): Result<Source, GraphError> => {

@@ -83,7 +83,17 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
       const http = httpFetcher();
       const xml = xmlParser();
       const html = readabilityExtractor();
-      const registry = sourceRegistry({ http, xml, html });
+      const registry = sourceRegistry({
+        http,
+        xml,
+        html,
+        claudeSessions: {
+          homePath: paths.home,
+          patterns: [],
+          scanUserMessages: false,
+          nowMs: () => Date.now(),
+        },
+      });
       const ingestDeps: IngestDeps = { graphs, vectors, embedder, sources, registry };
       return {
         paths,

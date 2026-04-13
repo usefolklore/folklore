@@ -82,7 +82,12 @@ test('phase 2: generic_rss ingest — fetch, chunk, index, dedup, update', async
     const http = httpFetcher();
     const xml = xmlParser();
     const html = readabilityExtractor();
-    const registry = sourceRegistry({ http, xml, html });
+    const registry = sourceRegistry({
+      http,
+      xml,
+      html,
+      claudeSessions: { homePath: '/tmp', patterns: [], scanUserMessages: false, nowMs: () => Date.now() },
+    });
 
     const deps: IngestDeps = { graphs, vectors, embedder, sources, registry };
 

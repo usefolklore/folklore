@@ -105,7 +105,12 @@ test('daemon: runOneTick triggers rooms and writes reports', async () => {
     const http = httpFetcher();
     const xml = xmlParser();
     const html = readabilityExtractor();
-    const reg = sourceRegistry({ http, xml, html });
+    const reg = sourceRegistry({
+      http,
+      xml,
+      html,
+      claudeSessions: { homePath: '/tmp', patterns: [], scanUserMessages: false, nowMs: () => Date.now() },
+    });
     const ingestDeps: IngestDeps = { graphs, vectors, embedder, sources, registry: reg };
 
     // Create a room + source
