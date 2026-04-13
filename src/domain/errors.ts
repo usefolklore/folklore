@@ -261,9 +261,41 @@ export const NetError = {
   relayNotConfigured: (): NetError                                 => ({ type: 'RelayNotConfigured' }),
 } as const;
 
+// ─────────────────────── SessionError ────────────────────
+
+/**
+ * Errors from the Claude-session ingestion bounded context (Phase 20).
+ *
+ * Split by failure surface:
+ *   - SessionFileReadError   — reading a *.jsonl transcript from ~/.claude/projects
+ *   - SessionJsonlParseError — one line of a transcript failed JSON.parse (partial write, corruption)
+ *   - SessionStateFileError  — ~/.wellinformed/sessions-state.json read/write/parse failure
+ *   - SessionRetentionError  — retention pruning pass failed (graph repo write error during delete)
+ *   - SessionIngestError     — upstream application-layer ingest for a session node failed
+ */
+export type SessionError =
+  | { readonly type: 'SessionFileReadError';   readonly path: string; readonly message: string }
+  | { readonly type: 'SessionJsonlParseError'; readonly path: string; readonly lineNum: number; readonly message: string }
+  | { readonly type: 'SessionStateFileError';  readonly path: string; readonly message: string }
+  | { readonly type: 'SessionRetentionError';  readonly message: string }
+  | { readonly type: 'SessionIngestError';     readonly sessionId: string; readonly message: string };
+
+export const SessionError = {
+  fileReadError:   (path: string, message: string): SessionError =>
+    ({ type: 'SessionFileReadError', path, message }),
+  jsonlParseError: (path: string, lineNum: number, message: string): SessionError =>
+    ({ type: 'SessionJsonlParseError', path, lineNum, message }),
+  stateFileError:  (path: string, message: string): SessionError =>
+    ({ type: 'SessionStateFileError', path, message }),
+  retentionError:  (message: string): SessionError =>
+    ({ type: 'SessionRetentionError', message }),
+  ingestError:     (sessionId: string, message: string): SessionError =>
+    ({ type: 'SessionIngestError', sessionId, message }),
+} as const;
+
 // ─────────────────────── AppError union ───────────────────
 
-export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError;
+export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError;
 
 /** Render a tagged error as a one-line human-readable string. */
 export const formatError = (e: AppError): string => {
@@ -368,5 +400,15 @@ export const formatError = (e: AppError): string => {
       return `peer ${e.peer} health degraded (${e.reason})`;
     case 'RelayNotConfigured':
       return `no relays configured in peer.relays — set config.yaml peer.relays to enable /p2p-circuit`;
+    case 'SessionFileReadError':
+      return `session file read error at ${e.path}: ${e.message}`;
+    case 'SessionJsonlParseError':
+      return `session JSONL parse error at ${e.path}:${e.lineNum}: ${e.message}`;
+    case 'SessionStateFileError':
+      return `session state file error at ${e.path}: ${e.message}`;
+    case 'SessionRetentionError':
+      return `session retention error: ${e.message}`;
+    case 'SessionIngestError':
+      return `session ingest error for ${e.sessionId}: ${e.message}`;
   }
 };
