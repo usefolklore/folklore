@@ -17,7 +17,7 @@ import type { ShareError } from '../domain/errors.js';
 import { ShareError as SE } from '../domain/errors.js';
 
 /** Current shared-rooms.json schema version. Bump when making breaking changes. */
-const SHARED_ROOMS_VERSION = 1 as const;
+const SHARED_ROOMS_VERSION = 2 as const;
 
 /**
  * Cross-process lock for shared-rooms.json mutations.
@@ -98,6 +98,13 @@ export interface SharedRoomRecord {
   readonly name: string;
   /** ISO-8601 timestamp when this room was first shared. */
   readonly sharedAt: string;
+  /**
+   * Phase 20 — non-shareable rooms hard-refuse `share room <name>`.
+   * Legacy v1 records without this field are treated as shareable: true on read
+   * (backwards compatibility). The `sessions` room is explicitly created with
+   * shareable: false so session data never crosses libp2p.
+   */
+  readonly shareable: boolean;
 }
 
 export interface SharedRoomsFile {
@@ -157,9 +164,16 @@ export const loadSharedRooms = (
         ),
       );
     }
+    const normalised: SharedRoomRecord[] = (
+      obj.rooms as readonly Partial<SharedRoomRecord>[]
+    ).map((r) => ({
+      name: String(r.name ?? ''),
+      sharedAt: String(r.sharedAt ?? ''),
+      shareable: typeof r.shareable === 'boolean' ? r.shareable : true,
+    }));
     return okAsync<SharedRoomsFile, ShareError>({
       version: SHARED_ROOMS_VERSION,
-      rooms: obj.rooms as readonly SharedRoomRecord[],
+      rooms: normalised,
     });
   });
 };

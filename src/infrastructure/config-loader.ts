@@ -16,6 +16,7 @@ import { ResultAsync, errAsync, okAsync } from 'neverthrow';
 import { parse as parseYaml } from 'yaml';
 import type { GraphError } from '../domain/errors.js';
 import { GraphError as GE } from '../domain/errors.js';
+import type { SessionsConfig } from '../domain/sessions.js';
 
 // ─────────────── types ──────────────────
 
@@ -107,6 +108,7 @@ export interface AppConfig {
   readonly tunnels: TunnelsConfig;
   readonly peer: PeerConfig;
   readonly security: SecurityConfig;
+  readonly sessions: SessionsConfig;
   /** The full raw parsed object — callers can drill into sections we don't type. */
   readonly raw: Readonly<Record<string, unknown>>;
 }
@@ -143,11 +145,18 @@ const DEFAULT_PEER: PeerConfig = {
 
 const DEFAULT_SECURITY: SecurityConfig = { secrets_patterns: [] };
 
+const DEFAULT_SESSIONS: SessionsConfig = {
+  interval_seconds: 300,
+  retention_days: 30,
+  scan_user_messages: true,
+};
+
 const DEFAULT_CONFIG: AppConfig = {
   daemon: DEFAULT_DAEMON,
   tunnels: DEFAULT_TUNNELS,
   peer: DEFAULT_PEER,
   security: DEFAULT_SECURITY,
+  sessions: DEFAULT_SESSIONS,
   raw: {},
 };
 
@@ -231,8 +240,14 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
           ? (securityRaw.secrets_patterns as Array<{ name: string; pattern: string }>)
           : DEFAULT_SECURITY.secrets_patterns,
       };
+      const sessionsRaw = (raw.sessions ?? {}) as Record<string, unknown>;
+      const sessions: SessionsConfig = {
+        interval_seconds: num(sessionsRaw.interval_seconds, DEFAULT_SESSIONS.interval_seconds),
+        retention_days: num(sessionsRaw.retention_days, DEFAULT_SESSIONS.retention_days),
+        scan_user_messages: bool(sessionsRaw.scan_user_messages, DEFAULT_SESSIONS.scan_user_messages),
+      };
 
-      return okAsync<AppConfig, GraphError>({ daemon, tunnels, peer, security, raw });
+      return okAsync<AppConfig, GraphError>({ daemon, tunnels, peer, security, sessions, raw });
     } catch (e) {
       return errAsync<AppConfig, GraphError>(GE.parseError(path, (e as Error).message));
     }

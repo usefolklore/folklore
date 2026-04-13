@@ -149,9 +149,10 @@ const roomCmd = async (rest: readonly string[]): Promise<number> => {
   }
 
   // Persist to shared-rooms.json under cross-process lock.
-  const record: { name: string; sharedAt: string } = {
+  const record: import('../../infrastructure/share-store.js').SharedRoomRecord = {
     name: roomId,
     sharedAt: new Date().toISOString(),
+    shareable: true,
   };
   const writeResult = await mutateSharedRooms(sharedRoomsPath(), (file) =>
     addSharedRoom(file, record),
