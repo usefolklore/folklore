@@ -198,14 +198,12 @@ wellinformed report --room homelab     # see what's new
 ║  multi-hop queries:   95% NDCG, 100% R@5                  ║
 ║  comparison queries: 100% NDCG, 100% R@5                  ║
 ║  single-hop queries: 100% NDCG, 100% R@5                  ║
-╠═══════════════════════════════════════════════════════════╣
-║  mcp-memory-service:  86.0% R@5 (claimed)                 ║
-║  mem0 LOCOMO:          67.1% LLM-as-Judge                  ║
-║  wellinformed:        100.0% R@5, 96.8% NDCG@10           ║
 ╚═══════════════════════════════════════════════════════════╝
 ```
 
-Reproduce: `npm test` — runs 243 tests including the ONNX benchmark, full P2P suite (peer/share/federated/networking), and the structured codebase indexing suite.
+Reproduce: `npm test` — runs 243 tests including the ONNX benchmark, full P2P suite (peer/share/federated/networking), and the structured codebase indexing suite. See [`.planning/BENCH-v2.md`](.planning/BENCH-v2.md) for the full v2.0 benchmark (CLI latency, warm p99, indexing throughput, 10-peer libp2p mesh) and [`.planning/BENCH-COMPETITORS.md`](.planning/BENCH-COMPETITORS.md) for the verified competitive landscape (mem0, Graphiti/Zep, Letta, Mastra, Engram, cognee, memobase, Honcho, MemPalace, mcp-memory-service, Aider, Continue, SCIP, LanceDB).
+
+**Competitive landscape disclosure:** The AI memory benchmark space (LOCOMO in particular) is actively disputed between mem0 and Zep, with three different LOCOMO numbers for the same system. wellinformed's benchmark is a mini-BEIR harness (15 passages × 10 queries) — small sample, but embedded in `npm test` and reproducible. We do not claim SOTA on a shared leaderboard.
 
 ## Real numbers
 
