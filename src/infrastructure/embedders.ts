@@ -17,6 +17,10 @@
  */
 
 import { ResultAsync, errAsync, okAsync } from 'neverthrow';
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { dirname, join } from 'node:path';
+import * as readline from 'node:readline';
+import { fileURLToPath } from 'node:url';
 import { EmbeddingError } from '../domain/errors.js';
 import type { Vector } from '../domain/vectors.js';
 import { DEFAULT_DIM, normalize } from '../domain/vectors.js';
@@ -135,6 +139,188 @@ export const xenovaEmbedder = (opts: XenovaOptions = {}): Embedder => {
     );
 
   return { dim, embed, embedBatch };
+};
+
+// ─────────────────────── rust-subprocess adapter ──────────
+
+/**
+ * Options for the Rust subprocess embedder — Phase 24 of v2.1.
+ *
+ * Spawns the `wellinformed-rs/target/release/embed_server` binary on
+ * first use and streams embedding requests through its stdio JSON-RPC
+ * protocol. Exists because Xenova/bge-base-en-v1.5 is a measured-
+ * defective ONNX conversion (-11 NDCG@10 on BEIR SciFact vs published);
+ * the Rust binary loads fastembed-rs which uses Qdrant-curated ONNX
+ * weights that match the published ceiling within 0.66 NDCG points.
+ *
+ * For nomic and MiniLM the Xenova ports are correct and either route
+ * works equivalently.
+ */
+export interface RustSubprocessOptions {
+  /** Short model name: 'nomic' | 'bge-base' | 'minilm'. */
+  readonly model: 'nomic' | 'bge-base' | 'minilm';
+  /** Output dimension — must match the model. */
+  readonly dim: number;
+  /**
+   * Path to the embed_server binary. Defaults to the repo-local
+   * `wellinformed-rs/target/release/embed_server`; override via
+   * `$WELLINFORMED_RUST_BIN` env var or this option.
+   */
+  readonly binaryPath?: string;
+  /** Treat texts as queries (embed with query prefix). */
+  readonly isQuery?: boolean;
+}
+
+interface RustRequest {
+  readonly op: 'embed' | 'ping' | 'shutdown';
+  readonly model?: string;
+  readonly texts?: readonly string[];
+  readonly is_query?: boolean;
+  readonly raw?: boolean;
+}
+
+interface RustResponse {
+  readonly ok: boolean;
+  readonly dim?: number;
+  readonly vectors?: readonly (readonly number[])[];
+  readonly error?: string;
+  readonly version?: string;
+}
+
+/**
+ * Build an Embedder that proxies every embedding call to a long-lived
+ * Rust subprocess speaking JSON-lines. One request in flight at a time
+ * (serialized via a promise queue) — simplest correct shape.
+ *
+ * The subprocess is spawned lazily on the first call and stays alive
+ * until the Node process exits. No connection pooling, no retry logic
+ * beyond propagating errors as neverthrow Err results.
+ */
+export const rustSubprocessEmbedder = (opts: RustSubprocessOptions): Embedder => {
+  const binaryPath =
+    opts.binaryPath ??
+    process.env.WELLINFORMED_RUST_BIN ??
+    // Default path assumes the repo layout: wellinformed-rs is a sibling
+    // of src/. Resolve relative to this file's directory.
+    (() => {
+      const here = dirname(fileURLToPath(import.meta.url));
+      // dist/infrastructure/embedders.js → dist/infrastructure → ../.. → repo root
+      return join(here, '..', '..', 'wellinformed-rs', 'target', 'release', 'embed_server');
+    })();
+
+  let child: ChildProcessWithoutNullStreams | null = null;
+  // Serial request queue — each request pushes a resolver, each response
+  // shifts the head resolver off the queue. FIFO, single-flight.
+  const pending: Array<(res: RustResponse) => void> = [];
+  let initPromise: Promise<void> | null = null;
+
+  const ensureStarted = (): ResultAsync<void, EmbeddingError> => {
+    if (child && !child.killed) return okAsync(undefined);
+    if (!initPromise) {
+      initPromise = new Promise<void>((resolve, reject) => {
+        try {
+          const spawned = spawn(binaryPath, [], {
+            stdio: ['pipe', 'pipe', 'pipe'],
+          });
+          spawned.on('error', (e) => reject(e));
+          spawned.on('exit', (code) => {
+            child = null;
+            // Fail any still-pending resolvers
+            while (pending.length > 0) {
+              const resolver = pending.shift();
+              if (resolver) {
+                resolver({
+                  ok: false,
+                  error: `embed_server exited with code ${code}`,
+                });
+              }
+            }
+          });
+          spawned.stderr.setEncoding('utf8');
+          spawned.stderr.on('data', () => {
+            // Rust server prints startup lines + exit msg to stderr.
+            // Silently absorb — not an error channel for the protocol.
+          });
+
+          readline.createInterface({ input: spawned.stdout }).on('line', (line) => {
+            const resolver = pending.shift();
+            if (!resolver) return;
+            try {
+              resolver(JSON.parse(line) as RustResponse);
+            } catch (e) {
+              resolver({
+                ok: false,
+                error: `stdout parse: ${(e as Error).message}  line: ${line.slice(0, 200)}`,
+              });
+            }
+          });
+
+          child = spawned;
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }
+    return ResultAsync.fromPromise(initPromise, (e) =>
+      EmbeddingError.modelLoad(opts.model, (e as Error).message),
+    );
+  };
+
+  const sendRequest = (req: RustRequest): ResultAsync<RustResponse, EmbeddingError> =>
+    ensureStarted().andThen(() =>
+      ResultAsync.fromPromise(
+        new Promise<RustResponse>((resolve) => {
+          pending.push(resolve);
+          child?.stdin.write(`${JSON.stringify(req)}\n`);
+        }),
+        (e) => EmbeddingError.inference((e as Error).message),
+      ).andThen((resp) =>
+        resp.ok
+          ? okAsync<RustResponse, EmbeddingError>(resp)
+          : errAsync<RustResponse, EmbeddingError>(
+              EmbeddingError.inference(resp.error ?? 'rust embed_server returned ok:false'),
+            ),
+      ),
+    );
+
+  const embed = (text: string): ResultAsync<Vector, EmbeddingError> =>
+    sendRequest({
+      op: 'embed',
+      model: opts.model,
+      texts: [text],
+      is_query: opts.isQuery ?? false,
+    }).andThen((resp) => {
+      const vecs = resp.vectors;
+      if (!vecs || vecs.length === 0) {
+        return errAsync<Vector, EmbeddingError>(
+          EmbeddingError.inference('empty vectors from rust embed_server'),
+        );
+      }
+      return okAsync<Vector, EmbeddingError>(new Float32Array(vecs[0]));
+    });
+
+  const embedBatch = (
+    texts: readonly string[],
+  ): ResultAsync<readonly Vector[], EmbeddingError> =>
+    sendRequest({
+      op: 'embed',
+      model: opts.model,
+      texts,
+      is_query: opts.isQuery ?? false,
+    }).andThen((resp) => {
+      const vecs = resp.vectors;
+      if (!vecs) {
+        return errAsync<readonly Vector[], EmbeddingError>(
+          EmbeddingError.inference('no vectors from rust embed_server'),
+        );
+      }
+      return okAsync<readonly Vector[], EmbeddingError>(
+        vecs.map((v) => new Float32Array(v)),
+      );
+    });
+
+  return { dim: opts.dim, embed, embedBatch };
 };
 
 // ─────────────────────── fixture adapter ──────────────────

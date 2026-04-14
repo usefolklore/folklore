@@ -23,18 +23,14 @@
     clippy::needless_pass_by_value
 )]
 
-mod application;
-mod domain;
-mod infrastructure;
-
 use anyhow::{Context, Result};
-use application::{run_benchmark, BenchmarkConfig, BenchmarkReport};
-use domain::{beir::load_beir, BeirDataset, EncoderSpec};
-use infrastructure::{
+use std::{path::PathBuf, time::Instant};
+use wellinformed_bench::application::{run_benchmark, BenchmarkConfig, BenchmarkReport};
+use wellinformed_bench::domain::{beir::load_beir, BeirDataset, EncoderSpec};
+use wellinformed_bench::infrastructure::{
     index_progress, query_progress, write_result, FastembedEncoder, LatencyMs, OutputMetrics,
     ResultRecord,
 };
-use std::{path::PathBuf, time::Instant};
 
 #[derive(Debug, Clone)]
 struct CliArgs {
