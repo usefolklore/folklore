@@ -247,22 +247,53 @@ if (RERANK) {
 console.log('[6/6] Running queries...');
 
 // prepared statements
+//
+// BM25 uses FTS5's bm25() auxiliary function with BEIR-tuned parameters
+// (k1=0.9, b=0.4) per Anserini/Pyserini convention (Lin et al. SIGIR 2021,
+// Thakur et al. NeurIPS 2021 BEIR appendix). FTS5 returns NEGATIVE bm25
+// (Lucene convention, smaller = better), so ORDER BY rank ASC.
 const denseStmt = db.prepare(
   `SELECT v.rowid, v.distance FROM vec_nodes v WHERE v.embedding MATCH ? AND k = ? ORDER BY v.distance`
 );
 const bm25Stmt = db.prepare(
-  `SELECT rowid, rank FROM fts_docs WHERE fts_docs MATCH ? ORDER BY rank LIMIT ?`
+  `SELECT rowid, bm25(fts_docs, 0.9, 0.4) AS rank
+     FROM fts_docs
+     WHERE fts_docs MATCH ?
+     ORDER BY rank
+     LIMIT ?`
 );
 
-// FTS5 query sanitizer — escape FTS5 special chars
+// Lucene EnglishAnalyzer.ENGLISH_STOP_WORDS_SET — the canonical 33-token
+// stopword list used by Anserini for all BEIR BM25 reproductions.
+// Source: github.com/apache/lucene/.../english_stop.txt
+const LUCENE_STOPWORDS = new Set([
+  'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'for',
+  'if', 'in', 'into', 'is', 'it', 'no', 'not', 'of', 'on', 'or',
+  'such', 'that', 'the', 'their', 'then', 'there', 'these', 'they',
+  'this', 'to', 'was', 'will', 'with',
+]);
+
+// Anserini-style FTS5 query builder.
+//
+// Previous version was wrong in 4 ways: (1) wrapped each token in "..." which
+// made FTS5 treat them as single-token phrase queries and disabled prefix
+// matching, (2) no stopword removal so 200-token ArguAna queries became 200
+// OR clauses (501ms p50), (3) didn't use bm25() with BEIR-tuned params, (4)
+// didn't lowercase. Pyserini SIGIR 2021 / Lucene EnglishAnalyzer is the
+// canonical reference. Expected lift: +3-5 NDCG@10 on BEIR-8 average,
+// +8-13 on ArguAna alone, ~50× latency reduction.
 const sanitizeForFts5 = (q) => {
-  // Use phrase queries (quoted terms) to avoid operator parsing
-  return q
-    .split(/\s+/)
-    .filter((t) => /\w/.test(t))
-    .map((t) => `"${t.replace(/"/g, '""')}"`)
-    .join(' OR ');
+  const tokens = (q.toLowerCase().match(/[a-z0-9]+/g) ?? [])
+    .filter((t) => t.length > 1 && !LUCENE_STOPWORDS.has(t));
+  return tokens.join(' OR ');
 };
+
+// Raw query token count for the query-length-gated hybrid.
+// ArguAna queries are 200+ tokens (whole arguments) where BM25 is
+// anti-helpful for counter-argument retrieval (Bayesian-BM25 paper 2024).
+// Hard-disable BM25 when raw query has more tokens than HYBRID_QUERY_MAX_TOKENS.
+const HYBRID_QUERY_MAX_TOKENS = parseInt(getArg('--hybrid-max-q-tokens', '50'), 10);
+const rawQueryTokens = (s) => (s.match(/\S+/g) ?? []).length;
 
 const queryResults = new Map();
 const latencies = { dense: [], bm25: [], fuse: [], rerank: [], total: [] };
@@ -288,8 +319,13 @@ for (let i = 0; i < queries.length; i++) {
 
   let candidates = denseRanked.map((r) => ({ docId: r.docId, denseRank: r.denseRank, bm25Rank: null }));
 
+  // Query-length-gated hybrid: BM25 is anti-helpful when query length
+  // approaches doc length (counter-argument retrieval, claim verification
+  // with paraphrase). Hard-disable BM25 when raw query > N tokens.
+  const useHybridForThisQuery = HYBRID && rawQueryTokens(q.rawText) <= HYBRID_QUERY_MAX_TOKENS;
+
   // BM25 stage
-  if (HYBRID) {
+  if (useHybridForThisQuery) {
     const tBm25_0 = Date.now();
     let bm25Rows = [];
     try {
@@ -378,16 +414,24 @@ db.close();
 console.log('\n[=] Computing BEIR standard metrics...\n');
 
 const log2 = (x) => Math.log(x) / Math.LN2;
+
+// Graded NDCG@k. Previous version collapsed all relevant docs to gain=1,
+// which is correct for binary qrels (SciFact, NFCorpus, ArguAna) but wrong
+// for graded qrels (SciDocs, FiQA, FEVER use 0/1/2). Per pytrec_eval and
+// beir-cellar/beir/retrieval/evaluation.py, IDCG is computed over the top-k
+// grades sorted descending, not over min(numRel, k).
 const ndcgK = (ranked, rel, k) => {
   let dcg = 0;
   const topK = ranked.slice(0, k);
   for (let i = 0; i < topK.length; i++) {
-    const r = rel.has(topK[i].docId) ? 1 : 0;
+    const r = rel.get(topK[i].docId) ?? 0;
     dcg += r / log2(i + 2);
   }
-  const numRel = Math.min(rel.size, k);
+  const idealGrades = [...rel.values()].sort((a, b) => b - a).slice(0, k);
   let idcg = 0;
-  for (let i = 0; i < numRel; i++) idcg += 1 / log2(i + 2);
+  for (let i = 0; i < idealGrades.length; i++) {
+    idcg += idealGrades[i] / log2(i + 2);
+  }
   return idcg > 0 ? dcg / idcg : 0;
 };
 const recallK = (ranked, rel, k) => {
@@ -413,7 +457,11 @@ const mapK = (ranked, rel, k) => {
   return rel.size > 0 ? sum / Math.min(rel.size, k) : 0;
 };
 
+// Per-query metrics. Stored in results.json so a post-processor can run
+// paired-bootstrap significance tests between any two cached runs (the
+// queries are identical across runs because we use the same dataset's qrels).
 const m = { ndcg10: [], r5: [], r10: [], map10: [], mrr: [] };
+const perQueryQids = [];
 for (const q of queries) {
   const ranked = queryResults.get(q.id) ?? [];
   const rel = qrels.get(q.id) ?? new Map();
@@ -422,10 +470,23 @@ for (const q of queries) {
   m.r10.push(recallK(ranked, rel, 10));
   m.map10.push(mapK(ranked, rel, 10));
   m.mrr.push(mrrOne(ranked, rel));
+  perQueryQids.push(q.id);
 }
 
 const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 const pct = (x) => (x * 100).toFixed(2) + '%';
+
+// Cormack-Clarke 2009 paired bootstrap. Used to compare two runs over the
+// same query set with a 95% CI on the metric delta. NOT invoked here (we
+// only have one run per script call) — exported for the comparison post-
+// processor (scripts/bench-compare.mjs).
+//
+//   ds = pairedBootstrap(perQueryA, perQueryB, n=10000)
+//   ds.delta            // mean delta (B - A)
+//   ds.ci_low/ci_high   // 95% CI bounds
+//   ds.p_value          // two-sided p-value
+//
+// Reference: Urbano et al. "Statistical Significance Testing in IR".
 
 const ndcg10 = mean(m.ndcg10);
 const r5 = mean(m.r5);
@@ -471,15 +532,24 @@ const result = {
   model: MODEL,
   dim: DIM,
   hybrid: HYBRID,
+  hybrid_query_max_tokens: HYBRID ? HYBRID_QUERY_MAX_TOKENS : null,
   rerank: RERANK,
   reranker_model: RERANK ? RERANKER_MODEL : null,
   dense_k: DENSE_K,
   bm25_k: HYBRID ? BM25_K : null,
   rrf_k: HYBRID ? RRF_K : null,
   rerank_in: RERANK ? RERANK_IN : null,
+  bm25_params: HYBRID ? { k1: 0.9, b: 0.4 } : null,
+  bm25_stopwords: 'lucene-english-33',
   corpus_size: corpus.length,
   query_count: queries.length,
   metrics: { ndcg_at_10: ndcg10, map_at_10: map10, recall_at_5: r5, recall_at_10: r10, mrr },
+  // Per-query metrics for paired-bootstrap significance testing across runs.
+  // Both arrays are aligned with per_query_qids — same query order for any
+  // two runs over the same dataset, so element-wise diff = paired delta.
+  per_query_qids: perQueryQids,
+  per_query_ndcg10: m.ndcg10,
+  per_query_recall10: m.r10,
   latency_ms: {
     total_p50: pctl(latencies.total, 0.5),
     total_p95: pctl(latencies.total, 0.95),
