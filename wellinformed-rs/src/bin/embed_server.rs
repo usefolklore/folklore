@@ -41,12 +41,22 @@ use std::{
 use wellinformed_bench::{
     domain::{
         beir::{doc_text as prefix_doc, query_text as prefix_query, BeirDoc},
-        BeirQuery, EncoderSpec,
+        compute_centroids, find_tunnels_rng, BeirQuery, EncoderSpec, LabeledVector, Tunnel,
     },
     infrastructure::{encoder_port::Encoder, FastembedEncoder},
 };
 
 // ─── protocol types ─────────────────────────────────────────────
+
+/// Labeled vector wire format — same shape as the Rust domain
+/// `LabeledVector` but owned instead of borrowed so serde can
+/// round-trip it from stdin.
+#[derive(Deserialize, Debug)]
+struct WireVector {
+    node_id: String,
+    room: String,
+    vector: Vec<f32>,
+}
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "op", rename_all = "snake_case")]
@@ -63,8 +73,54 @@ enum Request {
         #[serde(default)]
         raw: bool,
     },
+    /// Compute cross-room tunnels via the Relative Neighborhood Graph
+    /// (mathematician Proposal B). Pure domain call — the server is
+    /// stateless, the client uploads the labeled vector set per request.
+    FindTunnels {
+        vectors: Vec<WireVector>,
+        #[serde(default = "default_k_neighbors")]
+        k_neighbors: usize,
+    },
+    /// Compute L2-normalized pilot centroids per room for the
+    /// RouterRetriever-style room routing (Phase 28). Pure domain call;
+    /// routing itself runs client-side since it's just cosine.
+    ComputeCentroids {
+        vectors: Vec<WireVector>,
+    },
     Ping,
     Shutdown,
+}
+
+fn default_k_neighbors() -> usize {
+    20
+}
+
+#[derive(Serialize, Debug)]
+struct WireTunnel {
+    a: String,
+    b: String,
+    room_a: String,
+    room_b: String,
+    distance: f32,
+}
+
+impl From<Tunnel> for WireTunnel {
+    fn from(t: Tunnel) -> Self {
+        Self {
+            a: t.a,
+            b: t.b,
+            room_a: t.room_a,
+            room_b: t.room_b,
+            distance: t.distance,
+        }
+    }
+}
+
+#[derive(Serialize, Debug)]
+struct WireCentroid {
+    room: String,
+    vector: Vec<f32>,
+    doc_count: usize,
 }
 
 #[derive(Serialize, Debug)]
@@ -74,6 +130,14 @@ enum Response {
         ok: bool,
         dim: usize,
         vectors: Vec<Vec<f32>>,
+    },
+    TunnelsOk {
+        ok: bool,
+        tunnels: Vec<WireTunnel>,
+    },
+    CentroidsOk {
+        ok: bool,
+        centroids: Vec<WireCentroid>,
     },
     PingOk {
         ok: bool,
@@ -175,6 +239,42 @@ fn handle_ping() -> Response {
     }
 }
 
+fn handle_find_tunnels(vectors: Vec<WireVector>, k_neighbors: usize) -> Response {
+    let labeled: Vec<LabeledVector> = vectors
+        .into_iter()
+        .map(|v| LabeledVector {
+            node_id: v.node_id,
+            room: v.room,
+            vector: v.vector,
+        })
+        .collect();
+    let tunnels = find_tunnels_rng(&labeled, k_neighbors);
+    Response::TunnelsOk {
+        ok: true,
+        tunnels: tunnels.into_iter().map(WireTunnel::from).collect(),
+    }
+}
+
+fn handle_compute_centroids(vectors: &[WireVector]) -> Response {
+    // Build the iterator lazily as (&str, &[f32]) pairs — no cloning.
+    let centroids = compute_centroids(
+        vectors
+            .iter()
+            .map(|v| (v.room.as_str(), v.vector.as_slice())),
+    );
+    Response::CentroidsOk {
+        ok: true,
+        centroids: centroids
+            .into_values()
+            .map(|c| WireCentroid {
+                room: c.room,
+                vector: c.vector,
+                doc_count: c.doc_count,
+            })
+            .collect(),
+    }
+}
+
 fn err_response(msg: impl Into<String>) -> Response {
     Response::Err {
         ok: false,
@@ -220,6 +320,11 @@ fn main() -> Result<()> {
                 raw,
             }) => handle_embed(&mut registry, &model, &texts, is_query, raw)
                 .unwrap_or_else(|e| err_response(format!("embed: {e}"))),
+            Ok(Request::FindTunnels {
+                vectors,
+                k_neighbors,
+            }) => handle_find_tunnels(vectors, k_neighbors),
+            Ok(Request::ComputeCentroids { vectors }) => handle_compute_centroids(&vectors),
             Ok(Request::Ping) => handle_ping(),
             Ok(Request::Shutdown) => {
                 let resp = Response::PingOk {
