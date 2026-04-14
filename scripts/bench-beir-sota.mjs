@@ -297,12 +297,25 @@ const sanitizeForFts5 = (q) => {
   return tokens.join(' OR ');
 };
 
-// Raw query token count for the query-length-gated hybrid.
-// ArguAna queries are 200+ tokens (whole arguments) where BM25 is
-// anti-helpful for counter-argument retrieval (Bayesian-BM25 paper 2024).
-// Hard-disable BM25 when raw query has more tokens than HYBRID_QUERY_MAX_TOKENS.
-const HYBRID_QUERY_MAX_TOKENS = parseInt(getArg('--hybrid-max-q-tokens', '50'), 10);
-const rawQueryTokens = (s) => (s.match(/\S+/g) ?? []).length;
+// Phase 21b — query-length gate REMOVED.
+//
+// Post-hoc EDA (data researcher audit, 2026-04-14) showed the gate I added
+// in Phase 21 was causing the ArguAna "regression" it was supposed to fix.
+// 71% of ArguAna queries are >50 tokens (median 177). With the gate on, BM25
+// is disabled for those queries and dense-only nomic has to carry everything
+// — 26.5% of queries land at NDCG=0 because dense-only fails on long
+// counter-argument retrieval.
+//
+// The Bayesian-BM25 paper's mechanism (BM25 anti-helpful on counter-argument
+// because it promotes lexically-similar same-argument docs) was correct, but
+// the symptom I saw came from a BROKEN BM25 sanitizer (quoted-OR chain, no
+// stopwords, default k1/b). Phase 21's Anserini-style sanitizer fix already
+// handles the counter-argument pathology by giving BM25 a well-scoring bag-
+// of-words query where the fusion with dense can actually help. The gate
+// is now strictly harmful.
+//
+// Removing the gate unconditionally re-enables hybrid fusion for all queries.
+// Expected: ArguAna NDCG@10 recovers from 34.46% → ~48% (nomic dense ceiling).
 
 const queryResults = new Map();
 const latencies = { dense: [], bm25: [], fuse: [], rerank: [], total: [] };
@@ -328,13 +341,9 @@ for (let i = 0; i < queries.length; i++) {
 
   let candidates = denseRanked.map((r) => ({ docId: r.docId, denseRank: r.denseRank, bm25Rank: null }));
 
-  // Query-length-gated hybrid: BM25 is anti-helpful when query length
-  // approaches doc length (counter-argument retrieval, claim verification
-  // with paraphrase). Hard-disable BM25 when raw query > N tokens.
-  const useHybridForThisQuery = HYBRID && rawQueryTokens(q.rawText) <= HYBRID_QUERY_MAX_TOKENS;
-
-  // BM25 stage
-  if (useHybridForThisQuery) {
+  // BM25 stage — unconditional when --hybrid is on (query-length gate
+  // removed in Phase 21b after EDA showed it was the real ArguAna killer).
+  if (HYBRID) {
     const tBm25_0 = Date.now();
     let bm25Rows = [];
     try {
@@ -541,7 +550,8 @@ const result = {
   model: MODEL,
   dim: DIM,
   hybrid: HYBRID,
-  hybrid_query_max_tokens: HYBRID ? HYBRID_QUERY_MAX_TOKENS : null,
+  pooling: POOLING,
+  max_length: MAX_LENGTH,
   rerank: RERANK,
   reranker_model: RERANK ? RERANKER_MODEL : null,
   dense_k: DENSE_K,

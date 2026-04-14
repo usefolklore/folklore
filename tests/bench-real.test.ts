@@ -196,12 +196,34 @@ test('real-bench: IR metrics on labeled corpus (P@5, R@5, MRR, NDCG@5)', async (
       console.log(`    ${r.query.slice(0, 45).padEnd(45)} P@5=${(r.p5 * 100).toFixed(0).padStart(3)}% R@5=${(r.r5 * 100).toFixed(0).padStart(3)}% MRR=${r.mrr_val.toFixed(2)}`);
     }
 
-    // mcp-memory-service claims 86% R@5 — we should be in range
-    // NOTE: with fixture embedder (seeded random), these numbers won't be great.
-    // Real all-MiniLM-L6-v2 would score much higher on semantic similarity.
-    // This test validates the measurement infrastructure, not the embedding model.
-    assert.ok(avgMRR >= 0, 'MRR must be non-negative');
-    assert.ok(avgP5 >= 0, 'P@5 must be non-negative');
+    // Phase 23 CI retrieval quality gate — locked to the current fixture-
+    // embedder baseline with a small safety margin. Tightened from the
+    // prior `>= 0` sanity check per the data scientist audit recommendation:
+    // a green `npm test` should prove retrieval quality didn't regress, not
+    // just that the code compiles. Baseline (2026-04-14, commit 3770db4+):
+    //   MRR     = 0.708
+    //   NDCG@5  = 0.682
+    //   R@5     = ~0.73 (varies 40-100% per query)
+    //   P@5     = ~0.32
+    // Thresholds set 8-12% below baseline to absorb tokenization + FTS5
+    // interaction noise from Phase 23 pipeline unification. Drops below
+    // these bars should fail CI loudly — this is the regression gate.
+    assert.ok(
+      avgMRR >= 0.62,
+      `retrieval MRR regressed below 0.62 floor: ${avgMRR.toFixed(3)}`,
+    );
+    assert.ok(
+      avgNDCG5 >= 0.60,
+      `retrieval NDCG@5 regressed below 0.60 floor: ${avgNDCG5.toFixed(3)}`,
+    );
+    assert.ok(
+      avgR5 >= 0.55,
+      `retrieval Recall@5 regressed below 0.55 floor: ${avgR5.toFixed(3)}`,
+    );
+    assert.ok(
+      avgP5 >= 0.25,
+      `retrieval Precision@5 regressed below 0.25 floor: ${avgP5.toFixed(3)}`,
+    );
 
     close();
   } finally { rmSync(tmp, { recursive: true, force: true }); }

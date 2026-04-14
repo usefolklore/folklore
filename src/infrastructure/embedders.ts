@@ -65,6 +65,18 @@ export interface XenovaOptions {
    * degrades retrieval quality ~10-15% (measured on SciFact).
    */
   readonly pooling?: PoolingStrategy;
+  /**
+   * Whether to use the int8-quantized ONNX variant (Xenova transformers 2.x
+   * default) or the full-precision fp32 model. Default `false` — force full
+   * precision.
+   *
+   * Xenova publishes ~8 ONNX variants per model (fp32, fp16, int8, bnb4, q4,
+   * q4f16, uint8, quantized). The transformers.js 2.x default is
+   * `quantized: true` which loads the int8 variant. On retrievers this
+   * costs **11-13 NDCG@10 points** on BEIR (measured on bge-base and nomic).
+   * Unless you have a strong size/latency reason, use full precision.
+   */
+  readonly quantized?: boolean;
 }
 
 /**
@@ -77,6 +89,7 @@ export const xenovaEmbedder = (opts: XenovaOptions = {}): Embedder => {
   const dim = opts.dim ?? DEFAULT_DIM;
   const maxLength = opts.maxLength ?? 8192;
   const pooling = opts.pooling ?? 'mean';
+  const quantized = opts.quantized ?? false;
   let pipePromise: Promise<(text: string, o: unknown) => Promise<{ data: Float32Array }>> | null = null;
 
   const getPipe = (): ResultAsync<
@@ -90,10 +103,11 @@ export const xenovaEmbedder = (opts: XenovaOptions = {}): Embedder => {
           pipeline: (
             task: string,
             model: string,
+            opts?: { quantized?: boolean },
           ) => Promise<(text: string, o: unknown) => Promise<{ data: Float32Array }>>;
         };
         if (opts.cacheDir) tx.env.cacheDir = opts.cacheDir;
-        return tx.pipeline('feature-extraction', model);
+        return tx.pipeline('feature-extraction', model, { quantized });
       })();
     }
     return ResultAsync.fromPromise(pipePromise, (e) =>

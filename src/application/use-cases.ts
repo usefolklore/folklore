@@ -102,6 +102,10 @@ export const indexNode =
             room: cmd.room,
             wing: cmd.wing,
             vector: vec,
+            // Pass the pre-prefix raw text so the FTS5 BM25 index can
+            // participate in hybrid retrieval. Phase 23 pipeline unification:
+            // production now writes to both vec0 AND fts_docs on every upsert.
+            raw_text: cmd.text,
           })
           .mapErr((e): AppError => e)
           .map(() => vec),
@@ -129,7 +133,12 @@ export const indexNode =
 
 /**
  * Room-scoped semantic search. Returns the top-k matches restricted
- * to the given room, in order of increasing L2 distance.
+ * to the given room, fused via RRF over dense + BM25 (Phase 23
+ * pipeline unification: production now uses hybrid by default).
+ *
+ * For nodes that were upserted before Phase 23 (and thus have no FTS5
+ * row), the BM25 stage returns an empty list and RRF degrades gracefully
+ * to dense-only. Once the graph is re-indexed the hybrid benefit kicks in.
  */
 export const searchByRoom =
   (deps: UseCaseDeps) =>
@@ -140,14 +149,17 @@ export const searchByRoom =
       .mapErr((e): AppError => e)
       .andThen((vec) =>
         deps.vectors
-          .searchByRoom(query.room, vec, k)
+          .searchByRoomHybrid(query.room, query.text, vec, k)
           .mapErr((e): AppError => e),
       );
   };
 
 // ─────────────────────── searchGlobal ─────────────────────
 
-/** Global semantic search — no room filter. */
+/**
+ * Global semantic search — no room filter. Hybrid dense + BM25 + RRF
+ * (Phase 23 pipeline unification).
+ */
 export const searchGlobal =
   (deps: UseCaseDeps) =>
   (query: GlobalSearchQuery): ResultAsync<readonly Match[], AppError> => {
@@ -156,7 +168,7 @@ export const searchGlobal =
       .embed(query.text)
       .mapErr((e): AppError => e)
       .andThen((vec) =>
-        deps.vectors.searchGlobal(vec, k).mapErr((e): AppError => e),
+        deps.vectors.searchHybrid(query.text, vec, k).mapErr((e): AppError => e),
       );
   };
 

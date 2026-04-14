@@ -20,12 +20,20 @@ export const DEFAULT_DIM = 384;
 /** A dense unit-normalized float32 vector. */
 export type Vector = Float32Array;
 
-/** A vector in context — carries the id, room, and wing of its node. */
+/**
+ * A vector in context — carries the id, room, and wing of its node.
+ *
+ * Optional `raw_text` is the pre-prefix, pre-normalization text used to
+ * generate the vector. When present, the vector index can use it to feed
+ * a parallel FTS5 BM25 path for hybrid retrieval. When absent, hybrid
+ * retrieval gracefully falls back to dense-only.
+ */
 export interface VectorRecord {
   readonly node_id: NodeId;
   readonly room: Room;
   readonly wing?: Wing;
   readonly vector: Vector;
+  readonly raw_text?: string;
 }
 
 /** A similarity match returned by a search. `distance` is L2 on unit vectors. */
@@ -88,6 +96,122 @@ export const sparse = (entries: readonly (readonly [number, number])[], dim = DE
   const v = new Float32Array(dim);
   for (const [i, x] of entries) v[i] = x;
   return normalize(v);
+};
+
+// ─────────────────────── hybrid retrieval (BM25 + RRF) ───
+
+/**
+ * Lucene EnglishAnalyzer.ENGLISH_STOP_WORDS_SET — the canonical 33-token
+ * stopword list used by Anserini/Pyserini for all BEIR BM25 reproductions.
+ * Keeping this as a domain constant lets both the bench and the production
+ * VectorIndex use the same list without duplication.
+ */
+export const LUCENE_STOPWORDS: ReadonlySet<string> = new Set([
+  'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'for',
+  'if', 'in', 'into', 'is', 'it', 'no', 'not', 'of', 'on', 'or',
+  'such', 'that', 'the', 'their', 'then', 'there', 'these', 'they',
+  'this', 'to', 'was', 'will', 'with',
+]);
+
+/**
+ * Anserini-style FTS5 query builder. Pure function — no I/O.
+ *
+ * Takes a raw natural-language query, extracts alphanumeric tokens
+ * (lowercased), strips the Lucene stopword list, drops length-1 tokens,
+ * and emits a space-separated OR clause. The result is safe to pass to
+ * SQLite FTS5's `MATCH` with `bm25(fts_docs, 0.9, 0.4)` for BEIR-tuned
+ * BM25 scoring (Pyserini SIGIR 2021 standard).
+ *
+ * Returns an empty string if the query has no retainable tokens; callers
+ * should treat that as "skip BM25 stage" and fall back to dense-only.
+ */
+export const sanitizeForFts5 = (query: string): string => {
+  const tokens = (query.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter(
+    (t) => t.length > 1 && !LUCENE_STOPWORDS.has(t),
+  );
+  return tokens.join(' OR ');
+};
+
+/**
+ * A ranked candidate after dense or sparse retrieval. Used as input to RRF.
+ */
+export interface RankedCandidate {
+  readonly node_id: NodeId;
+  readonly room?: Room;
+  readonly wing?: Wing;
+  readonly denseRank: number | null;
+  readonly bm25Rank: number | null;
+  readonly distance?: number;
+}
+
+/**
+ * Hybrid retrieval configuration.
+ *
+ * `rrfK` is the Cormack-Clarke-Büttcher SIGIR 2009 constant; 60 is the
+ * published standard and moves only marginally with per-dataset tuning.
+ * `denseK` and `bm25K` are the depth of each ranked list that feeds RRF;
+ * depths below 30 start to cut recall, depths above 200 dilute the
+ * ranking signal — 100 is the BEIR default.
+ */
+export interface HybridConfig {
+  readonly denseK: number;
+  readonly bm25K: number;
+  readonly rrfK: number;
+}
+
+export const DEFAULT_HYBRID_CONFIG: HybridConfig = {
+  denseK: 100,
+  bm25K: 100,
+  rrfK: 60,
+};
+
+/**
+ * Reciprocal Rank Fusion (Cormack, Clarke, Büttcher, SIGIR 2009).
+ *
+ * Pure function: takes two ranked candidate lists (dense and BM25) and
+ * merges them by summing `1 / (rrfK + rank + 1)` contributions from each
+ * list in which a candidate appears. Returns the merged list sorted by
+ * fused score descending. No I/O, no mutation.
+ *
+ * When a candidate appears in only one list, its contribution from the
+ * other list is zero (not a missing-data penalty — RRF's strength is that
+ * it naturally handles absent candidates).
+ */
+export const rrfFuse = (
+  dense: readonly RankedCandidate[],
+  bm25: readonly RankedCandidate[],
+  cfg: HybridConfig = DEFAULT_HYBRID_CONFIG,
+): readonly RankedCandidate[] => {
+  const byId = new Map<NodeId, RankedCandidate>();
+  for (let i = 0; i < dense.length; i++) {
+    const c = dense[i];
+    byId.set(c.node_id, {
+      ...c,
+      denseRank: i,
+      bm25Rank: null,
+    });
+  }
+  for (let i = 0; i < bm25.length; i++) {
+    const c = bm25[i];
+    const existing = byId.get(c.node_id);
+    if (existing) {
+      byId.set(c.node_id, { ...existing, bm25Rank: i });
+    } else {
+      byId.set(c.node_id, {
+        ...c,
+        denseRank: null,
+        bm25Rank: i,
+      });
+    }
+  }
+  const scored = [...byId.values()].map((c) => {
+    let score = 0;
+    if (c.denseRank !== null) score += 1 / (cfg.rrfK + c.denseRank + 1);
+    if (c.bm25Rank !== null) score += 1 / (cfg.rrfK + c.bm25Rank + 1);
+    return { candidate: c, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.map((s) => s.candidate);
 };
 
 // ─────────────────────── tunnel detection ────────────────
