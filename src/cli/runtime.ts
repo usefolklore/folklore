@@ -13,7 +13,11 @@ import { ResultAsync, errAsync } from 'neverthrow';
 import type { AppError } from '../domain/errors.js';
 import { fileGraphRepository, type GraphRepository } from '../infrastructure/graph-repository.js';
 import { openSqliteVectorIndex, type VectorIndex } from '../infrastructure/vector-index.js';
-import { xenovaEmbedder, type Embedder } from '../infrastructure/embedders.js';
+import {
+  xenovaEmbedder,
+  rustSubprocessEmbedder,
+  type Embedder,
+} from '../infrastructure/embedders.js';
 import { fileSourcesConfig, type SourcesConfig } from '../infrastructure/sources-config.js';
 import { fileRoomsConfig, type RoomsConfig } from '../infrastructure/rooms-config.js';
 import { httpFetcher, type HttpFetcher } from '../infrastructure/http/fetcher.js';
@@ -26,6 +30,41 @@ import type { IngestDeps } from '../application/ingest.js';
 
 export const wellinformedHome = (): string =>
   process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
+
+/**
+ * Build the live Embedder adapter based on environment configuration.
+ *
+ * Backends (selected by `WELLINFORMED_EMBEDDER_BACKEND`):
+ *   'xenova'  — legacy `@xenova/transformers` in-process ONNX. Default.
+ *               Known defective on bge-base-en-v1.5 (-11 NDCG vs published);
+ *               correct on nomic-embed-text-v1.5 and all-MiniLM-L6-v2.
+ *   'rust'    — spawns the `wellinformed-rs` embed_server binary and
+ *               streams batches over stdio JSON-RPC. Uses fastembed-rs
+ *               which pulls Qdrant-curated ONNX conversions that match
+ *               the published BEIR ceilings within noise.
+ *
+ * Rust backend options (all optional, sensible defaults):
+ *   WELLINFORMED_EMBEDDER_MODEL   — 'minilm' | 'nomic' | 'bge-base'
+ *   WELLINFORMED_RUST_BIN         — path to embed_server binary
+ *
+ * This is a factory, not a global — each call constructs a fresh
+ * adapter. No singletons, no shared mutable state.
+ */
+export const buildEmbedder = (modelCache: string): Embedder => {
+  const backend = (process.env.WELLINFORMED_EMBEDDER_BACKEND ?? 'xenova').toLowerCase();
+  if (backend === 'rust') {
+    const model = (process.env.WELLINFORMED_EMBEDDER_MODEL ?? 'minilm').toLowerCase();
+    const dim =
+      model === 'minilm' ? 384 : model === 'nomic' || model === 'bge-base' ? 768 : 384;
+    if (model !== 'minilm' && model !== 'nomic' && model !== 'bge-base') {
+      throw new Error(
+        `WELLINFORMED_EMBEDDER_MODEL='${model}' — supported: minilm, nomic, bge-base`,
+      );
+    }
+    return rustSubprocessEmbedder({ model, dim });
+  }
+  return xenovaEmbedder({ cacheDir: modelCache });
+};
 
 export interface RuntimePaths {
   readonly home: string;
@@ -88,7 +127,7 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
         .mapErr((e): AppError => e)
         .map((vectors): Runtime => {
           const graphs = fileGraphRepository(paths.graph);
-          const embedder = xenovaEmbedder({ cacheDir: paths.modelCache });
+          const embedder = buildEmbedder(paths.modelCache);
           const sources = fileSourcesConfig(paths.sources);
           const rooms = fileRoomsConfig(paths.rooms);
           const http = httpFetcher();
