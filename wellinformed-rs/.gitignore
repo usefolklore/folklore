@@ -1,0 +1,14 @@
+# Rust build output
+target/
+
+# Cargo lock is tracked for binary crates — keep it
+# (intentional: Cargo.lock IS tracked)
+
+# fastembed downloads models into this cache on first run — hundreds of MB
+.fastembed_cache/
+
+# claude-flow artifacts
+.claude-flow/
+
+# system
+.DS_Store

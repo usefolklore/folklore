@@ -1,0 +1,34 @@
+[package]
+name = "wellinformed-bench"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+
+# Minimum-viable BEIR benchmark for wellinformed in Rust.
+#
+# Pipeline: nomic-embed-text-v1.5 via ONNX Runtime (ort) + tokenizers →
+# in-memory L2-normalized vectors → brute-force cosine similarity →
+# NDCG@10. Reads BEIR corpora directly from ~/.wellinformed/bench/
+# (shared with the TypeScript bench so both run on the exact same data).
+#
+# This is the apples-to-apples comparison target for the TypeScript
+# bench-beir-sota.mjs. Same dataset, same encoder, same metric — only
+# difference is the language + runtime. Measures the ceiling a JS
+# implementation can aspire to. If Rust+ORT beats TS+@xenova/transformers
+# by 3-10x on throughput, we know the TS pipeline has headroom to reclaim.
+
+[dependencies]
+anyhow = "1.0"
+# fastembed-rs wraps ort + tokenizers + hf-hub in a clean "give me a vector
+# for a string" API. Same underlying ONNX runtime, no manual session/tensor
+# plumbing. Supports NomicEmbedTextV15, BGEBaseENV15, AllMiniLMV2, etc.
+fastembed = "4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+indicatif = "0.17"
+rayon = "1.10"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
