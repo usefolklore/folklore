@@ -30,6 +30,19 @@ export interface Embedder {
 
 // ─────────────────────── xenova adapter ───────────────────
 
+/**
+ * Token-pooling strategy for sentence embeddings. Must match the model's
+ * training pooling or embedding quality silently degrades ~10-15%.
+ *
+ *   'mean' — average over token hidden states (nomic-embed-text, E5-*,
+ *            all-MiniLM-L6-v2, gte-*). The Xenova default.
+ *   'cls'  — use the [CLS] token's hidden state (BGE, jina-v2, many
+ *            contrastively-trained BERT-family retrievers).
+ *   'last' — use the last token's hidden state (mxbai-embed-xsmall-v1,
+ *            nomic-embed-v2-moe).
+ */
+export type PoolingStrategy = 'mean' | 'cls' | 'last';
+
 export interface XenovaOptions {
   readonly model?: string;
   readonly cacheDir?: string;
@@ -42,9 +55,16 @@ export interface XenovaOptions {
    * with long queries/docs (ArguAna queries are 200-645 tokens).
    *
    * Set to 512 if the caller's model has a 512-token ceiling
-   * (all-MiniLM-L6-v2, bge-base-en-v1.5 with default truncation).
+   * (all-MiniLM-L6-v2, bge-base-en-v1.5).
    */
   readonly maxLength?: number;
+  /**
+   * Pooling strategy. Must match the model's training pooling.
+   * Default 'mean' — correct for nomic, E5, MiniLM, GTE.
+   * BGE models require 'cls' pooling — using 'mean' on BGE silently
+   * degrades retrieval quality ~10-15% (measured on SciFact).
+   */
+  readonly pooling?: PoolingStrategy;
 }
 
 /**
@@ -56,6 +76,7 @@ export const xenovaEmbedder = (opts: XenovaOptions = {}): Embedder => {
   const model = opts.model ?? 'Xenova/all-MiniLM-L6-v2';
   const dim = opts.dim ?? DEFAULT_DIM;
   const maxLength = opts.maxLength ?? 8192;
+  const pooling = opts.pooling ?? 'mean';
   let pipePromise: Promise<(text: string, o: unknown) => Promise<{ data: Float32Array }>> | null = null;
 
   const getPipe = (): ResultAsync<
@@ -84,7 +105,7 @@ export const xenovaEmbedder = (opts: XenovaOptions = {}): Embedder => {
     getPipe().andThen((pipe) =>
       ResultAsync.fromPromise(
         pipe(text, {
-          pooling: 'mean',
+          pooling,
           normalize: true,
           truncation: true,
           max_length: maxLength,

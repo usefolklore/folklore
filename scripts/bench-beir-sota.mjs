@@ -36,6 +36,15 @@ const MODEL = getArg('--model', 'nomic-ai/nomic-embed-text-v1.5');
 const DIM = parseInt(getArg('--dim', '768'), 10);
 const DOC_PREFIX = getArg('--doc-prefix', 'search_document: ');
 const QUERY_PREFIX = getArg('--query-prefix', 'search_query: ');
+// Pooling strategy — MUST match the model's training pooling or embedding
+// quality silently degrades ~10-15%. nomic/E5/GTE use 'mean', BGE uses 'cls'.
+// Discovered via Phase 22: bge-base SciFact gave 62.76% with mean pooling
+// vs published 74.0% — a 15% relative drop that vanishes with 'cls'.
+const POOLING = getArg('--pooling', 'mean');
+// Max tokenizer length. nomic-v1.5 supports 8192, BGE/MiniLM cap at 512.
+// Passing 8192 to a 512-context model silently truncates AND 16× slows
+// the pipeline because Xenova still allocates the 8192 attention mask.
+const MAX_LENGTH = parseInt(getArg('--max-length', '8192'), 10);
 const HYBRID = has('--hybrid');
 const RERANK = has('--rerank');
 const RERANKER_MODEL = getArg('--reranker-model', 'Xenova/bge-reranker-base');
@@ -166,7 +175,7 @@ const insertVec = db.prepare('INSERT INTO vec_nodes(rowid, embedding) VALUES (?,
 const insertFts = db.prepare('INSERT INTO fts_docs(rowid, text) VALUES (?, ?)');
 
 // ─── step 4: embed + index (or load cached) ─────────────────────
-const embedder = xenovaEmbedder({ model: MODEL, dim: DIM });
+const embedder = xenovaEmbedder({ model: MODEL, dim: DIM, maxLength: MAX_LENGTH, pooling: POOLING });
 const idToRowid = new Map();
 const rowidToId = new Map();
 // vec0 virtual table requires BigInt rowids, not plain JS numbers
