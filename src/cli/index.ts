@@ -33,6 +33,7 @@ import { share } from './commands/share.js';
 import { unshare } from './commands/unshare.js';
 import { touch } from './commands/touch.js';
 import { hot } from './commands/hot.js';
+import { lint } from './commands/lint.js';
 import { codebase } from './commands/codebase.js';
 import { recentSessions } from './commands/recent-sessions.js';
 
@@ -68,6 +69,7 @@ const commands: Record<string, CommandFn> = {
   unshare,
   touch,
   hot,
+  lint,
   codebase,
   'recent-sessions': recentSessions,
 };
