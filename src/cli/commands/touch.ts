@@ -147,11 +147,20 @@ export const touch = async (rest: readonly string[]): Promise<number> => {
       console.error(`touch: ${formatError(streamRes.error)}`);
       return 1;
     }
-    const { nodes, redactions_applied } = streamRes.value;
+    const { nodes, redactions_applied, rejected } = streamRes.value;
 
     console.log(
       `touch: peer ${resolved.peerId} returned ${nodes.length} node(s) from room '${parsed.room}'${redactions_applied > 0 ? ` (${redactions_applied} redaction${redactions_applied === 1 ? '' : 's'} applied server-side)` : ''}`,
     );
+    if (rejected.length > 0) {
+      console.error(
+        `touch: rejected ${rejected.length} node(s) at validation boundary:`,
+      );
+      for (const r of rejected.slice(0, 5)) {
+        console.error(`  idx=${r.index} — ${r.failure.kind}`);
+      }
+      if (rejected.length > 5) console.error(`  ...and ${rejected.length - 5} more`);
+    }
 
     if (parsed.dryRun) {
       for (const n of nodes.slice(0, 10)) {

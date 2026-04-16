@@ -42,6 +42,7 @@ import type { GraphRepository } from './graph-repository.js';
 import { loadSharedRooms } from './share-store.js';
 import { redactNodes } from '../domain/secret-gate.js';
 import { buildPatterns } from '../domain/sharing.js';
+import { validateRemoteNodes, type ValidationFailure } from '../domain/remote-node-validator.js';
 import { createRateLimiter, type RateLimiter } from './search-sync.js';
 
 // ─────────────────────── framing ──────────────────────────────────────────────
@@ -211,6 +212,8 @@ export const unregisterTouchProtocol = (
 export interface TouchResult {
   readonly nodes: readonly GraphNode[];
   readonly redactions_applied: number;
+  /** Non-empty when the responder sent nodes that failed validation. */
+  readonly rejected: ReadonlyArray<{ readonly index: number; readonly failure: ValidationFailure }>;
 }
 
 /**
@@ -234,17 +237,39 @@ export const openTouchStream = (
         const iter = fs.frameIter();
         const frame = await iter.next();
         if (frame.done || !frame.value) {
-          return { nodes: [], redactions_applied: 0 };
+          return { nodes: [], redactions_applied: 0, rejected: [] };
         }
-        const resp = JSON.parse(decoder.decode(frame.value)) as TouchResponse;
+        // Parse defensively — an adversarial peer may send shapes that
+        // don't match TouchResponse. Prototype-pollution gate: a reviver
+        // drops __proto__/constructor/prototype keys at parse time so no
+        // downstream walker can pick them up. Shape checks after parse.
+        const unsafeReviver = (key: string, value: unknown): unknown =>
+          key === '__proto__' || key === 'constructor' || key === 'prototype'
+            ? undefined
+            : value;
+        let resp: TouchResponse;
+        try {
+          resp = JSON.parse(decoder.decode(frame.value), unsafeReviver) as TouchResponse;
+        } catch (e) {
+          throw new Error(`malformed-response: ${(e as Error).message}`);
+        }
+        if (!resp || typeof resp !== 'object' || resp.type !== 'touch-response') {
+          throw new Error('malformed-response: wrong shape');
+        }
         if (resp.error) {
           // Surface peer-side refusals as a thrown error so the ResultAsync
           // wrapper classifies them correctly via the catch path below.
           throw new Error(`remote:${resp.error}`);
         }
+        // Validate every node at the trust boundary before handing them
+        // back to the caller. Survivors are safe to upsertNode; rejects
+        // are surfaced so the CLI can report them.
+        const rawNodes = Array.isArray(resp.nodes) ? resp.nodes : [];
+        const { accepted, rejected } = validateRemoteNodes(rawNodes);
         return {
-          nodes: resp.nodes ?? [],
+          nodes: accepted,
           redactions_applied: resp.redactions_applied ?? 0,
+          rejected,
         };
       } finally {
         fs.close();
