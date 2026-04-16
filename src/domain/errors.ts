@@ -295,7 +295,31 @@ export const SessionError = {
 
 // ─────────────────────── AppError union ───────────────────
 
-export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError;
+// ─────────────────────── TouchError (Phase 31 — asymmetric graph exchange) ───────
+
+/**
+ * Errors from the `touch` bounded context: one-shot asymmetric pull of a
+ * remote peer's public room graph. Unlike ShareError (symmetric Y.js CRDT
+ * replication), touch has no intersection requirement and no persistent
+ * state — a stream opens, a request is sent, a response is received, the
+ * stream closes. Failure modes mirror SearchError's request/response shape.
+ */
+export type TouchError =
+  | { readonly type: 'TouchRoomNotShared'; readonly peer: string; readonly room: string }
+  | { readonly type: 'TouchProtocolError'; readonly peer: string; readonly message: string }
+  | { readonly type: 'TouchTimeout';       readonly peer: string; readonly elapsedMs: number }
+  | { readonly type: 'TouchBudgetExceeded'; readonly peer: string; readonly max: number }
+  | { readonly type: 'TouchRemoteError';   readonly peer: string; readonly code: string };
+
+export const TouchError = {
+  roomNotShared:   (peer: string, room: string): TouchError    => ({ type: 'TouchRoomNotShared', peer, room }),
+  protocolError:   (peer: string, message: string): TouchError => ({ type: 'TouchProtocolError', peer, message }),
+  timeout:         (peer: string, elapsedMs: number): TouchError => ({ type: 'TouchTimeout', peer, elapsedMs }),
+  budgetExceeded:  (peer: string, max: number): TouchError     => ({ type: 'TouchBudgetExceeded', peer, max }),
+  remoteError:     (peer: string, code: string): TouchError    => ({ type: 'TouchRemoteError', peer, code }),
+} as const;
+
+export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError | TouchError;
 
 /** Render a tagged error as a one-line human-readable string. */
 export const formatError = (e: AppError): string => {
@@ -372,6 +396,16 @@ export const formatError = (e: AppError): string => {
       return `search protocol error with peer ${e.peer}: ${e.message}`;
     case 'SearchTimeout':
       return `search timeout for peer ${e.peer} after ${e.elapsedMs}ms`;
+    case 'TouchRoomNotShared':
+      return `touch: peer ${e.peer} does not share room '${e.room}'`;
+    case 'TouchProtocolError':
+      return `touch protocol error with peer ${e.peer}: ${e.message}`;
+    case 'TouchTimeout':
+      return `touch timeout for peer ${e.peer} after ${e.elapsedMs}ms`;
+    case 'TouchBudgetExceeded':
+      return `touch response from peer ${e.peer} exceeds max nodes (${e.max})`;
+    case 'TouchRemoteError':
+      return `touch remote error from peer ${e.peer}: ${e.code}`;
     case 'CodebaseDbOpenError':
       return `code graph db open error at ${e.path}: ${e.message}`;
     case 'CodebaseDbReadError':

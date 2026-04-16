@@ -21,7 +21,7 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync, mkdirSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ResultAsync, okAsync } from 'neverthrow';
-import type { AppError } from '../domain/errors.js';
+import type { AppError, ShareError } from '../domain/errors.js';
 import { formatError } from '../domain/errors.js';
 import { roomIds } from '../domain/rooms.js';
 import type { RoomRun } from '../domain/sources.js';
@@ -52,6 +52,16 @@ import {
   unregisterSearchProtocol,
   type SearchRegistry,
 } from '../infrastructure/search-sync.js';
+import {
+  createTouchRegistry,
+  registerTouchProtocol,
+  unregisterTouchProtocol,
+  type TouchRegistry,
+} from '../infrastructure/touch-protocol.js';
+import {
+  TOUCH_DEFAULT_RATE_PER_SEC,
+  TOUCH_DEFAULT_BURST,
+} from '../domain/touch.js';
 import {
   createHealthTracker,
   type HealthTracker,
@@ -166,8 +176,14 @@ export const runOneTick = (deps: DaemonDeps): ResultAsync<TickResult, AppError> 
     })
     .andThen((tickResult) => {
       if (!deps.shareSync) {
+        daemonLog(deps.homePath, 'share sync tick: skipped (no registry)');
         return okAsync<TickResult, AppError>(tickResult);
       }
+      const peerCount = deps.shareSync.node.getPeers().length;
+      daemonLog(
+        deps.homePath,
+        `share sync tick: starting (connected_peers=${peerCount})`,
+      );
       return runShareSyncTick(deps.shareSync)
         .map((sync) => {
           daemonLog(deps.homePath, `share sync tick: opened=${sync.opened}`);
@@ -269,6 +285,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
   let liveNode: Libp2p | null = null;
   let liveSync: ShareSyncRegistry | null = null;
   let liveSearch: SearchRegistry | null = null; // Phase 17
+  let liveTouch: TouchRegistry | null = null; // Phase 31
   let liveHealthTracker: HealthTracker | null = null; // Phase 18
   const identityPath = join(deps.homePath, 'peer-identity.json');
   if (existsSync(identityPath)) {
@@ -283,11 +300,13 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
           daemonLog(deps.homePath, `share sync skipped — identity: ${formatError(idRes.error)}`);
         } else {
           const nodeRes = await createNode(idRes.value, {
-            listenPort: 0, // ephemeral — daemon does not need a fixed port for v1
-            listenHost: '127.0.0.1',
+            listenPort: cfgRes.value.peer.port,
+            listenHost: cfgRes.value.peer.listen_host,
             mdns: cfgRes.value.peer.mdns,
             dhtEnabled: cfgRes.value.peer.dht.enabled,
             peersPath: join(deps.homePath, 'peers.json'), // enables peer:discovery persistence
+            relays: cfgRes.value.peer.relays,
+            upnp: cfgRes.value.peer.upnp,
           });
           if (nodeRes.isErr()) {
             daemonLog(deps.homePath, `share sync skipped — libp2p: ${formatError(nodeRes.error)}`);
@@ -359,6 +378,55 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
               liveSync = null;
             } else {
               daemonLog(deps.homePath, `share sync registered: /wellinformed/share/1.0.0`);
+
+              // P2P-sync bug fix: the daemon's main-tick share sync cadence is
+              // tied to research-tick interval (daily by default), which leaves
+              // new connections unsynced for up to 24 hours. Two complementary
+              // triggers close the gap:
+              //   1. Immediate tick right after registration — covers peers
+              //      dialed during startup.
+              //   2. Reactive tick on every connection:open — covers inbound
+              //      peer connections, reconnects, and late-discovered peers.
+              const syncRegistry = liveSync;
+              void runShareSyncTick(syncRegistry)
+                .map((sync) => {
+                  daemonLog(
+                    deps.homePath,
+                    `share sync tick (startup): opened=${sync.opened}`,
+                  );
+                  return undefined;
+                })
+                .orElse((e) => {
+                  daemonLog(
+                    deps.homePath,
+                    `share sync tick (startup) error: ${formatError(e)}`,
+                  );
+                  return okAsync<undefined, ShareError>(undefined);
+                });
+
+              liveNode.addEventListener('connection:open', (evt) => {
+                const conn = evt.detail;
+                const peerId = conn.remotePeer.toString();
+                daemonLog(
+                  deps.homePath,
+                  `connection:open peer=${peerId} — triggering share sync tick`,
+                );
+                void runShareSyncTick(syncRegistry)
+                  .map((sync) => {
+                    daemonLog(
+                      deps.homePath,
+                      `share sync tick (on-connect): opened=${sync.opened}`,
+                    );
+                    return undefined;
+                  })
+                  .orElse((e) => {
+                    daemonLog(
+                      deps.homePath,
+                      `share sync tick (on-connect) error: ${formatError(e)}`,
+                    );
+                    return okAsync<undefined, ShareError>(undefined);
+                  });
+              });
             }
 
             // Phase 17: register federated search protocol alongside share protocol.
@@ -378,6 +446,26 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
             } else {
               daemonLog(deps.homePath, `search protocol registered: /wellinformed/search/1.0.0`);
             }
+
+            // Phase 31: register asymmetric touch protocol — one-shot pull
+            // of a remote peer's shared-room graph with pre-transmission
+            // redaction via secret-gate. Separate registry, shared libp2p
+            // node, stricter rate limit than search (touch is heavier).
+            liveTouch = createTouchRegistry(
+              liveNode,
+              deps.homePath,
+              deps.graphs,
+              TOUCH_DEFAULT_RATE_PER_SEC,
+              TOUCH_DEFAULT_BURST,
+              cfgRes.value.security.secrets_patterns,
+            );
+            const touchReg = await registerTouchProtocol(liveTouch);
+            if (touchReg.isErr()) {
+              daemonLog(deps.homePath, `touch protocol register failed: ${formatError(touchReg.error)}`);
+              liveTouch = null;
+            } else {
+              daemonLog(deps.homePath, `touch protocol registered: /wellinformed/touch/1.0.0`);
+            }
           }
         }
       }
@@ -390,7 +478,10 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
   const tickDeps: DaemonDeps = { ...deps, shareSync: liveSync, healthTracker: liveHealthTracker };
 
   const cleanup = async (): Promise<void> => {
-    // Cleanup order: search → share → node.stop (per plan spec)
+    // Cleanup order: touch → search → share → node.stop
+    if (liveTouch) {
+      try { await unregisterTouchProtocol(liveTouch); } catch { /* benign */ }
+    }
     if (liveSearch) {
       try { await unregisterSearchProtocol(liveSearch); } catch { /* benign */ }
     }

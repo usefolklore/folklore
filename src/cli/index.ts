@@ -31,6 +31,7 @@ import { dashboard } from './commands/dashboard.js';
 import { peer } from './commands/peer.js';
 import { share } from './commands/share.js';
 import { unshare } from './commands/unshare.js';
+import { touch } from './commands/touch.js';
 import { codebase } from './commands/codebase.js';
 import { recentSessions } from './commands/recent-sessions.js';
 
@@ -64,6 +65,7 @@ const commands: Record<string, CommandFn> = {
   peer,
   share,
   unshare,
+  touch,
   codebase,
   'recent-sessions': recentSessions,
 };
