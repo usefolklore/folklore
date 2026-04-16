@@ -39,6 +39,7 @@ import { loadOrCreateIdentity, createNode, dialAndTag } from '../infrastructure/
 import { loadPeers } from '../infrastructure/peer-store.js';
 import { buildPatterns } from '../domain/sharing.js';
 import { ensureSessionsRoom, enforceRetention } from '../application/session-ingest.js';
+import { refreshHotCache } from '../application/hot-cache-tick.js';
 import {
   createShareSyncRegistry,
   registerShareProtocol,
@@ -218,6 +219,17 @@ export const runOneTick = (deps: DaemonDeps): ResultAsync<TickResult, AppError> 
         })
         .orElse((e): ResultAsync<TickResult, AppError> => {
           daemonLog(deps.homePath, `retention config error: ${formatError(e)}`);
+          return okAsync<TickResult, AppError>(tickResult);
+        });
+    })
+    .andThen((tickResult) => {
+      // Phase 32 — refresh the hot cache after every tick so Claude
+      // sessions starting between ticks always see a current recency
+      // digest. Failures are logged, never fatal to the tick chain.
+      return refreshHotCache(deps.graphs, deps.homePath)
+        .map(() => tickResult)
+        .orElse((e): ResultAsync<TickResult, AppError> => {
+          daemonLog(deps.homePath, `hot cache error: ${formatError(e)}`);
           return okAsync<TickResult, AppError>(tickResult);
         });
     });
