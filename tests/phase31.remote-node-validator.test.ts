@@ -52,6 +52,7 @@ test('phase-31: __proto__ / constructor / prototype keys are stripped silently',
     label: 'legit',
     file_type: 'document',
     source_file: 'x',
+    fetched_at: '2026-04-17T00:00:00Z',
     __proto__: { polluted: true },
     constructor: { polluted: true },
     prototype: { polluted: true },
@@ -162,6 +163,7 @@ test('phase-31: arxiv: scheme accepted', () => {
   const r = validateRemoteNode({
     id: 'x', label: 'y', file_type: 'paper', source_file: 'arxiv',
     source_uri: 'arxiv:2604.08540',
+    fetched_at: '2026-04-17T00:00:00Z',
   });
   assert.ok(r.isOk());
 });
@@ -184,8 +186,14 @@ test('phase-31: 100KB serialised node rejected at size gate', () => {
 // ─── batch behaviour ─────────────────────────────────────────────
 
 test('phase-31: validateRemoteNodes partitions ok and rejected', () => {
-  const good = { id: 'g', label: 'g', file_type: 'document', source_file: 's' };
-  const bad = { id: 'b', label: 'b', file_type: 'not-a-kind', source_file: 's' };
+  const good = {
+    id: 'g', label: 'g', file_type: 'document', source_file: 's',
+    fetched_at: '2026-04-17T00:00:00Z',
+  };
+  const bad = {
+    id: 'b', label: 'b', file_type: 'not-a-kind', source_file: 's',
+    fetched_at: '2026-04-17T00:00:00Z',
+  };
   const { accepted, rejected } = validateRemoteNodes([good, bad, good]);
   assert.strictEqual(accepted.length, 2);
   assert.strictEqual(rejected.length, 1);
@@ -197,6 +205,7 @@ test('phase-31: validateRemoteNodes partitions ok and rejected', () => {
 test('phase-31: unknown extra keys are dropped, node still accepted', () => {
   const r = validateRemoteNode({
     id: 'x', label: 'y', file_type: 'document', source_file: 'z',
+    fetched_at: '2026-04-17T00:00:00Z',
     some_adapter_specific_key: 'value',
     toJSON: () => 'hijacked', // attempted gadget — not a string, dropped
   });

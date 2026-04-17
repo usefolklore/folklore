@@ -15,6 +15,7 @@ import { existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { ShareError } from '../domain/errors.js';
 import { ShareError as SE } from '../domain/errors.js';
+import { SYSTEM_ROOMS, isSystemRoomName } from '../domain/system-rooms.js';
 
 /** Current shared-rooms.json schema version. Bump when making breaking changes. */
 const SHARED_ROOMS_VERSION = 2 as const;
@@ -235,10 +236,43 @@ export const addSharedRoom = (
 export const removeSharedRoom = (
   file: SharedRoomsFile,
   name: string,
-): SharedRoomsFile => ({
-  version: file.version,
-  rooms: file.rooms.filter((r) => r.name !== name),
-});
+): SharedRoomsFile => {
+  // System-managed rooms (toolshed / research) are P2P-always-shared
+  // by design — refusing to remove them keeps the out-of-the-box
+  // surface every peer can count on.
+  if (isSystemRoomName(name)) return file;
+  return {
+    version: file.version,
+    rooms: file.rooms.filter((r) => r.name !== name),
+  };
+};
+
+/**
+ * Boot-time invariant: the two system rooms (toolshed, research) are
+ * always present in shared-rooms.json with shareable: true. Callers
+ * run this on CLI startup / daemon boot so a fresh install or a file
+ * rolled forward from an older version picks them up automatically.
+ *
+ * Idempotent — no-op when both rooms are already present + shareable.
+ */
+export const ensureSystemRoomsShared = (
+  path: string,
+  now: Date = new Date(),
+): ResultAsync<SharedRoomsFile, ShareError> =>
+  mutateSharedRooms(path, (current) => {
+    const iso = now.toISOString();
+    let out: SharedRoomsFile = current;
+    for (const spec of SYSTEM_ROOMS) {
+      const existing = out.rooms.find((r) => r.name === spec.name);
+      const desired: SharedRoomRecord = {
+        name: spec.name,
+        sharedAt: existing?.sharedAt ?? iso,
+        shareable: true,
+      };
+      out = addSharedRoom(out, desired);
+    }
+    return out;
+  });
 
 // ─────────────────────── transactional mutate ─────────────
 

@@ -44,6 +44,10 @@ import { redactNodes } from '../domain/secret-gate.js';
 import { buildPatterns } from '../domain/sharing.js';
 import { validateRemoteNodes, type ValidationFailure } from '../domain/remote-node-validator.js';
 import { createRateLimiter, type RateLimiter } from './search-sync.js';
+import {
+  findSystemRoom,
+  nodesInSystemRoom,
+} from '../domain/system-rooms.js';
 
 // ─────────────────────── framing ──────────────────────────────────────────────
 
@@ -147,15 +151,24 @@ const handleTouchRequest = async (
       return;
     }
 
+    // System rooms (toolshed / research) are always shareable — they're the
+    // two out-of-the-box surfaces every peer advertises. Other rooms have
+    // to be explicitly opted in via shared-rooms.json. Regardless, we
+    // always load the file here — system-room virtual membership respects
+    // `shareable: false` entries as an opt-out.
+    const systemRoom = findSystemRoom(req.room);
     const sharedRes = await loadSharedRooms(deps.sharedRoomsPath);
     if (sharedRes.isErr()) {
       await writeResponse(fs, errorResponse('internal-error'));
       return;
     }
-    const isShared = sharedRes.value.rooms.some((r) => r.name === req.room);
-    if (!isShared) {
-      await writeResponse(fs, errorResponse('room-not-shared'));
-      return;
+    const sharedRooms = sharedRes.value.rooms;
+    if (!systemRoom) {
+      const isShared = sharedRooms.some((r) => r.name === req.room && r.shareable !== false);
+      if (!isShared) {
+        await writeResponse(fs, errorResponse('room-not-shared'));
+        return;
+      }
     }
 
     const graphRes = await deps.graphRepo.load();
@@ -164,8 +177,21 @@ const handleTouchRequest = async (
       return;
     }
 
+    // Physical rooms explicitly marked `shareable: false` are the user's
+    // opt-out signal — nodes in them must NOT leak via system-room
+    // virtual membership either.
+    const isolatedRooms = new Set<string>(
+      sharedRooms.filter((r) => r.shareable === false).map((r) => r.name),
+    );
+
+    // System rooms are virtual — membership derived from source_uri
+    // scheme and results sorted newest-first by fetched_at. Physical
+    // rooms use the existing room-field filter.
     const cap = Math.min(req.max_nodes ?? TOUCH_MAX_NODES, TOUCH_MAX_NODES);
-    const roomNodes = nodesInRoom(graphRes.value, req.room).slice(0, cap);
+    const allRoomNodes = systemRoom
+      ? nodesInSystemRoom(graphRes.value.json.nodes, systemRoom, isolatedRooms)
+      : nodesInRoom(graphRes.value, req.room);
+    const roomNodes = allRoomNodes.slice(0, cap);
 
     const { nodes: cleaned, redactions_by_node } = redactNodes(roomNodes, deps.patterns);
     const totalRedactions = Array.from(redactions_by_node.values())

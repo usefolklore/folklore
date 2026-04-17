@@ -80,13 +80,24 @@ const logMiss = (tool, query) => safe(() => {
   }) + '\n');
 });
 
+const renderAge = (h) => {
+  // age_days arrives as a fractional number or null; format coarsely so
+  // Claude can act on it without parsing: "today" / "3d" / "6w" / "11mo"
+  if (typeof h.age_days !== 'number') return 'age:?';
+  const d = h.age_days;
+  if (d < 1)     return 'today';
+  if (d < 14)    return `${Math.round(d)}d`;
+  if (d < 90)    return `${Math.round(d / 7)}w`;
+  return `${Math.round(d / 30)}mo`;
+};
+
 const renderHits = (hits, query) => {
   const head = `wellinformed: ${hits.length} indexed node(s) match "${query.slice(0, 80)}"`;
   const body = hits.map((h, i) => {
     const snippet = h.summary ? ` — ${String(h.summary).slice(0, SNIPPET_LEN).replace(/\s+/g, ' ')}` : '';
-    return `  ${i + 1}. ${h.label ?? h.id} [${h.room ?? '?'}] d=${h.distance}${snippet}\n     → ${h.source_uri ?? h.id}`;
+    return `  ${i + 1}. ${h.label ?? h.id} [${h.room ?? '?'}, ${renderAge(h)}] d=${h.distance}${snippet}\n     → ${h.source_uri ?? h.id}`;
   }).join('\n');
-  return `${head}\n${body}\n\nPrefer these over the outbound tool. Load full content via mcp__wellinformed__get_node(id) or mcp__wellinformed__ask(query).`;
+  return `${head}\n${body}\n\nPrefer these over the outbound tool. Load full content via mcp__wellinformed__get_node(id) or mcp__wellinformed__ask(query). If a hit's age is stale for the task (research > 7d, toolshed > 30d), trigger a fresh pull via WebFetch / WebSearch / \`wellinformed trigger\` instead of trusting the cache.`;
 };
 
 const main = () => {

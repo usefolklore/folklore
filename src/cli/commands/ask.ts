@@ -90,8 +90,16 @@ export const ask = async (args: readonly string[]): Promise<number> => {
     }
 
     if (parsed.json) {
+      const nowMs = Date.now();
       const hits = matches.value.map((m) => {
         const node = getNode(graph.value, m.node_id);
+        // Age in fractional days. null when the node has no fetched_at
+        // — surfaced to the LLM so it can treat un-aged hits as stale.
+        const fetchedAt = typeof node?.fetched_at === 'string' ? node.fetched_at : null;
+        const fetchedMs = fetchedAt ? Date.parse(fetchedAt) : NaN;
+        const ageDays = Number.isFinite(fetchedMs)
+          ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
+          : null;
         return {
           id: m.node_id,
           label: node?.label ?? null,
@@ -99,6 +107,8 @@ export const ask = async (args: readonly string[]): Promise<number> => {
           distance: Number(m.distance.toFixed(4)),
           source_uri: node?.source_uri ?? node?.source_file ?? null,
           summary: typeof node?.summary === 'string' ? (node.summary as string).slice(0, 400) : null,
+          fetched_at: fetchedAt,
+          age_days: ageDays,
         };
       });
       console.log(JSON.stringify({ query: parsed.query, room: parsed.room ?? null, hits }));

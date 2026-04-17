@@ -67,11 +67,25 @@ const seedGraph = (): GraphJson => ({
       fetched_at: '2026-04-17T00:00:00Z',
     },
     {
+      // hn:// is a research-scheme URI, so it lives in the `research`
+      // system room alongside the arxiv + https nodes above.
+      id: 'hn://story/1',
+      label: 'HN thread on retrieval latency',
+      file_type: 'document',
+      source_file: 'hn',
+      room: 'research',
+      source_uri: 'hn://story/1',
+      fetched_at: '2026-04-17T00:00:00Z',
+    },
+    {
+      // Toolshed-scheme node — covered by the E4 test. Intentionally
+      // in a user-chosen `room` (not 'toolshed') to prove virtual
+      // membership wins over the physical room field.
       id: 'git://abc123',
       label: 'commit abc123 — hybrid bm25 fix',
       file_type: 'code',
       source_file: 'git:local',
-      room: 'research',
+      room: 'wellinformed-dev',
       source_uri: 'git://abc123',
       fetched_at: '2026-04-17T00:00:00Z',
     },
@@ -104,9 +118,17 @@ describe('Phase 35 — P2P touch E2E (two real libp2p nodes)', () => {
     writeFileSync(
       join(aliceHome, 'shared-rooms.json'),
       JSON.stringify({
-        version: 1,
+        version: 2,
         rooms: [
+          // `research` as a physical room is legacy — system room
+          // coverage handles it now, but we keep the entry so older
+          // peers who dial by name still land on a valid room.
           { name: 'research', sharedAt: '2026-04-17T00:00:00Z', shareable: true },
+          // `private` explicitly opts OUT of all sharing, including
+          // virtual system-room membership. Nodes tagged `room: private`
+          // must NEVER cross the wire — this is the test's trust-boundary
+          // fixture.
+          { name: 'private',  sharedAt: '2026-04-17T00:00:00Z', shareable: false },
         ],
       }),
     );
@@ -147,23 +169,41 @@ describe('Phase 35 — P2P touch E2E (two real libp2p nodes)', () => {
     if (bobHome)   rmSync(bobHome,   { recursive: true, force: true });
   });
 
-  test('E1 round-trip: Bob pulls the shared `research` room and receives all three nodes', async () => {
+  test('E1 round-trip: Bob pulls `research` — virtual membership by URI scheme', async () => {
     assert.ok(bobNode, 'bob node must be up');
     const r = await openTouchStream(bobNode!, alicePeerId, 'research');
     assert.ok(r.isOk(), `openTouchStream failed: ${r.isErr() ? JSON.stringify(r.error) : ''}`);
     if (r.isErr()) return;
     const { nodes, rejected } = r.value;
-    assert.strictEqual(nodes.length, 3, `expected 3 nodes, got ${nodes.length}`);
+    // System-room `research` membership is derived from source_uri
+    // scheme — arxiv://, https://, hn:// all qualify. The git:// and
+    // priv:// nodes in Alice's graph must NOT leak in.
+    assert.strictEqual(nodes.length, 3, `expected 3 research-scheme nodes, got ${nodes.length}`);
     assert.strictEqual(rejected.length, 0, `unexpected rejections: ${JSON.stringify(rejected)}`);
     const ids = new Set(nodes.map((n) => n.id));
     assert.ok(ids.has('arxiv://2409.02685'));
     assert.ok(ids.has('https://example.org/rng'));
-    assert.ok(ids.has('git://abc123'));
-    // The private-room node must NOT have leaked into the research response
+    assert.ok(ids.has('hn://story/1'));
     for (const n of nodes) {
-      assert.notStrictEqual(n.id, 'priv://secret-1', 'private-room node leaked into research response');
-      assert.strictEqual(n.room, 'research');
+      assert.notStrictEqual(n.id, 'git://abc123', 'toolshed-scheme node leaked into research');
+      assert.notStrictEqual(n.id, 'priv://secret-1', 'private-room node leaked into research');
     }
+  });
+
+  test('E4 system room `toolshed`: Bob pulls toolshed and gets the git-scheme node regardless of its physical room', async () => {
+    assert.ok(bobNode);
+    // Toolshed is never listed in Alice's shared-rooms.json — the
+    // touch handler auto-allows system rooms. The git:// node's
+    // physical room is `wellinformed-dev`, NOT 'toolshed' — virtual
+    // membership wins.
+    const r = await openTouchStream(bobNode!, alicePeerId, 'toolshed');
+    assert.ok(r.isOk(), `toolshed touch failed: ${r.isErr() ? JSON.stringify(r.error) : ''}`);
+    if (r.isErr()) return;
+    const ids = new Set(r.value.nodes.map((n) => n.id));
+    assert.ok(ids.has('git://abc123'), 'git:// node must land in toolshed');
+    // No research-scheme nodes in toolshed
+    assert.ok(!ids.has('arxiv://2409.02685'));
+    assert.ok(!ids.has('hn://story/1'));
   });
 
   test('E2 gate: Bob cannot touch `private` — responder returns room-not-shared', async () => {

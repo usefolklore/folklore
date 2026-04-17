@@ -31,7 +31,11 @@ const HOME = process.env.WELLINFORMED_HOME || join(os.homedir(), '.wellinformed'
 const GRAPH_PATH = join(HOME, 'graph.json');
 const SAVE_TIMEOUT_MS = 8000;
 const MAX_BODY_BYTES = 32_000;
-const ROOM = process.env.WELLINFORMED_INBOX_ROOM || 'research-inbox';
+// System room — every WebSearch / WebFetch result lands here so every
+// peer can touch `research` and see what this agent has read lately.
+// Deliberately not tunable: the system-rooms contract is that toolshed
+// and research are the two canonical, always-available surfaces.
+const ROOM = 'research';
 
 const safe = (fn) => { try { return fn(); } catch { return undefined; } };
 

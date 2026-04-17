@@ -26,6 +26,7 @@ import { readabilityExtractor, type HtmlExtractor } from '../infrastructure/pars
 import { sourceRegistry, type SourceRegistry } from '../infrastructure/sources/registry.js';
 import { loadConfig } from '../infrastructure/config-loader.js';
 import { buildPatterns } from '../domain/sharing.js';
+import { ensureSystemRoomsShared } from '../infrastructure/share-store.js';
 import type { IngestDeps } from '../application/ingest.js';
 
 export const wellinformedHome = (): string =>
@@ -119,6 +120,13 @@ export interface Runtime {
 export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
   const paths = runtimePaths();
   const cfgPath = join(paths.home, 'config.yaml');
+
+  // Fire-and-forget: guarantee toolshed + research are present and
+  // marked shareable in shared-rooms.json. Boot-time invariant —
+  // doesn't block runtime return; any failure is non-fatal since the
+  // touch handler already auto-allows system rooms regardless of
+  // shared-rooms.json state.
+  void ensureSystemRoomsShared(join(paths.home, 'shared-rooms.json'));
 
   return loadConfig(cfgPath)
     .mapErr((e): AppError => e)

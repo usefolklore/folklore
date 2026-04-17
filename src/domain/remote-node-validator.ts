@@ -24,6 +24,7 @@
 
 import { err, ok, type Result } from 'neverthrow';
 import type { GraphNode } from './graph.js';
+import { isOpaqueInternalUri } from './internal-schemes.js';
 
 // ─────────────────────── constants ─────────────────────────
 
@@ -55,35 +56,14 @@ const ALLOWED_FILE_TYPES = new Set<GraphNode['file_type']>([
  * can be SSRF vectors.
  */
 /**
- * Allow-listed URI schemes. Two categories:
- *   - Network-fetchable (NETWORK_SCHEMES below): http, https — real
- *     URLs that can trigger an outbound fetch. Must pass URL() parse
- *     and the BLOCKED_HOST_PREFIXES SSRF gate.
- *   - Opaque internal (OPAQUE_INTERNAL_PREFIXES): references used by
- *     specific adapters. arxiv://<id>, p2p://<peer>, git://<hash>,
- *     npm://<pkg>, websearch:<query>, claude-session://<sid>, and
- *     file-uri:<path> never trigger a network fetch on their own. They
- *     may not be URL()-parseable (git hashes have no authority) so we
- *     bypass the URL parse path and only check length + control chars.
+ * Network-fetchable URI schemes. Real URLs that trigger outbound HTTP
+ * on ingest; must pass URL() parse + the SSRF host gate below.
  *
- * Adding a new internal scheme? Append the `<scheme>:` prefix here —
- * this set is the single source of truth for both validateUri fast-path
- * and scheme-allow checks.
+ * The orthogonal set — opaque internal schemes (git, npm, arxiv, ...)
+ * — lives in `./internal-schemes.ts` so system-rooms classification
+ * and validator fast-path share one list.
  */
 const NETWORK_SCHEMES = new Set<string>(['http:', 'https:']);
-
-const OPAQUE_INTERNAL_PREFIXES = [
-  'arxiv:',
-  'p2p:',
-  'git:',
-  'npm:',
-  'websearch:',
-  'claude-session:',
-  'file-uri:',
-] as const;
-
-const isOpaqueInternalUri = (raw: string): boolean =>
-  OPAQUE_INTERNAL_PREFIXES.some((p) => raw.startsWith(p));
 
 const ALLOWED_URI_SCHEMES = NETWORK_SCHEMES;
 
@@ -147,7 +127,9 @@ export type ValidationFailure =
   | { readonly kind: 'UriHostBlocked'; readonly host: string }
   | { readonly kind: 'UriMalformed'; readonly uri: string; readonly message: string }
   | { readonly kind: 'SerialisedNodeTooLarge'; readonly bytes: number }
-  | { readonly kind: 'ControlCharacterInString'; readonly field: string };
+  | { readonly kind: 'ControlCharacterInString'; readonly field: string }
+  | { readonly kind: 'FetchedAtMissing' }
+  | { readonly kind: 'FetchedAtInvalid'; readonly got: string };
 
 // ─────────────────────── predicates ────────────────────────
 
@@ -253,6 +235,20 @@ export const validateRemoteNode = (raw: unknown): Result<GraphNode, ValidationFa
     const r = validateUri(src.source_uri);
     if (r.isErr()) return err(r.error);
     sourceUri = r.value;
+  }
+
+  // fetched_at is REQUIRED on the trust boundary so receiving peers
+  // (and their LLMs) can compute `age_days` and decide trust-cache vs
+  // re-fetch. A node with no timestamp is indistinguishable from a
+  // node forged ten years ago — we reject outright rather than
+  // surface "age unknown" hits that look as fresh as today's read.
+  const fetchedAt = src.fetched_at;
+  if (typeof fetchedAt !== 'string' || fetchedAt.length === 0) {
+    return err({ kind: 'FetchedAtMissing' });
+  }
+  const fetchedTs = Date.parse(fetchedAt);
+  if (!Number.isFinite(fetchedTs)) {
+    return err({ kind: 'FetchedAtInvalid', got: fetchedAt });
   }
 
   // Build the sanitised copy — only allow-listed keys pass.
