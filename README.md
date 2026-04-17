@@ -198,6 +198,30 @@ echo "body..." | wellinformed save --room project --type concept --label "RNG tu
 
 Saved nodes are both vector-embedded and BM25-indexed so they surface from `ask` / `search` immediately.
 
+## Decentralized identity — your keypair, not someone's customer record (v2.1, DID wave)
+
+Every wellinformed install provisions a W3C `did:key` on first boot. Ed25519 keypair, 32-byte pubkey, base58btc-encoded with the `0xed01` multicodec prefix per the [did:key spec](https://w3c-ccg.github.io/did-method-key/). The user DID is long-lived and survives device changes; a device key is authorized by the user DID via a signed tuple `(device_id, device_pub, authorized_at)` so individual devices can be rotated without losing identity.
+
+```bash
+wellinformed identity show           # prints your user DID + authorized devices
+wellinformed identity rotate         # new device key, same user DID, old device revoked
+wellinformed identity export         # BIP39 mnemonic recovery phrase
+wellinformed identity import         # restore from recovery phrase on a new machine
+```
+
+**Signed envelopes at the wire** — any outbound node (memory entry, oracle answer, room share) can be wrapped with a device signature + the device-authorization chain. Receivers verify the whole chain **offline, in under 2 ms, three Ed25519 checks**. No DID resolver, no registry lookup, no network call. Domain-separation tags (`wellinformed-auth:v1:` vs `wellinformed-sig:v1:`) prevent replay of authorization signatures as payload signatures.
+
+**Canonical JSON** — signatures are over key-sorted, deterministic JSON encoding so the same payload produces byte-identical bytes across Node versions, architectures, and runtimes. Pure Node `crypto` primitives (PKCS8/SPKI DER paths), zero new crypto deps, 38 tests passing across three test files.
+
+```
+src/domain/identity.ts             641 lines of pure domain — codec + keys + envelope + verify
+src/infrastructure/identity-store.ts  encrypted-at-rest seed + JSON public bundle
+src/application/identity-lifecycle.ts ensure / rotate / export / import — the lifecycle ops
+src/application/identity-bridge.ts    envelope wrapping for share-sync, oracle, session capture
+```
+
+**Why this matters:** the VC-funded AI memory category holds your identity in their user table. When they change pricing, when they get acquired, when they revoke your account — they take your identity with them. wellinformed's identity is math you already own; no intermediary to revoke it.
+
 ## Structured codebase indexing (v2.0, Phase 19)
 
 Separate from the research graph, wellinformed parses codebases into a rich structured code graph via tree-sitter. Codebases are first-class aggregates attachable to rooms via a join table. Nothing mixes the research nodes and the code nodes — two distinct graphs, two distinct query surfaces.
