@@ -93,9 +93,11 @@ After `wellinformed claude install`, a PreToolUse hook fires before every Glob/G
 
 > *"wellinformed: Knowledge graph exists (425 nodes). Consider using search, ask, get_node before searching raw files."*
 
-Claude then calls the MCP tools instead of grepping. 15 tools available:
+Claude then calls the MCP tools instead of grepping. 21 tools available:
 
-`search` · `ask` · `get_node` · `get_neighbors` · `find_tunnels` · `trigger_room` · `discover_loop` · `graph_stats` · `room_create` · `room_list` · `sources_list` · `federated_search` · `code_graph_query`
+`search` · `ask` · `get_node` · `get_neighbors` · `find_tunnels` · `trigger_room` · `discover_loop` · `graph_stats` · `room_create` · `room_list` · `sources_list` · `federated_search` · `code_graph_query` · `recent_sessions` · `deep_search` · `oracle_ask` · `oracle_answer` · `list_open_questions` · `oracle_answers` · `oracle_answerable`
+
+The v2.1 hook layer goes further: before every Grep/Glob/Read/WebSearch/WebFetch, a PreToolUse hook runs `wellinformed ask --json` on the extracted query and injects the top-3 hits into Claude's context. On a miss, the query is logged for later ingest. After every WebSearch/WebFetch, a PostToolUse hook auto-saves the result as a `source` node in the always-on `research` system room so the next session finds it via the graph instead of the network.
 
 Works with **Claude Code** (auto-discovered), **Codex**, **OpenClaw**, and any MCP host.
 
@@ -135,6 +137,66 @@ wellinformed ask "proxmox GPU passthrough" --peers  # query across connected pee
 **Federated search + discovery** (Phase 17): `ask --peers` embeds your query locally, fans out to connected peers with a 2s per-peer timeout, each runs sqlite-vec against its own shared-room vectors, results merge by cosine distance with `_source_peer` annotation. mDNS auto-discovers peers on your LAN. DHT wiring lands off-by-default for internet-wide discovery.
 
 **Production networking** (Phase 18): libp2p circuit-relay-v2 + dcutr (direct connection upgrade via hole punching) + UPnP port forwarding handle NAT traversal. Application-layer bandwidth limiter caps per-peer-per-room updates. Passive connection health monitoring flags degraded peers without active probes. **10 simultaneous peers connect in-process in ~2.5s** (integration tested).
+
+## System rooms + oracle bulletin board (v2.1)
+
+Every wellinformed peer advertises **three always-on system rooms** out of the box. No opt-in, no manual sharing — every peer can touch them immediately:
+
+| System room | What it contains | Stale-after |
+|---|---|---|
+| `toolshed` | codebase, skills, MCP tools, deps, git history — "what this peer can do" | 30 days |
+| `research` | arxiv, hn, rss, web searches, web fetches, telegram — "what this peer has read" | 7 days |
+| `oracle` | Q&A bulletin board — questions + answers propagate via touch + CRDT | 14 days |
+
+Membership is **virtual** — derived from each node's `source_uri` scheme, not from its physical `room` field. A git commit tagged `room: wellinformed-dev` still shows up in `toolshed` for peers. User-chosen rooms stay intact; system rooms are an additional query-time lens.
+
+**Data aging:** every graph hit now surfaces `fetched_at` + numeric `age_days`. The prefetch hook renders compact age tags inline: `label [research, 3d] d=0.82`. If a hit is older than the room's `staleAfterDays` window, Claude prefers a fresh pull over the cache. The trust boundary (remote-node-validator) **requires** `fetched_at` on every inbound node — a node with no timestamp is indistinguishable from a node forged ten years ago and gets rejected.
+
+**Opt-out** for sensitive rooms: mark them `shareable: false` in `shared-rooms.json` (or via the interactive picker below) and nodes in them are excluded from system-room virtual membership.
+
+```bash
+wellinformed share ui                             # interactive toggle list
+                                                  # (zero-dep ANSI; system rooms are never shown)
+```
+
+### Oracle — peer-to-peer Q&A at zero protocol cost
+
+The oracle bulletin board (Layer A of peer discovery) reuses the existing `touch` + CRDT surface. No new wire protocol, no new rate limiter.
+
+```bash
+wellinformed oracle ask "how do I wire prefetch hooks without adding a dep?"
+# → node oracle-question:<uuid> lands in your graph, room=oracle
+# → any peer touches `oracle` on next cycle, receives it
+
+wellinformed oracle answerable                    # what can your graph plausibly answer?
+wellinformed oracle answer <qid> "use raw ANSI + setRawMode" --confidence 0.85
+wellinformed oracle show <qid>                    # confidence-ranked answers
+```
+
+**Layer B — live oracle queries via libp2p pubsub:**
+
+```bash
+wellinformed oracle ask "..." --live              # publishes over pubsub for real-time fan-out
+wellinformed oracle answer <qid> "..." --live     # live response path
+wellinformed daemon start                         # daemon subscribes at boot and upserts
+                                                  # inbound questions/answers in real-time
+```
+
+Layer A (touch, seconds to minutes) and Layer B (pubsub, sub-second) use the same node shape and validator, so they compose cleanly. Layer A is the durable backing store; Layer B is the fast path when both sides are online.
+
+`@libp2p/floodsub` ships Layer B today; gossipsub's latest still targets libp2p/interface v2 while wellinformed runs v3 — the service API is identical so a future swap is a one-line change.
+
+### Save distilled insights
+
+Beyond raw ingest, `wellinformed save` files typed notes (synthesis / concept / decision / source) that outlive chat transcripts. Ported from [claude-obsidian](https://github.com/AgriciDaniel/claude-obsidian) — reused for the Q&A distillation flow.
+
+```bash
+wellinformed save --room project --type synthesis --label "Touch primitive" \
+  --text "Asymmetric P2P pull replacing symmetric Y.js intersection rule"
+echo "body..." | wellinformed save --room project --type concept --label "RNG tunnels"
+```
+
+Saved nodes are both vector-embedded and BM25-indexed so they surface from `ask` / `search` immediately.
 
 ## Structured codebase indexing (v2.0, Phase 19)
 
@@ -248,7 +310,7 @@ See [`.planning/BENCH-v2.md`](.planning/BENCH-v2.md) for the full 4-wave writeup
 ## Real numbers
 
 ```
-2700+ nodes │ 23 adapters │ 15 MCP tools │ 14 secret patterns │ 243 tests │ 5 phases shipped (v2.0)
+10000+ nodes │ 23 adapters │ 21 MCP tools │ 14 secret patterns │ 396 tests │ v2.0 + v2.1 shipped
 ```
 
 <details>
@@ -265,11 +327,12 @@ src/
                     tree-sitter-parser · sources/*
   application/      Use cases (ingest · discover · findTunnels · federated-search · codebase-indexer)
   daemon/           Tick loop + libp2p node lifecycle + share/search protocols
-  mcp/              15 MCP tools over stdio
-  cli/              Admin commands (peer · share · unshare · codebase · ask · etc.)
+  mcp/              21 MCP tools over stdio
+  cli/              Admin commands (peer · share · unshare · codebase · ask ·
+                    oracle · save · hot · lint · etc.)
 ```
 
-Functional DDD. Every fallible op returns `Result<T, E>`. No classes in domain/application. All deps verified via `gh api` + [ossinsight.io](https://ossinsight.io). 243 tests, zero regressions across 5 phases of v2.0.
+Functional DDD. Every fallible op returns `Result<T, E>`. No classes in domain/application. All deps verified via `gh api` + [ossinsight.io](https://ossinsight.io). 396 tests, zero regressions across v2.0 + v2.1.
 
 **v2.0 phases shipped:**
 1. Phase 15 — Peer Foundation + Security (libp2p ed25519 identity, 14-pattern secrets scanner, share audit)
@@ -277,6 +340,16 @@ Functional DDD. Every fallible op returns `Result<T, E>`. No classes in domain/a
 3. Phase 17 — Federated Search + Discovery (cross-peer semantic search, mDNS, DHT wiring)
 4. Phase 18 — Production Networking (NAT traversal, bandwidth management, health monitoring, 10-peer mesh verified)
 5. Phase 19 — Structured Codebase Indexing (tree-sitter code graph, separate from research rooms, attachable via M:N)
+6. Phase 20 — Session capture + 16th MCP tool (recent_sessions rollup, always-local room)
+
+**v2.1 waves shipped:**
+7. Phase 24–25 — Rust embed_server + bge-base via fastembed-rs (75.22% SciFact NDCG@10, +11.9 over Xenova)
+8. Phase 31–35 — Remote-node validator at trust boundary + real two-peer touch E2E (caught the silent `git://` drop bug)
+9. Phase 32–34 — Hot-cache recency digest + graph-lint (8 hygiene rules + P2P drift) + save (typed distillation notes)
+10. Phase 36 — **System rooms** (toolshed + research + oracle, always-on, age-aware, virtual membership)
+11. Phase 37 — Interactive share picker (zero-dep ANSI TUI)
+12. Phase 38 — **Oracle bulletin board** (Layer A: questions + answers via touch + CRDT, 5 MCP tools)
+13. Phase 39 — **Oracle gossip** (Layer B: real-time pubsub via @libp2p/floodsub, daemon subscribes on boot)
 
 </details>
 
