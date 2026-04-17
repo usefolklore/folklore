@@ -54,7 +54,38 @@ const ALLOWED_FILE_TYPES = new Set<GraphNode['file_type']>([
  * pipeline. gopher/ftp/data are banned because they are unused and
  * can be SSRF vectors.
  */
-const ALLOWED_URI_SCHEMES = new Set<string>(['http:', 'https:', 'arxiv:', 'p2p:']);
+/**
+ * Allow-listed URI schemes. Two categories:
+ *   - Network-fetchable (NETWORK_SCHEMES below): http, https — real
+ *     URLs that can trigger an outbound fetch. Must pass URL() parse
+ *     and the BLOCKED_HOST_PREFIXES SSRF gate.
+ *   - Opaque internal (OPAQUE_INTERNAL_PREFIXES): references used by
+ *     specific adapters. arxiv://<id>, p2p://<peer>, git://<hash>,
+ *     npm://<pkg>, websearch:<query>, claude-session://<sid>, and
+ *     file-uri:<path> never trigger a network fetch on their own. They
+ *     may not be URL()-parseable (git hashes have no authority) so we
+ *     bypass the URL parse path and only check length + control chars.
+ *
+ * Adding a new internal scheme? Append the `<scheme>:` prefix here —
+ * this set is the single source of truth for both validateUri fast-path
+ * and scheme-allow checks.
+ */
+const NETWORK_SCHEMES = new Set<string>(['http:', 'https:']);
+
+const OPAQUE_INTERNAL_PREFIXES = [
+  'arxiv:',
+  'p2p:',
+  'git:',
+  'npm:',
+  'websearch:',
+  'claude-session:',
+  'file-uri:',
+] as const;
+
+const isOpaqueInternalUri = (raw: string): boolean =>
+  OPAQUE_INTERNAL_PREFIXES.some((p) => raw.startsWith(p));
+
+const ALLOWED_URI_SCHEMES = NETWORK_SCHEMES;
 
 /**
  * Private / link-local / loopback IP prefixes. If a peer hands us a
@@ -147,8 +178,9 @@ const validateUri = (raw: string): Result<string, ValidationFailure> => {
   if (raw.length > MAX_URI_LEN) {
     return err({ kind: 'StringTooLong', field: 'source_uri', limit: MAX_URI_LEN });
   }
-  // arxiv: is our own adapter scheme; accept without URL() parse
-  if (raw.startsWith('arxiv:') || raw.startsWith('p2p:')) return ok(raw);
+  // Opaque internal schemes: identifiers, not URL targets. Skip URL()
+  // parse — these don't always have an authority component.
+  if (isOpaqueInternalUri(raw)) return ok(raw);
   let parsed: URL;
   try {
     parsed = new URL(raw);
