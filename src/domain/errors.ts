@@ -319,7 +319,37 @@ export const TouchError = {
   remoteError:     (peer: string, code: string): TouchError    => ({ type: 'TouchRemoteError', peer, code }),
 } as const;
 
-export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError | TouchError;
+// ─────────────────────── IdentityError (Phase 32 — DID wave) ─────
+
+/**
+ * Errors from the user-identity / DID bounded context.
+ *
+ * Split by failure surface:
+ *   - KeyGenerationError       — Ed25519 keypair generation failed (Node crypto)
+ *   - InvalidDIDError          — malformed did:key string (bad prefix, bad base58, wrong multicodec)
+ *   - SignatureError           — sign/verify operation itself failed at the crypto layer
+ *   - BadSignatureError        — cryptographically valid operation that produced an invalid signature
+ *   - DeviceAuthorizationError — envelope's device authorization chain does not verify under the claimed user DID
+ *   - CanonicalizationError    — payload could not be canonical-JSON-encoded (cyclic object, bigint, etc.)
+ */
+export type IdentityError =
+  | { readonly type: 'IdentityKeyGenerationError';     readonly message: string }
+  | { readonly type: 'IdentityInvalidDIDError';        readonly did: string;   readonly message: string }
+  | { readonly type: 'IdentitySignatureError';         readonly message: string }
+  | { readonly type: 'IdentityBadSignatureError';      readonly reason: string }
+  | { readonly type: 'IdentityDeviceAuthorizationError'; readonly reason: string }
+  | { readonly type: 'IdentityCanonicalizationError';  readonly message: string };
+
+export const IdentityError = {
+  keyGeneration:        (message: string): IdentityError => ({ type: 'IdentityKeyGenerationError', message }),
+  invalidDID:           (did: string, message: string): IdentityError => ({ type: 'IdentityInvalidDIDError', did, message }),
+  signature:            (message: string): IdentityError => ({ type: 'IdentitySignatureError', message }),
+  badSignature:         (reason: string): IdentityError => ({ type: 'IdentityBadSignatureError', reason }),
+  deviceAuthorization:  (reason: string): IdentityError => ({ type: 'IdentityDeviceAuthorizationError', reason }),
+  canonicalization:     (message: string): IdentityError => ({ type: 'IdentityCanonicalizationError', message }),
+} as const;
+
+export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError | TouchError | IdentityError;
 
 /** Render a tagged error as a one-line human-readable string. */
 export const formatError = (e: AppError): string => {
@@ -444,5 +474,17 @@ export const formatError = (e: AppError): string => {
       return `session retention error: ${e.message}`;
     case 'SessionIngestError':
       return `session ingest error for ${e.sessionId}: ${e.message}`;
+    case 'IdentityKeyGenerationError':
+      return `identity key generation failed: ${e.message}`;
+    case 'IdentityInvalidDIDError':
+      return `invalid DID '${e.did}': ${e.message}`;
+    case 'IdentitySignatureError':
+      return `identity signature op failed: ${e.message}`;
+    case 'IdentityBadSignatureError':
+      return `identity signature verification failed: ${e.reason}`;
+    case 'IdentityDeviceAuthorizationError':
+      return `device authorization invalid: ${e.reason}`;
+    case 'IdentityCanonicalizationError':
+      return `canonical JSON encoding failed: ${e.message}`;
   }
 };
