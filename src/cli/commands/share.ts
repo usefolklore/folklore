@@ -4,6 +4,9 @@
  * Subcommands:
  *   audit --room <name> [--json]   show what would be shared (allowed + blocked nodes)
  *   room <name>                    mark a room as shared (runs audit; blocks on flagged nodes)
+ *   ui                             interactive TUI to toggle which non-system
+ *                                  rooms are shared. System rooms (toolshed,
+ *                                  research) are never shown — always shared.
  */
 
 import { join } from 'node:path';
@@ -16,6 +19,8 @@ import { runtimePaths, wellinformedHome } from '../runtime.js';
 import { mutateSharedRooms, addSharedRoom, loadSharedRooms } from '../../infrastructure/share-store.js';
 import { loadYDoc, saveYDoc } from '../../infrastructure/ydoc-store.js';
 import { syncNodeIntoYDoc } from '../../infrastructure/share-sync.js';
+import { buildPickerState, computeDiff, applyDiff } from '../../domain/share-picker.js';
+import { runPicker } from '../tui/share-picker-tty.js';
 
 const configPath = (): string => join(wellinformedHome(), 'config.yaml');
 const sharedRoomsPath = (): string => join(wellinformedHome(), 'shared-rooms.json');
@@ -225,13 +230,88 @@ const roomCmd = async (rest: readonly string[]): Promise<number> => {
   return 0;
 };
 
+// ─────────────────────── ui subcommand ─────────────────────
+
+const ui = async (): Promise<number> => {
+  const paths = runtimePaths();
+  const graphRepo = fileGraphRepository(paths.graph);
+  const graphRes = await graphRepo.load();
+  if (graphRes.isErr()) {
+    console.error(`share ui: ${formatError(graphRes.error)}`);
+    return 1;
+  }
+  const sharedRes = await loadSharedRooms(sharedRoomsPath());
+  if (sharedRes.isErr()) {
+    console.error(`share ui: ${formatError(sharedRes.error)}`);
+    return 1;
+  }
+
+  const initial = buildPickerState(graphRes.value.json.nodes, sharedRes.value);
+  if (initial.items.length === 0) {
+    console.log('share ui: no physical rooms yet. Run `wellinformed trigger` to index some content first.');
+    console.log('         System rooms (toolshed, research) are always shared.');
+    return 0;
+  }
+
+  let result;
+  try {
+    result = await runPicker(initial);
+  } catch (e) {
+    console.error(`share ui: ${(e as Error).message}`);
+    return 1;
+  }
+  if (result.state.done === 'cancelled') {
+    console.log('share ui: cancelled — no changes.');
+    return 0;
+  }
+
+  const diff = computeDiff(result.state.items);
+  if (diff.toShare.length + diff.toUnshare.length === 0) {
+    console.log('share ui: no changes.');
+    return 0;
+  }
+
+  // Audit each newly-shared room and block on any flagged nodes before
+  // persisting — parity with `share room <name>`. Secrets must not leak
+  // through the UI path just because it's interactive.
+  const cfgRes = await loadConfig(configPath());
+  if (cfgRes.isErr()) {
+    console.error(`share ui: ${formatError(cfgRes.error)}`);
+    return 1;
+  }
+  const patterns = buildPatterns(cfgRes.value.security.secrets_patterns);
+  const blocked: Array<{ room: string; count: number }> = [];
+  for (const name of diff.toShare) {
+    const roomNodes = nodesInRoom(graphRes.value, name);
+    const audit = auditRoom(roomNodes, patterns);
+    if (audit.blocked.length > 0) blocked.push({ room: name, count: audit.blocked.length });
+  }
+  if (blocked.length > 0) {
+    console.error('share ui: refusing — the following rooms contain flagged nodes:');
+    for (const b of blocked) {
+      console.error(`  ${b.room}: ${b.count} flagged node(s). Run \`wellinformed share audit --room ${b.room}\` to inspect.`);
+    }
+    return 1;
+  }
+
+  const mutRes = await mutateSharedRooms(sharedRoomsPath(), (cur) => applyDiff(cur, diff));
+  if (mutRes.isErr()) {
+    console.error(`share ui: ${formatError(mutRes.error)}`);
+    return 1;
+  }
+  if (diff.toShare.length > 0)   console.log(`  started sharing: ${diff.toShare.join(', ')}`);
+  if (diff.toUnshare.length > 0) console.log(`  stopped sharing: ${diff.toUnshare.join(', ')}`);
+  return 0;
+};
+
 // ─────────────────────── usage ────────────────────────────
 
-const USAGE = `usage: wellinformed share <audit|room>
+const USAGE = `usage: wellinformed share <audit|room|ui>
 
 subcommands:
   audit --room <name> [--json]   show what would be shared before enabling
-  room <name>                    mark a room as shared (runs audit; blocks on flagged nodes)`;
+  room <name>                    mark a room as shared (runs audit; blocks on flagged nodes)
+  ui                             interactive picker for non-system rooms`;
 
 // ─────────────────────── entry ────────────────────────────
 
@@ -240,9 +320,12 @@ export const share = async (args: string[]): Promise<number> => {
   switch (sub) {
     case 'audit': return audit(rest);
     case 'room':  return roomCmd(rest);
+    case 'ui':    return ui();
     default:
       console.error(sub ? `share: unknown subcommand '${sub}'` : 'share: missing subcommand');
       console.error(USAGE);
       return 1;
   }
+  // rest is consumed via audit/roomCmd — kept for the type-level
+  void rest;
 };
