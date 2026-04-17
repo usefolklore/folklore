@@ -21,8 +21,13 @@ import {
   listQuestions,
   listAnswers,
   isQuestionId,
+  rankAnswerable,
+  questionsAnsweredBy,
+  type AnswerabilityInput,
   type QuestionStatus,
 } from '../../domain/oracle.js';
+import { searchGlobal } from '../../application/use-cases.js';
+import { getNode } from '../../domain/graph.js';
 import { loadOrCreateIdentity } from '../../infrastructure/peer-transport.js';
 import { join } from 'node:path';
 
@@ -223,9 +228,110 @@ const show = async (rest: readonly string[]): Promise<number> => {
   }
 };
 
+// ─────────────────────── answerable ────────────────────────
+
+const answerable = async (rest: readonly string[]): Promise<number> => {
+  let threshold = 1.0;
+  let k = 3;
+  let limit = 10;
+  let jsonOut = false;
+  for (let i = 0; i < rest.length; i++) {
+    if (rest[i] === '--threshold' && i + 1 < rest.length) {
+      const n = Number(rest[++i]);
+      if (Number.isFinite(n)) threshold = n;
+    } else if (rest[i] === '--k' && i + 1 < rest.length) {
+      const n = Number(rest[++i]);
+      if (Number.isFinite(n) && n >= 1) k = Math.min(10, Math.floor(n));
+    } else if (rest[i] === '--limit' && i + 1 < rest.length) {
+      const n = Number(rest[++i]);
+      if (Number.isFinite(n) && n >= 1) limit = Math.min(50, Math.floor(n));
+    } else if (rest[i] === '--json') {
+      jsonOut = true;
+    }
+  }
+
+  const rt = await defaultRuntime();
+  if (rt.isErr()) {
+    console.error(`oracle answerable: ${formatError(rt.error)}`);
+    return 1;
+  }
+  const runtime = rt.value;
+  try {
+    const selfPeerId = await localPeerId(runtime.paths.home);
+    const graph = await runtime.graphs.load();
+    if (graph.isErr()) {
+      console.error(`oracle answerable: ${formatError(graph.error)}`);
+      return 1;
+    }
+    const all = graph.value.json.nodes;
+    const openQuestions = listQuestions(all, { status: 'open' });
+    const alreadyAnswered = questionsAnsweredBy(all, selfPeerId);
+
+    const deps = {
+      graphs: runtime.graphs,
+      vectors: runtime.vectors,
+      embedder: runtime.embedder,
+    };
+
+    // Run a semantic search per external open question; filter oracle
+    // hits so we don't match bulletin-board traffic against itself.
+    const inputs: AnswerabilityInput[] = [];
+    for (const q of openQuestions) {
+      if (q.askedBy === selfPeerId) continue;
+      if (alreadyAnswered.has(q.id)) continue;
+      const matches = await searchGlobal(deps)({ text: q.text, k });
+      if (matches.isErr()) continue;
+      const hits = matches.value
+        .map((m) => ({
+          nodeId: m.node_id,
+          distance: m.distance,
+          node: getNode(graph.value, m.node_id),
+        }))
+        .filter((h) => h.node?.room !== 'oracle')
+        .map((h) => ({ nodeId: h.nodeId, distance: h.distance }));
+      inputs.push({ question: q, hits });
+    }
+
+    const ranked = rankAnswerable(inputs, selfPeerId, alreadyAnswered, threshold).slice(0, limit);
+
+    if (jsonOut) {
+      console.log(JSON.stringify({
+        self_peer_id: selfPeerId,
+        threshold,
+        count: ranked.length,
+        items: ranked.map((r) => ({
+          question: r.question,
+          top_hits: r.topHits,
+          suggested_confidence: r.suggestedConfidence,
+        })),
+      }, null, 2));
+      return 0;
+    }
+
+    if (ranked.length === 0) {
+      console.log('oracle answerable: no external open questions your graph can plausibly answer.');
+      return 0;
+    }
+    console.log(`oracle answerable: ${ranked.length} question(s) your graph can plausibly answer`);
+    console.log('');
+    for (const r of ranked) {
+      console.log(`• ${r.question.label}`);
+      console.log(`    ${r.question.id}  asked_by=${r.question.askedBy}  suggested_confidence=${r.suggestedConfidence.toFixed(2)}`);
+      for (const h of r.topHits) {
+        const node = getNode(graph.value, h.nodeId);
+        console.log(`    ↳ d=${h.distance.toFixed(3)} ${node?.label ?? h.nodeId} [${node?.room ?? '?'}]`);
+      }
+      console.log('');
+    }
+    return 0;
+  } finally {
+    runtime.close();
+  }
+};
+
 // ─────────────────────── entry ────────────────────────────
 
-const USAGE = `usage: wellinformed oracle <ask|answer|list|show>
+const USAGE = `usage: wellinformed oracle <ask|answer|list|show|answerable>
 
 subcommands:
   ask "<text>"               post a new question
@@ -234,6 +340,9 @@ subcommands:
   list [--status <open|answered|closed>] [--json]
                              show questions, newest-first
   show <qid>                 show a question and its answers (confidence-ranked)
+  answerable [--threshold N] [--k N] [--limit N] [--json]
+                             list external open questions your graph could
+                             plausibly answer (best-match first)
 
 Oracle questions/answers propagate to peers via the existing \`touch oracle\`
 surface. Run \`wellinformed daemon start\` (or ensure peers are connected)
@@ -242,10 +351,11 @@ so the CRDT sync fans your post out in near-real-time.`;
 export const oracle = async (args: readonly string[]): Promise<number> => {
   const [sub, ...rest] = args;
   switch (sub) {
-    case 'ask':    return ask(rest);
-    case 'answer': return answer(rest);
-    case 'list':   return list(rest);
-    case 'show':   return show(rest);
+    case 'ask':        return ask(rest);
+    case 'answer':     return answer(rest);
+    case 'list':       return list(rest);
+    case 'show':       return show(rest);
+    case 'answerable': return answerable(rest);
     default:
       console.error(sub ? `oracle: unknown subcommand '${sub}'` : 'oracle: missing subcommand');
       console.error(USAGE);
