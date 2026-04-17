@@ -21,6 +21,10 @@ import {
   answerFromNode,
   isQuestionId,
   isAnswerId,
+  rankAnswerable,
+  questionsAnsweredBy,
+  type AnswerabilityInput,
+  type QuestionView,
 } from '../src/domain/oracle.js';
 import { ORACLE, belongsToSystemRoom, nodesInSystemRoom } from '../src/domain/system-rooms.js';
 import { validateRemoteNode } from '../src/domain/remote-node-validator.js';
@@ -122,5 +126,75 @@ describe('Phase 38 — oracle domain', () => {
     const av = validateRemoteNode(a);
     assert.ok(qv.isOk(), qv.isErr() ? JSON.stringify(qv.error) : '');
     assert.ok(av.isOk(), av.isErr() ? JSON.stringify(av.error) : '');
+  });
+});
+
+// ─────────────────────── answerability ─────────────────────
+
+describe('Phase 38 — answerability ranking', () => {
+  const mkQ = (id: string, askedBy: string, text = 'q'): QuestionView => ({
+    id,
+    label: text,
+    text,
+    askedBy,
+    status: 'open',
+    fetchedAt: '2026-04-17T00:00:00Z',
+    answerCount: 0,
+  });
+
+  test('A1: rankAnswerable skips self-asked questions', () => {
+    const inputs: AnswerabilityInput[] = [
+      { question: mkQ('q1', 'me'),    hits: [{ nodeId: 'n1', distance: 0.1 }] },
+      { question: mkQ('q2', 'other'), hits: [{ nodeId: 'n2', distance: 0.2 }] },
+    ];
+    const out = rankAnswerable(inputs, 'me', new Set(), 1.0);
+    assert.deepStrictEqual(out.map((i) => i.question.id), ['q2']);
+  });
+
+  test('A2: rankAnswerable skips already-answered questions', () => {
+    const inputs: AnswerabilityInput[] = [
+      { question: mkQ('q1', 'x'), hits: [{ nodeId: 'n', distance: 0.1 }] },
+      { question: mkQ('q2', 'y'), hits: [{ nodeId: 'n', distance: 0.2 }] },
+    ];
+    const out = rankAnswerable(inputs, 'me', new Set(['q1']), 1.0);
+    assert.deepStrictEqual(out.map((i) => i.question.id), ['q2']);
+  });
+
+  test('A3: rankAnswerable drops questions beyond threshold', () => {
+    const inputs: AnswerabilityInput[] = [
+      { question: mkQ('close', 'x'), hits: [{ nodeId: 'c', distance: 0.3 }] },
+      { question: mkQ('far',   'y'), hits: [{ nodeId: 'f', distance: 0.9 }] },
+    ];
+    const out = rankAnswerable(inputs, 'me', new Set(), 0.5);
+    assert.deepStrictEqual(out.map((i) => i.question.id), ['close']);
+  });
+
+  test('A4: rankAnswerable sorts by best-hit distance ASC', () => {
+    const inputs: AnswerabilityInput[] = [
+      { question: mkQ('q-far',  'x'), hits: [{ nodeId: 'a', distance: 0.8 }] },
+      { question: mkQ('q-near', 'y'), hits: [{ nodeId: 'b', distance: 0.2 }] },
+      { question: mkQ('q-mid',  'z'), hits: [{ nodeId: 'c', distance: 0.5 }] },
+    ];
+    const out = rankAnswerable(inputs, 'me', new Set(), 1.0);
+    assert.deepStrictEqual(out.map((i) => i.question.id), ['q-near', 'q-mid', 'q-far']);
+  });
+
+  test('A5: suggestedConfidence derives as max(0, 1 - distance)', () => {
+    const inputs: AnswerabilityInput[] = [
+      { question: mkQ('q', 'x'), hits: [{ nodeId: 'n', distance: 0.3 }] },
+    ];
+    const out = rankAnswerable(inputs, 'me', new Set(), 1.0);
+    assert.strictEqual(out.length, 1);
+    assert.ok(Math.abs(out[0].suggestedConfidence - 0.7) < 1e-9);
+  });
+
+  test('A6: questionsAnsweredBy collects ids answered by the given peer', () => {
+    const q1 = nodeFromQuestion({ text: 'q1', askedBy: 'x' });
+    const q2 = nodeFromQuestion({ text: 'q2', askedBy: 'y' });
+    const aByMe    = nodeFromAnswer({ questionId: q1.id, text: 'a', answeredBy: 'me' });
+    const aByOther = nodeFromAnswer({ questionId: q2.id, text: 'a', answeredBy: 'bob' });
+    const set = questionsAnsweredBy([q1, q2, aByMe, aByOther], 'me');
+    assert.strictEqual(set.has(q1.id), true);
+    assert.strictEqual(set.has(q2.id), false);
   });
 });

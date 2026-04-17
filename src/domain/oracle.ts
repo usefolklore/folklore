@@ -227,3 +227,88 @@ export const listAnswers = (
     return (b.fetchedAt ?? '').localeCompare(a.fetchedAt ?? '');
   });
 };
+
+// ─────────────────────── answerability ─────────────────────
+
+/**
+ * "Which open external questions could this peer plausibly answer from
+ * its local graph?"
+ *
+ * Pure filtering — takes already-computed semantic-search hits as
+ * input so this module stays I/O-free. The application layer runs
+ * the searches; this function partitions the results into a ranked
+ * answerable list.
+ *
+ *   - Skip questions asked by `selfPeerId` (no self-answering).
+ *   - Skip questions whose best hit is beyond `threshold` distance
+ *     (irrelevant — not worth flagging as answerable).
+ *   - Skip questions that already have an answer from `selfPeerId`
+ *     (idempotency — don't flag as pending what we already answered).
+ *   - Sort by best-hit distance ASC (closest match first = most
+ *     confident answerability).
+ */
+export interface AnswerabilityHit {
+  readonly nodeId: string;
+  readonly distance: number;
+}
+
+export interface AnswerableItem {
+  readonly question: QuestionView;
+  readonly topHits: readonly AnswerabilityHit[];
+  /**
+   * Heuristic confidence in [0..1] derived from best-hit distance:
+   *   suggestedConfidence = max(0, 1 - bestDistance).
+   * The asker can override; this is just a starting point for the
+   * `oracle_answer` confidence field.
+   */
+  readonly suggestedConfidence: number;
+}
+
+export interface AnswerabilityInput {
+  readonly question: QuestionView;
+  readonly hits: readonly AnswerabilityHit[];
+}
+
+export const rankAnswerable = (
+  inputs: readonly AnswerabilityInput[],
+  selfPeerId: string,
+  alreadyAnsweredByMe: ReadonlySet<string>,
+  threshold: number,
+): readonly AnswerableItem[] => {
+  const out: AnswerableItem[] = [];
+  for (const i of inputs) {
+    if (i.question.askedBy === selfPeerId) continue;
+    if (alreadyAnsweredByMe.has(i.question.id)) continue;
+    if (i.hits.length === 0) continue;
+    const best = i.hits[0];
+    if (!(best.distance <= threshold)) continue;
+    out.push({
+      question: i.question,
+      topHits: i.hits,
+      suggestedConfidence: Math.max(0, Math.min(1, 1 - best.distance)),
+    });
+  }
+  return out.sort((a, b) => {
+    const dA = a.topHits[0]?.distance ?? Infinity;
+    const dB = b.topHits[0]?.distance ?? Infinity;
+    return dA - dB;
+  });
+};
+
+/**
+ * From the graph, collect the set of question ids the given peer has
+ * already answered. Used by rankAnswerable to skip already-answered
+ * questions (idempotency on self).
+ */
+export const questionsAnsweredBy = (
+  nodes: readonly GraphNode[],
+  peerId: string,
+): ReadonlySet<string> => {
+  const out = new Set<string>();
+  for (const n of nodes) {
+    const view = answerFromNode(n);
+    if (!view) continue;
+    if (view.answeredBy === peerId) out.add(view.questionId);
+  }
+  return out;
+};

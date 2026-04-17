@@ -47,6 +47,9 @@ import {
   listQuestions,
   listAnswers,
   isQuestionId,
+  rankAnswerable,
+  questionsAnsweredBy,
+  type AnswerabilityInput,
 } from '../domain/oracle.js';
 import { triggerRoom } from '../application/ingest.js';
 import { runFederatedSearch } from '../application/federated-search.js';
@@ -763,6 +766,109 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
           status: q.status,
           fetched_at: q.fetchedAt,
           answer_count: q.answerCount,
+        })),
+      });
+    },
+  );
+
+  // ─────────────── oracle_answerable ──────
+  // "Which open external questions could this peer plausibly answer?"
+  // For each open question not asked by self, run semantic search on
+  // the local graph and surface the top hits. Claude picks from this
+  // list, composes a real answer from the cited nodes, and posts via
+  // oracle_answer. Keeps the LLM as the answerer, graph as the
+  // matchmaker — no blind auto-answering.
+
+  server.registerTool(
+    'oracle_answerable',
+    {
+      description:
+        'Return open oracle questions this peer could plausibly answer from its ' +
+        'local graph. For each external question, returns the top semantic ' +
+        'matches on this peer\'s graph + a suggested confidence. Skips ' +
+        'questions you asked and questions you already answered. Sorted by ' +
+        'best-hit distance (closest match first). Use this to decide what to ' +
+        'oracle_answer next.',
+      inputSchema: {
+        threshold: z
+          .number()
+          .min(0)
+          .max(2)
+          .default(1.0)
+          .describe('Max semantic distance for "answerable" (default 1.0 = cosine-ish threshold)'),
+        k: z
+          .number()
+          .int()
+          .min(1)
+          .max(10)
+          .default(3)
+          .describe('Top-k local graph hits to return per question'),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .default(10)
+          .describe('Max answerable questions to return'),
+      },
+    },
+    async ({ threshold, k, limit }) => {
+      const selfRes = await loadOrCreateIdentity(join(wellinformedHome(), 'peer-identity.json'));
+      const selfPeerId = selfRes.isOk() ? selfRes.value.peerId : 'local';
+
+      const graphRes = await runtime.graphs.load();
+      if (graphRes.isErr()) return errText(graphRes.error);
+      const allNodes = graphRes.value.json.nodes;
+
+      const openQuestions = listQuestions(allNodes, { status: 'open' });
+      const alreadyAnswered = questionsAnsweredBy(allNodes, selfPeerId);
+
+      // Run semantic search for each external open question. Exclude
+      // oracle-room hits so we don't match questions against other
+      // questions/answers — we want the underlying knowledge, not the
+      // bulletin-board traffic.
+      const inputs: AnswerabilityInput[] = [];
+      for (const q of openQuestions) {
+        if (q.askedBy === selfPeerId) continue;
+        if (alreadyAnswered.has(q.id)) continue;
+        const matches = await searchGlobal(deps)({ text: q.text, k });
+        if (matches.isErr()) continue;
+        const hits = matches.value
+          .map((m) => {
+            const node = getNode(graphRes.value, m.node_id);
+            return { nodeId: m.node_id, distance: m.distance, room: node?.room };
+          })
+          .filter((h) => h.room !== 'oracle')
+          .map((h) => ({ nodeId: h.nodeId, distance: h.distance }));
+        inputs.push({ question: q, hits });
+      }
+
+      const ranked = rankAnswerable(inputs, selfPeerId, alreadyAnswered, threshold)
+        .slice(0, limit);
+
+      return okJson({
+        self_peer_id: selfPeerId,
+        threshold,
+        count: ranked.length,
+        items: ranked.map((r) => ({
+          question: {
+            id: r.question.id,
+            label: r.question.label,
+            text: r.question.text,
+            asked_by: r.question.askedBy,
+            fetched_at: r.question.fetchedAt,
+          },
+          top_hits: r.topHits.map((h) => {
+            const node = getNode(graphRes.value, h.nodeId);
+            return {
+              node_id: h.nodeId,
+              distance: Number(h.distance.toFixed(4)),
+              label: node?.label ?? null,
+              room: node?.room ?? null,
+              source_uri: node?.source_uri ?? null,
+            };
+          }),
+          suggested_confidence: Number(r.suggestedConfidence.toFixed(2)),
         })),
       });
     },
