@@ -64,6 +64,10 @@ import {
   TOUCH_DEFAULT_BURST,
 } from '../domain/touch.js';
 import {
+  subscribeOracle,
+  type SubscribeHandle as OracleSubscribeHandle,
+} from '../infrastructure/oracle-gossip.js';
+import {
   createHealthTracker,
   type HealthTracker,
 } from '../infrastructure/connection-health.js';
@@ -298,6 +302,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
   let liveSync: ShareSyncRegistry | null = null;
   let liveSearch: SearchRegistry | null = null; // Phase 17
   let liveTouch: TouchRegistry | null = null; // Phase 31
+  let liveOracle: OracleSubscribeHandle | null = null; // Phase 39 — pubsub
   let liveHealthTracker: HealthTracker | null = null; // Phase 18
   const identityPath = join(deps.homePath, 'peer-identity.json');
   if (existsSync(identityPath)) {
@@ -478,6 +483,30 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
             } else {
               daemonLog(deps.homePath, `touch protocol registered: /wellinformed/touch/1.0.0`);
             }
+
+            // Phase 39 — Layer B oracle pubsub. Subscribe to the
+            // /wellinformed/oracle/1.0.0 topic so inbound questions and
+            // answers from connected peers land in the local graph in
+            // real-time (seconds, not minutes). Upserts run through the
+            // same remote-node-validator as touch, so the trust boundary
+            // stays identical. Subscribe is fire-and-forget: a failure
+            // to subscribe is logged and the daemon keeps running on
+            // Layer A (touch + CRDT) alone.
+            const oracleSub = await subscribeOracle(liveNode, {
+              graphRepo: deps.graphs,
+              onAccepted: (msg, fromPeer) => {
+                daemonLog(deps.homePath, `oracle inbound ${msg.kind} from peer=${fromPeer} id=${msg.node.id}`);
+              },
+              onRejected: (reason, fromPeer) => {
+                daemonLog(deps.homePath, `oracle rejected from peer=${fromPeer} reason=${reason}`);
+              },
+            });
+            if (oracleSub.isErr()) {
+              daemonLog(deps.homePath, `oracle subscribe failed (Layer B disabled): ${formatError(oracleSub.error)}`);
+            } else {
+              liveOracle = oracleSub.value;
+              daemonLog(deps.homePath, `oracle pubsub subscribed: /wellinformed/oracle/1.0.0`);
+            }
           }
         }
       }
@@ -490,7 +519,10 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
   const tickDeps: DaemonDeps = { ...deps, shareSync: liveSync, healthTracker: liveHealthTracker };
 
   const cleanup = async (): Promise<void> => {
-    // Cleanup order: touch → search → share → node.stop
+    // Cleanup order: oracle pubsub → touch → search → share → node.stop
+    if (liveOracle) {
+      try { liveOracle.unsubscribe(); } catch { /* benign */ }
+    }
     if (liveTouch) {
       try { await unregisterTouchProtocol(liveTouch); } catch { /* benign */ }
     }

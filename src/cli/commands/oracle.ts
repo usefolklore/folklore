@@ -27,8 +27,12 @@ import {
   type QuestionStatus,
 } from '../../domain/oracle.js';
 import { searchGlobal } from '../../application/use-cases.js';
-import { getNode } from '../../domain/graph.js';
-import { loadOrCreateIdentity } from '../../infrastructure/peer-transport.js';
+import { getNode, type GraphNode } from '../../domain/graph.js';
+import { loadOrCreateIdentity, createNode, dialAndTag } from '../../infrastructure/peer-transport.js';
+import { loadPeers } from '../../infrastructure/peer-store.js';
+import { loadConfig } from '../../infrastructure/config-loader.js';
+import { publishQuestion, publishAnswer } from '../../infrastructure/oracle-gossip.js';
+import { wellinformedHome } from '../runtime.js';
 import { join } from 'node:path';
 
 const ORACLE_ROOM = 'oracle';
@@ -41,12 +45,103 @@ const localPeerId = async (homePath: string): Promise<string> => {
   return res.isOk() ? res.value.peerId : 'local';
 };
 
+// ─────────────────────── live publish helper ────────────────
+
+/**
+ * Spin up a short-lived libp2p node, dial every known peer plus every
+ * configured relay, publish one oracle message over pubsub, stop.
+ * Mirrors the ask --peers pattern. Returns a non-zero code on hard
+ * failure; a zero publish-to-zero-peers is still a success (offline-
+ * tolerant, same as Layer A's write-now-propagate-later model).
+ */
+const liveBroadcast = async (
+  kind: 'question' | 'answer',
+  node: GraphNode,
+): Promise<number> => {
+  const homePath = wellinformedHome();
+  const idRes = await loadOrCreateIdentity(join(homePath, 'peer-identity.json'));
+  if (idRes.isErr()) {
+    console.error(`oracle --live: identity: ${formatError(idRes.error)}`);
+    return 1;
+  }
+  const cfgRes = await loadConfig(join(homePath, 'config.yaml'));
+  if (cfgRes.isErr()) {
+    console.error(`oracle --live: config: ${formatError(cfgRes.error)}`);
+    return 1;
+  }
+
+  // Ephemeral node — listen on a random port, outbound-focused.
+  const nodeRes = await createNode(idRes.value, {
+    listenPort: 0,
+    listenHost: '127.0.0.1',
+    upnp: false,
+  });
+  if (nodeRes.isErr()) {
+    console.error(`oracle --live: libp2p: ${formatError(nodeRes.error)}`);
+    return 1;
+  }
+  const libp2p = nodeRes.value;
+
+  try {
+    // Subscribe to the topic BEFORE dialing — floodsub only forwards to
+    // peers it has seen subscribed. Without subscribing on our side,
+    // the dialed peers may not immediately know we're a subscriber and
+    // may drop our publish.
+    const pubsub = (libp2p.services as Record<string, unknown>).pubsub as {
+      subscribe: (t: string) => void;
+    };
+    pubsub.subscribe('/wellinformed/oracle/1.0.0');
+
+    // Dial known peers + configured relays so the pubsub graph has
+    // reach. Failures are non-fatal per peer.
+    let dialed = 0;
+    const peersRes = await loadPeers(join(homePath, 'peers.json'));
+    if (peersRes.isOk()) {
+      for (const p of peersRes.value.peers) {
+        for (const addr of p.addrs) {
+          try {
+            await dialAndTag(libp2p, addr);
+            dialed++;
+            break;
+          } catch { /* try next addr */ }
+        }
+      }
+    }
+    for (const relay of cfgRes.value.peer.relays) {
+      try { await dialAndTag(libp2p, relay); dialed++; } catch { /* non-fatal */ }
+    }
+
+    // Tiny settle window so floodsub's subscription-meta handshake can
+    // complete before we publish. 200 ms is generous for 127.0.0.1
+    // pubsub; slower on real networks but still bounded.
+    await new Promise<void>((r) => setTimeout(r, 200));
+
+    const publishRes = kind === 'question'
+      ? await publishQuestion(libp2p, node)
+      : await publishAnswer(libp2p, node);
+    if (publishRes.isErr()) {
+      console.error(`oracle --live: publish: ${formatError(publishRes.error)}`);
+      return 1;
+    }
+    console.log(`  live:   published to /wellinformed/oracle/1.0.0 (${dialed} peer(s) dialed)`);
+    return 0;
+  } finally {
+    try { await libp2p.stop(); } catch { /* ignore */ }
+  }
+};
+
 // ─────────────────────── ask ──────────────────────────────
 
 const ask = async (rest: readonly string[]): Promise<number> => {
-  const text = rest.join(' ').trim();
+  let live = false;
+  const textTokens: string[] = [];
+  for (const t of rest) {
+    if (t === '--live') { live = true; continue; }
+    textTokens.push(t);
+  }
+  const text = textTokens.join(' ').trim();
   if (!text) {
-    console.error('oracle ask: missing question — usage: wellinformed oracle ask "your question"');
+    console.error('oracle ask: missing question — usage: wellinformed oracle ask "your question" [--live]');
     return 1;
   }
   const rt = await defaultRuntime();
@@ -70,7 +165,13 @@ const ask = async (rest: readonly string[]): Promise<number> => {
     console.log(`oracle ask: posted`);
     console.log(`  id:     ${node.id}`);
     console.log(`  asked:  ${askedBy}`);
-    console.log('  peers will see it on their next touch of `oracle`.');
+    console.log(live
+      ? '  peers subscribed to /wellinformed/oracle/1.0.0 get it now; others on next touch.'
+      : '  peers will see it on their next touch of `oracle`.');
+    if (live) {
+      const rc = await liveBroadcast('question', node);
+      if (rc !== 0) return rc;
+    }
     return 0;
   } finally {
     runtime.close();
@@ -82,7 +183,8 @@ const ask = async (rest: readonly string[]): Promise<number> => {
 const answer = async (rest: readonly string[]): Promise<number> => {
   const [qid, ...textParts] = rest;
   let confidence: number | undefined;
-  // Strip an optional --confidence N flag from textParts
+  let live = false;
+  // Strip --confidence / --live flags from textParts
   const textTokens: string[] = [];
   for (let i = 0; i < textParts.length; i++) {
     if (textParts[i] === '--confidence' && i + 1 < textParts.length) {
@@ -90,11 +192,12 @@ const answer = async (rest: readonly string[]): Promise<number> => {
       if (Number.isFinite(n)) confidence = n;
       continue;
     }
+    if (textParts[i] === '--live') { live = true; continue; }
     textTokens.push(textParts[i]);
   }
   const text = textTokens.join(' ').trim();
   if (!qid || !text) {
-    console.error('oracle answer: usage: wellinformed oracle answer <question-id> "your answer" [--confidence 0.7]');
+    console.error('oracle answer: usage: wellinformed oracle answer <question-id> "your answer" [--confidence 0.7] [--live]');
     return 1;
   }
   if (!isQuestionId(qid)) {
@@ -124,6 +227,10 @@ const answer = async (rest: readonly string[]): Promise<number> => {
     console.log(`  to:       ${qid}`);
     console.log(`  from:     ${answeredBy}`);
     if (confidence !== undefined) console.log(`  confidence: ${confidence.toFixed(2)}`);
+    if (live) {
+      const rc = await liveBroadcast('answer', node);
+      if (rc !== 0) return rc;
+    }
     return 0;
   } finally {
     runtime.close();
@@ -334,8 +441,9 @@ const answerable = async (rest: readonly string[]): Promise<number> => {
 const USAGE = `usage: wellinformed oracle <ask|answer|list|show|answerable>
 
 subcommands:
-  ask "<text>"               post a new question
-  answer <qid> "<text>" [--confidence N]
+  ask "<text>" [--live]      post a new question (--live also publishes
+                             over libp2p pubsub for real-time fan-out)
+  answer <qid> "<text>" [--confidence N] [--live]
                              post an answer linked to a question id
   list [--status <open|answered|closed>] [--json]
                              show questions, newest-first
