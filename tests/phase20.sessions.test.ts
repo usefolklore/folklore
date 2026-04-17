@@ -606,11 +606,13 @@ describe('Phase 20 — PreToolUse hook SessionStart branch (Pitfall 5, SESS-07)'
 
 // ─────────────────────── GROUP 12: Pitfall 7 — MCP 16th tool ────────────────
 
-describe('Phase 20 — MCP 16th tool (Pitfall 7, SESS-06)', () => {
-  it('SESS-06 L1: src/mcp/server.ts has exactly 16 registerTool calls', () => {
+describe('Phase 20 — MCP tool count (Pitfall 7, SESS-06)', () => {
+  it('SESS-06 L1: src/mcp/server.ts has the expected registerTool count (20 after Phase 38 oracle tools)', () => {
     const src = readFileSync('src/mcp/server.ts', 'utf8');
     const matches = src.match(/server\.registerTool\(/g) ?? [];
-    assert.equal(matches.length, 16, `expected 16 registerTool calls, got ${matches.length}`);
+    // Phase 20 pinned this at 16; Phase 38 added 4 oracle tools
+    // (oracle_ask, oracle_answer, list_open_questions, oracle_answers).
+    assert.equal(matches.length, 20, `expected 20 registerTool calls, got ${matches.length}`);
   });
 
   it("SESS-06 L2: 'recent_sessions' tool is registered by name", () => {
@@ -628,9 +630,9 @@ describe('Phase 20 — MCP 16th tool (Pitfall 7, SESS-06)', () => {
     assert.ok(block.includes('limit'), 'limit parameter required');
   });
 
-  it('L4: phase17 C2 test asserts 16 registerTool calls (not 15)', () => {
+  it('L4: phase17 C2 test asserts the current registerTool count (20 after Phase 38)', () => {
     const src = readFileSync('tests/phase17.mcp-tool.test.ts', 'utf8');
-    assert.match(src, /matches\.length,\s*16/, 'phase17 test must assert 16');
+    assert.match(src, /matches\.length,\s*20/, 'phase17 test must assert 20');
   });
 });
 

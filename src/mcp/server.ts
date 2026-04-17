@@ -39,7 +39,15 @@ import {
   searchByRoom,
   searchGlobal,
   findTunnels,
+  indexNode,
 } from '../application/use-cases.js';
+import {
+  nodeFromQuestion,
+  nodeFromAnswer,
+  listQuestions,
+  listAnswers,
+  isQuestionId,
+} from '../domain/oracle.js';
 import { triggerRoom } from '../application/ingest.js';
 import { runFederatedSearch } from '../application/federated-search.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../infrastructure/peer-transport.js';
@@ -616,6 +624,183 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
       const cutoffMs = Date.now() - hours * 60 * 60 * 1000;
       const rollups = rollupSessions(nodes, cutoffMs, project).slice(0, limit);
       return okJson({ count: rollups.length, sessions: rollups });
+    },
+  );
+
+  // ─────────────── oracle_ask ─────────────
+  // Layer A of the peer-discovery stack — post a question to the oracle
+  // system room. Every connected peer picks it up via their next
+  // `touch oracle`. Returns the new question id so the caller can
+  // poll back with oracle_answers.
+
+  server.registerTool(
+    'oracle_ask',
+    {
+      description:
+        'Post a new question to the oracle system room. The question propagates ' +
+        'to all connected peers via the existing touch + CRDT sync (no new ' +
+        'wire protocol). Peers can answer with oracle_answer. Returns the ' +
+        'question id (`oracle-question:<uuid>`). Use this when you want the ' +
+        'broader federation of wellinformed peers to help answer a question ' +
+        'your local graph cannot.',
+      inputSchema: {
+        text: z.string().min(1).max(8000).describe('The question body'),
+        label: z
+          .string()
+          .optional()
+          .describe('Optional short title; auto-derived from text if omitted'),
+      },
+    },
+    async ({ text, label }) => {
+      const askedByRes = await loadOrCreateIdentity(
+        join(wellinformedHome(), 'peer-identity.json'),
+      );
+      const askedBy = askedByRes.isOk() ? askedByRes.value.peerId : 'local';
+      const node = nodeFromQuestion({ text, askedBy, label });
+      const res = await indexNode(deps)({ node, text, room: 'oracle' });
+      if (res.isErr()) return errText(res.error);
+      return okJson({
+        question_id: node.id,
+        asked_by: askedBy,
+        status: 'open',
+        posted_at: node.fetched_at,
+      });
+    },
+  );
+
+  // ─────────────── oracle_answer ──────────
+  // Post an answer linked to a question id. Answer propagates the same
+  // way. Confidence is a self-assessed [0..1] score the asker's client
+  // can use for ranking.
+
+  server.registerTool(
+    'oracle_answer',
+    {
+      description:
+        'Post an answer to an existing oracle question. Links to the question ' +
+        'via question_id and propagates to all peers. Confidence is your ' +
+        'self-assessed certainty in the answer — used by the asker to rank.',
+      inputSchema: {
+        question_id: z
+          .string()
+          .describe('The question id (e.g. `oracle-question:<uuid>`)'),
+        text: z.string().min(1).max(8000).describe('The answer body'),
+        confidence: z
+          .number()
+          .min(0)
+          .max(1)
+          .optional()
+          .describe('Self-assessed confidence 0..1 (optional)'),
+      },
+    },
+    async ({ question_id, text, confidence }) => {
+      if (!isQuestionId(question_id)) {
+        return errText(
+          `oracle_answer: '${question_id}' does not look like a question id (expected 'oracle-question:...')`,
+        );
+      }
+      const answeredByRes = await loadOrCreateIdentity(
+        join(wellinformedHome(), 'peer-identity.json'),
+      );
+      const answeredBy = answeredByRes.isOk() ? answeredByRes.value.peerId : 'local';
+      const node = nodeFromAnswer({
+        questionId: question_id,
+        text,
+        answeredBy,
+        confidence,
+      });
+      const res = await indexNode(deps)({ node, text, room: 'oracle' });
+      if (res.isErr()) return errText(res.error);
+      return okJson({
+        answer_id: node.id,
+        question_id,
+        answered_by: answeredBy,
+        confidence: confidence ?? null,
+        posted_at: node.fetched_at,
+      });
+    },
+  );
+
+  // ─────────────── list_open_questions ─────
+  // Surface the oracle room so an agent can see what's waiting for an
+  // answer. Newest-first. Includes answer counts so the agent can
+  // prioritise unanswered ones.
+
+  server.registerTool(
+    'list_open_questions',
+    {
+      description:
+        'List open questions in the oracle room — questions peers (including ' +
+        'you) have posted and are awaiting answers for. Newest-first. Each ' +
+        'entry has {id, label, text, asked_by, status, fetched_at, ' +
+        'answer_count}. Use this before answering to see what the network ' +
+        'is asking.',
+      inputSchema: {
+        status: z
+          .enum(['open', 'answered', 'closed'])
+          .optional()
+          .describe('Filter by status; default returns all'),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .default(20)
+          .describe('Max questions to return (default 20)'),
+      },
+    },
+    async ({ status, limit }) => {
+      const graphRes = await runtime.graphs.load();
+      if (graphRes.isErr()) return errText(graphRes.error);
+      const questions = listQuestions(graphRes.value.json.nodes, { status }).slice(0, limit);
+      return okJson({
+        count: questions.length,
+        questions: questions.map((q) => ({
+          id: q.id,
+          label: q.label,
+          text: q.text,
+          asked_by: q.askedBy,
+          status: q.status,
+          fetched_at: q.fetchedAt,
+          answer_count: q.answerCount,
+        })),
+      });
+    },
+  );
+
+  // ─────────────── oracle_answers ──────────
+  // Fetch all answers for a given question, confidence-ranked then
+  // recency-ranked. Pair with oracle_ask to complete the Q→A loop
+  // from inside a Claude conversation.
+
+  server.registerTool(
+    'oracle_answers',
+    {
+      description:
+        'Fetch all answers for a given oracle question. Sorted by confidence ' +
+        '(DESC) then recency (DESC). Each entry has {id, question_id, text, ' +
+        'answered_by, confidence, fetched_at}. Use after oracle_ask to poll ' +
+        'for responses.',
+      inputSchema: {
+        question_id: z.string().describe('The oracle-question:<uuid> to fetch answers for'),
+      },
+    },
+    async ({ question_id }) => {
+      const graphRes = await runtime.graphs.load();
+      if (graphRes.isErr()) return errText(graphRes.error);
+      const answers = listAnswers(graphRes.value.json.nodes, question_id);
+      return okJson({
+        question_id,
+        count: answers.length,
+        answers: answers.map((a) => ({
+          id: a.id,
+          question_id: a.questionId,
+          text: a.text,
+          answered_by: a.answeredBy,
+          confidence: a.confidence ?? null,
+          fetched_at: a.fetchedAt,
+        })),
+      });
     },
   );
 

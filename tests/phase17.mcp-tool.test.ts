@@ -76,14 +76,14 @@ describe('Phase 17: MCP tool — federated_search registration (FED-05)', () => 
     assert.ok(server, 'buildMcpServer must return a truthy McpServer');
   });
 
-  it('C2: server.ts registers exactly 16 tools (14 Phase-17 + code_graph_query Phase-19 + recent_sessions Phase-20)', () => {
+  it('C2: server.ts registers exactly 20 tools (14 Phase-17 + code_graph_query Phase-19 + recent_sessions Phase-20 + 4 oracle tools Phase-38)', () => {
     const src = readFileSync('src/mcp/server.ts', 'utf8');
     const matches = src.match(/server\.registerTool\(/g);
     assert.ok(matches, 'registerTool calls must exist in server.ts');
     assert.equal(
       matches.length,
-      16,
-      `expected 16 tools in Phase 20 (14 Phase-17 + code_graph_query Phase-19 + recent_sessions Phase-20), found ${matches.length}`,
+      20,
+      `expected 20 tools in Phase 38 (14 Phase-17 + code_graph_query + recent_sessions + oracle_ask + oracle_answer + list_open_questions + oracle_answers), found ${matches.length}`,
     );
   });
 
