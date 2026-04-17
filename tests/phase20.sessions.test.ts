@@ -544,14 +544,16 @@ describe('Phase 20 — PreToolUse hook SessionStart branch (Pitfall 5, SESS-07)'
     assert.match(src, /recent-sessions --hours 24/, 'recent-sessions invocation required');
   });
 
-  it('K3: install deduplicates by HOOK_SCRIPT_NAME in BOTH PreToolUse and SessionStart', () => {
+  it('K3: install deduplicates across PreToolUse AND SessionStart (and now PostToolUse too)', () => {
     const src = readFileSync('src/cli/commands/claude-install.ts', 'utf8');
-    // Filter calls span multiple lines — use a multiline-aware approach
-    // Count occurrences of HOOK_SCRIPT_NAME inside a .filter( context
-    const filterMatches = src.match(/\.filter\([\s\S]*?HOOK_SCRIPT_NAME/g) ?? [];
+    // Post-prefetch refactor: dedupe is done via `isOwned()` against
+    // OWNED_SCRIPT_NAMES rather than a single HOOK_SCRIPT_NAME. We still
+    // require at least two idempotent filter sites — one per hook-array
+    // we write to — so running `install` twice doesn't stack entries.
+    const filterMatches = src.match(/\.filter\([\s\S]*?isOwned/g) ?? [];
     assert.ok(
       filterMatches.length >= 2,
-      `expected >=2 idempotency filter calls, got ${filterMatches.length}`,
+      `expected >=2 isOwned-based filter calls, got ${filterMatches.length}`,
     );
   });
 

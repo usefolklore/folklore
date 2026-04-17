@@ -25,6 +25,7 @@ interface ParsedArgs {
   readonly room?: string;
   readonly k: number;
   readonly peers: boolean;
+  readonly json: boolean;
 }
 
 const parseArgs = (args: readonly string[]): ParsedArgs | string => {
@@ -32,6 +33,7 @@ const parseArgs = (args: readonly string[]): ParsedArgs | string => {
   let room: string | undefined;
   let k = 5;
   let peers = false;
+  let json = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     const next = (): string => args[++i] ?? '';
@@ -40,10 +42,11 @@ const parseArgs = (args: readonly string[]): ParsedArgs | string => {
     else if (a === '--k' || a === '-k') k = parseInt(next(), 10) || 5;
     else if (a.startsWith('--k=')) k = parseInt(a.slice('--k='.length), 10) || 5;
     else if (a === '--peers') peers = true;
+    else if (a === '--json') json = true;
     else if (!a.startsWith('-')) query = query ? `${query} ${a}` : a;
   }
-  if (!query) return 'missing query — usage: wellinformed ask "your question" [--room R] [--k N] [--peers]';
-  return { query, room, k, peers };
+  if (!query) return 'missing query — usage: wellinformed ask "your question" [--room R] [--k N] [--peers] [--json]';
+  return { query, room, k, peers, json };
 };
 
 export const ask = async (args: readonly string[]): Promise<number> => {
@@ -80,15 +83,31 @@ export const ask = async (args: readonly string[]): Promise<number> => {
       return 1;
     }
 
-    if (matches.value.length === 0) {
-      console.log('no results found. try a broader query or run `wellinformed trigger` to index content first.');
-      return 0;
-    }
-
     const graph = await runtime.graphs.load();
     if (graph.isErr()) {
       console.error(`ask: ${formatError(graph.error)}`);
       return 1;
+    }
+
+    if (parsed.json) {
+      const hits = matches.value.map((m) => {
+        const node = getNode(graph.value, m.node_id);
+        return {
+          id: m.node_id,
+          label: node?.label ?? null,
+          room: node?.room ?? null,
+          distance: Number(m.distance.toFixed(4)),
+          source_uri: node?.source_uri ?? node?.source_file ?? null,
+          summary: typeof node?.summary === 'string' ? (node.summary as string).slice(0, 400) : null,
+        };
+      });
+      console.log(JSON.stringify({ query: parsed.query, room: parsed.room ?? null, hits }));
+      return 0;
+    }
+
+    if (matches.value.length === 0) {
+      console.log('no results found. try a broader query or run `wellinformed trigger` to index content first.');
+      return 0;
     }
 
     console.log(`# wellinformed results for: ${parsed.query}`);

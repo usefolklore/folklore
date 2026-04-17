@@ -22,17 +22,27 @@
         ]
       },
       {
-        "matcher": "Glob|Grep|Read",
+        "matcher": "Glob|Grep|Read|WebSearch|WebFetch",
         "hooks": [
           {
             "type": "command",
             "command": "sh -c 'exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-smart-hook.sh\"'",
-            "timeout": 3000
+            "timeout": 5000
           }
         ]
       }
     ],
     "PostToolUse": [
+      {
+        "matcher": "WebSearch|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-post-fetch.sh\"'",
+            "timeout": 10000
+          }
+        ]
+      },
       {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [

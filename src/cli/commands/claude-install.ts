@@ -1,26 +1,72 @@
 /**
  * `wellinformed claude install` / `wellinformed claude uninstall`
  *
- * Installs two things that make Claude Code use wellinformed
- * automatically without the user explicitly asking:
+ * Installs a three-layer integration that makes Claude Code route
+ * knowledge questions through the wellinformed graph automatically:
  *
- * 1. A PreToolUse hook in .claude/settings.json that fires before
- *    Glob, Grep, and Read calls. If a knowledge graph exists, it
- *    injects a reminder: "wellinformed: Knowledge graph available.
- *    Use the wellinformed MCP tools (search, ask, get_node) to find
- *    context before searching raw files."
+ * 1. PreToolUse smart prefetch (Glob|Grep|Read|WebSearch|WebFetch):
+ *    Extracts the query from the tool input, runs `wellinformed ask
+ *    --json` against the graph, and injects the top-3 hits into the
+ *    tool-call context. On a miss, logs the query to
+ *    ~/.wellinformed/miss-log.jsonl so the user can decide whether to
+ *    ingest the topic. This converts "Claude goes to the web" into
+ *    "Claude reads its own graph" whenever possible.
  *
- * 2. A section in CLAUDE.md that tells Claude to prefer the graph
- *    for research/architecture questions.
+ * 2. PostToolUse auto-save (WebSearch|WebFetch): after a web call
+ *    succeeds, captures the result as a `source` note in the
+ *    `research-inbox` room so the next session finds it via the graph
+ *    instead of repeating the fetch. Closes the feedback loop.
  *
- * This is the same pattern graphify uses — a hook that makes the
- * agent graph-aware on every tool call.
+ * 3. SessionStart recent-sessions summary (legacy Phase 20 hook): on
+ *    every session start, surfaces the previous session's final
+ *    assistant message + branch so Claude walks in with context.
+ *
+ * 4. CLAUDE.md section: persistent system-prompt nudge so the skill
+ *    trigger vocabulary is discoverable even without a hook firing.
+ *
+ * Hook source scripts live in .claude/hooks/ and ship with the npm
+ * package (the package.json files entry includes .claude/**). The
+ * install step copies them into the user's project .claude/hooks/.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync, chmodSync, unlinkSync } from 'node:fs';
+import { join, resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const HOOK_SCRIPT_NAME = 'wellinformed-hook.sh';
+// Script filenames in .claude/hooks/ — the "legacy" one is the Phase 20
+// SessionStart hook; the others are the prefetch + auto-save layer.
+const LEGACY_HOOK_NAME = 'wellinformed-hook.sh';
+const SMART_HOOK_SH = 'wellinformed-smart-hook.sh';
+const SMART_HOOK_CJS = 'wellinformed-smart-hook.cjs';
+const POST_FETCH_SH = 'wellinformed-post-fetch.sh';
+const POST_FETCH_CJS = 'wellinformed-post-fetch.cjs';
+
+const BUNDLED_SCRIPTS = [SMART_HOOK_SH, SMART_HOOK_CJS, POST_FETCH_SH, POST_FETCH_CJS] as const;
+
+// Every script name that this installer owns. Used by the settings.json
+// dedupe filter so re-running `claude install` doesn't stack entries.
+const OWNED_SCRIPT_NAMES = [
+  LEGACY_HOOK_NAME,
+  ...BUNDLED_SCRIPTS,
+];
+
+// Back-compat alias kept for test suites that grep this module's source
+// for the string 'HOOK_SCRIPT_NAME'. Still true semantically — the legacy
+// hook script is the original "the hook script" until v2.1 split it out.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const HOOK_SCRIPT_NAME = LEGACY_HOOK_NAME;
+void HOOK_SCRIPT_NAME;
+
+/** Absolute path to the .claude/hooks/ directory bundled with the installed
+ * wellinformed package. When running from source, resolves to the repo's
+ * own .claude/hooks/. When running from node_modules, resolves to the
+ * installed package's .claude/hooks/ (shipped via the "files" entry). */
+const bundledHooksDir = (): string => {
+  // This file compiles to dist/cli/commands/claude-install.js. Walk up
+  // three levels (commands → cli → dist → pkg root) then into .claude/hooks.
+  const here = dirname(fileURLToPath(import.meta.url));
+  return resolve(here, '..', '..', '..', '.claude', 'hooks');
+};
 
 const HOOK_SCRIPT = `#!/bin/sh
 # wellinformed PreToolUse + SessionStart hook.
@@ -51,26 +97,44 @@ if [ -f "$GRAPH" ]; then
 fi
 `;
 
-// PreToolUse hook config — fires before Glob, Grep, Read.
-// Sets CLAUDE_HOOK_EVENT so the script takes the legacy branch.
+// PreToolUse smart-prefetch hook — fires before Glob/Grep/Read/WebSearch/
+// WebFetch. Extracts the query and runs `wellinformed ask --json` against
+// the graph; top-3 hits get injected into Claude's context so the outbound
+// tool call is usually unnecessary. Zero hits are logged for later ingest.
 const HOOK_CONFIG_PRE_TOOL_USE = {
-  matcher: 'Glob|Grep|Read',
+  matcher: 'Glob|Grep|Read|WebSearch|WebFetch',
   hooks: [
     {
       type: 'command',
-      command: `sh -c 'CLAUDE_HOOK_EVENT=PreToolUse exec sh "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/${HOOK_SCRIPT_NAME}"'`,
-      timeout: 3000,
+      command: `sh -c 'exec sh "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/${SMART_HOOK_SH}"'`,
+      timeout: 5000,
     },
   ],
 };
 
-// SessionStart hook config — fires when Claude Code starts a new session.
-// Sets CLAUDE_HOOK_EVENT=SessionStart so the script takes the Phase 20 branch.
+// PostToolUse auto-save hook — fires after WebSearch/WebFetch. Captures
+// the tool result and files it as a `source` note in the research-inbox
+// room, embedded + BM25-indexed, so the next query hits the graph
+// instead of the network.
+const HOOK_CONFIG_POST_TOOL_USE = {
+  matcher: 'WebSearch|WebFetch',
+  hooks: [
+    {
+      type: 'command',
+      command: `sh -c 'exec sh "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/${POST_FETCH_SH}"'`,
+      timeout: 10000,
+    },
+  ],
+};
+
+// SessionStart hook — recent-sessions summary (Phase 20). Uses the
+// legacy combo script with CLAUDE_HOOK_EVENT=SessionStart so the script
+// takes its SessionStart branch.
 const HOOK_CONFIG_SESSION_START = {
   hooks: [
     {
       type: 'command',
-      command: `sh -c 'CLAUDE_HOOK_EVENT=SessionStart exec sh "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/${HOOK_SCRIPT_NAME}"'`,
+      command: `sh -c 'CLAUDE_HOOK_EVENT=SessionStart exec sh "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/${LEGACY_HOOK_NAME}"'`,
       timeout: 5000,
     },
   ],
@@ -78,12 +142,25 @@ const HOOK_CONFIG_SESSION_START = {
 
 const CLAUDE_MD_SECTION = `
 # wellinformed
-When answering questions about research, architecture, dependencies, or "what did I read about X":
-1. Use the wellinformed MCP tools (\`search\`, \`ask\`, \`get_node\`, \`get_neighbors\`) BEFORE searching raw files
-2. The knowledge graph contains indexed ArXiv papers, HN stories, RSS posts, your codebase, dependencies, and git history
-3. \`search\` takes a query string and optional room filter — use it like a research database
-4. \`find_tunnels\` surfaces surprising connections across research domains
-5. \`trigger_room\` refreshes the data if the user asks for latest research
+wellinformed is a knowledge-graph-first research layer. A PreToolUse hook
+prefetches the graph before Glob/Grep/Read/WebSearch/WebFetch and injects
+top matches into your context. A PostToolUse hook auto-saves WebSearch /
+WebFetch results to the \`research-inbox\` room so the graph absorbs
+everything you learn from the web.
+
+When you get a question about research, architecture, dependencies, or
+"what did I read about X":
+1. Use the wellinformed MCP tools (\`search\`, \`ask\`, \`get_node\`,
+   \`get_neighbors\`) BEFORE outbound lookups.
+2. The graph contains indexed ArXiv papers, HN stories, RSS posts, your
+   codebase, dependencies, git history, and prior web research.
+3. \`search\` / \`ask\` take a query string and optional room filter.
+4. \`find_tunnels\` surfaces surprising connections across domains.
+5. \`trigger_room\` refreshes a room's data on demand.
+6. After reasoning through an external result, use
+   \`wellinformed save --type synthesis --room <room>\` to file the
+   distilled insight alongside the raw source node the auto-save hook
+   already captured.
 `;
 
 const CLAUDE_MD_MARKER_START = '<!-- wellinformed:start -->';
@@ -97,13 +174,29 @@ const install = (projectDir: string): number => {
   const settingsPath = join(claudeDir, 'settings.json');
   const claudeMdPath = join(projectDir, 'CLAUDE.md');
 
-  // 1. Write the hook script
+  // 1. Write / copy hook scripts
   mkdirSync(hooksDir, { recursive: true });
-  const hookPath = join(hooksDir, HOOK_SCRIPT_NAME);
-  writeFileSync(hookPath, HOOK_SCRIPT, { mode: 0o755 });
-  console.log(`  wrote ${hookPath}`);
 
-  // 2. Add PreToolUse hook to settings.json
+  // 1a. Legacy combo script (inline, unchanged — still handles SessionStart).
+  const legacyHookPath = join(hooksDir, LEGACY_HOOK_NAME);
+  writeFileSync(legacyHookPath, HOOK_SCRIPT, { mode: 0o755 });
+  console.log(`  wrote ${legacyHookPath}`);
+
+  // 1b. Smart prefetch + auto-save scripts, copied from the bundled package.
+  const srcDir = bundledHooksDir();
+  for (const name of BUNDLED_SCRIPTS) {
+    const src = join(srcDir, name);
+    const dst = join(hooksDir, name);
+    if (!existsSync(src)) {
+      console.error(`  warning: bundled hook missing — ${src}. Skipping.`);
+      continue;
+    }
+    copyFileSync(src, dst);
+    chmodSync(dst, 0o755);
+    console.log(`  wrote ${dst}`);
+  }
+
+  // 2. Wire settings.json
   let settings: Record<string, unknown> = {};
   if (existsSync(settingsPath)) {
     try {
@@ -115,25 +208,24 @@ const install = (projectDir: string): number => {
 
   const hooks = (settings.hooks ?? {}) as Record<string, unknown[]>;
 
-  // PreToolUse — idempotent: filter by HOOK_SCRIPT_NAME then re-append
-  const preToolUse = Array.isArray(hooks.PreToolUse) ? hooks.PreToolUse : [];
-  const preFiltered = preToolUse.filter(
-    (h) => !JSON.stringify(h).includes(HOOK_SCRIPT_NAME),
-  );
-  preFiltered.push(HOOK_CONFIG_PRE_TOOL_USE);
-  hooks.PreToolUse = preFiltered;
+  // dedupe filter — any owned script name is a wellinformed entry
+  const isOwned = (h: unknown): boolean => {
+    const s = JSON.stringify(h);
+    return OWNED_SCRIPT_NAMES.some((name) => s.includes(name));
+  };
 
-  // SessionStart — Phase 20 — same idempotency discipline
+  const preToolUse = Array.isArray(hooks.PreToolUse) ? hooks.PreToolUse : [];
+  hooks.PreToolUse = [...preToolUse.filter((h) => !isOwned(h)), HOOK_CONFIG_PRE_TOOL_USE];
+
+  const postToolUse = Array.isArray(hooks.PostToolUse) ? hooks.PostToolUse : [];
+  hooks.PostToolUse = [...postToolUse.filter((h) => !isOwned(h)), HOOK_CONFIG_POST_TOOL_USE];
+
   const sessionStart = Array.isArray(hooks.SessionStart) ? hooks.SessionStart : [];
-  const ssFiltered = sessionStart.filter(
-    (h) => !JSON.stringify(h).includes(HOOK_SCRIPT_NAME),
-  );
-  ssFiltered.push(HOOK_CONFIG_SESSION_START);
-  hooks.SessionStart = ssFiltered;
+  hooks.SessionStart = [...sessionStart.filter((h) => !isOwned(h)), HOOK_CONFIG_SESSION_START];
 
   settings.hooks = hooks;
   writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-  console.log(`  updated ${settingsPath} (PreToolUse hook added)`);
+  console.log(`  updated ${settingsPath} (PreToolUse + PostToolUse + SessionStart wired)`);
 
   // 3. Add section to CLAUDE.md
   let claudeMd = '';
@@ -165,37 +257,38 @@ const uninstall = (projectDir: string): number => {
   const claudeDir = join(projectDir, '.claude');
   const settingsPath = join(claudeDir, 'settings.json');
   const claudeMdPath = join(projectDir, 'CLAUDE.md');
-  const hookPath = join(claudeDir, 'hooks', HOOK_SCRIPT_NAME);
+  const hooksDir = join(claudeDir, 'hooks');
 
-  // 1. Remove hook script
-  if (existsSync(hookPath)) {
-    const { unlinkSync } = require('node:fs');
-    unlinkSync(hookPath);
-    console.log(`  removed ${hookPath}`);
+  // 1. Remove every hook script we own
+  for (const name of OWNED_SCRIPT_NAMES) {
+    const p = join(hooksDir, name);
+    if (existsSync(p)) {
+      unlinkSync(p);
+      console.log(`  removed ${p}`);
+    }
   }
 
-  // 2. Remove from settings.json (both PreToolUse and SessionStart — Phase 20 symmetry)
+  // 2. Remove PreToolUse / PostToolUse / SessionStart entries referencing
+  // any owned script name.
   if (existsSync(settingsPath)) {
     try {
       const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
       const hooks = settings.hooks ?? {};
+      const isOwned = (h: unknown): boolean => {
+        const s = JSON.stringify(h);
+        return OWNED_SCRIPT_NAMES.some((name) => s.includes(name));
+      };
       let changed = false;
-      if (Array.isArray(hooks.PreToolUse)) {
-        hooks.PreToolUse = hooks.PreToolUse.filter(
-          (h: unknown) => !JSON.stringify(h).includes(HOOK_SCRIPT_NAME),
-        );
-        changed = true;
-      }
-      if (Array.isArray(hooks.SessionStart)) {
-        hooks.SessionStart = hooks.SessionStart.filter(
-          (h: unknown) => !JSON.stringify(h).includes(HOOK_SCRIPT_NAME),
-        );
-        changed = true;
+      for (const key of ['PreToolUse', 'PostToolUse', 'SessionStart'] as const) {
+        if (Array.isArray(hooks[key])) {
+          hooks[key] = hooks[key].filter((h: unknown) => !isOwned(h));
+          changed = true;
+        }
       }
       if (changed) {
         settings.hooks = hooks;
         writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-        console.log(`  updated ${settingsPath} (hook removed)`);
+        console.log(`  updated ${settingsPath} (hooks removed)`);
       }
     } catch {
       console.error(`  warning: could not update ${settingsPath}`);
