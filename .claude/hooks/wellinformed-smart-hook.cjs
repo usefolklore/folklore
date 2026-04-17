@@ -26,14 +26,35 @@ const os = require('node:os');
 const HOME = process.env.WELLINFORMED_HOME || join(os.homedir(), '.wellinformed');
 const GRAPH_PATH = join(HOME, 'graph.json');
 const MISS_LOG = join(HOME, 'miss-log.jsonl');
-const PREFETCH_TIMEOUT_MS = 3000;
+const PREFETCH_TIMEOUT_MS = Number(process.env.WELLINFORMED_PREFETCH_TIMEOUT_MS ?? 4500);
 const MAX_QUERY_LEN = 300;
 const SNIPPET_LEN = 220;
-// Cosine distance threshold for "this is actually relevant" — `ask` returns
-// top-K regardless of distance, so we filter downstream. Empirically, on
-// MiniLM-384 cosine, real matches sit below 1.0 and unrelated neighbours
-// pile up around 1.1+. Tune via WELLINFORMED_HIT_THRESHOLD.
-const HIT_THRESHOLD = Number(process.env.WELLINFORMED_HIT_THRESHOLD ?? 1.0);
+// Relevance filter — two signals combined:
+//
+//   1. Absolute distance cap. Empirically on MiniLM-384 with hybrid
+//      RRF scoring, the best hit for a genuinely relevant query lands
+//      around 0.9–1.05, while a garbage query's best still sits
+//      around 1.06–1.12 (the nearest-neighbour noise floor). 1.05
+//      splits them cleanly — false positives from "nearest neighbour
+//      of something" get rejected.
+//
+//   2. Gap signal. If the best hit's distance is within epsilon of
+//      the third, the results are all tied at the noise floor — no
+//      clear winner, reject everything. A sharp gap means the top
+//      hit stands out; a flat curve means no hit stands out at all.
+//
+// Tune both via env vars if the corpus shifts (larger graph = more
+// aggressive noise floor, so raise the cap).
+const HIT_THRESHOLD = Number(process.env.WELLINFORMED_HIT_THRESHOLD ?? 1.05);
+const GAP_MIN = Number(process.env.WELLINFORMED_GAP_MIN ?? 0.02);
+// Federated-first prefetch — "the network before the web" is the product
+// promise, and the hook has to live up to it. With peers enabled, we run
+// `ask --peers --json` which embeds once locally, fans out to every
+// connected peer with a 2s per-peer deadline, and merges results with
+// local search. If no peers are connected (fresh install, daemon not
+// running), federated gracefully degrades to local-only. Set
+// WELLINFORMED_PREFETCH_PEERS=0 to force local-only.
+const PREFETCH_PEERS = process.env.WELLINFORMED_PREFETCH_PEERS !== '0';
 
 const emit = (text) => {
   process.stdout.write(JSON.stringify({
@@ -59,13 +80,20 @@ const queryFromInput = (toolName, ti) => {
 
 const prefetch = (query) => {
   try {
-    const out = execFileSync('wellinformed', ['ask', '--json', '--k', '3', query], {
+    const args = PREFETCH_PEERS
+      ? ['ask', '--peers', '--json', '--k', '3', query]
+      : ['ask', '--json', '--k', '3', query];
+    const out = execFileSync('wellinformed', args, {
       timeout: PREFETCH_TIMEOUT_MS,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     });
     const parsed = JSON.parse(out);
-    return Array.isArray(parsed.hits) ? parsed.hits : [];
+    return {
+      hits: Array.isArray(parsed.hits) ? parsed.hits : [],
+      peers_queried: typeof parsed.peers_queried === 'number' ? parsed.peers_queried : 0,
+      peers_responded: typeof parsed.peers_responded === 'number' ? parsed.peers_responded : 0,
+    };
   } catch {
     return null;
   }
@@ -91,11 +119,19 @@ const renderAge = (h) => {
   return `${Math.round(d / 30)}mo`;
 };
 
-const renderHits = (hits, query) => {
-  const head = `wellinformed: ${hits.length} indexed node(s) match "${query.slice(0, 80)}"`;
+const renderPeer = (h) => {
+  const p = h.source_peer ?? 'local';
+  return p === 'local' ? 'local' : `peer:${p.slice(0, 12)}`;
+};
+
+const renderHits = (hits, query, peersMeta) => {
+  const peerSummary = peersMeta && peersMeta.peers_queried > 0
+    ? ` (queried ${peersMeta.peers_responded}/${peersMeta.peers_queried} peer(s))`
+    : '';
+  const head = `wellinformed: ${hits.length} indexed node(s) match "${query.slice(0, 80)}"${peerSummary}`;
   const body = hits.map((h, i) => {
     const snippet = h.summary ? ` — ${String(h.summary).slice(0, SNIPPET_LEN).replace(/\s+/g, ' ')}` : '';
-    return `  ${i + 1}. ${h.label ?? h.id} [${h.room ?? '?'}, ${renderAge(h)}] d=${h.distance}${snippet}\n     → ${h.source_uri ?? h.id}`;
+    return `  ${i + 1}. ${h.label ?? h.id} [${h.room ?? '?'}, ${renderAge(h)}, ${renderPeer(h)}] d=${h.distance}${snippet}\n     → ${h.source_uri ?? h.id}`;
   }).join('\n');
   return `${head}\n${body}\n\nPrefer these over the outbound tool. Load full content via mcp__wellinformed__get_node(id) or mcp__wellinformed__ask(query). If a hit's age is stale for the task (research > 7d, toolshed > 30d), trigger a fresh pull via WebFetch / WebSearch / \`wellinformed trigger\` instead of trusting the cache.`;
 };
@@ -113,18 +149,35 @@ const main = () => {
     process.exit(0);
   }
 
-  const rawHits = prefetch(query);
-  if (rawHits === null) {
+  const prefetchResult = prefetch(query);
+  if (prefetchResult === null) {
     emit(`wellinformed: prefetch skipped for "${query.slice(0, 80)}" (binary unavailable or timed out).`);
     process.exit(0);
   }
-  const hits = rawHits.filter((h) => typeof h.distance === 'number' && h.distance <= HIT_THRESHOLD);
+  // Two-stage relevance filter (see threshold constants above). First
+  // cap absolute distance; then if the best remaining hit is within
+  // GAP_MIN of the last, reject the whole set as "flat noise floor."
+  const below = prefetchResult.hits.filter((h) => typeof h.distance === 'number' && h.distance <= HIT_THRESHOLD);
+  const hits = (() => {
+    if (below.length === 0) return below;
+    if (below.length === 1) return below;
+    const best = below[0].distance;
+    const worst = below[below.length - 1].distance;
+    return worst - best >= GAP_MIN ? below : [below[0]];
+  })();
+  const peersMeta = {
+    peers_queried: prefetchResult.peers_queried,
+    peers_responded: prefetchResult.peers_responded,
+  };
 
   if (hits.length > 0) {
-    emit(renderHits(hits, query));
+    emit(renderHits(hits, query, peersMeta));
   } else {
     logMiss(toolName, query);
-    emit(`wellinformed: no indexed context for "${query.slice(0, 80)}". Miss logged to ${MISS_LOG}. Proceeding with ${toolName} — consider saving the result back with \`wellinformed save\` or a PostToolUse hook once reasoning is done.`);
+    const peerNote = peersMeta.peers_queried > 0
+      ? ` (network checked: ${peersMeta.peers_responded}/${peersMeta.peers_queried} peer(s) responded, none had a match)`
+      : '';
+    emit(`wellinformed: no indexed context for "${query.slice(0, 80)}"${peerNote}. Miss logged to ${MISS_LOG}. Proceeding with ${toolName} — consider saving the result back with \`wellinformed save\` or a PostToolUse hook once reasoning is done.`);
   }
   process.exit(0);
 };

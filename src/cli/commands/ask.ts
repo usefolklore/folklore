@@ -65,7 +65,12 @@ export const ask = async (args: readonly string[]): Promise<number> => {
 
   try {
     if (parsed.peers) {
-      return askFederated(runtime, parsed);
+      // CRITICAL: `await` here. Without it, the outer async function's
+      // `finally { runtime.close() }` runs before askFederated completes,
+      // closing the SQLite vector index mid-query and silently poisoning
+      // every federated-local search. Caught while wiring the v2.1 smart-
+      // hook to consult peers by default.
+      return await askFederated(runtime, parsed);
     }
 
     const deps = {
@@ -213,10 +218,13 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
       );
     }
 
-    // 4. Run the federated search — 2s per-peer deadline locked in Plan 02
+    // 4. Run the federated search — 2s per-peer deadline locked in Plan 02.
+    // Pass `text` so the local half uses the hybrid (BM25 + vector + RRF)
+    // path that non-federated `ask` uses; peers still only receive the
+    // embedding (SEC-03 boundary).
     const result = await runFederatedSearch(
       { node, vectorIndex: runtime.vectors },
-      { embedding, k: parsed.k, room: parsed.room },
+      { embedding, k: parsed.k, room: parsed.room, text: parsed.query },
     );
 
     // 5. Print results with _source_peer annotation
@@ -224,6 +232,47 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
     if (graph.isErr()) {
       console.error(`ask --peers: ${formatError(graph.error)}`);
       return 1;
+    }
+
+    if (parsed.json) {
+      // JSON surface for the smart-hook and any programmatic consumer.
+      // Same shape as local --json plus peer provenance fields so the
+      // caller can surface "this hit came from peer X" context.
+      const nowMs = Date.now();
+      const hits = result.matches.map((m) => {
+        const graphNode = getNode(graph.value, m.node_id);
+        const fetchedAt = typeof graphNode?.fetched_at === 'string' ? graphNode.fetched_at : null;
+        const fetchedMs = fetchedAt ? Date.parse(fetchedAt) : NaN;
+        const ageDays = Number.isFinite(fetchedMs)
+          ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
+          : null;
+        return {
+          id: m.node_id,
+          label: graphNode?.label ?? null,
+          room: graphNode?.room ?? m.room ?? null,
+          distance: Number(m.distance.toFixed(4)),
+          source_uri: graphNode?.source_uri ?? graphNode?.source_file ?? null,
+          summary: typeof graphNode?.summary === 'string' ? (graphNode.summary as string).slice(0, 400) : null,
+          fetched_at: fetchedAt,
+          age_days: ageDays,
+          source_peer: m._source_peer ?? 'local',
+          also_from_peers: m._also_from_peers ?? [],
+        };
+      });
+      console.log(JSON.stringify({
+        query: parsed.query,
+        room: parsed.room ?? null,
+        peers_queried: result.peers_queried,
+        peers_responded: result.peers_responded,
+        peers_timed_out: result.peers_timed_out,
+        peers_errored: result.peers_errored,
+        hits,
+        tunnels: result.tunnels.map((t) => ({
+          a: t.a, b: t.b, room_a: t.room_a, room_b: t.room_b,
+          distance: Number(t.distance.toFixed(4)),
+        })),
+      }));
+      return 0;
     }
 
     console.log(`# wellinformed federated results for: ${parsed.query}`);

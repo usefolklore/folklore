@@ -77,6 +77,14 @@ export interface FederatedSearchParams {
   readonly embedding: Vector;     // Float32Array, length === DEFAULT_DIM
   readonly k: number;
   readonly room?: string;
+  /**
+   * Raw query text for the local-half hybrid (vector + BM25) lookup. When
+   * omitted, local search falls back to vector-only. Peers still receive
+   * only the embedding (SEC-03 boundary — raw text does not cross the
+   * wire); this field exists for the LOCAL half, which has the text
+   * in-process anyway.
+   */
+  readonly text?: string;
   /** Cross-room tunnel threshold. Default 0.6 matches MCP find_tunnels default. */
   readonly tunnelThreshold?: number;
   /** Per-peer deadline. Default 2000ms matches CONTEXT.md locked decision. */
@@ -189,10 +197,19 @@ export const runFederatedSearch = async (
   // Resolve injectable stream opener (test seam)
   const streamOpener = deps.openStream ?? openSearchStream;
 
-  // 1. Local query — synchronous from the caller's perspective
-  const localRes = room
-    ? await deps.vectorIndex.searchByRoom(room as Room, params.embedding, k)
-    : await deps.vectorIndex.searchGlobal(params.embedding, k);
+  // 1. Local query — synchronous from the caller's perspective.
+  // Use the hybrid (BM25 + vector + RRF) path whenever the caller supplied
+  // the raw text. Hybrid is what the non-federated `searchGlobal` use case
+  // calls — without it, federated local-half would silently diverge in
+  // retrieval quality from the local-only `ask` path (bug caught while
+  // wiring the v2.1 smart-hook to consult peers by default).
+  const localRes = params.text
+    ? (room
+        ? await deps.vectorIndex.searchByRoomHybrid(room as Room, params.text, params.embedding, k)
+        : await deps.vectorIndex.searchHybrid(params.text, params.embedding, k))
+    : (room
+        ? await deps.vectorIndex.searchByRoom(room as Room, params.embedding, k)
+        : await deps.vectorIndex.searchGlobal(params.embedding, k));
 
   const localMatches: FederatedMatch[] = localRes.isOk()
     ? localRes.value.map((m) => ({
