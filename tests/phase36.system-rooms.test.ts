@@ -46,14 +46,17 @@ const mk = (o: Partial<GraphNode>): GraphNode => ({
 }) as GraphNode;
 
 describe('Phase 36 — system rooms (domain)', () => {
-  test('S1: exactly two system rooms registered by name', () => {
-    assert.strictEqual(SYSTEM_ROOMS.length, 2);
+  test('S1: three system rooms registered by name (toolshed, research, oracle)', () => {
+    assert.strictEqual(SYSTEM_ROOMS.length, 3);
     assert.ok(SYSTEM_ROOM_NAMES.has('toolshed'));
     assert.ok(SYSTEM_ROOM_NAMES.has('research'));
+    assert.ok(SYSTEM_ROOM_NAMES.has('oracle'));
     assert.ok(isSystemRoomName('toolshed'));
     assert.ok(isSystemRoomName('research'));
+    assert.ok(isSystemRoomName('oracle'));
     assert.ok(!isSystemRoomName('user-project'));
     assert.strictEqual(findSystemRoom('toolshed')?.name, 'toolshed');
+    assert.strictEqual(findSystemRoom('oracle')?.name, 'oracle');
     assert.strictEqual(findSystemRoom('unknown'), undefined);
   });
 

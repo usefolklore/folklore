@@ -26,7 +26,7 @@
 
 import { strict as assert } from 'node:assert';
 import { after, before, describe, test } from 'node:test';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -41,6 +41,7 @@ import {
 import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import type { GraphJson } from '../src/domain/graph.js';
 import { validateRemoteNodes } from '../src/domain/remote-node-validator.js';
+import { nodeFromQuestion, nodeFromAnswer, listQuestions, listAnswers } from '../src/domain/oracle.js';
 
 /** Build a minimal graph.json covering two rooms — one shareable, one not. */
 const seedGraph = (): GraphJson => ({
@@ -221,6 +222,62 @@ describe('Phase 35 — P2P touch E2E (two real libp2p nodes)', () => {
       // gate — what we're ruling out is "received the private node".
       assert.ok(true, 'gate refused via TouchError — acceptable');
     }
+  });
+
+  test('E5 oracle: Alice posts a question, Bob pulls it via the oracle system room', async () => {
+    assert.ok(bobNode);
+    // Alice posts a question directly into her graph.json. In the
+    // live CLI this goes through indexNode (vectors + BM25), but here
+    // we're testing the wire path so a raw graph write is sufficient.
+    const q = nodeFromQuestion({
+      text: 'How do I wire prefetch hooks without adding a dep?',
+      askedBy: alicePeerId,
+      date: new Date('2026-04-17T12:00:00Z'),
+    });
+    const graphPath = join(aliceHome, 'graph.json');
+    const raw = JSON.parse(readFileSync(graphPath, 'utf8'));
+    raw.nodes.push(q);
+    writeFileSync(graphPath, JSON.stringify(raw));
+
+    // Bob touches the oracle system room — auto-allowed, not in Alice's
+    // shared-rooms.json — and must receive Alice's question.
+    const r = await openTouchStream(bobNode!, alicePeerId, 'oracle');
+    assert.ok(r.isOk(), `oracle touch failed: ${r.isErr() ? JSON.stringify(r.error) : ''}`);
+    if (r.isErr()) return;
+
+    const questions = listQuestions(r.value.nodes);
+    assert.strictEqual(questions.length, 1, `expected 1 question, got ${questions.length}`);
+    assert.strictEqual(questions[0].askedBy, alicePeerId);
+    assert.match(questions[0].text, /prefetch hooks/);
+
+    // Bob posts an answer (again, raw graph write — this test pins the
+    // wire behaviour; the CLI path is covered by phase38).
+    const a = nodeFromAnswer({
+      questionId: q.id,
+      text: 'Use raw ANSI + setRawMode; 50 lines, zero deps. @opentui/core is 10 MB for a toggle list.',
+      answeredBy: 'bob-peer',
+      confidence: 0.85,
+      date: new Date('2026-04-17T13:00:00Z'),
+    });
+    // Bob writes to his graph then Alice pulls — but Bob's side has no
+    // shared graph to Alice. Instead, we prove Alice-side would see an
+    // answer if it arrived: append Bob's answer into Alice's graph to
+    // simulate a later CRDT merge, then have Bob pull 'oracle' again
+    // and check the answer is now counted.
+    const raw2 = JSON.parse(readFileSync(graphPath, 'utf8'));
+    raw2.nodes.push(a);
+    writeFileSync(graphPath, JSON.stringify(raw2));
+
+    const r2 = await openTouchStream(bobNode!, alicePeerId, 'oracle');
+    assert.ok(r2.isOk());
+    if (r2.isErr()) return;
+
+    const q2 = listQuestions(r2.value.nodes).find((x) => x.id === q.id);
+    assert.ok(q2, 'question must still be in the oracle room');
+    assert.strictEqual(q2!.answerCount, 1);
+    const answers = listAnswers(r2.value.nodes, q.id);
+    assert.strictEqual(answers.length, 1);
+    assert.strictEqual(answers[0].confidence, 0.85);
   });
 
   test('E3 trust boundary: every received node passes the remote-node validator locally', async () => {

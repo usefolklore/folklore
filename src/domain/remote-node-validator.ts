@@ -114,6 +114,19 @@ const ALLOWED_KEYS = new Set<string>([
   'language',
   'word_count',
   'content_hash',
+  // Oracle bulletin-board fields — carried on question/answer nodes
+  // so peers can reconstruct the Q&A topology post-wire. All bounded:
+  // string fields go through isPlainString's length guard; confidence
+  // is a number. The kind + status strings are effectively enums
+  // enforced by the oracle domain module.
+  'oracle_kind',
+  'asked_by',
+  'status',
+  'question_id',
+  'answered_by',
+  'confidence',
+  // Oracle additions (save-note typing)
+  'note_type',
 ]);
 
 // ─────────────────────── result type ───────────────────────

@@ -36,6 +36,9 @@ export const OPAQUE_INTERNAL_PREFIXES = [
   'mcp-tool:',
   'repo:',
   'file-uri:',
+  // Oracle bulletin board (system room: oracle)
+  'oracle-question:',
+  'oracle-answer:',
   // Claude Code capture
   'claude-session:',
 ] as const;

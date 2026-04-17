@@ -35,6 +35,7 @@ import { touch } from './commands/touch.js';
 import { hot } from './commands/hot.js';
 import { lint } from './commands/lint.js';
 import { save } from './commands/save.js';
+import { oracle } from './commands/oracle.js';
 import { codebase } from './commands/codebase.js';
 import { recentSessions } from './commands/recent-sessions.js';
 
@@ -72,6 +73,7 @@ const commands: Record<string, CommandFn> = {
   hot,
   lint,
   save,
+  oracle,
   codebase,
   'recent-sessions': recentSessions,
 };

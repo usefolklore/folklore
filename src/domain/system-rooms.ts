@@ -42,7 +42,7 @@ import type { GraphNode } from './graph.js';
 
 // ─────────────────────── types ────────────────────────────
 
-export type SystemRoomName = 'toolshed' | 'research';
+export type SystemRoomName = 'toolshed' | 'research' | 'oracle';
 
 export interface SystemRoomSpec {
   readonly name: SystemRoomName;
@@ -72,7 +72,19 @@ export const RESEARCH: SystemRoomSpec = Object.freeze({
   uriPrefixes: ['arxiv:', 'hn:', 'rss:', 'websearch:', 'http://', 'https://', 'telegram:'],
 });
 
-export const SYSTEM_ROOMS: readonly SystemRoomSpec[] = Object.freeze([TOOLSHED, RESEARCH]);
+/** Bulletin-board room for peer-to-peer Q&A. Questions and answers live
+ *  here as nodes (schemes oracle-question: / oracle-answer:) and
+ *  propagate via the existing touch + CRDT surface. Async by design —
+ *  no new protocol code. Stale-after: 14 days (a question that's been
+ *  open two weeks is probably not getting answered organically). */
+export const ORACLE: SystemRoomSpec = Object.freeze({
+  name: 'oracle',
+  description: 'peer-to-peer Q&A bulletin board — questions and answers propagate via touch/CRDT',
+  staleAfterDays: 14,
+  uriPrefixes: ['oracle-question:', 'oracle-answer:'],
+});
+
+export const SYSTEM_ROOMS: readonly SystemRoomSpec[] = Object.freeze([TOOLSHED, RESEARCH, ORACLE]);
 
 export const SYSTEM_ROOM_NAMES: ReadonlySet<string> =
   new Set(SYSTEM_ROOMS.map((r) => r.name));
