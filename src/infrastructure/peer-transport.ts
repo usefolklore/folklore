@@ -21,6 +21,14 @@ import { mdns } from '@libp2p/mdns';
 import { kadDHT } from '@libp2p/kad-dht';
 import { circuitRelayTransport } from '@libp2p/circuit-relay-v2';
 import { dcutr } from '@libp2p/dcutr';
+// Layer B of the peer-discovery stack (oracle live queries). Floodsub
+// is the simpler pubsub over libp2p — O(n²) relay traffic but fine for
+// the small networks wellinformed targets at this stage. Gossipsub 14.x
+// still targets @libp2p/interface v2 while wellinformed uses v3, so
+// floodsub is the right fit until @chainsafe ships a v3-compatible
+// gossipsub release. The service API is identical so upgrading later
+// is a one-line swap.
+import { floodsub } from '@libp2p/floodsub';
 import { uPnPNAT } from '@libp2p/upnp-nat';
 // @libp2p/identify is required by circuitRelayTransport at runtime — its
 // RelayDiscovery always initialises and registers '@libp2p/identify' as a
@@ -257,6 +265,11 @@ export const createNode = (
         // autoConfirmAddress:true skips the @libp2p/autonat serviceDependency check —
         // the UPnP mapping itself is authoritative enough without a second autonat round-trip.
         ...(cfg.upnp !== false ? { upnpNAT: uPnPNAT({ autoConfirmAddress: true }) } : {}),
+        // Phase 39 — oracle live queries. pubsub handles topic-
+        // subscribe / broadcast-publish. Zero direct-wire cost when no
+        // topics are subscribed. See infrastructure/oracle-gossip.ts
+        // for the oracle-specific publish/subscribe helpers.
+        pubsub: floodsub(),
       };
 
       // Phase 18 NET-03: conditional /p2p-circuit listen. Only add when the user
