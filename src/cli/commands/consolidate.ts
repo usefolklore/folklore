@@ -38,6 +38,7 @@ import { defaultRuntime, type Runtime } from '../runtime.js';
 import { ollamaClient } from '../../infrastructure/ollama-client.js';
 import { acquireLock } from '../../infrastructure/process-lock.js';
 import { wellinformedHome } from '../runtime.js';
+import { join } from 'node:path';
 
 // ─── arg parsing ──────────────────────────────────────────────────
 
@@ -49,6 +50,8 @@ interface RunArgs {
   readonly maxSize: number;
   readonly model: string;
   readonly prune: boolean;
+  readonly backup: boolean;
+  readonly backupPath: string | null;
 }
 
 const parseRunArgs = (args: readonly string[]): RunArgs | string => {
@@ -59,21 +62,30 @@ const parseRunArgs = (args: readonly string[]): RunArgs | string => {
   let maxSize = 100;
   let model = process.env.WELLINFORMED_OLLAMA_MODEL ?? 'qwen2.5:1.5b';
   let prune = false;
+  // Backup-before-prune is ON by default when --prune is used. Explicit
+  // --no-backup disables. --backup <path> overrides the auto-generated
+  // filename. Makes destructive --prune reversible: the source raw
+  // entries go to an NDJSON file that `wellinformed sessions reingest`
+  // OR a manual reimport can restore.
+  let backup = true;
+  let backupPath: string | null = null;
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     const next = (): string => args[++i] ?? '';
     if (a === '--dry-run') dryRun = true;
     else if (a === '--prune') prune = true;
+    else if (a === '--no-backup') backup = false;
+    else if (a === '--backup') { backup = true; backupPath = next(); }
     else if (a === '--threshold') threshold = parseFloat(next()) || threshold;
     else if (a === '--min-size') minSize = parseInt(next(), 10) || minSize;
     else if (a === '--max-size') maxSize = parseInt(next(), 10) || maxSize;
     else if (a === '--model') model = next();
     else if (!a.startsWith('-')) room = room ?? a;
   }
-  if (!room) return 'missing <room>. usage: wellinformed consolidate run <room> [--dry-run] [--prune] [--threshold 0.8] [--min-size 5]';
+  if (!room) return 'missing <room>. usage: wellinformed consolidate run <room> [--dry-run] [--prune [--backup PATH | --no-backup]]';
   if (dryRun && prune) return 'cannot use --dry-run and --prune together';
-  return { room, dryRun, threshold, minSize, maxSize, model, prune };
+  return { room, dryRun, threshold, minSize, maxSize, model, prune, backup, backupPath };
 };
 
 // ─── wiring: build ConsolidatorDeps from Runtime ────────────────
@@ -266,6 +278,25 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
     // before the summary is durable.
     if (parsed.prune && res.value.source_ids_marked.length > 0) {
       const ids = res.value.source_ids_marked;
+
+      // Phase 4.2 — backup-before-prune. On by default. Writes source
+      // graph nodes to an NDJSON file so `wellinformed sessions reingest`
+      // (or a manual re-import) can undo the prune.
+      if (parsed.backup) {
+        const path = parsed.backupPath
+          ?? join(wellinformedHome(), `prune-backup-${parsed.room}-${Date.now()}.ndjson`);
+        const backupRes = await writeBackup(runtime, ids, path);
+        if (backupRes.isErr()) {
+          console.error(`consolidate prune: backup failed, ABORTING prune: ${formatError(backupRes.error)}`);
+          console.error(`  the consolidated memories persisted successfully; sources were NOT deleted.`);
+          console.error(`  use --no-backup to prune without a backup file.`);
+          return 1;
+        }
+        console.error(`consolidate prune: wrote ${backupRes.value} bytes to ${path}`);
+      } else {
+        console.error(`consolidate prune: --no-backup — proceeding with destructive delete`);
+      }
+
       console.error(`consolidate prune: removing ${ids.length} source entries from graph + vectors...`);
       const pruneStart = Date.now();
       const pruneRes = await pruneSources(runtime, ids);
@@ -282,6 +313,27 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
     await lock.release();
   }
 };
+
+const writeBackup = (
+  runtime: Runtime,
+  ids: readonly NodeId[],
+  path: string,
+): ResultAsync<number, AppError> =>
+  runtime.graphs.load().mapErr((e): AppError => e).andThen((graph) => {
+    const idSet = new Set<NodeId>(ids);
+    const nodes = graph.json.nodes.filter((n) => idSet.has(n.id));
+    return ResultAsync.fromPromise(
+      (async () => {
+        const { writeFile, mkdir } = await import('node:fs/promises');
+        const { dirname } = await import('node:path');
+        await mkdir(dirname(path), { recursive: true });
+        const body = nodes.map((n) => JSON.stringify(n)).join('\n') + '\n';
+        await writeFile(path, body, 'utf8');
+        return body.length;
+      })(),
+      (e): AppError => ({ type: 'GraphWriteError', path, message: (e as Error).message } as GraphError),
+    );
+  });
 
 const pruneSources = (
   runtime: Runtime,
