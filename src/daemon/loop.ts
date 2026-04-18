@@ -67,6 +67,7 @@ import {
   subscribeOracle,
   type SubscribeHandle as OracleSubscribeHandle,
 } from '../infrastructure/oracle-gossip.js';
+import { runConsolidateTick } from './consolidate-tick.js';
 import {
   createHealthTracker,
   type HealthTracker,
@@ -206,6 +207,25 @@ export const runOneTick = (deps: DaemonDeps): ResultAsync<TickResult, AppError> 
         .mapErr((e): AppError => e)
         .andThen((cfg) => {
           const retentionDays = cfg.sessions?.retention_days ?? 30;
+
+          // Phase 4.1+ — daemon-tick auto-consolidation. No-op when
+          // config.daemon.consolidate.enabled is false (default). When
+          // on, spawns detached child processes per configured room.
+          // Tick interval is independent of the daemon tick — handled
+          // inside runConsolidateTick via the last-run state file.
+          try {
+            const spawned = runConsolidateTick(
+              deps.homePath,
+              cfg.daemon.consolidate,
+              (msg) => daemonLog(deps.homePath, msg),
+            );
+            if (spawned > 0) {
+              daemonLog(deps.homePath, `consolidate-tick: spawned ${spawned} child process(es)`);
+            }
+          } catch (e) {
+            daemonLog(deps.homePath, `consolidate-tick error: ${(e as Error).message}`);
+          }
+
           return enforceRetention({ graphs: deps.graphs }, retentionDays)
             .map((dropped) => {
               if (dropped > 0) {

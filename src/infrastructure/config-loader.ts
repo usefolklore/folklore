@@ -25,6 +25,29 @@ export interface DaemonConfig {
   readonly max_parallel_sources: number;
   readonly discovery_cadence: number;
   readonly round_robin_rooms: boolean;
+  /** Phase 4.1 — daemon-tick auto-consolidation (off by default). */
+  readonly consolidate: ConsolidateConfig;
+}
+
+export interface ConsolidateConfig {
+  /** Whether the daemon should auto-run consolidation on its own cadence. Default false. */
+  readonly enabled: boolean;
+  /** Rooms to consolidate. Empty = every room with > min_room_raw_to_trigger raw entries. */
+  readonly rooms: readonly string[];
+  /** How often to attempt a consolidation pass (seconds). Default 86400 (daily). */
+  readonly interval_seconds: number;
+  /** Local LLM model name (Ollama tag). */
+  readonly model: string;
+  /** Cosine similarity threshold for cluster membership. */
+  readonly similarity_threshold: number;
+  /** Minimum cluster size to emit a consolidated_memory. */
+  readonly min_size: number;
+  /** Maximum cluster size (clamp). */
+  readonly max_size: number;
+  /** Auto-prune source raw entries after consolidation (with NDJSON backup). Default true. */
+  readonly prune: boolean;
+  /** Skip a room if it has fewer than this many unconsolidated raw entries. Default 50. */
+  readonly min_room_raw_to_trigger: number;
 }
 
 export interface TunnelsConfig {
@@ -115,11 +138,24 @@ export interface AppConfig {
 
 // ─────────────── defaults ───────────────
 
+const DEFAULT_CONSOLIDATE: ConsolidateConfig = {
+  enabled: false,
+  rooms: [],
+  interval_seconds: 86400,
+  model: 'qwen2.5:1.5b',
+  similarity_threshold: 0.8,
+  min_size: 5,
+  max_size: 200,
+  prune: true,
+  min_room_raw_to_trigger: 50,
+};
+
 const DEFAULT_DAEMON: DaemonConfig = {
   interval_seconds: 86400,
   max_parallel_sources: 8,
   discovery_cadence: 5,
   round_robin_rooms: true,
+  consolidate: DEFAULT_CONSOLIDATE,
 };
 
 const DEFAULT_TUNNELS: TunnelsConfig = {
@@ -178,11 +214,26 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
       const peerRaw = (raw.peer ?? {}) as Record<string, unknown>;
       const securityRaw = (raw.security ?? {}) as Record<string, unknown>;
 
+      const consolidateRaw = (daemonRaw.consolidate ?? {}) as Record<string, unknown>;
+      const consolidate: ConsolidateConfig = {
+        enabled: bool(consolidateRaw.enabled, DEFAULT_CONSOLIDATE.enabled),
+        rooms: Array.isArray(consolidateRaw.rooms)
+          ? (consolidateRaw.rooms as unknown[]).filter((r): r is string => typeof r === 'string')
+          : DEFAULT_CONSOLIDATE.rooms,
+        interval_seconds: num(consolidateRaw.interval_seconds, DEFAULT_CONSOLIDATE.interval_seconds),
+        model: str(consolidateRaw.model, DEFAULT_CONSOLIDATE.model),
+        similarity_threshold: num(consolidateRaw.similarity_threshold, DEFAULT_CONSOLIDATE.similarity_threshold),
+        min_size: num(consolidateRaw.min_size, DEFAULT_CONSOLIDATE.min_size),
+        max_size: num(consolidateRaw.max_size, DEFAULT_CONSOLIDATE.max_size),
+        prune: bool(consolidateRaw.prune, DEFAULT_CONSOLIDATE.prune),
+        min_room_raw_to_trigger: num(consolidateRaw.min_room_raw_to_trigger, DEFAULT_CONSOLIDATE.min_room_raw_to_trigger),
+      };
       const daemon: DaemonConfig = {
         interval_seconds: num(daemonRaw.interval_seconds, DEFAULT_DAEMON.interval_seconds),
         max_parallel_sources: num(daemonRaw.max_parallel_sources, DEFAULT_DAEMON.max_parallel_sources),
         discovery_cadence: num(daemonRaw.discovery_cadence, DEFAULT_DAEMON.discovery_cadence),
         round_robin_rooms: bool(daemonRaw.round_robin_rooms, DEFAULT_DAEMON.round_robin_rooms),
+        consolidate,
       };
       const tunnels: TunnelsConfig = {
         enabled: bool(tunnelsRaw.enabled, DEFAULT_TUNNELS.enabled),
