@@ -16,7 +16,7 @@
  * without pulling the 25MB MiniLM weights.
  */
 
-import { ResultAsync, errAsync, okAsync } from 'neverthrow';
+import { Result, ResultAsync, errAsync, okAsync, err, ok } from 'neverthrow';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import * as readline from 'node:readline';
@@ -321,6 +321,119 @@ export const rustSubprocessEmbedder = (opts: RustSubprocessOptions): Embedder =>
     });
 
   return { dim: opts.dim, embed, embedBatch };
+};
+
+// ─────────────────────── batching decorator ──────────────
+
+/**
+ * Options for the coalescing batch decorator (Phase 2 of the v4 plan).
+ *
+ * Wraps any Embedder so that individual `.embed(text)` calls queue up
+ * and flush as a single `embedBatch()` call against the underlying
+ * encoder. Measured gain on the live wellinformed stack (bench-embed-
+ * throughput.mjs on bge-base): serial 1-text embeds = 8.56 docs/sec,
+ * batched 32-text = 26.56 docs/sec → 3.1× from coalescing. The
+ * per-request overhead lives on the Rust subprocess protocol path;
+ * grouping amortizes it across many docs.
+ *
+ * Flushed on either:
+ *   - `maxBatch` items in the queue  (size-triggered)
+ *   - `flushAfterMs` elapsed since the first queued item (time-triggered)
+ * Direct `embedBatch()` calls bypass the queue — they're already batched.
+ */
+export interface BatchingOptions {
+  /** Max items per flush. Default 32 — matches `rust-via-ts` bench tuning. */
+  readonly maxBatch?: number;
+  /**
+   * Max wait (ms) before flushing a partial batch. Default 20 ms —
+   * ingestion loops send many embeds in quick succession so a short
+   * window is enough to coalesce without adding user-visible latency.
+   */
+  readonly flushAfterMs?: number;
+}
+
+interface PendingEmbed {
+  readonly text: string;
+  readonly resolve: (result: Result<Vector, EmbeddingError>) => void;
+}
+
+/**
+ * Wrap an `Embedder` so individual `.embed()` calls are transparently
+ * coalesced into batch requests. Safe to stack on top of any backend
+ * (xenova, rustSubprocessEmbedder, fixture). Returns a new Embedder
+ * with the same interface; callers change nothing.
+ *
+ * Direct `.embedBatch()` calls pass through to the inner encoder with
+ * no queueing — they're already efficient.
+ */
+export const batchingEmbedder = (
+  inner: Embedder,
+  opts: BatchingOptions = {},
+): Embedder => {
+  const maxBatch = Math.max(1, opts.maxBatch ?? 32);
+  const flushAfterMs = Math.max(0, opts.flushAfterMs ?? 20);
+
+  let pending: PendingEmbed[] = [];
+  let flushTimer: NodeJS.Timeout | null = null;
+  let flushInFlight = false;
+
+  const flushNow = async (): Promise<void> => {
+    if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
+    if (pending.length === 0) return;
+    if (flushInFlight) return; // another flush already draining — it'll pick up our items next round
+
+    const batch = pending;
+    pending = [];
+    flushInFlight = true;
+
+    try {
+      const texts = batch.map((b) => b.text);
+      const result = await inner.embedBatch(texts);
+      if (result.isErr()) {
+        for (const p of batch) p.resolve(err(result.error));
+        return;
+      }
+      const vectors = result.value;
+      if (vectors.length !== batch.length) {
+        const mismatch = EmbeddingError.inference(
+          `batching: inner embedBatch returned ${vectors.length} vectors for ${batch.length} inputs`,
+        );
+        for (const p of batch) p.resolve(err(mismatch));
+        return;
+      }
+      for (let i = 0; i < batch.length; i++) batch[i].resolve(ok(vectors[i]));
+    } catch (e) {
+      const wrapped = EmbeddingError.inference((e as Error).message);
+      for (const p of batch) p.resolve(err(wrapped));
+    } finally {
+      flushInFlight = false;
+      // If more items arrived during the flush, drain them.
+      if (pending.length > 0) void flushNow();
+    }
+  };
+
+  const scheduleFlush = (): void => {
+    if (pending.length >= maxBatch) { void flushNow(); return; }
+    if (flushTimer) return; // timer already armed
+    flushTimer = setTimeout(() => {
+      flushTimer = null;
+      void flushNow();
+    }, flushAfterMs);
+  };
+
+  const embed = (text: string): ResultAsync<Vector, EmbeddingError> => {
+    const promise = new Promise<Result<Vector, EmbeddingError>>((resolve) => {
+      pending.push({ text, resolve });
+      scheduleFlush();
+    });
+    return ResultAsync.fromPromise(promise, () => EmbeddingError.inference('batching: unexpected reject'))
+      .andThen((r) => (r.isOk() ? okAsync(r.value) : errAsync(r.error)));
+  };
+
+  const embedBatch = (texts: readonly string[]): ResultAsync<readonly Vector[], EmbeddingError> =>
+    inner.embedBatch(texts);
+
+  return { dim: inner.dim, embed, embedBatch };
 };
 
 // ─────────────────────── fixture adapter ──────────────────

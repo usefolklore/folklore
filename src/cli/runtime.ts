@@ -16,6 +16,7 @@ import { openSqliteVectorIndex, type VectorIndex } from '../infrastructure/vecto
 import {
   xenovaEmbedder,
   rustSubprocessEmbedder,
+  batchingEmbedder,
   type Embedder,
 } from '../infrastructure/embedders.js';
 import { fileSourcesConfig, type SourcesConfig } from '../infrastructure/sources-config.js';
@@ -76,18 +77,39 @@ export const parseQuantizationEnv = (): number | undefined => {
  */
 export const buildEmbedder = (modelCache: string): Embedder => {
   const backend = (process.env.WELLINFORMED_EMBEDDER_BACKEND ?? 'xenova').toLowerCase();
-  if (backend === 'rust') {
-    const model = (process.env.WELLINFORMED_EMBEDDER_MODEL ?? 'minilm').toLowerCase();
-    const dim =
-      model === 'minilm' ? 384 : model === 'nomic' || model === 'bge-base' ? 768 : 384;
-    if (model !== 'minilm' && model !== 'nomic' && model !== 'bge-base') {
-      throw new Error(
-        `WELLINFORMED_EMBEDDER_MODEL='${model}' — supported: minilm, nomic, bge-base`,
-      );
+
+  // Phase 2 — coalescing batch decorator. Transparent to callers;
+  // individual `.embed()` calls (e.g. from indexNode) get queued and
+  // flushed as a single `embedBatch()` against the underlying encoder.
+  // Measured 3.1× throughput on the live wellinformed stack via
+  // scripts/bench-embed-throughput.mjs (bge-base, N=32: serial 8.56
+  // docs/sec → batched 26.56 docs/sec).
+  //
+  // Opt-out via WELLINFORMED_EMBEDDER_BATCH=off for the serial path
+  // (useful for comparisons or if the batching window ever interferes
+  // with a latency-sensitive caller). Defaults to enabled.
+  const batchingEnabled = (process.env.WELLINFORMED_EMBEDDER_BATCH ?? 'on').toLowerCase() !== 'off';
+  const batchSize = parseInt(process.env.WELLINFORMED_EMBEDDER_BATCH_SIZE ?? '32', 10) || 32;
+  const batchWaitMs = parseInt(process.env.WELLINFORMED_EMBEDDER_BATCH_MS ?? '20', 10) || 20;
+
+  const base: Embedder = (() => {
+    if (backend === 'rust') {
+      const model = (process.env.WELLINFORMED_EMBEDDER_MODEL ?? 'minilm').toLowerCase();
+      const dim =
+        model === 'minilm' ? 384 : model === 'nomic' || model === 'bge-base' ? 768 : 384;
+      if (model !== 'minilm' && model !== 'nomic' && model !== 'bge-base') {
+        throw new Error(
+          `WELLINFORMED_EMBEDDER_MODEL='${model}' — supported: minilm, nomic, bge-base`,
+        );
+      }
+      return rustSubprocessEmbedder({ model, dim });
     }
-    return rustSubprocessEmbedder({ model, dim });
-  }
-  return xenovaEmbedder({ cacheDir: modelCache });
+    return xenovaEmbedder({ cacheDir: modelCache });
+  })();
+
+  return batchingEnabled
+    ? batchingEmbedder(base, { maxBatch: batchSize, flushAfterMs: batchWaitMs })
+    : base;
 };
 
 export interface RuntimePaths {
