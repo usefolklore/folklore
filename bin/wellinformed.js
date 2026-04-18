@@ -33,7 +33,7 @@ const srcEntry = join(here, '..', 'src', 'cli', 'index.ts');
 // Keep this list in sync with IPC_DELEGATABLE_COMMANDS in
 // src/daemon/ipc-handlers.ts. Duplicated here to avoid importing the
 // compiled TS surface before we know whether delegation will succeed.
-const IPC_DELEGATABLE = new Set(['ask', 'stats']);
+const IPC_DELEGATABLE = new Set(['ask', 'stats', 'cache-stats']);
 const IPC_FALLBACK_SENTINEL = '__fallback__';
 const IPC_TIMEOUT_MS = 5000;
 

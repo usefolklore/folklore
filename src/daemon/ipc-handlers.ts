@@ -166,6 +166,28 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
   return { stdout, exit: 0 };
 };
 
+// ─────────────── cache-stats handler (Phase 5 observability) ─────
+
+/**
+ * Returns the L1 query cache stats as a JSON line. The CLI surface
+ * (wellinformed cache-stats) prints this for operators monitoring
+ * cache effectiveness on real workloads.
+ */
+const cacheStatsHandler: IpcHandler<Runtime> = async (_args, _runtime): Promise<HandlerResult> => {
+  const s = ipcCacheStats();
+  return {
+    stdout: JSON.stringify({
+      size: s.size,
+      hits: s.hits,
+      misses: s.misses,
+      evictions: s.evictions,
+      hit_rate: Number(s.hit_rate.toFixed(4)),
+      via: 'daemon-ipc',
+    }) + '\n',
+    exit: 0,
+  };
+};
+
 // ─────────────── stats handler (fast "is the daemon alive + what's indexed") ───────────────
 
 const statsHandler: IpcHandler<Runtime> = async (_args, runtime): Promise<HandlerResult> => {
@@ -206,6 +228,7 @@ export const buildIpcHandlers = (): Map<string, IpcHandler<Runtime>> => {
   const h = new Map<string, IpcHandler<Runtime>>();
   h.set('ask', askHandler);
   h.set('stats', statsHandler);
+  h.set('cache-stats', cacheStatsHandler);
   return h;
 };
 
@@ -215,4 +238,4 @@ export const buildIpcHandlers = (): Map<string, IpcHandler<Runtime>> => {
  * buildIpcHandlers(). Used by bin/wellinformed.js to know whether to
  * try the socket before spawning.
  */
-export const IPC_DELEGATABLE_COMMANDS: ReadonlySet<string> = new Set(['ask', 'stats']);
+export const IPC_DELEGATABLE_COMMANDS: ReadonlySet<string> = new Set(['ask', 'stats', 'cache-stats']);
