@@ -432,13 +432,16 @@ const status = async (): Promise<number> => {
 const help = (): number => {
   console.log('usage: wellinformed consolidate <sub>');
   console.log('');
-  console.log('  run <room> [--dry-run | --prune] [--threshold 0.8] [--min-size 5] [--max-size 100] [--model M]');
+  console.log('  run <room> [--dry-run | --prune [--backup PATH | --no-backup]]');
+  console.log('             [--threshold 0.8] [--min-size 5] [--max-size 100] [--model M]');
   console.log('                    Cluster raw entries in <room>, LLM-summarize each cluster,');
   console.log('                    persist as consolidated_memory nodes, mark sources.');
   console.log('                    --prune: also DELETE source raw entries (graph + vectors)');
-  console.log('                             after successful consolidation. Closes the BENCH §2j');
-  console.log('                             quality regression by removing BM25 competitors.');
+  console.log('                             after consolidation. NDJSON backup written by default.');
   console.log('                             Mutually exclusive with --dry-run.');
+  console.log('  prune-marked <room> [--force|-y] [--no-backup | --backup PATH]');
+  console.log('                    Retroactively prune all consolidated_at-marked raw entries');
+  console.log('                    in <room> (from prior consolidate runs that did not --prune).');
   console.log('  status            Counts of raw / consolidated entries per room.');
   console.log('  help              This text.');
   console.log('');
@@ -450,10 +453,93 @@ const help = (): number => {
   return 0;
 };
 
+// ─── prune-marked subcommand ─────────────────────────────────────
+
+/**
+ * Deletes every node in <room> that has `consolidated_at != null` AND
+ * `kind != 'consolidated_memory'`. These are raw source entries that
+ * were marked during a prior consolidation run but not atomically
+ * pruned (e.g. run without --prune). Closes the §2j quality regression
+ * retroactively.
+ *
+ * Backup-by-default — same semantics as `run --prune`.
+ */
+const pruneMarkedCmd = async (args: readonly string[]): Promise<number> => {
+  let room: string | null = null;
+  let backup = true;
+  let backupPath: string | null = null;
+  let force = false;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    const next = (): string => args[++i] ?? '';
+    if (a === '--no-backup') backup = false;
+    else if (a === '--backup') { backup = true; backupPath = next(); }
+    else if (a === '--force' || a === '-y') force = true;
+    else if (!a.startsWith('-')) room = room ?? a;
+  }
+  if (!room) {
+    console.error('consolidate prune-marked: missing <room>. usage: wellinformed consolidate prune-marked <room> [--no-backup | --backup PATH] [--force]');
+    return 1;
+  }
+
+  const lockRes = await acquireLock(wellinformedHome(), { owner: 'consolidate-prune', waitMs: 30_000, pollIntervalMs: 250 });
+  if (lockRes.isErr()) { console.error(`consolidate prune-marked: ${formatError(lockRes.error)}`); return 1; }
+  const lock = lockRes.value;
+
+  const rt = await defaultRuntime();
+  if (rt.isErr()) { console.error(`consolidate prune-marked: ${formatError(rt.error)}`); await lock.release(); return 1; }
+  const runtime = rt.value;
+
+  try {
+    const g = await runtime.graphs.load();
+    if (g.isErr()) { console.error(`consolidate prune-marked: ${formatError(g.error)}`); return 1; }
+
+    const candidates = g.value.json.nodes.filter((n) =>
+      (n as { room?: string }).room === room
+      && (n as { consolidated_at?: unknown }).consolidated_at
+      && (n as { kind?: unknown }).kind !== 'consolidated_memory',
+    );
+
+    if (candidates.length === 0) {
+      console.log(`no consolidated_at-marked raw entries in room '${room}'. nothing to prune.`);
+      return 0;
+    }
+
+    console.error(`consolidate prune-marked: ${candidates.length} candidates in room '${room}'`);
+    if (!force) {
+      console.error(`  DESTRUCTIVE. pass --force (or -y) to actually delete.`);
+      return 1;
+    }
+
+    const ids = candidates.map((n) => n.id);
+    if (backup) {
+      const path = backupPath ?? join(wellinformedHome(), `prune-marked-backup-${room}-${Date.now()}.ndjson`);
+      const r = await writeBackup(runtime, ids, path);
+      if (r.isErr()) {
+        console.error(`consolidate prune-marked: backup failed, ABORTING: ${formatError(r.error)}`);
+        return 1;
+      }
+      console.error(`consolidate prune-marked: wrote ${r.value} bytes to ${path}`);
+    } else {
+      console.error(`consolidate prune-marked: --no-backup — proceeding with destructive delete`);
+    }
+
+    const pruneStart = Date.now();
+    const pruneRes = await pruneSources(runtime, ids);
+    if (pruneRes.isErr()) { console.error(`consolidate prune-marked: ${formatError(pruneRes.error)}`); return 1; }
+    console.error(`consolidate prune-marked: ${pruneRes.value.deletedFromGraph} graph nodes + ${pruneRes.value.deletedFromVectors} vectors removed in ${((Date.now() - pruneStart) / 1000).toFixed(1)}s`);
+    return 0;
+  } finally {
+    runtime.close();
+    await lock.release();
+  }
+};
+
 export const consolidate = async (args: readonly string[]): Promise<number> => {
   const [sub, ...rest] = args;
   switch (sub) {
     case 'run':           return runCmd(rest);
+    case 'prune-marked':  return pruneMarkedCmd(rest);
     case 'status':
     case undefined:       return status();
     case 'help':
