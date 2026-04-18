@@ -39,6 +39,8 @@ import { oracle } from './commands/oracle.js';
 import { codebase } from './commands/codebase.js';
 import { recentSessions } from './commands/recent-sessions.js';
 import { identity } from './commands/identity.js';
+import { logs } from './commands/logs.js';
+import { update } from './commands/update.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -78,6 +80,8 @@ const commands: Record<string, CommandFn> = {
   codebase,
   'recent-sessions': recentSessions,
   identity,
+  logs,
+  update,
 };
 
 const futureCommands = new Set<string>([]);
