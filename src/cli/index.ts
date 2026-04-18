@@ -41,6 +41,7 @@ import { recentSessions } from './commands/recent-sessions.js';
 import { identity } from './commands/identity.js';
 import { logs } from './commands/logs.js';
 import { update } from './commands/update.js';
+import { consolidate } from './commands/consolidate.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -82,6 +83,7 @@ const commands: Record<string, CommandFn> = {
   identity,
   logs,
   update,
+  consolidate,
 };
 
 const futureCommands = new Set<string>([]);
