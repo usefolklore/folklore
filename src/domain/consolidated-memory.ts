@@ -22,24 +22,8 @@ import { Result, err, ok } from 'neverthrow';
 import type { NodeId, Room } from './graph.js';
 import type { Vector } from './vectors.js';
 import { cosine } from './vectors.js';
-
-// ─────────────── errors ───────────────
-
-export type ConsolidationError =
-  | { readonly type: 'ConsolidationEmptyInput'; readonly message: string }
-  | { readonly type: 'ConsolidationDimMismatch'; readonly expected: number; readonly got: number; readonly at: number }
-  | { readonly type: 'ConsolidationInvalidParameter'; readonly field: string; readonly message: string };
-
-export const ConsolidationError = {
-  emptyInput: (message: string): ConsolidationError => ({ type: 'ConsolidationEmptyInput', message }),
-  dimMismatch: (expected: number, got: number, at: number): ConsolidationError => ({
-    type: 'ConsolidationDimMismatch',
-    expected, got, at,
-  }),
-  invalidParameter: (field: string, message: string): ConsolidationError => ({
-    type: 'ConsolidationInvalidParameter', field, message,
-  }),
-} as const;
+import { ConsolidationError } from './errors.js';
+export type { ConsolidationError };
 
 // ─────────────── shapes ───────────────
 

@@ -349,7 +349,28 @@ export const IdentityError = {
   canonicalization:     (message: string): IdentityError => ({ type: 'IdentityCanonicalizationError', message }),
 } as const;
 
-export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError | TouchError | IdentityError;
+// ─────────────────────── ConsolidationError (Phase 4 — agent-brain consolidator) ─
+
+/**
+ * Errors from the episodic→semantic consolidation worker.
+ *
+ * The worker pulls episodic entries from a room, clusters them by
+ * cosine similarity, distills each cluster via a local LLM, and
+ * persists the result as a `consolidated_memory` graph node. This
+ * error family covers the boundary checks at each stage.
+ */
+export type ConsolidationError =
+  | { readonly type: 'ConsolidationEmptyInput';        readonly message: string }
+  | { readonly type: 'ConsolidationDimMismatch';       readonly expected: number; readonly got: number; readonly at: number }
+  | { readonly type: 'ConsolidationInvalidParameter';  readonly field: string; readonly message: string };
+
+export const ConsolidationError = {
+  emptyInput:        (message: string): ConsolidationError => ({ type: 'ConsolidationEmptyInput', message }),
+  dimMismatch:       (expected: number, got: number, at: number): ConsolidationError => ({ type: 'ConsolidationDimMismatch', expected, got, at }),
+  invalidParameter:  (field: string, message: string): ConsolidationError => ({ type: 'ConsolidationInvalidParameter', field, message }),
+} as const;
+
+export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError | TouchError | IdentityError | ConsolidationError;
 
 /** Render a tagged error as a one-line human-readable string. */
 export const formatError = (e: AppError): string => {
@@ -486,5 +507,11 @@ export const formatError = (e: AppError): string => {
       return `device authorization invalid: ${e.reason}`;
     case 'IdentityCanonicalizationError':
       return `canonical JSON encoding failed: ${e.message}`;
+    case 'ConsolidationEmptyInput':
+      return `consolidation: empty input — ${e.message}`;
+    case 'ConsolidationDimMismatch':
+      return `consolidation: vector dim mismatch at index ${e.at}: expected ${e.expected}, got ${e.got}`;
+    case 'ConsolidationInvalidParameter':
+      return `consolidation: invalid parameter '${e.field}' — ${e.message}`;
   }
 };
