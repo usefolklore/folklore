@@ -1,7 +1,7 @@
 {
   "name": "wellinformed",
-  "version": "1.0.0",
-  "description": "MCP skill that gives AI coding agents persistent research memory — ArXiv, HN, RSS, GitHub Trending, codebase indexing, 12 MCP tools. Claude Code / Codex / OpenClaw.",
+  "version": "4.0.0-rc1",
+  "description": "OSS P2P agent memory — DID-authored cryptographic envelopes, 48× compressed vectors, 33× faster cached queries via daemon IPC + native Rust client, episodic→semantic consolidation worker, cross-model embedding bridge. CPU-local, zero GPU, zero SaaS. v4 Agent Brain.",
   "type": "module",
   "bin": {
     "wellinformed": "./bin/wellinformed.js"
