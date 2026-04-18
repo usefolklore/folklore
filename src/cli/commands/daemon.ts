@@ -15,6 +15,7 @@ import { isRunning, readPid, removePid, startLoop } from '../../daemon/loop.js';
 import { defaultRuntime, runtimePaths } from '../runtime.js';
 import { startIpcServer } from '../../daemon/ipc.js';
 import { buildIpcHandlers } from '../../daemon/ipc-handlers.js';
+import { acquireLock } from '../../infrastructure/process-lock.js';
 
 const start = async (): Promise<number> => {
   const paths = runtimePaths();
@@ -91,9 +92,34 @@ const run = async (): Promise<number> => {
     return 1;
   }
 
+  // Phase 4.1 — acquire the cross-process write lock at daemon startup.
+  // The daemon holds it for its entire lifetime; refresh every 20s so
+  // the staleness window (default 60s) doesn't reap us. Mutating CLI
+  // commands (consolidate, etc.) wait on this lock instead of erroring.
+  const lockRes = await acquireLock(paths.home, {
+    owner: 'daemon',
+    waitMs: 5_000,
+    pollIntervalMs: 200,
+    staleAfterMs: 60_000,
+  });
+  if (lockRes.isErr()) {
+    console.error(`daemon: ${formatError(lockRes.error)}`);
+    console.error(`  another wellinformed process is already mutating. retry in a moment.`);
+    return 1;
+  }
+  const writeLock = lockRes.value;
+  const refreshTimer = setInterval(() => {
+    void writeLock.refresh().catch(() => { /* best-effort */ });
+  }, 20_000);
+  // Don't keep the event loop alive on the refresh timer alone — the
+  // daemon's own loop owns liveness.
+  refreshTimer.unref();
+
   const rt = await defaultRuntime();
   if (rt.isErr()) {
     console.error(`daemon: ${formatError(rt.error)}`);
+    clearInterval(refreshTimer);
+    await writeLock.release();
     return 1;
   }
 
@@ -121,8 +147,10 @@ const run = async (): Promise<number> => {
   );
 
   const shutdown = async (): Promise<void> => {
+    try { clearInterval(refreshTimer); } catch { /* best-effort */ }
     try { await ipc.stop(); } catch { /* best-effort */ }
     try { rt.value.close(); } catch { /* best-effort */ }
+    try { await writeLock.release(); } catch { /* best-effort */ }
   };
   process.on('SIGTERM', () => { void shutdown(); });
   process.on('SIGINT', () => { void shutdown(); });

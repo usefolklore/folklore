@@ -36,6 +36,8 @@ import type { ConsolidationCluster } from '../../domain/consolidated-memory.js';
 import { runConsolidation, type ConsolidationReport, type ConsolidatorDeps } from '../../application/consolidator.js';
 import { defaultRuntime, type Runtime } from '../runtime.js';
 import { ollamaClient } from '../../infrastructure/ollama-client.js';
+import { acquireLock } from '../../infrastructure/process-lock.js';
+import { wellinformedHome } from '../runtime.js';
 
 // ─── arg parsing ──────────────────────────────────────────────────
 
@@ -194,9 +196,27 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
     return 1;
   }
 
+  // Phase 4.1 — acquire the cross-process write lock BEFORE opening the
+  // runtime so the daemon (or another mutator) doesn't race on graph.json
+  // mid-consolidate. waitMs=30s gives the daemon time to drain a tick if
+  // it's mid-write. Removes the v4.0 "stop the daemon first" caveat.
+  const lockRes = await acquireLock(wellinformedHome(), {
+    owner: 'consolidate',
+    waitMs: 30_000,
+    pollIntervalMs: 250,
+  });
+  if (lockRes.isErr()) {
+    console.error(`consolidate: ${formatError(lockRes.error)}`);
+    console.error(`  the daemon (or another mutating command) is currently writing.`);
+    console.error(`  retry, or run 'wellinformed daemon stop' to free the lock.`);
+    return 1;
+  }
+  const lock = lockRes.value;
+
   const rt = await defaultRuntime();
   if (rt.isErr()) {
     console.error(`consolidate: ${formatError(rt.error)}`);
+    await lock.release();
     return 1;
   }
   const runtime = rt.value;
@@ -259,6 +279,7 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
     return 0;
   } finally {
     runtime.close();
+    await lock.release();
   }
 };
 
