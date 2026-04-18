@@ -13,6 +13,8 @@ import { formatError } from '../../domain/errors.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
 import { isRunning, readPid, removePid, startLoop } from '../../daemon/loop.js';
 import { defaultRuntime, runtimePaths } from '../runtime.js';
+import { startIpcServer } from '../../daemon/ipc.js';
+import { buildIpcHandlers } from '../../daemon/ipc-handlers.js';
 
 const start = async (): Promise<number> => {
   const paths = runtimePaths();
@@ -95,6 +97,36 @@ const run = async (): Promise<number> => {
     return 1;
   }
 
+  // Phase 1 (v4 plan) — IPC server for delegated queries. Lives alongside
+  // the tick loop in the same process so read-only commands like `ask`
+  // can reuse the warmed Runtime (sqlite-vec open + ONNX model loaded)
+  // instead of paying ~240 ms of cold-start per invocation. Socket at
+  // $WELLINFORMED_HOME/daemon.sock, 0600.
+  const ipc = await startIpcServer({
+    homeDir: paths.home,
+    ctx: rt.value,
+    handlers: buildIpcHandlers(),
+    onError: (m) => console.error(`daemon ipc: ${m}`),
+  });
+  console.log(`daemon: ipc listening on ${ipc.path}`);
+
+  // Pre-warm the embedder so the first IPC `ask` isn't the one that
+  // eats the 200 ms ONNX load. Best-effort — on failure we just log,
+  // the first real query will warm it lazily.
+  void rt.value.embedder.embed('wellinformed daemon warm').then(
+    (r) => {
+      if (r.isErr()) console.error(`daemon: embedder pre-warm failed: ${formatError(r.error)}`);
+    },
+    () => { /* swallow */ },
+  );
+
+  const shutdown = async (): Promise<void> => {
+    try { await ipc.stop(); } catch { /* best-effort */ }
+    try { rt.value.close(); } catch { /* best-effort */ }
+  };
+  process.on('SIGTERM', () => { void shutdown(); });
+  process.on('SIGINT', () => { void shutdown(); });
+
   await startLoop({
     ingestDeps: rt.value.ingestDeps,
     rooms: rt.value.rooms,
@@ -104,6 +136,7 @@ const run = async (): Promise<number> => {
     config: cfg.value.daemon,
     homePath: paths.home,
   });
+  await shutdown();
   return 0;
 };
 
