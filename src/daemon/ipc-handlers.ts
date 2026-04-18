@@ -22,6 +22,7 @@ import { formatError } from '../domain/errors.js';
 import { getNode } from '../domain/graph.js';
 import { searchByRoom, searchGlobal } from '../application/use-cases.js';
 import { queryCache, type QueryCache } from '../domain/query-cache.js';
+import { semanticCache, type SemanticCache } from '../domain/semantic-cache.js';
 
 // ─────────────── process-cached L1 query cache ───────────────
 
@@ -41,11 +42,29 @@ const getCache = (): QueryCache => {
   return ipcCache;
 };
 
-/** Test seam — lets unit tests reset the cache between assertions. */
-export const __resetIpcCache = (): void => { ipcCache = null; };
+/**
+ * Phase 5.1 — process-wide L2 semantic cache. Catches paraphrased
+ * queries the L1 hash cache misses ("what's libp2p" vs "tell me about
+ * libp2p" hash to different keys but embed to nearly the same vector).
+ *
+ * Cosine threshold 0.92 is conservative — picked so that retrieval-
+ * relevance reordering between near-paraphrases stays inside the
+ * NDCG@10 noise floor. Lower thresholds would catch more rephrasings
+ * but risk serving the wrong cached result for a semantically nearby
+ * but distinct question.
+ */
+let ipcL2: SemanticCache | null = null;
+const getL2 = (): SemanticCache => {
+  if (!ipcL2) ipcL2 = semanticCache({ maxEntries: 128, ttlMs: 60_000, defaultThreshold: 0.92 });
+  return ipcL2;
+};
+
+/** Test seam — lets unit tests reset both cache layers between assertions. */
+export const __resetIpcCache = (): void => { ipcCache = null; ipcL2 = null; };
 
 /** Observability — daemon can expose this via a future `cache-stats` command. */
 export const ipcCacheStats = () => getCache().stats();
+export const ipcL2Stats = () => getL2().stats();
 
 // ─────────────── ask handler ───────────────
 
@@ -82,13 +101,38 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     return { stdout: '', stderr: `ask: ${parsed}\n`, exit: 1 };
   }
 
-  // Phase 5 — L1 cache lookup. Hit returns the cached stdout directly;
-  // miss falls through to the normal compute + insert path.
+  // Phase 5 — L1 (hash-keyed) cache lookup. Hit returns immediately.
   const cache = getCache();
   const cacheKey = cache.keyFor('ask', args);
   const cached = cache.get(cacheKey);
   if (cached) {
     return { stdout: cached.stdout, exit: 0 };
+  }
+
+  // Phase 5.1 — L2 semantic cache. We pre-embed the query once and
+  // reuse the vector both for L2 lookup AND (on miss) for the search
+  // path below. This is "embed once, route twice" — saves an ONNX
+  // forward pass on the cache-miss code path vs the naive design.
+  //
+  // Only meaningful when not filtering by room: room-scoped cached
+  // stdout from a different room would be misleading. Room queries
+  // skip L2 and pay the full search cost. Acceptable: paraphrase hits
+  // are dominated by global-room interactive queries.
+  const l2 = getL2();
+  let queryVec: Float32Array | null = null;
+  if (!parsed.room) {
+    const embRes = await runtime.embedder.embed(parsed.query);
+    if (embRes.isErr()) {
+      return { stdout: '', stderr: `ask: ${formatError(embRes.error)}\n`, exit: 1 };
+    }
+    queryVec = embRes.value;
+    const semHit = l2.get(queryVec);
+    if (semHit) {
+      // Promote to L1 under the actual hash key so subsequent identical
+      // requests skip the embed entirely.
+      cache.set(cacheKey, semHit.stdout);
+      return { stdout: semHit.stdout, exit: 0 };
+    }
   }
 
   const deps = {
@@ -134,6 +178,7 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     const payload = JSON.stringify({ query: parsed.query, room: parsed.room ?? null, hits });
     const stdout = payload + '\n';
     cache.set(cacheKey, stdout);
+    if (queryVec) l2.set(queryVec, stdout);
     return { stdout, exit: 0 };
   }
 
@@ -141,6 +186,7 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
   if (matches.value.length === 0) {
     const stdout = 'no results found. try a broader query or run `wellinformed trigger` to index content first.\n';
     cache.set(cacheKey, stdout);
+    if (queryVec) l2.set(queryVec, stdout);
     return { stdout, exit: 0 };
   }
 
@@ -163,6 +209,7 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
   }
   const stdout = lines.join('\n');
   cache.set(cacheKey, stdout);
+  if (queryVec) l2.set(queryVec, stdout);
   return { stdout, exit: 0 };
 };
 
@@ -174,14 +221,25 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
  * cache effectiveness on real workloads.
  */
 const cacheStatsHandler: IpcHandler<Runtime> = async (_args, _runtime): Promise<HandlerResult> => {
-  const s = ipcCacheStats();
+  const l1 = ipcCacheStats();
+  const l2 = ipcL2Stats();
   return {
     stdout: JSON.stringify({
-      size: s.size,
-      hits: s.hits,
-      misses: s.misses,
-      evictions: s.evictions,
-      hit_rate: Number(s.hit_rate.toFixed(4)),
+      l1: {
+        size: l1.size,
+        hits: l1.hits,
+        misses: l1.misses,
+        evictions: l1.evictions,
+        hit_rate: Number(l1.hit_rate.toFixed(4)),
+      },
+      l2: {
+        size: l2.size,
+        hits: l2.hits,
+        misses: l2.misses,
+        evictions: l2.evictions,
+        hit_rate: Number(l2.hit_rate.toFixed(4)),
+        average_hit_similarity: Number(l2.average_hit_similarity.toFixed(4)),
+      },
       via: 'daemon-ipc',
     }) + '\n',
     exit: 0,
