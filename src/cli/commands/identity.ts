@@ -18,7 +18,8 @@ import {
   ensureIdentity,
   rotateDeviceKey,
   exportRecoveryHex,
-  importRecoveryHex,
+  exportRecoveryMnemonic,
+  importRecoveryAuto,
 } from '../../application/identity-lifecycle.js';
 import { wellinformedHome } from '../runtime.js';
 
@@ -71,26 +72,41 @@ const rotate = async (): Promise<number> => {
   return 0;
 };
 
-const exportCmd = async (): Promise<number> => {
-  const res = await exportRecoveryHex(wellinformedHome());
+const exportCmd = async (rest: readonly string[]): Promise<number> => {
+  const wantHex = rest.includes('--hex');
+  const res = wantHex
+    ? await exportRecoveryHex(wellinformedHome())
+    : await exportRecoveryMnemonic(wellinformedHome());
   if (res.isErr()) {
     console.error(`identity export: ${formatError(res.error)}`);
     return 1;
   }
   console.error('⚠  SENSITIVE — anyone holding this string can impersonate your user DID.');
   console.error('   Store it somewhere only you can access (password manager, cold storage).');
-  console.error('   v1 recovery format: 64-char hex of the 32-byte Ed25519 seed.\n');
+  if (wantHex) {
+    console.error('   v1 hex format: 64-char hex of the 32-byte Ed25519 seed.\n');
+  } else {
+    console.error('   v4.1 BIP39 format: 24 English words = 256 bits = exact seed.');
+    console.error('   Use `wellinformed identity export --hex` for the legacy v1 hex format.\n');
+  }
   console.log(res.value);
   return 0;
 };
 
 const importCmd = async (rest: readonly string[]): Promise<number> => {
-  const hex = rest[0];
-  if (!hex) {
-    console.error('identity import: missing <hex>. usage: wellinformed identity import <64-char-hex>');
+  // The recovery argument may be:
+  //   - a 24-word BIP39 mnemonic (v4.1 default)
+  //   - a 64-char hex seed (v4.0 legacy)
+  // Autodetect via importRecoveryAuto. Multi-word mnemonics arrive as
+  // multiple argv tokens; join them.
+  if (rest.length === 0) {
+    console.error('identity import: missing recovery input.');
+    console.error('  usage: wellinformed identity import <24-word-mnemonic>');
+    console.error('         wellinformed identity import <64-char-hex>');
     return 1;
   }
-  const res = await importRecoveryHex(wellinformedHome(), hex);
+  const input = rest.join(' ');
+  const res = await importRecoveryAuto(wellinformedHome(), input);
   if (res.isErr()) {
     console.error(`identity import: ${formatError(res.error)}`);
     return 1;
@@ -102,11 +118,12 @@ const importCmd = async (rest: readonly string[]): Promise<number> => {
 const help = (): number => {
   console.log('usage: wellinformed identity <sub>');
   console.log('');
-  console.log('  init               create user+device identity if missing (idempotent)');
-  console.log('  show               print current identity');
-  console.log('  rotate             rotate the device key');
-  console.log('  export             print recovery hex (SENSITIVE — warns)');
-  console.log('  import <hex>       restore identity from recovery hex');
+  console.log('  init                          create user+device identity if missing (idempotent)');
+  console.log('  show                          print current identity');
+  console.log('  rotate                        rotate the device key');
+  console.log('  export [--hex]                print recovery — 24-word BIP39 mnemonic by default,');
+  console.log('                                hex with --hex (SENSITIVE — warns)');
+  console.log('  import <words... | hex>       restore identity from BIP39 mnemonic OR 64-char hex');
   console.log('');
   console.log('Every memory entry wellinformed signs is wrapped in an envelope');
   console.log('provably authored by this user DID via this device key. Rotating');
@@ -126,7 +143,7 @@ export const identity = async (args: string[]): Promise<number> => {
     case 'rotate':
       return rotate();
     case 'export':
-      return exportCmd();
+      return exportCmd(rest);
     case 'import':
       return importCmd(rest);
     case 'help':

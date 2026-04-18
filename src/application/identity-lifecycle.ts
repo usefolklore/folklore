@@ -158,6 +158,100 @@ export const rotateDeviceKey = (
     );
 };
 
+// ─────────────── BIP39 mnemonic recovery (v4.1) ───────────────
+
+/**
+ * Export the user seed as a 24-word BIP39 English mnemonic — the v4.1
+ * default recovery format. Hex is still supported via exportRecoveryHex.
+ *
+ * 24 words = 256 bits of entropy = exact match for the Ed25519 seed
+ * length. No HKDF derivation involved.
+ */
+export const exportRecoveryMnemonic = (homeDir: string): ResultAsync<string, AppError> => {
+  const paths = identityPaths(homeDir);
+  return loadUserSeed(paths)
+    .mapErr((e): AppError => e)
+    .andThen((seed) =>
+      ResultAsync.fromPromise(
+        (async () => {
+          if (!seed) throw new Error('NO_SEED');
+          const { mnemonicFromSeed } = await import('./bip39-recovery.js');
+          const r = mnemonicFromSeed(seed);
+          if (r.isErr()) throw new Error(r.error.type);
+          return r.value;
+        })(),
+        (e): AppError => {
+          if ((e as Error).message === 'NO_SEED') {
+            return PeerError.identityReadError(paths.userSeedPath, 'no user seed — run ensureIdentity first');
+          }
+          return PeerError.identityReadError('(mnemonic)', (e as Error).message);
+        },
+      ),
+    );
+};
+
+/**
+ * Restore identity from a 24-word BIP39 mnemonic. Same outcome shape
+ * as importRecoveryHex. Detects whether input is mnemonic vs hex via
+ * `importRecoveryAuto`.
+ */
+export const importRecoveryMnemonic = (
+  homeDir: string,
+  mnemonic: string,
+  clock: () => string = nowIso,
+): ResultAsync<ResolvedIdentity, AppError> => {
+  return ResultAsync.fromPromise(import('./bip39-recovery.js'), (e) =>
+    PeerError.identityReadError('(import)', (e as Error).message),
+  ).andThen((mod) => {
+    const seedRes = mod.seedFromMnemonic(mnemonic);
+    if (seedRes.isErr()) return errAsync<ResolvedIdentity, AppError>(seedRes.error);
+    return importRecoverySeed(homeDir, seedRes.value, clock);
+  });
+};
+
+/**
+ * Auto-detect and dispatch: if input is 24 whitespace-separated words,
+ * treat as BIP39 mnemonic. If it's a 64-hex string, treat as hex seed.
+ * Anything else returns InvalidDIDError.
+ */
+export const importRecoveryAuto = (
+  homeDir: string,
+  input: string,
+  clock: () => string = nowIso,
+): ResultAsync<ResolvedIdentity, AppError> => {
+  const trimmed = input.trim();
+  const wordCount = trimmed.split(/\s+/).length;
+  if (wordCount === 24) return importRecoveryMnemonic(homeDir, trimmed, clock);
+  if (/^[0-9a-fA-F]{64}$/.test(trimmed.replace(/^0x/i, ''))) return importRecoveryHex(homeDir, trimmed, clock);
+  return errAsync<ResolvedIdentity, AppError>(
+    PeerError.identityParseError('(input)', 'recovery input must be a 24-word BIP39 mnemonic OR a 64-char hex seed'),
+  );
+};
+
+/** Internal: shared restore-from-bytes path used by both hex and mnemonic. */
+const importRecoverySeed = (
+  homeDir: string,
+  seed: Uint8Array,
+  clock: () => string,
+): ResultAsync<ResolvedIdentity, AppError> => {
+  const paths = identityPaths(homeDir);
+  const userRes = userIdentityFromSeed(seed, clock());
+  if (userRes.isErr()) return errAsync<ResolvedIdentity, AppError>(userRes.error);
+  const { identity, privateKey } = userRes.value;
+  return saveUserPublic(paths, identity)
+    .mapErr((e): AppError => e)
+    .andThen(() => saveUserSeed(paths, privateKey).mapErr((e): AppError => e))
+    .andThen(() => deleteDevice(paths).mapErr((e): AppError => e))
+    .andThen(() => createAndAuthorizeDevice(paths, identity, privateKey, clock).mapErr((e): AppError => e))
+    .map((d) => ({
+      user: identity,
+      userPrivateKey: privateKey,
+      deviceKey: d.deviceKey,
+      devicePrivateKey: d.devicePrivateKey,
+      paths,
+    }));
+};
+
 /** Export the user seed as a hex string (v1 recovery format). */
 export const exportRecoveryHex = (homeDir: string): ResultAsync<string, AppError> => {
   const paths = identityPaths(homeDir);
