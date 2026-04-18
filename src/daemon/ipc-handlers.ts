@@ -21,6 +21,31 @@ import type { HandlerResult, IpcHandler } from './ipc.js';
 import { formatError } from '../domain/errors.js';
 import { getNode } from '../domain/graph.js';
 import { searchByRoom, searchGlobal } from '../application/use-cases.js';
+import { queryCache, type QueryCache } from '../domain/query-cache.js';
+
+// ─────────────── process-cached L1 query cache ───────────────
+
+/**
+ * Phase 5 — process-wide L1 query cache. Lives for the daemon's
+ * lifetime; cleared on `cache.clear` admin command (future) or
+ * daemon restart.
+ *
+ * Cache-key semantics match the IPC wire shape: `hash(cmd + args)`.
+ * Identical queries from different agents hit the same cache. TTL
+ * 60 s keeps stale entries out of the hot path without any
+ * fine-grained invalidation layer.
+ */
+let ipcCache: QueryCache | null = null;
+const getCache = (): QueryCache => {
+  if (!ipcCache) ipcCache = queryCache({ maxEntries: 256, ttlMs: 60_000 });
+  return ipcCache;
+};
+
+/** Test seam — lets unit tests reset the cache between assertions. */
+export const __resetIpcCache = (): void => { ipcCache = null; };
+
+/** Observability — daemon can expose this via a future `cache-stats` command. */
+export const ipcCacheStats = () => getCache().stats();
 
 // ─────────────── ask handler ───────────────
 
@@ -55,6 +80,15 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
   const parsed = parseAskArgs(args);
   if (typeof parsed === 'string') {
     return { stdout: '', stderr: `ask: ${parsed}\n`, exit: 1 };
+  }
+
+  // Phase 5 — L1 cache lookup. Hit returns the cached stdout directly;
+  // miss falls through to the normal compute + insert path.
+  const cache = getCache();
+  const cacheKey = cache.keyFor('ask', args);
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    return { stdout: cached.stdout, exit: 0 };
   }
 
   const deps = {
@@ -98,15 +132,16 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
       };
     });
     const payload = JSON.stringify({ query: parsed.query, room: parsed.room ?? null, hits });
-    return { stdout: payload + '\n', exit: 0 };
+    const stdout = payload + '\n';
+    cache.set(cacheKey, stdout);
+    return { stdout, exit: 0 };
   }
 
   // Human-readable — matches src/cli/commands/ask.ts output verbatim
   if (matches.value.length === 0) {
-    return {
-      stdout: 'no results found. try a broader query or run `wellinformed trigger` to index content first.\n',
-      exit: 0,
-    };
+    const stdout = 'no results found. try a broader query or run `wellinformed trigger` to index content first.\n';
+    cache.set(cacheKey, stdout);
+    return { stdout, exit: 0 };
   }
 
   const lines: string[] = [];
@@ -126,7 +161,9 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     if (node.author) lines.push(`author: ${node.author}`);
     lines.push('');
   }
-  return { stdout: lines.join('\n'), exit: 0 };
+  const stdout = lines.join('\n');
+  cache.set(cacheKey, stdout);
+  return { stdout, exit: 0 };
 };
 
 // ─────────────── stats handler (fast "is the daemon alive + what's indexed") ───────────────
