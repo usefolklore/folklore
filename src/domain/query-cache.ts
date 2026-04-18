@@ -23,7 +23,27 @@
  * guarantee lets us do this with zero extra bookkeeping.
  */
 
-import { createHash } from 'node:crypto';
+/**
+ * Default sync sha256 — uses @noble/hashes which is pure JS and
+ * browser/WASM-portable. The domain module thus has zero `node:`
+ * imports and can be bundled for any runtime.
+ *
+ * Callers can still inject a custom hash (e.g. WebCrypto wrapper or a
+ * faster native impl) via QueryCacheOptions.sha256Hex.
+ */
+import { sha256 } from '@noble/hashes/sha2.js';
+
+const HEX = '0123456789abcdef';
+const bytesToHex = (b: Uint8Array): string => {
+  let out = '';
+  for (let i = 0; i < b.length; i++) {
+    out += HEX[b[i] >> 4] + HEX[b[i] & 15];
+  }
+  return out;
+};
+const utf8Encoder = new TextEncoder();
+const defaultHashHex = (input: string): string =>
+  bytesToHex(sha256(utf8Encoder.encode(input)));
 
 // ─────────────── public types ───────────────
 
@@ -49,6 +69,13 @@ export interface QueryCacheOptions {
   readonly ttlMs?: number;
   /** Clock injection for tests. Default () => Date.now(). */
   readonly clock?: () => number;
+  /**
+   * Sync hex sha256 — defaults to a node:crypto-backed implementation.
+   * Browser/WASM callers should pass a pure-JS sha256 (e.g. from
+   * @noble/hashes) so the domain module remains free of Node imports
+   * at the static-analyzer layer.
+   */
+  readonly sha256Hex?: (input: string) => string;
 }
 
 export interface QueryCache {
@@ -70,6 +97,7 @@ const DEFAULTS: Required<QueryCacheOptions> = {
   maxEntries: 256,
   ttlMs: 60_000,
   clock: () => Date.now(),
+  sha256Hex: defaultHashHex,
 };
 
 /**
@@ -87,16 +115,14 @@ export const queryCache = (opts: QueryCacheOptions = {}): QueryCache => {
   let evictions = 0;
 
   const keyFor = (cmd: string, args: readonly string[]): string => {
-    // Canonicalize args: sort non-positional flags for stable keys, but
-    // preserve positional order. For the `ask` command specifically the
-    // query is positional (non-flag), and --room / --k / --json are
-    // flags. Simpler safe approach: hash the full (cmd, args) as-is,
-    // since the client passes them in a deterministic order anyway.
-    const h = createHash('sha256');
-    h.update(cmd);
-    h.update('\x00');
-    for (const a of args) { h.update(a); h.update('\x01'); }
-    return h.digest('hex').slice(0, 32);
+    // Canonicalize the inputs into a single string with non-printable
+    // separators (\x00 between cmd and args, \x01 between args). The
+    // client always passes args in deterministic order so we don't
+    // sort here. Truncate to 128 bits for compactness — collision
+    // probability is negligible at the cache's working-set size.
+    let canonical = cmd + '\x00';
+    for (const a of args) canonical += a + '\x01';
+    return cfg.sha256Hex(canonical).slice(0, 32);
   };
 
   const get = (key: string): QueryCacheEntry | null => {
