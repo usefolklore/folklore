@@ -129,6 +129,23 @@ export interface SqliteVectorIndexOptions {
    * builder.
    */
   readonly binaryDim?: number;
+  /**
+   * v4.1 binary-only mode. When true (and binaryDim is set), upsert
+   * SKIPS writing the fp32 vector to vec_nodes — only the binary blob
+   * goes to vec_meta.raw_bin. Realizes the full 48× storage compression
+   * claim on disk (vs the v4.0 default which keeps both fp32 + binary).
+   *
+   * Consequence: searchHybrid (the fp32 cosine path) returns empty.
+   * Callers must use searchHybridBinary. The runtime dispatch in
+   * src/application/use-cases.ts already routes through binary when
+   * binaryDim is set — so this is transparent for production callers.
+   *
+   * Pre-existing fp32 rows in vec_nodes from prior upserts remain;
+   * they're only invisible to binary search until reindexed.
+   *
+   * Toggle: `WELLINFORMED_VECTOR_FP32_DROP=true` env var.
+   */
+  readonly binaryOnly?: boolean;
 }
 
 const isValidBinaryDim = (d: number | undefined): d is number =>
@@ -141,6 +158,10 @@ export const openSqliteVectorIndex = (
   const dim = opts.dim ?? DEFAULT_DIM;
   const overfetch = opts.roomSearchOverfetch ?? 10;
   const binaryDim = isValidBinaryDim(opts.binaryDim) ? opts.binaryDim : null;
+  // v4.1 binary-only mode requires binaryDim to be set. Without binaryDim,
+  // there's no binary path to skip-fp32-in-favor-of, so we silently coerce
+  // binaryOnly to false.
+  const binaryOnly = binaryDim !== null && (opts.binaryOnly ?? false);
 
   return ResultAsync.fromPromise(
     (async () => {
@@ -197,7 +218,7 @@ export const openSqliteVectorIndex = (
         }
       }
 
-      return build(db, dim, overfetch, binaryDim);
+      return build(db, dim, overfetch, binaryDim, binaryOnly);
     })(),
     (e) => VectorError.openError(opts.path, (e as Error).message),
   );
@@ -210,6 +231,7 @@ const build = (
   dim: number,
   overfetch: number,
   binaryDim: number | null,
+  binaryOnly: boolean,
 ): VectorIndex => {
   // sqlite-vec's vec0 virtual table rejects `INSERT OR REPLACE` because
   // the internal storage treats the rowid as an immutable key. The
@@ -301,7 +323,12 @@ const build = (
       const tx = db.transaction(() => {
         // delete any prior vector + fts row for this rowid (no-op if absent)
         stDeleteVec.run(rowid);
-        stInsertVec.run(rowid, buf);
+        // v4.1 binary-only mode: skip fp32 vec0 write entirely. Existing
+        // fp32 rows from prior upserts are deleted (above) but not
+        // re-inserted. Binary search via raw_bin still works.
+        if (!binaryOnly) {
+          stInsertVec.run(rowid, buf);
+        }
         stUpsertMeta.run(
           rowidNum,
           record.node_id,

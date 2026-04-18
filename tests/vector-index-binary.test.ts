@@ -237,3 +237,69 @@ describe('vector-index — binary mode rejects invalid dim', () => {
     }
   });
 });
+
+describe('vector-index — binary-only mode (v4.1)', () => {
+  it('binaryOnly=true: upsert skips fp32 vec_nodes write but still populates raw_bin', async () => {
+    const Better = (await import('better-sqlite3')).default;
+    const sqliteVec = await import('sqlite-vec');
+    const dbPath = join(dir, 'vec.db');
+    const r = await openSqliteVectorIndex({ path: dbPath, dim: 128, binaryDim: 128, binaryOnly: true });
+    assert.ok(r.isOk());
+    if (!r.isOk()) return;
+    const idx = r.value;
+    try {
+      await idx.upsert(mkRecord('a', 'r1', 128, 7, 'binary-only doc'));
+
+      // Close the writer first so we can open a fresh reader without WAL contention
+      idx.close();
+
+      const db = new Better(dbPath, { readonly: true, fileMustExist: true });
+      sqliteVec.load(db);
+      const meta = db.prepare('SELECT raw_bin FROM vec_meta WHERE node_id = ?').get('a') as { raw_bin: Buffer };
+      assert.ok(meta.raw_bin);
+      assert.equal(meta.raw_bin.length, 16, 'binary-128 = 16 bytes');
+
+      // vec_nodes should NOT have a row for this rowid (binary-only skipped fp32)
+      const vec = db.prepare('SELECT COUNT(*) AS n FROM vec_nodes').get() as { n: number };
+      assert.equal(vec.n, 0, 'binary-only must skip fp32 vec0 write entirely');
+      db.close();
+    } catch (e) {
+      // Surface the underlying error if assertions failed for non-assertion reasons
+      throw e;
+    }
+  });
+
+  it('binaryOnly without binaryDim is silently coerced off', async () => {
+    const r = await openSqliteVectorIndex({ path: join(dir, 'vec.db'), dim: 128, binaryOnly: true });
+    assert.ok(r.isOk());
+    if (!r.isOk()) return;
+    try {
+      // binaryDim is null → binaryOnly has no effect; fp32 path remains live
+      assert.equal(r.value.binaryDim, null);
+    } finally {
+      r.value.close();
+    }
+  });
+
+  it('binaryHybridSearch works under binary-only mode (no fp32 fallback)', async () => {
+    const r = await openSqliteVectorIndex({ path: join(dir, 'vec.db'), dim: 128, binaryDim: 128, binaryOnly: true });
+    assert.ok(r.isOk());
+    if (!r.isOk()) return;
+    const idx = r.value;
+    try {
+      const words = ['alpha','bravo','charlie','delta','echo','foxtrot','golf','hotel','india','juliet'];
+      for (let i = 0; i < 10; i++) {
+        await idx.upsert(mkRecord(`n${i}`, 'r1', 128, 100 + i, `${words[i]} body text`));
+      }
+      const queryVec = mkVec(128, 107);
+      const res = await idx.searchHybridBinary('hotel', queryVec, 5);
+      assert.ok(res.isOk());
+      if (res.isOk()) {
+        // n7 is the self-match seed
+        assert.equal(res.value[0].node_id, 'n7', 'binary-only Hamming + BM25 still ranks self-match top-1');
+      }
+    } finally {
+      idx.close();
+    }
+  });
+});

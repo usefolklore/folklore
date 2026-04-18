@@ -176,7 +176,11 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
   return loadConfig(cfgPath)
     .mapErr((e): AppError => e)
     .andThen((cfg) =>
-      openSqliteVectorIndex({ path: paths.vectors, binaryDim: parseQuantizationEnv() })
+      openSqliteVectorIndex({
+        path: paths.vectors,
+        binaryDim: parseQuantizationEnv(),
+        binaryOnly: (process.env.WELLINFORMED_VECTOR_FP32_DROP ?? '').toLowerCase() === 'true',
+      })
         .mapErr((e): AppError => e)
         .map((vectors): Runtime => {
           const graphs = fileGraphRepository(paths.graph);
