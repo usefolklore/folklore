@@ -33,6 +33,29 @@ export const wellinformedHome = (): string =>
   process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
 
 /**
+ * Parse the binary-quantization env toggle.
+ *   WELLINFORMED_VECTOR_QUANTIZATION=binary-512   → returns 512
+ *   WELLINFORMED_VECTOR_QUANTIZATION=binary-256   → returns 256
+ *   (unset | 'fp32' | anything else)              → returns undefined
+ *
+ * When set to a supported value, the VectorIndex opens with Matryoshka-
+ * binary storage alongside fp32 and searchHybrid dispatches through the
+ * Hamming-ranked path (Phase 3 of the v4 plan). When unset, behavior is
+ * identical to v3. Invalid values silently fall back to fp32 — the
+ * VectorIndex validates the dim further and coerces unsupported values
+ * to null.
+ */
+export const parseQuantizationEnv = (): number | undefined => {
+  const raw = process.env.WELLINFORMED_VECTOR_QUANTIZATION;
+  if (!raw) return undefined;
+  const m = /^binary-(\d+)$/i.exec(raw.trim());
+  if (!m) return undefined;
+  const dim = parseInt(m[1], 10);
+  if (!Number.isFinite(dim)) return undefined;
+  return dim;
+};
+
+/**
  * Build the live Embedder adapter based on environment configuration.
  *
  * Backends (selected by `WELLINFORMED_EMBEDDER_BACKEND`):
@@ -131,7 +154,7 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
   return loadConfig(cfgPath)
     .mapErr((e): AppError => e)
     .andThen((cfg) =>
-      openSqliteVectorIndex({ path: paths.vectors })
+      openSqliteVectorIndex({ path: paths.vectors, binaryDim: parseQuantizationEnv() })
         .mapErr((e): AppError => e)
         .map((vectors): Runtime => {
           const graphs = fileGraphRepository(paths.graph);

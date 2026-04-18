@@ -147,11 +147,17 @@ export const searchByRoom =
     return deps.embedder
       .embed(query.text)
       .mapErr((e): AppError => e)
-      .andThen((vec) =>
-        deps.vectors
-          .searchByRoomHybrid(query.room, query.text, vec, k)
-          .mapErr((e): AppError => e),
-      );
+      .andThen((vec) => {
+        // Phase 3c — when the VectorIndex was opened with binaryDim,
+        // route through the Hamming-ranked binary path. Otherwise fall
+        // back to the fp32 searchByRoomHybrid. Zero-behavioral-change
+        // when binary mode is off.
+        const call =
+          deps.vectors.binaryDim !== null
+            ? deps.vectors.searchByRoomHybridBinary(query.room, query.text, vec, k)
+            : deps.vectors.searchByRoomHybrid(query.room, query.text, vec, k);
+        return call.mapErr((e): AppError => e);
+      });
   };
 
 // ─────────────────────── searchGlobal ─────────────────────
@@ -167,9 +173,13 @@ export const searchGlobal =
     return deps.embedder
       .embed(query.text)
       .mapErr((e): AppError => e)
-      .andThen((vec) =>
-        deps.vectors.searchHybrid(query.text, vec, k).mapErr((e): AppError => e),
-      );
+      .andThen((vec) => {
+        const call =
+          deps.vectors.binaryDim !== null
+            ? deps.vectors.searchHybridBinary(query.text, vec, k)
+            : deps.vectors.searchHybrid(query.text, vec, k);
+        return call.mapErr((e): AppError => e);
+      });
   };
 
 // ─────────────────────── findTunnels ──────────────────────
