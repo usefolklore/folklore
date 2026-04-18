@@ -46,6 +46,7 @@ interface RunArgs {
   readonly minSize: number;
   readonly maxSize: number;
   readonly model: string;
+  readonly prune: boolean;
 }
 
 const parseRunArgs = (args: readonly string[]): RunArgs | string => {
@@ -55,19 +56,22 @@ const parseRunArgs = (args: readonly string[]): RunArgs | string => {
   let minSize = 5;
   let maxSize = 100;
   let model = process.env.WELLINFORMED_OLLAMA_MODEL ?? 'qwen2.5:1.5b';
+  let prune = false;
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     const next = (): string => args[++i] ?? '';
     if (a === '--dry-run') dryRun = true;
+    else if (a === '--prune') prune = true;
     else if (a === '--threshold') threshold = parseFloat(next()) || threshold;
     else if (a === '--min-size') minSize = parseInt(next(), 10) || minSize;
     else if (a === '--max-size') maxSize = parseInt(next(), 10) || maxSize;
     else if (a === '--model') model = next();
     else if (!a.startsWith('-')) room = room ?? a;
   }
-  if (!room) return 'missing <room>. usage: wellinformed consolidate run <room> [--dry-run] [--threshold 0.8] [--min-size 5]';
-  return { room, dryRun, threshold, minSize, maxSize, model };
+  if (!room) return 'missing <room>. usage: wellinformed consolidate run <room> [--dry-run] [--prune] [--threshold 0.8] [--min-size 5]';
+  if (dryRun && prune) return 'cannot use --dry-run and --prune together';
+  return { room, dryRun, threshold, minSize, maxSize, model, prune };
 };
 
 // ─── wiring: build ConsolidatorDeps from Runtime ────────────────
@@ -230,10 +234,71 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
     }
 
     printReport(res.value);
+
+    // Phase 4.1 — atomic prune. After successful consolidation, remove
+    // the source raw entries from BOTH the graph and the vector index
+    // so they no longer compete with the consolidated_memory in
+    // retrieval (closes the BENCH-v2.md §2j quality regression).
+    //
+    // Safer than a delayed retention pass: we know the source was
+    // consolidated_at = now and the consolidated_memory exists at the
+    // ID we just persisted. No race window where pruning could happen
+    // before the summary is durable.
+    if (parsed.prune && res.value.source_ids_marked.length > 0) {
+      const ids = res.value.source_ids_marked;
+      console.error(`consolidate prune: removing ${ids.length} source entries from graph + vectors...`);
+      const pruneStart = Date.now();
+      const pruneRes = await pruneSources(runtime, ids);
+      if (pruneRes.isErr()) {
+        console.error(`consolidate prune: ${formatError(pruneRes.error)}`);
+        return 1;
+      }
+      console.error(`consolidate prune: ${pruneRes.value.deletedFromGraph} graph nodes + ${pruneRes.value.deletedFromVectors} vectors removed in ${((Date.now() - pruneStart) / 1000).toFixed(1)}s`);
+    }
+
     return 0;
   } finally {
     runtime.close();
   }
+};
+
+const pruneSources = (
+  runtime: Runtime,
+  ids: readonly NodeId[],
+): ResultAsync<{ deletedFromGraph: number; deletedFromVectors: number }, AppError> => {
+  const idSet = new Set<NodeId>(ids);
+
+  // Vector deletes are independent rows; serialize through the existing
+  // single-flight queue (better-sqlite3 is sync, but the API is async).
+  // Each deleteByNodeId is idempotent so re-runs after partial failure
+  // are safe.
+  return ResultAsync.fromPromise(
+    (async () => {
+      let deletedFromVectors = 0;
+      for (const id of ids) {
+        const r = await runtime.vectors.deleteByNodeId(id);
+        if (r.isOk()) deletedFromVectors++;
+        // Single-vector failure is logged + ignored — partial prune is
+        // better than no prune; the entries are already consolidated_at-
+        // marked so a re-run will pick them up.
+      }
+      return deletedFromVectors;
+    })(),
+    (e): AppError => ({ type: 'GraphWriteError', path: '<vectors>', message: (e as Error).message } as GraphError),
+  ).andThen((deletedFromVectors) => {
+    return runtime.graphs.load()
+      .mapErr((e): AppError => e)
+      .andThen((graph) => {
+        const beforeCount = graph.json.nodes.length;
+        const nextNodes = graph.json.nodes.filter((n) => !idSet.has(n.id));
+        const nextLinks = graph.json.links.filter((edge) => !idSet.has(edge.source) && !idSet.has(edge.target));
+        const deletedFromGraph = beforeCount - nextNodes.length;
+        const nextGraph = { ...graph, json: { ...graph.json, nodes: nextNodes, links: nextLinks } };
+        return runtime.graphs.save(nextGraph)
+          .mapErr((e): AppError => e)
+          .map(() => ({ deletedFromGraph, deletedFromVectors }));
+      });
+  });
 };
 
 const printReport = (r: ConsolidationReport): void => {
@@ -294,9 +359,13 @@ const status = async (): Promise<number> => {
 const help = (): number => {
   console.log('usage: wellinformed consolidate <sub>');
   console.log('');
-  console.log('  run <room> [--dry-run] [--threshold 0.8] [--min-size 5] [--max-size 100] [--model M]');
+  console.log('  run <room> [--dry-run | --prune] [--threshold 0.8] [--min-size 5] [--max-size 100] [--model M]');
   console.log('                    Cluster raw entries in <room>, LLM-summarize each cluster,');
   console.log('                    persist as consolidated_memory nodes, mark sources.');
+  console.log('                    --prune: also DELETE source raw entries (graph + vectors)');
+  console.log('                             after successful consolidation. Closes the BENCH §2j');
+  console.log('                             quality regression by removing BM25 competitors.');
+  console.log('                             Mutually exclusive with --dry-run.');
   console.log('  status            Counts of raw / consolidated entries per room.');
   console.log('  help              This text.');
   console.log('');

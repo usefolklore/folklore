@@ -89,6 +89,12 @@ export interface VectorIndex {
     k: number,
     cfg?: HybridConfig,
   ): ResultAsync<readonly Match[], VectorError>;
+  /**
+   * Delete a single record by node_id from vec_nodes + vec_meta + fts_docs.
+   * Idempotent — calling on an absent node_id is a no-op (returns ok).
+   * Used by Phase 4.1 retention prune of consolidated raw entries.
+   */
+  deleteByNodeId(node_id: NodeId): ResultAsync<void, VectorError>;
   /** Snapshot of every record — used by offline passes like tunnel detection. */
   all(): ResultAsync<readonly VectorRecord[], VectorError>;
   size(): number;
@@ -231,6 +237,11 @@ const build = (
   const stAllBinByRoom = db.prepare(
     'SELECT rowid, node_id, room, wing, raw_bin FROM vec_meta WHERE raw_bin IS NOT NULL AND room = ? ORDER BY rowid',
   );
+  // Phase 4.1 — delete-by-node_id for the consolidate prune path. Need
+  // the rowid lookup first because vec0 + fts_docs key on rowid (not
+  // node_id), and there's no FK to cascade for us. Idempotent: a
+  // missing node_id is a no-op.
+  const stDeleteMetaByNodeId = db.prepare('DELETE FROM vec_meta WHERE node_id = ?');
   // sqlite-vec requires the k value on the MATCH clause itself
   // (`k = ?`), not as a trailing LIMIT. LIMIT is evaluated AFTER the
   // vec0 scan, so using it alone makes sqlite-vec reject the prepare.
@@ -549,6 +560,23 @@ const build = (
       }));
     });
 
+  const deleteByNodeId = (node_id: NodeId): ResultAsync<void, VectorError> => {
+    try {
+      const existing = stGetRowid.get(node_id) as { rowid: number } | undefined;
+      if (!existing) return okAsync(undefined); // idempotent no-op
+      const rowid = BigInt(existing.rowid);
+      const tx = db.transaction(() => {
+        stDeleteVec.run(rowid);
+        stDeleteFts.run(existing.rowid);
+        stDeleteMetaByNodeId.run(node_id);
+      });
+      tx();
+      return okAsync(undefined);
+    } catch (e) {
+      return errAsync(VectorError.writeError(node_id, (e as Error).message));
+    }
+  };
+
   const all = (): ResultAsync<readonly VectorRecord[], VectorError> => {
     try {
       const metas = stAllMeta.all() as Array<{
@@ -598,6 +626,7 @@ const build = (
     searchByRoomHybrid,
     searchHybridBinary,
     searchByRoomHybridBinary,
+    deleteByNodeId,
     all,
     size,
     binaryDim,
