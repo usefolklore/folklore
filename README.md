@@ -36,6 +36,20 @@ One query. Three rooms. A starred GitHub repo, your Go source, and your own Clau
   <b>13 documented null attacks</b> &nbsp;·&nbsp; W3C did:key identity &nbsp;·&nbsp; libp2p federation &nbsp;·&nbsp; MIT
 </p>
 
+## Why wellinformed exists
+
+The frontier-model economy isn't sustainable, and everyone paying attention knows it. Compute costs climb. Training runs burn hundreds of millions. Investors want returns. Governments want levers — a US administration can decide tomorrow that an AI lab is strategic infrastructure and reshape its trajectory with a phone call. When that happens your workflow's weather changes overnight: prices hike, models deprecate, weights get silently swapped, terms tighten, behaviors drift. The customer is never consulted.
+
+The open-source community — tens of thousands of engineers, researchers, and operators — already writes the code, benchmarks the models, builds the tools, and documents the failure modes faster than any single lab can absorb them. Closed labs race; the open-source ecosystem evolves.
+
+**wellinformed is how that ecosystem shares its knowledge.**
+
+Ten thousand developers asking the same question ten thousand times a day is waste. One peer answers once; the answer propagates through the network. Knowledge accumulates across the community faster than any quarterly pre-training dump can keep up. Your Claude session starts from what your peers have already measured — not what a foundation model memorized six months ago.
+
+Decentralized means the knowledge can't be revoked. When a lab gets acquired, sanctioned, or reorganized, your graph doesn't care. Your identity is a W3C `did:key` you own — the math on your keyring, not a row in someone else's user table. Shared memory carries signed envelopes verifiable offline in under 2 ms. Nobody emails support, because nobody operates "support."
+
+The result: fewer tokens burned on repeated research, richer sessions every time a peer in your network learns something new, automatic propagation of best practices and current tools, context that stays fresh between pre-training cuts. The open-source movement open-sourced the code. **wellinformed open-sources the knowledge graph itself.** That's the next step.
+
 ## The three pillars
 
 **1. Your peers already know.** Every wellinformed instance is a libp2p peer. Rooms sync across peers via Y.js CRDT. A federated `ask --peers` fans a query across your connected peers in parallel, 2-second per-peer timeout, results merged by cosine distance with per-peer attribution. Your teammate already read the paper; your node finds it instead of hitting the internet.
