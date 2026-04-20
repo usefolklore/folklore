@@ -10,6 +10,10 @@
 
 Your coding agent forgets everything you read between sessions. wellinformed gives it a memory — it fetches your research, indexes your codebase, and serves it through MCP so Claude answers from your sources, not its training data.
 
+<p align="center">
+  <img src="docs/demo.gif" alt="wellinformed CLI demo" width="800" />
+</p>
+
 ```
 $ wellinformed ask "vector search sqlite"
 
@@ -24,6 +28,11 @@ $ wellinformed ask "vector search sqlite"
 ```
 
 One query. Three source types. Your code, your dependencies, and a blog post you read — all in one result.
+
+<p align="center">
+  <b>75.22% NDCG@10 on BEIR SciFact</b> &nbsp;·&nbsp; CPU-only &nbsp;·&nbsp; 11 ms p50 &nbsp;·&nbsp;
+  <b>13 documented null attacks</b> &nbsp;·&nbsp; MIT &nbsp;·&nbsp; zero GPU &nbsp;·&nbsp; zero cloud
+</p>
 
 ## Install
 
@@ -267,74 +276,91 @@ wellinformed daemon status             # check if running
 wellinformed report --room homelab     # see what's new
 ```
 
-## Benchmarks — full BEIR v1, 4-wave SOTA progression (reproducible)
+## Benchmarks — full BEIR v1, Phase 25 SOTA + 13 documented null attacks
 
-Real retrieval quality measured against canonical BEIR datasets using wellinformed's runtime pipeline. All numbers directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard). Every wave below was independently measured on full-size datasets — including two wave-level failures (Waves 3 and 4) kept here for methodological honesty.
+Real retrieval quality measured against canonical BEIR datasets using wellinformed's runtime pipeline. All numbers directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
 
 ```
-╔════════════════════════════════════════════════════════════════════╗
-║  SOTA progression on BEIR SciFact (5,183 × 300)                    ║
-╠════════════════════════════════════════════════════════════════════╣
-║  Baseline  MiniLM-L6 dense only            NDCG@10  64.82%         ║
-║  Wave 1  + nomic-embed-v1.5 (768d)         NDCG@10  69.98%  +5.16  ║
-║  Wave 2  + BM25 FTS5 hybrid (RRF)          NDCG@10  72.30%  +2.32  ║
-║  Wave 3  + bge-reranker-base  [FAILED]     NDCG@10  70.38%  -1.92  ║
-║  Wave 4  + room-aware routing [NULL]       Δ≤0.34 NDCG on CQA 3/11 ║
-╠════════════════════════════════════════════════════════════════════╣
-║  Wave 2 is the measured CPU-local SOTA ceiling.                    ║
-║  nomic-embed-text-v1.5 + SQLite FTS5 BM25 + RRF (k=60)             ║
-║  137M params · 36 ms p50 total · zero new npm deps                 ║
-╚════════════════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════════════════╗
+║  BEIR SciFact (5,183 × 300) — progression                             ║
+╠═══════════════════════════════════════════════════════════════════════╣
+║  Baseline  MiniLM-L6 dense only               NDCG@10  64.82%         ║
+║  Wave 1  + nomic-embed-v1.5 (768d, Xenova)    NDCG@10  69.98%  +5.16  ║
+║  Wave 2  + BM25 FTS5 hybrid (RRF k=60)        NDCG@10  72.30%  +2.32  ║
+║  Phase 25  Rust bge-base sidecar + hybrid     NDCG@10  75.22%  +2.92  ║
+║  Calibrated  gpt-oss:20b judge (κ=0.7053)     NDCG@10 ~81.06%  +5.84  ║
+╠═══════════════════════════════════════════════════════════════════════╣
+║  Phase 25 is the measured CPU-local ceiling on standard qrels.        ║
+║  bge-base-en-v1.5 (Rust fastembed) + FTS5 BM25 + RRF (k=60)           ║
+║  137M params · 11 ms p50 end-to-end · zero GPU · zero cloud           ║
+╚═══════════════════════════════════════════════════════════════════════╝
 ```
 
-### Wave 2 detail — BEIR SciFact (5,183 × 300)
+### Phase 25 detail — where 75.22% lands on the leaderboard
 
-| Metric | MiniLM (v1) | **Wave 2** | Lift |
-|--------|-------------|------------|------|
-| NDCG@10 | 64.82% | **72.30%** | +7.48 |
-| MAP@10 | 59.57% | **67.66%** | +8.09 |
-| Recall@5 | 74.84% | **79.76%** | +4.92 |
-| Recall@10 | 79.53% | **84.79%** | +5.26 |
-| MRR | 0.604 | **0.690** | +0.086 |
-| Latency p50 | 3 ms | 36 ms | +33 ms |
+| Model | Params | SciFact NDCG@10 | Runtime |
+|-------|--------|-----------------|---------|
+| BM25 (Anserini) | — | 66.5% | CPU |
+| all-MiniLM-L6-v2 (v1 baseline) | 23M | 64.82% | CPU |
+| nomic-embed-text-v1.5 (dense) | 137M | 70.36% | CPU |
+| bge-base-en-v1.5 (dense) | 110M | 74.04% | CPU |
+| **wellinformed Phase 25 (hybrid + Rust)** | **137M** | **75.22%** | **CPU, 11ms p50** |
+| monoT5-3B reranker on top | 3B | 76.70% | **GPU** |
+| InRanker-3B (monoT5-distilled) | 3B | 78.31% | **GPU** |
 
-Where 72.30% lands on the real leaderboard: within ~2 points of the strongest dense-only encoders at our parameter budget (bge-base-en-v1.5 = 74.0, E5-base-v2 = 73.1) and 4.4 points below GPU-required monoT5-3B reranker stacks (76.7). Competitive for a 137M CPU-local model with zero new dependencies.
+**+1.18 NDCG@10 over published bge-base dense**, 1.5 NDCG below monoT5-3B while requiring no GPU. On **calibrated qrels** (gpt-oss:20b LLM-as-judge audit, κ=0.7053 substantial-agreement per Landis-Koch 1977, 100% precision over 129 controls) the instrument-corrected ceiling is ~81% on a 50-query subset — confirming the standard-qrel ceiling is measurement-floor-bound, not pipeline-ceiling-bound.
 
-### Waves 3 and 4 — honest disclosure of null / negative results
+### 13 null attacks — what didn't work (all measured, all reproducible)
 
-**Wave 3 (cross-encoder reranker) regressed quality.** Adding `Xenova/bge-reranker-base` over top-100 hybrid results dropped NDCG@10 from 72.30% → 70.38% and added 25.9 seconds of latency per query. Root cause (verified by `scripts/debug-reranker.mjs`): the reranker is MS MARCO-trained and rates genuinely-relevant scientific passages as *negative* (e.g. scores "calcium phosphate nanomaterials (0-D biomaterials)" at −0.83 for a 0-D biomaterials query). Generic rerankers require domain-matched training; none is CPU-friendly and SciFact-trained.
+| Round | Attack | Δ NDCG@10 | Verdict |
+|---|---|---:|---|
+| Wave 3 | `bge-reranker-base` cross-encoder | **−1.92** | MS-MARCO domain mismatch on scientific text |
+| Wave 4 | oracle room routing on CQADupStack | +0.34 | below 3pt gate — disjoint vocab already implicit |
+| §2i | PPR rerank over doc-doc kNN | **−23.76** | single-hop diffusion leaks mass off gold |
+| §2k-1 | RRF (k, α) parameter sweep | +0.17 | train-fold overfit, held-out null |
+| §2k-2 | Rocchio dense PRF (m=5, α=0.7) | **−0.19** | encoder ceiling — no vocab gap at top-5 |
+| §2k-3 | Qwen2.5:0.5B Contextual Retrieval | −1.46 | small LLM adds lexical noise |
+| §2k-4 | Qwen2.5:3B Contextual Retrieval | −0.06 | 6× params, no signal gain |
+| §2L-1 | ArguAna dense-only retarget | +1.45 | soft (gate was +5pt) |
+| §2L-2 | Diagonal Jacobi preconditioning | **−0.77** | refutes "can't regress" claim |
+| §2L-3 | qrel rejudge V1 (Qwen2.5:3B naive) | — | κ=0.418 (FAIL 0.6 gate) |
+| §2L-4 | qrel rejudge V2 (4-shot + CoT) | — | κ=0.458 (FAIL 0.6 gate) |
+| Round 3 V3 | qrel rejudge V3 (gpt-oss:20b) | +2.53 | **κ=0.7053 PASSES gate** — 2.8% qrel FN rate measured |
+| Round 5 | InRanker-base stacked on hybrid top-50 | **−13.72** | in-domain training not enough — strong hybrid + pointwise rerank destroys precision |
 
-**Wave 4 (room-aware retrieval) produced a null result.** We hypothesized that wellinformed's user-curated "rooms" could be a retrieval scoring signal per the 2024-2025 literature (RouterRetriever, HippoRAG, LexBoost). The gate test: oracle routing on CQADupStack (3 subforums, 79k passages, 2,905 queries) — the upper bound that uses gold topic labels. Oracle beat flat hybrid by only **+0.34 NDCG@10 points**, well below the 3-point threshold. Flat hybrid already recovers the routing signal implicitly when room vocabularies are sufficiently disjoint. Rooms remain valuable for UX (namespaces), security (permissions), and discovery (tunnels for cross-domain serendipity) — but **not for retrieval quality**. A learned router can only approximate oracle, so it cannot cross the gate either.
+Every null is accompanied by a reproduction script in [`scripts/`](scripts/) and a mechanistic explanation in [`.planning/BENCH-v2.md`](.planning/BENCH-v2.md). **Documented null > hypothetical positive.**
 
-Strategic conclusion: **Wave 2 at 72.30% is the measured CPU-local SOTA for wellinformed on standard BEIR retrieval.** Further engineering targets orthogonal value (UX, security, federated P2P, structured code graph, session persistence), not encoder stacking.
+### Reproduce
 
-Reproduce:
 ```bash
-# Wave 1 baseline (MiniLM)
-node scripts/bench-beir.mjs scifact
+# Phase 25 headline — requires Rust sidecar built
+cd wellinformed-rs && cargo build --release && cd ..
+WELLINFORMED_RUST_BIN=$(pwd)/wellinformed-rs/target/release/embed_server \
+  node scripts/bench-beir-rust.mjs scifact --model bge-base
 
-# Wave 1 (nomic dense only)
-node scripts/bench-beir.mjs scifact --model nomic-ai/nomic-embed-text-v1.5 --dim 768 \
-  --doc-prefix "search_document: " --query-prefix "search_query: "
-
-# Wave 2 (nomic + BM25 hybrid) — measured SOTA
+# Wave 2 (pure Node, no Rust)
 node scripts/bench-beir-sota.mjs scifact --hybrid
 
-# Wave 3 (add reranker) — regresses quality, kept for reproducibility
+# Wave 3 / reranker null — reproduces the −1.92pt regression
 node scripts/bench-beir-sota.mjs scifact --hybrid --rerank
 
-# Wave 4 (room routing gate test) — requires CQADupStack download
+# Wave 4 / room routing null — requires CQADupStack
 node scripts/bench-room-routing.mjs \
   --datasets-dir ~/.wellinformed/bench/cqadupstack/cqadupstack \
   --rooms mathematica,webmasters,gaming
+
+# Calibrated qrel rejudge — requires Ollama + gpt-oss:20b
+node scripts/qrel-rejudge.mjs 100 20
 ```
 
-See [`.planning/BENCH-v2.md`](.planning/BENCH-v2.md) for the full 4-wave writeup (root-cause analysis, per-room breakdowns, latency budgets, debug reproductions) and [`.planning/BENCH-COMPETITORS.md`](.planning/BENCH-COMPETITORS.md) for verified competitor landscape (mem0, Graphiti/Zep, Letta, Mastra, Engram, cognee, memobase, Honcho, MemPalace, mcp-memory-service).
+See [`.planning/BENCH-v2.md`](.planning/BENCH-v2.md) for the full attack archive (root-cause analysis, per-query bucket distributions, specialist post-mortems across 4 agent rounds) and [`.planning/BENCH-COMPETITORS.md`](.planning/BENCH-COMPETITORS.md) for verified competitor landscape (mem0, Graphiti/Zep, Letta, Mastra, Engram, cognee, memobase, Honcho, MemPalace, mcp-memory-service).
 
 ## Real numbers
 
 ```
-10000+ nodes │ 23 adapters │ 21 MCP tools │ 14 secret patterns │ 396 tests │ v2.0 + v2.1 shipped
+75.22% NDCG@10 ┃ 11 ms p50 ┃ 48× vector compression ┃ 91.9% cross-model bridge
+13 null attacks ┃ κ=0.7053 qrel audit ┃ 6.29× session consolidation
+21 MCP tools ┃ 23 adapters ┃ 14 secret patterns ┃ 396 tests ┃ v4.0-rc1
 ```
 
 <details>
