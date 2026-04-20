@@ -14,7 +14,7 @@
   <img src="docs/demo.gif" alt="wellinformed CLI demo — peer identity, graph breadth, cross-source ask, federated ask, Claude Code wiring" width="880" />
 </p>
 
-**wellinformed is a peer-to-peer knowledge network for AI agents.** Your peers already did the research. Before your coding agent's next websearch, it asks your network — your code, your dependencies, your research, your teammates' graphs — all federated over libp2p with a cryptographic identity you own. Local-first. CPU-only. Zero cloud, zero subscription, zero telemetry.
+**wellinformed is a peer-to-peer knowledge network for AI agents.** Each of us carries a shard of the answer; together the network is stronger than any one of us. Before your coding agent burns 30 minutes on the same web search your teammate already did yesterday, it asks your network — your code, your dependencies, your research, your teammates' graphs — all federated over libp2p with a cryptographic identity you own. Local-first. CPU-only. Zero cloud, zero subscription, zero telemetry.
 
 ```
 $ wellinformed ask "vector search sqlite" --k 3
@@ -44,7 +44,7 @@ The open-source community — tens of thousands of engineers, researchers, and o
 
 **wellinformed is how that ecosystem shares its knowledge.**
 
-Ten thousand developers asking the same question ten thousand times a day is waste. One peer answers once; the answer propagates through the network. Knowledge accumulates across the community faster than any quarterly pre-training dump can keep up. Your Claude session starts from what your peers have already measured — not what a foundation model memorized six months ago.
+Ten thousand developers asking the same question ten thousand times a day. Ten thousand isolated 30-minute web searches. Same papers, same GitHub repos, same Stack Overflow threads, all re-derived alone, all billable. None of it accumulates. Each of us carries a shard of the answer — alone, we burn tokens rediscovering what the rest of the network already knows. When our graphs federate, the whole emerges. Knowledge compounds across the community faster than any quarterly pre-training dump can keep up. Your Claude session starts from what ten thousand peers have already measured — not what a foundation model memorized six months ago.
 
 Decentralized means the knowledge can't be revoked. When a lab gets acquired, sanctioned, or reorganized, your graph doesn't care. Your identity is a W3C `did:key` you own — the math on your keyring, not a row in someone else's user table. Shared memory carries signed envelopes verifiable offline in under 2 ms. Nobody emails support, because nobody operates "support."
 
@@ -52,7 +52,7 @@ The result: fewer tokens burned on repeated research, richer sessions every time
 
 ## The three pillars
 
-**1. Your peers already know.** Every wellinformed instance is a libp2p peer. Rooms sync across peers via Y.js CRDT. A federated `ask --peers` fans a query across your connected peers in parallel, 2-second per-peer timeout, results merged by cosine distance with per-peer attribution. Your teammate already read the paper; your node finds it instead of hitting the internet.
+**1. Each peer carries a shard — together we're strong.** Every wellinformed instance is a libp2p peer. Rooms sync across peers via Y.js CRDT. A federated `ask --peers` fans a query across your connected peers in parallel, 2-second per-peer timeout, results merged by cosine distance with per-peer attribution. The teammate who read that paper last Thursday, the peer who benchmarked that library two weeks ago, the friend who debugged that exact bug — their embeddings flow into your session. No single node has the whole graph; together they have more than any one lab's index.
 
 **2. Your identity is math you own.** W3C `did:key` over Ed25519 on first boot, BIP39 24-word recovery, hardware-authorized device keys. Every shared memory carries a signed envelope verifiable offline in under 2 ms. No registry, no resolver, no customer record to revoke. When the VC-funded memory category changes pricing, yours stays.
 
