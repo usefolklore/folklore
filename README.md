@@ -136,7 +136,11 @@ Works with **Claude Code** (auto-discovered), **Codex**, **OpenClaw**, and any M
 
 ## Rooms & tunnels
 
-Rooms partition the graph. `homelab` doesn't see `fundraise`. Each room has its own sources and search scope.
+Rooms partition the graph. `homelab` doesn't see `fundraise`. Each room has its own sources and search scope. There are three layers:
+
+- **Three always-on system rooms** — `toolshed` / `research` / `oracle` advertised out of the box by every peer, with virtual membership derived from node `source_uri` scheme (see below).
+- **One room per repo** — when you `wellinformed index` a codebase (or Claude Code opens one), wellinformed provisions a dedicated room for it. The repo name becomes the room id — `my-app`, `auto-tlv`, `wellinformed-dev` — and its embeddings, commits, and docs stay scoped to that room. Switching projects switches rooms automatically; queries stay relevant to the repo you're in without cross-contamination.
+- **Custom rooms** — anything you create yourself (`homelab`, `fundraise`, `reading-list`, etc.). Full control over sources, sharing, and retention.
 
 **Tunnels** are the exception — when nodes in different rooms are semantically close, wellinformed flags them. A paper about embedding quantization in `ml-papers` connects to a memory issue in `homelab`. That connection is what rooms exist to produce.
 
