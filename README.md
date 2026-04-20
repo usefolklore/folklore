@@ -8,31 +8,41 @@
   <a href="https://github.com/SaharBarak/wellinformed/watchers"><img src="https://img.shields.io/github/watchers/SaharBarak/wellinformed?style=social" alt="Watchers" /></a>
 </p>
 
-Your coding agent forgets everything you read between sessions. wellinformed gives it a memory — it fetches your research, indexes your codebase, and serves it through MCP so Claude answers from your sources, not its training data.
+<p align="center"><b>The network before the web.</b></p>
 
 <p align="center">
-  <img src="docs/demo.gif" alt="wellinformed CLI demo" width="800" />
+  <img src="docs/demo.gif" alt="wellinformed CLI demo — peer identity, graph breadth, cross-source ask, federated ask, Claude Code wiring" width="880" />
 </p>
 
+**wellinformed is a peer-to-peer knowledge network for AI agents.** Your peers already did the research. Before your coding agent's next websearch, it asks your network — your code, your dependencies, your research, your teammates' graphs — all federated over libp2p with a cryptographic identity you own. Local-first. CPU-only. Zero cloud, zero subscription, zero telemetry.
+
 ```
-$ wellinformed ask "vector search sqlite"
+$ wellinformed ask "vector search sqlite" --k 3
 
-## sqlite-vec                         (npm dep you installed last week)
-   distance: 0.908 | source: npm://sqlite-vec
+## vearch/vearch (2,297★)            (GitHub repo your peer starred)
+   distance: 0.961 | room: wellinformed-dev
 
-## vector-index.ts                    (your own code)
-   distance: 1.021 | source: file://src/infrastructure/vector-index.ts
+## packages/vectordb/store.go         (your own code)
+   distance: 1.090 | room: auto-tlv
 
-## Syntaqlite Playground              (Simon Willison blog post, April 2026)
-   distance: 1.023 | source: simonwillison.net
+## CLAUDE.md project instructions     (your research notes)
+   distance: 1.173 | room: auto-tlv
 ```
 
-One query. Three source types. Your code, your dependencies, and a blog post you read — all in one result.
+One query. Three rooms. A starred GitHub repo, your Go source, and your own Claude-session notes — all retrieved in 970 ms, CPU-only, no network call.
 
 <p align="center">
   <b>75.22% NDCG@10 on BEIR SciFact</b> &nbsp;·&nbsp; CPU-only &nbsp;·&nbsp; 11 ms p50 &nbsp;·&nbsp;
-  <b>13 documented null attacks</b> &nbsp;·&nbsp; MIT &nbsp;·&nbsp; zero GPU &nbsp;·&nbsp; zero cloud
+  <b>13 documented null attacks</b> &nbsp;·&nbsp; W3C did:key identity &nbsp;·&nbsp; libp2p federation &nbsp;·&nbsp; MIT
 </p>
+
+## The three pillars
+
+**1. Your peers already know.** Every wellinformed instance is a libp2p peer. Rooms sync across peers via Y.js CRDT. A federated `ask --peers` fans a query across your connected peers in parallel, 2-second per-peer timeout, results merged by cosine distance with per-peer attribution. Your teammate already read the paper; your node finds it instead of hitting the internet.
+
+**2. Your identity is math you own.** W3C `did:key` over Ed25519 on first boot, BIP39 24-word recovery, hardware-authorized device keys. Every shared memory carries a signed envelope verifiable offline in under 2 ms. No registry, no resolver, no customer record to revoke. When the VC-funded memory category changes pricing, yours stays.
+
+**3. Retrieval that's measured, not claimed.** 75.22% NDCG@10 on full BEIR SciFact (5,183 × 300) — 1.2 pts above published bge-base dense, 1.5 below GPU-only monoT5-3B. 13 separate algorithmic attacks nulled and documented, including a full gpt-oss:20b κ=0.7053 LLM-as-judge calibration audit that puts the instrument-corrected ceiling at ~81%. Every null is reproducible; the hard part of retrieval is knowing what you can't claim.
 
 ## Install
 
