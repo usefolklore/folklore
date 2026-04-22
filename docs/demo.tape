@@ -1,14 +1,20 @@
-# wellinformed CLI demo — the P2P knowledge network
-# Recorded via VHS https://github.com/charmbracelet/vhs
+# wellinformed CLI demo — accumulate · share · stream
+# Recorded via VHS (https://github.com/charmbracelet/vhs).
 #
-# Narrative (5 beats, tight ~30 s):
-#   1. peer identity          did:key + libp2p PeerId
-#   2. known peers            the network has neighbors
-#   3. ask the graph          cross-source (GitHub + code + notes)
-#   4. ask the network        federated over libp2p
-#   5. wire Claude Code       one-line MCP registration
+# Thesis: wellinformed is a COMMUNITY network. Everyone who runs it
+# contributes a shard. Whatever you're debugging at 4pm Friday,
+# someone in the network already solved at 3am Wednesday. Your next
+# LLM session starts from what the community already knows — no
+# 30-min web dive, no burned tokens, no duplicated work.
 #
-# Each beat clears the screen first so every frame is crisp.
+# Beats:
+#   1. Thesis banner       — what wellinformed does in one sentence
+#   2. Identity + peers    — did:key + libp2p, not a SaaS row
+#   3. Ask the graph       — one query, three rooms, cross-source
+#   4. Federate            — community shards stream in via libp2p
+#   5. Wired into Claude   — claude mcp get confirms the MCP surface
+#   6. Closer              — every future session starts from what
+#                            the community already knows
 
 Output docs/demo.gif
 
@@ -16,7 +22,7 @@ Set Shell "zsh"
 Set FontSize 13
 Set Width 1000
 Set Height 620
-Set TypingSpeed 22ms
+Set TypingSpeed 26ms
 Set PlaybackSpeed 1.0
 Set Theme "Catppuccin Mocha"
 Set Padding 20
@@ -25,7 +31,7 @@ Set BorderRadius 10
 Set WindowBar Colorful
 Set WindowBarSize 30
 
-# ─── hidden setup — interactive_comments + clean slate ─
+# ─── hidden setup ────────────────────────────────────────────
 Hide
 Type "setopt interactive_comments"
 Enter
@@ -34,54 +40,71 @@ Enter
 Sleep 200ms
 Show
 
-# ─── Beat 1 — identity (did:key + libp2p PeerId) ───────────────
+# ─── Beat 1 — THESIS banner ──────────────────────────────────
+Type `echo "▸ wellinformed — accumulate · share · stream knowledge into every LLM session"`
+Enter
+Sleep 2000ms
+
+Hide
+Type "clear"
+Enter
+Show
+
+# ─── Beat 2 — IDENTITY + NETWORK ─────────────────────────────
+Type "# identity is math you own — W3C did:key + libp2p PeerId"
+Enter
+Sleep 500ms
 Type "wellinformed peer status"
-Sleep 200ms
 Enter
-Sleep 1800ms
+Sleep 2400ms
 
 Hide
 Type "clear"
 Enter
 Show
 
-# ─── Beat 2 — known peers (the federation has neighbors) ───────
-Type "wellinformed peer list"
-Sleep 200ms
+# ─── Beat 3 — ASK (cross-source in one query) ────────────────
+Type "# one query. GitHub repos, your own code, research notes. under 1 second."
 Enter
-Sleep 1800ms
+Sleep 600ms
+Type@28ms `wellinformed ask "vector search sqlite" --k 3`
+Enter
+Sleep 3200ms
 
 Hide
 Type "clear"
 Enter
 Show
 
-# ─── Beat 3 — cross-source ask ─────────────────────────────────
-Type@30ms `wellinformed ask "vector search sqlite" --k 3`
-Sleep 200ms
+# ─── Beat 4 — FEDERATE (community shards) ────────────────────
+Type "# federate — every wellinformed peer, anywhere, contributes a shard"
 Enter
-Sleep 2500ms
+Sleep 600ms
+Type@28ms `wellinformed ask "P2P knowledge graph" --k 3 --peers`
+Enter
+Sleep 3000ms
 
 Hide
 Type "clear"
 Enter
 Show
 
-# ─── Beat 4 — federated ask over libp2p ────────────────────────
-Type@30ms `wellinformed ask "P2P knowledge graph" --k 3 --peers`
-Sleep 200ms
+# ─── Beat 5 — WIRED into every LLM session ───────────────────
+Type "# every claude / codex / cursor / continue session gets 21 MCP tools"
 Enter
-Sleep 2500ms
+Sleep 600ms
+Type "claude mcp get wellinformed"
+Enter
+Sleep 2400ms
 
 Hide
 Type "clear"
 Enter
 Show
 
-# ─── Beat 5 — wire into Claude Code (MCP) ──────────────────────
-Type "claude mcp add --scope user wellinformed -- wellinformed mcp"
-Sleep 200ms
+# ─── Beat 6 — CLOSER ─────────────────────────────────────────
+Type `echo "▸ every future LLM session starts from what the community already knows."`
 Enter
-Sleep 1800ms
+Sleep 2200ms
 
-Sleep 1200ms
+Sleep 1500ms
