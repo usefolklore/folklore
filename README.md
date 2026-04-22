@@ -14,7 +14,7 @@
 
 > **wellinformed is the only way to accumulate, share, and stream knowledge seamlessly into your LLM work sessions.**
 
-**A peer-to-peer shared knowledge network that enables continuous shared learning across machines.** Every one of us holds a shard of knowledge; together, we create knowledge planes — always up-to-date, everlasting, globally accessible, at lightning speed. **No servers. No subscriptions.** Before your coding agent burns 30 minutes on the same web search your teammate already did yesterday, it asks your network — your code, your dependencies, your research, your teammates' graphs — all federated over libp2p with a cryptographic identity you own. Local-first. CPU-only. Zero cloud, zero telemetry.
+**A peer-to-peer shared knowledge network that enables continuous shared learning across machines.** Every one of us holds a shard of knowledge; together, we create knowledge planes — always up-to-date, everlasting, globally accessible, at lightning speed. **No servers. No subscriptions.** Before your coding agent burns 30 minutes on the same web search someone in the community already did this morning, it asks the network — your code, your dependencies, your research, every peer's graph — all federated over libp2p with a cryptographic identity you own. Local-first. CPU-only. Zero cloud, zero telemetry.
 
 ```
 $ wellinformed ask "vector search sqlite" --k 3
@@ -52,29 +52,27 @@ The result: fewer tokens burned on repeated research, richer sessions every time
 
 ## The three pillars
 
-**1. Each peer carries a shard of what's current — together, the live index.** Every wellinformed instance is a libp2p peer. Rooms sync across peers via Y.js CRDT. A federated `ask --peers` fans a query across your connected peers in parallel, 2-second per-peer timeout, results merged by cosine distance with per-peer attribution. The teammate who read that paper last Thursday, the peer who benchmarked that library two weeks ago, the friend who debugged that exact bug — their embeddings flow into your session. No single node has the whole graph; together they have the live state of the field — something no frozen-weight model can touch.
+**1. Each peer carries a shard of what's current — together, the live index.** Every wellinformed instance is a libp2p peer. Rooms sync across peers via Y.js CRDT. A federated `ask --peers` fans a query across the network in parallel, 2-second per-peer timeout, results merged by cosine distance with per-peer attribution. The stranger who read that paper last Thursday, the peer who benchmarked that library two weeks ago, the dev who debugged that exact bug last night — their embeddings flow into your session. Nobody knows the whole graph; together the community does — the live state of the field, something no frozen-weight model can touch.
 
 **2. Your identity is math you own.** W3C `did:key` over Ed25519 on first boot, BIP39 24-word recovery, hardware-authorized device keys. Every shared memory carries a signed envelope verifiable offline in under 2 ms. No registry, no resolver, no customer record to revoke. When the VC-funded memory category changes pricing, yours stays.
 
 **3. Retrieval that's measured, not claimed.** 75.22% NDCG@10 on full BEIR SciFact (5,183 × 300) — 1.2 pts above published bge-base dense, 1.5 below GPU-only monoT5-3B. 13 separate algorithmic attacks nulled and documented, including a full gpt-oss:20b κ=0.7053 LLM-as-judge calibration audit that puts the instrument-corrected ceiling at ~81%. Every null is reproducible; the hard part of retrieval is knowing what you can't claim.
 
-## Where it fits in the Claude Code memory stack
+## The only knowledge layer that gets richer the more people use it
 
 <p align="center">
-  <img src="docs/memory-stack.png" alt="Claude Code memory stack — canonical today vs federated with wellinformed" width="920" />
+  <img src="docs/memory-stack.png" alt="The same Claude session, two different Fridays — without vs with wellinformed" width="920" />
 </p>
 
-The canonical Claude Code stack has seven layers ([per Anthropic's best-practices doc](https://code.claude.com/docs/en/best-practices)): context window, `CLAUDE.md` hierarchy, skills, subagents, hooks, session persistence + checkpoints, and a third-party memory MCP server. All seven are single-user, single-machine, single-project — or a SaaS silo you pay to rent.
+**Same question. Same developer. Two different Fridays.**
 
-wellinformed **leaves three layers alone** (`CLAUDE.md`, skills, subagents — those are instructions, not retrieval), **augments three** (context window gets pre-filled via `PreToolUse` hook; hooks gain a semantic-prefetch + auto-save pair; sessions + checkpoints get vector-indexed into a searchable `sessions` room), **replaces one** (the third-party memory MCP — 21 tools, MIT, local-first, measured 75.22% NDCG@10), and **adds five new layers** that no canonical layer offers:
+Without wellinformed, your Claude session starts empty every time. Claude browses ten URLs, burns forty-five thousand tokens, takes thirty seconds, returns an answer half a year stale, and dies with the tab. Ten thousand other people run the exact same loop the same day. None of it compounds.
 
-- **Per-repo rooms** — one room per codebase, auto-provisioned, zero cross-project bleed
-- **Three system rooms** — `toolshed` / `research` / `oracle`, always-on, virtual membership
-- **libp2p federation** — `ask --peers` across teammates' graphs
-- **W3C `did:key` identity** — math on your keyring, BIP39 recovery, offline-verifiable signed envelopes
-- **Tree-sitter code graph** — 9 node kinds, 5 edge kinds, structural search via the `code_graph_query` MCP tool
+With wellinformed, the `PreToolUse` hook fires before Claude reaches for the web. Your graph — already holding every arXiv paper you've pulled, every repo you've starred, every past session you've had, plus every shard shared by every other peer running wellinformed — answers in **11 ms**. Three hits across three rooms: a GitHub repo someone starred yesterday, a piece of community code you hadn't seen, an arXiv paper from two hours ago. Claude replies instantly from the community's latest state. When the session ends, your transcript is vector-indexed back into the graph so tomorrow's session starts richer than today's. And every peer on the network is doing the same — the ten-thousand-stranger loop runs **once**, not ten thousand times.
 
-The right column is visibly taller than the left. That's the point.
+That's the compound. Every new contributor makes every existing session better. The graph is the only memory layer in the AI stack that goes the *other* direction: up and to the right, forever, at zero marginal cost.
+
+**Sources for the canonical stack** this diagram contrasts against: Anthropic's [Claude Code best-practices doc](https://code.claude.com/docs/en/best-practices) and the 2026 community comparisons of mem0 / Zep / Letta / Engram / MemPalace / mcp-memory-service.
 
 ## Install
 
