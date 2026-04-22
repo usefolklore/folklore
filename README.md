@@ -14,7 +14,7 @@
   <img src="docs/demo.gif" alt="wellinformed CLI demo — peer identity, graph breadth, cross-source ask, federated ask, Claude Code wiring" width="880" />
 </p>
 
-**wellinformed is a peer-to-peer knowledge network for AI agents.** Each of us carries a shard of the answer; together the network is stronger than any one of us. Before your coding agent burns 30 minutes on the same web search your teammate already did yesterday, it asks your network — your code, your dependencies, your research, your teammates' graphs — all federated over libp2p with a cryptographic identity you own. Local-first. CPU-only. Zero cloud, zero subscription, zero telemetry.
+**wellinformed is a peer-to-peer shared knowledge network that enables continuous shared learning across machines.** Every one of us holds a shard of knowledge; together, we create knowledge planes — always up-to-date, everlasting, globally accessible, at lightning speed. **No servers. No subscriptions.** Before your coding agent burns 30 minutes on the same web search your teammate already did yesterday, it asks your network — your code, your dependencies, your research, your teammates' graphs — all federated over libp2p with a cryptographic identity you own. Local-first. CPU-only. Zero cloud, zero telemetry.
 
 ```
 $ wellinformed ask "vector search sqlite" --k 3
