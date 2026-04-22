@@ -227,6 +227,20 @@
       font-style: italic;
       font-weight: 500;
     }
+    .hero-claim {
+      font-size: clamp(1.1rem, 1.5vw, 1.32rem);
+      font-weight: 600;
+      color: var(--accent);
+      max-width: 58ch;
+      line-height: 1.45;
+      margin-bottom: 1.4rem;
+      letter-spacing: -0.005em;
+    }
+    .hero-claim em {
+      color: #f7f4ec;
+      font-style: normal;
+      font-weight: 500;
+    }
     .hero-sub {
       font-size: clamp(1.02rem, 1.3vw, 1.14rem);
       color: #c7c7d0;
@@ -958,6 +972,11 @@
             The <span class="accent">network</span><br/>
             before the web.
           </h1>
+
+          <p class="hero-claim" data-reveal style="--d: 1.5">
+            <em>The only way to accumulate, share, and stream knowledge</em>
+            seamlessly into your LLM work sessions.
+          </p>
 
           <p class="hero-sub" data-reveal style="--d: 2">
             A peer-to-peer shared knowledge network that enables
