@@ -58,6 +58,24 @@ The result: fewer tokens burned on repeated research, richer sessions every time
 
 **3. Retrieval that's measured, not claimed.** 75.22% NDCG@10 on full BEIR SciFact (5,183 × 300) — 1.2 pts above published bge-base dense, 1.5 below GPU-only monoT5-3B. 13 separate algorithmic attacks nulled and documented, including a full gpt-oss:20b κ=0.7053 LLM-as-judge calibration audit that puts the instrument-corrected ceiling at ~81%. Every null is reproducible; the hard part of retrieval is knowing what you can't claim.
 
+## Where it fits in the Claude Code memory stack
+
+<p align="center">
+  <img src="docs/memory-stack.png" alt="Claude Code memory stack — canonical today vs federated with wellinformed" width="920" />
+</p>
+
+The canonical Claude Code stack has seven layers ([per Anthropic's best-practices doc](https://code.claude.com/docs/en/best-practices)): context window, `CLAUDE.md` hierarchy, skills, subagents, hooks, session persistence + checkpoints, and a third-party memory MCP server. All seven are single-user, single-machine, single-project — or a SaaS silo you pay to rent.
+
+wellinformed **leaves three layers alone** (`CLAUDE.md`, skills, subagents — those are instructions, not retrieval), **augments three** (context window gets pre-filled via `PreToolUse` hook; hooks gain a semantic-prefetch + auto-save pair; sessions + checkpoints get vector-indexed into a searchable `sessions` room), **replaces one** (the third-party memory MCP — 21 tools, MIT, local-first, measured 75.22% NDCG@10), and **adds five new layers** that no canonical layer offers:
+
+- **Per-repo rooms** — one room per codebase, auto-provisioned, zero cross-project bleed
+- **Three system rooms** — `toolshed` / `research` / `oracle`, always-on, virtual membership
+- **libp2p federation** — `ask --peers` across teammates' graphs
+- **W3C `did:key` identity** — math on your keyring, BIP39 recovery, offline-verifiable signed envelopes
+- **Tree-sitter code graph** — 9 node kinds, 5 edge kinds, structural search via the `code_graph_query` MCP tool
+
+The right column is visibly taller than the left. That's the point.
+
 ## Install
 
 ```bash
