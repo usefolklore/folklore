@@ -18,6 +18,12 @@ rust-version = "1.82"
 # by 3-10x on throughput, we know the TS pipeline has headroom to reclaim.
 
 [dependencies]
+# Force openssl-sys to build the vendored copy of OpenSSL from source
+# instead of searching the system for libssl-dev headers. Needed because
+# hetzner has libssl runtime but not dev headers, and we can't install
+# them without sudo. The `vendored` feature is additive — it doesn't
+# remove native-tls, it just ensures a self-contained openssl exists.
+openssl-sys = { version = "0.9", features = ["vendored"] }
 anyhow = "1.0"
 # fastembed-rs wraps ort + tokenizers + hf-hub in a clean "give me a vector
 # for a string" API. Same underlying ONNX runtime, no manual session/tensor
