@@ -9,6 +9,8 @@ usage:
   wellinformed <command> [options]
 
 commands:
+  onboard [--yes]         first-run installer — daemon, hooks, identity, rooms
+  this [me|everyone]      index the current folder; 'everyone' shares it on P2P
   doctor [--fix]          check runtime prerequisites (and bootstrap with --fix)
   version                 print version
   help                    this message
