@@ -869,6 +869,361 @@ A first genuinely intelligent version might require only five additions:
 
 This is the pivot from retrieval system to epistemic protocol.
 
+## Many Peers Means Data Treatment, Not Just Retrieval
+
+At small scale, peer search feels like asking a few friends. At network scale,
+it becomes a data processing problem.
+
+The system will receive:
+
+- duplicate memories from many peers;
+- near-duplicate summaries of the same source;
+- stale copies of once-current sources;
+- contradictory claims;
+- weak LLM summaries that dropped key facts;
+- poisoned or spammy nodes;
+- high-quality local measurements from unknown peers;
+- official docs, random blog posts, session logs, benchmark claims, and notes
+  all mixed together;
+- repeated re-shares where the origin becomes unclear;
+- multiple embeddings, models, dimensions, and source schemas;
+- rooms whose names leak context or collide semantically.
+
+The protocol must therefore separate four jobs:
+
+1. **Acquire** peer data.
+2. **Treat** peer data into a clean evidence substrate.
+3. **Consolidate** redundant and related evidence.
+4. **Reason** over the treated substrate with provenance intact.
+
+Open questions:
+
+- What is the raw landing zone for peer data before trust decisions?
+- Which transformations are allowed before signature verification?
+- Can we clean data without destroying provenance?
+- Should untrusted data be searchable before it is treated?
+- When does peer data become local knowledge versus remote evidence?
+
+## Raw, Treated, Consolidated, Reasoned
+
+Peer knowledge should probably move through explicit stages.
+
+| Stage | Meaning | Allowed uses |
+|---|---|---|
+| `raw_remote` | received from peer, minimally validated | audit, quarantine, low-trust search |
+| `treated` | normalized, deduped, scored, provenance-preserved | retrieval, satisfaction scoring |
+| `consolidated` | clustered or summarized across evidence | context injection, reports |
+| `reasoned` | claims extracted, conflicts found, coverage mapped | agent contract, skip/search decisions |
+| `accepted_local` | user or policy promoted it into local memory | normal local retrieval |
+
+Open questions:
+
+- Should these be separate rooms, node kinds, or storage tables?
+- Should promotion be automatic, user-reviewed, or policy-driven?
+- Can a result be useful without ever becoming `accepted_local`?
+- Should raw peer data expire quickly unless promoted?
+- What audit trail is required for each stage transition?
+
+## Cleaning Pipeline
+
+Before peer data can influence an agent, it needs treatment.
+
+Potential pipeline:
+
+1. **Schema validation**
+   - required fields
+   - size limits
+   - allowed URI schemes
+   - timestamp validity
+   - signature envelope shape
+
+2. **Safety filtering**
+   - secret scan
+   - prompt-injection scan
+   - unsafe command pattern scan
+   - SSRF/source URI gate
+   - room policy check
+
+3. **Normalization**
+   - canonical source URI
+   - normalized package/repo IDs
+   - normalized timestamps
+   - source type classification
+   - content kind classification
+   - embedder metadata capture
+
+4. **Deduplication**
+   - exact source URI duplicates
+   - content hash duplicates
+   - near-duplicate text
+   - repeated re-shares
+   - identical benchmark artifacts
+
+5. **Quality scoring**
+   - freshness
+   - source authority
+   - peer history
+   - metadata completeness
+   - evidence type
+   - contradiction risk
+
+6. **Quarantine or promotion**
+   - reject
+   - keep as low-trust remote evidence
+   - treat and search
+   - consolidate
+   - promote to accepted local memory
+
+Open questions:
+
+- Which steps must run synchronously on receipt?
+- Which can run in the background daemon?
+- What does the agent see while treatment is incomplete?
+- Should treatment failures be visible to peers?
+- Can a peer ask "why was my node rejected?"
+
+## Deduplication Is Not Deletion
+
+At many-peer scale, dedupe is mandatory, but deleting duplicates can destroy
+useful signal.
+
+Duplicates can mean:
+
+- many peers independently found the same source;
+- one source was re-shared many times;
+- a popular but wrong answer propagated;
+- the same session was imported by multiple devices;
+- a canonical official source exists and should dominate;
+- a benchmark artifact was copied without environment context.
+
+Protocol implication:
+
+Collapse duplicates for context, but preserve the evidence graph.
+
+Candidate model:
+
+```ts
+interface EvidenceCluster {
+  cluster_id: string;
+  canonical_source_uri?: string;
+  representative_node_id: string;
+  member_node_ids: string[];
+  origin_peer_ids: string[];
+  source_peer_ids: string[];
+  independent_origin_count: number;
+  first_seen_at: string;
+  last_seen_at: string;
+  freshness_range: {
+    newest: string;
+    oldest: string;
+  };
+  consensus_score: number;
+  conflict_score: number;
+}
+```
+
+Open questions:
+
+- What counts as an independent origin?
+- Should one peer with five nodes count once or five times?
+- How do we dedupe summaries against their raw source?
+- How do we prevent consensus inflation from re-shares?
+- Should clusters, not nodes, become the primary retrieval unit?
+
+## Consolidation Across Peers
+
+Consolidation cannot be ordinary summarization. It must preserve:
+
+- source lineage;
+- peer lineage;
+- conflict;
+- minority evidence;
+- exact versions, commands, dates, and environments;
+- fragile facts;
+- uncertainty.
+
+Bad consolidation:
+
+```txt
+Several peers discussed libp2p NAT traversal and found dcutr useful.
+```
+
+Better consolidation:
+
+```txt
+3 independent peers used libp2p dcutr for NAT traversal. Peer A measured
+successful hole punching on macOS with libp2p 3.2.0 on 2026-04-20. Peer B
+reported failure behind symmetric NAT on 2026-04-24. Peer C's note links to
+official circuit-relay-v2 docs but has no local measurement. Verify current
+libp2p release notes before production use.
+```
+
+Open questions:
+
+- Should consolidation produce prose, structured claims, or both?
+- Should every consolidated memory include dissent?
+- Should summaries include "what would make this stale"?
+- Should consolidation be forbidden from dropping exact commands?
+- How do we evaluate consolidation quality beyond compression ratio?
+
+## Claim Extraction
+
+To reason with many peers, the system needs claims, not only chunks.
+
+Example raw memory:
+
+```txt
+I upgraded @libp2p/dcutr to 3.0.15 and had to change relay config. Works on
+Node 24. p2p test: 10 peers in 2.5s.
+```
+
+Extracted claims:
+
+```json
+[
+  {
+    "claim": "@libp2p/dcutr 3.0.15 works on Node 24",
+    "type": "compatibility",
+    "evidence_kind": "observed",
+    "measured_at": "2026-04-29",
+    "environment": "unknown",
+    "confidence": 0.62
+  },
+  {
+    "claim": "10 peers connected in 2.5s",
+    "type": "benchmark",
+    "evidence_kind": "measured",
+    "sample_size": 10,
+    "confidence": 0.78
+  }
+]
+```
+
+Open questions:
+
+- Should claim extraction be local-only to avoid leaking raw text?
+- Can claims be extracted deterministically enough for tests?
+- Should peers share extracted claims instead of summaries?
+- How do we link claims back to exact source spans?
+- How do we represent "claim depends on environment"?
+
+## Reasoning Over The Evidence Graph
+
+Once peer data is cleaned and clustered, the query path should reason over an
+evidence graph:
+
+- nodes are claims, sources, peers, rooms, benchmarks, sessions, packages;
+- edges represent supports, contradicts, derived-from, re-shared-from,
+  measured-by, supersedes, stale-because;
+- query asks for coverage and decision, not just nearest neighbors.
+
+Reasoning tasks:
+
+- find strongest evidence for a required fact;
+- find contradictions;
+- identify stale-but-refreshable sources;
+- detect whether consensus is independent;
+- preserve minority warnings;
+- recommend search/refetch/ask-user;
+- build the agent contract.
+
+Open questions:
+
+- What graph schema is enough for v1?
+- Can this sit on the existing graph model, or does it need a separate claim
+  graph?
+- Should PageRank/PPR rank sources, claims, or clusters?
+- Does reasoning run per query or as a background materialization?
+- What is the cost ceiling for an agent hook?
+
+## Quarantine And Garbage Collection
+
+Many peers means garbage accumulation.
+
+Data should be garbage-collected by:
+
+- age;
+- missing provenance;
+- repeated low satisfaction;
+- source supersession;
+- peer distrust;
+- duplicate collapse;
+- failed refresh;
+- policy rejection;
+- user feedback.
+
+Open questions:
+
+- What expires automatically?
+- What must never be deleted without user review?
+- Should bad peer data reduce peer trust?
+- Can a consolidated cluster survive after raw remote nodes expire?
+- How do we avoid retaining dangerous prompt-injection content forever?
+
+## Treatment Metrics
+
+The system needs metrics for the data pipeline, not only query quality.
+
+Candidate metrics:
+
+- `RawRemoteIngested`
+- `RejectedBySchema`
+- `RejectedBySafety`
+- `TreatmentSuccessRate`
+- `DuplicateCollapseRate`
+- `IndependentOriginRate`
+- `ConsolidationCompressionRatio`
+- `ConsolidationFactRetention`
+- `ClaimExtractionCoverage`
+- `ConflictDetectionRate`
+- `PromotionRate`
+- `RemoteEvidenceUsedInAnswers`
+- `RemoteEvidenceCausedBadSkip`
+
+Open questions:
+
+- Which metrics should be visible in `wellinformed stats`?
+- Which should be local-only because they reveal peer behavior?
+- Can treatment metrics predict answer quality?
+- What is the healthy duplicate-collapse rate in a real network?
+
+## Data Governance For A Local-First Swarm
+
+This is not enterprise governance, but some governance still exists:
+
+- user controls what becomes local memory;
+- room policy controls what peer data can influence;
+- source policy controls refresh/fetch behavior;
+- trust policy controls peer weighting;
+- retention policy controls raw remote garbage;
+- red-line policy controls skip-search.
+
+Open questions:
+
+- Should policy be declarative YAML?
+- Should policies be shareable between teams?
+- How do we explain policy decisions to users?
+- Can users simulate policy changes on past shadow-search receipts?
+
+## Updated Minimum Bright Protocol
+
+The earlier minimum protocol is necessary but not enough at many-peer scale.
+
+The more complete minimum:
+
+1. Result quality metadata.
+2. Raw remote landing zone.
+3. Treatment pipeline.
+4. Evidence clustering with duplicate collapse.
+5. Claim extraction for high-value results.
+6. Transparent satisfaction scorer.
+7. Coverage map for borderline queries.
+8. Shadow-search receipts to measure bad skips.
+9. Traceable agent contract in every response.
+10. Retention and quarantine policy for remote garbage.
+
+This is the shift from "P2P search" to "distributed evidence processing."
+
 ## Updated First Experiment
 
 Run a 100-query local study from real agent workflows.
