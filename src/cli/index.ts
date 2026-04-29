@@ -44,6 +44,8 @@ import { update } from './commands/update.js';
 import { consolidate } from './commands/consolidate.js';
 import { sessions } from './commands/sessions.js';
 import { cacheStats } from './commands/cache-stats.js';
+import { onboard } from './commands/onboard.js';
+import { thisCmd } from './commands/this.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -88,6 +90,8 @@ const commands: Record<string, CommandFn> = {
   consolidate,
   sessions,
   'cache-stats': cacheStats,
+  onboard,
+  this: thisCmd,
 };
 
 const futureCommands = new Set<string>([]);
