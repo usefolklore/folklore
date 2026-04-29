@@ -447,6 +447,173 @@ Functional DDD. Every fallible op returns `Result<T, E>`. No classes in domain/a
 
 </details>
 
+## Vision — the agent-memory protocol problem
+
+wellinformed is not a vector store with peer sync bolted on. It is an attempt at
+the protocol that decides whether peer knowledge is good enough for an agent to
+trust, cite, or use *instead of* a live web search. The product question:
+
+> When a peer returns knowledge, how do we know it is satisfactory enough to
+> stop the agent from searching the web?
+
+If that question is weak, the whole P2P story is vibes — sometimes helpful,
+sometimes stale, sometimes wrong, impossible to defend. If it's strong,
+wellinformed becomes a serious agent-memory protocol. Full thinking surface in
+[`docs/PROTOCOL-QUALITY-QUESTIONS.md`](./docs/PROTOCOL-QUALITY-QUESTIONS.md).
+
+### The decision the protocol must make
+
+Every query needs an explicit breakpoint, not just a top-k chunk list. Six
+possible decisions:
+
+1. Use local graph only.
+2. Use trusted peer graph.
+3. Ask the oracle room.
+4. Trigger live web search.
+5. Trigger source re-fetch.
+6. Ask the user — confidence boundary unclear.
+
+A possible satisfaction model:
+
+```
+satisfaction =
+    retrieval_quality
+  + source_quality
+  + freshness_quality
+  + peer_trust
+  + consensus
+  + task_fit
+  - risk_penalty
+  - staleness_penalty
+  - missing_metadata_penalty
+```
+
+| Score        | Decision                                          |
+| ------------ | ------------------------------------------------- |
+| ≥ 0.85       | Use peer/local memory; no live search by default |
+| 0.65 – 0.85  | Use memory, but verify one source                 |
+| 0.40 – 0.65  | Show memory as hints; perform live search         |
+| < 0.40       | Cache miss — search or ask the oracle room        |
+
+Numbers are placeholders. The point is the breakpoint is **explicit and
+measurable**, not an emergent property of cosine distance.
+
+### What counts as amazing peer data
+
+- Already scoped to the user's task, repo, toolchain, or room.
+- Provenance, age, peer attribution, derivation chain.
+- Captures lived debugging experience not present in docs.
+- Multiple independent peers converge on the same source.
+- Saves a web search without reducing answer quality.
+- Comes from a peer with a record of satisfying similar queries.
+
+### What counts as garbage
+
+- Stale release notes presented as current.
+- A memory with no source, timestamp, or derivation chain.
+- Near-duplicate hits from one peer pretending to be consensus.
+- Topic-adjacent vector matches with no answer-bearing text.
+- Peer answers too short to verify and too confident to ignore.
+
+### Red lines — must block "skip search"
+
+- Missing `fetched_at`.
+- No source or provenance for a factual claim.
+- High-risk task (security / dependency / financial / legal) with no primary
+  fresh source.
+- All evidence traces back to one origin through re-shares.
+- Stale window exceeded and source can't be cheaply refreshed.
+- Room-required signature missing or invalid.
+
+### Open research questions
+
+- Does peer memory reduce live searches by 30%+ without raising bad answers?
+- Which metadata most predicts peer sufficiency?
+- Does consensus across independent peers beat one trusted peer?
+- How often is freshness the reason peer memory fails?
+- Can an LLM judge peer sufficiency with acceptable human agreement?
+- What confidence threshold keeps `BadSkipRate` below 2%?
+- Does showing provenance to the agent improve final answer quality?
+- Should benchmark claims ("this worked on Node 24", "this fix shipped in
+  v3.2.1") be first-class typed metadata distinct from prose text?
+- How do we represent "trusted peer, untrusted source" vs "untrusted peer,
+  official source"?
+- How do we detect sybil peers re-sharing one origin as fake consensus?
+
+### The hardest open problem
+
+The hardest problem is not retrieval. It is deciding when retrieval is enough.
+That means the protocol needs to carry **evidence, not just chunks**. The
+quality system needs to measure bad skips, not just NDCG. The product should
+optimize for **searches safely avoided** rather than "more results returned."
+
+Until that is measured, the honest default is:
+
+> Peer knowledge can narrow or answer a query, but high-risk or freshness-
+> sensitive tasks still require verification.
+
+## Roadmap
+
+The execution priorities for getting wellinformed to category leadership as a
+local-first agent memory system. Full detail (acceptance gates, file pointers,
+suggested order) lives in [`NEXT_STEPS.md`](./NEXT_STEPS.md).
+
+### North Star
+
+Make this loop feel inevitable:
+
+1. Peer A researches or fixes something current.
+2. Peer B asks Claude / Codex a related task.
+3. wellinformed retrieves the trusted peer memory before web search.
+4. The agent sees source age, room, peer attribution, and provenance.
+5. The answer is faster, cheaper, and better than local-only context.
+
+### Priorities
+
+1. **Match federated search to local search.** Federated peer search currently
+   downgrades to dense-only because the embedding is all that crosses the wire.
+   Add an opt-in `query_text` field gated by room policy so remote peers can
+   run hybrid (BM25 + dense). Privacy-sensitive rooms keep the embedding-only
+   path.
+2. **Fix room-filtered dense retrieval.** `searchByRoom` does global k-NN then
+   filters; switch to per-room partitions so room recall isn't dominated by
+   global overfetch luck.
+3. **Ship the native Rust CLI as a first-class artifact.** The IPC client
+   exists; install/package flow still centers the Node shim. Bake it into
+   bootstrap, document cold / warm / daemon-hit / fallback latencies.
+4. **Wire the semantic L2 cache into the daemon.** Paraphrased queries miss the
+   exact-match cache today; embed incoming queries server-side, check semantic
+   cache after the exact miss and before retrieval, expose L1/L2 hit rates in
+   `cache-stats`.
+5. **Make consolidation ambient and safe.** Auto-discover eligible rooms,
+   pre/post retrieval-quality gate, NDJSON backup before prune by default.
+6. **Add product-shaped evals.** Stop optimizing only for BEIR; benchmark the
+   actual product claim — peer-vs-search, prior-session recall, stale source
+   handling, "would this avoid a web search?" agent workflow cases.
+7. **Tighten claims and first-impression copy.** Separate shipped behavior,
+   benchmark-only behavior, env-gated behavior, and roadmap. Every public
+   number should name what it requires (daemon, native client, cache hit, Rust
+   embedder).
+
+### Definition of done
+
+wellinformed claims category leadership when:
+
+- federated search is not lower quality than local search by default policy;
+- room search has deterministic recall;
+- warm daemon hits are visibly fast in a fresh install;
+- semantic paraphrases hit cache;
+- consolidation is safe to leave on;
+- evals show fewer repeated web searches per agent task;
+- public docs distinguish shipped facts from roadmap work.
+
+### Out of scope (explicitly)
+
+- Another SciFact SOTA attack unless tied to a product eval.
+- Embedding model swaps without a deployment story.
+- Graph algorithms that don't change the peer-memory demo.
+- Claims without a reproducible gate.
+
 ## Star history
 
 <a href="https://www.star-history.com/#SaharBarak/wellinformed&Date">
