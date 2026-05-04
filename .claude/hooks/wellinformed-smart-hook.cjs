@@ -173,12 +173,15 @@ const main = () => {
     peers_responded: prefetchResult.peers_responded,
   };
 
-  // Build the agent-visible context. When the federated path produced
-  // a telemetry block, append it so the agent session sees timing,
-  // bytes, peer counts, and satisfaction in every prefetch — the
-  // visible signal that "wellinformed went to the network."
+  // Build the agent-visible context. Append the telemetry block ONLY
+  // when the federated path actually queried peers — local-only
+  // prefetches produce a `0/0 responded · 0 alive on swarm` block
+  // that's noise on every PreToolUse fire (Claude Code fires Read /
+  // Glob / Grep hundreds of times per session). The block is meant
+  // for "wellinformed went to the network" moments, not idle ones.
   const block = prefetchResult.telemetry_block;
-  const appendTelemetry = (msg) => block ? `${msg}\n\n${block}` : msg;
+  const queriedPeers = peersMeta.peers_queried > 0;
+  const appendTelemetry = (msg) => (block && queriedPeers) ? `${msg}\n\n${block}` : msg;
 
   if (hits.length > 0) {
     emit(appendTelemetry(renderHits(hits, query, peersMeta)));

@@ -93,54 +93,76 @@ export interface PeerPullTelemetry {
 
 const clamp01 = (n: number): number => (n < 0 ? 0 : n > 1 ? 1 : n);
 
-interface Components {
-  readonly retrieval: number;
-  readonly freshness: number;
-  readonly provenance: number;
-  readonly consensus: number;
-  readonly signature: number;
+/**
+ * One scorer component — `value` is in [0,1]; `observed=false` means
+ * the underlying signal is missing (no age, no signature info, etc.).
+ * The aggregator drops unobserved components instead of averaging
+ * a constant 0.5 prior, which previously inflated the floor on
+ * low-data result sets (caught in code review).
+ */
+interface Component {
+  readonly value: number;
+  readonly observed: boolean;
 }
+
+interface Components {
+  readonly retrieval: Component;
+  readonly freshness: Component;
+  readonly provenance: Component;
+  readonly consensus: Component;
+  readonly signature: Component;
+}
+
+const NIL: Component = { value: 0, observed: false };
 
 const computeComponents = (results: readonly EnrichedMatch[]): Components => {
   if (results.length === 0) {
-    return { retrieval: 0, freshness: 0, provenance: 0, consensus: 0, signature: 0 };
+    return { retrieval: NIL, freshness: NIL, provenance: NIL, consensus: NIL, signature: NIL };
   }
 
   // Retrieval — top-3 average of (1 − distance), clamped to [0,1].
-  // Cosine distance for normalised embeddings is in [0, 2]; treat
-  // distances ≥ 1 as 0 retrieval signal.
+  // Always observed when any results exist.
   const top3 = results.slice(0, 3);
-  const retrieval =
-    top3.reduce((acc, r) => acc + clamp01(1 - r.distance), 0) / top3.length;
+  const retrieval: Component = {
+    value: top3.reduce((acc, r) => acc + clamp01(1 - r.distance), 0) / top3.length,
+    observed: true,
+  };
 
-  // Freshness — node is fresh when age_days is within stale_after_days
-  // (default 14 if unspecified). Missing age treated as half-fresh
-  // because we don't know.
+  // Freshness — observed iff at least one result has a known age.
   const fresh = results.filter((r) => {
     if (r.age_days === undefined) return false;
     const limit = r.stale_after_days ?? 14;
     return r.age_days <= limit;
   }).length;
   const ageKnown = results.filter((r) => r.age_days !== undefined).length;
-  const freshness = ageKnown === 0 ? 0.5 : fresh / ageKnown;
+  const freshness: Component =
+    ageKnown === 0 ? NIL : { value: fresh / ageKnown, observed: true };
 
-  // Provenance — both source_uri and fetched_at present
-  const provenance =
-    results.filter((r) => r.source_uri && r.fetched_at).length / results.length;
+  // Provenance — always observed (any node either has source_uri+fetched_at or not).
+  const provenance: Component = {
+    value: results.filter((r) => r.source_uri && r.fetched_at).length / results.length,
+    observed: true,
+  };
 
-  // Consensus — distinct origins among (source_peer + also_from_peers).
-  // null source_peer counts as 'local'.
+  // Consensus — observed when at least one peer (or local) attribution exists.
+  // For a result set entirely from one origin, consensus.value is 0.5
+  // (single source, can't tell if the agreement is meaningful).
   const origins = new Set<string>();
   for (const r of results) {
     origins.add(r.source_peer ?? 'local');
     for (const also of r.also_from_peers) origins.add(also);
   }
-  const consensus = origins.size >= 2 ? 1 : 0.5;
+  const consensus: Component = { value: origins.size >= 2 ? 1 : 0.5, observed: true };
 
-  // Signature — fraction with verified envelope (when reported)
+  // Signature — observed iff at least one result reported has_signature.
   const sigKnown = results.filter((r) => r.has_signature !== undefined).length;
-  const sigVerified = results.filter((r) => r.has_signature === true).length;
-  const signature = sigKnown === 0 ? 0.5 : sigVerified / sigKnown;
+  const signature: Component =
+    sigKnown === 0
+      ? NIL
+      : {
+          value: results.filter((r) => r.has_signature === true).length / sigKnown,
+          observed: true,
+        };
 
   return { retrieval, freshness, provenance, consensus, signature };
 };
@@ -152,13 +174,20 @@ export const computeSatisfaction = (
   const penalties: string[] = [];
 
   const components = computeComponents(results);
+  // Weighted average over OBSERVED components only — unknown signals
+  // contribute zero weight (and zero value), so a low-data result set
+  // can't be inflated by counting "I don't know" priors as positive
+  // evidence. With only retrieval observed, a 0.7 retrieval result
+  // scores 0.7 base instead of the previous (0.7 + 0.5 + 0 + 0.5 + 0.5)/5 = 0.44.
+  const observed = [
+    components.retrieval,
+    components.freshness,
+    components.provenance,
+    components.consensus,
+    components.signature,
+  ].filter((c) => c.observed);
   const base =
-    (components.retrieval +
-      components.freshness +
-      components.provenance +
-      components.consensus +
-      components.signature) /
-    5;
+    observed.length === 0 ? 0 : observed.reduce((s, c) => s + c.value, 0) / observed.length;
 
   // Tally diagnostics
   const fresh_count = results.filter((r) => {
@@ -189,7 +218,9 @@ export const computeSatisfaction = (
   }
   if (fresh_count > 0) reasons.push(`${fresh_count} fresh node${fresh_count === 1 ? '' : 's'}`);
   if (distinct_origins >= 2) reasons.push(`${distinct_origins} distinct origins`);
-  if (components.provenance >= 0.8) reasons.push('strong provenance coverage');
+  if (components.provenance.observed && components.provenance.value >= 0.8) {
+    reasons.push('strong provenance coverage');
+  }
 
   // Penalties (subtractive, capped at 0.4) ─────────────────
   let penaltyTotal = 0;

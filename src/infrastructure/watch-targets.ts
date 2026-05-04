@@ -11,7 +11,8 @@
  * duplicating the row.
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { atomicWriteSync } from './atomic-write.js';
 
 export interface WatchTarget {
   readonly room: string;
@@ -38,7 +39,10 @@ const safeRead = (path: string): WatchTargetsFile => {
 };
 
 const safeWrite = (path: string, file: WatchTargetsFile): void => {
-  writeFileSync(path, JSON.stringify(file, null, 2));
+  // tmp+rename so a crash mid-write never loses the registered
+  // watch-targets — losing them means every `wellinformed this` has
+  // to be re-run.
+  atomicWriteSync(path, JSON.stringify(file, null, 2));
 };
 
 export const loadWatchTargets = (path: string): readonly WatchTarget[] =>

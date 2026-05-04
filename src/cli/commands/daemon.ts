@@ -192,6 +192,9 @@ const run = async (): Promise<number> => {
     sources: rt.value.sources,
     config: cfg.value.daemon,
     homePath: paths.home,
+    // Same mutex instance the job worker uses — closes the
+    // tick-vs-worker lost-update race on graph.json.
+    graphMutex: rt.value.graphMutex,
   });
   await shutdown();
   return 0;

@@ -86,6 +86,14 @@ export interface DaemonDeps {
   readonly shareSync?: ShareSyncRegistry | null;   // Phase 16 — null until libp2p starts
   /** Phase 18: in-memory connection health tracker. Undefined until libp2p starts. */
   readonly healthTracker?: HealthTracker | null;
+  /**
+   * In-process write serializer. Shared with the daemon's job
+   * worker so the tick loop and the queue can't interleave their
+   * load → mutate → save sequences and silently lose updates.
+   * When omitted, the tick loop runs unsynchronized (legacy
+   * behaviour for tests that don't share a Runtime with a worker).
+   */
+  readonly graphMutex?: import('../infrastructure/async-mutex.js').AsyncMutex;
 }
 
 export interface TickResult {
@@ -265,37 +273,51 @@ const runRooms = (
   const results: RoomRun[] = [];
   const reports: string[] = [];
 
-  // Sequential to avoid parallel writes to graph.json
+  // Sequential to avoid parallel writes to graph.json. The
+  // per-room critical section ALSO acquires the in-process graph
+  // mutex when one is supplied — closes the lost-update window
+  // against the job worker which mutates the same graph concurrently.
+  // Without graphMutex (legacy/test path) the inner work runs as before.
+  const runOne = (room: string): ResultAsync<void, AppError> => {
+    const work = (): ResultAsync<void, AppError> =>
+      triggerRoom(deps.ingestDeps)(room)
+        .andThen((run) => {
+          results.push(run);
+          daemonLog(deps.homePath, `tick: room=${room} new=${run.runs.reduce((s, r) => s + r.items_new, 0)}`);
+          return generateReport({
+            graphs: deps.graphs,
+            vectors: deps.vectors,
+            sources: deps.sources,
+          })({ room })
+            .map((data) => {
+              const md = renderReport(data);
+              const reportDir = join(deps.homePath, 'reports', room);
+              mkdirSync(reportDir, { recursive: true });
+              const date = data.generated_at.slice(0, 10);
+              const path = join(reportDir, `${date}.md`);
+              writeFileSync(path, md);
+              reports.push(path);
+              daemonLog(deps.homePath, `report: ${path}`);
+            });
+        })
+        .orElse((e) => {
+          daemonLog(deps.homePath, `error: room=${room} ${formatError(e)}`);
+          return okAsync(undefined);
+        });
+
+    if (!deps.graphMutex) return work();
+    return ResultAsync.fromPromise(
+      deps.graphMutex.runExclusive(async () => {
+        const r = await work();
+        if (r.isErr()) throw r.error;
+      }),
+      (e): AppError => (e instanceof Error ? { type: 'GraphWriteError', path: '<runtime>', message: e.message } : { type: 'GraphWriteError', path: '<runtime>', message: String(e) }),
+    );
+  };
+
   return rooms
     .reduce<ResultAsync<void, AppError>>(
-      (acc, room) =>
-        acc.andThen(() =>
-          triggerRoom(deps.ingestDeps)(room)
-            .andThen((run) => {
-              results.push(run);
-              daemonLog(deps.homePath, `tick: room=${room} new=${run.runs.reduce((s, r) => s + r.items_new, 0)}`);
-              // Generate report
-              return generateReport({
-                graphs: deps.graphs,
-                vectors: deps.vectors,
-                sources: deps.sources,
-              })({ room })
-                .map((data) => {
-                  const md = renderReport(data);
-                  const reportDir = join(deps.homePath, 'reports', room);
-                  mkdirSync(reportDir, { recursive: true });
-                  const date = data.generated_at.slice(0, 10);
-                  const path = join(reportDir, `${date}.md`);
-                  writeFileSync(path, md);
-                  reports.push(path);
-                  daemonLog(deps.homePath, `report: ${path}`);
-                });
-            })
-            .orElse((e) => {
-              daemonLog(deps.homePath, `error: room=${room} ${formatError(e)}`);
-              return okAsync(undefined);
-            }),
-        ),
+      (acc, room) => acc.andThen(() => runOne(room)),
       okAsync<void, AppError>(undefined),
     )
     .map((): TickResult => ({ rooms: results, reports_written: reports }));
