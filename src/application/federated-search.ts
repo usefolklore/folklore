@@ -60,6 +60,20 @@ export interface FederatedSearchResult {
   readonly peers_responded: number;
   readonly peers_timed_out: number;
   readonly peers_errored: number;
+  /**
+   * Wire-level telemetry — populated unconditionally so callers can
+   * surface a peer-pull block into the agent session. Enrichment and
+   * satisfaction scoring happen at the call site (MCP / CLI / hook)
+   * where the GraphRepository is available.
+   */
+  readonly _telemetry: {
+    readonly took_total_ms: number;
+    readonly took_local_ms: number;
+    readonly took_fanout_ms: number;
+    readonly took_merge_ms: number;
+    readonly bytes_received_estimate: number;
+    readonly peers_alive: number;
+  };
 }
 
 export interface FederatedSearchDeps {
@@ -197,6 +211,8 @@ export const runFederatedSearch = async (
   // Resolve injectable stream opener (test seam)
   const streamOpener = deps.openStream ?? openSearchStream;
 
+  const t0 = Date.now();
+
   // 1. Local query — synchronous from the caller's perspective.
   // Use the hybrid (BM25 + vector + RRF) path whenever the caller supplied
   // the raw text. Hybrid is what the non-federated `searchGlobal` use case
@@ -220,6 +236,8 @@ export const runFederatedSearch = async (
         _source_peer: null,
       }))
     : [];
+
+  const t1 = Date.now();
 
   // 2. Parallel fan-out — NEVER use ResultAsync.combine (short-circuits on first error).
   // Use plain Promise.all with per-promise withTimeout guards.
@@ -257,6 +275,18 @@ export const runFederatedSearch = async (
   const peers_responded = peerOutcomes.filter((o) => o.status === 'ok' && o.matches.length > 0).length;
   const peers_timed_out = peerOutcomes.filter((o) => o.status === 'timeout').length;
   const peers_errored = peerOutcomes.filter((o) => o.status === 'error').length;
+
+  // Bytes-received estimate: sum of JSON-encoded peer match payloads.
+  // PeerMatch is a small object (node_id ≈ 36, room ≈ 12, wing ≈ 12,
+  // distance + commas + braces ≈ 30 → ~90 B per row at the 50th
+  // percentile). JSON.stringify gives a fair upper bound without
+  // forcing the wire layer to expose a byte counter.
+  const bytes_received_estimate = peerOutcomes.reduce(
+    (acc, o) => acc + (o.matches.length === 0 ? 0 : JSON.stringify(o.matches).length),
+    0,
+  );
+
+  const t2 = Date.now();
 
   // 3. Merge — dedupe by node_id preferring local, collapse peer dupes into _also_from_peers
   const byId = new Map<string, FederatedMatch>();
@@ -300,6 +330,8 @@ export const runFederatedSearch = async (
     tunnelThreshold,
   );
 
+  const t3 = Date.now();
+
   return {
     matches: merged,
     tunnels,
@@ -307,5 +339,16 @@ export const runFederatedSearch = async (
     peers_responded,
     peers_timed_out,
     peers_errored,
+    _telemetry: {
+      took_total_ms: t3 - t0,
+      took_local_ms: t1 - t0,
+      took_fanout_ms: t2 - t1,
+      took_merge_ms: t3 - t2,
+      bytes_received_estimate,
+      // peers_alive — currently == peers_queried because we fan out to
+      // every connected peer. When v4.x adds DHT-aware peer selection
+      // this will diverge: peers_alive = swarm size, peers_queried = subset.
+      peers_alive: peers_queried,
+    },
   };
 };

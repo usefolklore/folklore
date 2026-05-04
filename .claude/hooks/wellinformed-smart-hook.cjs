@@ -93,6 +93,9 @@ const prefetch = (query) => {
       hits: Array.isArray(parsed.hits) ? parsed.hits : [],
       peers_queried: typeof parsed.peers_queried === 'number' ? parsed.peers_queried : 0,
       peers_responded: typeof parsed.peers_responded === 'number' ? parsed.peers_responded : 0,
+      // Pre-rendered telemetry block from `wellinformed ask --peers --json`.
+      // Always emitted by the federated path; absent on local-only --json.
+      telemetry_block: typeof parsed._telemetry_block === 'string' ? parsed._telemetry_block : null,
     };
   } catch {
     return null;
@@ -170,14 +173,21 @@ const main = () => {
     peers_responded: prefetchResult.peers_responded,
   };
 
+  // Build the agent-visible context. When the federated path produced
+  // a telemetry block, append it so the agent session sees timing,
+  // bytes, peer counts, and satisfaction in every prefetch — the
+  // visible signal that "wellinformed went to the network."
+  const block = prefetchResult.telemetry_block;
+  const appendTelemetry = (msg) => block ? `${msg}\n\n${block}` : msg;
+
   if (hits.length > 0) {
-    emit(renderHits(hits, query, peersMeta));
+    emit(appendTelemetry(renderHits(hits, query, peersMeta)));
   } else {
     logMiss(toolName, query);
     const peerNote = peersMeta.peers_queried > 0
       ? ` (network checked: ${peersMeta.peers_responded}/${peersMeta.peers_queried} peer(s) responded, none had a match)`
       : '';
-    emit(`wellinformed: no indexed context for "${query.slice(0, 80)}"${peerNote}. Miss logged to ${MISS_LOG}. Proceeding with ${toolName} — consider saving the result back with \`wellinformed save\` or a PostToolUse hook once reasoning is done.`);
+    emit(appendTelemetry(`wellinformed: no indexed context for "${query.slice(0, 80)}"${peerNote}. Miss logged to ${MISS_LOG}. Proceeding with ${toolName} — consider saving the result back with \`wellinformed save\` or a PostToolUse hook once reasoning is done.`));
   }
   process.exit(0);
 };

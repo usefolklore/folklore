@@ -53,6 +53,8 @@ import {
 } from '../domain/oracle.js';
 import { triggerRoom } from '../application/ingest.js';
 import { runFederatedSearch } from '../application/federated-search.js';
+import { buildPeerPullTelemetry } from '../application/peer-pull-telemetry.js';
+import { formatTelemetryBlock } from '../infrastructure/telemetry-formatter.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../infrastructure/peer-transport.js';
 import { loadPeers } from '../infrastructure/peer-store.js';
 import { loadConfig } from '../infrastructure/config-loader.js';
@@ -294,8 +296,17 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
         // 4. Run federated search
         const result = await runFederatedSearch(
           { node, vectorIndex: runtime.vectors },
-          { embedding: embedRes.value, k: limit, room },
+          { embedding: embedRes.value, k: limit, room, text: query },
         );
+
+        // 5. Build the peer-pull telemetry block. Lands in every agent
+        // session that calls federated_search — the visible signal for
+        // "wellinformed actually went to the network and here's what
+        // came back."
+        const graphRes = await runtime.graphs.load();
+        const telemetry = graphRes.isOk()
+          ? buildPeerPullTelemetry({ query, room, result, graph: graphRes.value })
+          : null;
 
         return okJson({
           query,
@@ -306,6 +317,8 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
           peers_errored: result.peers_errored,
           matches: result.matches,
           tunnels: result.tunnels,
+          _telemetry: telemetry,
+          _telemetry_block: telemetry ? formatTelemetryBlock(telemetry) : null,
         });
       } finally {
         try {
