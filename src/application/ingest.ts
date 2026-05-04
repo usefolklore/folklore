@@ -213,9 +213,22 @@ const indexChunksFor = (
     embedder: deps.embedder,
   });
 
-  const toNode = (chunkIndex: number): GraphNode => ({
-    id: chunks.length === 1 ? item.source_uri : `${item.source_uri}#chunk-${chunkIndex}`,
-    label: chunks.length === 1 ? item.title : `${item.title} [chunk ${chunkIndex + 1}/${chunks.length}]`,
+  // Chunk-text body cap on the GraphNode. The hybrid path stores the
+  // full raw_text in FTS5 for BM25; the on-node copy is what `ask`
+  // (and the MCP `get_node` tool, and Claude's PreToolUse smart-hook)
+  // render as the answer-bearing context block. Without this field the
+  // surface returns metadata headers only — semantic routing works but
+  // the LLM has no text to ground on.
+  //
+  // Cap at 1500 chars per chunk: typical English-prose chunk is 500-
+  // 1000 chars, so 1500 fits whole chunks for nearly all ingesters
+  // while keeping graph.json bounded. The read-side (ask.ts:114,
+  // ipc-handlers.ts:174, MCP server.ts) further truncates to 400 chars
+  // for display, so the on-node value is the cap, not the floor.
+  const BODY_MAX = 1500;
+  const toNode = (chunk: { index: number; text: string }): GraphNode => ({
+    id: chunks.length === 1 ? item.source_uri : `${item.source_uri}#chunk-${chunk.index}`,
+    label: chunks.length === 1 ? item.title : `${item.title} [chunk ${chunk.index + 1}/${chunks.length}]`,
     file_type: 'document',
     source_file: item.source_uri,
     source_uri: item.source_uri,
@@ -223,15 +236,18 @@ const indexChunksFor = (
     content_sha256: contentHash,
     published_at: item.published_at,
     author: item.author,
-    chunk_index: chunkIndex,
+    chunk_index: chunk.index,
     chunk_count: chunks.length,
     kind: descriptor.kind,
+    // Persist body text so ask / MCP / smart-hook return readable
+    // context, not just metadata headers (Phase 41 fix).
+    summary: chunk.text.length <= BODY_MAX ? chunk.text : chunk.text.slice(0, BODY_MAX),
   });
 
   return sequenceLazy(
     chunks.map((c) => () =>
       useCase({
-        node: toNode(c.index),
+        node: toNode(c),
         text: c.text,
         room: descriptor.room,
         wing: descriptor.wing,
