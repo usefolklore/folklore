@@ -14,6 +14,8 @@ import { formatError } from '../../domain/errors.js';
 import { getNode } from '../../domain/graph.js';
 import { searchByRoom, searchGlobal } from '../../application/use-cases.js';
 import { runFederatedSearch } from '../../application/federated-search.js';
+import { buildPeerPullTelemetry } from '../../application/peer-pull-telemetry.js';
+import { formatTelemetryBlock } from '../../infrastructure/telemetry-formatter.js';
 import { defaultRuntime, wellinformedHome } from '../runtime.js';
 import type { Runtime } from '../runtime.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../../infrastructure/peer-transport.js';
@@ -234,6 +236,16 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
       return 1;
     }
 
+    // Compose the agent-session telemetry block once. Used by both
+    // --json (structured payload + pre-rendered text) and the human
+    // surface (printed at the end so the user sees timing/peer/sat).
+    const telemetry = buildPeerPullTelemetry({
+      query: parsed.query,
+      room: parsed.room,
+      result,
+      graph: graph.value,
+    });
+
     if (parsed.json) {
       // JSON surface for the smart-hook and any programmatic consumer.
       // Same shape as local --json plus peer provenance fields so the
@@ -271,6 +283,8 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
           a: t.a, b: t.b, room_a: t.room_a, room_b: t.room_b,
           distance: Number(t.distance.toFixed(4)),
         })),
+        _telemetry: telemetry,
+        _telemetry_block: formatTelemetryBlock(telemetry),
       }));
       return 0;
     }
@@ -310,6 +324,10 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
       }
       console.log('');
     }
+
+    // 7. Peer-pull telemetry block — visible signal of "wellinformed
+    //    actually went to the network and here's what came back".
+    console.log(formatTelemetryBlock(telemetry));
 
     return 0;
   } finally {
