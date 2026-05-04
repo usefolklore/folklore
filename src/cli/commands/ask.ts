@@ -16,6 +16,7 @@ import { searchByRoom, searchGlobal } from '../../application/use-cases.js';
 import { runFederatedSearch } from '../../application/federated-search.js';
 import { buildPeerPullTelemetry } from '../../application/peer-pull-telemetry.js';
 import { formatTelemetryBlock } from '../../infrastructure/telemetry-formatter.js';
+import { rerankByRecency, halfLifeForRoom } from '../../domain/recency-rerank.js';
 import { defaultRuntime, wellinformedHome } from '../runtime.js';
 import type { Runtime } from '../runtime.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../../infrastructure/peer-transport.js';
@@ -96,52 +97,71 @@ export const ask = async (args: readonly string[]): Promise<number> => {
       return 1;
     }
 
+    // Enrich + recency-rerank when the room (or any hit's room) has a
+    // policy. This is the place where rerank happens for the local
+    // (non-federated) ask path — relevance × decay (sessions: 30d
+    // half-life, research: 14d, toolshed: 60d). See
+    // src/domain/recency-rerank.ts.
+    const nowMs = Date.now();
+    const enriched = matches.value.map((m) => {
+      const node = getNode(graph.value, m.node_id);
+      const fetchedAt = typeof node?.fetched_at === 'string' ? node.fetched_at : null;
+      const fetchedMs = fetchedAt ? Date.parse(fetchedAt) : NaN;
+      const ageDays = Number.isFinite(fetchedMs)
+        ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
+        : null;
+      return {
+        node_id: m.node_id,
+        room: node?.room ?? undefined,
+        distance: m.distance,
+        age_days: ageDays ?? undefined,
+        _node: node,
+        _fetchedAt: fetchedAt,
+      };
+    });
+    const anyRerank = enriched.some((e) => halfLifeForRoom(e.room) !== undefined);
+    const ranked = anyRerank ? rerankByRecency(enriched) : enriched;
+
     if (parsed.json) {
-      const nowMs = Date.now();
-      const hits = matches.value.map((m) => {
-        const node = getNode(graph.value, m.node_id);
-        // Age in fractional days. null when the node has no fetched_at
-        // — surfaced to the LLM so it can treat un-aged hits as stale.
-        const fetchedAt = typeof node?.fetched_at === 'string' ? node.fetched_at : null;
-        const fetchedMs = fetchedAt ? Date.parse(fetchedAt) : NaN;
-        const ageDays = Number.isFinite(fetchedMs)
-          ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
-          : null;
-        return {
-          id: m.node_id,
-          label: node?.label ?? null,
-          room: node?.room ?? null,
-          distance: Number(m.distance.toFixed(4)),
-          source_uri: node?.source_uri ?? node?.source_file ?? null,
-          summary: typeof node?.summary === 'string' ? (node.summary as string).slice(0, 400) : null,
-          fetched_at: fetchedAt,
-          age_days: ageDays,
-        };
-      });
+      const hits = ranked.map((e) => ({
+        id: e.node_id,
+        label: e._node?.label ?? null,
+        room: e._node?.room ?? null,
+        distance: Number(e.distance.toFixed(4)),
+        source_uri: e._node?.source_uri ?? e._node?.source_file ?? null,
+        summary: typeof e._node?.summary === 'string' ? (e._node.summary as string).slice(0, 400) : null,
+        fetched_at: e._fetchedAt,
+        age_days: e.age_days ?? null,
+      }));
       console.log(JSON.stringify({ query: parsed.query, room: parsed.room ?? null, hits }));
       return 0;
     }
 
-    if (matches.value.length === 0) {
+    if (ranked.length === 0) {
       console.log('no results found. try a broader query or run `wellinformed trigger` to index content first.');
       return 0;
     }
 
     console.log(`# wellinformed results for: ${parsed.query}`);
     if (parsed.room) console.log(`room: ${parsed.room}`);
+    if (anyRerank) console.log('ranked by: relevance × recency-decay');
     console.log('');
 
-    for (const m of matches.value) {
-      const node = getNode(graph.value, m.node_id);
+    for (const e of ranked) {
+      const node = e._node;
       if (!node) {
-        console.log(`## [${m.node_id}] (not in graph)`);
+        console.log(`## [${e.node_id}] (not in graph)`);
         continue;
       }
       console.log(`## ${node.label}`);
-      console.log(`distance: ${m.distance.toFixed(3)} | room: ${node.room ?? '-'} | wing: ${node.wing ?? '-'}`);
+      console.log(`distance: ${e.distance.toFixed(3)} | room: ${node.room ?? '-'} | wing: ${node.wing ?? '-'}`);
       console.log(`source: ${node.source_uri ?? node.source_file}`);
       if (node.published_at) console.log(`published: ${node.published_at}`);
       if (node.author) console.log(`author: ${node.author}`);
+      if (typeof node.summary === 'string' && node.summary.length > 0) {
+        console.log('');
+        console.log(node.summary.slice(0, 400));
+      }
       console.log('');
     }
     return 0;
