@@ -16,6 +16,8 @@ import { defaultRuntime, runtimePaths } from '../runtime.js';
 import { startIpcServer } from '../../daemon/ipc.js';
 import { buildIpcHandlers } from '../../daemon/ipc-handlers.js';
 import { acquireLock } from '../../infrastructure/process-lock.js';
+import { startJobQueue } from '../../daemon/job-queue.js';
+import { buildJobRunner } from '../../daemon/job-runner.js';
 
 const start = async (): Promise<number> => {
   const paths = runtimePaths();
@@ -123,6 +125,21 @@ const run = async (): Promise<number> => {
     return 1;
   }
 
+  // Phase 41 — background job queue. Owned by the daemon for its
+  // lifetime; CLI commands (trigger, this, file-watcher events,
+  // session-watcher events) submit work over IPC instead of running
+  // synchronously. Single worker, FIFO, persisted to jobs.json.
+  const jobRunner = buildJobRunner({ runtime: rt.value });
+  const jobQueue = startJobQueue({
+    homePath: paths.home,
+    runner: jobRunner,
+    onChange: (j) => {
+      // Mirror state transitions to daemon.log so operators can `tail
+      // -f daemon.log` while jobs run. Stable single-line format.
+      console.log(`job ${j.status.padEnd(7)} ${j.id}  ${j.kind} ${j.result_summary ?? j.error ?? ''}`);
+    },
+  });
+
   // Phase 1 (v4 plan) — IPC server for delegated queries. Lives alongside
   // the tick loop in the same process so read-only commands like `ask`
   // can reuse the warmed Runtime (sqlite-vec open + ONNX model loaded)
@@ -131,7 +148,7 @@ const run = async (): Promise<number> => {
   const ipc = await startIpcServer({
     homeDir: paths.home,
     ctx: rt.value,
-    handlers: buildIpcHandlers(),
+    handlers: buildIpcHandlers(jobQueue),
     onError: (m) => console.error(`daemon ipc: ${m}`),
   });
   console.log(`daemon: ipc listening on ${ipc.path}`);
@@ -148,6 +165,7 @@ const run = async (): Promise<number> => {
 
   const shutdown = async (): Promise<void> => {
     try { clearInterval(refreshTimer); } catch { /* best-effort */ }
+    try { jobQueue.stop(); } catch { /* best-effort */ }
     try { await ipc.stop(); } catch { /* best-effort */ }
     try { rt.value.close(); } catch { /* best-effort */ }
     try { await writeLock.release(); } catch { /* best-effort */ }

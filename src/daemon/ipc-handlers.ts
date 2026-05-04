@@ -23,6 +23,8 @@ import { getNode } from '../domain/graph.js';
 import { searchByRoom, searchGlobal } from '../application/use-cases.js';
 import { queryCache, type QueryCache } from '../domain/query-cache.js';
 import { semanticCache, type SemanticCache } from '../domain/semantic-cache.js';
+import type { JobQueue } from './job-queue.js';
+import type { JobPayload } from '../domain/job.js';
 
 // ─────────────── process-cached L1 query cache ───────────────
 
@@ -275,18 +277,93 @@ const statsHandler: IpcHandler<Runtime> = async (_args, runtime): Promise<Handle
   };
 };
 
+// ─────────────── jobs handlers ───────────────
+
+/**
+ * `wellinformed jobs submit <kind> <...args>` over IPC.
+ *
+ * Args shape:
+ *   submit ingest:room <room>
+ *   submit ingest:file <room> <path>
+ *   submit ingest:session [path]
+ *
+ * The queue captured in the closure is the daemon-owned singleton.
+ * Returns the assigned job id on stdout (one line, no trailing brace
+ * spam — keeps `wellinformed this | xargs` style scripting easy).
+ */
+const submitJobHandler = (queue: JobQueue): IpcHandler<Runtime> =>
+  async (args): Promise<HandlerResult> => {
+    const [kind, ...rest] = args;
+    let payload: JobPayload | string;
+    if (kind === 'ingest:room') {
+      if (!rest[0]) payload = 'usage: submit ingest:room <room>';
+      else payload = { kind: 'ingest:room', room: rest[0] };
+    } else if (kind === 'ingest:file') {
+      if (!rest[0] || !rest[1]) payload = 'usage: submit ingest:file <room> <path>';
+      else payload = { kind: 'ingest:file', room: rest[0], path: rest[1] };
+    } else if (kind === 'ingest:session') {
+      payload = { kind: 'ingest:session', path: rest[0] };
+    } else {
+      payload = `unknown job kind: ${kind ?? '<missing>'}`;
+    }
+    if (typeof payload === 'string') {
+      return { stdout: '', stderr: `submit: ${payload}\n`, exit: 1 };
+    }
+    const id = queue.submit(payload);
+    return { stdout: `${id}\n`, exit: 0 };
+  };
+
+const jobsListHandler = (queue: JobQueue): IpcHandler<Runtime> =>
+  async (args): Promise<HandlerResult> => {
+    const json = args.includes('--json');
+    const live = args.includes('--live'); // queued + running only
+    const all = queue.list();
+    const filtered = live
+      ? all.filter((j) => j.status === 'queued' || j.status === 'running')
+      : all;
+    if (json) {
+      return { stdout: JSON.stringify({ jobs: filtered }) + '\n', exit: 0 };
+    }
+    if (filtered.length === 0) {
+      return { stdout: 'no jobs\n', exit: 0 };
+    }
+    const lines = filtered
+      .slice()
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .map((j) => {
+        const tag = j.status.padEnd(7);
+        const summary = j.result_summary ?? j.error ?? '';
+        return `  [${tag}] ${j.id}  ${j.kind.padEnd(16)} ${summary}`;
+      });
+    return { stdout: lines.join('\n') + '\n', exit: 0 };
+  };
+
+const jobsClearHandler = (queue: JobQueue): IpcHandler<Runtime> =>
+  async (): Promise<HandlerResult> => {
+    const removed = queue.clearTerminal();
+    return { stdout: `cleared ${removed} terminal job(s)\n`, exit: 0 };
+  };
+
 // ─────────────── registry ───────────────
 
 /**
  * Build the command→handler map. Called once by the daemon at startup.
- * Extending: add new handlers here. The daemon re-exposes them
- * automatically via the IPC protocol.
+ * The optional JobQueue argument enables the `submit-job` /
+ * `jobs-list` / `jobs-clear` handlers; without it those commands are
+ * absent from the registry and the client falls back to spawning a
+ * fresh process (which itself errors with "daemon not running" — see
+ * src/cli/commands/jobs.ts).
  */
-export const buildIpcHandlers = (): Map<string, IpcHandler<Runtime>> => {
+export const buildIpcHandlers = (queue?: JobQueue): Map<string, IpcHandler<Runtime>> => {
   const h = new Map<string, IpcHandler<Runtime>>();
   h.set('ask', askHandler);
   h.set('stats', statsHandler);
   h.set('cache-stats', cacheStatsHandler);
+  if (queue) {
+    h.set('submit-job', submitJobHandler(queue));
+    h.set('jobs-list', jobsListHandler(queue));
+    h.set('jobs-clear', jobsClearHandler(queue));
+  }
   return h;
 };
 
@@ -296,4 +373,7 @@ export const buildIpcHandlers = (): Map<string, IpcHandler<Runtime>> => {
  * buildIpcHandlers(). Used by bin/wellinformed.js to know whether to
  * try the socket before spawning.
  */
-export const IPC_DELEGATABLE_COMMANDS: ReadonlySet<string> = new Set(['ask', 'stats', 'cache-stats']);
+export const IPC_DELEGATABLE_COMMANDS: ReadonlySet<string> = new Set([
+  'ask', 'stats', 'cache-stats',
+  'submit-job', 'jobs-list', 'jobs-clear',
+]);
