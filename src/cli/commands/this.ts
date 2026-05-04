@@ -15,10 +15,12 @@
  * boundary identical to `wellinformed share room <name>`.
  */
 
-import { basename } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { slugifyRoomName } from '../../domain/rooms.js';
 import { indexProject } from './index-project.js';
 import { share } from './share.js';
+import { registerWatchTarget } from '../../infrastructure/watch-targets.js';
+import { wellinformedHome } from '../runtime.js';
 
 type Visibility = 'me' | 'everyone';
 
@@ -68,6 +70,18 @@ export const thisCmd = async (args: readonly string[]): Promise<number> => {
 
   const indexCode = await indexProject(['--room', slug, '--root', root]);
   if (indexCode !== 0) return indexCode;
+
+  // Register as a watch-target so the daemon's file-watcher re-embeds
+  // changed files automatically. Idempotent — re-running `this` on
+  // the same folder just refreshes the registered_at timestamp.
+  const absRoot = resolve(root);
+  registerWatchTarget(join(wellinformedHome(), 'watch-targets.json'), {
+    room: slug,
+    root: absRoot,
+  });
+  console.log(`\nwatch-target registered — daemon will re-embed on save (${absRoot})`);
+  console.log('   restart the daemon if it was already running so the new watcher takes effect:');
+  console.log('     wellinformed daemon stop && wellinformed daemon start');
 
   if (visibility === 'everyone') {
     console.log('');

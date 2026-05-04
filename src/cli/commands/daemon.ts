@@ -18,6 +18,7 @@ import { buildIpcHandlers } from '../../daemon/ipc-handlers.js';
 import { acquireLock } from '../../infrastructure/process-lock.js';
 import { startJobQueue } from '../../daemon/job-queue.js';
 import { buildJobRunner } from '../../daemon/job-runner.js';
+import { startFileWatchers } from '../../daemon/file-watcher.js';
 
 const start = async (): Promise<number> => {
   const paths = runtimePaths();
@@ -140,6 +141,15 @@ const run = async (): Promise<number> => {
     },
   });
 
+  // Phase 41 — file-watcher (registered roots from `wellinformed this`)
+  // and Claude session-watcher. Both submit ingest jobs to the queue
+  // on file events; debounced so editor save bursts collapse.
+  const watchers = startFileWatchers({
+    homePath: paths.home,
+    queue: jobQueue,
+    log: (line) => console.log(line),
+  });
+
   // Phase 1 (v4 plan) — IPC server for delegated queries. Lives alongside
   // the tick loop in the same process so read-only commands like `ask`
   // can reuse the warmed Runtime (sqlite-vec open + ONNX model loaded)
@@ -165,6 +175,7 @@ const run = async (): Promise<number> => {
 
   const shutdown = async (): Promise<void> => {
     try { clearInterval(refreshTimer); } catch { /* best-effort */ }
+    try { await watchers.stop(); } catch { /* best-effort */ }
     try { jobQueue.stop(); } catch { /* best-effort */ }
     try { await ipc.stop(); } catch { /* best-effort */ }
     try { rt.value.close(); } catch { /* best-effort */ }
