@@ -17,8 +17,9 @@
  * `jobs list`.
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { atomicWriteSync } from '../infrastructure/atomic-write.js';
 import {
   type Job,
   type JobPayload,
@@ -48,7 +49,10 @@ const safeRead = (path: string): JobsFile => {
 
 const safeWrite = (path: string, file: JobsFile): void => {
   try {
-    writeFileSync(path, JSON.stringify(file, null, 2));
+    // tmp+rename so a SIGKILL mid-write never leaves a torn jobs.json
+    // (which would silently roll back to an empty list on next boot
+    // and lose the entire queue + history).
+    atomicWriteSync(path, JSON.stringify(file, null, 2));
   } catch {
     /* persistence is best-effort */
   }

@@ -272,6 +272,14 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
   );
   child.unref();
 
+  // Detect early child failure — without this the spinner cheerfully
+  // reports "warming up…" while the spawned process is already dead
+  // (PATH miss, trigger refused, env mismatch, etc.).
+  let childAlive = true;
+  let childExitCode: number | null = null;
+  child.on('exit', (code) => { childAlive = false; childExitCode = code; });
+  child.on('error', () => { childAlive = false; });
+
   // Tail the sessions-state.json for ~10 seconds so the user sees
   // progress. Then return control with a status hint.
   const statePath = join(home, 'sessions-state.json');
@@ -293,9 +301,21 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
       return 'ingest in progress…';
     }
   };
-  while (Date.now() - start < 10_000) {
+  while (Date.now() - start < 10_000 && childAlive) {
     sp.message(peek());
     await new Promise((r) => setTimeout(r, 1000));
+  }
+  if (!childAlive) {
+    if (childExitCode === 0) {
+      sp.stop('ingest finished quickly — sessions room is up to date');
+    } else {
+      sp.stop(`ingest exited early (code=${childExitCode ?? 'error'})`);
+      note(
+        `The 'wellinformed trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - WELLINFORMED_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  wellinformed trigger --room sessions`,
+        'session ingest failed',
+      );
+    }
+    return;
   }
   sp.stop(`ingest still running in background (pid=${child.pid})`);
   note(

@@ -10,7 +10,7 @@
  * tags the job `failed`.
  */
 
-import { join } from 'node:path';
+import { dirname, isAbsolute } from 'node:path';
 import { formatError } from '../domain/errors.js';
 import type { Job } from '../domain/job.js';
 import type { Runtime } from '../cli/runtime.js';
@@ -44,13 +44,19 @@ const runIngestFile = async (
   room: string,
   path: string,
 ): Promise<string> => {
-  // The codebase adapter walks a root and emits ContentItems per file.
-  // Scoping to a single file: use the file's parent as root and rely on
-  // content-hash dedupe (decideForItem) to skip every sibling — only
-  // the changed file gets re-embedded. Slightly wasteful (walks
-  // siblings to compare hashes) but an order of magnitude faster than
-  // re-walking the whole repo.
-  const root = path.replace(/\/[^/]+$/, '');
+  // Reject relative / empty paths — the daemon's cwd is unrelated to
+  // whichever folder the user is editing. The watcher itself emits
+  // absolute paths; the IPC submit-job handler is the only other
+  // ingress and now also validates.
+  if (!isAbsolute(path) || path === '/') {
+    throw new Error(`ingest:file refused — non-absolute or root path: ${path}`);
+  }
+  // Scope to the file's parent directory and rely on content-hash
+  // dedupe (decideForItem) to skip every sibling. Walking siblings
+  // is O(siblings) statSync + hash compares — cheap, idempotent.
+  // dirname() is platform-correct (was previously a unix-only regex
+  // that broke at the filesystem root and on Windows).
+  const root = dirname(path);
   const desc: SourceDescriptor = {
     id: `${room}-watch-${path}`,
     kind: 'codebase',
@@ -129,21 +135,29 @@ const runIngestProject = async (
 
 // ─────────────── dispatch ──────────────────
 
+/**
+ * Build the per-job dispatcher. Each job's critical section runs
+ * inside `runtime.graphMutex.runExclusive(...)` so the daemon's
+ * tick loop and the job worker can't interleave their load → mutate
+ * → save sequences and lose updates. The cross-process write lock
+ * (process-lock.ts) protects against OTHER wellinformed processes;
+ * this mutex covers the in-process tick + worker pair.
+ */
 export const buildJobRunner = (deps: RunnerDeps) =>
   async (job: Job): Promise<string> => {
     const p = job.payload;
-    switch (p.kind) {
-      case 'ingest:room':    return runIngestRoom(deps, p.room);
-      case 'ingest:file':    return runIngestFile(deps, p.room, p.path);
-      case 'ingest:session': return runIngestSession(deps, p.path);
-      case 'ingest:project': return runIngestProject(deps, p.room, p.root, p.maxCommits ?? 50, p.includeDev ?? true);
-      default: {
-        const _exhaustive: never = p;
-        void _exhaustive;
-        throw new Error(`unknown job kind: ${(p as { kind: string }).kind}`);
+    return deps.runtime.graphMutex.runExclusive(async (): Promise<string> => {
+      switch (p.kind) {
+        case 'ingest:room':    return runIngestRoom(deps, p.room);
+        case 'ingest:file':    return runIngestFile(deps, p.room, p.path);
+        case 'ingest:session': return runIngestSession(deps, p.path);
+        case 'ingest:project': return runIngestProject(deps, p.room, p.root, p.maxCommits ?? 50, p.includeDev ?? true);
+        default: {
+          const _exhaustive: never = p;
+          void _exhaustive;
+          throw new Error(`unknown job kind: ${(p as { kind: string }).kind}`);
+        }
       }
-    }
+    });
   };
 
-// Silence the home-path import (reserved for a future job-log file).
-void join;

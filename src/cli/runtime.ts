@@ -28,6 +28,7 @@ import { sourceRegistry, type SourceRegistry } from '../infrastructure/sources/r
 import { loadConfig } from '../infrastructure/config-loader.js';
 import { buildPatterns } from '../domain/sharing.js';
 import { ensureSystemRoomsShared } from '../infrastructure/share-store.js';
+import { asyncMutex, type AsyncMutex } from '../infrastructure/async-mutex.js';
 import type { IngestDeps } from '../application/ingest.js';
 
 export const wellinformedHome = (): string =>
@@ -149,6 +150,14 @@ export interface Runtime {
   readonly registry: SourceRegistry;
   /** A convenience packet of the fields ingest.ts needs. */
   readonly ingestDeps: IngestDeps;
+  /**
+   * In-process write serialization. Shared by daemon tick + job
+   * worker; either side that does load → mutate → save on the
+   * graph wraps its critical section in
+   * `runtime.graphMutex.runExclusive(async () => { ... })` to close
+   * the lost-update window across in-process concurrent writers.
+   */
+  readonly graphMutex: AsyncMutex;
   /** Release native resources (sqlite) */
   close(): void;
 }
@@ -202,6 +211,7 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
             },
           });
           const ingestDeps: IngestDeps = { graphs, vectors, embedder, sources, registry };
+          const graphMutex = asyncMutex();
           return {
             paths,
             graphs,
@@ -214,6 +224,7 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
             html,
             registry,
             ingestDeps,
+            graphMutex,
             close: () => vectors.close(),
           };
         }),

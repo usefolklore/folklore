@@ -102,6 +102,37 @@ test('semantic-adjacent only top hit (d > 1.5) penalises', () => {
   assert.ok(s.penalties.some((p) => p.includes('semantically adjacent only')));
 });
 
+test('low-data results are NOT inflated by unknown-prior averaging', () => {
+  // Single peer hit with retrieval=0.7, no fetched_at, no signature,
+  // single origin. Old scorer averaged 0.5 priors for freshness/
+  // signature into the base, yielding ~0.44. New scorer drops
+  // unobserved components entirely; observed are retrieval (0.7),
+  // provenance (0 — no source_uri+fetched_at), consensus (0.5 single
+  // origin), so base = (0.7 + 0 + 0.5) / 3 ≈ 0.4 BEFORE penalties.
+  const m: EnrichedMatch = {
+    node_id: 'n',
+    room: 'research',
+    distance: 0.3,                    // retrieval ≈ 0.7
+    source_peer: 'peer-x',
+    also_from_peers: [],
+    source_uri: undefined,
+    fetched_at: undefined,
+    age_days: undefined,
+    has_signature: undefined,
+    stale_after_days: undefined,
+  };
+  const s = computeSatisfaction([m]);
+  // After the missing-provenance penalty (0.15) and single-origin
+  // penalty (0.15), score should be substantially below 0.5 — the
+  // visible signal that "this is low-confidence data" survives.
+  assert.ok(
+    s.score < 0.4,
+    `expected low score for low-data result, got ${s.score}`,
+  );
+  assert.equal(s.distinct_origins, 1);
+  assert.equal(s.missing_provenance_count, 1);
+});
+
 test('score is clamped to [0, 1]', () => {
   const garbage = mk({
     distance: 1.9,
