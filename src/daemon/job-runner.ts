@@ -85,6 +85,48 @@ const runIngestSession = async (
   return runIngestRoom(deps, 'sessions');
 };
 
+/**
+ * Project ingest — the four ephemeral descriptors that `wellinformed
+ * this` wants to run, but routed through the daemon's worker so the
+ * graph.json write-lock dance stays single-writer. Descriptors are
+ * NOT persisted to sources.json (mirrors `wellinformed index`).
+ */
+const runIngestProject = async (
+  deps: RunnerDeps,
+  room: string,
+  root: string,
+  maxCommits: number,
+  includeDev: boolean,
+): Promise<string> => {
+  const descriptors: SourceDescriptor[] = [
+    { id: `${room}-codebase`, kind: 'codebase', room, enabled: true, config: { root } },
+    { id: `${room}-deps`, kind: 'package_deps', room, enabled: true, config: { root, include_dev: includeDev } },
+    { id: `${room}-submodules`, kind: 'git_submodules', room, enabled: true, config: { root } },
+    { id: `${room}-git`, kind: 'git_log', room, enabled: true, config: { root, max_commits: maxCommits } },
+  ];
+  const ingest = ingestSource(deps.runtime.ingestDeps);
+  let totalNew = 0;
+  let totalUpd = 0;
+  let totalSkip = 0;
+  let errs = 0;
+  for (const desc of descriptors) {
+    const built = deps.runtime.registry.buildAll([desc]);
+    if (built.errors.length > 0 || built.sources.length === 0) {
+      errs++;
+      continue;
+    }
+    const r = await ingest(built.sources[0]);
+    if (r.isErr()) {
+      errs++;
+      continue;
+    }
+    totalNew += r.value.items_new;
+    totalUpd += r.value.items_updated;
+    totalSkip += r.value.items_skipped;
+  }
+  return `room=${room} root=${root} new=${totalNew} updated=${totalUpd} skipped=${totalSkip} errors=${errs}`;
+};
+
 // ─────────────── dispatch ──────────────────
 
 export const buildJobRunner = (deps: RunnerDeps) =>
@@ -94,6 +136,7 @@ export const buildJobRunner = (deps: RunnerDeps) =>
       case 'ingest:room':    return runIngestRoom(deps, p.room);
       case 'ingest:file':    return runIngestFile(deps, p.room, p.path);
       case 'ingest:session': return runIngestSession(deps, p.path);
+      case 'ingest:project': return runIngestProject(deps, p.room, p.root, p.maxCommits ?? 50, p.includeDev ?? true);
       default: {
         const _exhaustive: never = p;
         void _exhaustive;

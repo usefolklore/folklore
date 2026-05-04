@@ -11,7 +11,7 @@
  * no-op except for source_uri additions and freshness updates.
  */
 
-export type JobKind = 'ingest:room' | 'ingest:file' | 'ingest:session';
+export type JobKind = 'ingest:room' | 'ingest:file' | 'ingest:session' | 'ingest:project';
 
 export type JobStatus = 'queued' | 'running' | 'done' | 'failed';
 
@@ -55,10 +55,26 @@ export interface IngestSessionPayload {
   readonly path?: string;
 }
 
+/**
+ * Project ingest — what `wellinformed this` actually wants. Runs the
+ * four ephemeral codebase descriptors (codebase, package_deps,
+ * git_submodules, git_log) for a (room, root) pair. The descriptors
+ * are NOT persisted to sources.json — they're rebuilt each time
+ * from the room+root inputs, mirroring `wellinformed index`.
+ */
+export interface IngestProjectPayload {
+  readonly kind: 'ingest:project';
+  readonly room: string;
+  readonly root: string;          // absolute path
+  readonly maxCommits?: number;   // default 50
+  readonly includeDev?: boolean;  // default true
+}
+
 export type JobPayload =
   | IngestRoomPayload
   | IngestFilePayload
-  | IngestSessionPayload;
+  | IngestSessionPayload
+  | IngestProjectPayload;
 
 export interface Job extends JobBase {
   readonly payload: JobPayload;

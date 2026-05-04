@@ -23,6 +23,7 @@ import { getNode } from '../domain/graph.js';
 import { searchByRoom, searchGlobal } from '../application/use-cases.js';
 import { queryCache, type QueryCache } from '../domain/query-cache.js';
 import { semanticCache, type SemanticCache } from '../domain/semantic-cache.js';
+import { rerankByRecency, halfLifeForRoom } from '../domain/recency-rerank.js';
 import type { JobQueue } from './job-queue.js';
 import type { JobPayload } from '../domain/job.js';
 
@@ -184,7 +185,8 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     return { stdout, exit: 0 };
   }
 
-  // Human-readable — matches src/cli/commands/ask.ts output verbatim
+  // Human-readable — match src/cli/commands/ask.ts output verbatim
+  // (including the Phase A body-text + Phase D recency rerank).
   if (matches.value.length === 0) {
     const stdout = 'no results found. try a broader query or run `wellinformed trigger` to index content first.\n';
     cache.set(cacheKey, stdout);
@@ -192,21 +194,45 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     return { stdout, exit: 0 };
   }
 
+  const nowMs = Date.now();
+  const enriched = matches.value.map((m) => {
+    const node = getNode(graphRes.value, m.node_id);
+    const fetchedAt = typeof node?.fetched_at === 'string' ? node.fetched_at : null;
+    const fetchedMs = fetchedAt ? Date.parse(fetchedAt) : NaN;
+    const ageDays = Number.isFinite(fetchedMs)
+      ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
+      : null;
+    return {
+      node_id: m.node_id,
+      room: node?.room ?? undefined,
+      distance: m.distance,
+      age_days: ageDays ?? undefined,
+      _node: node,
+    };
+  });
+  const anyRerank = enriched.some((e) => halfLifeForRoom(e.room) !== undefined);
+  const ranked = anyRerank ? rerankByRecency(enriched) : enriched;
+
   const lines: string[] = [];
   lines.push(`# wellinformed results for: ${parsed.query}`);
   if (parsed.room) lines.push(`room: ${parsed.room}`);
+  if (anyRerank) lines.push('ranked by: relevance × recency-decay');
   lines.push('');
-  for (const m of matches.value) {
-    const node = getNode(graphRes.value, m.node_id);
+  for (const e of ranked) {
+    const node = e._node;
     if (!node) {
-      lines.push(`## [${m.node_id}] (not in graph)`);
+      lines.push(`## [${e.node_id}] (not in graph)`);
       continue;
     }
     lines.push(`## ${node.label}`);
-    lines.push(`distance: ${m.distance.toFixed(3)} | room: ${node.room ?? '-'} | wing: ${node.wing ?? '-'}`);
+    lines.push(`distance: ${e.distance.toFixed(3)} | room: ${node.room ?? '-'} | wing: ${node.wing ?? '-'}`);
     lines.push(`source: ${node.source_uri ?? node.source_file ?? ''}`);
     if (node.published_at) lines.push(`published: ${node.published_at}`);
     if (node.author) lines.push(`author: ${node.author}`);
+    if (typeof node.summary === 'string' && node.summary.length > 0) {
+      lines.push('');
+      lines.push(node.summary.slice(0, 400));
+    }
     lines.push('');
   }
   const stdout = lines.join('\n');
@@ -303,6 +329,9 @@ const submitJobHandler = (queue: JobQueue): IpcHandler<Runtime> =>
       else payload = { kind: 'ingest:file', room: rest[0], path: rest[1] };
     } else if (kind === 'ingest:session') {
       payload = { kind: 'ingest:session', path: rest[0] };
+    } else if (kind === 'ingest:project') {
+      if (!rest[0] || !rest[1]) payload = 'usage: submit ingest:project <room> <root>';
+      else payload = { kind: 'ingest:project', room: rest[0], root: rest[1] };
     } else {
       payload = `unknown job kind: ${kind ?? '<missing>'}`;
     }
