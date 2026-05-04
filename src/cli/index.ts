@@ -46,6 +46,7 @@ import { sessions } from './commands/sessions.js';
 import { cacheStats } from './commands/cache-stats.js';
 import { onboard } from './commands/onboard.js';
 import { thisCmd } from './commands/this.js';
+import { jobs } from './commands/jobs.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -92,6 +93,7 @@ const commands: Record<string, CommandFn> = {
   'cache-stats': cacheStats,
   onboard,
   this: thisCmd,
+  jobs,
 };
 
 const futureCommands = new Set<string>([]);
