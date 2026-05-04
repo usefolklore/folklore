@@ -1,76 +1,63 @@
 /**
  * `wellinformed onboard` — first-run installer + onboarding wizard.
  *
- * One command that takes a fresh machine to a fully wired install:
+ * Eight numbered steps that take a fresh machine to a wired install:
  *
- *   1. Print the privacy contract (no secrets ever leave the host)
- *   2. Pick the data home directory (graph / vectors / models / models cache)
- *   3. Run doctor (informational; report blocking issues without bailing)
- *   4. Materialise the P2P identity (DID + libp2p PeerId)
- *   5. Ensure system rooms `toolshed` and `research` exist + shareable
- *   6. Wire Claude Code hooks (delegates to `claude install`) and CLAUDE.md
- *   7. Strip ghost hook entries pointing at non-existent helper scripts
- *      (cleans up claude-flow / ruflo leftovers that crash on startup)
- *   8. Optionally index the current project (`wellinformed this me`)
- *   9. Optionally ingest past Claude Code sessions
- *  10. Start the daemon if it isn't already running
- *  11. Show P2P status — own peerId, known-peer count, dial guidance
- *  12. Print the "from now on" explainer + cheatsheet
+ *   1. Pick the data home directory
+ *   2. Run doctor (informational)
+ *   3. Materialise the libp2p identity
+ *   4. Ensure system rooms (toolshed + research) are shareable
+ *   5. Wire Claude Code hooks + strip ghost helper-script entries
+ *   6. Optionally ingest past Claude Code sessions (detached)
+ *   7. Start the daemon
+ *   8. Show P2P status + final cheatsheet
  *
- * The wizard re-uses the readlinePrompter from init.ts so prompt UX is
- * consistent with the room-creation flow. Non-interactive mode
- * (`--yes`) accepts every default and skips optional steps that would
- * block on a prompt.
+ * The UI uses @clack/prompts so the surface matches modern installer
+ * UX (bordered intro/outro, spinners with live status, clean Ctrl-C
+ * cancellation). Onboarding deliberately does NOT index the cwd —
+ * indexing is the user's intent, exposed as `wellinformed this`.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
+import {
+  intro,
+  outro,
+  text,
+  confirm,
+  spinner,
+  note,
+  log,
+  isCancel,
+  cancel,
+} from '@clack/prompts';
 import { formatError } from '../../domain/errors.js';
 import { loadOrCreateIdentity } from '../../infrastructure/peer-transport.js';
 import { ensureSystemRoomsShared, loadSharedRooms } from '../../infrastructure/share-store.js';
 import { loadPeers } from '../../infrastructure/peer-store.js';
 import { isRunning, readPid } from '../../daemon/loop.js';
 import { runtimePaths } from '../runtime.js';
-import { readlinePrompter, staticPrompter, type Prompter } from './init.js';
 import { claudeInstall } from './claude-install.js';
-import { thisCmd } from './this.js';
-import { trigger } from './trigger.js';
 
-// ─────────────── render helpers ─────────────
-
-const HR = '━'.repeat(60);
-
-const banner = (title: string): void => {
-  console.log('');
-  console.log(HR);
-  console.log(`  ${title}`);
-  console.log(HR);
-};
-
-const step = (n: number, total: number, title: string): void => {
-  console.log('');
-  console.log(`[${n}/${total}] ${title}`);
-};
-
-const ok = (msg: string): void => console.log(`  ✓ ${msg}`);
-const skip = (msg: string): void => console.log(`  · ${msg}`);
-const warn = (msg: string): void => console.log(`  ! ${msg}`);
-
-// ─────────────── flag parsing ───────────────
+// ─────────────── flags ─────────────────────
 
 interface Flags {
   readonly yes: boolean;
   readonly home?: string;
-  readonly noProject: boolean;
   readonly noSessions: boolean;
 }
 
 const parseFlags = (args: readonly string[]): Flags => {
   let yes = false;
   let home: string | undefined;
-  let noProject = false;
   let noSessions = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -78,29 +65,18 @@ const parseFlags = (args: readonly string[]): Flags => {
     if (a === '--yes' || a === '-y') yes = true;
     else if (a === '--home') home = next();
     else if (a.startsWith('--home=')) home = a.slice('--home='.length);
-    else if (a === '--no-project') noProject = true;
     else if (a === '--no-sessions') noSessions = true;
   }
-  return { yes, home, noProject, noSessions };
+  return { yes, home, noSessions };
 };
 
-// ─────────────── ghost-hook cleanup ─────────
+// ─────────────── ghost-hook cleanup ────────
 
 interface GhostRemoval {
   readonly event: string;
   readonly path: string;
 }
 
-/**
- * Walks `.claude/settings.json` and drops hook entries whose command
- * line references a `.claude/...` script that does not exist on disk.
- * Catches stale claude-flow / ruflo wiring that throws MODULE_NOT_FOUND
- * on every Claude Code event (the SessionStart / UserPromptSubmit /
- * PreToolUse spam in the user's screenshot).
- *
- * Conservative — only filters entries we can prove are broken. Leaves
- * unknown shapes (no command, no `.claude/` path) untouched.
- */
 const cleanGhostHooks = (
   settingsPath: string,
   projectDir: string,
@@ -125,10 +101,7 @@ const cleanGhostHooks = (
       if (typeof cmd !== 'string') continue;
       const matches = cmd.match(/\.claude\/[^"\s']+\.(?:cjs|mjs|sh|js)/g) ?? [];
       for (const rel of matches) {
-        const abs = join(projectDir, rel);
-        if (!existsSync(abs)) {
-          return true;
-        }
+        if (!existsSync(join(projectDir, rel))) return true;
       }
     }
     return false;
@@ -137,23 +110,19 @@ const cleanGhostHooks = (
   for (const event of Object.keys(hooks)) {
     const arr = hooks[event];
     if (!Array.isArray(arr)) continue;
-    const kept = arr.filter((entry) => {
+    hooks[event] = arr.filter((entry) => {
       if (!isBroken(entry)) return true;
       const inner = (entry as { hooks?: unknown[] }).hooks ?? [];
       for (const h of inner) {
         const cmd = (h as { command?: string })?.command ?? '';
         const m = cmd.match(/\.claude\/[^"\s']+\.(?:cjs|mjs|sh|js)/g) ?? [];
         for (const p of m) {
-          if (!existsSync(join(projectDir, p))) {
-            removed.push({ event, path: p });
-          }
+          if (!existsSync(join(projectDir, p))) removed.push({ event, path: p });
         }
       }
       return false;
     });
-    hooks[event] = kept;
   }
-
   if (removed.length > 0) {
     parsed.hooks = hooks;
     writeFileSync(settingsPath, JSON.stringify(parsed, null, 2));
@@ -161,187 +130,230 @@ const cleanGhostHooks = (
   return removed;
 };
 
-// ─────────────── steps ──────────────────────
+// ─────────────── cancel helper ─────────────
 
-const stepHome = async (prompter: Prompter, flags: Flags): Promise<string> => {
+const ensure = <T>(v: T | symbol): T => {
+  if (isCancel(v)) {
+    cancel('onboarding cancelled — run again whenever.');
+    process.exit(0);
+  }
+  return v as T;
+};
+
+// ─────────────── steps ─────────────────────
+
+const stepHome = async (flags: Flags): Promise<string> => {
   const def = flags.home ?? process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
   const chosen = flags.yes
     ? def
-    : await prompter.ask('Data home (graph / vectors / model cache)', def);
-
+    : ensure(
+        await text({
+          message: 'Data home',
+          placeholder: def,
+          initialValue: def,
+          validate: (v) => (v && v.trim() ? undefined : 'path required'),
+        }),
+      );
   process.env.WELLINFORMED_HOME = chosen;
   mkdirSync(chosen, { recursive: true });
-  ok(`home: ${chosen}`);
   if (chosen !== join(homedir(), '.wellinformed')) {
-    warn('non-default home — add this to your shell profile:');
-    console.log(`      export WELLINFORMED_HOME="${chosen}"`);
+    note(
+      `Add to your shell profile so future sessions agree:\n  export WELLINFORMED_HOME="${chosen}"`,
+      'non-default home',
+    );
   }
   return chosen;
 };
 
 const stepDoctor = (): void => {
-  // Doctor is heavy (spawns python, scans venv). Run it but tolerate
-  // failure — onboard is about wiring, not bootstrapping the venv.
-  try {
-    const r = spawnSync(process.execPath, [process.argv[1], 'doctor'], {
-      stdio: 'inherit',
-    });
-    if (r.status !== 0) {
-      warn(`doctor reported issues — run 'wellinformed doctor --fix' when convenient`);
-    } else {
-      ok('runtime healthy');
-    }
-  } catch (e) {
-    warn(`doctor: ${(e as Error).message}`);
+  const sp = spinner();
+  sp.start('checking runtime (Node, Python, venv, graphify)');
+  const r = spawnSync(process.execPath, [process.argv[1], 'doctor'], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (r.status === 0) {
+    sp.stop('runtime healthy');
+  } else {
+    sp.stop("runtime check reported issues — run 'wellinformed doctor --fix'");
   }
 };
 
 const stepIdentity = async (home: string): Promise<string | null> => {
-  const idPath = join(home, 'peer-identity.json');
-  const res = await loadOrCreateIdentity(idPath);
+  const sp = spinner();
+  sp.start('creating libp2p identity (Ed25519)');
+  const res = await loadOrCreateIdentity(join(home, 'peer-identity.json'));
   if (res.isErr()) {
-    warn(`identity: ${formatError(res.error)}`);
+    sp.stop(`identity failed: ${formatError(res.error)}`);
     return null;
   }
-  ok(`peerId: ${res.value.peerId}`);
+  sp.stop(`peer identity ready · ${res.value.peerId.slice(0, 24)}…`);
   return res.value.peerId;
 };
 
 const stepSystemRooms = async (home: string): Promise<void> => {
+  const sp = spinner();
+  sp.start('marking system rooms shareable');
   const r = await ensureSystemRoomsShared(join(home, 'shared-rooms.json'));
   if (r.isErr()) {
-    warn(`system rooms: ${formatError(r.error)}`);
+    sp.stop(`system rooms: ${formatError(r.error)}`);
     return;
   }
-  ok('toolshed (codebase, deps, git) — always on, P2P-shared');
-  ok('research (arxiv, hn, rss, web) — always on, P2P-shared');
+  sp.stop('system rooms ready: toolshed (code/deps/git), research (arxiv/hn/rss/web)');
 };
 
-const stepClaudeInstall = async (projectDir: string): Promise<readonly GhostRemoval[]> => {
+const stepClaudeInstall = async (projectDir: string): Promise<void> => {
   const settingsPath = join(projectDir, '.claude', 'settings.json');
+  const sp = spinner();
+  sp.start('cleaning broken hook entries from .claude/settings.json');
   const removed = cleanGhostHooks(settingsPath, projectDir);
   if (removed.length > 0) {
-    ok(`removed ${removed.length} broken hook entr${removed.length === 1 ? 'y' : 'ies'}`);
-    for (const r of removed) console.log(`     - ${r.event}: ${r.path}`);
+    sp.stop(`removed ${removed.length} broken hook entr${removed.length === 1 ? 'y' : 'ies'}`);
+    note(removed.map((r) => `${r.event}: ${r.path}`).join('\n'), 'cleaned (referenced files were missing)');
   } else {
-    skip('no broken hooks to clean');
+    sp.stop('no broken hooks to clean');
   }
-  await claudeInstall(['install']);
-  return removed;
+
+  const sp2 = spinner();
+  sp2.start('wiring PreToolUse / PostToolUse / SessionStart hooks');
+  // claudeInstall prints to stdout — silence it under the spinner.
+  const stdoutWrite = process.stdout.write.bind(process.stdout);
+  process.stdout.write = (() => true) as typeof process.stdout.write;
+  try {
+    await claudeInstall(['install']);
+  } finally {
+    process.stdout.write = stdoutWrite;
+  }
+  sp2.stop('Claude Code hooks wired (smart prefetch + auto-save + session summary)');
 };
 
-const stepIndexProject = async (
-  prompter: Prompter,
-  flags: Flags,
-  projectDir: string,
-): Promise<void> => {
-  if (flags.noProject) {
-    skip('skipped (--no-project)');
-    return;
-  }
-  const yes = flags.yes
-    ? true
-    : await prompter.confirm(`Index this project (${projectDir}) into your toolshed now?`, true);
-  if (!yes) {
-    skip('skipped — run `wellinformed this me` later');
-    return;
-  }
-  const code = await thisCmd(['me', '--root', projectDir]);
-  if (code !== 0) warn('project index returned non-zero');
-};
-
-const stepIngestSessions = async (prompter: Prompter, flags: Flags): Promise<void> => {
+/**
+ * Sessions ingest is a long, file-heavy walk over ~/.claude/projects.
+ * We launch it detached so the wizard never blocks, then either tail
+ * progress for a few seconds or hand control back with a status command.
+ */
+const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => {
   if (flags.noSessions) {
-    skip('skipped (--no-sessions)');
+    log.info('past Claude sessions — skipped (--no-sessions)');
     return;
   }
+  const explainer = [
+    'Reads every transcript under ~/.claude/projects/**/*.jsonl.',
+    'Each becomes a searchable node in the local-only "sessions" room.',
+    'Secrets pre-scan strips API keys / tokens / .env values before embed.',
+    "The 'sessions' room is hard-blocked from P2P sharing — stays local.",
+    '',
+    'Default is NO because re-walking can be heavy on the first run.',
+    "Skip if unsure; you can always run 'wellinformed trigger --room sessions' later.",
+  ].join('\n');
+  note(explainer, 'past Claude sessions');
+
   const yes = flags.yes
     ? false
-    : await prompter.confirm(
-        'Ingest past Claude Code sessions (~/.claude/projects/**/*.jsonl)? Stays local.',
-        false,
+    : ensure(
+        await confirm({
+          message: 'Ingest sessions now (detached, tail status afterwards)?',
+          initialValue: false,
+        }),
       );
   if (!yes) {
-    skip('skipped — run `wellinformed trigger --room sessions` later');
+    log.message('skipped — run `wellinformed trigger --room sessions` when convenient');
     return;
   }
-  const code = await trigger(['--room', 'sessions']);
-  if (code !== 0) warn('session ingest returned non-zero');
+
+  const logPath = join(home, 'sessions-ingest.log');
+  const child = spawn(
+    process.execPath,
+    [process.argv[1], 'trigger', '--room', 'sessions'],
+    {
+      detached: true,
+      stdio: ['ignore', 'inherit', 'inherit'],
+      env: { ...process.env, WELLINFORMED_HOME: home },
+    },
+  );
+  child.unref();
+
+  // Tail the sessions-state.json for ~10 seconds so the user sees
+  // progress. Then return control with a status hint.
+  const statePath = join(home, 'sessions-state.json');
+  const sp = spinner();
+  sp.start(`ingest pid=${child.pid} — tracking state file…`);
+  const start = Date.now();
+  const peek = (): string => {
+    if (!existsSync(statePath)) return 'warming up…';
+    try {
+      const stat = statSync(statePath);
+      const parsed = JSON.parse(readFileSync(statePath, 'utf8')) as {
+        files?: Record<string, { byteOffset?: number; lastLineNum?: number }>;
+      };
+      const files = parsed.files ?? {};
+      const fileCount = Object.keys(files).length;
+      const lines = Object.values(files).reduce((a, f) => a + (f.lastLineNum ?? 0), 0);
+      return `${fileCount} files · ${lines.toLocaleString()} lines · ${stat.size} B state`;
+    } catch {
+      return 'ingest in progress…';
+    }
+  };
+  while (Date.now() - start < 10_000) {
+    sp.message(peek());
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  sp.stop(`ingest still running in background (pid=${child.pid})`);
+  note(
+    `Track progress with:\n  wellinformed sessions status\n  tail -f ${logPath}\n\nThe daemon will pick up the new nodes once it starts.`,
+    'sessions ingest detached',
+  );
+  void logPath; // reserved for future stdout redirect
 };
 
 const stepDaemon = async (home: string): Promise<void> => {
   if (isRunning(home)) {
-    ok(`daemon already running (pid=${readPid(home)})`);
+    log.success(`daemon already running (pid=${readPid(home)})`);
     return;
   }
   const dist = join(dirname(process.argv[1]), '..', 'dist', 'cli', 'index.js');
-  const child = spawn(process.execPath, [existsSync(dist) ? dist : process.argv[1], 'daemon', '_run'], {
-    detached: true,
-    stdio: 'ignore',
-    env: { ...process.env },
-  });
+  const child = spawn(
+    process.execPath,
+    [existsSync(dist) ? dist : process.argv[1], 'daemon', '_run'],
+    { detached: true, stdio: 'ignore', env: { ...process.env } },
+  );
   child.unref();
-  ok(`daemon started (pid=${child.pid})`);
-  console.log(`     logs: ${join(home, 'daemon.log')}`);
+  log.success(`daemon started (pid=${child.pid}) · logs: ${join(home, 'daemon.log')}`);
 };
 
 const stepP2pStatus = async (home: string, peerId: string | null): Promise<void> => {
   const peers = await loadPeers(join(home, 'peers.json'));
   const known = peers.isOk() ? peers.value.peers.length : 0;
-
   const shared = await loadSharedRooms(join(home, 'shared-rooms.json'));
   const sharedCount = shared.isOk() ? shared.value.rooms.length : 0;
 
-  console.log(`  network`);
-  console.log(`     identity:    ${peerId ?? '<unknown>'}`);
-  console.log(`     known peers: ${known} dialled by daemon on connect`);
-  console.log(`     shared rooms: ${sharedCount} (toolshed + research always on)`);
-
+  const lines = [
+    `identity:     ${peerId ?? '<unknown>'}`,
+    `known peers:  ${known} (daemon dials these on connect)`,
+    `shared rooms: ${sharedCount} (toolshed + research always-on)`,
+  ];
   if (known === 0) {
-    warn('no peers yet — add one with: wellinformed peer add /ip4/<host>/tcp/<port>/p2p/<id>');
-    console.log('     (your graph still works fully offline; federation is opt-in.)');
+    lines.push('');
+    lines.push('No peers yet. Your graph works fully offline; federation is opt-in.');
+    lines.push('Add a bootstrap peer:');
+    lines.push('  wellinformed peer add /ip4/<host>/tcp/<port>/p2p/<id>');
   }
+  note(lines.join('\n'), 'P2P status');
 };
 
-const printOutro = (projectDir: string): void => {
-  banner('you are wired in');
-  console.log(`
-  what runs on every session, automatically:
-    · SessionStart: shows graph stats + last session's branch / final reply
-    · PreToolUse:   prefetches the graph before Glob / Grep / Read / WebSearch / WebFetch
-    · PostToolUse:  saves WebSearch / WebFetch results into the 'research' room
-    · daemon:       fetches sources, consolidates memory, syncs P2P rooms
+// ─────────────── usage + entry ─────────────
 
-  daily commands:
-    wellinformed this              index the current folder, keep it private
-    wellinformed this me           same (explicit)
-    wellinformed this everyone     index + share room with the P2P network
-    wellinformed ask "..."         semantic search across your graph
-    wellinformed trigger           refresh all rooms
-    wellinformed peer list         see who you talk to
-    wellinformed doctor            health check
-
-  privacy contract:
-    · everything stays under ${process.env.WELLINFORMED_HOME}
-    · the secrets gate runs on every shared node — flagged content is REFUSED
-    · 'this me' never leaves your machine; only 'this everyone' enters federation
-    · system rooms (toolshed, research) are shared metadata only, never raw secrets
-    · disable the network: wellinformed daemon stop
-`);
-  void projectDir;
-};
-
-// ─────────────── entry ──────────────────────
-
-const USAGE = `usage: wellinformed onboard [--yes] [--home DIR] [--no-project] [--no-sessions]
+const USAGE = `usage: wellinformed onboard [--yes] [--home DIR] [--no-sessions]
 
   --yes, -y       accept every default; skip optional prompts
   --home DIR      data home (graph + vectors + model cache); also via $WELLINFORMED_HOME
-  --no-project    skip indexing the current project
   --no-sessions   skip ingesting past Claude Code sessions
 
   Run once on a fresh machine. Sets up identity, system rooms, hooks,
-  daemon, and prints what wellinformed will do on every session.`;
+  daemon, and prints what wellinformed will do on every session.
+
+  Onboard does NOT index any folder. To index a project, cd into it and
+  run 'wellinformed this me' (private) or 'wellinformed this everyone'
+  (P2P-shared, secrets-audited).`;
 
 export const onboard = async (args: readonly string[]): Promise<number> => {
   if (args.includes('--help') || args.includes('-h') || args.includes('help')) {
@@ -350,48 +362,66 @@ export const onboard = async (args: readonly string[]): Promise<number> => {
   }
   const flags = parseFlags(args);
   const projectDir = process.cwd();
-  const prompter: Prompter = flags.yes ? staticPrompter([]) : readlinePrompter();
 
-  banner('wellinformed onboard');
-  console.log(`
-  CPU-local knowledge graph + opt-in P2P federation.
-  Nothing leaves this machine unless you say 'everyone'.
-  Secrets are scanned and refused at the share boundary, no override.
-`);
+  intro('wellinformed onboard');
+  note(
+    [
+      'CPU-local knowledge graph + opt-in P2P federation.',
+      'Nothing leaves this machine unless you say so explicitly.',
+      'Secrets are scanned and refused at the share boundary, no override.',
+    ].join('\n'),
+    'privacy contract',
+  );
 
-  const TOTAL = 9;
-  try {
-    step(1, TOTAL, 'choose data home');
-    const home = await stepHome(prompter, flags);
-    void runtimePaths(); // touch — surfaces invalid env early
+  log.step('1/8 · choose data home');
+  const home = await stepHome(flags);
+  void runtimePaths();
 
-    step(2, TOTAL, 'check runtime (doctor)');
-    stepDoctor();
+  log.step('2/8 · check runtime');
+  stepDoctor();
 
-    step(3, TOTAL, 'create P2P identity');
-    const peerId = await stepIdentity(home);
+  log.step('3/8 · create P2P identity');
+  const peerId = await stepIdentity(home);
 
-    step(4, TOTAL, 'system rooms');
-    await stepSystemRooms(home);
+  log.step('4/8 · system rooms');
+  await stepSystemRooms(home);
 
-    step(5, TOTAL, 'wire Claude Code hooks');
-    await stepClaudeInstall(projectDir);
+  log.step('5/8 · wire Claude Code hooks');
+  await stepClaudeInstall(projectDir);
 
-    step(6, TOTAL, 'index this project');
-    await stepIndexProject(prompter, flags, projectDir);
+  log.step('6/8 · past Claude sessions');
+  await stepIngestSessions(flags, home);
 
-    step(7, TOTAL, 'past Claude sessions');
-    await stepIngestSessions(prompter, flags);
+  log.step('7/8 · start daemon');
+  await stepDaemon(home);
 
-    step(8, TOTAL, 'start daemon');
-    await stepDaemon(home);
+  log.step('8/8 · P2P status');
+  await stepP2pStatus(home, peerId);
 
-    step(9, TOTAL, 'P2P status');
-    await stepP2pStatus(home, peerId);
-
-    printOutro(projectDir);
-    return 0;
-  } finally {
-    prompter.close();
-  }
+  note(
+    [
+      'Every Claude Code session, automatically:',
+      '  · SessionStart   shows graph stats + last session context',
+      '  · PreToolUse     prefetches the graph before Glob/Grep/Read/WebSearch',
+      '  · PostToolUse    saves WebSearch / WebFetch results into research room',
+      '  · daemon         fetches sources, consolidates memory, syncs P2P rooms',
+      '',
+      'Daily commands:',
+      '  wellinformed this              index the current folder, keep it private',
+      '  wellinformed this everyone     index + share with the P2P network',
+      '  wellinformed ask "..."         semantic search across your graph',
+      '  wellinformed trigger           refresh all rooms',
+      '  wellinformed peer list         see who you talk to',
+      '  wellinformed doctor            health check',
+      '',
+      'Privacy:',
+      `  · Everything stays under ${process.env.WELLINFORMED_HOME}`,
+      "  · 'this me' never leaves your machine",
+      "  · 'this everyone' enters the secrets-audit gate before federation",
+      "  · Stop the network at any time: wellinformed daemon stop",
+    ].join('\n'),
+    'you are wired in',
+  );
+  outro('done');
+  return 0;
 };
