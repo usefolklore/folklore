@@ -29,7 +29,9 @@ import { loadConfig } from '../infrastructure/config-loader.js';
 import { buildPatterns } from '../domain/sharing.js';
 import { ensureSystemRoomsShared } from '../infrastructure/share-store.js';
 import { asyncMutex, type AsyncMutex } from '../infrastructure/async-mutex.js';
-import type { IngestDeps } from '../application/ingest.js';
+import { fileEntityRegistry, type EntityRegistry } from '../infrastructure/entity-registry.js';
+import { extractMentions } from '../domain/entity-extract.js';
+import type { IngestDeps, MentionsExtractorPort } from '../application/ingest.js';
 
 export const wellinformedHome = (): string =>
   process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
@@ -148,6 +150,14 @@ export interface Runtime {
   readonly xml: XmlParserPort;
   readonly html: HtmlExtractor;
   readonly registry: SourceRegistry;
+  /**
+   * Canonical entity store. Source of truth for entity metadata —
+   * label, aliases, type, mention_count, first_seen, last_seen.
+   * Graph nodes with kind:'entity' are stubs; the renderer joins
+   * here on read. Single-write boundary; ingest pipeline only
+   * touches it via the MentionsExtractorPort.
+   */
+  readonly entityRegistry: EntityRegistry;
   /** A convenience packet of the fields ingest.ts needs. */
   readonly ingestDeps: IngestDeps;
   /**
@@ -211,7 +221,25 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
             },
           });
           const graphMutex = asyncMutex();
-          const ingestDeps: IngestDeps = { graphs, vectors, embedder, sources, registry, graphMutex };
+
+          // Entity registry — canonical store for entity metadata.
+          // Wired into the ingest pipeline via the MentionsExtractor
+          // port so the application layer doesn't need to import
+          // infrastructure/entity-registry directly.
+          const entityRegistry = fileEntityRegistry(join(paths.home, 'entities.json'));
+          const mentionsExtractor: MentionsExtractorPort = {
+            extract: (text: string) =>
+              extractMentions(text, {
+                resolveAlias: (s) => entityRegistry.resolve(s),
+                autoRegister: (input) => entityRegistry.register(input),
+              }),
+            touchMany: (ids) => { entityRegistry.touchMany(ids); },
+          };
+
+          const ingestDeps: IngestDeps = {
+            graphs, vectors, embedder, sources, registry,
+            graphMutex, mentionsExtractor,
+          };
           return {
             paths,
             graphs,
@@ -223,6 +251,7 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
             xml,
             html,
             registry,
+            entityRegistry,
             ingestDeps,
             graphMutex,
             close: () => vectors.close(),
