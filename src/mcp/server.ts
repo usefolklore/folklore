@@ -362,6 +362,67 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     },
   );
 
+  // ─────────────── recall ───────────────
+  // Entity-first lookup across every room. Resolves <name> to a
+  // canonical entity (registered alias OR heuristic auto-detected),
+  // returns every chunk that mentions it ranked by recency × decay.
+  // The complement to `ask` (semantic) and `search` (k-NN): when
+  // the agent has a CONCRETE name, recall is the right channel.
+  server.registerTool(
+    'recall',
+    {
+      description:
+        'Entity-first knowledge graph lookup. Given a name (e.g. "lemlist", a product / repo / concept), ' +
+        'returns every chunk in your graph that mentions it, ranked by recency × frequency across every room. ' +
+        'The complement to vector-similarity search: use this when the agent has a concrete object name in mind. ' +
+        'Returns empty hits when no entity is registered AND no heuristic detection has caught the name yet — ' +
+        'in that case the agent should fall back to `ask` or suggest `wellinformed entity add <name>`.',
+      inputSchema: {
+        name: z.string().describe('The entity name to recall (case-insensitive, matches any registered alias).'),
+        room: z.string().optional().describe('Restrict to a single room.'),
+        limit: z.number().int().min(1).max(100).default(20).describe('Max hits to return.'),
+      },
+    },
+    async ({ name, room, limit }) => {
+      const { fileEntityRegistry } = await import('../infrastructure/entity-registry.js');
+      const { recall } = await import('../application/recall.js');
+      const registry = fileEntityRegistry(join(wellinformedHome(), 'entities.json'));
+      const graphRes = await runtime.graphs.load();
+      if (graphRes.isErr()) return errText(graphRes.error);
+      const result = recall(
+        { registry, graph: graphRes.value },
+        { query: name, limit, room },
+      );
+      if (result.isErr()) {
+        if (result.error.type === 'EntityNotFound') {
+          return okJson({
+            query: name,
+            found: false,
+            hits: [],
+            hint: `No entity registered for "${name}". Register one with \`wellinformed entity add "${name}"\`, or run an ingest — heuristic detection picks up CamelCase identifiers and URL hosts automatically.`,
+          });
+        }
+        return errText({ type: 'GraphReadError', path: '<recall>', message: result.error.message });
+      }
+      const { entity, hits, total } = result.value;
+      return okJson({
+        query: name,
+        found: true,
+        entity: {
+          id: entity.id,
+          label: entity.label,
+          type: entity.type,
+          aliases: entity.aliases,
+          mention_count: entity.mention_count,
+          first_seen: entity.first_seen,
+          last_seen: entity.last_seen,
+        },
+        total,
+        hits,
+      });
+    },
+  );
+
   // ─────────────── graph_stats ──────────
 
   server.registerTool(
