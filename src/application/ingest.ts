@@ -36,7 +36,7 @@ import type { AppError } from '../domain/errors.js';
 import { chunk as chunkText } from '../domain/chunks.js';
 import type { ContentItem } from '../domain/content.js';
 import type { Graph, GraphEdge, GraphNode, Room } from '../domain/graph.js';
-import { getNode, upsertEdge } from '../domain/graph.js';
+import { getNode, upsertEdge, upsertNode as upsertNodePure } from '../domain/graph.js';
 import type { Source, SourceDescriptor, SourceRun, RoomRun } from '../domain/sources.js';
 import { emptyRun, forRoom } from '../domain/sources.js';
 import type { GraphRepository } from '../infrastructure/graph-repository.js';
@@ -44,8 +44,11 @@ import type { VectorIndex } from '../infrastructure/vector-index.js';
 import type { Embedder } from '../infrastructure/embedders.js';
 import type { SourcesConfig } from '../infrastructure/sources-config.js';
 import type { SourceRegistry } from '../infrastructure/sources/registry.js';
+import type { AsyncMutex } from '../infrastructure/async-mutex.js';
 import { hashContent } from '../infrastructure/http/fetcher.js';
-import { indexNode } from './use-cases.js';
+// indexNode use-case is no longer the per-chunk path (we batch
+// embed + upsert in indexChunksFor for an order-of-magnitude speedup);
+// kept exported in use-cases.ts for any single-node callers.
 
 // ─────────────────────── deps ─────────────────────────────
 
@@ -55,6 +58,18 @@ export interface IngestDeps {
   readonly embedder: Embedder;
   readonly sources: SourcesConfig;
   readonly registry: SourceRegistry;
+  /**
+   * Optional in-process graph-mutex. When supplied (daemon path),
+   * the load→upsert-all→save block inside indexChunksFor takes the
+   * lock so the tick loop and the job worker can't lose updates.
+   * Undefined paths (CLI standalone) rely on the cross-process file
+   * lock alone — single mutator at a time.
+   *
+   * Crucially this is at the inner block level, NOT at the job
+   * dispatch level — skipped items and embedding work happen
+   * outside the lock so the mutex window stays tiny.
+   */
+  readonly graphMutex?: AsyncMutex;
 }
 
 // ─────────────────────── ingestSource ─────────────────────
@@ -169,7 +184,16 @@ const classifyItem = (
   hashContent(item.text)
     .mapErr((e): AppError => e)
     .map((newHash): ItemDecision => {
-      const existing = getNode(graph, item.source_uri);
+      // Look up the existing node — try the source_uri first
+      // (single-chunk case where node.id === source_uri), then fall
+      // back to chunk-0 (multi-chunk case where the file's content
+      // hash lives on every chunk node). Without this fallback,
+      // every multi-chunk re-ingest looked like a brand-new item
+      // and re-embedded everything, breaking dedupe completely —
+      // one large markdown file would take ~30s on every save.
+      const existing =
+        getNode(graph, item.source_uri) ??
+        getNode(graph, `${item.source_uri}#chunk-0`);
       if (!existing) return { kind: 'new' };
       const oldHash = existing.content_sha256 as string | undefined;
       if (!oldHash) return { kind: 'updated', old_hash: '<missing>' };
@@ -194,9 +218,27 @@ const actOnDecision = (
 };
 
 /**
- * Split the item into chunks and call `indexNode` for each chunk.
- * Chunks share the parent's source_uri via the `source_uri` field
- * but each gets a unique id (`<source_uri>#chunk-<index>`).
+ * Index every chunk of one item — fast path. Was N graph load+save
+ * round-trips per item, now ONE per item:
+ *
+ *   1. Parallel `embedder.embed()` for all chunks at once. The
+ *      batchingEmbedder coalesces these into a single ONNX forward
+ *      pass (or a few, when chunk count > maxBatch). Sequential
+ *      dispatch via the old sequenceLazy path would have triggered
+ *      one ONNX call per chunk because each await resolves before
+ *      the next dispatch.
+ *
+ *   2. Vector upsert per chunk (sqlite-vec, ~5ms each — kept serial
+ *      because the underlying connection serializes anyway).
+ *
+ *   3. Single `graph.load()` → upsert all GraphNodes + next-chunk
+ *      edges in memory → single `graph.save()`. Was 2N load+save
+ *      cycles; now exactly 1. On a 16 MB graph.json, this alone
+ *      saves ~130 ms × (N − 1) per item.
+ *
+ * Body-text cap on GraphNode.summary preserved (so `ask` / MCP /
+ * smart-hook still render readable context). Edge-creation pass
+ * preserved (next_chunk traversal still works).
  */
 const indexChunksFor = (
   deps: IngestDeps,
@@ -207,24 +249,9 @@ const indexChunksFor = (
   const chunks = chunkText(item.text);
   if (chunks.length === 0) return okAsync(undefined);
 
-  const useCase = indexNode({
-    graphs: deps.graphs,
-    vectors: deps.vectors,
-    embedder: deps.embedder,
-  });
-
-  // Chunk-text body cap on the GraphNode. The hybrid path stores the
-  // full raw_text in FTS5 for BM25; the on-node copy is what `ask`
-  // (and the MCP `get_node` tool, and Claude's PreToolUse smart-hook)
-  // render as the answer-bearing context block. Without this field the
-  // surface returns metadata headers only — semantic routing works but
-  // the LLM has no text to ground on.
-  //
-  // Cap at 1500 chars per chunk: typical English-prose chunk is 500-
-  // 1000 chars, so 1500 fits whole chunks for nearly all ingesters
-  // while keeping graph.json bounded. The read-side (ask.ts:114,
-  // ipc-handlers.ts:174, MCP server.ts) further truncates to 400 chars
-  // for display, so the on-node value is the cap, not the floor.
+  // Cap at 1500 chars per chunk. The read-side (ask.ts, IPC
+  // ask handler, MCP get_node) truncates to 400 chars on display,
+  // so this is the storage cap, not the render floor.
   const BODY_MAX = 1500;
   const toNode = (chunk: { index: number; text: string }): GraphNode => ({
     id: chunks.length === 1 ? item.source_uri : `${item.source_uri}#chunk-${chunk.index}`,
@@ -239,45 +266,84 @@ const indexChunksFor = (
     chunk_index: chunk.index,
     chunk_count: chunks.length,
     kind: descriptor.kind,
-    // Persist body text so ask / MCP / smart-hook return readable
-    // context, not just metadata headers (Phase 41 fix).
     summary: chunk.text.length <= BODY_MAX ? chunk.text : chunk.text.slice(0, BODY_MAX),
   });
 
-  return sequenceLazy(
-    chunks.map((c) => () =>
-      useCase({
-        node: toNode(c),
-        text: c.text,
-        room: descriptor.room,
-        wing: descriptor.wing,
-      }).map(() => undefined),
-    ),
-  ).andThen(() => {
-    // Add sequential edges between chunks of multi-chunk articles so
-    // graph traversal can follow the reading order.
-    if (chunks.length <= 1) return okAsync<void, AppError>(undefined);
-    return deps.graphs
-      .load()
-      .mapErr((e): AppError => e)
-      .andThen((graph) => {
-        let g = graph;
-        for (let i = 0; i < chunks.length - 1; i++) {
-          const srcId = `${item.source_uri}#chunk-${i}`;
-          const tgtId = `${item.source_uri}#chunk-${i + 1}`;
-          const edge: GraphEdge = {
-            source: srcId,
-            target: tgtId,
-            relation: 'next_chunk',
-            confidence: 'EXTRACTED',
-            source_file: item.source_uri,
-          };
-          const result = upsertEdge(g, edge);
-          if (result.isOk()) g = result.value;
-        }
-        return deps.graphs.save(g).mapErr((e): AppError => e);
-      });
-  });
+  return ResultAsync.combine(
+    chunks.map((c) => deps.embedder.embed(c.text).mapErr((e): AppError => e)),
+  ).andThen((vectors) => {
+    // Vector upserts — serial (sqlite-vec connection serializes).
+    return chunks.reduce<ResultAsync<void, AppError>>(
+      (acc, c, i) =>
+        acc.andThen(() =>
+          deps.vectors
+            .upsert({
+              node_id: toNode(c).id,
+              room: descriptor.room,
+              wing: descriptor.wing,
+              vector: vectors[i],
+              raw_text: c.text,
+            })
+            .mapErr((e): AppError => e)
+            .map(() => undefined),
+        ),
+      okAsync<void, AppError>(undefined),
+    );
+  })
+    .andThen(() => {
+      // Single graph load+save — applies every node and edge for
+      // this item in one atomic write. The mutex (when supplied)
+      // wraps ONLY this block so embed work and skipped items
+      // don't serialize on it.
+      const mutate = (): ResultAsync<void, AppError> =>
+        deps.graphs
+          .load()
+          .mapErr((e): AppError => e)
+          .andThen((graph) => {
+            let g: Graph = graph;
+
+            // Upsert every chunk node
+            for (const c of chunks) {
+              const enriched: GraphNode = {
+                ...toNode(c),
+                room: descriptor.room,
+                wing: descriptor.wing,
+                embedding_id: toNode(c).id,
+              };
+              const r = upsertNodePure(g, enriched);
+              if (r.isOk()) g = r.value;
+            }
+
+            // next_chunk edges between consecutive chunks of multi-chunk articles
+            if (chunks.length > 1) {
+              for (let i = 0; i < chunks.length - 1; i++) {
+                const edge: GraphEdge = {
+                  source: `${item.source_uri}#chunk-${i}`,
+                  target: `${item.source_uri}#chunk-${i + 1}`,
+                  relation: 'next_chunk',
+                  confidence: 'EXTRACTED',
+                  source_file: item.source_uri,
+                };
+                const r = upsertEdge(g, edge);
+                if (r.isOk()) g = r.value;
+              }
+            }
+
+            return deps.graphs.save(g).mapErr((e): AppError => e);
+          });
+
+      if (!deps.graphMutex) return mutate();
+      return ResultAsync.fromPromise(
+        deps.graphMutex.runExclusive(async () => {
+          const r = await mutate();
+          if (r.isErr()) throw r.error;
+        }),
+        (e): AppError =>
+          e instanceof Error
+            ? { type: 'GraphWriteError', path: '<runtime>', message: e.message }
+            : { type: 'GraphWriteError', path: '<runtime>', message: String(e) },
+      );
+    });
 };
 
 /**

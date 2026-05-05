@@ -11,10 +11,14 @@
  */
 
 import { dirname, isAbsolute } from 'node:path';
+import { readFileSync, statSync } from 'node:fs';
+import { okAsync } from 'neverthrow';
+import type { AppError } from '../domain/errors.js';
 import { formatError } from '../domain/errors.js';
 import type { Job } from '../domain/job.js';
 import type { Runtime } from '../cli/runtime.js';
-import type { SourceDescriptor } from '../domain/sources.js';
+import type { Source, SourceDescriptor } from '../domain/sources.js';
+import type { ContentItem } from '../domain/content.js';
 import { triggerRoom, ingestSource } from '../application/ingest.js';
 
 export interface RunnerDeps {
@@ -34,42 +38,74 @@ const runIngestRoom = async (deps: RunnerDeps, room: string): Promise<string> =>
 };
 
 /**
- * Re-ingest a single file inside a known room. Builds a one-shot
- * codebase descriptor scoped to that file's parent so the existing
- * codebase adapter does the work. The descriptor is ephemeral (not
- * persisted to sources.json) — same pattern as `wellinformed this`.
+ * Re-ingest a single file inside a known room. Reads the file directly,
+ * builds a synthetic ContentItem, and routes through the chunk-based
+ * ingest pipeline — bypassing the codebase adapter's directory walk
+ * entirely.
+ *
+ * Was: walked the parent directory and let content-hash dedupe skip
+ * siblings. For a 200-file dir, 200 statSync + 200 hash compares per
+ * editor save. Bursty workloads (npm install touching package-lock,
+ * git checkout, watch-mode rebuild) would queue N jobs each redoing
+ * O(N) sibling walks → O(N²) on a single repo edit.
+ *
+ * Now: O(1) per save. Just the file we got the change event for.
  */
 const runIngestFile = async (
   deps: RunnerDeps,
   room: string,
   path: string,
 ): Promise<string> => {
-  // Reject relative / empty paths — the daemon's cwd is unrelated to
-  // whichever folder the user is editing. The watcher itself emits
-  // absolute paths; the IPC submit-job handler is the only other
-  // ingress and now also validates.
   if (!isAbsolute(path) || path === '/') {
     throw new Error(`ingest:file refused — non-absolute or root path: ${path}`);
   }
-  // Scope to the file's parent directory and rely on content-hash
-  // dedupe (decideForItem) to skip every sibling. Walking siblings
-  // is O(siblings) statSync + hash compares — cheap, idempotent.
-  // dirname() is platform-correct (was previously a unix-only regex
-  // that broke at the filesystem root and on Windows).
-  const root = dirname(path);
+
+  // Read the file. Skip cleanly when it was deleted between the
+  // watcher event and the worker pulling the job.
+  let text: string;
+  let mtime: Date;
+  try {
+    const buf = readFileSync(path, 'utf8');
+    text = buf;
+    mtime = statSync(path).mtime;
+  } catch (e) {
+    return `file=${path} room=${room} skipped (${(e as Error).message})`;
+  }
+
+  // Skip empty / huge files — embedding them is wasted work, and the
+  // codebase adapter already filters by extension at the directory
+  // walk; here we re-apply a size sanity check.
+  const MAX_FILE_BYTES = 2_000_000;
+  if (text.length === 0) return `file=${path} room=${room} skipped (empty)`;
+  if (text.length > MAX_FILE_BYTES) {
+    return `file=${path} room=${room} skipped (>${MAX_FILE_BYTES}B)`;
+  }
+
+  // Build a synthetic single-item Source so the existing chunk
+  // pipeline (chunk text → batched embed → single graph save) does
+  // the work. The descriptor's source_uri is the file path; the
+  // ingest pipeline's content-hash dedupe will skip if the file
+  // hasn't actually changed since last index.
+  const item: ContentItem = {
+    source_uri: `file://${path}`,
+    title: path,
+    text,
+    metadata: { kind: 'ingest:file-watch', mtime: mtime.toISOString() },
+  };
   const desc: SourceDescriptor = {
     id: `${room}-watch-${path}`,
     kind: 'codebase',
     room,
     enabled: true,
-    config: { root },
+    config: { root: dirname(path) },
   };
-  const built = deps.runtime.registry.buildAll([desc]);
-  if (built.errors.length > 0 || built.sources.length === 0) {
-    throw new Error(`ingest:file ${path} — ${built.errors.map(formatError).join('; ')}`);
-  }
+  const synthSource: Source = {
+    descriptor: desc,
+    fetch: () => okAsync<readonly ContentItem[], AppError>([item]),
+  };
+
   const ingest = ingestSource(deps.runtime.ingestDeps);
-  const r = await ingest(built.sources[0]);
+  const r = await ingest(synthSource);
   if (r.isErr()) throw new Error(`ingest:file ${path} — ${formatError(r.error)}`);
   return `file=${path} room=${room} new=${r.value.items_new} updated=${r.value.items_updated} skipped=${r.value.items_skipped}`;
 };
@@ -136,28 +172,27 @@ const runIngestProject = async (
 // ─────────────── dispatch ──────────────────
 
 /**
- * Build the per-job dispatcher. Each job's critical section runs
- * inside `runtime.graphMutex.runExclusive(...)` so the daemon's
- * tick loop and the job worker can't interleave their load → mutate
- * → save sequences and lose updates. The cross-process write lock
- * (process-lock.ts) protects against OTHER wellinformed processes;
- * this mutex covers the in-process tick + worker pair.
+ * Build the per-job dispatcher. The mutex now lives at a finer
+ * granularity — inside indexChunksFor's load→upsert→save block — so
+ * skipped items, embed work, and vector upserts run lock-free. This
+ * keeps the mutex window tiny (~80ms graph save) instead of holding
+ * the gate for the entire job lifetime, which under burst load
+ * (boot reconciliation enqueues hundreds of jobs) was queueing
+ * skipped no-op jobs behind one another for tens of seconds each.
  */
 export const buildJobRunner = (deps: RunnerDeps) =>
   async (job: Job): Promise<string> => {
     const p = job.payload;
-    return deps.runtime.graphMutex.runExclusive(async (): Promise<string> => {
-      switch (p.kind) {
-        case 'ingest:room':    return runIngestRoom(deps, p.room);
-        case 'ingest:file':    return runIngestFile(deps, p.room, p.path);
-        case 'ingest:session': return runIngestSession(deps, p.path);
-        case 'ingest:project': return runIngestProject(deps, p.room, p.root, p.maxCommits ?? 50, p.includeDev ?? true);
-        default: {
-          const _exhaustive: never = p;
-          void _exhaustive;
-          throw new Error(`unknown job kind: ${(p as { kind: string }).kind}`);
-        }
+    switch (p.kind) {
+      case 'ingest:room':    return runIngestRoom(deps, p.room);
+      case 'ingest:file':    return runIngestFile(deps, p.room, p.path);
+      case 'ingest:session': return runIngestSession(deps, p.path);
+      case 'ingest:project': return runIngestProject(deps, p.room, p.root, p.maxCommits ?? 50, p.includeDev ?? true);
+      default: {
+        const _exhaustive: never = p;
+        void _exhaustive;
+        throw new Error(`unknown job kind: ${(p as { kind: string }).kind}`);
       }
-    });
+    }
   };
 

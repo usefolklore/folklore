@@ -210,8 +210,8 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
               nowMs: () => Date.now(),
             },
           });
-          const ingestDeps: IngestDeps = { graphs, vectors, embedder, sources, registry };
           const graphMutex = asyncMutex();
+          const ingestDeps: IngestDeps = { graphs, vectors, embedder, sources, registry, graphMutex };
           return {
             paths,
             graphs,

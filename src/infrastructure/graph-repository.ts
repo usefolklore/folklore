@@ -29,20 +29,57 @@ export interface GraphRepository {
 }
 
 /**
- * File-backed implementation. Stateless — each call re-reads or
- * re-writes the file. In-memory cache layers can wrap this if
- * hot-path performance ever matters.
+ * File-backed implementation with a short-lived in-memory cache.
+ *
+ * graph.json on a real install is 10-50 MB; JSON.parse of that on
+ * every load() costs 50-300 ms, and under burst ingest (boot
+ * reconciliation enqueues hundreds of `ingest:file` jobs that each
+ * call load() to dedupe by content_sha256) those parses dominate.
+ *
+ * Cache invariants:
+ *   - Hits within CACHE_TTL_MS return the in-memory Graph directly
+ *     (no I/O, no parse).
+ *   - Every save() writes through and overwrites the cache, so a
+ *     subsequent load() sees the just-written state immediately.
+ *   - On any read or parse error, the cache is cleared and the
+ *     next load re-reads from disk.
+ *
+ * The TTL is short (200ms) on purpose: any caller that mutates the
+ * graph through save() invalidates immediately; the TTL only
+ * affects READ-ONLY callers that happen to call load() multiple
+ * times in quick succession (the dedupe path, search ranking, etc.).
+ *
+ * In-process only — the cross-process write lock guarantees no
+ * other process is mutating the file while ours holds the lock,
+ * so a stale cache is impossible during a held lock.
  */
+const CACHE_TTL_MS = 200;
+
 export const fileGraphRepository = (path: string): GraphRepository => {
+  let cache: { graph: Graph; ts: number } | null = null;
+
   const load = (): ResultAsync<Graph, GraphError> => {
-    if (!existsSync(path)) return okAsync(empty());
-    return ResultAsync.fromPromise(readFile(path, 'utf8'), (e) =>
-      GraphError.readError(path, (e as Error).message),
-    ).andThen((text) => {
+    const now = Date.now();
+    if (cache && now - cache.ts < CACHE_TTL_MS) {
+      return okAsync(cache.graph);
+    }
+    if (!existsSync(path)) {
+      const g = empty();
+      cache = { graph: g, ts: now };
+      return okAsync(g);
+    }
+    return ResultAsync.fromPromise(readFile(path, 'utf8'), (e) => {
+      cache = null;
+      return GraphError.readError(path, (e as Error).message);
+    }).andThen((text) => {
       try {
         const parsed = JSON.parse(text);
-        return fromJson(parsed, path);
+        return fromJson(parsed, path).map((g) => {
+          cache = { graph: g, ts: Date.now() };
+          return g;
+        });
       } catch (e) {
+        cache = null;
         return errAsync(GraphError.parseError(path, (e as Error).message));
       }
     });
@@ -54,8 +91,13 @@ export const fileGraphRepository = (path: string): GraphRepository => {
       const tmp = `${path}.tmp`;
       writeFileSync(tmp, JSON.stringify(toJson(graph), null, 2));
       renameSync(tmp, path);
+      // Write-through: the just-saved graph IS the freshest state.
+      // Subsequent load() returns it without re-reading + re-parsing
+      // the file we just wrote.
+      cache = { graph, ts: Date.now() };
       return okAsync(undefined);
     } catch (e) {
+      cache = null;
       return errAsync(GraphError.writeError(path, (e as Error).message));
     }
   };
