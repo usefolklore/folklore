@@ -341,6 +341,9 @@ const submitJobHandler = (queue: JobQueue): IpcHandler<Runtime> =>
     } else if (kind === 'ingest:project') {
       if (!rest[0] || !rest[1]) payload = 'usage: submit ingest:project <room> <root>';
       else payload = { kind: 'ingest:project', room: rest[0], root: rest[1] };
+    } else if (kind === 'ingest:batch') {
+      if (!rest[0] || rest.length < 2) payload = 'usage: submit ingest:batch <room> <path1> [path2 ...]';
+      else payload = { kind: 'ingest:batch', room: rest[0], paths: rest.slice(1) };
     } else {
       payload = `unknown job kind: ${kind ?? '<missing>'}`;
     }
@@ -377,9 +380,13 @@ const jobsListHandler = (queue: JobQueue): IpcHandler<Runtime> =>
   };
 
 const jobsClearHandler = (queue: JobQueue): IpcHandler<Runtime> =>
-  async (): Promise<HandlerResult> => {
-    const removed = queue.clearTerminal();
-    return { stdout: `cleared ${removed} terminal job(s)\n`, exit: 0 };
+  async (args): Promise<HandlerResult> => {
+    const all = args.includes('--all');
+    const removed = all ? queue.clearAll() : queue.clearTerminal();
+    return {
+      stdout: `cleared ${removed} ${all ? 'queued+terminal' : 'terminal'} job(s)\n`,
+      exit: 0,
+    };
   };
 
 // ─────────────── registry ───────────────

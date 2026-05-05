@@ -24,7 +24,7 @@ const USAGE = `usage: wellinformed jobs <sub>
 
   list [--json] [--live]   show queued + running + recent terminal
   watch                    refresh list every second (Ctrl-C to exit)
-  clear                    drop terminal (done/failed) entries`;
+  clear [--all]            drop terminal entries (or all incl queued)`;
 
 const checkDaemon = (): number | null => {
   const paths = runtimePaths();
@@ -80,10 +80,11 @@ const watch = async (): Promise<number> => {
   return 0;
 };
 
-const clear = async (): Promise<number> => {
+const clear = async (args: readonly string[]): Promise<number> => {
   const code = checkDaemon();
   if (code !== null) return code;
-  const out = await ipcCallLines('jobs-clear', []);
+  const ipcArgs = args.includes('--all') ? ['--all'] : [];
+  const out = await ipcCallLines('jobs-clear', ipcArgs);
   if (out === null) return 1;
   process.stdout.write(out);
   return 0;
@@ -98,7 +99,7 @@ export const jobs = async (args: readonly string[]): Promise<number> => {
   switch (sub) {
     case 'list':  return list(rest);
     case 'watch': return watch();
-    case 'clear': return clear();
+    case 'clear': return clear(rest);
     default:
       console.error(`jobs: unknown subcommand '${sub}'`);
       console.error(USAGE);

@@ -21,8 +21,20 @@ import type { JobQueue } from './job-queue.js';
 import type { WatchTarget } from '../infrastructure/watch-targets.js';
 import { loadWatchTargets, stampWatchTargetScan } from '../infrastructure/watch-targets.js';
 
-const FILE_DEBOUNCE_MS = 500;
+/**
+ * Per-root debounce window. Watchers buffer every changed path
+ * during this window, then emit ONE `ingest:batch` with the deduped
+ * path list. 1.2s captures editor save bursts (vim swap, IDE
+ * atomic-rename) and bigger workflows like `git checkout` /
+ * `npm install`'s package-lock churn into a single job.
+ */
+const BATCH_DEBOUNCE_MS = 1200;
 const SESSION_DEBOUNCE_MS = 2000;
+/** Cap a single batch at this many paths — beyond it, flush early
+ * and start a new window. Keeps a single ingest:batch payload
+ * bounded so the queue + JSON serialization stay sane on a
+ * `git checkout` of 5,000+ files. */
+const MAX_BATCH_PATHS = 200;
 
 // Paths chokidar should never even consider.
 const FILE_IGNORE: readonly RegExp[] = [
@@ -101,20 +113,43 @@ export const startFileWatchers = (deps: FileWatcherDeps): FileWatcherHandle => {
   const targets = loadWatchTargets(join(deps.homePath, 'watch-targets.json'));
 
   const watchers: FSWatcher[] = [];
-  // Per-target debounce timers — keyed by path.
-  const fileTimers = new Map<string, NodeJS.Timeout>();
+
+  // Per-target batching state. Each watch-target accumulates changed
+  // paths during a 1.2s debounce window and flushes a single
+  // ingest:batch job. A `git checkout` that touches 800 files
+  // produces ONE job, not 800.
+  interface BatchState {
+    readonly target: WatchTarget;
+    paths: Set<string>;
+    timer: NodeJS.Timeout | null;
+  }
+  const batches = new Map<string, BatchState>();
+
+  const flush = (state: BatchState): void => {
+    if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+    if (state.paths.size === 0) return;
+    const paths = Array.from(state.paths);
+    state.paths = new Set();
+    deps.queue.submit({ kind: 'ingest:batch', room: state.target.room, paths });
+    log(`watch: queued ingest:batch room=${state.target.room} paths=${paths.length}`);
+  };
 
   const enqueueFile = (target: WatchTarget, path: string): void => {
-    const prev = fileTimers.get(path);
-    if (prev) clearTimeout(prev);
-    fileTimers.set(
-      path,
-      setTimeout(() => {
-        fileTimers.delete(path);
-        deps.queue.submit({ kind: 'ingest:file', room: target.room, path });
-        log(`watch: queued ingest:file ${path} (room=${target.room})`);
-      }, FILE_DEBOUNCE_MS),
-    );
+    const key = `${target.room}:${target.root}`;
+    let state = batches.get(key);
+    if (!state) {
+      state = { target, paths: new Set(), timer: null };
+      batches.set(key, state);
+    }
+    state.paths.add(path);
+    // Flush early when the window saturates — keeps one batch
+    // payload bounded under bursts like a 5,000-file git checkout.
+    if (state.paths.size >= MAX_BATCH_PATHS) {
+      flush(state);
+      return;
+    }
+    if (state.timer) clearTimeout(state.timer);
+    state.timer = setTimeout(() => flush(state!), BATCH_DEBOUNCE_MS);
   };
 
   const watchTargetsPath = join(deps.homePath, 'watch-targets.json');
@@ -125,21 +160,23 @@ export const startFileWatchers = (deps: FileWatcherDeps): FileWatcherHandle => {
       continue;
     }
 
-    // Boot-time reconciliation — find files modified since this
-    // target's last_scan_at and enqueue them. Closes the gap where
-    // the daemon was off (or the wizard told the user to restart it
-    // to pick up a new target) and editor saves during that window
-    // were silently lost.
+    // Boot-time reconciliation — collect files modified since this
+    // target's last_scan_at and enqueue ingest:batch jobs in chunks
+    // of MAX_BATCH_PATHS. One job per N paths instead of one job
+    // per file: the difference between 4 jobs and 800 jobs on a
+    // typical post-restart catch-up.
     const sinceMs = t.last_scan_at ? Date.parse(t.last_scan_at) : 0;
-    let caughtUp = 0;
+    const caughtUp: string[] = [];
     walkFiles(t.root, (path, mtimeMs) => {
-      if (mtimeMs > sinceMs) {
-        deps.queue.submit({ kind: 'ingest:file', room: t.room, path });
-        caughtUp++;
-      }
+      if (mtimeMs > sinceMs) caughtUp.push(path);
     });
-    if (caughtUp > 0) {
-      log(`watch: catch-up for ${t.root} (room=${t.room}) — ${caughtUp} file(s) since ${t.last_scan_at ?? '<never>'}`);
+    if (caughtUp.length > 0) {
+      for (let i = 0; i < caughtUp.length; i += MAX_BATCH_PATHS) {
+        const chunk = caughtUp.slice(i, i + MAX_BATCH_PATHS);
+        deps.queue.submit({ kind: 'ingest:batch', room: t.room, paths: chunk });
+      }
+      const batches = Math.ceil(caughtUp.length / MAX_BATCH_PATHS);
+      log(`watch: catch-up for ${t.root} (room=${t.room}) — ${caughtUp.length} file(s) in ${batches} batch(es) since ${t.last_scan_at ?? '<never>'}`);
     }
     // Stamp the scan so the next boot's catch-up window starts here.
     // Done BEFORE chokidar starts so concurrent live events still
@@ -192,8 +229,10 @@ export const startFileWatchers = (deps: FileWatcherDeps): FileWatcherHandle => {
   }
 
   const stop = async (): Promise<void> => {
-    for (const t of fileTimers.values()) clearTimeout(t);
-    fileTimers.clear();
+    for (const state of batches.values()) {
+      if (state.timer) clearTimeout(state.timer);
+    }
+    batches.clear();
     if (sessionTimer.handle) clearTimeout(sessionTimer.handle);
     await Promise.all(watchers.map((w) => w.close()));
   };

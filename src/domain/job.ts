@@ -11,7 +11,12 @@
  * no-op except for source_uri additions and freshness updates.
  */
 
-export type JobKind = 'ingest:room' | 'ingest:file' | 'ingest:session' | 'ingest:project';
+export type JobKind =
+  | 'ingest:room'
+  | 'ingest:file'
+  | 'ingest:session'
+  | 'ingest:project'
+  | 'ingest:batch';
 
 export type JobStatus = 'queued' | 'running' | 'done' | 'failed';
 
@@ -70,11 +75,36 @@ export interface IngestProjectPayload {
   readonly includeDev?: boolean;  // default true
 }
 
+/**
+ * Batched file ingest — coalesces N file events into ONE job.
+ *
+ * Why this exists: a `git checkout` of 800 files, an `npm install`
+ * touching package-lock + node_modules-but-ignored, an editor's
+ * find-and-replace across 50 files, all enqueued one ingest:file
+ * per path under the old design. With single-worker semantics that
+ * produced 10+ minute backlogs that drained at ~1 job/sec.
+ *
+ * The watcher buffers paths during a 1-2 second debounce window
+ * and emits a single ingest:batch with the deduped path list. The
+ * runner processes them under a single graph load+save (instead of
+ * one save per file).
+ *
+ * Boot reconciliation also uses this — instead of enqueueing every
+ * mtime-newer file as a separate ingest:file, it submits one
+ * ingest:batch per watch-target.
+ */
+export interface IngestBatchPayload {
+  readonly kind: 'ingest:batch';
+  readonly room: string;
+  readonly paths: readonly string[];   // absolute paths
+}
+
 export type JobPayload =
   | IngestRoomPayload
   | IngestFilePayload
   | IngestSessionPayload
-  | IngestProjectPayload;
+  | IngestProjectPayload
+  | IngestBatchPayload;
 
 export interface Job extends JobBase {
   readonly payload: JobPayload;
