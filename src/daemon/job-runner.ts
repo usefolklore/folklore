@@ -12,13 +12,17 @@
 
 import { dirname, isAbsolute } from 'node:path';
 import { readFileSync, statSync } from 'node:fs';
-import { okAsync } from 'neverthrow';
+import { okAsync, ResultAsync } from 'neverthrow';
 import type { AppError } from '../domain/errors.js';
 import { formatError } from '../domain/errors.js';
 import type { Job } from '../domain/job.js';
 import type { Runtime } from '../cli/runtime.js';
 import type { Source, SourceDescriptor } from '../domain/sources.js';
 import type { ContentItem } from '../domain/content.js';
+import type { Graph, GraphEdge, GraphNode } from '../domain/graph.js';
+import { getNode, upsertEdge, upsertNode as upsertNodePure } from '../domain/graph.js';
+import { chunk as chunkText } from '../domain/chunks.js';
+import { hashContent } from '../infrastructure/http/fetcher.js';
 import { triggerRoom, ingestSource } from '../application/ingest.js';
 
 export interface RunnerDeps {
@@ -128,21 +132,41 @@ const runIngestSession = async (
 };
 
 /**
- * Batched file ingest — N paths, ONE pass through the chunk
- * pipeline. Coalesces a debounced watcher window or a boot
- * reconciliation walk into a single job that:
+ * Batched file ingest — N paths, ONE graph load + ONE graph save
+ * covering every item.
  *
- *   - reads every file (skipping deleted/empty/oversized),
- *   - builds one synthetic Source emitting all ContentItems,
- *   - lets the chunk pipeline batch-embed across files
- *     (so a 50-file batch fires fewer ONNX passes than 50
- *     individual jobs would, and shares the graph cache),
- *   - returns one summary line for the entire batch.
+ * Bypasses the per-item ingestSource → indexChunksFor pipeline
+ * (which saves the graph once per item) and runs the equivalent
+ * work directly:
  *
- * Skipped (unchanged) files don't pay an embed; the existing
- * content-hash dedupe in classifyItem catches them.
+ *   1. Read every file, build ContentItems (skip empty/oversized/missing).
+ *   2. Load graph ONCE under the mutex (cached if a recent load happened).
+ *   3. Per item: hash, dedupe-classify (uses multi-chunk fallback),
+ *      keep only items that need work.
+ *   4. Chunk every kept item.
+ *   5. Parallel-embed ALL chunks across the entire batch in one
+ *      shot. The batchingEmbedder coalesces into ⌈N/32⌉ ONNX
+ *      passes — much fewer than per-item ingest would fire.
+ *   6. Vector upserts (serial — sqlite-vec is single-writer).
+ *   7. Apply every chunk node + next_chunk edge into the in-memory
+ *      Graph.
+ *   8. Save ONCE.
+ *
+ * For an 8-file batch on a 16 MB graph, the old per-item path paid
+ * 8 × ~80 ms = 640 ms of graph saves alone. The new path pays one
+ * ~80 ms save for the whole batch.
  */
 const MAX_BATCH_FILE_BYTES = 2_000_000;
+const BODY_MAX = 1500;
+
+interface BatchItem {
+  readonly source_uri: string;
+  readonly title: string;
+  readonly text: string;
+  readonly content_sha256: string;
+  readonly mtime: string;
+}
+
 const runIngestBatch = async (
   deps: RunnerDeps,
   room: string,
@@ -150,9 +174,8 @@ const runIngestBatch = async (
 ): Promise<string> => {
   if (paths.length === 0) return `room=${room} paths=0 (empty)`;
 
-  // Read every file into memory, skipping anything we can't or
-  // shouldn't index. Each survivor becomes one ContentItem.
-  const items: ContentItem[] = [];
+  // 1. Read files
+  const itemsRaw: ContentItem[] = [];
   let skippedRead = 0;
   let skippedSize = 0;
   for (const path of paths) {
@@ -162,7 +185,7 @@ const runIngestBatch = async (
       if (text.length === 0) { skippedSize++; continue; }
       if (text.length > MAX_BATCH_FILE_BYTES) { skippedSize++; continue; }
       const mtime = statSync(path).mtime.toISOString();
-      items.push({
+      itemsRaw.push({
         source_uri: `file://${path}`,
         title: path,
         text,
@@ -172,27 +195,158 @@ const runIngestBatch = async (
       skippedRead++;
     }
   }
-
-  if (items.length === 0) {
+  if (itemsRaw.length === 0) {
     return `room=${room} paths=${paths.length} skipped_read=${skippedRead} skipped_size=${skippedSize}`;
   }
 
-  const desc: SourceDescriptor = {
-    id: `${room}-batch-${Date.now()}`,
-    kind: 'codebase',
-    room,
-    enabled: true,
-    config: { root: '<batch>' },
-  };
-  const synthSource: Source = {
-    descriptor: desc,
-    fetch: () => okAsync<readonly ContentItem[], AppError>(items),
+  // 2. Hash every item (parallel — pure CPU on small inputs)
+  const hashed: BatchItem[] = await Promise.all(
+    itemsRaw.map(async (it) => {
+      const r = await hashContent(it.text);
+      if (r.isErr()) throw new Error(`batch hash error: ${formatError(r.error)}`);
+      return {
+        source_uri: it.source_uri,
+        title: it.title,
+        text: it.text,
+        content_sha256: r.value,
+        mtime: typeof it.metadata?.mtime === 'string' ? it.metadata.mtime : new Date().toISOString(),
+      };
+    }),
+  );
+
+  // 3. Single graph load (cached) — classify each item against the
+  // current state, partition into work / skip. The mutex guards the
+  // load+save block; the embed and vector work happen lock-free.
+  const mutex = deps.runtime.ingestDeps.graphMutex;
+  let newCount = 0;
+  let updatedCount = 0;
+  let skippedDedupe = 0;
+
+  const work = async (): Promise<void> => {
+    const graphRes = await deps.runtime.graphs.load();
+    if (graphRes.isErr()) throw new Error(`batch load: ${formatError(graphRes.error)}`);
+    const graphSnapshot = graphRes.value;
+
+    interface KeptItem extends BatchItem {
+      readonly chunks: readonly { readonly index: number; readonly text: string }[];
+      readonly status: 'new' | 'updated';
+    }
+    const kept: KeptItem[] = [];
+
+    for (const it of hashed) {
+      const existing =
+        getNode(graphSnapshot, it.source_uri) ??
+        getNode(graphSnapshot, `${it.source_uri}#chunk-0`);
+      const oldHash = (existing?.content_sha256 as string | undefined) ?? null;
+      if (existing && oldHash === it.content_sha256) {
+        skippedDedupe++;
+        continue;
+      }
+      const chunks = chunkText(it.text);
+      if (chunks.length === 0) {
+        skippedDedupe++;
+        continue;
+      }
+      kept.push({
+        ...it,
+        chunks,
+        status: existing ? 'updated' : 'new',
+      });
+      if (existing) updatedCount++;
+      else newCount++;
+    }
+
+    if (kept.length === 0) return;  // nothing to do; no save needed
+
+    // 5. Parallel-embed every chunk across the entire batch.
+    // Flat array of (item_idx, chunk_idx, text) for stable ordering.
+    interface FlatChunk {
+      readonly itemIdx: number;
+      readonly chunkIdx: number;
+      readonly text: string;
+    }
+    const flat: FlatChunk[] = [];
+    kept.forEach((k, i) => {
+      k.chunks.forEach((c) => flat.push({ itemIdx: i, chunkIdx: c.index, text: c.text }));
+    });
+
+    const embedRes = await ResultAsync.combine(
+      flat.map((f) => deps.runtime.ingestDeps.embedder.embed(f.text)),
+    );
+    if (embedRes.isErr()) throw new Error(`batch embed: ${formatError(embedRes.error)}`);
+    const vectors = embedRes.value;
+
+    // 6. Vector upserts — serial; sqlite-vec is single-writer.
+    for (let i = 0; i < flat.length; i++) {
+      const f = flat[i];
+      const k = kept[f.itemIdx];
+      const isOnlyChunk = k.chunks.length === 1;
+      const nodeId = isOnlyChunk ? k.source_uri : `${k.source_uri}#chunk-${f.chunkIdx}`;
+      const upRes = await deps.runtime.ingestDeps.vectors.upsert({
+        node_id: nodeId,
+        room,
+        vector: vectors[i],
+        raw_text: f.text,
+      });
+      if (upRes.isErr()) throw new Error(`batch vector: ${formatError(upRes.error)}`);
+    }
+
+    // 7. Apply every chunk node + next_chunk edge to the in-memory
+    // graph snapshot. We start from the same `graphSnapshot` we
+    // loaded above — single in-memory mutation chain.
+    let g: Graph = graphSnapshot;
+    const fetched = new Date().toISOString();
+    for (const k of kept) {
+      const isOnlyChunk = k.chunks.length === 1;
+      for (const c of k.chunks) {
+        const nodeId = isOnlyChunk ? k.source_uri : `${k.source_uri}#chunk-${c.index}`;
+        const node: GraphNode = {
+          id: nodeId,
+          label: isOnlyChunk ? k.title : `${k.title} [chunk ${c.index + 1}/${k.chunks.length}]`,
+          file_type: 'document',
+          source_file: k.source_uri,
+          source_uri: k.source_uri,
+          fetched_at: fetched,
+          content_sha256: k.content_sha256,
+          chunk_index: c.index,
+          chunk_count: k.chunks.length,
+          kind: 'codebase',
+          room,
+          embedding_id: nodeId,
+          summary: c.text.length <= BODY_MAX ? c.text : c.text.slice(0, BODY_MAX),
+        };
+        const r = upsertNodePure(g, node);
+        if (r.isOk()) g = r.value;
+      }
+      // next_chunk edges between consecutive chunks of multi-chunk items
+      if (k.chunks.length > 1) {
+        for (let i = 0; i < k.chunks.length - 1; i++) {
+          const edge: GraphEdge = {
+            source: `${k.source_uri}#chunk-${i}`,
+            target: `${k.source_uri}#chunk-${i + 1}`,
+            relation: 'next_chunk',
+            confidence: 'EXTRACTED',
+            source_file: k.source_uri,
+          };
+          const r = upsertEdge(g, edge);
+          if (r.isOk()) g = r.value;
+        }
+      }
+    }
+
+    // 8. Single save — covers every chunk node and every edge for
+    //    the entire batch.
+    const saveRes = await deps.runtime.graphs.save(g);
+    if (saveRes.isErr()) throw new Error(`batch save: ${formatError(saveRes.error)}`);
   };
 
-  const ingest = ingestSource(deps.runtime.ingestDeps);
-  const r = await ingest(synthSource);
-  if (r.isErr()) throw new Error(`ingest:batch room=${room} — ${formatError(r.error)}`);
-  return `room=${room} paths=${paths.length} new=${r.value.items_new} updated=${r.value.items_updated} skipped=${r.value.items_skipped + skippedRead + skippedSize}`;
+  if (mutex) {
+    await mutex.runExclusive(work);
+  } else {
+    await work();
+  }
+
+  return `room=${room} paths=${paths.length} new=${newCount} updated=${updatedCount} skipped=${skippedDedupe + skippedRead + skippedSize}`;
 };
 
 /**
