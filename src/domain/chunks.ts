@@ -22,6 +22,17 @@
  * Callers can pass `maxChars` directly if they have a real tokenizer.
  */
 
+/**
+ * Per-chunk on-node body cap. Each chunk's text is persisted onto
+ * GraphNode.summary up to this many chars; the read-side (ask, MCP
+ * get_node, smart-hook) further truncates to ~400 for display, so
+ * this is the storage cap, not the render floor.
+ *
+ * Single source of truth — was duplicated across application/ingest.ts
+ * and daemon/job-runner.ts before the architectural review.
+ */
+export const NODE_BODY_MAX = 1500;
+
 export interface ChunkOptions {
   /** Maximum characters per chunk. Default: 1200 (~300 tokens on English). */
   readonly maxChars?: number;

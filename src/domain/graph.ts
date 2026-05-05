@@ -84,7 +84,43 @@ export interface Graph {
   readonly json: GraphJson;
   readonly nodeById: ReadonlyMap<NodeId, GraphNode>;
   readonly adjacency: ReadonlyMap<NodeId, ReadonlySet<NodeId>>;
+  /**
+   * Inbound edge index keyed by `relationtarget` — answers
+   * "which edges of relation R point at target T". Built once at
+   * graph load; O(1) lookup per recall.
+   *
+   * Necessary because a linear scan over `json.links` is O(all
+   * edges) per query. With chunk graphs already at 14k+ edges and
+   * `next_chunk` accounting for ~90% of those, recall.ts's
+   * `relation === 'mentions' && target === entityId` filter scaled
+   * with TOTAL edges, not mention edges — the wrong cost gradient.
+   */
+  readonly edgesByRelTarget: ReadonlyMap<string, readonly GraphEdge[]>;
+  /**
+   * Outbound edge index keyed by `relationsource` — answers
+   * "which edges of relation R leave source S". Used by federated
+   * recall responders to filter mentions per chunk during the
+   * shared-rooms gate, and by future "what entities does this
+   * chunk reference" lookups.
+   */
+  readonly edgesByRelSource: ReadonlyMap<string, readonly GraphEdge[]>;
 }
+
+const relEdgeKey = (relation: string, id: NodeId): string => `${relation}${id}`;
+
+/** Public accessor for the inbound edge index. Hides the key shape. */
+export const edgesByRelationAndTarget = (
+  g: Graph,
+  relation: string,
+  target: NodeId,
+): readonly GraphEdge[] => g.edgesByRelTarget.get(relEdgeKey(relation, target)) ?? [];
+
+/** Public accessor for the outbound edge index. */
+export const edgesByRelationAndSource = (
+  g: Graph,
+  relation: string,
+  source: NodeId,
+): readonly GraphEdge[] => g.edgesByRelSource.get(relEdgeKey(relation, source)) ?? [];
 
 /** Search result for traversal queries. */
 export interface Subgraph {
@@ -335,6 +371,11 @@ const fromJsonUnchecked = (json: GraphJson): Graph => {
     nodeById.set(n.id, n);
     if (!adjacency.has(n.id)) adjacency.set(n.id, new Set());
   }
+  // Inbound + outbound edge indices keyed by `${relation}${id}`.
+  // Built in the same loop that updates adjacency to keep load
+  // cost O(edges). Memory: ~50 bytes per edge × edge count.
+  const edgesByRelTarget = new Map<string, GraphEdge[]>();
+  const edgesByRelSource = new Map<string, GraphEdge[]>();
   for (const e of json.links) {
     const a = adjacency.get(e.source) ?? new Set<NodeId>();
     const b = adjacency.get(e.target) ?? new Set<NodeId>();
@@ -342,9 +383,24 @@ const fromJsonUnchecked = (json: GraphJson): Graph => {
     b.add(e.source);
     adjacency.set(e.source, a);
     adjacency.set(e.target, b);
+
+    const tk = relEdgeKey(e.relation, e.target);
+    const sk = relEdgeKey(e.relation, e.source);
+    const tArr = edgesByRelTarget.get(tk);
+    if (tArr) tArr.push(e);
+    else edgesByRelTarget.set(tk, [e]);
+    const sArr = edgesByRelSource.get(sk);
+    if (sArr) sArr.push(e);
+    else edgesByRelSource.set(sk, [e]);
   }
   // Freeze to make mutation-via-cast impossible.
-  return Object.freeze({ json, nodeById, adjacency });
+  return Object.freeze({
+    json,
+    nodeById,
+    adjacency,
+    edgesByRelTarget,
+    edgesByRelSource,
+  });
 };
 
 const roomFilter =

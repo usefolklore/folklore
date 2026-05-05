@@ -1,10 +1,18 @@
 /**
  * Recall — entity-first lookup across the knowledge graph.
  *
- * Given a name like "lemlist", resolves it to the canonical entity,
- * traverses every `mentions` edge into source chunks, and ranks the
- * results by recency × frequency. Returns a unified timeline across
- * every room: research, sessions, toolshed, user-defined.
+ * Given a name like "lemlist", resolves it to the canonical entity
+ * (registry is source-of-truth for entity metadata), traverses every
+ * `mentions` edge into source chunks, ranks the results by
+ * recency × frequency. Returns a unified timeline across every
+ * room: research, sessions, toolshed, user-defined.
+ *
+ * Schema invariant: entity GraphNodes are stubs (id + kind + forward
+ * pointer to entities.json). Canonical entity state — label,
+ * aliases, mention_count, first_seen, last_seen — lives ONLY in
+ * the registry. Recall joins the two on read, never on write.
+ * This eliminates the dual-write drift class flagged in the
+ * architectural review.
  *
  * Pure (no I/O of its own — calls into the registry + graph). All
  * the rendering work happens at the CLI / MCP boundary.
@@ -12,7 +20,7 @@
 
 import { type Result, ok, err } from 'neverthrow';
 import { type Entity } from '../domain/entity.js';
-import { type Graph, type GraphEdge } from '../domain/graph.js';
+import { type Graph, type GraphEdge, edgesByRelationAndTarget } from '../domain/graph.js';
 import { type EntityRegistry } from '../infrastructure/entity-registry.js';
 
 /**
@@ -75,14 +83,16 @@ const resolve = (
 
 /**
  * All edges with `relation === 'mentions'` whose target is the
- * entity. We don't have a from-target-to-edges index in the
- * Graph yet — linear scan over the edges array is fine for v1
- * (a hot graph has 50k edges; scanning is sub-millisecond).
+ * entity. Uses the inbound edge index built during `fromJson`
+ * (Graph.edgesByRelTarget). Constant-time lookup vs the linear
+ * scan over `json.links` this used to do — at 50k edges with
+ * 10k mentions, that scan was 14ns × 50k = 700µs per call AND
+ * grew with TOTAL edges, not just mentions. The architectural
+ * review flagged it as the wrong cost gradient since recall
+ * fires on every PreToolUse that hits an entity surface.
  */
 const mentionEdges = (graph: Graph, entityId: string): readonly GraphEdge[] =>
-  graph.json.links.filter(
-    (e) => e.relation === 'mentions' && e.target === entityId,
-  );
+  edgesByRelationAndTarget(graph, 'mentions', entityId);
 
 const enrichHit = (
   graph: Graph,

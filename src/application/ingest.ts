@@ -33,10 +33,9 @@
 
 import { Result, ResultAsync, errAsync, okAsync } from 'neverthrow';
 import type { AppError } from '../domain/errors.js';
-import { chunk as chunkText } from '../domain/chunks.js';
 import type { ContentItem } from '../domain/content.js';
-import type { Graph, GraphEdge, GraphNode, Room } from '../domain/graph.js';
-import { getNode, upsertEdge, upsertNode as upsertNodePure } from '../domain/graph.js';
+import type { Graph, Room } from '../domain/graph.js';
+import { getNode } from '../domain/graph.js';
 import type { Source, SourceDescriptor, SourceRun, RoomRun } from '../domain/sources.js';
 import { emptyRun, forRoom } from '../domain/sources.js';
 import type { GraphRepository } from '../infrastructure/graph-repository.js';
@@ -51,6 +50,30 @@ import { hashContent } from '../infrastructure/http/fetcher.js';
 // kept exported in use-cases.ts for any single-node callers.
 
 // ─────────────────────── deps ─────────────────────────────
+
+/**
+ * Mentions extractor port — supplied by the daemon runtime to wire
+ * the entity layer into the ingest pipeline. The domain layer
+ * (entity-extract.ts) doesn't know about persistent registries; the
+ * concrete adapter (in src/infrastructure or wired in cli/runtime)
+ * binds the registry-backed extract + touchMany functions to this
+ * port.
+ *
+ * Standalone-CLI paths (no daemon, no entity layer) leave this
+ * undefined — ingest still works, just without entity extraction.
+ */
+export interface MentionsExtractorPort {
+  /** Extract entity mentions from one chunk's text. Pure. */
+  readonly extract: (text: string) => readonly {
+    readonly entity_id: string;
+    readonly surface: string;
+    readonly start: number;
+    readonly end: number;
+  }[];
+  /** Bulk-touch — ONE persisted update for the whole batch's
+   * mentions, regardless of count. */
+  readonly touchMany: (entityIds: readonly string[]) => void;
+}
 
 export interface IngestDeps {
   readonly graphs: GraphRepository;
@@ -70,6 +93,13 @@ export interface IngestDeps {
    * outside the lock so the mutex window stays tiny.
    */
   readonly graphMutex?: AsyncMutex;
+  /**
+   * Optional entity extractor + registry touchMany. When supplied,
+   * the batch ingest pipeline runs extraction over each chunk's
+   * text and adds `mentions` edges to detected entities. When
+   * undefined, the pipeline skips the entity layer entirely.
+   */
+  readonly mentionsExtractor?: MentionsExtractorPort;
 }
 
 // ─────────────────────── ingestSource ─────────────────────
@@ -246,104 +276,25 @@ const indexChunksFor = (
   item: ContentItem,
   contentHash: string,
 ): ResultAsync<void, AppError> => {
-  const chunks = chunkText(item.text);
-  if (chunks.length === 0) return okAsync(undefined);
-
-  // Cap at 1500 chars per chunk. The read-side (ask.ts, IPC
-  // ask handler, MCP get_node) truncates to 400 chars on display,
-  // so this is the storage cap, not the render floor.
-  const BODY_MAX = 1500;
-  const toNode = (chunk: { index: number; text: string }): GraphNode => ({
-    id: chunks.length === 1 ? item.source_uri : `${item.source_uri}#chunk-${chunk.index}`,
-    label: chunks.length === 1 ? item.title : `${item.title} [chunk ${chunk.index + 1}/${chunks.length}]`,
-    file_type: 'document',
-    source_file: item.source_uri,
-    source_uri: item.source_uri,
-    fetched_at: new Date().toISOString(),
-    content_sha256: contentHash,
-    published_at: item.published_at,
-    author: item.author,
-    chunk_index: chunk.index,
-    chunk_count: chunks.length,
-    kind: descriptor.kind,
-    summary: chunk.text.length <= BODY_MAX ? chunk.text : chunk.text.slice(0, BODY_MAX),
-  });
-
-  return ResultAsync.combine(
-    chunks.map((c) => deps.embedder.embed(c.text).mapErr((e): AppError => e)),
-  ).andThen((vectors) => {
-    // Vector upserts — serial (sqlite-vec connection serializes).
-    return chunks.reduce<ResultAsync<void, AppError>>(
-      (acc, c, i) =>
-        acc.andThen(() =>
-          deps.vectors
-            .upsert({
-              node_id: toNode(c).id,
-              room: descriptor.room,
-              wing: descriptor.wing,
-              vector: vectors[i],
-              raw_text: c.text,
-            })
-            .mapErr((e): AppError => e)
-            .map(() => undefined),
-        ),
-      okAsync<void, AppError>(undefined),
-    );
-  })
-    .andThen(() => {
-      // Single graph load+save — applies every node and edge for
-      // this item in one atomic write. The mutex (when supplied)
-      // wraps ONLY this block so embed work and skipped items
-      // don't serialize on it.
-      const mutate = (): ResultAsync<void, AppError> =>
-        deps.graphs
-          .load()
-          .mapErr((e): AppError => e)
-          .andThen((graph) => {
-            let g: Graph = graph;
-
-            // Upsert every chunk node
-            for (const c of chunks) {
-              const enriched: GraphNode = {
-                ...toNode(c),
-                room: descriptor.room,
-                wing: descriptor.wing,
-                embedding_id: toNode(c).id,
-              };
-              const r = upsertNodePure(g, enriched);
-              if (r.isOk()) g = r.value;
-            }
-
-            // next_chunk edges between consecutive chunks of multi-chunk articles
-            if (chunks.length > 1) {
-              for (let i = 0; i < chunks.length - 1; i++) {
-                const edge: GraphEdge = {
-                  source: `${item.source_uri}#chunk-${i}`,
-                  target: `${item.source_uri}#chunk-${i + 1}`,
-                  relation: 'next_chunk',
-                  confidence: 'EXTRACTED',
-                  source_file: item.source_uri,
-                };
-                const r = upsertEdge(g, edge);
-                if (r.isOk()) g = r.value;
-              }
-            }
-
-            return deps.graphs.save(g).mapErr((e): AppError => e);
-          });
-
-      if (!deps.graphMutex) return mutate();
-      return ResultAsync.fromPromise(
-        deps.graphMutex.runExclusive(async () => {
-          const r = await mutate();
-          if (r.isErr()) throw r.error;
-        }),
-        (e): AppError =>
-          e instanceof Error
-            ? { type: 'GraphWriteError', path: '<runtime>', message: e.message }
-            : { type: 'GraphWriteError', path: '<runtime>', message: String(e) },
-      );
-    });
+  // Single-item path delegates to the canonical batch use case in
+  // batch-ingest.ts. Was a near-duplicate of that function before
+  // the architectural review (BODY_MAX, dedupe trick, next-chunk
+  // edges all in two places). Now the batch path is the single
+  // implementation; this wrapper lets `processItems` call it with
+  // one item without a code-path fork.
+  void contentHash;
+  // Lazy import keeps ingest.ts ↔ batch-ingest.ts non-circular.
+  return ResultAsync.fromPromise(
+    import('./batch-ingest.js').then(async ({ ingestBatch }) => {
+      const r = await ingestBatch(deps)({ descriptor, items: [item] });
+      if (r.isErr()) throw r.error;
+      return undefined;
+    }),
+    (e): AppError =>
+      e && typeof e === 'object' && 'type' in (e as object)
+        ? (e as AppError)
+        : { type: 'GraphWriteError', path: '<batch>', message: String(e) },
+  );
 };
 
 /**

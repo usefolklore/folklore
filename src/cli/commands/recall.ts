@@ -13,11 +13,9 @@
  * wins.
  */
 
-import { join } from 'node:path';
-import { fileEntityRegistry } from '../../infrastructure/entity-registry.js';
-import { fileGraphRepository } from '../../infrastructure/graph-repository.js';
 import { recall } from '../../application/recall.js';
-import { runtimePaths } from '../runtime.js';
+import { defaultRuntime } from '../runtime.js';
+import { formatError } from '../../domain/errors.js';
 
 interface ParsedArgs {
   readonly query: string;
@@ -67,18 +65,31 @@ flags:
     return 1;
   }
 
-  const paths = runtimePaths();
-  const registry = fileEntityRegistry(join(paths.home, 'entities.json'));
-  const graphRes = await fileGraphRepository(paths.graph).load();
-  if (graphRes.isErr()) {
-    const e = graphRes.error;
-    const msg = 'message' in e ? (e as { message?: string }).message ?? e.type : e.type;
-    console.error(`recall: graph load failed: ${msg}`);
+  const rt = await defaultRuntime();
+  if (rt.isErr()) {
+    console.error(`recall: ${formatError(rt.error)}`);
     return 1;
   }
+  const runtime = rt.value;
+  try {
+    const graphRes = await runtime.graphs.load();
+    if (graphRes.isErr()) {
+      console.error(`recall: graph load failed: ${formatError(graphRes.error)}`);
+      return 1;
+    }
+    return await runRecall(runtime, graphRes.value, parsed);
+  } finally {
+    runtime.close();
+  }
+};
 
+const runRecall = async (
+  runtime: import('../runtime.js').Runtime,
+  graph: import('../../domain/graph.js').Graph,
+  parsed: { readonly query: string; readonly room?: string; readonly k: number; readonly json: boolean },
+): Promise<number> => {
   const result = recall(
-    { registry, graph: graphRes.value },
+    { registry: runtime.entityRegistry, graph },
     { query: parsed.query, limit: parsed.k, room: parsed.room },
   );
 
