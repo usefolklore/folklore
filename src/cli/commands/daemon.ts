@@ -11,7 +11,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { formatError } from '../../domain/errors.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
-import { isRunning, readPid, removePid, startLoop } from '../../daemon/loop.js';
+import { isRunning, readPid, removePid, startLoop, daemonLog } from '../../daemon/loop.js';
 import { defaultRuntime, runtimePaths } from '../runtime.js';
 import { startIpcServer } from '../../daemon/ipc.js';
 import { buildIpcHandlers } from '../../daemon/ipc-handlers.js';
@@ -39,7 +39,29 @@ const start = async (): Promise<number> => {
     },
   );
   child.unref();
-  console.log(`daemon started (pid=${child.pid})`);
+
+  // Poll for the PID file before returning — closes the race where
+  // 'daemon started' prints but the child hasn't yet acquired the
+  // write lock + opened sqlite-vec + loaded ONNX. Without this, an
+  // immediately-following CLI command (jobs list / this) sees
+  // isRunning() === false during the gap and either errors or
+  // falls back to the synchronous path that fights the booting
+  // daemon for the same write lock.
+  //
+  // Cap at 5s — covers cold-load on slow machines without making
+  // failed boots invisible. Bail without error if the file appears.
+  const start = Date.now();
+  while (Date.now() - start < 5000) {
+    if (isRunning(paths.home)) break;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  if (!isRunning(paths.home)) {
+    console.error(`daemon spawn returned but PID file not visible after 5s — check ${join(paths.home, 'daemon.log')}`);
+    return 1;
+  }
+  const pid = readPid(paths.home);
+  console.log(`daemon started (pid=${pid})`);
   console.log(`  logs: ${join(paths.home, 'daemon.log')}`);
   return 0;
 };
@@ -135,9 +157,13 @@ const run = async (): Promise<number> => {
     homePath: paths.home,
     runner: jobRunner,
     onChange: (j) => {
-      // Mirror state transitions to daemon.log so operators can `tail
-      // -f daemon.log` while jobs run. Stable single-line format.
-      console.log(`job ${j.status.padEnd(7)} ${j.id}  ${j.kind} ${j.result_summary ?? j.error ?? ''}`);
+      // The daemon process was spawned with stdio: 'ignore' — plain
+      // console.log vanishes. Use daemonLog so operators tailing
+      // daemon.log see job state transitions live.
+      daemonLog(
+        paths.home,
+        `job ${j.status.padEnd(7)} ${j.id}  ${j.kind} ${j.result_summary ?? j.error ?? ''}`,
+      );
     },
   });
 
@@ -147,7 +173,7 @@ const run = async (): Promise<number> => {
   const watchers = startFileWatchers({
     homePath: paths.home,
     queue: jobQueue,
-    log: (line) => console.log(line),
+    log: (line) => daemonLog(paths.home, line),
   });
 
   // Phase 1 (v4 plan) — IPC server for delegated queries. Lives alongside

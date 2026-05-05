@@ -49,6 +49,26 @@ export interface SatisfactionScore {
 }
 
 /**
+ * The breakpoint decision the protocol-quality thinking surface
+ * (docs/PROTOCOL-QUALITY-QUESTIONS.md) describes — six paths the
+ * agent can take. v1 always emits `use_memory` as a stable contract
+ * placeholder so v2 can specialise without breaking callers that
+ * type-narrow on this field.
+ *
+ * Stability promise: this string set may grow but existing values
+ * keep their semantics. Callers should default-route on unknown
+ * values (treat as `unknown`) rather than throwing.
+ */
+export type AgentDecision =
+  | 'use_memory'
+  | 'verify_one_source'
+  | 'search_required'
+  | 'refetch'
+  | 'consensus_check'
+  | 'ask_user'
+  | 'unknown';
+
+/**
  * The full record handed to the formatter and surfaced into agent
  * sessions. JSON-safe — the same shape goes into MCP responses, the
  * smart-hook additionalContext, and CLI block output.
@@ -68,6 +88,21 @@ export interface PeerPullTelemetry {
   readonly peers_timed_out: number;
   readonly peers_errored: number;
   readonly satisfaction: SatisfactionScore;
+  /**
+   * The recommended action surfaced to the agent. v1 picks from a
+   * threshold table on satisfaction.score (use_memory ≥ 0.85,
+   * verify_one_source ≥ 0.65, search_required ≥ 0.40, otherwise
+   * ask_user). v2 will overlay task-risk / coverage-map signals.
+   * Adding the field NOW means v2 won't trigger a flag day on
+   * agent prompts.
+   */
+  readonly decision: AgentDecision;
+  /**
+   * Reserved for v2's coverage-map output (required_facts /
+   * covered / missing). Always null in v1 — present so consumers
+   * can opt in incrementally.
+   */
+  readonly coverage_map: null;
   readonly emitted_at: string;        // ISO-8601
 }
 

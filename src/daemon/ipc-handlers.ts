@@ -144,9 +144,15 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     embedder: runtime.embedder,
   };
 
+  // Overfetch by 4× when the room has a recency-rerank policy so
+  // age-decay can promote nodes the cosine top-k would have pruned.
+  // Mirrors src/cli/commands/ask.ts — keep them in sync.
+  const RERANK_OVERFETCH = 4;
+  const willRerank = parsed.room ? halfLifeForRoom(parsed.room) !== undefined : false;
+  const fetchK = willRerank ? parsed.k * RERANK_OVERFETCH : parsed.k;
   const matches = parsed.room
-    ? await searchByRoom(deps)({ room: parsed.room, text: parsed.query, k: parsed.k })
-    : await searchGlobal(deps)({ text: parsed.query, k: parsed.k });
+    ? await searchByRoom(deps)({ room: parsed.room, text: parsed.query, k: fetchK })
+    : await searchGlobal(deps)({ text: parsed.query, k: fetchK });
 
   if (matches.isErr()) {
     return { stdout: '', stderr: `ask: ${formatError(matches.error)}\n`, exit: 1 };
@@ -211,7 +217,10 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     };
   });
   const anyRerank = enriched.some((e) => halfLifeForRoom(e.room) !== undefined);
-  const ranked = anyRerank ? rerankByRecency(enriched) : enriched;
+  // Rerank then slice to user-requested k — the overfetch widens
+  // the candidate pool only.
+  const reranked = anyRerank ? rerankByRecency(enriched) : enriched;
+  const ranked = reranked.slice(0, parsed.k);
 
   const lines: string[] = [];
   lines.push(`# wellinformed results for: ${parsed.query}`);

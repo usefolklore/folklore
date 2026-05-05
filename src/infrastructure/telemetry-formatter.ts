@@ -40,8 +40,12 @@ export const formatTelemetryBlock = (t: PeerPullTelemetry): string => {
 
   const s = t.satisfaction;
   const fitLine = ` fit      ${s.score.toFixed(2)} satisfaction · ${s.fresh_count} fresh · ${s.stale_count} stale · ${s.unsigned_count} unsigned`;
+  // Decision line is the explicit agent contract (v1 placeholder for
+  // the protocol-quality breakpoint shape — see
+  // docs/PROTOCOL-QUALITY-QUESTIONS.md). Stable surface across v1→v2.
+  const actionLine = ` action   ${t.decision}`;
 
-  return [HR_TOP, queryLine, tookLine, dataLine, peersLine, fitLine, HR_BOTTOM].join('\n');
+  return [HR_TOP, queryLine, tookLine, dataLine, peersLine, fitLine, actionLine, HR_BOTTOM].join('\n');
 };
 
 /**

@@ -139,7 +139,7 @@ export const isRunning = (homePath: string): boolean => {
 
 // ─────────────── logging ────────────────
 
-const daemonLog = (homePath: string, msg: string): void => {
+export const daemonLog = (homePath: string, msg: string): void => {
   const line = `[${new Date().toISOString()}] ${msg}\n`;
   try {
     appendFileSync(logPath(homePath), line);
