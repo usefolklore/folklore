@@ -273,51 +273,41 @@ const runRooms = (
   const results: RoomRun[] = [];
   const reports: string[] = [];
 
-  // Sequential to avoid parallel writes to graph.json. The
-  // per-room critical section ALSO acquires the in-process graph
-  // mutex when one is supplied — closes the lost-update window
-  // against the job worker which mutates the same graph concurrently.
-  // Without graphMutex (legacy/test path) the inner work runs as before.
-  const runOne = (room: string): ResultAsync<void, AppError> => {
-    const work = (): ResultAsync<void, AppError> =>
-      triggerRoom(deps.ingestDeps)(room)
-        .andThen((run) => {
-          results.push(run);
-          daemonLog(deps.homePath, `tick: room=${room} new=${run.runs.reduce((s, r) => s + r.items_new, 0)}`);
-          return generateReport({
-            graphs: deps.graphs,
-            vectors: deps.vectors,
-            sources: deps.sources,
-          })({ room })
-            .map((data) => {
-              const md = renderReport(data);
-              const reportDir = join(deps.homePath, 'reports', room);
-              mkdirSync(reportDir, { recursive: true });
-              const date = data.generated_at.slice(0, 10);
-              const path = join(reportDir, `${date}.md`);
-              writeFileSync(path, md);
-              reports.push(path);
-              daemonLog(deps.homePath, `report: ${path}`);
-            });
-        })
-        .orElse((e) => {
-          daemonLog(deps.homePath, `error: room=${room} ${formatError(e)}`);
-          return okAsync(undefined);
-        });
-
-    if (!deps.graphMutex) return work();
-    return ResultAsync.fromPromise(
-      deps.graphMutex.runExclusive(async () => {
-        const r = await work();
-        if (r.isErr()) throw r.error;
-      }),
-      (e): AppError => (e instanceof Error ? { type: 'GraphWriteError', path: '<runtime>', message: e.message } : { type: 'GraphWriteError', path: '<runtime>', message: String(e) }),
-    );
-  };
-
+  // Sequential at the room level for predictable tick output; each
+  // room's per-item graph mutations are serialized at a finer
+  // granularity by indexChunksFor's mutex (when graphMutex is in
+  // ingestDeps). No outer mutex wrap here — that was holding the
+  // gate during embedder work and starving job-worker ingest:file
+  // skips that needed only a read.
   return rooms
     .reduce<ResultAsync<void, AppError>>(
-      (acc, room) => acc.andThen(() => runOne(room)),
+      (acc, room) =>
+        acc.andThen(() =>
+          triggerRoom(deps.ingestDeps)(room)
+            .andThen((run) => {
+              results.push(run);
+              daemonLog(deps.homePath, `tick: room=${room} new=${run.runs.reduce((s, r) => s + r.items_new, 0)}`);
+              return generateReport({
+                graphs: deps.graphs,
+                vectors: deps.vectors,
+                sources: deps.sources,
+              })({ room })
+                .map((data) => {
+                  const md = renderReport(data);
+                  const reportDir = join(deps.homePath, 'reports', room);
+                  mkdirSync(reportDir, { recursive: true });
+                  const date = data.generated_at.slice(0, 10);
+                  const path = join(reportDir, `${date}.md`);
+                  writeFileSync(path, md);
+                  reports.push(path);
+                  daemonLog(deps.homePath, `report: ${path}`);
+                });
+            })
+            .orElse((e) => {
+              daemonLog(deps.homePath, `error: room=${room} ${formatError(e)}`);
+              return okAsync(undefined);
+            }),
+        ),
       okAsync<void, AppError>(undefined),
     )
     .map((): TickResult => ({ rooms: results, reports_written: reports }));
