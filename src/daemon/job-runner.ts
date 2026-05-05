@@ -24,6 +24,9 @@ import { getNode, upsertEdge, upsertNode as upsertNodePure } from '../domain/gra
 import { chunk as chunkText } from '../domain/chunks.js';
 import { hashContent } from '../infrastructure/http/fetcher.js';
 import { triggerRoom, ingestSource } from '../application/ingest.js';
+import { extractMentions } from '../domain/entity-extract.js';
+import { fileEntityRegistry } from '../infrastructure/entity-registry.js';
+import { join } from 'node:path';
 
 export interface RunnerDeps {
   readonly runtime: Runtime;
@@ -296,6 +299,22 @@ const runIngestBatch = async (
     // loaded above — single in-memory mutation chain.
     let g: Graph = graphSnapshot;
     const fetched = new Date().toISOString();
+
+    // Entity layer — set up the registry once per batch. Heuristic
+    // auto-registers (capitalised idents, URL hosts, GitHub repos)
+    // accumulate during this batch and persist atomically when the
+    // batch ends. Registered-alias resolution stays case-insensitive.
+    const registry = fileEntityRegistry(join(deps.runtime.paths.home, 'entities.json'));
+    const mentionedEntityIds: string[] = [];
+    const extractDeps = {
+      resolveAlias: (s: string) => registry.resolve(s),
+      autoRegister: (input: {
+        readonly label: string;
+        readonly type: 'product' | 'symbol' | 'url' | 'repo' | 'concept' | 'unknown';
+        readonly aliases?: readonly string[];
+      }) => registry.register(input),
+    };
+
     for (const k of kept) {
       const isOnlyChunk = k.chunks.length === 1;
       for (const c of k.chunks) {
@@ -315,8 +334,48 @@ const runIngestBatch = async (
           embedding_id: nodeId,
           summary: c.text.length <= BODY_MAX ? c.text : c.text.slice(0, BODY_MAX),
         };
-        const r = upsertNodePure(g, node);
-        if (r.isOk()) g = r.value;
+        const upserted = upsertNodePure(g, node);
+        if (upserted.isOk()) g = upserted.value;
+
+        // Entity extraction: scan the chunk text, upsert the entity
+        // node into the graph, add a `mentions` edge from this
+        // chunk to each detected entity. The registry's auto-
+        // register call already wrote the canonical metadata to
+        // entities.json — we mirror the entity into the Graph so
+        // graph traversal works without a separate index.
+        const mentions = extractMentions(c.text, extractDeps);
+        for (const m of mentions) {
+          const entityFromRegistry = registry.getById(m.entity_id);
+          if (!entityFromRegistry) continue;
+          const entityNode: GraphNode = {
+            id: entityFromRegistry.id,
+            label: entityFromRegistry.label,
+            file_type: 'rationale',         // entity is metadata, not a document
+            source_file: 'entities.json',
+            kind: 'entity',
+            // Carry the entity-specific fields through the
+            // [extra: string] index signature on GraphNode.
+            entity_type: entityFromRegistry.type,
+            aliases: entityFromRegistry.aliases,
+            mention_count: entityFromRegistry.mention_count + 1,
+            first_seen: entityFromRegistry.first_seen,
+            last_seen: fetched,
+          };
+          const upRes = upsertNodePure(g, entityNode);
+          if (upRes.isOk()) g = upRes.value;
+
+          const edge: GraphEdge = {
+            source: nodeId,
+            target: entityFromRegistry.id,
+            relation: 'mentions',
+            confidence: 'EXTRACTED',
+            source_file: k.source_uri,
+            surface: m.surface,
+          };
+          const er = upsertEdge(g, edge);
+          if (er.isOk()) g = er.value;
+          mentionedEntityIds.push(entityFromRegistry.id);
+        }
       }
       // next_chunk edges between consecutive chunks of multi-chunk items
       if (k.chunks.length > 1) {
@@ -334,8 +393,15 @@ const runIngestBatch = async (
       }
     }
 
-    // 8. Single save — covers every chunk node and every edge for
-    //    the entire batch.
+    // 7b. Bump entity mention_count + last_seen in the registry —
+    // batched as one read-modify-write so 200 mentions don't touch
+    // entities.json 200 times.
+    if (mentionedEntityIds.length > 0) {
+      registry.touchMany(mentionedEntityIds);
+    }
+
+    // 8. Single save — covers every chunk node, every edge, every
+    //    entity node, and every `mentions` edge for the batch.
     const saveRes = await deps.runtime.graphs.save(g);
     if (saveRes.isErr()) throw new Error(`batch save: ${formatError(saveRes.error)}`);
   };

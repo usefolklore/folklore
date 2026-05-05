@@ -47,6 +47,8 @@ import { cacheStats } from './commands/cache-stats.js';
 import { onboard } from './commands/onboard.js';
 import { thisCmd } from './commands/this.js';
 import { jobs } from './commands/jobs.js';
+import { recallCmd } from './commands/recall.js';
+import { entity } from './commands/entity.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -94,6 +96,8 @@ const commands: Record<string, CommandFn> = {
   onboard,
   this: thisCmd,
   jobs,
+  recall: recallCmd,
+  entity,
 };
 
 const futureCommands = new Set<string>([]);

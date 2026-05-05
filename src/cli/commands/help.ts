@@ -11,6 +11,8 @@ usage:
 commands:
   onboard [--yes]         first-run installer — daemon, hooks, identity, rooms
   this [me|everyone]      index the current folder; 'everyone' shares it on P2P
+  recall <name>           entity-first lookup across every room
+  entity add|list|remove  manage the canonical entity registry
   doctor [--fix]          check runtime prerequisites (and bootstrap with --fix)
   version                 print version
   help                    this message
