@@ -76,6 +76,9 @@ export interface JobQueue {
   readonly list: () => readonly Job[];
   /** Remove all done/failed entries. Queued + running are preserved. */
   readonly clearTerminal: () => number;
+  /** Drop ALL queued + done/failed. Running stays (can't unsubmit
+   * mid-flight). Used to recover from a runaway catch-up flood. */
+  readonly clearAll: () => number;
   /** Stop the worker loop (for daemon shutdown). */
   readonly stop: () => void;
 }
@@ -194,6 +197,13 @@ export const startJobQueue = (opts: JobQueueOptions): JobQueue => {
     return before - jobs.length;
   };
 
+  const clearAll = (): number => {
+    const before = jobs.length;
+    jobs = jobs.filter((j) => j.status === 'running');
+    persist();
+    return before - jobs.length;
+  };
+
   const stop = (): void => {
     stopped = true;
   };
@@ -201,5 +211,5 @@ export const startJobQueue = (opts: JobQueueOptions): JobQueue => {
   // Boot: any leftover queued work resumes immediately.
   setImmediate(() => { void tick(); });
 
-  return { submit, list, clearTerminal, stop };
+  return { submit, list, clearTerminal, clearAll, stop };
 };

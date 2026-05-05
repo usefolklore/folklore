@@ -128,6 +128,74 @@ const runIngestSession = async (
 };
 
 /**
+ * Batched file ingest — N paths, ONE pass through the chunk
+ * pipeline. Coalesces a debounced watcher window or a boot
+ * reconciliation walk into a single job that:
+ *
+ *   - reads every file (skipping deleted/empty/oversized),
+ *   - builds one synthetic Source emitting all ContentItems,
+ *   - lets the chunk pipeline batch-embed across files
+ *     (so a 50-file batch fires fewer ONNX passes than 50
+ *     individual jobs would, and shares the graph cache),
+ *   - returns one summary line for the entire batch.
+ *
+ * Skipped (unchanged) files don't pay an embed; the existing
+ * content-hash dedupe in classifyItem catches them.
+ */
+const MAX_BATCH_FILE_BYTES = 2_000_000;
+const runIngestBatch = async (
+  deps: RunnerDeps,
+  room: string,
+  paths: readonly string[],
+): Promise<string> => {
+  if (paths.length === 0) return `room=${room} paths=0 (empty)`;
+
+  // Read every file into memory, skipping anything we can't or
+  // shouldn't index. Each survivor becomes one ContentItem.
+  const items: ContentItem[] = [];
+  let skippedRead = 0;
+  let skippedSize = 0;
+  for (const path of paths) {
+    if (!isAbsolute(path) || path === '/') { skippedRead++; continue; }
+    try {
+      const text = readFileSync(path, 'utf8');
+      if (text.length === 0) { skippedSize++; continue; }
+      if (text.length > MAX_BATCH_FILE_BYTES) { skippedSize++; continue; }
+      const mtime = statSync(path).mtime.toISOString();
+      items.push({
+        source_uri: `file://${path}`,
+        title: path,
+        text,
+        metadata: { kind: 'ingest:batch-watch', mtime },
+      });
+    } catch {
+      skippedRead++;
+    }
+  }
+
+  if (items.length === 0) {
+    return `room=${room} paths=${paths.length} skipped_read=${skippedRead} skipped_size=${skippedSize}`;
+  }
+
+  const desc: SourceDescriptor = {
+    id: `${room}-batch-${Date.now()}`,
+    kind: 'codebase',
+    room,
+    enabled: true,
+    config: { root: '<batch>' },
+  };
+  const synthSource: Source = {
+    descriptor: desc,
+    fetch: () => okAsync<readonly ContentItem[], AppError>(items),
+  };
+
+  const ingest = ingestSource(deps.runtime.ingestDeps);
+  const r = await ingest(synthSource);
+  if (r.isErr()) throw new Error(`ingest:batch room=${room} — ${formatError(r.error)}`);
+  return `room=${room} paths=${paths.length} new=${r.value.items_new} updated=${r.value.items_updated} skipped=${r.value.items_skipped + skippedRead + skippedSize}`;
+};
+
+/**
  * Project ingest — the four ephemeral descriptors that `wellinformed
  * this` wants to run, but routed through the daemon's worker so the
  * graph.json write-lock dance stays single-writer. Descriptors are
@@ -188,6 +256,7 @@ export const buildJobRunner = (deps: RunnerDeps) =>
       case 'ingest:file':    return runIngestFile(deps, p.room, p.path);
       case 'ingest:session': return runIngestSession(deps, p.path);
       case 'ingest:project': return runIngestProject(deps, p.room, p.root, p.maxCommits ?? 50, p.includeDev ?? true);
+      case 'ingest:batch':   return runIngestBatch(deps, p.room, p.paths);
       default: {
         const _exhaustive: never = p;
         void _exhaustive;
