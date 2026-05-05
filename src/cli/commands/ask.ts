@@ -82,9 +82,17 @@ export const ask = async (args: readonly string[]): Promise<number> => {
       embedder: runtime.embedder,
     };
 
+    // Overfetch when the room has a recency-rerank policy — without
+    // it, a hit at rank 7 that decay-scores above the top-5 is
+    // already pruned by the cosine top-k. Factor-of-4 is a balance
+    // between latency and the largest realistic age spread inside a
+    // room (sessions has the widest, ~365d on month-old transcripts).
+    const RERANK_OVERFETCH = 4;
+    const willRerank = parsed.room ? halfLifeForRoom(parsed.room) !== undefined : false;
+    const fetchK = willRerank ? parsed.k * RERANK_OVERFETCH : parsed.k;
     const matches = parsed.room
-      ? await searchByRoom(deps)({ room: parsed.room, text: parsed.query, k: parsed.k })
-      : await searchGlobal(deps)({ text: parsed.query, k: parsed.k });
+      ? await searchByRoom(deps)({ room: parsed.room, text: parsed.query, k: fetchK })
+      : await searchGlobal(deps)({ text: parsed.query, k: fetchK });
 
     if (matches.isErr()) {
       console.error(`ask: ${formatError(matches.error)}`);
@@ -120,7 +128,11 @@ export const ask = async (args: readonly string[]): Promise<number> => {
       };
     });
     const anyRerank = enriched.some((e) => halfLifeForRoom(e.room) !== undefined);
-    const ranked = anyRerank ? rerankByRecency(enriched) : enriched;
+    // Rerank, then slice back down to the user-requested k. The
+    // overfetch only widens the candidate pool — the visible result
+    // count is unchanged.
+    const reranked = anyRerank ? rerankByRecency(enriched) : enriched;
+    const ranked = reranked.slice(0, parsed.k);
 
     if (parsed.json) {
       const hits = ranked.map((e) => ({

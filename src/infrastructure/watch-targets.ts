@@ -18,6 +18,13 @@ export interface WatchTarget {
   readonly room: string;
   readonly root: string;
   readonly registered_at: string;     // ISO-8601
+  /**
+   * Last time the daemon walked this root for catch-up. The daemon
+   * updates this on boot after reconciling files modified during
+   * its downtime. Absent on freshly-registered targets — first boot
+   * after registration walks everything.
+   */
+  readonly last_scan_at?: string;
 }
 
 interface WatchTargetsFile {
@@ -77,6 +84,27 @@ export const unregisterWatchTarget = (
   const file = safeRead(path);
   const next = file.targets.filter(
     (t) => !(t.room === target.room && t.root === target.root),
+  );
+  safeWrite(path, { version: 1, targets: next });
+  return next;
+};
+
+/**
+ * Mutate `last_scan_at` for one target. Called by the daemon
+ * file-watcher after a boot-time catch-up scan completes — the
+ * stamp is what closes the file-events-lost-during-daemon-downtime
+ * window flagged in code review.
+ */
+export const stampWatchTargetScan = (
+  path: string,
+  target: { readonly room: string; readonly root: string },
+  now: Date = new Date(),
+): readonly WatchTarget[] => {
+  const file = safeRead(path);
+  const next = file.targets.map((t) =>
+    t.room === target.room && t.root === target.root
+      ? { ...t, last_scan_at: now.toISOString() }
+      : t,
   );
   safeWrite(path, { version: 1, targets: next });
   return next;

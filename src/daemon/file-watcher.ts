@@ -16,10 +16,10 @@
 import chokidar, { type FSWatcher } from 'chokidar';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import type { JobQueue } from './job-queue.js';
 import type { WatchTarget } from '../infrastructure/watch-targets.js';
-import { loadWatchTargets } from '../infrastructure/watch-targets.js';
+import { loadWatchTargets, stampWatchTargetScan } from '../infrastructure/watch-targets.js';
 
 const FILE_DEBOUNCE_MS = 500;
 const SESSION_DEBOUNCE_MS = 2000;
@@ -38,6 +38,46 @@ const FILE_IGNORE: readonly RegExp[] = [
 ];
 
 const ignored = (p: string): boolean => FILE_IGNORE.some((rx) => rx.test(p));
+
+/**
+ * Recursively walk `dir`, calling `visit` on each file (not
+ * directory) that survives the FILE_IGNORE filter. Bounded by
+ * MAX_DEPTH to keep accidental symlink cycles from looping.
+ *
+ * Used by the boot-time reconciliation path so files modified
+ * during daemon downtime get re-ingested instead of silently
+ * dropped (the chokidar `ignoreInitial: true` flag means startup
+ * doesn't replay events).
+ */
+const MAX_DEPTH = 12;
+const walkFiles = (
+  dir: string,
+  visit: (path: string, mtimeMs: number) => void,
+  depth = 0,
+): void => {
+  if (depth > MAX_DEPTH) return;
+  let entries: readonly string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return;
+  }
+  for (const name of entries) {
+    const full = join(dir, name);
+    if (ignored(full)) continue;
+    let st;
+    try {
+      st = statSync(full);
+    } catch {
+      continue;
+    }
+    if (st.isDirectory()) {
+      walkFiles(full, visit, depth + 1);
+    } else if (st.isFile()) {
+      visit(full, st.mtimeMs);
+    }
+  }
+};
 
 export interface FileWatcherHandle {
   /** Stop every chokidar instance. Idempotent. */
@@ -77,14 +117,39 @@ export const startFileWatchers = (deps: FileWatcherDeps): FileWatcherHandle => {
     );
   };
 
+  const watchTargetsPath = join(deps.homePath, 'watch-targets.json');
+
   for (const t of targets) {
     if (!existsSync(t.root)) {
       log(`watch: skipping missing root ${t.root}`);
       continue;
     }
+
+    // Boot-time reconciliation — find files modified since this
+    // target's last_scan_at and enqueue them. Closes the gap where
+    // the daemon was off (or the wizard told the user to restart it
+    // to pick up a new target) and editor saves during that window
+    // were silently lost.
+    const sinceMs = t.last_scan_at ? Date.parse(t.last_scan_at) : 0;
+    let caughtUp = 0;
+    walkFiles(t.root, (path, mtimeMs) => {
+      if (mtimeMs > sinceMs) {
+        deps.queue.submit({ kind: 'ingest:file', room: t.room, path });
+        caughtUp++;
+      }
+    });
+    if (caughtUp > 0) {
+      log(`watch: catch-up for ${t.root} (room=${t.room}) — ${caughtUp} file(s) since ${t.last_scan_at ?? '<never>'}`);
+    }
+    // Stamp the scan so the next boot's catch-up window starts here.
+    // Done BEFORE chokidar starts so concurrent live events still
+    // get debounced through the normal path.
+    try { stampWatchTargetScan(watchTargetsPath, { room: t.room, root: t.root }); }
+    catch (e) { log(`watch: stamp failed for ${t.root}: ${(e as Error).message}`); }
+
     const w = chokidar.watch(t.root, {
       ignored: (p: string) => ignored(p),
-      ignoreInitial: true,        // we don't re-ingest the world on daemon boot
+      ignoreInitial: true,        // catch-up scan above replaces the initial replay
       persistent: true,
       depth: 12,
       awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 100 },
