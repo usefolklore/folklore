@@ -43,6 +43,13 @@ import { type Match } from '../domain/vectors.js';
 import { rerankByRecency, halfLifeForRoom } from '../domain/recency-rerank.js';
 import { searchByRoom, searchGlobal } from './use-cases.js';
 import { recall, type RecallResult } from './recall.js';
+import {
+  computeSatisfaction,
+  type AgentDecision,
+  type EnrichedMatch,
+  type SatisfactionScore,
+} from '../domain/peer-telemetry.js';
+import { isSystemRoomName, TOOLSHED, RESEARCH, ORACLE } from '../domain/system-rooms.js';
 
 // ─────────────── result shape ─────────────
 
@@ -95,6 +102,24 @@ export interface AskResult {
    * Renderers print "ranked by: relevance × recency-decay" when true.
    */
   readonly reranked: boolean;
+  /**
+   * Completeness score computed over the merged search + recall
+   * evidence. The agent contract — Claude / Codex / etc. read this
+   * to decide whether to fall through to WebSearch.
+   *
+   *   ≥ 0.85  →  use_memory
+   *   ≥ 0.65  →  verify_one_source
+   *   ≥ 0.40  →  search_required
+   *   <  0.40 →  ask_user
+   */
+  readonly satisfaction: SatisfactionScore;
+  /**
+   * Recommended next action for the agent. Stable string set —
+   * see AgentDecision in domain/peer-telemetry.ts. v2 will overlay
+   * task-risk + coverage-map signals; v1 is pure threshold over
+   * satisfaction.score.
+   */
+  readonly decision: AgentDecision;
 }
 
 // ─────────────── deps ─────────────────────
@@ -121,6 +146,69 @@ export interface AskParams {
  * we slice to k. Single source of truth (was duplicated in CLI
  * and IPC). */
 const RERANK_OVERFETCH = 4;
+
+/** Per-room stale-window in days — same windows the recency rerank
+ * uses. Drives the `freshness` component of the satisfaction score
+ * (a hit older than its window penalises freshness). */
+const staleWindowFor = (room: string | undefined): number | undefined => {
+  if (!room) return undefined;
+  if (room === TOOLSHED.name) return TOOLSHED.staleAfterDays;
+  if (room === RESEARCH.name) return RESEARCH.staleAfterDays;
+  if (room === ORACLE.name) return ORACLE.staleAfterDays;
+  if (isSystemRoomName(room)) return undefined;
+  return undefined; // user rooms have no canonical window; scorer falls back to 14d
+};
+
+/**
+ * Pick the agent action from satisfaction.score using v1 thresholds.
+ * Stable surface — the same set used in peer-pull-telemetry's
+ * federated path. Single source so future tuning lands in one place.
+ */
+const pickDecision = (s: SatisfactionScore): AgentDecision => {
+  if (s.score >= 0.85) return 'use_memory';
+  if (s.score >= 0.65) return 'verify_one_source';
+  if (s.score >= 0.40) return 'search_required';
+  return 'ask_user';
+};
+
+/**
+ * Convert an AskHit into the EnrichedMatch shape the satisfaction
+ * scorer expects. Source-peer is null (local-only path); also-from
+ * is empty.
+ */
+const toEnriched = (h: AskHit, fetchedAt?: string): EnrichedMatch => ({
+  node_id: h.node_id,
+  room: h.room ?? '',
+  distance: h.distance,
+  source_peer: null,
+  also_from_peers: [],
+  source_uri: h.source_uri,
+  fetched_at: fetchedAt ?? h.fetched_at,
+  age_days: h.age_days,
+  stale_after_days: staleWindowFor(h.room),
+  has_signature: undefined,
+});
+
+/**
+ * Convert a recall hit (no distance — every recall hit is exact-
+ * match on the entity) to an EnrichedMatch. Synthesises distance=0
+ * so `retrieval_quality` reflects the exact match, not a missing
+ * field.
+ */
+const recallHitToEnriched = (
+  h: RecallResult['hits'][number],
+): EnrichedMatch => ({
+  node_id: h.node_id,
+  room: h.room ?? '',
+  distance: 0,
+  source_peer: null,
+  also_from_peers: [],
+  source_uri: h.source_uri,
+  fetched_at: h.fetched_at,
+  age_days: h.age_days,
+  stale_after_days: staleWindowFor(h.room),
+  has_signature: undefined,
+});
 
 /** Extract entity refs from a single chunk by walking outbound
  * `mentions` edges via the indexed accessor. Joins the registry
@@ -218,13 +306,32 @@ export const ask =
           // like "claude code" → recall surfaces alongside search.
           const resolvedEntity = deps.entityRegistry.resolve(params.query.trim());
 
+          // Helper — compute satisfaction over the merged evidence
+          // (search hits + recall hits when present). Single scorer,
+          // single decision, surfaced on every AskResult so the
+          // smart-hook / CLI / IPC / MCP all expose the same agent
+          // contract: should the agent fall through to WebSearch?
+          const buildSatisfaction = (
+            recallHits: readonly RecallResult['hits'][number][] = [],
+          ): { satisfaction: SatisfactionScore; decision: AgentDecision } => {
+            const enrichedAll: EnrichedMatch[] = [
+              ...search_hits.map((h) => toEnriched(h)),
+              ...recallHits.map(recallHitToEnriched),
+            ];
+            const satisfaction = computeSatisfaction(enrichedAll);
+            return { satisfaction, decision: pickDecision(satisfaction) };
+          };
+
           if (!resolvedEntity) {
+            const { satisfaction, decision } = buildSatisfaction();
             return okAsync<AskResult, AppError>({
               query: params.query,
               room: params.room,
               k: params.k,
               search_hits,
               reranked: anyRerank,
+              satisfaction,
+              decision,
             });
           }
 
@@ -235,6 +342,7 @@ export const ask =
             { query: resolvedEntity.id, limit: params.k, room: params.room },
           );
           if (recallRes.isErr()) {
+            const { satisfaction, decision } = buildSatisfaction();
             return okAsync<AskResult, AppError>({
               query: params.query,
               room: params.room,
@@ -242,8 +350,11 @@ export const ask =
               search_hits,
               resolved_entity: resolvedEntity,
               reranked: anyRerank,
+              satisfaction,
+              decision,
             });
           }
+          const { satisfaction, decision } = buildSatisfaction(recallRes.value.hits);
           return okAsync<AskResult, AppError>({
             query: params.query,
             room: params.room,
@@ -252,6 +363,8 @@ export const ask =
             resolved_entity: resolvedEntity,
             recall_result: recallRes.value,
             reranked: anyRerank,
+            satisfaction,
+            decision,
           });
         }),
     );

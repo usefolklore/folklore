@@ -116,6 +116,16 @@ const renderAskJson = (r: AskResult): number => {
     room: r.room ?? null,
     hits,
     reranked: r.reranked,
+    satisfaction: r.satisfaction.score,
+    decision: r.decision,
+    satisfaction_detail: {
+      fresh: r.satisfaction.fresh_count,
+      stale: r.satisfaction.stale_count,
+      missing_provenance: r.satisfaction.missing_provenance_count,
+      distinct_origins: r.satisfaction.distinct_origins,
+      reasons: r.satisfaction.reasons,
+      penalties: r.satisfaction.penalties,
+    },
   };
   if (r.resolved_entity) {
     out.resolved_entity = {
@@ -163,7 +173,12 @@ const renderAskHuman = (r: AskResult): number => {
   if (r.search_hits.length === 0) {
     if (!r.resolved_entity) {
       console.log('no results found. try a broader query or run `wellinformed trigger` to index content first.');
+      console.log('');
     }
+    // Even with no hits, surface the agent contract — decision will
+    // be `ask_user` or `search_required`, telling the agent it
+    // should NOT trust the cache.
+    console.log(`action: ${r.decision}  satisfaction: ${r.satisfaction.score.toFixed(2)}`);
     return 0;
   }
 
@@ -187,6 +202,15 @@ const renderAskHuman = (r: AskResult): number => {
     }
     console.log('');
   }
+
+  // Agent contract — explicit completeness signal so the calling
+  // agent (Claude / Codex / etc.) knows whether to fall through to
+  // WebSearch. v1 thresholds: ≥0.85 use_memory · ≥0.65 verify_one_source ·
+  // ≥0.40 search_required · <0.40 ask_user.
+  const s = r.satisfaction;
+  console.log(`action: ${r.decision}  satisfaction: ${s.score.toFixed(2)}  · fresh=${s.fresh_count} stale=${s.stale_count} missing_provenance=${s.missing_provenance_count}`);
+  if (s.reasons.length > 0) console.log(`reasons: ${s.reasons.slice(0, 3).join(' · ')}`);
+  if (s.penalties.length > 0) console.log(`penalties: ${s.penalties.slice(0, 3).join(' · ')}`);
   return 0;
 };
 

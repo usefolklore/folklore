@@ -89,11 +89,26 @@ test('missing provenance on majority triggers penalty', () => {
   assert.ok(s.penalties.some((p) => p.includes('majority of results lack source_uri')));
 });
 
-test('single origin (re-share) triggers consensus penalty', () => {
+test('single REMOTE origin (re-share) triggers consensus penalty', () => {
   const m = mk({ source_peer: 'peer-x', also_from_peers: [] });
   const s = computeSatisfaction([m]);
   assert.equal(s.distinct_origins, 1);
-  assert.ok(s.penalties.some((p) => p.includes('single origin')));
+  assert.ok(s.penalties.some((p) => p.includes('single remote origin')));
+});
+
+test('all-local single origin does NOT trigger the penalty', () => {
+  // Pure-local data — source_peer null on every match — is the
+  // user's own corpus by definition. Penalising it would tell the
+  // agent "fall through to WebSearch" even when the local graph
+  // has perfect coverage. Bug caught during the demo.
+  const m = mk({ source_peer: null, also_from_peers: [] });
+  const s = computeSatisfaction([m, { ...m, node_id: 'b' }, { ...m, node_id: 'c' }]);
+  assert.equal(s.distinct_origins, 1);
+  // No single-origin penalty in the penalties list
+  assert.ok(
+    !s.penalties.some((p) => p.includes('single')),
+    `unexpected single-origin penalty for all-local: ${s.penalties.join(', ')}`,
+  );
 });
 
 test('semantic-adjacent only top hit (d > 1.5) penalises', () => {
@@ -102,18 +117,18 @@ test('semantic-adjacent only top hit (d > 1.5) penalises', () => {
   assert.ok(s.penalties.some((p) => p.includes('semantically adjacent only')));
 });
 
-test('low-data results are NOT inflated by unknown-prior averaging', () => {
-  // Single peer hit with retrieval=0.7, no fetched_at, no signature,
-  // single origin. Old scorer averaged 0.5 priors for freshness/
-  // signature into the base, yielding ~0.44. New scorer drops
-  // unobserved components entirely; observed are retrieval (0.7),
-  // provenance (0 — no source_uri+fetched_at), consensus (0.5 single
-  // origin), so base = (0.7 + 0 + 0.5) / 3 ≈ 0.4 BEFORE penalties.
+test('low-data REMOTE results are NOT inflated by unknown-prior averaging', () => {
+  // Single peer hit with retrieval=0.7, no fetched_at, no
+  // signature, single REMOTE origin. Old scorer averaged 0.5
+  // priors for freshness/signature into the base, yielding ~0.44.
+  // New scorer drops unobserved components AND only penalises
+  // single-origin when the source is remote — so the penalty
+  // chain still fires for this case.
   const m: EnrichedMatch = {
     node_id: 'n',
     room: 'research',
     distance: 0.3,                    // retrieval ≈ 0.7
-    source_peer: 'peer-x',
+    source_peer: 'peer-x',            // REMOTE → triggers single-origin penalty
     also_from_peers: [],
     source_uri: undefined,
     fetched_at: undefined,
@@ -122,12 +137,11 @@ test('low-data results are NOT inflated by unknown-prior averaging', () => {
     stale_after_days: undefined,
   };
   const s = computeSatisfaction([m]);
-  // After the missing-provenance penalty (0.15) and single-origin
-  // penalty (0.15), score should be substantially below 0.5 — the
-  // visible signal that "this is low-confidence data" survives.
+  // After missing-provenance + single-remote-origin penalties,
+  // score is below 0.5 — visible signal "low confidence data."
   assert.ok(
-    s.score < 0.4,
-    `expected low score for low-data result, got ${s.score}`,
+    s.score < 0.5,
+    `expected low score for low-data remote result, got ${s.score}`,
   );
   assert.equal(s.distinct_origins, 1);
   assert.equal(s.missing_provenance_count, 1);

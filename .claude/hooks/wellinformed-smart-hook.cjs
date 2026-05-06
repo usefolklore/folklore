@@ -96,9 +96,27 @@ const prefetch = (query) => {
       // Pre-rendered telemetry block from `wellinformed ask --peers --json`.
       // Always emitted by the federated path; absent on local-only --json.
       telemetry_block: typeof parsed._telemetry_block === 'string' ? parsed._telemetry_block : null,
+      // Agent contract — satisfaction + decision so the agent knows
+      // whether to fall through to WebSearch. Always present on the
+      // ask --json output (local OR federated).
+      satisfaction: typeof parsed.satisfaction === 'number' ? parsed.satisfaction : null,
+      decision: typeof parsed.decision === 'string' ? parsed.decision : null,
     };
   } catch {
     return null;
+  }
+};
+
+// Human-readable hint mapping. Stable v1; v2 will overlay task-risk.
+const decisionHint = (decision) => {
+  switch (decision) {
+    case 'use_memory':         return 'indexed context is sufficient — no web search needed.';
+    case 'verify_one_source':  return 'context is mostly sufficient — verify one source if accuracy is critical.';
+    case 'search_required':    return 'partial context — fall through to WebSearch / WebFetch to fill the gap.';
+    case 'refetch':            return 'right source but stale — refetch via WebFetch on the source_uri.';
+    case 'consensus_check':    return 'multiple peers, independence not yet verified — verify against another source.';
+    case 'ask_user':           return 'low confidence — clarify with the user before acting.';
+    default:                   return null;
   }
 };
 
@@ -181,7 +199,20 @@ const main = () => {
   // for "wellinformed went to the network" moments, not idle ones.
   const block = prefetchResult.telemetry_block;
   const queriedPeers = peersMeta.peers_queried > 0;
-  const appendTelemetry = (msg) => (block && queriedPeers) ? `${msg}\n\n${block}` : msg;
+  // Agent contract line — always append when wellinformed produced
+  // a satisfaction score, regardless of peer status. This is the
+  // *completeness signal* Claude reads to decide whether to fall
+  // through to WebSearch.
+  const action = prefetchResult.decision;
+  const score = prefetchResult.satisfaction;
+  const hint = action ? decisionHint(action) : null;
+  const actionLine =
+    action !== null && score !== null
+      ? `\n\naction: ${action}  satisfaction: ${score.toFixed(2)}` +
+        (hint ? `\n→ ${hint}` : '')
+      : '';
+  const appendTelemetry = (msg) =>
+    (block && queriedPeers ? `${msg}\n\n${block}` : msg) + actionLine;
 
   if (hits.length > 0) {
     emit(appendTelemetry(renderHits(hits, query, peersMeta)));
