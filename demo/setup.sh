@@ -7,7 +7,7 @@
 # Designed to be re-runnable: clears any prior state under
 # ~/.wellinformed.demo so the demo always starts from the same place.
 #
-# Run from the wellinformed repo root:
+# Run from anywhere:
 #
 #   bash demo/setup.sh
 #
@@ -38,26 +38,37 @@ mkdir -p "$DEMO_HOME"
 # 2. Stop any running daemon to avoid lock contention while we onboard.
 WELLINFORMED_HOME="$DEMO_HOME" wellinformed daemon stop 2>/dev/null || true
 
-# 3. Onboard non-interactively. The wizard creates identity + system
-#    rooms + Claude Code hooks. --no-sessions keeps it fast for the
-#    demo (we're not ingesting Claude history here).
-echo "→ onboarding (this should take < 5 s)"
-WELLINFORMED_HOME="$DEMO_HOME" wellinformed onboard --yes --no-sessions
+# 3. Load each markdown note via `wellinformed save`. Each file is
+#    one canonical "concept" node in the local-only research room.
+#    The label is read from the first markdown heading; the body is
+#    streamed via stdin so chunking + embedding happens server-side
+#    in one shot. Output is suppressed for cleanliness.
+echo "→ ingesting 15 research notes (~3 s)"
+loaded=0
+for f in "$CORPUS_DIR"/*.md; do
+  label=$(head -1 "$f" | sed -E 's/^#+[[:space:]]*//' | tr -d '\r')
+  if [[ -z "$label" ]]; then
+    label=$(basename "$f" .md)
+  fi
+  if WELLINFORMED_HOME="$DEMO_HOME" wellinformed save \
+       --room research \
+       --type concept \
+       --label "$label" \
+       <"$f" >/dev/null 2>&1; then
+    loaded=$((loaded + 1))
+  else
+    echo "  ! failed: $(basename "$f")"
+  fi
+done
+echo "  ✓ $loaded / $(ls "$CORPUS_DIR" | wc -l | tr -d ' ') notes ingested"
 
-# 4. Index the corpus into the local-only "research" room.
-#    `wellinformed this me` walks the current directory, chunks every
-#    file, embeds it locally, and registers entities. Output is
-#    deterministic across runs (chunk ids derived from source_uri).
-echo
-echo "→ indexing 15 research notes (this should take ~2 s)"
-(cd "$CORPUS_DIR" && WELLINFORMED_HOME="$DEMO_HOME" wellinformed this me)
-
-# 5. Smoke-test the install.
+# 4. Smoke-test the install.
 echo
 echo "── verification ──────────────────────────────────────"
 echo "→ sample query: \"ML methods for liquid hydrogen leak detection\""
+echo
 WELLINFORMED_HOME="$DEMO_HOME" wellinformed ask \
-  "ML methods for liquid hydrogen leak detection" --k 3
+  "ML methods for liquid hydrogen leak detection" --k 3 | head -25
 
 echo
 echo "── ready ────────────────────────────────────────────"

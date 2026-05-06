@@ -388,18 +388,25 @@ wellinformed
 - [ ] Final upload: GitHub repo `demo/` directory + asciinema.org for
   the terminal-only scenes + YouTube for the full thing.
 
-## What to file in the repo alongside this manuscript
+## What is in the repo alongside this manuscript
 
-Already present (this commit):
+Recorded artifacts (already in the repo):
 - `demo/MANUSCRIPT.md` — this file.
+- `demo/README.md` — quickstart + recorded-vs-live mapping.
 - `demo/research-corpus/` — 15 markdown files (loaded in scene 1).
 - `demo/setup.sh` — one-shot setup script.
+- `demo/screencast.tape` + `demo/screencast.gif` — VHS recording of
+  scenes 0, 2, 5, 8 against the real corpus.
+- `demo/timing.tape` + `demo/timing.gif` — single-shot headline-timing
+  teaser; the 4-second proof that retrieval is sub-second.
 
-To add when recording:
-- `demo/screencast.cast` — asciinema recording of scenes 1, 2, 5, 6, 7.
-- `demo/walkthrough.mp4` — full screen capture with the Claude Code
-  side-by-side scenes.
-- `demo/screenshots/` — stills from the side-by-side moment.
+Live-capture scenes (filled when recording):
+- Scenes 3, 4, 6, 7 — Claude Code session, side-by-side timing,
+  P2P touch, codebase Q&A. These need a real Claude Code panel
+  alongside a terminal; OBS or macOS Screen Capture is the tool.
+  Stills go into `demo/screenshots/`; full footage into
+  `demo/walkthrough.mp4` (gitignored — link to a hosted version
+  from the README).
 
 ## Manuscript change log
 
