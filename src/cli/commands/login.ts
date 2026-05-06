@@ -1,11 +1,11 @@
 /**
- * `wellinformed login github` — link a verified GitHub identity to
- * your local DID via OAuth Device Flow.
+ * `wellinformed login` — link a verified GitHub identity to your
+ * local DID via OAuth Device Flow.
  *
  * Why this command exists (per the project decision saved in memory):
  * the social DID for wellinformed is anchored to existing OAuth
- * identities. GitHub is the first provider. The verified-at handle
- * + GitHub user id + profile URL go into `~/.wellinformed/linked-
+ * identities. GitHub is the bootstrap provider. The verified handle +
+ * GitHub user id + profile URL go into `~/.wellinformed/linked-
  * accounts.json`. The OAuth access token NEVER touches disk — we use
  * it once to fetch /user, then drop it.
  *
@@ -18,9 +18,9 @@
  *   4. Poll the token endpoint at GitHub's requested cadence.
  *   5. On grant, fetch /user, persist the verified handle.
  *
- * Subcommands: just `github` for now. Google / Anthropic / Twitter
- * land as siblings later — the plumbing already supports them via
- * `linked-accounts.ts`.
+ * Future providers (google, anthropic, twitter) land behind a
+ * `--provider` flag on this same command — the plumbing in
+ * `linked-accounts.ts` is already multi-provider.
  */
 
 import { spawn } from 'node:child_process';
@@ -73,19 +73,19 @@ const clientIdFromEnv = (): string | null => {
   return v && v.trim().length > 0 ? v.trim() : null;
 };
 
-// ─────────────── github subcommand ────────
+// ─────────────── github flow ──────────────
 
 const loginGithub = async (): Promise<number> => {
   const clientId = clientIdFromEnv();
   if (!clientId) {
-    console.error(`login github: ${renderOAuthError({ type: 'GitHubOAuthMissingClientId' })}`);
+    console.error(`login: ${renderOAuthError({ type: 'GitHubOAuthMissingClientId' })}`);
     return 1;
   }
 
-  console.log('login github: requesting device code…');
+  console.log('login: requesting device code from github…');
   const codeRes = await requestDeviceCode(clientId);
   if (codeRes.isErr()) {
-    console.error(`login github: ${renderOAuthError(codeRes.error)}`);
+    console.error(`login: ${renderOAuthError(codeRes.error)}`);
     return 1;
   }
   const code = codeRes.value;
@@ -118,7 +118,7 @@ const loginGithub = async (): Promise<number> => {
   process.stdout.write('\n');
 
   if (tokenRes.isErr()) {
-    console.error(`login github: ${renderOAuthError(tokenRes.error)}`);
+    console.error(`login: ${renderOAuthError(tokenRes.error)}`);
     return 1;
   }
   const accessToken = tokenRes.value;
@@ -127,7 +127,7 @@ const loginGithub = async (): Promise<number> => {
   // the user's public attestation goes to disk.
   const userRes = await getUserHandle(accessToken);
   if (userRes.isErr()) {
-    console.error(`login github: ${renderOAuthError(userRes.error)}`);
+    console.error(`login: ${renderOAuthError(userRes.error)}`);
     return 1;
   }
   const user = userRes.value;
@@ -139,7 +139,7 @@ const loginGithub = async (): Promise<number> => {
     verified_at: new Date().toISOString(),
   });
   if (persisted.isErr()) {
-    console.error(`login github: failed to persist verified handle: ${persisted.error.message}`);
+    console.error(`login: failed to persist verified handle: ${persisted.error.message}`);
     return 1;
   }
 
@@ -155,34 +155,34 @@ const loginGithub = async (): Promise<number> => {
 
 // ─────────────── usage + dispatch ─────────
 
-const USAGE = `usage: wellinformed login <provider>
+const USAGE = `usage: wellinformed login
 
-  github            link a GitHub identity via OAuth device flow
+  Link a verified GitHub identity to your local DID via OAuth Device
+  Flow. Only the verified handle (no access token) is persisted.
+  Required for strict-mode P2P federation when peers enforce signed
+  envelopes.
 
-  Anchors a verified handle from an external identity provider to
-  your local DID. Only the verified handle (no access token) is
-  persisted. Required for strict-mode P2P federation when peers
-  enforce signed envelopes.
-
-  GitHub setup:
+  Setup:
     1. Register a Device Flow OAuth app:
        https://github.com/settings/applications/new
        (any callback URL works; enable "Device Flow" in app settings)
     2. Export the client id:
        export WELLINFORMED_GITHUB_CLIENT_ID="Iv1.<your_id>"
-    3. Re-run: wellinformed login github`;
+    3. Re-run: wellinformed login
+
+  Future: \`--provider google|anthropic|twitter\` flag for
+  additional identity anchors.`;
 
 export const login = async (args: readonly string[]): Promise<number> => {
-  if (args.includes('--help') || args.includes('-h') || args.length === 0) {
+  if (args.includes('--help') || args.includes('-h')) {
     console.log(USAGE);
-    return args.length === 0 ? 1 : 0;
+    return 0;
   }
-  const [sub] = args;
-  switch (sub) {
-    case 'github':
-      return loginGithub();
-    default:
-      console.error(`login: unknown provider '${sub}'. supported: github`);
-      return 1;
+  // Permit `wellinformed login github` as an explicit alias, but
+  // bare `wellinformed login` is the canonical form.
+  if (args.length > 0 && args[0] !== 'github') {
+    console.error(`login: unknown argument '${args[0]}'. usage: wellinformed login`);
+    return 1;
   }
+  return loginGithub();
 };

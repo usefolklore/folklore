@@ -212,7 +212,7 @@ const stepLoginGithub = async (flags: Flags): Promise<void> => {
         '  1. Register a Device Flow OAuth app:',
         '     https://github.com/settings/applications/new',
         '  2. export WELLINFORMED_GITHUB_CLIENT_ID="Iv1.<your_id>"',
-        '  3. wellinformed login github',
+        '  3. wellinformed login',
       ].join('\n'),
       'GitHub login (optional, skipped — no client id configured)',
     );
@@ -228,18 +228,18 @@ const stepLoginGithub = async (flags: Flags): Promise<void> => {
         }),
       );
   if (!proceed) {
-    log.message('skipped — run `wellinformed login github` when convenient');
+    log.message('skipped — run `wellinformed login` when convenient');
     return;
   }
 
   // Defer to the standalone login command so the flow + persistence
-  // logic is identical to `wellinformed login github`. One canonical
-  // path keeps the codex round-3 "behavioral inconsistency across
-  // parallel surfaces" verdict from re-emerging here.
+  // logic is identical to `wellinformed login`. One canonical path
+  // keeps the codex round-3 "behavioral inconsistency across parallel
+  // surfaces" verdict from re-emerging here.
   const { login } = await import('./login.js');
-  const exit = await login(['github']);
+  const exit = await login([]);
   if (exit !== 0) {
-    log.warn('login github failed — `wellinformed login github` to retry');
+    log.warn('login failed — `wellinformed login` to retry');
   }
 };
 
