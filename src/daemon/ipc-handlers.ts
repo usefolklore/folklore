@@ -373,6 +373,17 @@ const submitJobHandler = (queue: JobQueue): IpcHandler<Runtime> =>
       return { stdout: '', stderr: `submit: ${payload}\n`, exit: 1 };
     }
     const id = queue.submit(payload);
+    if (id === null) {
+      // Queue at capacity — return non-zero exit so the caller sees
+      // overload pressure rather than treating an empty stdout as
+      // success (multi-LLM round-2 review on job-queue.ts:174).
+      const d = queue.depth();
+      return {
+        stdout: '',
+        stderr: `submit: queue full (queued=${d.queued}, max=${d.max_queued}) — back off and retry\n`,
+        exit: 1,
+      };
+    }
     return { stdout: `${id}\n`, exit: 0 };
   };
 
