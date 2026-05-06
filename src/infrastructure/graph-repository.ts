@@ -55,37 +55,47 @@ export interface GraphRepository {
  */
 const CACHE_TTL_MS = 200;
 
+import { metrics } from '../domain/metrics.js';
+
 export const fileGraphRepository = (path: string): GraphRepository => {
   let cache: { graph: Graph; ts: number } | null = null;
 
   const load = (): ResultAsync<Graph, GraphError> => {
     const now = Date.now();
     if (cache && now - cache.ts < CACHE_TTL_MS) {
+      metrics.counter('graph.load.cache_hit').inc();
       return okAsync(cache.graph);
     }
+    metrics.counter('graph.load.cache_miss').inc();
+    const t0 = performance.now();
     if (!existsSync(path)) {
       const g = empty();
       cache = { graph: g, ts: now };
+      metrics.histogram('graph.load.ms').observe(performance.now() - t0);
       return okAsync(g);
     }
     return ResultAsync.fromPromise(readFile(path, 'utf8'), (e) => {
       cache = null;
+      metrics.counter('graph.load.errors').inc();
       return GraphError.readError(path, (e as Error).message);
     }).andThen((text) => {
       try {
         const parsed = JSON.parse(text);
         return fromJson(parsed, path).map((g) => {
           cache = { graph: g, ts: Date.now() };
+          metrics.histogram('graph.load.ms').observe(performance.now() - t0);
           return g;
         });
       } catch (e) {
         cache = null;
+        metrics.counter('graph.load.errors').inc();
         return errAsync(GraphError.parseError(path, (e as Error).message));
       }
     });
   };
 
   const save = (graph: Graph): ResultAsync<void, GraphError> => {
+    const t0 = performance.now();
     try {
       mkdirSync(dirname(path), { recursive: true });
       const tmp = `${path}.tmp`;
@@ -95,9 +105,12 @@ export const fileGraphRepository = (path: string): GraphRepository => {
       // Subsequent load() returns it without re-reading + re-parsing
       // the file we just wrote.
       cache = { graph, ts: Date.now() };
+      metrics.histogram('graph.save.ms').observe(performance.now() - t0);
+      metrics.counter('graph.save.ok').inc();
       return okAsync(undefined);
     } catch (e) {
       cache = null;
+      metrics.counter('graph.save.errors').inc();
       return errAsync(GraphError.writeError(path, (e as Error).message));
     }
   };

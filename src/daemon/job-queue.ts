@@ -26,6 +26,7 @@ import {
   type JobStatus,
   newJobId,
 } from '../domain/job.js';
+import { metrics } from '../domain/metrics.js';
 
 const MAX_HISTORY = 200;
 /**
@@ -186,6 +187,7 @@ export const startJobQueue = (opts: JobQueueOptions): JobQueue => {
       return;
     }
 
+    const t0 = performance.now();
     try {
       const summary = await opts.runner(started);
       replace(job.id, {
@@ -193,6 +195,8 @@ export const startJobQueue = (opts: JobQueueOptions): JobQueue => {
         finished_at: new Date().toISOString(),
         result_summary: summary,
       });
+      metrics.histogram('queue.job.ms').observe(performance.now() - t0);
+      metrics.counter(`queue.job.${started.kind}.ok`).inc();
     } catch (e) {
       const err = e instanceof Error ? e.message : String(e);
       replace(job.id, {
@@ -200,6 +204,8 @@ export const startJobQueue = (opts: JobQueueOptions): JobQueue => {
         finished_at: new Date().toISOString(),
         error: err,
       });
+      metrics.histogram('queue.job.ms').observe(performance.now() - t0);
+      metrics.counter(`queue.job.${started.kind}.error`).inc();
     } finally {
       runningId = null;
       // Schedule next tick — yield to the event loop first.
@@ -234,6 +240,7 @@ export const startJobQueue = (opts: JobQueueOptions): JobQueue => {
       0,
     );
     if (queuedCount >= MAX_QUEUED) {
+      metrics.counter('queue.rejected').inc();
       opts.onChange?.({
         id: 'rejected',
         kind: payload.kind,
@@ -271,6 +278,10 @@ export const startJobQueue = (opts: JobQueueOptions): JobQueue => {
       if (j.status === 'queued') queued++;
       else if (j.status === 'running') running++;
     }
+    // Mirror to gauges so the metrics snapshot has the live pressure
+    // without requiring callers to poll depth() and copy values.
+    metrics.gauge('queue.queued').set(queued);
+    metrics.gauge('queue.running').set(running);
     return { queued, running, max_queued: MAX_QUEUED };
   };
 
