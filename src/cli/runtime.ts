@@ -233,7 +233,7 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
                 resolveAlias: (s) => entityRegistry.resolve(s),
                 autoRegister: (input) => entityRegistry.register(input),
               }),
-            touchMany: (ids) => { entityRegistry.touchMany(ids); },
+            touchMany: (counts) => { entityRegistry.touchMany(counts); },
           };
 
           const ingestDeps: IngestDeps = {

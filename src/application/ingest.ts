@@ -70,9 +70,15 @@ export interface MentionsExtractorPort {
     readonly start: number;
     readonly end: number;
   }[];
-  /** Bulk-touch — ONE persisted update for the whole batch's
-   * mentions, regardless of count. */
-  readonly touchMany: (entityIds: readonly string[]) => void;
+  /**
+   * Bulk-touch — ONE persisted update for the whole batch's
+   * mentions. The map carries true mention counts (entity_id →
+   * times-mentioned-in-batch); the registry adds those increments
+   * exactly. Previously this took a `string[]` which the registry
+   * collapsed into a Set, undercounting repeated mentions
+   * (gemini synthesis HIGH on entity-registry.ts:153).
+   */
+  readonly touchMany: (counts: ReadonlyMap<string, number>) => void;
 }
 
 export interface IngestDeps {

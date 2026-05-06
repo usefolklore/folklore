@@ -147,6 +147,41 @@ test('low-data REMOTE results are NOT inflated by unknown-prior averaging', () =
   assert.equal(s.missing_provenance_count, 1);
 });
 
+test('observed_components reports the count of visible signals', () => {
+  // Empty results → no components observed.
+  const empty = computeSatisfaction([]);
+  assert.equal(empty.observed_components, 0);
+
+  // Local-only with provenance + age → retrieval, freshness,
+  // provenance, consensus all observed (4 of 5). Signature stays
+  // unobserved because nothing reports has_signature.
+  const localFresh = mk({});
+  const local = computeSatisfaction([localFresh]);
+  assert.equal(local.observed_components, 4);
+
+  // Strip provenance + age from a remote hit → only retrieval +
+  // consensus observable (2 of 5). Codex review M2: this is the
+  // "shallow evidence" case the decision picker must demote.
+  const sparse: EnrichedMatch = {
+    node_id: 'n',
+    room: 'research',
+    distance: 0.4,
+    source_peer: 'peer-x',
+    also_from_peers: [],
+    source_uri: undefined,
+    fetched_at: undefined,
+    age_days: undefined,
+    has_signature: undefined,
+    stale_after_days: undefined,
+  };
+  const s = computeSatisfaction([sparse]);
+  // retrieval (always observed when results exist) + provenance
+  // (always observed: "does it have source_uri+fetched_at?" is a
+  // boolean that's always answerable) + consensus = 3.
+  // freshness + signature = unobserved.
+  assert.equal(s.observed_components, 3);
+});
+
 test('score is clamped to [0, 1]', () => {
   const garbage = mk({
     distance: 1.9,
@@ -186,6 +221,7 @@ const sampleTelemetry: PeerPullTelemetry = {
     distinct_origins: 3,
     reasons: ['top hit very close'],
     penalties: [],
+    observed_components: 4,
   },
   decision: 'verify_one_source',
   coverage_map: null,

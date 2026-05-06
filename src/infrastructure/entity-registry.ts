@@ -83,7 +83,16 @@ export interface EntityRegistry {
    * of N chunk mentions doesn't trigger N file writes. Returns
    * the count of entities updated.
    */
-  readonly touchMany: (ids: readonly string[], now?: Date) => number;
+  /**
+   * Bump mention_count + last_seen for many entities in one write.
+   *
+   * `counts` is a frequency map: {entity_id → times-mentioned}. Pass
+   * a Map (or any ReadonlyMap) — iteration determines which entities
+   * to update; the value is the increment delta. This shape lets a
+   * batch with ten mentions of the same entity post +10 instead of
+   * +1 (the previous Set-based shape under-counted).
+   */
+  readonly touchMany: (counts: ReadonlyMap<string, number>, now?: Date) => number;
 }
 
 export const fileEntityRegistry = (path: string): EntityRegistry => {
@@ -150,15 +159,18 @@ export const fileEntityRegistry = (path: string): EntityRegistry => {
     return updated;
   };
 
-  const touchMany = (ids: readonly string[], now: Date = new Date()): number => {
-    if (ids.length === 0) return 0;
+  const touchMany = (
+    counts: ReadonlyMap<string, number>,
+    now: Date = new Date(),
+  ): number => {
+    if (counts.size === 0) return 0;
     const file = safeRead(path);
-    const idSet = new Set(ids);
     let updated = 0;
     const next = file.entities.map((e) => {
-      if (!idSet.has(e.id)) return e;
+      const inc = counts.get(e.id);
+      if (inc === undefined || inc <= 0) return e;
       updated++;
-      return touchEntity(e, now);
+      return touchEntity(e, now, inc);
     });
     if (updated === 0) return 0;
     safeWrite(path, { version: 1, entities: next });
