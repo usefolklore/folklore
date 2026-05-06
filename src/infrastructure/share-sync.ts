@@ -60,6 +60,16 @@ import { loadYDoc, saveYDoc } from './ydoc-store.js';
 import { loadSharedRooms } from './share-store.js';
 import type { GraphRepository } from './graph-repository.js';
 import { createRateLimiter, makePerPeerRoomKey, type RateLimiter } from './bandwidth-limiter.js';
+import { metrics } from '../domain/metrics.js';
+import {
+  classifyInboundShare,
+  sharePolicyModeFromEnv,
+  type SharePolicyMode,
+} from '../domain/share-policy.js';
+import {
+  inProcessIdentityResolver,
+  type IdentityResolver,
+} from './identity-resolver.js';
 
 // ─────────────────────── constants ────────────────────────────────────────────
 
@@ -367,9 +377,46 @@ const attachInboundObserver = (
   patterns: ReturnType<typeof buildPatterns>,
   graphRepo: GraphRepository,
   logPath: string,
+  policyMode: SharePolicyMode,
+  identityResolver: IdentityResolver,
 ): { detach: () => void; cancel: () => void } => {
   let pendingMerge: Uint8Array[] = [];
   let timer: NodeJS.Timeout | null = null;
+
+  /**
+   * Run one Y.Map value through the policy gate. Returns the payload
+   * to ingest plus the verified author DID (when signed), or null if
+   * the value should be dropped (signature failed, strict-mode-rejected,
+   * or malformed). Drives both the inbound scan and the flush path so
+   * both see the same trust verdict.
+   */
+  const screen = (
+    value: unknown,
+  ): { payload: ShareableNode; signedBy?: string } | null => {
+    const c = classifyInboundShare(value, policyMode);
+    switch (c.verdict) {
+      case 'signed_ok':
+        metrics.counter('share.inbound.signed_ok').inc();
+        identityResolver.record({
+          did: c.verified.verified_user_did,
+          device_id: c.verified.verified_device_id,
+          room,
+        });
+        return { payload: c.payload, signedBy: c.verified.verified_user_did };
+      case 'signed_invalid':
+        metrics.counter('share.inbound.signature_invalid').inc();
+        return null;
+      case 'unsigned_allowed':
+        metrics.counter('share.inbound.unsigned_allowed').inc();
+        return { payload: c.payload };
+      case 'unsigned_rejected':
+        metrics.counter('share.inbound.unsigned_rejected').inc();
+        return null;
+      case 'malformed':
+        metrics.counter('share.inbound.malformed').inc();
+        return null;
+    }
+  };
 
   const flush = async (): Promise<void> => {
     if (pendingMerge.length === 0) return;
@@ -383,8 +430,9 @@ const attachInboundObserver = (
     let graph: Graph = loaded.value;
     const map = doc.getMap(MAP_NAME) as Y.Map<unknown>;
     map.forEach((value) => {
-      const v = value as ShareableNode;
-      if (!v || typeof v !== 'object' || !v.id) return;
+      const screened = screen(value);
+      if (!screened) return;
+      const v = screened.payload;
       // Reconstruct a GraphNode from the ShareableNode + provenance.
       // file_type/source_file are required by GraphNode but excluded from
       // the wire — fill with sentinel values that mark imported provenance.
@@ -398,6 +446,7 @@ const attachInboundObserver = (
         source_uri: v.source_uri,
         fetched_at: v.fetched_at,
         _wellinformed_source_peer: remotePeerId,
+        ...(screened.signedBy ? { _wellinformed_signed_by: screened.signedBy } : {}),
       } as GraphNode;
       const upserted = upsertNode(graph, imported);
       if (upserted.isOk()) graph = upserted.value;
@@ -409,12 +458,34 @@ const attachInboundObserver = (
   };
 
   const handler = (_event: Y.YEvent<Y.Map<unknown>>): void => {
-    // Inbound scan for the SECRET BOUNDARY (must run before allowing
-    // the update to influence graph.json).
+    // Inbound scan for the SECRET BOUNDARY + policy gate. Both run
+    // before the value is allowed to influence graph.json. Order:
+    // policy first (cryptographic trust) — secrets scan after, against
+    // the unwrapped payload — so a maliciously-signed payload still
+    // gets the secrets gate and a plain payload that strict mode would
+    // reject doesn't waste a regex pass.
     const map = doc.getMap(MAP_NAME) as Y.Map<unknown>;
     map.forEach((value, key) => {
-      const v = value as Partial<ShareableNode>;
-      if (!v || !v.id || !v.label) return;
+      const screened = screen(value);
+      if (!screened) {
+        // Policy dropped — remove from the local Y.Map so it doesn't
+        // re-fire on the next observe cycle and so a future flush
+        // doesn't see it.
+        map.delete(key);
+        void appendShareLog(logPath, {
+          timestamp: new Date().toISOString(),
+          peer: remotePeerId,
+          room,
+          nodeId: typeof (value as { id?: unknown })?.id === 'string'
+            ? ((value as { id: string }).id)
+            : '<unknown>',
+          action: 'inbound',
+          allowed: false,
+          reason: 'policy_drop',
+        });
+        return;
+      }
+      const v = screened.payload;
       const candidate: GraphNode = {
         id: v.id,
         label: v.label,
@@ -491,6 +562,26 @@ export interface ShareSyncRegistry {
    * via createShareSyncRegistry when `config.peer.bandwidth` is present.
    */
   readonly limiter?: RateLimiter;
+  /**
+   * Inbound share policy mode (round-2 architecture review step A).
+   *
+   *   soft   — accept both signed envelopes and plain ShareableNodes
+   *            (legacy / pre-flag peers); verify when signed, ingest
+   *            either way. Default — keeps existing federation alive
+   *            during the rollout window.
+   *   strict — only signed envelopes survive. Plain payloads are
+   *            dropped with `share.inbound.rejected_unsigned`. Set
+   *            via WELLINFORMED_REQUIRE_SIGNED_NODES=1.
+   */
+  readonly policyMode: SharePolicyMode;
+  /**
+   * Identity resolver — records every successful envelope verify so
+   * `wellinformed identity peers` (future) and audit logs can answer
+   * "who signed what, when?" The current MVP is TOFU-style + in-memory;
+   * a follow-on commit drops in did:web HTTP resolution behind the
+   * same port without changing share-sync.
+   */
+  readonly identityResolver: IdentityResolver;
 }
 
 export const createShareSyncRegistry = (deps: {
@@ -500,6 +591,10 @@ export const createShareSyncRegistry = (deps: {
   patterns: ReturnType<typeof buildPatterns>;
   /** Rate limit for outbound share updates. Omit to skip bandwidth gating (backward-compat). */
   maxUpdatesPerSecPerPeerPerRoom?: number;
+  /** Override policy mode (defaults to env). Used by tests. */
+  policyMode?: SharePolicyMode;
+  /** Override identity resolver (defaults to in-memory TOFU). Used by tests. */
+  identityResolver?: IdentityResolver;
 }): ShareSyncRegistry => ({
   node: deps.node,
   homePath: deps.homePath,
@@ -514,6 +609,8 @@ export const createShareSyncRegistry = (deps: {
     deps.maxUpdatesPerSecPerPeerPerRoom !== undefined
       ? createRateLimiter(deps.maxUpdatesPerSecPerPeerPerRoom, deps.maxUpdatesPerSecPerPeerPerRoom)
       : undefined,
+  policyMode: deps.policyMode ?? sharePolicyModeFromEnv(),
+  identityResolver: deps.identityResolver ?? inProcessIdentityResolver(),
 });
 
 const ydocPathFor = (registry: ShareSyncRegistry, room: string): string =>
@@ -658,6 +755,8 @@ const runStreamSession = async (
     registry.patterns,
     registry.graphRepo,
     registry.logPath,
+    registry.policyMode,
+    registry.identityResolver,
   );
   const detachOutbound = attachOutboundObserver(doc, [fs]);
 
