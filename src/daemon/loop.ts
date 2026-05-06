@@ -54,6 +54,10 @@ import {
   type SearchRegistry,
 } from '../infrastructure/search-sync.js';
 import {
+  registerRecallProtocol,
+  unregisterRecallProtocol,
+} from '../infrastructure/recall-sync.js';
+import {
   createTouchRegistry,
   registerTouchProtocol,
   unregisterTouchProtocol,
@@ -496,6 +500,23 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
               daemonLog(deps.homePath, `search protocol registered: /wellinformed/search/1.0.0`);
             }
 
+            // Register entity-recall protocol — sibling to search.
+            // Re-loads the graph snapshot per request so updates flow.
+            try {
+              registerRecallProtocol({
+                node: liveNode,
+                getGraph: async () => {
+                  const r = await deps.graphs.load();
+                  return r.isOk() ? r.value : null;
+                },
+                sharedRoomsPath: join(deps.homePath, 'shared-rooms.json'),
+                log: (m) => daemonLog(deps.homePath, m),
+              });
+              daemonLog(deps.homePath, `recall protocol registered: /wellinformed/recall/1.0.0`);
+            } catch (e) {
+              daemonLog(deps.homePath, `recall protocol register failed: ${(e as Error).message}`);
+            }
+
             // Phase 31: register asymmetric touch protocol — one-shot pull
             // of a remote peer's shared-room graph with pre-transmission
             // redaction via secret-gate. Separate registry, shared libp2p
@@ -560,6 +581,9 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
     }
     if (liveSearch) {
       try { await unregisterSearchProtocol(liveSearch); } catch { /* benign */ }
+    }
+    if (liveNode) {
+      try { await unregisterRecallProtocol(liveNode); } catch { /* benign */ }
     }
     if (liveSync) {
       try { await unregisterShareProtocol(liveSync); } catch { /* benign */ }
