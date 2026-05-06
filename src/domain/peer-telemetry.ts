@@ -46,6 +46,16 @@ export interface SatisfactionScore {
   readonly distinct_origins: number;
   readonly reasons: readonly string[];
   readonly penalties: readonly string[];
+  /**
+   * How many of the five components (retrieval, freshness, provenance,
+   * consensus, signature) had observable input. Drives the decision-
+   * picker's "shallow evidence" demotion — when fewer than 4 of 5
+   * signals are visible, `use_memory` is downgraded to
+   * `verify_one_source` regardless of base score (codex review M2 —
+   * local-only thresholds were undefensible because consensus is a
+   * carve-out and signature is unobservable on a stand-alone node).
+   */
+  readonly observed_components: number;
 }
 
 /**
@@ -314,6 +324,7 @@ export const computeSatisfaction = (
     distinct_origins,
     reasons,
     penalties,
+    observed_components: observed.length,
   };
 };
 

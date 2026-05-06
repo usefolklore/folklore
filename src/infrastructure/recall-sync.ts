@@ -26,6 +26,7 @@
  * application/federated-recall.ts; this file is libp2p-only.
  */
 
+import { createHmac, randomBytes } from 'node:crypto';
 import * as lp from 'it-length-prefixed';
 import { ResultAsync, errAsync, okAsync } from 'neverthrow';
 import type { Libp2p, Stream, Connection } from '@libp2p/interface';
@@ -41,6 +42,23 @@ export const RECALL_PROTOCOL_ID = '/wellinformed/recall/1.0.0' as const;
 const PER_PEER_TIMEOUT_MS = 2000;
 const MAX_INBOUND_STREAMS = 16;
 const MAX_LIMIT = 50;
+/**
+ * Hard cap on inbound frame size in bytes. A RecallRequest is small
+ * (entity_id ≤ 256 chars + room ≤ 128 + integer limit + JSON
+ * overhead — typically <1 KB). 4 KB leaves slack without giving an
+ * attacker room to push a 10 MB JSON.parse at the responder. Caught
+ * by the multi-LLM review.
+ */
+const MAX_INBOUND_FRAME_BYTES = 4096;
+/**
+ * Per-token-bucket rate limit on inbound recall requests (mirrors
+ * search-sync's pattern). Without this, any connected peer could
+ * drive continuous graph loads, share-store reads, and inbound
+ * mention-index walks at the responder.
+ */
+const RATE_PER_SEC = 5;
+const RATE_BURST = 10;
+const RATE_IDLE_EVICT_MS = 5 * 60 * 1000;
 
 // ─────────────── wire shapes ──────────────
 
@@ -83,10 +101,17 @@ const writeFrame = async (stream: Stream, payload: object): Promise<void> => {
   }
 };
 
-const readFrame = async <T>(stream: Stream): Promise<T | null> => {
-  for await (const msg of lp.decode(stream)) {
+const readFrame = async <T>(stream: Stream, maxBytes: number): Promise<T | null> => {
+  // `maxDataLength` makes lp.decode itself reject oversize frames
+  // before any application buffer holds them — gemini synthesis
+  // BLOCKER on recall-sync.ts:105. The post-decode `byteLength`
+  // check stays as defense-in-depth (e.g. if a future libp2p
+  // version changes the option semantics).
+  for await (const msg of lp.decode(stream, { maxDataLength: maxBytes })) {
+    const bytes = msg.subarray();
+    if (bytes.byteLength > maxBytes) return null;
     try {
-      return JSON.parse(new TextDecoder().decode(msg.subarray())) as T;
+      return JSON.parse(new TextDecoder().decode(bytes)) as T;
     } catch {
       return null;
     }
@@ -105,6 +130,99 @@ export interface RecallResponderDeps {
   readonly now: () => number;
 }
 
+/**
+ * Allowlisted URI schemes that are safe to transmit. Local
+ * filesystem paths (file://, /Users/..., absolute /paths) leak the
+ * asker's homedir + project layout when the asker has indexed
+ * private code into a shared room — caught by the multi-LLM review.
+ *
+ * Anything outside this set is dropped from the wire (the hit still
+ * goes back, just without the URI). The label + room + age give
+ * enough context for downstream filtering without the leak.
+ */
+const SAFE_URI_PREFIXES = [
+  'http://',
+  'https://',
+  'github.com/',
+  'arxiv:',
+  'doi:',
+  'urn:',
+  'mailto:',
+];
+
+const isLocalPath = (s: string): boolean => {
+  const lower = s.toLowerCase();
+  return (
+    lower.startsWith('file://') ||
+    s.startsWith('/') ||                       // unix absolute
+    s.startsWith('./') ||                      // relative-current  (gemini MED)
+    s.startsWith('../') ||                     // relative-parent
+    /^[a-z]:[\\/]/i.test(s) ||                 // windows
+    // Anything with a path separator that didn't match SAFE_URI_PREFIXES
+    // upstream is treated as a local path. This catches things like
+    // `src/foo/bar.ts` that the codex sanitiser missed.
+    /[\\/]/.test(s)
+  );
+};
+
+const sanitiseSourceUri = (raw: unknown): string | undefined => {
+  if (typeof raw !== 'string' || raw.length === 0) return undefined;
+  const lower = raw.toLowerCase();
+  return SAFE_URI_PREFIXES.some((p) => lower.startsWith(p)) ? raw : undefined;
+};
+
+/**
+ * Per-process secret used to HMAC opaque ids. Generated once on first
+ * use, kept in memory only — never logged, never persisted, never
+ * transmitted. Two effects:
+ *
+ *   - Within a single process lifetime, the same local path → same
+ *     opaque id (so cross-peer dedupe still works for the duration
+ *     of one daemon run).
+ *   - Across processes / peers, the SAME local path → DIFFERENT
+ *     opaque ids — preventing a peer from rebuilding a rainbow table
+ *     and reverse-mapping ids to filesystem layouts.
+ *
+ * The 32-bit DJB2 hash this replaced was reversible by an attacker
+ * with a few thousand candidate paths. Gemini synthesis HIGH on
+ * recall-sync.ts:172.
+ */
+let nodeSecret: Buffer | null = null;
+const getNodeSecret = (): Buffer => {
+  if (!nodeSecret) nodeSecret = randomBytes(32);
+  return nodeSecret;
+};
+
+/**
+ * Stable opaque hash of a node_id used for cross-peer dedupe when the
+ * underlying id contains a local path. HMAC-SHA256 truncated to 16
+ * hex chars (8 bytes / 64 bits) — roughly 2^32 birthday-resistance,
+ * plenty for dedupe within a single peer's result set without
+ * shipping the full 64 hex chars.
+ */
+const opaqueId = (raw: string): string => {
+  const mac = createHmac('sha256', getNodeSecret()).update(raw).digest('hex');
+  return `node:${mac.slice(0, 16)}`;
+};
+
+const sanitiseNodeId = (id: string): string =>
+  isLocalPath(id) ? opaqueId(id) : id;
+
+/**
+ * Sanitise the chunk label before transmission. When the label
+ * looks like an absolute path, only the basename leaves; when it's
+ * already free-form text (a chunk title, an issue subject), it
+ * passes through unchanged.
+ */
+const sanitiseLabel = (raw: unknown): string => {
+  if (typeof raw !== 'string' || raw.length === 0) return '';
+  if (isLocalPath(raw)) {
+    const base = raw.split(/[\\/]/).pop() ?? '';
+    return base.length > 0 ? base : '<file>';
+  }
+  return raw.length > 200 ? raw.slice(0, 200) : raw;
+};
+
 const buildHit = (
   edge: GraphEdge,
   graph: Graph,
@@ -112,7 +230,10 @@ const buildHit = (
 ): RecallPeerHit | null => {
   const node: GraphNode | undefined = graph.nodeById.get(edge.source);
   if (!node) return null;
-  // Don't transmit chunk body content — only metadata.
+  // Don't transmit chunk body content or local filesystem paths —
+  // only safe public-URI metadata. The fallback to source_file the
+  // codex audit caught (recall-sync.ts:126 of v1) leaked
+  // /Users/saharbarak/... and similar absolute paths to peers.
   const fetchedAt =
     typeof node.fetched_at === 'string' ? node.fetched_at : undefined;
   const fetchedMs = fetchedAt ? Date.parse(fetchedAt) : NaN;
@@ -120,10 +241,10 @@ const buildHit = (
     ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
     : undefined;
   return {
-    node_id: node.id,
+    node_id: sanitiseNodeId(node.id),
     room: node.room,
-    label: node.label,
-    source_uri: node.source_uri ?? node.source_file,
+    label: sanitiseLabel(node.label),
+    source_uri: sanitiseSourceUri(node.source_uri),
     fetched_at: fetchedAt,
     age_days: ageDays,
   };
@@ -167,27 +288,103 @@ export const answerRecall = async (
     };
   }
 
+  // Build hits AFTER the share-store gate. Two privacy fixes the
+  // multi-LLM review caught:
+  //
+  // 1. mention_count must reflect ONLY hits that pass the room
+  //    filter. The previous version incremented a running counter
+  //    over every edge before filtering, then returned that as
+  //    `mention_count` — leaking private-room mention volume to
+  //    peers asking about a public entity (codex BLOCKER on
+  //    recall-sync.ts:145).
+  //
+  // 2. Nodes with `room` undefined must NOT pass the gate. The
+  //    previous predicate `if (hit.room && !sharable) continue`
+  //    short-circuited on falsy rooms and let metadata through.
+  //    Now we require `hit.room` AND `shareable.has(hit.room)`
+  //    explicitly (codex HIGH on recall-sync.ts:178).
   const now = deps.now();
   const hits: RecallPeerHit[] = [];
-  let totalForEntity = 0;
   for (const e of edges) {
     const hit = buildHit(e, deps.graph, now);
     if (!hit) continue;
-    totalForEntity++;
+    // Gate every hit: must have a room, must be in the shareable
+    // set, and must match req.room when the asker filtered by room.
+    if (!hit.room) continue;
+    if (!shareableRooms.has(hit.room)) continue;
     if (req.room && hit.room !== req.room) continue;
-    if (hit.room && !shareableRooms.has(hit.room)) continue;
     hits.push(hit);
   }
-  // Sort by recency desc, then trim.
+  // Sort by recency desc, then trim to the asker's limit.
   hits.sort((a, b) =>
     (b.fetched_at ?? '').localeCompare(a.fetched_at ?? ''),
   );
   return {
     type: 'recall_ok',
     entity_id: req.entity_id,
-    mention_count: totalForEntity,
+    // Count = post-filter hits. Same number an external caller
+    // could reproduce from `hits.length`, so no extra information
+    // crosses; consistent with the wire shape's privacy contract.
+    mention_count: hits.length,
     hits: hits.slice(0, limit),
   };
+};
+
+// ─────────────── per-peer rate limiter ────
+
+/**
+ * Token-bucket rate limiter — same shape as search-sync's. Without
+ * this, any peer can drive continuous graph loads + share-store
+ * reads + edge-index walks at the responder. Inline (not shared
+ * with search-sync) per the review's "lifecycle independence"
+ * decision: search and recall have separate quotas.
+ */
+interface BucketState {
+  tokens: number;
+  lastRefill: number;
+  lastActive: number;
+}
+
+const buckets = new Map<string, BucketState>();
+
+/**
+ * Evict idle buckets in a background interval rather than scanning the
+ * full map on every inbound request. The previous shape (inline scan
+ * inside `consumeToken`) is an O(N) operation per request — gemini
+ * synthesis MED on recall-sync.ts:326 flagged it as an algorithmic-
+ * complexity DoS vector when peer churn is high. Interval cadence is
+ * intentionally generous: idle-evict is housekeeping, not security.
+ */
+let evictTimer: NodeJS.Timeout | null = null;
+const startEvictionLoop = (): void => {
+  if (evictTimer) return;
+  evictTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [k, b] of buckets) {
+      if (now - b.lastActive > RATE_IDLE_EVICT_MS) buckets.delete(k);
+    }
+  }, 60_000);
+  evictTimer.unref?.();
+};
+
+const consumeToken = (peerId: string, now: number): boolean => {
+  startEvictionLoop();
+  let b = buckets.get(peerId);
+  if (!b) {
+    b = { tokens: RATE_BURST - 1, lastRefill: now, lastActive: now };
+    buckets.set(peerId, b);
+    return true;
+  }
+  // Refill — add tokens proportional to elapsed time, cap at burst.
+  const elapsed = (now - b.lastRefill) / 1000;
+  b.tokens = Math.min(RATE_BURST, b.tokens + elapsed * RATE_PER_SEC);
+  b.lastRefill = now;
+  b.lastActive = now;
+  if (b.tokens >= 1) {
+    b.tokens -= 1;
+    return true;
+  }
+  return false;
 };
 
 // ─────────────── protocol registration ────
@@ -206,8 +403,18 @@ export const registerRecallProtocol = (deps: RecallRegistryDeps): void => {
   void deps.node.handle(
     RECALL_PROTOCOL_ID,
     async (stream: Stream, connection: Connection) => {
+      const peerIdStr = connection.remotePeer.toString();
       try {
-        const req = await readFrame<RecallRequest>(stream);
+        // Rate-limit per peer BEFORE doing any work — graph load,
+        // share-store read, and edge-index walks all touch the hot
+        // path; a chatty peer mustn't be able to keep them busy.
+        if (!consumeToken(peerIdStr, Date.now())) {
+          await writeFrame(stream, { type: 'recall_err', reason: 'rate_limited' });
+          stream.close();
+          return;
+        }
+
+        const req = await readFrame<RecallRequest>(stream, MAX_INBOUND_FRAME_BYTES);
         if (!req || req.type !== 'recall') {
           await writeFrame(stream, {
             type: 'recall_err',
@@ -216,12 +423,29 @@ export const registerRecallProtocol = (deps: RecallRegistryDeps): void => {
           stream.close();
           return;
         }
+        // Cheap input validation — entity_id + room caps. Stops a
+        // peer from forcing an enormous-string graph traversal.
+        if (typeof req.entity_id !== 'string' || req.entity_id.length === 0 || req.entity_id.length > 256) {
+          await writeFrame(stream, { type: 'recall_err', reason: 'invalid_request' });
+          stream.close();
+          return;
+        }
+        if (req.room !== undefined && (typeof req.room !== 'string' || req.room.length > 128)) {
+          await writeFrame(stream, { type: 'recall_err', reason: 'invalid_request' });
+          stream.close();
+          return;
+        }
+
         const graph = await deps.getGraph();
         if (!graph) {
-          await writeFrame(stream, {
-            type: 'recall_err',
-            reason: 'invalid_request',
-          });
+          // Responder-side transient state — graph file isn't loaded
+          // yet, or the load failed. NOT the asker's fault. Sending
+          // `invalid_request` would (a) mislabel the asker as faulty
+          // in their telemetry and (b) cause caching of a permanent
+          // negative response. Close silently so the asker times out
+          // and naturally retries on a later request (claude-sonnet
+          // sub-agent HIGH-3).
+          log(`recall responder ← peer=${peerIdStr.slice(0, 12)} graph_unloaded`);
           stream.close();
           return;
         }
@@ -232,7 +456,7 @@ export const registerRecallProtocol = (deps: RecallRegistryDeps): void => {
         });
         await writeFrame(stream, resp);
         log(
-          `recall responder ← peer=${connection.remotePeer.toString().slice(0, 12)} entity=${req.entity_id} hits=${resp.type === 'recall_ok' ? resp.hits.length : 0}`,
+          `recall responder ← peer=${peerIdStr.slice(0, 12)} entity=${req.entity_id} hits=${resp.type === 'recall_ok' ? resp.hits.length : 0}`,
         );
       } catch (e) {
         log(`recall responder error: ${(e as Error).message}`);
@@ -281,8 +505,13 @@ export const openRecallStream = (
       );
       try {
         await writeFrame(stream, req);
+        // Inbound (response) cap is generous: a recall_ok with 50
+        // hits at ~512 B each + envelope overhead ≈ 30 KB. Cap at
+        // 64 KB so a malicious peer can't OOM the asker by sending
+        // an unbounded JSON document back through the protocol.
+        const RESP_MAX_BYTES = 64 * 1024;
         const resp = await withTimeout(
-          readFrame<RecallWire>(stream),
+          readFrame<RecallWire>(stream, RESP_MAX_BYTES),
           PER_PEER_TIMEOUT_MS,
           peerIdStr,
         );

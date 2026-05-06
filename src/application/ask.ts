@@ -38,6 +38,7 @@ import {
   type Graph,
   getNode,
   edgesByRelationAndSource,
+  empty as emptyGraph,
 } from '../domain/graph.js';
 import { type Match } from '../domain/vectors.js';
 import { rerankByRecency, halfLifeForRoom } from '../domain/recency-rerank.js';
@@ -163,9 +164,31 @@ const staleWindowFor = (room: string | undefined): number | undefined => {
  * Pick the agent action from satisfaction.score using v1 thresholds.
  * Stable surface — the same set used in peer-pull-telemetry's
  * federated path. Single source so future tuning lands in one place.
+ *
+ * SHALLOW-EVIDENCE DEMOTION (codex review M1 + M2):
+ *
+ *   - When the only evidence is exact-recall (recall hits, no vector
+ *     match), distance is synthesised as 0 and retrieval saturates to
+ *     1.0 by construction — not by quality. Recall hits are EVIDENCE
+ *     ("this entity is mentioned here"), not ANSWERS ("here is the
+ *     answer"). Such a result set must NOT auto-trigger `use_memory`.
+ *
+ *   - When fewer than 4 of the 5 scorer components are observable
+ *     (signature unobserved + consensus on the local-only carve-out),
+ *     the score collapses to retrieval+freshness+provenance — three
+ *     signals isn't enough completeness evidence to bypass a sanity
+ *     check. Demote `use_memory` to `verify_one_source` in this
+ *     case so the agent reads at least one source before answering.
+ *
+ * Lower tiers (`verify_one_source`, `search_required`, `ask_user`) are
+ * unaffected — they already imply the agent will look at sources.
  */
-const pickDecision = (s: SatisfactionScore): AgentDecision => {
-  if (s.score >= 0.85) return 'use_memory';
+const pickDecision = (
+  s: SatisfactionScore,
+  opts?: { readonly shallowEvidence?: boolean },
+): AgentDecision => {
+  const shallow = (opts?.shallowEvidence ?? false) || s.observed_components < 4;
+  if (s.score >= 0.85) return shallow ? 'verify_one_source' : 'use_memory';
   if (s.score >= 0.65) return 'verify_one_source';
   if (s.score >= 0.40) return 'search_required';
   return 'ask_user';
@@ -264,9 +287,14 @@ const buildHit = (
 export const ask =
   (deps: AskDeps) =>
   (params: AskParams): ResultAsync<AskResult, AppError> => {
+    // Rerank may fire even on a global search whose results land in
+    // recency-tracked rooms (gemini synthesis HIGH on ask.ts:267).
+    // For room-scoped searches we know up front; for global, we
+    // overfetch unconditionally and let the inner `anyRerank` decide
+    // whether to actually rerank. Trim happens at slice(0, k).
     const willRerank = params.room
       ? halfLifeForRoom(params.room) !== undefined
-      : false;
+      : true;
     const fetchK = willRerank ? params.k * RERANK_OVERFETCH : params.k;
 
     const useDeps = {
@@ -283,9 +311,25 @@ export const ask =
     return searchRes.andThen((matches) =>
       // 2. Single graph load — used for hit enrichment AND the
       // recall path (entities live in the same Graph).
+      //
+      // GRACEFUL DEGRADATION: when the graph load fails we used to
+      // abort the whole ask, breaking the "satisfaction signal on
+      // every path" contract (codex review HIGH on ask.ts:283).
+      // Now we return the search hits without mention enrichment
+      // and synthesise low-confidence satisfaction so the agent
+      // still gets `decision: search_required`.
       deps.graphs
         .load()
-        .mapErr((e): AppError => e)
+        .orElse((): ResultAsync<Graph, AppError> => {
+          // Fall through with an empty graph — search results stay
+          // intact, recall can't fire (no edges), satisfaction
+          // scores low → decision: search_required (or ask_user).
+          // Use the typed `emptyGraph()` factory rather than a
+          // structural `as Graph` cast (gemini synthesis MED on
+          // ask.ts:295 — the cast hid drift if Graph's shape ever
+          // gains fields).
+          return okAsync(emptyGraph());
+        })
         .andThen((graph) => {
           const nowMs = Date.now();
 
@@ -298,13 +342,29 @@ export const ask =
           );
           // rerankByRecency takes RankableMatch — our AskHit has the
           // right shape (node_id, room, distance, age_days)
-          const reranked = anyRerank ? rerankByRecession(enriched) : enriched;
+          const reranked = anyRerank ? rerankByRecencyAdapter(enriched) : enriched;
           const search_hits = reranked.slice(0, params.k);
 
-          // 5. Try to resolve the raw query as an entity alias.
-          // Single-token queries like "lemlist" or compound aliases
-          // like "claude code" → recall surfaces alongside search.
-          const resolvedEntity = deps.entityRegistry.resolve(params.query.trim());
+          // 5. Try to resolve the raw query as an entity. Mirrors
+          // recall.ts:81 — accept BOTH a canonical id (already-
+          // resolved callers passing e.g. `entity:product:lemlist`)
+          // and a free-form alias (`lemlist`, `claude code`). The
+          // codex review caught the asymmetry: `ask` only ran
+          // `resolve` so callers handing in a canonical id silently
+          // skipped recall.
+          //
+          // SAFETY: an alternate registry implementation could throw;
+          // wrap in try/catch so the typed AppError path stays clean.
+          // Codex review HIGH on ask.ts:307.
+          let resolvedEntity: Entity | undefined;
+          try {
+            const trimmed = params.query.trim();
+            resolvedEntity =
+              deps.entityRegistry.getById(trimmed) ??
+              deps.entityRegistry.resolve(trimmed);
+          } catch {
+            resolvedEntity = undefined;
+          }
 
           // Helper — compute satisfaction over the merged evidence
           // (search hits + recall hits when present). Single scorer,
@@ -314,12 +374,42 @@ export const ask =
           const buildSatisfaction = (
             recallHits: readonly RecallResult['hits'][number][] = [],
           ): { satisfaction: SatisfactionScore; decision: AgentDecision } => {
-            const enrichedAll: EnrichedMatch[] = [
-              ...search_hits.map((h) => toEnriched(h)),
+            // RANKING ORDER (codex review H1 — ask.ts:317):
+            //
+            //   `computeSatisfaction` derives retrieval quality from the
+            //   top-3 results. Exact recall hits (alias match → recall)
+            //   are higher-confidence than semantic neighbours by
+            //   construction, so they go FIRST in the merged evidence
+            //   set. Otherwise a 3-hit vector return could drown out an
+            //   exact "lemlist" alias match.
+            //
+            // DEDUPE BY node_id (gemini synthesis HIGH on ask.ts:341):
+            //
+            //   A single chunk can surface in BOTH search_hits (vector
+            //   neighbour) AND recallHits (mentions the resolved
+            //   entity). Without dedupe the top-3 retrieval slice
+            //   double-counts that node, inflating the score.
+            const merged: EnrichedMatch[] = [
               ...recallHits.map(recallHitToEnriched),
+              ...search_hits.map((h) => toEnriched(h)),
             ];
+            const seen = new Set<string>();
+            const enrichedAll: EnrichedMatch[] = [];
+            for (const m of merged) {
+              if (seen.has(m.node_id)) continue;
+              seen.add(m.node_id);
+              enrichedAll.push(m);
+            }
             const satisfaction = computeSatisfaction(enrichedAll);
-            return { satisfaction, decision: pickDecision(satisfaction) };
+            // Shallow evidence: the only matches are recall hits with
+            // no corroborating vector search. distance=0 is synthetic,
+            // so retrieval saturates by construction — agent must
+            // verify rather than trust the score.
+            const shallowEvidence = search_hits.length === 0 && recallHits.length > 0;
+            return {
+              satisfaction,
+              decision: pickDecision(satisfaction, { shallowEvidence }),
+            };
           };
 
           if (!resolvedEntity) {
@@ -370,10 +460,11 @@ export const ask =
     );
   };
 
-// rerankByRecency adapter — the rerank type wants a slim
-// RankableMatch shape; our AskHit has the same fields plus extras
-// so it conforms structurally.
-const rerankByRecession = (hits: readonly AskHit[]): readonly AskHit[] =>
+// Adapter — `rerankByRecency` wants a slim RankableMatch shape; our
+// AskHit has the same fields plus extras so it conforms structurally.
+// (Was named `rerankByRecession` — typo, not a different algorithm.
+// Renamed per claude-sonnet review.)
+const rerankByRecencyAdapter = (hits: readonly AskHit[]): readonly AskHit[] =>
   rerankByRecency(hits) as readonly AskHit[];
 
 // Silence unused parity imports.

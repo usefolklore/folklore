@@ -24,7 +24,7 @@ import { ResultAsync, errAsync, okAsync } from 'neverthrow';
 import type { AppError } from '../domain/errors.js';
 import type { ContentItem } from '../domain/content.js';
 import type { Graph, GraphEdge, GraphNode } from '../domain/graph.js';
-import { getNode, upsertEdge, upsertNode as upsertNodePure } from '../domain/graph.js';
+import { getNode, replaceNode, upsertEdge, upsertNode as upsertNodePure } from '../domain/graph.js';
 import { chunk as chunkText, NODE_BODY_MAX } from '../domain/chunks.js';
 import { hashContent } from '../infrastructure/http/fetcher.js';
 import type { SourceDescriptor, SourceRun } from '../domain/sources.js';
@@ -248,7 +248,12 @@ export const ingestBatch =
                 // 7. Apply chunk nodes + next_chunk edges in memory
                 let g: Graph = graph;
                 const fetched = new Date().toISOString();
-                const mentionedEntityIds: string[] = [];
+                // Frequency map of mentions per entity id — mirrors the
+                // graph's edge count exactly. touchMany takes this as
+                // a ReadonlyMap so a single registry write captures
+                // the true count instead of under-counting via Set
+                // dedupe (gemini synthesis HIGH on entity-registry.ts:153).
+                const mentionCounts = new Map<string, number>();
 
                 for (const k of kept) {
                   const isOnlyChunk = k.chunks.length === 1;
@@ -273,7 +278,15 @@ export const ingestBatch =
                           source_file: 'entities.json',
                           kind: 'entity',
                         };
-                        const sr = upsertNodePure(g, stub);
+                        // Wholesale replace (not merge) — codex review M5.
+                        // entities.json is the canonical store; if a
+                        // legacy stub had `aliases`, `mention_count`, or
+                        // `note` baked into the graph node, shallow
+                        // merge would preserve them forever even after
+                        // the registry moved on. replaceNode discards
+                        // all prior attributes so the graph stub stays
+                        // the slim projection it's supposed to be.
+                        const sr = replaceNode(g, stub);
                         if (sr.isOk()) g = sr.value;
                         const edge: GraphEdge = {
                           source: sourceId,
@@ -285,7 +298,10 @@ export const ingestBatch =
                         };
                         const er = upsertEdge(g, edge);
                         if (er.isOk()) g = er.value;
-                        mentionedEntityIds.push(m.entity_id);
+                        mentionCounts.set(
+                          m.entity_id,
+                          (mentionCounts.get(m.entity_id) ?? 0) + 1,
+                        );
                       }
                     }
                   }
@@ -295,26 +311,43 @@ export const ingestBatch =
                   }
                 }
 
-                // 8b. Bump entity mention_count + last_seen — ONE
-                // batched read-modify-write per ingest, regardless of
-                // how many mentions landed.
-                if (deps.mentionsExtractor && mentionedEntityIds.length > 0) {
-                  deps.mentionsExtractor.touchMany(mentionedEntityIds);
-                }
-
-                // 9. Single save
+                // 8b. Save graph FIRST, then bump registry counts.
+                //
+                // Order matters for crash recovery (codex review HIGH
+                // on batch-ingest.ts:301):
+                //   - Graph.save() persists `mentions` edges to graph.json.
+                //     This IS the truth — mention_count can always be
+                //     re-derived as the count of inbound mentions edges
+                //     per entity.
+                //   - registry.touchMany updates entities.json's
+                //     mention_count + last_seen — a derived projection.
+                //
+                // If process dies between the two: the graph holds
+                // the edges (recoverable), the registry has a slight
+                // undercount that the NEXT ingest fixes (or a future
+                // boot-time reconciliation pass collapses).
+                //
+                // Previous order (registry → graph) had the inverse
+                // failure: registry showing increased counts the
+                // graph couldn't back up — semantically broken with
+                // no recovery path.
                 return deps.graphs
                   .save(g)
                   .mapErr((e): AppError => e)
-                  .map((): SourceRun => ({
-                    source_id: descriptor.id,
-                    kind: descriptor.kind,
-                    room: descriptor.room,
-                    items_seen: items.length,
-                    items_new: newCount,
-                    items_updated: updatedCount,
-                    items_skipped: skippedCount,
-                  }));
+                  .map((): SourceRun => {
+                    if (deps.mentionsExtractor && mentionCounts.size > 0) {
+                      deps.mentionsExtractor.touchMany(mentionCounts);
+                    }
+                    return {
+                      source_id: descriptor.id,
+                      kind: descriptor.kind,
+                      room: descriptor.room,
+                      items_seen: items.length,
+                      items_new: newCount,
+                      items_updated: updatedCount,
+                      items_skipped: skippedCount,
+                    };
+                  });
               });
             });
           });

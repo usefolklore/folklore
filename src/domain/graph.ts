@@ -332,6 +332,30 @@ export const upsertNode = (g: Graph, node: GraphNode): Result<Graph, GraphError>
 };
 
 /**
+ * Wholesale replace a node — discard ALL existing attributes, write
+ * exactly the provided shape.
+ *
+ * Use this for entity stubs (codex review M5 on batch-ingest.ts:267):
+ * canonical entity fields (`aliases`, `mention_count`, `note`) live
+ * in `entities.json`, not the graph. A previous schema (or a third-
+ * party tool that wrote the graph file) might have left those fields
+ * on a stub node — `upsertNode`'s shallow merge would preserve them
+ * forever even after entities.json moved on. `replaceNode` enforces
+ * "graph stub IS the canonical projection, nothing else."
+ */
+export const replaceNode = (g: Graph, node: GraphNode): Result<Graph, GraphError> => {
+  for (const f of REQUIRED_NODE_FIELDS) {
+    if (!node[f]) return err(GraphError.invalidNode(f, node.id));
+  }
+  const existed = g.nodeById.has(node.id);
+  const replacement: GraphNode = { ...node };
+  const nodes = existed
+    ? g.json.nodes.map((n) => (n.id === node.id ? replacement : n))
+    : [...g.json.nodes, replacement];
+  return ok(fromJsonUnchecked({ ...g.json, nodes }));
+};
+
+/**
  * Insert or update an edge. Both endpoints must already exist. Edges
  * are undirected — the same pair (a,b) and (b,a) refer to the same
  * edge, keyed by the sorted pair.

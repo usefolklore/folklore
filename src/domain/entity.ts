@@ -128,10 +128,16 @@ export const createEntity = (
   };
 };
 
-/** Increment mention_count + advance last_seen. Pure. */
-export const touchEntity = (e: Entity, now: Date = new Date()): Entity => ({
+/**
+ * Increment mention_count by `times` (default 1) and advance last_seen.
+ * Pure. The `times` parameter exists so a single batch that mentions
+ * an entity ten times can post one update with +10 instead of either
+ * (a) writing the registry ten times or (b) under-counting via
+ * `Set`-based dedupe (gemini synthesis HIGH on entity-registry.ts:153).
+ */
+export const touchEntity = (e: Entity, now: Date = new Date(), times = 1): Entity => ({
   ...e,
-  mention_count: e.mention_count + 1,
+  mention_count: e.mention_count + Math.max(0, times),
   last_seen: now.toISOString(),
 });
 
