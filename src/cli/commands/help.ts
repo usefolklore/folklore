@@ -22,6 +22,7 @@ commands:
   sources <sub>           list | add | remove | enable | disable
   ask "<query>"           semantic search + context output
   eval <queries.jsonl>    retrieval quality eval — recall@k, NDCG@k, MRR
+  metrics                 daemon counters/gauges/histograms snapshot (JSON)
   report [--room R]       generate a knowledge graph report
   index [--room R]        index the project codebase, deps, submodules, git history
   daemon <sub>            start | stop | status — background research daemon

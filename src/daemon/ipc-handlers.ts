@@ -24,6 +24,7 @@ import { queryCache, type QueryCache } from '../domain/query-cache.js';
 import { semanticCache, type SemanticCache } from '../domain/semantic-cache.js';
 import type { JobQueue } from './job-queue.js';
 import type { JobPayload } from '../domain/job.js';
+import { metrics } from '../domain/metrics.js';
 
 // ─────────────── process-cached L1 query cache ───────────────
 
@@ -432,11 +433,27 @@ const jobsClearHandler = (queue: JobQueue): IpcHandler<Runtime> =>
  * fresh process (which itself errors with "daemon not running" — see
  * src/cli/commands/jobs.ts).
  */
+/**
+ * `metrics` handler — returns the live in-process metrics snapshot as
+ * JSON. Read-only, no parameters. Wired in step C of the multi-LLM
+ * round-2 architecture review (production readiness — observability).
+ *
+ *   $ wellinformed metrics
+ *   {"counters":{"ask.calls":42,…},"gauges":{"queue.queued":3,…},
+ *    "histograms":{"ask.latency.ms":{"p50":18.2,"p95":140.3,…}},…}
+ */
+const metricsHandler: IpcHandler<Runtime> =
+  async (_args): Promise<HandlerResult> => {
+    const snap = metrics.snapshot();
+    return { stdout: JSON.stringify(snap) + '\n', exit: 0 };
+  };
+
 export const buildIpcHandlers = (queue?: JobQueue): Map<string, IpcHandler<Runtime>> => {
   const h = new Map<string, IpcHandler<Runtime>>();
   h.set('ask', askHandler);
   h.set('stats', statsHandler);
   h.set('cache-stats', cacheStatsHandler);
+  h.set('metrics', metricsHandler);
   if (queue) {
     h.set('submit-job', submitJobHandler(queue));
     h.set('jobs-list', jobsListHandler(queue));
@@ -452,6 +469,6 @@ export const buildIpcHandlers = (queue?: JobQueue): Map<string, IpcHandler<Runti
  * try the socket before spawning.
  */
 export const IPC_DELEGATABLE_COMMANDS: ReadonlySet<string> = new Set([
-  'ask', 'stats', 'cache-stats',
+  'ask', 'stats', 'cache-stats', 'metrics',
   'submit-job', 'jobs-list', 'jobs-clear',
 ]);

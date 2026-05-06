@@ -50,6 +50,7 @@ import { jobs } from './commands/jobs.js';
 import { recallCmd } from './commands/recall.js';
 import { entity } from './commands/entity.js';
 import { evalCmd } from './commands/eval.js';
+import { metricsCmd } from './commands/metrics.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -100,6 +101,7 @@ const commands: Record<string, CommandFn> = {
   recall: recallCmd,
   entity,
   eval: evalCmd,
+  metrics: metricsCmd,
 };
 
 const futureCommands = new Set<string>([]);

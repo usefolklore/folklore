@@ -43,6 +43,7 @@ import {
 import { type Match, multiRrfFuse } from '../domain/vectors.js';
 import { rerankByRecency, halfLifeForRoom } from '../domain/recency-rerank.js';
 import { pprRerank } from '../domain/graph-rerank.js';
+import { metrics } from '../domain/metrics.js';
 import { searchByRoom, searchGlobal } from './use-cases.js';
 import { recall, type RecallResult } from './recall.js';
 import {
@@ -288,6 +289,11 @@ const buildHit = (
 export const ask =
   (deps: AskDeps) =>
   (params: AskParams): ResultAsync<AskResult, AppError> => {
+    // Latency histogram + call counter — populated regardless of error
+    // outcome so a failing-but-fast path is still visible.
+    const t0 = performance.now();
+    metrics.counter('ask.calls').inc();
+
     // Rerank may fire even on a global search whose results land in
     // recency-tracked rooms (gemini synthesis HIGH on ask.ts:267).
     // For room-scoped searches we know up front; for global, we
@@ -358,7 +364,7 @@ export const ask =
             ),
           ).map((lists): readonly Match[] => multiRrfFuse(lists, 60));
 
-    return searchRes.andThen((matches) =>
+    const result = searchRes.andThen((matches) =>
       // 2. Single graph load — used for hit enrichment AND the
       // recall path (entities live in the same Graph).
       //
@@ -509,6 +515,21 @@ export const ask =
           });
         }),
     );
+
+    // Latency + outcome metrics — applied via map/mapErr so both
+    // success and error paths record a sample. The histogram is
+    // bounded; high-volume hot path is safe.
+    return result
+      .map((r) => {
+        metrics.histogram('ask.latency.ms').observe(performance.now() - t0);
+        metrics.counter('ask.ok').inc();
+        return r;
+      })
+      .mapErr((e) => {
+        metrics.histogram('ask.latency.ms').observe(performance.now() - t0);
+        metrics.counter('ask.errors').inc();
+        return e;
+      });
   };
 
 // Adapter — `rerankByRecency` wants a slim RankableMatch shape; our
