@@ -10,7 +10,7 @@
  */
 
 import { join } from 'node:path';
-import { formatError } from '../../domain/errors.js';
+import { formatError, formatErrorWithHint } from '../../domain/errors.js';
 import { getNode } from '../../domain/graph.js';
 import { runFederatedSearch } from '../../application/federated-search.js';
 import { buildPeerPullTelemetry } from '../../application/peer-pull-telemetry.js';
@@ -86,7 +86,7 @@ export const ask = async (args: readonly string[]): Promise<number> => {
     })({ query: parsed.query, room: parsed.room, k: parsed.k });
 
     if (result.isErr()) {
-      console.error(`ask: ${formatError(result.error)}`);
+      console.error(`ask: ${formatErrorWithHint(result.error)}`);
       return 1;
     }
     return parsed.json
@@ -145,10 +145,58 @@ const renderAskJson = (r: AskResult): number => {
   return 0;
 };
 
+/**
+ * Hook payload schema version. Bump when the field set or ordering
+ * changes so downstream agent integrations can skip a stale block
+ * instead of silently misinterpreting it (round-3 review:
+ * "wellinformed_hook_version" — defends against zombie hooks after a
+ * project gets dropped or upgraded).
+ */
+const HOOK_SCHEMA_VERSION = 2;
+
+/**
+ * Inline agent contract — embedded directly in the rendered block so
+ * an LLM consuming the hook output does not need source-code access
+ * or vendor docs to interpret the satisfaction score. Without this,
+ * agents from different vendors (Codex, Gemini, Cursor) interpreting
+ * `satisfaction: 0.87` are guessing what the threshold for
+ * `use_memory` is.
+ */
+const renderAgentContract = (r: AskResult): void => {
+  const s = r.satisfaction;
+  // Decision FIRST — agents read top-to-bottom, so this is where
+  // they can short-circuit on use_memory and skip reading the rest
+  // (round-3 UX review HIGH on ask.ts:208-213).
+  console.log(`# wellinformed agent contract (hook_version: ${HOOK_SCHEMA_VERSION})`);
+  console.log(`action:        ${r.decision}`);
+  console.log(`satisfaction:  ${s.score.toFixed(2)}  (range 0.00–1.00)`);
+  console.log(
+    `thresholds:    ≥0.85 use_memory · ≥0.65 verify_one_source · ≥0.40 search_required · <0.40 ask_user`,
+  );
+  console.log(
+    `signals:       fresh=${s.fresh_count} stale=${s.stale_count} missing_provenance=${s.missing_provenance_count} observed=${s.observed_components}/5`,
+  );
+  if (s.reasons.length > 0) {
+    console.log(`reasons:       ${s.reasons.slice(0, 3).join(' · ')}`);
+  }
+  if (s.penalties.length > 0) {
+    console.log(`penalties:     ${s.penalties.slice(0, 3).join(' · ')}`);
+  }
+  console.log('');
+};
+
 const renderAskHuman = (r: AskResult): number => {
+  // 0. AGENT CONTRACT FIRST.
+  //
+  //    The hook injects this block into the LLM context window. Agents
+  //    read top-to-bottom; placing the decision + threshold legend at
+  //    the TOP lets them short-circuit reading 20-60 lines of result
+  //    text when action=use_memory. Round-3 multi-LLM UX review
+  //    flagged this as the #1 highest-leverage change in the codebase.
+  renderAgentContract(r);
+
   // 1. Entity recall — when the query resolved to a known entity,
-  //    show the recall block FIRST. This is the user's headline:
-  //    "you asked about lemlist — here's what I know across rooms."
+  //    show the recall block.
   if (r.resolved_entity && r.recall_result && r.recall_result.hits.length > 0) {
     const e = r.resolved_entity;
     console.log(`# wellinformed: "${r.query}" matches entity ${e.id}`);
@@ -164,7 +212,9 @@ const renderAskHuman = (r: AskResult): number => {
           : h.age_days < 14 ? ` · ${Math.round(h.age_days)}d`
           : h.age_days < 90 ? ` · ${Math.round(h.age_days / 7)}w`
           : ` · ${Math.round(h.age_days / 30)}mo`;
-      console.log(`  - ${h.label} [${room}${ageStr}] surface: "${h.surface}"`);
+      // Renamed `surface:` → `matched_on:` (round-3 UX review — `surface`
+      // was internal jargon; agents reading the hook had no context).
+      console.log(`  - ${h.label} [${room}${ageStr}] matched_on: "${h.surface}"`);
     }
     console.log('');
   }
@@ -173,12 +223,7 @@ const renderAskHuman = (r: AskResult): number => {
   if (r.search_hits.length === 0) {
     if (!r.resolved_entity) {
       console.log('no results found. try a broader query or run `wellinformed trigger` to index content first.');
-      console.log('');
     }
-    // Even with no hits, surface the agent contract — decision will
-    // be `ask_user` or `search_required`, telling the agent it
-    // should NOT trust the cache.
-    console.log(`action: ${r.decision}  satisfaction: ${r.satisfaction.score.toFixed(2)}`);
     return 0;
   }
 
@@ -189,7 +234,14 @@ const renderAskHuman = (r: AskResult): number => {
 
   for (const h of r.search_hits) {
     console.log(`### ${h.label}`);
-    console.log(`distance: ${h.distance.toFixed(3)} | room: ${h.room ?? '-'}`);
+    // Both relevance (1-distance, higher=better) and the underlying
+    // distance for callers who want it — round-3 UX review: agents and
+    // humans alike misread `distance: 0.187` because the orientation
+    // wasn't documented.
+    const relevance = Math.max(0, 1 - h.distance);
+    console.log(
+      `relevance: ${relevance.toFixed(3)} (cosine_distance ${h.distance.toFixed(3)}) | room: ${h.room ?? '-'}`,
+    );
     if (h.source_uri) console.log(`source: ${h.source_uri}`);
     if (h.mentioned_entities.length > 0) {
       const ents = h.mentioned_entities.slice(0, 5).map((e) => e.label).join(', ');
@@ -198,19 +250,14 @@ const renderAskHuman = (r: AskResult): number => {
     }
     if (typeof h.summary === 'string' && h.summary.length > 0) {
       console.log('');
-      console.log(h.summary.slice(0, 400));
+      // Mark truncation so consumers don't treat the cut as the end
+      // of the source text (round-3 UX review).
+      const TRUNC = 400;
+      const out = h.summary.length > TRUNC ? `${h.summary.slice(0, TRUNC)} […]` : h.summary;
+      console.log(out);
     }
     console.log('');
   }
-
-  // Agent contract — explicit completeness signal so the calling
-  // agent (Claude / Codex / etc.) knows whether to fall through to
-  // WebSearch. v1 thresholds: ≥0.85 use_memory · ≥0.65 verify_one_source ·
-  // ≥0.40 search_required · <0.40 ask_user.
-  const s = r.satisfaction;
-  console.log(`action: ${r.decision}  satisfaction: ${s.score.toFixed(2)}  · fresh=${s.fresh_count} stale=${s.stale_count} missing_provenance=${s.missing_provenance_count}`);
-  if (s.reasons.length > 0) console.log(`reasons: ${s.reasons.slice(0, 3).join(' · ')}`);
-  if (s.penalties.length > 0) console.log(`penalties: ${s.penalties.slice(0, 3).join(' · ')}`);
   return 0;
 };
 

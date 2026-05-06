@@ -20,7 +20,7 @@
 import { readFileSync } from 'node:fs';
 import { defaultRuntime } from '../runtime.js';
 import { indexNode } from '../../application/use-cases.js';
-import { formatError } from '../../domain/errors.js';
+import { formatErrorWithHint } from '../../domain/errors.js';
 import {
   NOTE_TYPES,
   type NoteType,
@@ -81,7 +81,7 @@ export const save = async (rest: readonly string[]): Promise<number> => {
 
   const rtRes = await defaultRuntime();
   if (rtRes.isErr()) {
-    console.error(`save: ${formatError(rtRes.error)}`);
+    console.error(`save: ${formatErrorWithHint(rtRes.error)}`);
     return 1;
   }
   const runtime = rtRes.value;
@@ -107,7 +107,7 @@ export const save = async (rest: readonly string[]): Promise<number> => {
 
     const indexed = await indexNode(deps)({ node, text, room: parsed.room });
     if (indexed.isErr()) {
-      console.error(`save: ${formatError(indexed.error)}`);
+      console.error(`save: ${formatErrorWithHint(indexed.error)}`);
       return 1;
     }
 

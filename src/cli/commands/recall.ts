@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import { recall } from '../../application/recall.js';
 import { runFederatedRecall } from '../../application/federated-recall.js';
 import { defaultRuntime, wellinformedHome } from '../runtime.js';
-import { formatError } from '../../domain/errors.js';
+import { formatError, formatErrorWithHint } from '../../domain/errors.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../../infrastructure/peer-transport.js';
 import { loadPeers } from '../../infrastructure/peer-store.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
@@ -79,7 +79,7 @@ flags:
 
   const rt = await defaultRuntime();
   if (rt.isErr()) {
-    console.error(`recall: ${formatError(rt.error)}`);
+    console.error(`recall: ${formatErrorWithHint(rt.error)}`);
     return 1;
   }
   const runtime = rt.value;

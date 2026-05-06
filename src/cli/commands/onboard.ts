@@ -28,6 +28,7 @@ import {
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
+import { connect } from 'node:net';
 import {
   intro,
   outro,
@@ -337,7 +338,49 @@ const stepDaemon = async (home: string): Promise<void> => {
     { detached: true, stdio: 'ignore', env: { ...process.env } },
   );
   child.unref();
-  log.success(`daemon started (pid=${child.pid}) · logs: ${join(home, 'daemon.log')}`);
+
+  // LIVENESS PROBE (round-3 UX review — `onboard.ts:339` always logged
+  // success regardless of whether the daemon actually came up).
+  //
+  // Two checks, in this order:
+  //   1. PID file appears (daemon wrote it during startLoop)
+  //   2. IPC socket accepts a connection (daemon's IPC server is up)
+  //
+  // Cap the wait at 8s — covers cold ONNX load + sqlite-vec open on
+  // slow machines without making a failed boot invisible. On timeout
+  // we log a warning + tail the daemon.log path so the user can see
+  // exactly what went wrong instead of a silent "started" lie.
+  const sockPath = join(home, 'daemon.sock');
+  const start = Date.now();
+  let pidVisible = false;
+  let sockReachable = false;
+  while (Date.now() - start < 8000) {
+    if (!pidVisible && isRunning(home)) pidVisible = true;
+    if (pidVisible && !sockReachable && existsSync(sockPath)) {
+      sockReachable = await new Promise<boolean>((resolve) => {
+        const sock = connect(sockPath);
+        const settle = (ok: boolean): void => {
+          try { sock.destroy(); } catch { /* benign */ }
+          resolve(ok);
+        };
+        sock.once('connect', () => settle(true));
+        sock.once('error', () => settle(false));
+        setTimeout(() => settle(false), 500);
+      });
+    }
+    if (pidVisible && sockReachable) break;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+
+  const elapsed = Date.now() - start;
+  const pid = readPid(home);
+  if (pidVisible && sockReachable) {
+    log.success(`daemon ready (pid=${pid}, ipc reachable in ${elapsed}ms) · logs: ${join(home, 'daemon.log')}`);
+  } else if (pidVisible && !sockReachable) {
+    log.warn(`daemon started (pid=${pid}) but IPC socket not reachable yet — initial requests may queue. Tail \`${join(home, 'daemon.log')}\` if it stays this way.`);
+  } else {
+    log.warn(`daemon spawn returned (pid=${child.pid}) but no PID file after ${elapsed}ms — see \`${join(home, 'daemon.log')}\` for the failure reason.`);
+  }
 };
 
 const stepP2pStatus = async (home: string, peerId: string | null): Promise<void> => {
