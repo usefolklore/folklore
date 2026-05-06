@@ -177,6 +177,62 @@ export const DEFAULT_HYBRID_CONFIG: HybridConfig = {
  * other list is zero (not a missing-data penalty — RRF's strength is that
  * it naturally handles absent candidates).
  */
+/**
+ * Multi-list Reciprocal Rank Fusion over plain Match lists.
+ *
+ * Pure generalisation of `rrfFuse` for the alias-expansion case:
+ * given N ranked Match[] lists, sum each candidate's 1 / (rrfK + rank)
+ * contribution from every list it appears in. Returns a single Match[]
+ * sorted by fused score (descending), with `distance` set to a synthetic
+ * value preserving the rank order so downstream consumers (PPR rerank,
+ * recency rerank, slice) keep their existing contracts.
+ *
+ * Empty input → empty output. Single list → that list unchanged.
+ *
+ * Used by ask.ts for "feed each entity alias as a parallel query and
+ * fuse" — the free version of HyDE that costs no LLM calls and uses
+ * structure already in the entity registry.
+ */
+export const multiRrfFuse = (
+  lists: readonly (readonly Match[])[],
+  rrfK = 60,
+): readonly Match[] => {
+  if (lists.length === 0) return [];
+  if (lists.length === 1) return lists[0].slice();
+
+  const byId = new Map<NodeId, { match: Match; score: number }>();
+  for (const list of lists) {
+    for (let i = 0; i < list.length; i++) {
+      const m = list[i];
+      const contribution = 1 / (rrfK + i + 1);
+      const existing = byId.get(m.node_id);
+      if (existing) {
+        // Keep the BEST distance seen (smallest) so downstream PPR /
+        // recency / scoring still has a meaningful number for this
+        // node. The fused-score-derived synthetic distance below
+        // controls ordering; the kept distance just survives as
+        // metadata.
+        if (m.distance < existing.match.distance) {
+          existing.match = m;
+        }
+        existing.score += contribution;
+      } else {
+        byId.set(m.node_id, { match: m, score: contribution });
+      }
+    }
+  }
+
+  const fused = [...byId.values()].sort((a, b) => b.score - a.score);
+
+  // Rewrite distance to preserve ordering. Top entry → smallest
+  // distance. Use 1 / (1 + score) so larger fused scores ⇒ smaller
+  // distances, monotonic and bounded in (0, 1).
+  return fused.map(({ match, score }) => ({
+    ...match,
+    distance: 1 / (1 + score),
+  }));
+};
+
 export const rrfFuse = (
   dense: readonly RankedCandidate[],
   bm25: readonly RankedCandidate[],
