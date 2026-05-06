@@ -10,6 +10,7 @@ usage:
 
 commands:
   onboard [--yes]         first-run installer — daemon, hooks, identity, rooms
+  login github            link a verified GitHub identity to your DID (OAuth)
   this [me|everyone]      index the current folder; 'everyone' shares it on P2P
   recall <name>           entity-first lookup across every room
   entity add|list|remove  manage the canonical entity registry
