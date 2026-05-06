@@ -42,6 +42,7 @@ import {
 } from '../domain/graph.js';
 import { type Match } from '../domain/vectors.js';
 import { rerankByRecency, halfLifeForRoom } from '../domain/recency-rerank.js';
+import { pprRerank } from '../domain/graph-rerank.js';
 import { searchByRoom, searchGlobal } from './use-cases.js';
 import { recall, type RecallResult } from './recall.js';
 import {
@@ -333,8 +334,26 @@ export const ask =
         .andThen((graph) => {
           const nowMs = Date.now();
 
+          // 2.5 GRAPH-AWARE RERANK (HippoRAG-2 / personalised PageRank).
+          //
+          // The bi-encoder gives us "is this chunk *similar* to the
+          // query?" — `pprRerank` adds "is this chunk *structurally
+          // central* among the chunks the query is about?" via a
+          // 1-hop walk over `mentions` + `next_chunk` edges seeded by
+          // the candidate set. Two chunks that co-mention the same
+          // entity boost each other; a chunk that mentions an entity
+          // referenced by 5 other top-K candidates climbs.
+          //
+          // Pure: input matches → output matches with rewritten
+          // `distance` field. Falls through unchanged when graph has
+          // no usable edges (empty-graph fallback path) or the PPR
+          // run errors. Default β=0.5 matches HippoRAG-2's reported
+          // sweet spot; the eval harness can ablate.
+          const pprRes = pprRerank(graph, matches);
+          const ranked: readonly Match[] = pprRes.isOk() ? pprRes.value : matches;
+
           // 3. Build search hits with mention enrichment
-          const enriched = matches.map((m) => buildHit(m, graph, deps.entityRegistry, nowMs));
+          const enriched = ranked.map((m) => buildHit(m, graph, deps.entityRegistry, nowMs));
 
           // 4. Apply rerank when ANY hit's room has a policy
           const anyRerank = enriched.some(

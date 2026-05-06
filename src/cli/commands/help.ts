@@ -21,6 +21,7 @@ commands:
   trigger [--room R]      fetch and index content from enabled sources
   sources <sub>           list | add | remove | enable | disable
   ask "<query>"           semantic search + context output
+  eval <queries.jsonl>    retrieval quality eval — recall@k, NDCG@k, MRR
   report [--room R]       generate a knowledge graph report
   index [--room R]        index the project codebase, deps, submodules, git history
   daemon <sub>            start | stop | status — background research daemon
