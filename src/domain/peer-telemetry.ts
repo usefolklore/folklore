@@ -179,15 +179,29 @@ const computeComponents = (results: readonly EnrichedMatch[]): Components => {
     observed: true,
   };
 
-  // Consensus — observed when at least one peer (or local) attribution exists.
-  // For a result set entirely from one origin, consensus.value is 0.5
-  // (single source, can't tell if the agreement is meaningful).
+  // Consensus — distinct origins among the result set.
+  // ALL-LOCAL ('source_peer' is null on every match): consensus is
+  // not meaningfully testable — it's the user's own corpus, by
+  // definition single-origin. We treat this as "consensus not
+  // applicable" (component stays 1.0) rather than penalising the
+  // user for not having peers connected. The single-origin
+  // *penalty* below is also gated on remote presence.
+  // ANY-REMOTE: penalise the case where every remote arrived from
+  // one peer (possible re-share / sybil), reward the case where
+  // multiple distinct peers converge on the same evidence.
   const origins = new Set<string>();
+  let hasRemote = false;
   for (const r of results) {
+    if (r.source_peer !== null) hasRemote = true;
     origins.add(r.source_peer ?? 'local');
-    for (const also of r.also_from_peers) origins.add(also);
+    for (const also of r.also_from_peers) {
+      if (also !== 'local') hasRemote = true;
+      origins.add(also);
+    }
   }
-  const consensus: Component = { value: origins.size >= 2 ? 1 : 0.5, observed: true };
+  const consensus: Component = hasRemote
+    ? { value: origins.size >= 2 ? 1 : 0.5, observed: true }
+    : { value: 1, observed: true };
 
   // Signature — observed iff at least one result reported has_signature.
   const sigKnown = results.filter((r) => r.has_signature !== undefined).length;
@@ -263,8 +277,21 @@ export const computeSatisfaction = (
     penalties.push('majority of results lack source_uri or fetched_at');
     penaltyTotal += 0.15;
   }
-  if (results.length > 0 && distinct_origins === 1) {
-    penalties.push('single origin — possible re-share without independence');
+  // Single-origin penalty only fires when there's at least one
+  // remote source AND every remote collapses to one peer. Pure-
+  // local result sets (source_peer === null) are NOT penalised —
+  // "local" isn't a re-share, it's the user's own corpus.
+  const hasRemoteForPenalty = results.some(
+    (r) =>
+      r.source_peer !== null ||
+      r.also_from_peers.some((p) => p !== 'local'),
+  );
+  if (
+    results.length > 0 &&
+    distinct_origins === 1 &&
+    hasRemoteForPenalty
+  ) {
+    penalties.push('single remote origin — possible re-share without independence');
     penaltyTotal += 0.15;
   }
   if (results.length > 0 && results[0].distance > 1.5) {

@@ -169,6 +169,19 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
       room: r.room ?? null,
       hits,
       reranked: r.reranked,
+      // Agent contract — completeness/decision so callers can
+      // decide whether to fall through to WebSearch. Same shape
+      // as the CLI output for consistency.
+      satisfaction: r.satisfaction.score,
+      decision: r.decision,
+      satisfaction_detail: {
+        fresh: r.satisfaction.fresh_count,
+        stale: r.satisfaction.stale_count,
+        missing_provenance: r.satisfaction.missing_provenance_count,
+        distinct_origins: r.satisfaction.distinct_origins,
+        reasons: r.satisfaction.reasons,
+        penalties: r.satisfaction.penalties,
+      },
     };
     if (r.resolved_entity) {
       payload.resolved_entity = {
@@ -244,6 +257,14 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
       lines.push('');
     }
   }
+
+  // Agent contract — same line shape as CLI ask. Lets the calling
+  // agent (smart-hook → Claude) decide whether the indexed context
+  // is enough or it should fall through to WebSearch.
+  const s = r.satisfaction;
+  lines.push(`action: ${r.decision}  satisfaction: ${s.score.toFixed(2)}  · fresh=${s.fresh_count} stale=${s.stale_count} missing_provenance=${s.missing_provenance_count}`);
+  if (s.reasons.length > 0) lines.push(`reasons: ${s.reasons.slice(0, 3).join(' · ')}`);
+  if (s.penalties.length > 0) lines.push(`penalties: ${s.penalties.slice(0, 3).join(' · ')}`);
 
   const stdout = lines.join('\n');
   cache.set(cacheKey, stdout);
