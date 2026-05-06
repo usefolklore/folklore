@@ -11,7 +11,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { formatError } from '../../domain/errors.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
-import { isRunning, readPid, removePid, startLoop, daemonLog } from '../../daemon/loop.js';
+import { isRunning, readPid, removePid, startLoop, daemonLog, type LoopHandle } from '../../daemon/loop.js';
 import { defaultRuntime, runtimePaths } from '../runtime.js';
 import { startIpcServer } from '../../daemon/ipc.js';
 import { buildIpcHandlers } from '../../daemon/ipc-handlers.js';
@@ -199,18 +199,7 @@ const run = async (): Promise<number> => {
     () => { /* swallow */ },
   );
 
-  const shutdown = async (): Promise<void> => {
-    try { clearInterval(refreshTimer); } catch { /* best-effort */ }
-    try { await watchers.stop(); } catch { /* best-effort */ }
-    try { jobQueue.stop(); } catch { /* best-effort */ }
-    try { await ipc.stop(); } catch { /* best-effort */ }
-    try { rt.value.close(); } catch { /* best-effort */ }
-    try { await writeLock.release(); } catch { /* best-effort */ }
-  };
-  process.on('SIGTERM', () => { void shutdown(); });
-  process.on('SIGINT', () => { void shutdown(); });
-
-  await startLoop({
+  const loop: LoopHandle = await startLoop({
     ingestDeps: rt.value.ingestDeps,
     rooms: rt.value.rooms,
     graphs: rt.value.graphs,
@@ -222,7 +211,48 @@ const run = async (): Promise<number> => {
     // tick-vs-worker lost-update race on graph.json.
     graphMutex: rt.value.graphMutex,
   });
-  await shutdown();
+
+  // SINGLE-OWNER SHUTDOWN (multi-LLM round-2 review).
+  //
+  //   Previously two SIGTERM handlers raced — one in `loop.ts` calling
+  //   `process.exit(0)` mid-flight while the supervisor here was still
+  //   flushing IPC + write lock + runtime. The loop now exposes a
+  //   cleanup callback; this supervisor orchestrates the full chain in
+  //   a fixed order so shutdown is deterministic and idempotent.
+  //
+  // Order matters:
+  //   refresh timer  — cheapest, drop the lock-keepalive first
+  //   watchers       — stop fs events so no new jobs queue
+  //   jobQueue       — drain to "stopped" so worker doesn't pick a
+  //                    new job after libp2p teardown
+  //   ipc            — close the socket so no more inbound RPCs
+  //   loop           — libp2p protocol unregistration + node.stop
+  //   runtime        — close sqlite-vec + ONNX
+  //   write lock     — release LAST so a concurrent CLI gets the
+  //                    "daemon already running" answer until we're
+  //                    fully torn down
+  let shuttingDown = false;
+  const shutdown = async (): Promise<void> => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    try { clearInterval(refreshTimer); } catch { /* best-effort */ }
+    try { await watchers.stop(); } catch { /* best-effort */ }
+    try { jobQueue.stop(); } catch { /* best-effort */ }
+    try { await ipc.stop(); } catch { /* best-effort */ }
+    try { await loop.cleanup(); } catch { /* best-effort */ }
+    try { rt.value.close(); } catch { /* best-effort */ }
+    try { await writeLock.release(); } catch { /* best-effort */ }
+    try { removePid(paths.home); } catch { /* best-effort */ }
+    daemonLog(paths.home, 'daemon stopped');
+    process.exit(0);
+  };
+  process.on('SIGTERM', () => { void shutdown(); });
+  process.on('SIGINT', () => { void shutdown(); });
+
+  // Pin process keep-alive HERE — the supervisor owns the lifetime,
+  // not the loop. Was previously inside startLoop which made the loop
+  // implicitly responsible for staying alive AND tearing down.
+  await new Promise<void>(() => {});
   return 0;
 };
 

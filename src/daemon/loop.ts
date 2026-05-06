@@ -320,13 +320,33 @@ const runRooms = (
 // ─────────────── loop ───────────────────
 
 /**
- * Start the daemon loop. Runs until SIGTERM / SIGINT. Writes PID
- * file on start, removes on exit.
+ * Loop handle returned by `startLoop`.
  *
- * This function never returns in normal operation — it blocks via
- * the timer. Tests should use `runOneTick` instead.
+ * Surface chosen by the multi-LLM round-2 review (`daemon.ts:202` +
+ * `loop.ts:574`): two SIGTERM handlers fighting over the same process
+ * is a real race — one calls `process.exit(0)` mid-flight while the
+ * other is still flushing the IPC server / write lock / runtime. The
+ * loop now exposes its libp2p teardown as a callback that the
+ * daemon-supervisor in `cli/commands/daemon.ts` orchestrates from one
+ * place, in one order.
  */
-export const startLoop = async (deps: DaemonDeps): Promise<void> => {
+export interface LoopHandle {
+  /**
+   * Tear down protocols + libp2p node started by the loop. Idempotent.
+   * Does NOT call process.exit and does NOT remove the PID file —
+   * those belong to the daemon supervisor that owns the process.
+   */
+  readonly cleanup: () => Promise<void>;
+}
+
+/**
+ * Start the daemon loop. Returns once the loop is wired (PID written,
+ * libp2p protocols registered, ticker scheduled). Process keep-alive
+ * is the supervisor's job: this function does not block forever and
+ * does not register signal handlers (was a dual-handler race with
+ * the daemon supervisor before the round-2 cleanup).
+ */
+export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
   writePid(deps.homePath);
   daemonLog(deps.homePath, `daemon started (pid=${process.pid}, interval=${deps.config.interval_seconds}s)`);
 
@@ -571,7 +591,25 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
   // Splice the live registry and health tracker into deps so runOneTick sees them.
   const tickDeps: DaemonDeps = { ...deps, shareSync: liveSync, healthTracker: liveHealthTracker };
 
+  // Run immediately on start
+  await runOneTick(tickDeps);
+
+  // Then schedule
+  const interval = setInterval(async () => {
+    await runOneTick(tickDeps);
+  }, deps.config.interval_seconds * 1000);
+  // Allow the supervisor to drive process lifetime — we don't pin the
+  // event loop on this timer.
+  interval.unref();
+
+  // Cleanup: libp2p side only. PID-file removal, runtime close, and
+  // the actual process.exit live in the daemon supervisor (see
+  // cli/commands/daemon.ts) so shutdown is single-owner.
+  let cleanedUp = false;
   const cleanup = async (): Promise<void> => {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    try { clearInterval(interval); } catch { /* benign */ }
     // Cleanup order: oracle pubsub → touch → search → share → node.stop
     if (liveOracle) {
       try { liveOracle.unsubscribe(); } catch { /* benign */ }
@@ -591,22 +629,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<void> => {
     if (liveNode) {
       try { await liveNode.stop(); } catch { /* benign */ }
     }
-    removePid(deps.homePath);
-    daemonLog(deps.homePath, 'daemon stopped');
-    process.exit(0);
   };
-  process.on('SIGTERM', () => { void cleanup(); });
-  process.on('SIGINT', () => { void cleanup(); });
 
-  // Run immediately on start
-  await runOneTick(tickDeps);
-
-  // Then schedule
-  const interval = setInterval(async () => {
-    await runOneTick(tickDeps);
-  }, deps.config.interval_seconds * 1000);
-
-  // Keep the process alive
-  interval.unref(); // allow process to exit on signal
-  await new Promise<void>(() => {}); // block forever
+  return { cleanup };
 };
