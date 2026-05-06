@@ -515,3 +515,97 @@ export const formatError = (e: AppError): string => {
       return `consolidation: invalid parameter '${e.field}' — ${e.message}`;
   }
 };
+
+/**
+ * Actionable remediation hint for an error, or null when there is no
+ * obvious fix the user can run.
+ *
+ * `formatError` answers "what went wrong"; `hintFor` answers "what do I
+ * do about it." Round-3 multi-LLM UX review flagged this as one of the
+ * three top ADD-NOW items: every CLI callsite that prints `formatError`
+ * leaves the user staring at a typed message with no next step.
+ *
+ * Architectural note: hints are CLI-facing, but living next to the
+ * error definitions keeps the mapping discoverable and prevents
+ * scattered ad-hoc strings across each command. CLI renderers can
+ * still suppress or rewrite by passing `--no-hints`.
+ */
+export const hintFor = (e: AppError): string | null => {
+  switch (e.type) {
+    // ─── graph state ──────────────────────────
+    case 'GraphReadError':
+      // Most common cause on first run: graph.json doesn't exist yet.
+      // The path-bearing message already shows ENOENT.
+      return /ENOENT|no such file/i.test(e.message)
+        ? 'fix: run `wellinformed trigger` to populate the graph (this is normal on first run).'
+        : 'fix: run `wellinformed doctor --fix` and check the file is readable.';
+    case 'GraphParseError':
+      return `fix: graph file is corrupted at ${e.path}. Restore from backup or move it aside and run \`wellinformed trigger\` to rebuild.`;
+    case 'GraphWriteError':
+      return 'fix: check disk space and that no other wellinformed process is holding the write lock (`wellinformed doctor`).';
+
+    // ─── vectors / embedder ───────────────────
+    case 'VectorOpenError':
+      return 'fix: run `wellinformed doctor --fix` to reset the sqlite-vec store, or check the file permissions on `~/.wellinformed/vectors.db`.';
+    case 'ModelLoadError':
+      // The model is fetched lazily on first embed (~90 MB for
+      // all-MiniLM-L6-v2). Either the cache is missing or the
+      // download failed.
+      return 'fix: check network access; the embedder downloads ~90 MB on first use. Re-run `wellinformed doctor` to retry, or set `WELLINFORMED_MODEL_CACHE` to a writable directory.';
+
+    // ─── peer / network ───────────────────────
+    case 'PeerDialError':
+      // Distinguish actionable causes by string-matching the inner
+      // message — gives the right hint without adding new error
+      // variants. Round-3 review flagged this string-typed reason
+      // as a separate concern; keep the call-to-action correct.
+      if (/timeout/i.test(e.message)) {
+        return `fix: peer is unreachable. Verify the address (\`${e.addr}\`), your firewall, and that the remote peer's daemon is running.`;
+      }
+      if (/ECONNREFUSED/i.test(e.message)) {
+        return 'fix: remote port refused the connection. The peer may be offline or listening on a different address.';
+      }
+      return 'fix: re-check the multiaddr; for diagnostics run `wellinformed peer list`.';
+
+    case 'PeerIdentityReadError':
+    case 'PeerIdentityParseError':
+      return 'fix: run `wellinformed identity init` to (re)create the peer identity, or `wellinformed identity import <hex>` to restore.';
+
+    // ─── share / privacy ──────────────────────
+    case 'SecretDetected':
+      // SecretDetected is the user's most-confusing error: an opaque
+      // node id and a list of pattern names with no path forward.
+      // Hint points at the two real fixes.
+      return `fix: the node was BLOCKED before reaching the network — your secret is safe locally. Either remove the credential from the source content, or move it to a non-shared room. Inspect the node with \`wellinformed get-node ${e.nodeId}\`.`;
+
+    case 'ShareAuditBlocked':
+      return `fix: review flagged nodes with \`wellinformed lint --room ${e.room}\` and either remove the secrets or unshare the room.`;
+
+    // ─── identity / signing ───────────────────
+    case 'IdentityKeyGenerationError':
+      return 'fix: run `wellinformed identity init` to create your DID, or `wellinformed onboard` to run the full setup wizard.';
+    case 'IdentityBadSignatureError':
+    case 'IdentityDeviceAuthorizationError':
+      return 'fix: the identity chain failed to verify. If this is your own identity, `wellinformed identity rotate` regenerates the device key under your existing DID.';
+
+    // Default: no actionable suffix.
+    default:
+      return null;
+  }
+};
+
+/**
+ * Convenience for CLI renderers — `formatError` plus an optional
+ * `hintFor` newline-suffix. Most CLI callsites should use this rather
+ * than calling the two helpers separately.
+ *
+ *   ask: graph read error at ~/.wellinformed/graph.json: ENOENT
+ *     → fix: run `wellinformed trigger` to populate the graph (this is normal on first run).
+ *
+ * Returns just the formatted error when there is no hint.
+ */
+export const formatErrorWithHint = (e: AppError): string => {
+  const base = formatError(e);
+  const hint = hintFor(e);
+  return hint ? `${base}\n  → ${hint}` : base;
+};

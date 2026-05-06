@@ -10,7 +10,7 @@
  */
 
 import { join } from 'node:path';
-import { formatError } from '../../domain/errors.js';
+import { formatError, formatErrorWithHint } from '../../domain/errors.js';
 import { auditRoom, buildPatterns } from '../../domain/sharing.js';
 import { nodesInRoom } from '../../domain/graph.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
@@ -47,7 +47,7 @@ const audit = async (rest: readonly string[]): Promise<number> => {
 
   const configResult = await loadConfig(configPath());
   if (configResult.isErr()) {
-    console.error(`share audit: ${formatError(configResult.error)}`);
+    console.error(`share audit: ${formatErrorWithHint(configResult.error)}`);
     return 1;
   }
   const cfg = configResult.value;
@@ -56,7 +56,7 @@ const audit = async (rest: readonly string[]): Promise<number> => {
   const graphRepo = fileGraphRepository(paths.graph);
   const graphResult = await graphRepo.load();
   if (graphResult.isErr()) {
-    console.error(`share audit: ${formatError(graphResult.error)}`);
+    console.error(`share audit: ${formatErrorWithHint(graphResult.error)}`);
     return 1;
   }
   const graph = graphResult.value;
@@ -146,7 +146,7 @@ const roomCmd = async (rest: readonly string[]): Promise<number> => {
 
   const configResult = await loadConfig(configPath());
   if (configResult.isErr()) {
-    console.error(`share room: ${formatError(configResult.error)}`);
+    console.error(`share room: ${formatErrorWithHint(configResult.error)}`);
     return 1;
   }
   const cfg = configResult.value;
@@ -155,7 +155,7 @@ const roomCmd = async (rest: readonly string[]): Promise<number> => {
   const graphRepo = fileGraphRepository(paths.graph);
   const graphResult = await graphRepo.load();
   if (graphResult.isErr()) {
-    console.error(`share room: ${formatError(graphResult.error)}`);
+    console.error(`share room: ${formatErrorWithHint(graphResult.error)}`);
     return 1;
   }
   const graph = graphResult.value;
@@ -186,7 +186,7 @@ const roomCmd = async (rest: readonly string[]): Promise<number> => {
     addSharedRoom(file, record),
   );
   if (writeResult.isErr()) {
-    console.error(`share room: ${formatError(writeResult.error)}`);
+    console.error(`share room: ${formatErrorWithHint(writeResult.error)}`);
     return 1;
   }
 
@@ -203,7 +203,7 @@ const roomCmd = async (rest: readonly string[]): Promise<number> => {
   const logPath = join(wellinformedHome(), 'share-log.jsonl');
   const ydocLoad = await loadYDoc(ydocPath);
   if (ydocLoad.isErr()) {
-    console.error(`share room: ${formatError(ydocLoad.error)}`);
+    console.error(`share room: ${formatErrorWithHint(ydocLoad.error)}`);
     return 1;
   }
   const ydoc = ydocLoad.value;
@@ -216,7 +216,7 @@ const roomCmd = async (rest: readonly string[]): Promise<number> => {
   }
   const ydocSave = await saveYDoc(ydocPath, ydoc);
   if (ydocSave.isErr()) {
-    console.error(`share room: ${formatError(ydocSave.error)}`);
+    console.error(`share room: ${formatErrorWithHint(ydocSave.error)}`);
     return 1;
   }
 
