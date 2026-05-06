@@ -40,7 +40,7 @@ import {
   edgesByRelationAndSource,
   empty as emptyGraph,
 } from '../domain/graph.js';
-import { type Match } from '../domain/vectors.js';
+import { type Match, multiRrfFuse } from '../domain/vectors.js';
 import { rerankByRecency, halfLifeForRoom } from '../domain/recency-rerank.js';
 import { pprRerank } from '../domain/graph-rerank.js';
 import { searchByRoom, searchGlobal } from './use-cases.js';
@@ -304,10 +304,59 @@ export const ask =
       embedder: deps.embedder,
     };
 
-    // 1. Vector search (overfetched when reranking)
-    const searchRes = params.room
-      ? searchByRoom(useDeps)({ room: params.room, text: params.query, k: fetchK })
-      : searchGlobal(useDeps)({ text: params.query, k: fetchK });
+    // 0. Early entity resolution.
+    //
+    //   `recall.ts` accepts both a canonical id and a free-form alias;
+    //   we mirror that here so a caller passing `entity:product:lemlist`
+    //   doesn't silently skip the entity-aware code paths (codex review
+    //   asymmetry). Wrapped in try/catch — alternate registry
+    //   implementations could throw (codex HIGH).
+    let resolvedEntity: Entity | undefined;
+    try {
+      const trimmed = params.query.trim();
+      resolvedEntity =
+        deps.entityRegistry.getById(trimmed) ??
+        deps.entityRegistry.resolve(trimmed);
+    } catch {
+      resolvedEntity = undefined;
+    }
+
+    // 0.5 ALIAS-BASED QUERY EXPANSION (free graph-RAG signal).
+    //
+    //   When the raw query resolves to a registered entity, fan out
+    //   parallel sub-queries on the entity's aliases ("lemlist",
+    //   "Lemlist", "lemlist.com", "@lemlist") and RRF-fuse the result
+    //   lists. This catches chunks where the surface form differs from
+    //   what the user typed — e.g. user types "lemlist" but the chunk
+    //   says "Lemlist Inc." Costs at most ALIAS_QUERY_CAP extra embed
+    //   + vector calls; only fires on the entity-resolution path.
+    const queryTexts: string[] = [params.query];
+    if (resolvedEntity && resolvedEntity.aliases.length > 0) {
+      const seen = new Set<string>([params.query.trim().toLowerCase()]);
+      const ALIAS_QUERY_CAP = 3; // total queries ≤ 4 (canonical + 3 aliases)
+      for (const a of resolvedEntity.aliases) {
+        if (queryTexts.length >= 1 + ALIAS_QUERY_CAP) break;
+        const lo = a.trim().toLowerCase();
+        if (lo.length === 0 || seen.has(lo)) continue;
+        seen.add(lo);
+        queryTexts.push(a);
+      }
+    }
+
+    // 1. Vector search — single query in the common case, parallel +
+    // RRF-fused when alias expansion fired.
+    const searchRes: ResultAsync<readonly Match[], AppError> =
+      queryTexts.length === 1
+        ? (params.room
+            ? searchByRoom(useDeps)({ room: params.room, text: params.query, k: fetchK })
+            : searchGlobal(useDeps)({ text: params.query, k: fetchK }))
+        : ResultAsync.combine(
+            queryTexts.map((text) =>
+              params.room
+                ? searchByRoom(useDeps)({ room: params.room, text, k: fetchK })
+                : searchGlobal(useDeps)({ text, k: fetchK }),
+            ),
+          ).map((lists): readonly Match[] => multiRrfFuse(lists, 60));
 
     return searchRes.andThen((matches) =>
       // 2. Single graph load — used for hit enrichment AND the
@@ -364,26 +413,9 @@ export const ask =
           const reranked = anyRerank ? rerankByRecencyAdapter(enriched) : enriched;
           const search_hits = reranked.slice(0, params.k);
 
-          // 5. Try to resolve the raw query as an entity. Mirrors
-          // recall.ts:81 — accept BOTH a canonical id (already-
-          // resolved callers passing e.g. `entity:product:lemlist`)
-          // and a free-form alias (`lemlist`, `claude code`). The
-          // codex review caught the asymmetry: `ask` only ran
-          // `resolve` so callers handing in a canonical id silently
-          // skipped recall.
-          //
-          // SAFETY: an alternate registry implementation could throw;
-          // wrap in try/catch so the typed AppError path stays clean.
-          // Codex review HIGH on ask.ts:307.
-          let resolvedEntity: Entity | undefined;
-          try {
-            const trimmed = params.query.trim();
-            resolvedEntity =
-              deps.entityRegistry.getById(trimmed) ??
-              deps.entityRegistry.resolve(trimmed);
-          } catch {
-            resolvedEntity = undefined;
-          }
+          // (entity resolution + alias-based query expansion already
+          // ran above — `resolvedEntity` is in scope from the outer
+          // closure.)
 
           // Helper — compute satisfaction over the merged evidence
           // (search hits + recall hits when present). Single scorer,
