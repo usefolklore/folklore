@@ -191,6 +191,58 @@ const stepIdentity = async (home: string): Promise<string | null> => {
   return res.value.peerId;
 };
 
+/**
+ * Optional GitHub OAuth link — wires a verified GitHub handle to the
+ * local DID via Device Flow. Skippable; users without
+ * `WELLINFORMED_GITHUB_CLIENT_ID` configured see a clear "skip + how
+ * to enable later" message rather than a broken flow.
+ *
+ * The actual OAuth round-trip lives in src/cli/commands/login.ts; this
+ * step calls it via the same dispatcher the standalone command uses.
+ */
+const stepLoginGithub = async (flags: Flags): Promise<void> => {
+  const clientId = process.env.WELLINFORMED_GITHUB_CLIENT_ID;
+  if (!clientId || clientId.trim().length === 0) {
+    note(
+      [
+        'Linking a GitHub identity to your local DID lets P2P peers verify',
+        'your signed envelopes against your public GitHub profile.',
+        '',
+        'To enable later:',
+        '  1. Register a Device Flow OAuth app:',
+        '     https://github.com/settings/applications/new',
+        '  2. export WELLINFORMED_GITHUB_CLIENT_ID="Iv1.<your_id>"',
+        '  3. wellinformed login github',
+      ].join('\n'),
+      'GitHub login (optional, skipped — no client id configured)',
+    );
+    return;
+  }
+
+  const proceed = flags.yes
+    ? false
+    : ensure(
+        await confirm({
+          message: `Link your GitHub identity now via ${clientId.slice(0, 8)}…?`,
+          initialValue: true,
+        }),
+      );
+  if (!proceed) {
+    log.message('skipped — run `wellinformed login github` when convenient');
+    return;
+  }
+
+  // Defer to the standalone login command so the flow + persistence
+  // logic is identical to `wellinformed login github`. One canonical
+  // path keeps the codex round-3 "behavioral inconsistency across
+  // parallel surfaces" verdict from re-emerging here.
+  const { login } = await import('./login.js');
+  const exit = await login(['github']);
+  if (exit !== 0) {
+    log.warn('login github failed — `wellinformed login github` to retry');
+  }
+};
+
 const stepSystemRooms = async (home: string): Promise<void> => {
   const sp = spinner();
   sp.start('marking system rooms shareable');
@@ -443,22 +495,25 @@ export const onboard = async (args: readonly string[]): Promise<number> => {
   log.step('2/8 · check runtime');
   stepDoctor();
 
-  log.step('3/8 · create P2P identity');
+  log.step('3/9 · create P2P identity');
   const peerId = await stepIdentity(home);
 
-  log.step('4/8 · system rooms');
+  log.step('4/9 · link GitHub identity (optional)');
+  await stepLoginGithub(flags);
+
+  log.step('5/9 · system rooms');
   await stepSystemRooms(home);
 
-  log.step('5/8 · wire Claude Code hooks');
+  log.step('6/9 · wire Claude Code hooks');
   await stepClaudeInstall(projectDir);
 
-  log.step('6/8 · past Claude sessions');
+  log.step('7/9 · past Claude sessions');
   await stepIngestSessions(flags, home);
 
-  log.step('7/8 · start daemon');
+  log.step('8/9 · start daemon');
   await stepDaemon(home);
 
-  log.step('8/8 · P2P status');
+  log.step('9/9 · P2P status');
   await stepP2pStatus(home, peerId);
 
   note(
