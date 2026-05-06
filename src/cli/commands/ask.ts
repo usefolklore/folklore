@@ -12,11 +12,10 @@
 import { join } from 'node:path';
 import { formatError } from '../../domain/errors.js';
 import { getNode } from '../../domain/graph.js';
-import { searchByRoom, searchGlobal } from '../../application/use-cases.js';
 import { runFederatedSearch } from '../../application/federated-search.js';
 import { buildPeerPullTelemetry } from '../../application/peer-pull-telemetry.js';
 import { formatTelemetryBlock } from '../../infrastructure/telemetry-formatter.js';
-import { rerankByRecency, halfLifeForRoom } from '../../domain/recency-rerank.js';
+import { ask as askUseCase, type AskResult } from '../../application/ask.js';
 import { defaultRuntime, wellinformedHome } from '../runtime.js';
 import type { Runtime } from '../runtime.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../../infrastructure/peer-transport.js';
@@ -76,110 +75,119 @@ export const ask = async (args: readonly string[]): Promise<number> => {
       return await askFederated(runtime, parsed);
     }
 
-    const deps = {
+    // Delegate to the application-layer ask use case. CLI is now
+    // a renderer of AskResult — composition (search + recall +
+    // rerank + mention enrichment) lives in application/ask.ts.
+    const result = await askUseCase({
       graphs: runtime.graphs,
       vectors: runtime.vectors,
       embedder: runtime.embedder,
-    };
+      entityRegistry: runtime.entityRegistry,
+    })({ query: parsed.query, room: parsed.room, k: parsed.k });
 
-    // Overfetch when the room has a recency-rerank policy — without
-    // it, a hit at rank 7 that decay-scores above the top-5 is
-    // already pruned by the cosine top-k. Factor-of-4 is a balance
-    // between latency and the largest realistic age spread inside a
-    // room (sessions has the widest, ~365d on month-old transcripts).
-    const RERANK_OVERFETCH = 4;
-    const willRerank = parsed.room ? halfLifeForRoom(parsed.room) !== undefined : false;
-    const fetchK = willRerank ? parsed.k * RERANK_OVERFETCH : parsed.k;
-    const matches = parsed.room
-      ? await searchByRoom(deps)({ room: parsed.room, text: parsed.query, k: fetchK })
-      : await searchGlobal(deps)({ text: parsed.query, k: fetchK });
-
-    if (matches.isErr()) {
-      console.error(`ask: ${formatError(matches.error)}`);
+    if (result.isErr()) {
+      console.error(`ask: ${formatError(result.error)}`);
       return 1;
     }
-
-    const graph = await runtime.graphs.load();
-    if (graph.isErr()) {
-      console.error(`ask: ${formatError(graph.error)}`);
-      return 1;
-    }
-
-    // Enrich + recency-rerank when the room (or any hit's room) has a
-    // policy. This is the place where rerank happens for the local
-    // (non-federated) ask path — relevance × decay (sessions: 30d
-    // half-life, research: 14d, toolshed: 60d). See
-    // src/domain/recency-rerank.ts.
-    const nowMs = Date.now();
-    const enriched = matches.value.map((m) => {
-      const node = getNode(graph.value, m.node_id);
-      const fetchedAt = typeof node?.fetched_at === 'string' ? node.fetched_at : null;
-      const fetchedMs = fetchedAt ? Date.parse(fetchedAt) : NaN;
-      const ageDays = Number.isFinite(fetchedMs)
-        ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
-        : null;
-      return {
-        node_id: m.node_id,
-        room: node?.room ?? undefined,
-        distance: m.distance,
-        age_days: ageDays ?? undefined,
-        _node: node,
-        _fetchedAt: fetchedAt,
-      };
-    });
-    const anyRerank = enriched.some((e) => halfLifeForRoom(e.room) !== undefined);
-    // Rerank, then slice back down to the user-requested k. The
-    // overfetch only widens the candidate pool — the visible result
-    // count is unchanged.
-    const reranked = anyRerank ? rerankByRecency(enriched) : enriched;
-    const ranked = reranked.slice(0, parsed.k);
-
-    if (parsed.json) {
-      const hits = ranked.map((e) => ({
-        id: e.node_id,
-        label: e._node?.label ?? null,
-        room: e._node?.room ?? null,
-        distance: Number(e.distance.toFixed(4)),
-        source_uri: e._node?.source_uri ?? e._node?.source_file ?? null,
-        summary: typeof e._node?.summary === 'string' ? (e._node.summary as string).slice(0, 400) : null,
-        fetched_at: e._fetchedAt,
-        age_days: e.age_days ?? null,
-      }));
-      console.log(JSON.stringify({ query: parsed.query, room: parsed.room ?? null, hits }));
-      return 0;
-    }
-
-    if (ranked.length === 0) {
-      console.log('no results found. try a broader query or run `wellinformed trigger` to index content first.');
-      return 0;
-    }
-
-    console.log(`# wellinformed results for: ${parsed.query}`);
-    if (parsed.room) console.log(`room: ${parsed.room}`);
-    if (anyRerank) console.log('ranked by: relevance × recency-decay');
-    console.log('');
-
-    for (const e of ranked) {
-      const node = e._node;
-      if (!node) {
-        console.log(`## [${e.node_id}] (not in graph)`);
-        continue;
-      }
-      console.log(`## ${node.label}`);
-      console.log(`distance: ${e.distance.toFixed(3)} | room: ${node.room ?? '-'} | wing: ${node.wing ?? '-'}`);
-      console.log(`source: ${node.source_uri ?? node.source_file}`);
-      if (node.published_at) console.log(`published: ${node.published_at}`);
-      if (node.author) console.log(`author: ${node.author}`);
-      if (typeof node.summary === 'string' && node.summary.length > 0) {
-        console.log('');
-        console.log(node.summary.slice(0, 400));
-      }
-      console.log('');
-    }
-    return 0;
+    return parsed.json
+      ? renderAskJson(result.value)
+      : renderAskHuman(result.value);
   } finally {
     runtime.close();
   }
+};
+
+// ─────────────── renderers ────────────────
+
+const renderAskJson = (r: AskResult): number => {
+  const hits = r.search_hits.map((h) => ({
+    id: h.node_id,
+    label: h.label,
+    room: h.room ?? null,
+    distance: Number(h.distance.toFixed(4)),
+    source_uri: h.source_uri ?? null,
+    summary: typeof h.summary === 'string' ? h.summary.slice(0, 400) : null,
+    fetched_at: h.fetched_at ?? null,
+    age_days: h.age_days ?? null,
+    mentioned_entities: h.mentioned_entities,
+  }));
+  const out: Record<string, unknown> = {
+    query: r.query,
+    room: r.room ?? null,
+    hits,
+    reranked: r.reranked,
+  };
+  if (r.resolved_entity) {
+    out.resolved_entity = {
+      id: r.resolved_entity.id,
+      label: r.resolved_entity.label,
+      type: r.resolved_entity.type,
+      mention_count: r.resolved_entity.mention_count,
+    };
+  }
+  if (r.recall_result) {
+    out.recall = {
+      total: r.recall_result.total,
+      hits: r.recall_result.hits,
+    };
+  }
+  console.log(JSON.stringify(out));
+  return 0;
+};
+
+const renderAskHuman = (r: AskResult): number => {
+  // 1. Entity recall — when the query resolved to a known entity,
+  //    show the recall block FIRST. This is the user's headline:
+  //    "you asked about lemlist — here's what I know across rooms."
+  if (r.resolved_entity && r.recall_result && r.recall_result.hits.length > 0) {
+    const e = r.resolved_entity;
+    console.log(`# wellinformed: "${r.query}" matches entity ${e.id}`);
+    console.log(`type: ${e.type} | aliases: ${e.aliases.join(', ')} | mentions: ${r.recall_result.total}`);
+    console.log('');
+    console.log(`## entity recall (top ${r.recall_result.hits.length})`);
+    for (const h of r.recall_result.hits) {
+      const room = h.room ?? '-';
+      const ageStr =
+        h.age_days === undefined
+          ? ''
+          : h.age_days < 1 ? ' · today'
+          : h.age_days < 14 ? ` · ${Math.round(h.age_days)}d`
+          : h.age_days < 90 ? ` · ${Math.round(h.age_days / 7)}w`
+          : ` · ${Math.round(h.age_days / 30)}mo`;
+      console.log(`  - ${h.label} [${room}${ageStr}] surface: "${h.surface}"`);
+    }
+    console.log('');
+  }
+
+  // 2. Vector search results
+  if (r.search_hits.length === 0) {
+    if (!r.resolved_entity) {
+      console.log('no results found. try a broader query or run `wellinformed trigger` to index content first.');
+    }
+    return 0;
+  }
+
+  console.log(`## semantic search results`);
+  if (r.room) console.log(`room: ${r.room}`);
+  if (r.reranked) console.log('ranked by: relevance × recency-decay');
+  console.log('');
+
+  for (const h of r.search_hits) {
+    console.log(`### ${h.label}`);
+    console.log(`distance: ${h.distance.toFixed(3)} | room: ${h.room ?? '-'}`);
+    if (h.source_uri) console.log(`source: ${h.source_uri}`);
+    if (h.mentioned_entities.length > 0) {
+      const ents = h.mentioned_entities.slice(0, 5).map((e) => e.label).join(', ');
+      const more = h.mentioned_entities.length > 5 ? `, +${h.mentioned_entities.length - 5}` : '';
+      console.log(`mentions: ${ents}${more}`);
+    }
+    if (typeof h.summary === 'string' && h.summary.length > 0) {
+      console.log('');
+      console.log(h.summary.slice(0, 400));
+    }
+    console.log('');
+  }
+  return 0;
 };
 
 /**

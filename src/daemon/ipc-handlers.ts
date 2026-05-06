@@ -19,11 +19,9 @@
 import type { Runtime } from '../cli/runtime.js';
 import type { HandlerResult, IpcHandler } from './ipc.js';
 import { formatError } from '../domain/errors.js';
-import { getNode } from '../domain/graph.js';
-import { searchByRoom, searchGlobal } from '../application/use-cases.js';
+import { ask } from '../application/ask.js';
 import { queryCache, type QueryCache } from '../domain/query-cache.js';
 import { semanticCache, type SemanticCache } from '../domain/semantic-cache.js';
-import { rerankByRecency, halfLifeForRoom } from '../domain/recency-rerank.js';
 import type { JobQueue } from './job-queue.js';
 import type { JobPayload } from '../domain/job.js';
 
@@ -138,112 +136,115 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     }
   }
 
-  const deps = {
+  // Delegate to the application use case — single source of truth
+  // for ask composition (search + recall + rerank + mention
+  // enrichment). Same canonical AskResult shape that the CLI and
+  // MCP surfaces consume.
+  const result = await ask({
     graphs: runtime.graphs,
     vectors: runtime.vectors,
     embedder: runtime.embedder,
-  };
+    entityRegistry: runtime.entityRegistry,
+  })({ query: parsed.query, room: parsed.room, k: parsed.k });
 
-  // Overfetch by 4× when the room has a recency-rerank policy so
-  // age-decay can promote nodes the cosine top-k would have pruned.
-  // Mirrors src/cli/commands/ask.ts — keep them in sync.
-  const RERANK_OVERFETCH = 4;
-  const willRerank = parsed.room ? halfLifeForRoom(parsed.room) !== undefined : false;
-  const fetchK = willRerank ? parsed.k * RERANK_OVERFETCH : parsed.k;
-  const matches = parsed.room
-    ? await searchByRoom(deps)({ room: parsed.room, text: parsed.query, k: fetchK })
-    : await searchGlobal(deps)({ text: parsed.query, k: fetchK });
-
-  if (matches.isErr()) {
-    return { stdout: '', stderr: `ask: ${formatError(matches.error)}\n`, exit: 1 };
+  if (result.isErr()) {
+    return { stdout: '', stderr: `ask: ${formatError(result.error)}\n`, exit: 1 };
   }
+  const r = result.value;
 
-  const graphRes = await runtime.graphs.load();
-  if (graphRes.isErr()) {
-    return { stdout: '', stderr: `ask: ${formatError(graphRes.error)}\n`, exit: 1 };
-  }
-
-  // JSON surface — same shape as src/cli/commands/ask.ts (local-only path)
   if (parsed.json) {
-    const nowMs = Date.now();
-    const hits = matches.value.map((m) => {
-      const node = getNode(graphRes.value, m.node_id);
-      const fetchedAt = typeof node?.fetched_at === 'string' ? node.fetched_at : null;
-      const fetchedMs = fetchedAt ? Date.parse(fetchedAt) : NaN;
-      const ageDays = Number.isFinite(fetchedMs)
-        ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
-        : null;
-      return {
-        id: m.node_id,
-        label: node?.label ?? null,
-        room: node?.room ?? null,
-        distance: Number(m.distance.toFixed(4)),
-        source_uri: node?.source_uri ?? node?.source_file ?? null,
-        summary: typeof node?.summary === 'string' ? (node.summary as string).slice(0, 400) : null,
-        fetched_at: fetchedAt,
-        age_days: ageDays,
+    const hits = r.search_hits.map((h) => ({
+      id: h.node_id,
+      label: h.label,
+      room: h.room ?? null,
+      distance: Number(h.distance.toFixed(4)),
+      source_uri: h.source_uri ?? null,
+      summary: typeof h.summary === 'string' ? h.summary.slice(0, 400) : null,
+      fetched_at: h.fetched_at ?? null,
+      age_days: h.age_days ?? null,
+      mentioned_entities: h.mentioned_entities,
+    }));
+    const payload: Record<string, unknown> = {
+      query: r.query,
+      room: r.room ?? null,
+      hits,
+      reranked: r.reranked,
+    };
+    if (r.resolved_entity) {
+      payload.resolved_entity = {
+        id: r.resolved_entity.id,
+        label: r.resolved_entity.label,
+        type: r.resolved_entity.type,
+        mention_count: r.resolved_entity.mention_count,
       };
-    });
-    const payload = JSON.stringify({ query: parsed.query, room: parsed.room ?? null, hits });
-    const stdout = payload + '\n';
+    }
+    if (r.recall_result) {
+      payload.recall = {
+        total: r.recall_result.total,
+        hits: r.recall_result.hits,
+      };
+    }
+    const stdout = JSON.stringify(payload) + '\n';
     cache.set(cacheKey, stdout);
     if (queryVec) l2.set(queryVec, stdout);
     return { stdout, exit: 0 };
   }
 
-  // Human-readable — match src/cli/commands/ask.ts output verbatim
-  // (including the Phase A body-text + Phase D recency rerank).
-  if (matches.value.length === 0) {
+  // Human-readable rendering
+  if (r.search_hits.length === 0 && !r.resolved_entity) {
     const stdout = 'no results found. try a broader query or run `wellinformed trigger` to index content first.\n';
     cache.set(cacheKey, stdout);
     if (queryVec) l2.set(queryVec, stdout);
     return { stdout, exit: 0 };
   }
 
-  const nowMs = Date.now();
-  const enriched = matches.value.map((m) => {
-    const node = getNode(graphRes.value, m.node_id);
-    const fetchedAt = typeof node?.fetched_at === 'string' ? node.fetched_at : null;
-    const fetchedMs = fetchedAt ? Date.parse(fetchedAt) : NaN;
-    const ageDays = Number.isFinite(fetchedMs)
-      ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
-      : null;
-    return {
-      node_id: m.node_id,
-      room: node?.room ?? undefined,
-      distance: m.distance,
-      age_days: ageDays ?? undefined,
-      _node: node,
-    };
-  });
-  const anyRerank = enriched.some((e) => halfLifeForRoom(e.room) !== undefined);
-  // Rerank then slice to user-requested k — the overfetch widens
-  // the candidate pool only.
-  const reranked = anyRerank ? rerankByRecency(enriched) : enriched;
-  const ranked = reranked.slice(0, parsed.k);
-
   const lines: string[] = [];
-  lines.push(`# wellinformed results for: ${parsed.query}`);
-  if (parsed.room) lines.push(`room: ${parsed.room}`);
-  if (anyRerank) lines.push('ranked by: relevance × recency-decay');
-  lines.push('');
-  for (const e of ranked) {
-    const node = e._node;
-    if (!node) {
-      lines.push(`## [${e.node_id}] (not in graph)`);
-      continue;
-    }
-    lines.push(`## ${node.label}`);
-    lines.push(`distance: ${e.distance.toFixed(3)} | room: ${node.room ?? '-'} | wing: ${node.wing ?? '-'}`);
-    lines.push(`source: ${node.source_uri ?? node.source_file ?? ''}`);
-    if (node.published_at) lines.push(`published: ${node.published_at}`);
-    if (node.author) lines.push(`author: ${node.author}`);
-    if (typeof node.summary === 'string' && node.summary.length > 0) {
-      lines.push('');
-      lines.push(node.summary.slice(0, 400));
+
+  // Entity recall block — when the query matches a registered entity,
+  // surface this block FIRST. The user's question framed it: "if I
+  // say lemlist you need to remember everything said in the lemlist
+  // sense." This composition is the visible answer.
+  if (r.resolved_entity && r.recall_result && r.recall_result.hits.length > 0) {
+    const e = r.resolved_entity;
+    lines.push(`# wellinformed: "${r.query}" matches entity ${e.id}`);
+    lines.push(`type: ${e.type} | aliases: ${e.aliases.join(', ')} | mentions: ${r.recall_result.total}`);
+    lines.push('');
+    lines.push(`## entity recall (top ${r.recall_result.hits.length})`);
+    for (const h of r.recall_result.hits) {
+      const room = h.room ?? '-';
+      const ageStr =
+        h.age_days === undefined ? ''
+        : h.age_days < 1 ? ' · today'
+        : h.age_days < 14 ? ` · ${Math.round(h.age_days)}d`
+        : h.age_days < 90 ? ` · ${Math.round(h.age_days / 7)}w`
+        : ` · ${Math.round(h.age_days / 30)}mo`;
+      lines.push(`  - ${h.label} [${room}${ageStr}] surface: "${h.surface}"`);
     }
     lines.push('');
   }
+
+  if (r.search_hits.length > 0) {
+    lines.push('## semantic search results');
+    if (r.room) lines.push(`room: ${r.room}`);
+    if (r.reranked) lines.push('ranked by: relevance × recency-decay');
+    lines.push('');
+    for (const h of r.search_hits) {
+      lines.push(`### ${h.label}`);
+      lines.push(`distance: ${h.distance.toFixed(3)} | room: ${h.room ?? '-'}`);
+      if (h.source_uri) lines.push(`source: ${h.source_uri}`);
+      if (h.mentioned_entities.length > 0) {
+        const ents = h.mentioned_entities.slice(0, 5).map((e) => e.label).join(', ');
+        const more = h.mentioned_entities.length > 5 ? `, +${h.mentioned_entities.length - 5}` : '';
+        lines.push(`mentions: ${ents}${more}`);
+      }
+      if (typeof h.summary === 'string' && h.summary.length > 0) {
+        lines.push('');
+        lines.push(h.summary.slice(0, 400));
+      }
+      lines.push('');
+    }
+  }
+
   const stdout = lines.join('\n');
   cache.set(cacheKey, stdout);
   if (queryVec) l2.set(queryVec, stdout);

@@ -423,6 +423,76 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     },
   );
 
+  // ─────────────── federated_recall ─────
+  // Cross-peer entity recall via the /wellinformed/recall/1.0.0
+  // libp2p protocol. Sibling to federated_search; recall trades the
+  // embedding for an entity_id (deterministic across peers via the
+  // slug function). Peers gate by share-store; surface text on
+  // mention edges never crosses the wire.
+  server.registerTool(
+    'federated_recall',
+    {
+      description:
+        'Federated entity recall — fans out to connected libp2p peers and asks each "what mentions of <entity> live in your shared rooms?". ' +
+        'Returns merged chunk metadata with per-peer attribution. The complement to federated_search: use this when the agent has a concrete object name (product, repo, person) and wants to find every mention across the network. ' +
+        'When no peers are connected, returns peers_queried: 0 and only the local entity stats (no error). Privacy: the entity_id crosses (deterministic slug, low information content); chunk body text and mention surface text never cross.',
+      inputSchema: {
+        name: z.string().describe('Entity surface form OR canonical id. Resolved via the local registry first.'),
+        room: z.string().optional().describe('Restrict to a single room.'),
+        limit: z.number().int().min(1).max(50).default(20).describe('Max merged hits.'),
+      },
+    },
+    async ({ name, room, limit }) => {
+      const { runFederatedRecall } = await import('../application/federated-recall.js');
+      const { loadOrCreateIdentity, createNode, dialAndTag } = await import('../infrastructure/peer-transport.js');
+      const { loadPeers } = await import('../infrastructure/peer-store.js');
+      const cfgRes = await loadConfig(join(wellinformedHome(), 'config.yaml'));
+      if (cfgRes.isErr()) return errText(cfgRes.error);
+      const idRes = await loadOrCreateIdentity(join(wellinformedHome(), 'peer-identity.json'));
+      if (idRes.isErr()) return errText(idRes.error);
+      const nodeRes = await createNode(idRes.value, {
+        listenPort: 0,
+        listenHost: '127.0.0.1',
+        mdns: cfgRes.value.peer.mdns,
+        dhtEnabled: cfgRes.value.peer.dht.enabled,
+        peersPath: join(wellinformedHome(), 'peers.json'),
+      });
+      if (nodeRes.isErr()) return errText(nodeRes.error);
+      const node = nodeRes.value;
+      try {
+        const peersRes = await loadPeers(join(wellinformedHome(), 'peers.json'));
+        if (peersRes.isOk()) {
+          await Promise.all(
+            peersRes.value.peers.map(async (p) => {
+              for (const addr of p.addrs) {
+                try { await dialAndTag(node, addr); break; } catch { /* try next */ }
+              }
+            }),
+          );
+        }
+        const result = await runFederatedRecall(
+          { node, entityRegistry: runtime.entityRegistry },
+          { query: name, limit, room },
+        );
+        return okJson({
+          query: name,
+          entity_id: result.entity_id,
+          local_entity: result.entity ?? null,
+          local_mentions: result.local_mentions,
+          peers_queried: result.peers_queried,
+          peers_responded: result.peers_responded,
+          peers_unknown_entity: result.peers_unknown_entity,
+          peers_timed_out: result.peers_timed_out,
+          peers_errored: result.peers_errored,
+          took_ms: result.took_ms,
+          remote_hits: result.remote_hits,
+        });
+      } finally {
+        try { await node.stop(); } catch { /* benign */ }
+      }
+    },
+  );
+
   // ─────────────── graph_stats ──────────
 
   server.registerTool(
