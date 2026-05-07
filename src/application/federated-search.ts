@@ -115,6 +115,37 @@ export interface FederatedSearchParams {
    * order — backwards compatible with every existing test.
    */
   readonly peerOrder?: (peerIds: readonly string[]) => readonly string[];
+  /**
+   * Optional cap on how many peers to fan out to. After `peerOrder`
+   * runs, the top `maxPeers` are queried; the rest are skipped.
+   *
+   * The mechanism that actually spreads load (combined with the rep
+   * system's load_factor in rank_score): top-rep peers get the
+   * fan-out budget; medium-rep peers stay idle this round; over time
+   * the load_factor decays a peer that's been hit recently and the
+   * rotation continues organically.
+   *
+   * Defaults to no cap (current behaviour — fan out to every
+   * connected peer). When set with a low rank-budget alongside, the
+   * combined effect is "ask top-3 peers fully; ask top-8 peers with
+   * a tighter timeout; skip the rest."
+   */
+  readonly maxPeers?: number;
+  /**
+   * Tier-2 timeout for peers ranked between TIER_1_COUNT and
+   * `maxPeers`. Lets the federated layer give your top-N peers the
+   * full 2 s budget while still sampling tier-2 peers under a
+   * shorter (e.g. 700 ms) deadline. When omitted, every peer gets
+   * the full `perPeerTimeoutMs`.
+   */
+  readonly lowRankTimeoutMs?: number;
+  /**
+   * How many peers count as the "top tier" that get the full
+   * `perPeerTimeoutMs`. Default 3 — every peer beyond this gets
+   * `lowRankTimeoutMs` if it's set. Ignored when `lowRankTimeoutMs`
+   * is undefined.
+   */
+  readonly topTierCount?: number;
 }
 
 // ─────────────────────── per-peer timeout helper ──────────────────────────────
@@ -257,12 +288,21 @@ export const runFederatedSearch = async (
   const rawPeers = deps.node.getPeers().map((p) => p.toString());
   // Reputation ordering hook — caller may bubble high-rep peers to
   // the front with an epsilon-greedy floor. Defaults to libp2p's
-  // native order. The fan-out is still parallel (Promise.all is
-  // order-agnostic for parallelism), but the order is preserved
-  // through into the peerOutcomes array — useful for logs, future
-  // top-N caps, and the tighter timeout-budgets-by-rank work that
-  // lands later.
-  const peers = params.peerOrder ? params.peerOrder(rawPeers) : rawPeers;
+  // native order.
+  const orderedPeers = params.peerOrder ? params.peerOrder(rawPeers) : rawPeers;
+  // Top-N cap — the actual load-spreading mechanism alongside the
+  // rep system's load_factor. After ordering, only the top
+  // `maxPeers` get queried; the rest are skipped this round and
+  // their rank decays naturally. No cap (default) preserves the
+  // current "ask everyone" behaviour.
+  const peers = typeof params.maxPeers === 'number' && params.maxPeers > 0
+    ? orderedPeers.slice(0, params.maxPeers)
+    : orderedPeers;
+  const topTierCount = params.topTierCount ?? 3;
+  const peerBudgetMs = (idx: number): number =>
+    params.lowRankTimeoutMs !== undefined && idx >= topTierCount
+      ? params.lowRankTimeoutMs
+      : perPeerTimeoutMs;
   const req: SearchRequest = {
     type: 'search',
     embedding: Array.from(params.embedding),  // Float32Array → number[] (JSON-safe, Pitfall 3)
@@ -273,20 +313,19 @@ export const runFederatedSearch = async (
   const peerOutcomes: PeerOutcome[] = peers.length === 0
     ? []
     : await Promise.all(
-        peers.map((peerId) =>
+        peers.map((peerId, idx) =>
           withTimeout(
             peerId,
-            // openSearchStream returns ResultAsync — unwrap to a plain Promise so
-            // withTimeout can Promise.race it against the deadline.
-            // Promise.resolve() wraps the PromiseLike returned by ResultAsync.then()
-            // into a real Promise (TS 2345 — PromiseLike lacks .catch/.finally).
             Promise.resolve(
               streamOpener(deps.node, peerId, req).then(
                 (r) => (r.isOk() ? r.value : ([] as ReadonlyArray<PeerMatch>)),
                 () => [] as ReadonlyArray<PeerMatch>,
               ),
             ),
-            perPeerTimeoutMs,
+            // Tier-aware budget: top-tier peers (idx < topTierCount)
+            // get the full perPeerTimeoutMs; tier-2 peers get the
+            // tighter `lowRankTimeoutMs` if set.
+            peerBudgetMs(idx),
           ),
         ),
       );
