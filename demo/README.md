@@ -32,8 +32,12 @@ wellinformed metrics | jq .
 | `research-corpus/*.md`    | 15 markdown notes on cryogenic-LH2 detection.    |
 | `screencast.tape`         | VHS script for the terminal-only scenes.         |
 | `timing.tape`             | VHS script for the headline-timing teaser.       |
+| `scene-claude.tape`       | VHS script for the side-by-side timing comparison. |
+| `scene-codebase.tape`     | VHS script for the codebase Q&A in `claude -p`.  |
 | `screencast.gif`          | Rendered output (1100×720, ~770 KB).             |
 | `timing.gif`              | Rendered output (1100×480, ~180 KB).             |
+| `scene-claude.gif`        | Side-by-side: Claude alone vs Claude + wellinformed (1200×800, ~350 KB). |
+| `scene-codebase.gif`      | Codebase Q&A — `claude -p` cites `src/daemon/job-queue.ts` directly via the hook (1200×760, ~285 KB). |
 | `screenshots/`            | Stills from the live screen capture (recorder fills). |
 
 ## What the GIFs cover vs what needs live capture
@@ -46,16 +50,17 @@ real corpus — no faking. They cover scenes that fit a single terminal pane.
 | 0 · title                      | `screencast.gif`             |
 | 1 · load corpus                | implicit (run `setup.sh`)    |
 | 2 · direct ask + timing        | `screencast.gif`, `timing.gif` |
-| 3 · Claude Code hook injection | **live screen capture**      |
-| 4 · side-by-side timing        | **live screen capture**      |
+| 3 · Claude Code hook injection | covered inside `scene-claude.gif` (Run B path) |
+| 4 · side-by-side timing        | `scene-claude.gif` ✓         |
 | 5 · entity recall              | `screencast.gif`             |
-| 6 · P2P touch (peer pull)      | **live screen capture** (two terminals) |
-| 7 · codebase Q&A in Claude     | **live screen capture**      |
+| 6 · P2P touch (peer pull)      | **live capture** (two daemons, OBS) |
+| 7 · codebase Q&A in Claude     | `scene-codebase.gif` ✓       |
 | 8 · closing card               | `screencast.gif`             |
 
-**For the live-capture scenes:** OBS or built-in macOS Screen Capture both work. Two
-windows side-by-side at the same zoom level. Manuscript scene-4 has the exact prompt
-to type into both panels.
+**Live capture remaining:** scene 6 (P2P touch) needs two `wellinformed` daemons
+running with different `WELLINFORMED_HOME` values + an out-of-band multiaddr exchange.
+That's a multi-pane/multi-daemon setup VHS can't drive single-handed. OBS or macOS
+Screen Capture; manuscript scene-6 has the exact setup commands for both peers.
 
 ## Re-rendering
 
