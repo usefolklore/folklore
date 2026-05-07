@@ -11,6 +11,8 @@
 
 import { join } from 'node:path';
 import { formatError, formatErrorWithHint } from '../../domain/errors.js';
+import { ensureIdentity } from '../../application/identity-lifecycle.js';
+import { updatePeerReputation } from '../../application/update-peer-reputation.js';
 import { getNode } from '../../domain/graph.js';
 import { runFederatedSearch } from '../../application/federated-search.js';
 import { buildPeerPullTelemetry } from '../../application/peer-pull-telemetry.js';
@@ -356,6 +358,32 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
       result,
       graph: graph.value,
     });
+
+    // FIRE-AND-FORGET REPUTATION UPDATE.
+    //
+    //   Every federated ask becomes a review of the peers that
+    //   contributed, scoped to the subjects the answer was about.
+    //   Sourced from telemetry.satisfaction.score so it benefits
+    //   from the existing scorer's confidence + provenance signals.
+    //   Reviewer DID comes from `ensureIdentity()` — first ever call
+    //   creates a fresh DID; subsequent calls reuse it. Failures are
+    //   swallowed: reputation is observability, never user-facing.
+    if (result.peers_responded > 0) {
+      void (async () => {
+        try {
+          const id = await ensureIdentity(wellinformedHome());
+          if (id.isErr()) return;
+          await updatePeerReputation({
+            satisfaction_score: telemetry.satisfaction.score,
+            result,
+            graph: graph.value,
+            reviewer_did: id.value.user.did,
+            local_peer_id: idRes.value.peerId,
+            home: wellinformedHome(),
+          });
+        } catch { /* benign — rep is observability, not state */ }
+      })();
+    }
 
     if (parsed.json) {
       // JSON surface for the smart-hook and any programmatic consumer.

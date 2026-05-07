@@ -219,7 +219,10 @@ subcommands:
   add <multiaddr>   connect to a remote peer
   remove <id>       disconnect and remove a known peer
   list [--json]     show all known peers (stored — live status in Phase 18)
-  status            show own identity and peer count`;
+  status            show own identity and peer count
+  rep [<peer-id>]   inspect peer reputation (subjects × scores)
+                    --subject <key>       rank peers on one subject
+                    --json                machine-readable output`;
 
 // ─────────────────────── entry ────────────────────────────
 
@@ -230,6 +233,10 @@ export const peer = async (args: string[]): Promise<number> => {
     case 'remove': return remove(rest);
     case 'list':   return list(rest);
     case 'status': return status();
+    case 'rep': {
+      const { peersRep } = await import('./peers-rep.js');
+      return peersRep(rest);
+    }
     default:
       console.error(sub ? `peer: unknown subcommand '${sub}'` : 'peer: missing subcommand');
       console.error(USAGE);
