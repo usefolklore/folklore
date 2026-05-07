@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import { formatError, formatErrorWithHint } from '../../domain/errors.js';
 import { ensureIdentity } from '../../application/identity-lifecycle.js';
 import { updatePeerReputation } from '../../application/update-peer-reputation.js';
+import { buildReputationPeerOrder } from '../../application/peer-order-builder.js';
 import { getNode } from '../../domain/graph.js';
 import { runFederatedSearch } from '../../application/federated-search.js';
 import { buildPeerPullTelemetry } from '../../application/peer-pull-telemetry.js';
@@ -337,9 +338,23 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
     // Pass `text` so the local half uses the hybrid (BM25 + vector + RRF)
     // path that non-federated `ask` uses; peers still only receive the
     // embedding (SEC-03 boundary).
+    //
+    // peerOrder: reputation-aware ranking with an epsilon-greedy
+    // exploration floor — bubbles peers with a track record on this
+    // subject to the front while still sampling unknowns. Cold-start
+    // safe: empty/missing rep file degrades to libp2p's native order.
+    const peerOrderRes = await buildReputationPeerOrder({
+      home: wellinformedHome(),
+      localPeerId: idRes.value.peerId,
+      query: parsed.query,
+      room: parsed.room,
+      registry: runtime.entityRegistry,
+    });
+    const peerOrder = peerOrderRes.isOk() ? peerOrderRes.value : undefined;
+
     const result = await runFederatedSearch(
       { node, vectorIndex: runtime.vectors },
-      { embedding, k: parsed.k, room: parsed.room, text: parsed.query },
+      { embedding, k: parsed.k, room: parsed.room, text: parsed.query, peerOrder },
     );
 
     // 5. Print results with _source_peer annotation
