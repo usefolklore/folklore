@@ -44,10 +44,11 @@ One query. Three rooms. A starred GitHub repo, your Go source, and your own Clau
 
 | | |
 |---|---|
+| <img src="demo/scene-prompt-hook.gif" alt="UserPromptSubmit hook — answer arrives before Claude reads the message" width="420" /> | **The hook fires BEFORE the LLM reads your message.** UserPromptSubmit + wellinformed = retrieval at prompt time. Claude has the answer with citations *before* it considers a tool call. |
 | <img src="demo/timing.gif" alt="headline timing teaser" width="420" /> | **Direct query, sub-second.** 15 cryogenic-LH2 research notes, cold cache. Real `time` measurement. |
 | <img src="demo/scene-codebase.gif" alt="codebase Q&A" width="420" /> | **Codebase Q&A.** `claude -p` cites `src/daemon/job-queue.ts` directly via the wellinformed PreToolUse hook. |
 | <img src="demo/scene-touch.gif" alt="P2P touch — 5-peer mesh" width="420" /> | **P2P touch.** 5 daemons on 127.0.0.1; peer A pulls exclusive notes from peers B and D, attribution preserved. |
-| <img src="demo/screencast.gif" alt="full screencast" width="420" /> | **Full tour.** Agent contract, semantic search, entity recall by canonical name. |
+| <img src="demo/screencast.gif" alt="full screencast" width="420" /> | **Full tour.** Agent contract, semantic search, entity recall, peer reputation table. |
 
 Reproduce locally — every gif in `demo/` is a real recording, not a mock-up. See `demo/README.md` for the one-shot setup script and the [shooting manuscript](demo/MANUSCRIPT.md).
 
