@@ -2,26 +2,6 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" pre-bash'",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" pre-edit'",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
         "matcher": "Glob|Grep|Read|WebSearch|WebFetch",
         "hooks": [
           {
@@ -42,31 +22,6 @@
             "timeout": 10000
           }
         ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" post-edit'",
-            "timeout": 10000
-          },
-          {
-            "type": "command",
-            "command": "sh -c 'exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-post-edit.sh\"'",
-            "timeout": 3000
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" post-bash'",
-            "timeout": 5000
-          }
-        ]
       }
     ],
     "UserPromptSubmit": [
@@ -74,8 +29,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" route'",
-            "timeout": 10000
+            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-prompt-submit.cjs\"'",
+            "timeout": 5000
           }
         ]
       }
@@ -85,112 +40,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" session-restore'",
-            "timeout": 15000
-          },
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/auto-memory-hook.mjs\" import'",
-            "timeout": 8000
-          },
-          {
-            "type": "command",
-            "command": "sh -c 'exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-session-start.sh\"'",
+            "command": "sh -c 'CLAUDE_HOOK_EVENT=SessionStart exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-hook.sh\"'",
             "timeout": 5000
           }
         ]
       }
     ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" session-end'",
-            "timeout": 10000
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/auto-memory-hook.mjs\" sync'",
-            "timeout": 10000
-          },
-          {
-            "type": "command",
-            "command": "sh -c 'exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-session-capture.sh\"'",
-            "timeout": 5000
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "manual",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" compact-manual'"
-          },
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" session-end'",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "auto",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" compact-auto'"
-          },
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" session-end'",
-            "timeout": 6000
-          }
-        ]
-      }
-    ],
-    "SubagentStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" status'",
-            "timeout": 3000
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" post-task'",
-            "timeout": 5000
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" notify'",
-            "timeout": 3000
-          }
-        ]
-      }
-    ]
+    "SessionEnd": [],
+    "Stop": [],
+    "PreCompact": [],
+    "SubagentStart": [],
+    "SubagentStop": [],
+    "Notification": []
   },
   "statusLine": {
     "type": "command",

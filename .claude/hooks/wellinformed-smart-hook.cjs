@@ -56,14 +56,37 @@ const GAP_MIN = Number(process.env.WELLINFORMED_GAP_MIN ?? 0.02);
 // WELLINFORMED_PREFETCH_PEERS=0 to force local-only.
 const PREFETCH_PEERS = process.env.WELLINFORMED_PREFETCH_PEERS !== '0';
 
-const emit = (text) => {
-  process.stdout.write(JSON.stringify({
+const emit = (text, decision) => {
+  const out = {
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
       additionalContext: text,
     },
-  }) + '\n');
+  };
+  if (decision && decision.permissionDecision) {
+    out.hookSpecificOutput.permissionDecision = decision.permissionDecision;
+    if (decision.permissionDecisionReason) {
+      out.hookSpecificOutput.permissionDecisionReason = decision.permissionDecisionReason;
+    }
+  }
+  process.stdout.write(JSON.stringify(out) + '\n');
 };
+
+/**
+ * Opt-in: when WELLINFORMED_DENY_WEBSEARCH=1 AND the prefetch lands a
+ * confident answer (decision=use_memory, ≥2 hits, satisfaction ≥
+ * DENY_THRESHOLD), the PreToolUse hook DENIES the upcoming WebSearch
+ * or WebFetch tool call — Claude is forced to use the injected context
+ * instead of searching. Off by default (false positives are costly).
+ *
+ * Tools eligible for denial: WebSearch and WebFetch only. Local tools
+ * (Read / Glob / Grep) are never denied — they're cheap and there's no
+ * value in stopping them.
+ */
+const DENY_WEBSEARCH = process.env.WELLINFORMED_DENY_WEBSEARCH === '1';
+const DENY_THRESHOLD = Number(process.env.WELLINFORMED_DENY_THRESHOLD ?? 0.85);
+const DENY_MIN_HITS = Number(process.env.WELLINFORMED_DENY_MIN_HITS ?? 2);
+const DENIABLE_TOOLS = new Set(['WebSearch', 'WebFetch']);
 
 const safe = (fn) => { try { return fn(); } catch { return undefined; } };
 
@@ -215,6 +238,27 @@ const main = () => {
     (block && queriedPeers ? `${msg}\n\n${block}` : msg) + actionLine;
 
   if (hits.length > 0) {
+    // Optional denial path — gated on env flag + tool type +
+    // confidence threshold + hit count. When all four align, we
+    // deny the WebSearch/WebFetch and rely on the injected context.
+    const shouldDeny =
+      DENY_WEBSEARCH &&
+      DENIABLE_TOOLS.has(toolName) &&
+      action === 'use_memory' &&
+      typeof score === 'number' &&
+      score >= DENY_THRESHOLD &&
+      hits.length >= DENY_MIN_HITS;
+    if (shouldDeny) {
+      const reason =
+        `wellinformed: indexed context already answers this (satisfaction ${score.toFixed(2)}, ${hits.length} hits). ` +
+        `Use the injected context above instead of ${toolName}. ` +
+        `Override with WELLINFORMED_DENY_WEBSEARCH=0 if a fresh source is genuinely needed.`;
+      emit(
+        appendTelemetry(renderHits(hits, query, peersMeta)),
+        { permissionDecision: 'deny', permissionDecisionReason: reason },
+      );
+      process.exit(0);
+    }
     emit(appendTelemetry(renderHits(hits, query, peersMeta)));
   } else {
     logMiss(toolName, query);
