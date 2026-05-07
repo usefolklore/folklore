@@ -103,6 +103,18 @@ export interface FederatedSearchParams {
   readonly tunnelThreshold?: number;
   /** Per-peer deadline. Default 2000ms matches CONTEXT.md locked decision. */
   readonly perPeerTimeoutMs?: number;
+  /**
+   * Optional peer-ordering callback. When supplied, the connected
+   * peer list is passed through this function before fan-out — the
+   * reputation system uses it to bubble high-rep peers to the front
+   * (with an epsilon-greedy floor so unknown peers still get
+   * sampled). Pure: no I/O, no clock dependence at this layer; the
+   * caller closes any reputation/ranking state into the closure.
+   *
+   * Default behaviour (no callback) preserves the libp2p-native peer
+   * order — backwards compatible with every existing test.
+   */
+  readonly peerOrder?: (peerIds: readonly string[]) => readonly string[];
 }
 
 // ─────────────────────── per-peer timeout helper ──────────────────────────────
@@ -242,7 +254,15 @@ export const runFederatedSearch = async (
   // 2. Parallel fan-out — NEVER use ResultAsync.combine (short-circuits on first error).
   // Use plain Promise.all with per-promise withTimeout guards.
   // Anti-pattern locked from 17-RESEARCH.md: "Eager ResultAsync sequence on fan-out".
-  const peers = deps.node.getPeers().map((p) => p.toString());
+  const rawPeers = deps.node.getPeers().map((p) => p.toString());
+  // Reputation ordering hook — caller may bubble high-rep peers to
+  // the front with an epsilon-greedy floor. Defaults to libp2p's
+  // native order. The fan-out is still parallel (Promise.all is
+  // order-agnostic for parallelism), but the order is preserved
+  // through into the peerOutcomes array — useful for logs, future
+  // top-N caps, and the tighter timeout-budgets-by-rank work that
+  // lands later.
+  const peers = params.peerOrder ? params.peerOrder(rawPeers) : rawPeers;
   const req: SearchRequest = {
     type: 'search',
     embedding: Array.from(params.embedding),  // Float32Array → number[] (JSON-safe, Pitfall 3)

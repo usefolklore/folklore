@@ -108,6 +108,12 @@ while [[ $i -lt $NUM_PEERS ]]; do
 done
 
 # ── 3. peer B/C/D/E identities + unique notes ────────────
+#
+# Each peer needs the embedder model to ingest the note, but
+# downloading 90 MB × 4 fresh peers from scratch hangs the script
+# under timeouts. Symlink peer A's already-downloaded models dir into
+# each peer's home — same on-disk cache layout, zero re-downloads.
+# Falls back to per-peer download if peer A's models dir is empty.
 i=0
 while [[ $i -lt $NUM_PEERS ]]; do
   p="${PEERS[$i]}"
@@ -117,6 +123,9 @@ while [[ $i -lt $NUM_PEERS ]]; do
   note="${NOTES[$i]}"
   echo "→ peer $p: identity + note + share room"
   write_config "$h" "$port"
+  if [[ -d "$A_HOME/models" ]] && [[ ! -e "$h/models" ]]; then
+    ln -s "$A_HOME/models" "$h/models"
+  fi
   WELLINFORMED_HOME="$h" wellinformed identity init >/dev/null
   WELLINFORMED_HOME="$h" wellinformed save \
     --room research \
@@ -171,7 +180,11 @@ NOW="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
       echo "[setup-p2p] could not read peerId for peer $p; abort" >&2
       exit 1
     fi
-    addr="/ip4/127.0.0.1/tcp/$port"
+    # libp2p dial verification requires the full /p2p/<peerId>
+    # suffix on the multiaddr — without it, dialAndTag silently
+    # fails ("we don't know who we're connecting to") and the
+    # federated ask sees peers_queried: 0.
+    addr="/ip4/127.0.0.1/tcp/$port/p2p/$pid"
     if [[ $first -eq 0 ]]; then echo '    ,'; fi
     echo '    {'
     echo "      \"id\": \"$pid\","
@@ -181,7 +194,7 @@ NOW="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
     first=0
     # Persist peer id for the recording.
     echo "$pid" >"$A_HOME/peer-${p}-id"
-    echo "→ peer A knows peer $p: $addr/p2p/$pid"
+    echo "→ peer A knows peer $p: $addr"
     i=$((i + 1))
   done
   echo '  ]'
@@ -199,7 +212,7 @@ while [[ $i -lt $NUM_PEERS ]]; do
   "peers": [
     {
       "id": "$A_PEERID",
-      "addrs": ["/ip4/127.0.0.1/tcp/$A_PORT"],
+      "addrs": ["/ip4/127.0.0.1/tcp/$A_PORT/p2p/$A_PEERID"],
       "addedAt": "$NOW"
     }
   ]
