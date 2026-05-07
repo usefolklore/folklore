@@ -9,7 +9,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/demo.gif" alt="wellinformed CLI demo — peer identity, graph breadth, cross-source ask, federated ask, Claude Code wiring" width="880" />
+  <img src="demo/scene-claude.gif" alt="Side-by-side: Claude alone (web search, ~14 s, generic) vs Claude + wellinformed (hook injection, ~1.5 s, cited)" width="880" />
+</p>
+
+<p align="center">
+  <em>Same prompt. Same model. The only difference is the wellinformed PreToolUse hook.</em>
 </p>
 
 > **wellinformed is the only way to accumulate, share, and stream knowledge seamlessly into your LLM work sessions.**
@@ -35,6 +39,17 @@ One query. Three rooms. A starred GitHub repo, your Go source, and your own Clau
   <b>75.22% NDCG@10 on BEIR SciFact</b> &nbsp;·&nbsp; CPU-only &nbsp;·&nbsp; 11 ms p50 &nbsp;·&nbsp;
   <b>13 documented null attacks</b> &nbsp;·&nbsp; W3C did:key identity &nbsp;·&nbsp; libp2p federation &nbsp;·&nbsp; MIT
 </p>
+
+## See it in action
+
+| | |
+|---|---|
+| <img src="demo/timing.gif" alt="headline timing teaser" width="420" /> | **Direct query, sub-second.** 15 cryogenic-LH2 research notes, cold cache. Real `time` measurement. |
+| <img src="demo/scene-codebase.gif" alt="codebase Q&A" width="420" /> | **Codebase Q&A.** `claude -p` cites `src/daemon/job-queue.ts` directly via the wellinformed PreToolUse hook. |
+| <img src="demo/scene-touch.gif" alt="P2P touch — 5-peer mesh" width="420" /> | **P2P touch.** 5 daemons on 127.0.0.1; peer A pulls exclusive notes from peers B and D, attribution preserved. |
+| <img src="demo/screencast.gif" alt="full screencast" width="420" /> | **Full tour.** Agent contract, semantic search, entity recall by canonical name. |
+
+Reproduce locally — every gif in `demo/` is a real recording, not a mock-up. See `demo/README.md` for the one-shot setup script and the [shooting manuscript](demo/MANUSCRIPT.md).
 
 ## Why wellinformed exists
 

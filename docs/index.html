@@ -1017,6 +1017,42 @@
     </div>
   </section>
 
+  <!-- ───────────── DEMO BAND — proof of product (light) ─────────────
+       Drops the new VHS recording from demo/scene-claude.gif right
+       after the hero. Self-contained inline styles so the existing
+       chap/section CSS doesn't fight us. The gif is committed to the
+       repo at demo/scene-claude.gif and served from the same path
+       relative to the docs root via the GitHub Pages /docs publishing
+       layout (the path resolves once the site is deployed; for
+       repo-direct viewers, the README.md mirrors the same gif).
+  -->
+  <section id="demo-band" style="background: #fafaf7; padding: 4rem 0; border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light);">
+    <div class="shell" style="max-width: 1100px; margin: 0 auto; padding: 0 1.5rem;">
+      <div data-reveal style="text-align: center;">
+        <div class="chap-num" style="display: inline-block; margin-bottom: 1rem;">See it in action</div>
+        <h2 style="font-size: clamp(1.6rem, 3vw, 2.4rem); line-height: 1.15; margin: 0 0 0.6rem; font-weight: 600;">
+          Same model. Same query.<br/>
+          The only difference is wellinformed.
+        </h2>
+        <p class="hush" style="max-width: 60ch; margin: 0 auto 2rem; font-size: 1rem; line-height: 1.55; color: var(--paper-mute);">
+          Top: Claude alone, no hook. Web-searches, hedges. Bottom: same
+          <code>claude -p</code> with the wellinformed PreToolUse hook
+          wired — fetches the local graph, cites named research notes,
+          finishes in a fraction of the time. Real recording, no faking.
+        </p>
+        <img src="https://raw.githubusercontent.com/SaharBarak/wellinformed/main/demo/scene-claude.gif"
+             alt="Side-by-side: Claude alone vs Claude + wellinformed — same prompt, dramatically different timing and citations"
+             style="display: block; width: 100%; max-width: 1000px; margin: 0 auto; border-radius: 12px; box-shadow: 0 24px 48px -16px rgba(22, 22, 25, 0.18); border: 1px solid var(--border-light);" />
+        <p style="margin-top: 1.5rem; font-size: 0.86rem; font-family: var(--mono); color: var(--paper-mute);">
+          More demos: <a href="https://github.com/SaharBarak/wellinformed/blob/main/demo/README.md" style="color: #0f6a46;">timing</a> ·
+          <a href="https://github.com/SaharBarak/wellinformed/blob/main/demo/README.md" style="color: #0f6a46;">codebase Q&amp;A</a> ·
+          <a href="https://github.com/SaharBarak/wellinformed/blob/main/demo/README.md" style="color: #0f6a46;">5-peer P2P touch</a> ·
+          <a href="https://github.com/SaharBarak/wellinformed/blob/main/demo/README.md" style="color: #0f6a46;">full screencast</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
   <!-- ───────────── CHAPTER 01 — the thesis (dark) ───────────── -->
   <section id="manifesto">
     <div class="shell">
