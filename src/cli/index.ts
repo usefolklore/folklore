@@ -52,6 +52,7 @@ import { entity } from './commands/entity.js';
 import { evalCmd } from './commands/eval.js';
 import { metricsCmd } from './commands/metrics.js';
 import { login } from './commands/login.js';
+import { peersRep } from './commands/peers-rep.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -104,6 +105,15 @@ const commands: Record<string, CommandFn> = {
   eval: evalCmd,
   metrics: metricsCmd,
   login,
+  // Plural-form alias: `wellinformed peers rep …` works as well as
+  // `wellinformed peer rep …`. The subcommand dispatcher handles both.
+  peers: async (args: string[]): Promise<number> => {
+    const [sub, ...rest] = args;
+    if (sub === 'rep') return peersRep(rest);
+    console.error('peers: only `rep` is implemented today (more coming).');
+    console.error('  usage: wellinformed peers rep [<peer-id>] [--subject <key>] [--json]');
+    return sub ? 1 : 1;
+  },
 };
 
 const futureCommands = new Set<string>([]);
