@@ -25,6 +25,7 @@ import {
   type SubjectAggregate,
   type SubjectKey,
 } from '../domain/peer-reputation.js';
+import { acquireFileLock, releaseFileLock } from './peer-store.js';
 
 const FILE_NAME = 'peer-reputation.json';
 const SCHEMA_VERSION = 1 as const;
@@ -149,4 +150,52 @@ export const savePeerReputation = (
       (e) => PeerReputationStoreError.write(path, (e as Error).message),
     ),
   );
+};
+
+// ─────────────── transactional RMW ────────
+
+/**
+ * Transactional read-modify-write for `peer-reputation.json`.
+ *
+ * Closes the BLOCKER concurrency race the round-4 implementation
+ * review flagged: federated asks resolve in parallel, so two
+ * `updatePeerReputation` calls can land at the same time. Without a
+ * mutex, the slower one's `save` overwrites the faster one's review
+ * — peer A's review of peer B is silently destroyed by peer C's
+ * concurrent review of peer D.
+ *
+ * The lock is a sibling `.lock` file with the same stale-detection
+ * pattern as `peer-store.ts:mutatePeers`. Cross-process: works even
+ * when the daemon and a CLI command land at the same time.
+ */
+export const mutatePeerReputation = (
+  home: string,
+  local_peer_id: PeerIdRef,
+  transform: (current: PeerReputationFile) => PeerReputationFile,
+): ResultAsync<PeerReputationFile, PeerReputationStoreError> => {
+  const path = peerReputationPath(home);
+  const lockPath = `${path}.lock`;
+  return ResultAsync.fromPromise(
+    acquireFileLock(lockPath),
+    (e) => PeerReputationStoreError.write(path, `lock acquire failed: ${(e as Error).message}`),
+  )
+    .andThen(() => loadPeerReputation(home, local_peer_id))
+    .andThen((current) => {
+      const next = transform(current);
+      return savePeerReputation(home, next).map(() => next);
+    })
+    .andThen((result) =>
+      ResultAsync.fromPromise(
+        releaseFileLock(lockPath),
+        (e) => PeerReputationStoreError.write(path, `lock release failed: ${(e as Error).message}`),
+      ).map(() => result),
+    )
+    .orElse((err) =>
+      // On any error after lock acquisition, best-effort release the lock so
+      // a transient failure doesn't leave the lock file behind for the next run.
+      ResultAsync.fromPromise(
+        releaseFileLock(lockPath),
+        () => err,
+      ).andThen(() => errAsync<PeerReputationFile, PeerReputationStoreError>(err)),
+    );
 };

@@ -47,6 +47,15 @@ const isStaleLock = async (lockPath: string): Promise<boolean> => {
   }
 };
 
+/**
+ * Exported for shared use by `peer-reputation-store.ts` (closes the
+ * RMW race the round-4 implementation review flagged as a BLOCKER).
+ * Sibling-`.lock`-file pattern with stale-detection — same primitives
+ * used by `mutatePeers` here.
+ */
+export const acquireFileLock = (path: string): Promise<void> => acquireLock(path);
+export const releaseFileLock = (path: string): Promise<void> => releaseLock(path);
+
 const acquireLock = async (lockPath: string): Promise<void> => {
   const deadline = Date.now() + LOCK_MAX_WAIT_MS;
   while (true) {

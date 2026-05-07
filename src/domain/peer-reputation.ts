@@ -259,10 +259,25 @@ export const recordObservation = (
   const stale = input.stale_after_days ?? DEFAULT_STALE_AFTER_DAYS;
   const halfLife = input.decay_half_life_days ?? DEFAULT_DECAY_HALF_LIFE_DAYS;
 
-  const baseSum = prev?.weighted_sum ?? 0;
-  const baseSumSquares = prev?.weighted_sum_squares ?? 0;
-  const baseCount = prev?.weighted_review_count ?? 0;
-  const baseRaw = prev?.raw_review_count ?? 0;
+  // LAZY DECAY (round-4 implementation review HIGH on peer-reputation.ts:213).
+  //
+  //   Design intent: decay the EVIDENCE (weighted_sum, weighted_review_count),
+  //   not just the query-time rank_score. Without this, a peer who got a 0.95
+  //   review six months ago retains permanently high `confidence` and dominates
+  //   ranking forever. With this, evidence bleeds out of the running totals at
+  //   the same half-life as `rank_score` already uses, so the persisted
+  //   `posterior_mean` and `confidence` decay too.
+  //
+  //   "Lazy" — we only decay at write time (when a new observation lands or
+  //   the store is mutated). Cheap; no periodic compaction job needed.
+  const decay = prev
+    ? freshness(ageDaysBetween(prev.last_review_at, now), halfLife)
+    : 1;
+  const baseSum = (prev?.weighted_sum ?? 0) * decay;
+  const baseSumSquares = (prev?.weighted_sum_squares ?? 0) * decay;
+  const baseCount = (prev?.weighted_review_count ?? 0) * decay;
+  const baseRaw = prev?.raw_review_count ?? 0;       // raw count is observability,
+                                                      // never decayed
 
   const weighted_sum = baseSum + w * score;
   const weighted_sum_squares = baseSumSquares + w * score * score;
