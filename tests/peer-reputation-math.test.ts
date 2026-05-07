@@ -135,7 +135,10 @@ test('recordObservation — first observation creates a fresh bucket', () => {
   assert.ok(next.reviewers['did:key:zLocal']);
 });
 
-test('recordObservation — second observation accumulates', () => {
+test('recordObservation — second observation accumulates (same instant, no decay)', () => {
+  // Both observations at the same NOW so lazy decay is a no-op —
+  // pure accumulation test. The decay path is covered separately in
+  // peer-reputation-review-fixes.test.ts.
   const a = recordObservation(undefined, {
     target_peer_id: 'p',
     subject_key: 'k',
@@ -143,7 +146,7 @@ test('recordObservation — second observation accumulates', () => {
     subject_kind: 'entity',
     reviewer_did: 'did:key:zLocal',
     satisfaction_score: 0.9,
-    now: T_MINUS(2),
+    now: NOW,
   });
   const b = recordObservation(a, {
     target_peer_id: 'p',
@@ -156,8 +159,8 @@ test('recordObservation — second observation accumulates', () => {
   });
   assert.equal(b.raw_review_count, 2);
   assert.ok(Math.abs(b.weighted_sum - (0.9 + 0.7)) < 1e-9);
-  assert.equal(b.first_review_at, T_MINUS(2));   // preserved
-  assert.equal(b.last_review_at, NOW);            // bumped
+  assert.equal(b.first_review_at, NOW);   // preserved
+  assert.equal(b.last_review_at, NOW);    // bumped
 });
 
 test('recordObservation — relay weight halves the contribution', () => {
