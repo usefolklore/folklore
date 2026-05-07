@@ -1,10 +1,9 @@
-# wellinformed — terminal demo
-# Recorded via VHS (https://github.com/charmbracelet/vhs).
+# wellinformed — terminal demo (screencast)
 #
-# Walks through the queries described in demo/MANUSCRIPT.md scenes
-# 1, 2, 5, 7, 8 — the terminal-only beats. Scenes 3, 4, 6 (Claude
-# Code session, side-by-side timing, P2P touch) need live screen
-# capture; this gif covers what VHS can drive directly.
+# Headline gif. Walks through the queries described in
+# demo/MANUSCRIPT.md scenes 1, 2, 5, 7, 8 — the terminal-only beats.
+# Live-capture scenes (Claude Code panels, P2P touch) live in the
+# scene-* gifs alongside this one.
 #
 # Run: bash demo/setup.sh && vhs demo/screencast.tape
 # Output: demo/screencast.gif
@@ -15,7 +14,7 @@ Set Shell "zsh"
 Set FontSize 14
 Set Width 1100
 Set Height 720
-Set TypingSpeed 28ms
+Set TypingSpeed 24ms
 Set PlaybackSpeed 1.0
 Set Theme "Catppuccin Mocha"
 Set Padding 20
@@ -25,8 +24,6 @@ Set WindowBar Colorful
 Set WindowBarSize 30
 
 # ─── hidden setup ──────────────────────────────────────────
-# Pin the demo home + clear the screen before frame 1. The corpus
-# is already loaded by `bash demo/setup.sh` (prerequisite).
 Hide
 Type "export WELLINFORMED_HOME=$HOME/.wellinformed.demo"
 Enter
@@ -35,66 +32,61 @@ Enter
 Sleep 200ms
 Show
 
-# ─── scene 0: title ────────────────────────────────────────
+# ─── opening — value prop ──────────────────────────────────
 Type '# wellinformed — local-first knowledge graph for AI agents'
 Enter
-Type '# 15 notes on cryogenic LH2 leak detection — already loaded'
+Type '# 15 cryogenic-LH2 research notes already loaded · ready'
 Enter
-Sleep 1500ms
+Sleep 1800ms
 
-Type 'ls demo/research-corpus | head -5'
-Enter
-Sleep 2500ms
-
-# ─── scene 2: direct ask with timing ───────────────────────
-Type 'echo'
-Enter
-Type '# scene 2 — direct query, full result block'
-Enter
-Sleep 800ms
-
+# ─── direct ask with timing ────────────────────────────────
 Type 'time wellinformed ask "ML methods for liquid hydrogen leak detection" --k 3'
 Enter
 Sleep 4500ms
 
-# ─── scene 5: recall by entity ─────────────────────────────
+# ─── entity recall ─────────────────────────────────────────
 Type 'clear'
 Enter
-Type 'echo'
+Type '# entity recall — every chunk that mentions stanford-cryo-lab, across rooms'
 Enter
-Type '# scene 5 — entity recall: every chunk that mentions stanford-cryo-lab'
-Enter
-Sleep 800ms
+Sleep 700ms
 
 Type 'wellinformed recall stanford-cryo-lab'
 Enter
 Sleep 4500ms
 
-# ─── scene 5b: another entity recall to show the pattern ───
+# ─── second entity for variety ─────────────────────────────
 Type 'clear'
 Enter
-Type 'echo'
+Type '# same query channel, different entity'
 Enter
-Type '# scene 5b — entity recall: nasa-glenn'
-Enter
-Sleep 800ms
+Sleep 700ms
 
 Type 'wellinformed recall nasa-glenn'
 Enter
 Sleep 4500ms
 
-# ─── scene 8: closing ──────────────────────────────────────
+# ─── peer reputation snapshot — the new feature ────────────
 Type 'clear'
 Enter
-Type 'echo'
+Type '# peer reputation — the system tracks who knows what, learned from real federated asks'
+Enter
+Sleep 800ms
+
+Type 'wellinformed peers rep'
+Enter
+Sleep 3500ms
+
+# ─── closing ───────────────────────────────────────────────
+Type 'clear'
 Enter
 Type 'echo "wellinformed — local-first knowledge for AI agents"'
 Enter
 Type 'echo "  ✓ sub-second local retrieval"'
 Enter
-Type 'echo "  ✓ entity-aware recall"'
+Type 'echo "  ✓ entity-aware recall + peer reputation"'
 Enter
-Type 'echo "  ✓ proactive hook injection — see Claude Code panel demo"'
+Type 'echo "  ✓ proactive hook injection (PreToolUse + UserPromptSubmit)"'
 Enter
 Type 'echo "  ✓ P2P federation, signed envelopes, no server"'
 Enter

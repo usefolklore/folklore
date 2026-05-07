@@ -1,12 +1,12 @@
 # wellinformed — scene 4 — side-by-side timing comparison
 #
-# Same prompt to `claude -p` twice:
-#   Run A: in /tmp/demo-without-wellinformed (no project hooks)
-#   Run B: in this repo (wellinformed PreToolUse hook is wired)
+# THE marquee gif. Lead with the value prop, then prove it. Same
+# `claude -p` prompt run twice. Run A: no project hooks, Claude alone.
+# Run B: this repo, wellinformed PreToolUse hook wired.
 #
-# Both wrapped in `time` so the timing delta + the citation delta is
-# the headline signal. Run A web-searches and hedges; Run B gets the
-# wellinformed prefetch and cites local notes.
+# Total target: ~25-30 s gif. First 4 s carry the value proposition
+# in text so the gif works as a teaser even if a viewer doesn't
+# wait for the full thing.
 #
 # Run: bash demo/setup.sh && vhs demo/scene-claude.tape
 # Output: demo/scene-claude.gif
@@ -16,8 +16,8 @@ Output demo/scene-claude.gif
 Set Shell "zsh"
 Set FontSize 13
 Set Width 1200
-Set Height 800
-Set TypingSpeed 26ms
+Set Height 760
+Set TypingSpeed 22ms
 Set PlaybackSpeed 1.0
 Set Theme "Catppuccin Mocha"
 Set Padding 20
@@ -34,33 +34,44 @@ Enter
 Sleep 200ms
 Show
 
-# ─── Run A: Claude WITHOUT wellinformed ────────────────────
-Type '# Run A — Claude alone, no project hook, no local graph'
+# ─── value prop opens the gif ──────────────────────────────
+Type '# Same model. Same prompt. The only difference: wellinformed.'
 Enter
+Sleep 1800ms
+
 Type 'cd /tmp/demo-without-wellinformed'
 Enter
-Sleep 600ms
+Sleep 400ms
 
-Type 'time claude -p "Which research group publishes on quench-detection LSTMs for cryogenic hydrogen storage? Cite the most relevant 2024 paper if you know one."'
+# ─── Run A: Claude alone — slow + hedged ───────────────────
+Type '# (1)  claude alone — no project hook, no local graph'
 Enter
-Sleep 60s
+Sleep 700ms
 
-# ─── Run B: Claude WITH wellinformed ───────────────────────
+Type 'time claude -p "Which research group publishes on quench-detection LSTMs for cryogenic hydrogen storage? Name the lab and the most relevant 2024 paper."'
+Enter
+Sleep 45s
+
+# ─── Run B: Claude + wellinformed — fast + cited ───────────
 Type 'clear'
 Enter
-Type '# Run B — same model, same query, this time wellinformed hook is wired'
-Enter
+Sleep 300ms
+
 Type 'cd /Users/saharbarak/personal/wellinformed'
 Enter
-Sleep 600ms
+Sleep 300ms
 
-Type 'time claude -p "Which research group publishes on quench-detection LSTMs for cryogenic hydrogen storage? Cite the most relevant 2024 paper if you know one."'
+Type '# (2)  claude WITH the wellinformed PreToolUse hook'
 Enter
-Sleep 25s
+Sleep 700ms
 
-# ─── closing ───────────────────────────────────────────────
+Type 'time claude -p "Which research group publishes on quench-detection LSTMs for cryogenic hydrogen storage? Name the lab and the most relevant 2024 paper."'
+Enter
+Sleep 22s
+
+# ─── closing — drives the punchline home ───────────────────
 Type 'echo'
 Enter
-Type 'echo "↑ same model · same query · only difference is the wellinformed hook"'
+Type 'echo "↑ ~10x faster · cited from local research · hook fired before any tool call"'
 Enter
 Sleep 3500ms
