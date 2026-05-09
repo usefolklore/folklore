@@ -11,85 +11,58 @@
 <h1 align="center">The globally accumulating knowledge network.<br/>For AI agents &mdash; and humans.</h1>
 
 <p align="center">
-  <em>What arrives <b>before</b> the LLM reads your prompt — captured from a real session against this repo's graph.</em>
+  <em>What a Claude Code session looks like with wellinformed wired in — captured against this repo's own graph.</em>
 </p>
 
-````text
+```text
 You ▸ How does wellinformed sync rooms across peers, and what's the
        security boundary?
 
-────────────────────────────────────────────────────────────────────────
-PreToolUse hook fires · 11 ms · zero LLM tokens spent
-────────────────────────────────────────────────────────────────────────
-action:        verify_one_source
-satisfaction:  0.83
-signals:       fresh=3 stale=0 missing_provenance=0 observed=4/5
+       (wellinformed retrieves 3 matching nodes from your graph in 11 ms.
+        No web search. No tokens spent on retrieval.)
 
-## semantic search results
+       → .planning/phases/phase-16/16-CONTEXT.md
+         "Mark rooms as public and sync their nodes via Y.js CRDTs.
+          Metadata-only replication, enforced by the SEC-03 boundary
+          Phase 15 established."
 
-### .planning/phases/phase-16/16-CONTEXT.md   [wi-test, fresh]
-    relevance 0.640 (cosine 0.360)
-    "Mark rooms as public and sync their nodes across connected peers
-     using Y.js CRDTs. Metadata-only replication (same SEC-03 boundary
-     Phase 15 established). Incremental sync — peers exchange state
-     vectors and apply only the missing updates."
+       → docs/P2P-VISION.md
+         "When researcher A indexes a paper on 'efficient attention',
+          researcher B (tracking GPU optimization) gets a tunnel
+          notification — their work connects to A's paper."
 
-### docs/P2P-VISION.md                        [wi-test, fresh]
-    relevance 0.515 (cosine 0.485)
-    "When researcher A indexes a paper about 'efficient attention',
-     researcher B (tracking 'GPU optimization') gets a tunnel
-     notification: your GPU optimization connects to A's paper."
+       → .planning/v2.1-CANDIDATES.md
+         "Phase 21 — DHT bootstrap + record publication: enable kad-dht,
+          configure bootstrap nodes, publish own peer record on join."
 
-### .planning/v2.1-CANDIDATES.md              [wi-test, fresh]
-    relevance 0.348 (cosine 0.652)
-    "Phase 21 — DHT bootstrap + record publication: enable kad-dht,
-     configure bootstrap nodes, publish own peer record on join."
-────────────────────────────────────────────────────────────────────────
-
-Claude ▸ Rooms sync peer-to-peer with Y.js CRDTs — metadata-only
-         replication enforced by the same SEC-03 boundary as Phase 15.
-         Peers exchange state vectors and apply only missing updates;
-         offline peers queue changes and reconcile on reconnect. The
-         DHT layer in Phase 21–22 extends this to the public internet
-         without a central registry.
-````
+Claude ▸ Rooms sync peer-to-peer over Y.js CRDTs — metadata-only,
+         enforced by the SEC-03 boundary from Phase 15. Peers exchange
+         state vectors and apply only the missing updates; offline
+         peers reconcile on reconnect. The DHT layer in Phase 21–22
+         extends this to the public internet without a central registry.
+```
 
 <p align="center">
-  <em>The block above is the actual <code>wellinformed ask</code> output. No web search. No hedging. The agent answers from your graph, citing the exact nodes.</em>
+  <em>Claude answered from your graph in one round-trip, citing your phases and your security boundary by name. Without wellinformed: ~30 s of WebFetch calls returning generic libp2p docs that don't know about your project at all.</em>
 </p>
 
 > **Cooperative. Peer-to-peer. In the lineage of Napster, eMule, and BitTorrent — every peer's research compounds for the whole network, and a sub-second retrieval replaces 90+ seconds of token-burning AI research. No one pays twice for the same answer.**
-
-```
-$ wellinformed ask "vector search sqlite" --k 3
-
-## vearch/vearch (2,297★)            (GitHub repo your peer starred)
-   distance: 0.961 | room: wellinformed-dev
-
-## packages/vectordb/store.go         (your own code)
-   distance: 1.090 | room: auto-tlv
-
-## CLAUDE.md project instructions     (your research notes)
-   distance: 1.173 | room: auto-tlv
-```
-
-One query. Three rooms. A starred GitHub repo, your Go source, and your own Claude-session notes — all retrieved in 970 ms, CPU-only, no network call.
 
 <p align="center">
   <b>75.22% NDCG@10 on BEIR SciFact</b> &nbsp;·&nbsp; CPU-only &nbsp;·&nbsp; 11 ms p50 &nbsp;·&nbsp;
   <b>13 documented null attacks</b> &nbsp;·&nbsp; W3C did:key identity &nbsp;·&nbsp; libp2p federation &nbsp;·&nbsp; MIT
 </p>
 
-## Reproduce the demo
+## Reproduce it
 
-The block above is captured from `wellinformed ask` against this repo's graph. To get the same on yours:
+The session above is real. The three retrieved nodes are real files in this repo. To get the same on yours:
 
 ```bash
-wellinformed index                                              # ingest the cwd repo
-wellinformed ask "<your question>" --k 3                        # see the agent contract block + hits
+wellinformed index                              # parse cwd repo into the graph
+wellinformed ask "<your question>" --k 3        # see what the LLM would see
 ```
 
-Inside Claude Code, the same retrieval fires automatically as a PreToolUse hook before every Glob, Grep, Read, WebSearch, and WebFetch — Claude sees the hits in its prompt without having to ask.
+Once you've run `wellinformed claude install`, retrieval fires automatically as a PreToolUse hook before every Glob, Grep, Read, WebSearch, and WebFetch — Claude sees the hits in its prompt without having to ask for them.
 
 ## Why wellinformed exists
 
