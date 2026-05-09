@@ -11,11 +11,11 @@
 <h1 align="center">The decentralized, globally accumulating knowledge network.</h1>
 
 <p align="center">
-  <img src="demo/scene-federated.gif" alt="wellinformed federated ask across a 5-daemon mesh — peer B's exclusive Munich Raman note pulled live with cryptographic attribution" width="900" />
+  <img src="demo/scene-federated.gif" alt="Active Claude Code session — wellinformed retrieves from peers live during the session and Claude attributes the top hit to a specific peer" width="980" />
 </p>
 
 <p align="center">
-  <em>Captured live across a 5-daemon mesh. Peer A asks; 4 peers respond in 209&nbsp;ms; peer&nbsp;B's exclusive note lands at the top with <code>source_peer</code> attribution. Reproducible on your machine — see below.</em>
+  <em>Real Claude Code session against a 5-daemon mesh. Claude runs <code>wellinformed ask --peers</code>, 4 peers respond, the top hit is attributed to a specific peer (not local), and Claude reports it back — all inside the session.</em>
 </p>
 
 > **Cooperative. Peer-to-peer. In the lineage of Napster, eMule, and BitTorrent — every peer's research compounds for the whole network. A sub-second federated retrieval replaces 90+ seconds of token-burning AI research. No one pays twice for the same answer.**
