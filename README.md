@@ -11,58 +11,67 @@
 <h1 align="center">The globally accumulating knowledge network.<br/>For AI agents &mdash; and humans.</h1>
 
 <p align="center">
-  <em>What a Claude Code session looks like with wellinformed wired in — captured against this repo's own graph.</em>
+  <em>The headline feature: peer-to-peer knowledge retrieval. Captured live from a 5-daemon mesh on this machine — same flow runs across the open internet over libp2p.</em>
 </p>
 
 ```text
-You ▸ How does wellinformed sync rooms across peers, and what's the
-       security boundary?
+You ▸ Is there an open-hardware Raman kit for hydrogen leak detection?
 
-       (wellinformed retrieves 3 matching nodes from your graph in 11 ms.
-        No web search. No tokens spent on retrieval.)
+       wellinformed fans the query out across 4 connected peers ──────────
+         peers_queried:   4
+         peers_responded: 4
+         data:            4.3 KB · 5 results · 4 unique sources
+         took:            209 ms  (6 ms local · 171 ms peer merge)
 
-       → .planning/phases/phase-16/16-CONTEXT.md
-         "Mark rooms as public and sync their nodes via Y.js CRDTs.
-          Metadata-only replication, enforced by the SEC-03 boundary
-          Phase 15 established."
+       ┌─ from peer 12D3KooW…QQ2W ─────────────────────────────────────────
+       │ Open-hardware portable Raman LH2 spectrometer  (room: research)
+       │ "A small Munich lab open-sourced a 4155 cm⁻¹ Raman kit with a
+       │  532 nm green laser, 600 lines/mm transmission grating, and a
+       │  CMOS sensor. Total parts ~2400 EUR. BOM, firmware, CAD at
+       │  github.com/open-h2-raman. Lives only on peer B."
+       └───────────────────────────────────────────────────────────────────
 
-       → docs/P2P-VISION.md
-         "When researcher A indexes a paper on 'efficient attention',
-          researcher B (tracking GPU optimization) gets a tunnel
-          notification — their work connects to A's paper."
+       ┌─ from local graph ───────────────────────────────────────────────
+       │ demo/research-corpus/02-laser-raman-leak-detection.md
+       │ "Raman scattering of H2's vibrational mode at 4155 cm⁻¹ is the
+       │  cleanest spectroscopic fingerprint we have…"
+       └───────────────────────────────────────────────────────────────────
 
-       → .planning/v2.1-CANDIDATES.md
-         "Phase 21 — DHT bootstrap + record publication: enable kad-dht,
-          configure bootstrap nodes, publish own peer record on join."
-
-Claude ▸ Rooms sync peer-to-peer over Y.js CRDTs — metadata-only,
-         enforced by the SEC-03 boundary from Phase 15. Peers exchange
-         state vectors and apply only the missing updates; offline
-         peers reconcile on reconnect. The DHT layer in Phase 21–22
-         extends this to the public internet without a central registry.
+Claude ▸ Yes — peer B has a recent open-hardware build. A Munich lab
+         open-sourced a 4155 cm⁻¹ Raman setup with a 532 nm green laser,
+         600 lines/mm transmission grating, and a CMOS sensor. Total
+         parts ~2400 EUR; BOM, firmware, and CAD at github.com/open-h2-raman.
+         That information is on peer B's machine — your local graph
+         corroborates the underlying spectroscopy theory.
 ```
 
 <p align="center">
-  <em>Claude answered from your graph in one round-trip, citing your phases and your security boundary by name. Without wellinformed: ~30 s of WebFetch calls returning generic libp2p docs that don't know about your project at all.</em>
+  <em>4/4 peers responded in 209 ms. The Munich kit was only on peer B; wellinformed pulled it across the libp2p network with cryptographic attribution. Without wellinformed, this is a 30-minute web search across arXiv and GitHub that ten thousand other developers will run again tomorrow.</em>
 </p>
 
 > **Cooperative. Peer-to-peer. In the lineage of Napster, eMule, and BitTorrent — every peer's research compounds for the whole network, and a sub-second retrieval replaces 90+ seconds of token-burning AI research. No one pays twice for the same answer.**
 
 <p align="center">
-  <b>75.22% NDCG@10 on BEIR SciFact</b> &nbsp;·&nbsp; CPU-only &nbsp;·&nbsp; 11 ms p50 &nbsp;·&nbsp;
+  <b>75.22% NDCG@10 on BEIR SciFact</b> &nbsp;·&nbsp; CPU-only &nbsp;·&nbsp; 11 ms p50 local &nbsp;·&nbsp;
   <b>13 documented null attacks</b> &nbsp;·&nbsp; W3C did:key identity &nbsp;·&nbsp; libp2p federation &nbsp;·&nbsp; MIT
 </p>
 
-## Reproduce it
+## Reproduce the demo
 
-The session above is real. The three retrieved nodes are real files in this repo. To get the same on yours:
+The session above is captured live. To run it on your machine:
 
 ```bash
-wellinformed index                              # parse cwd repo into the graph
-wellinformed ask "<your question>" --k 3        # see what the LLM would see
+bash demo/setup-p2p.sh                     # spin up 5 daemons on 127.0.0.1
+export WELLINFORMED_HOME=~/.wellinformed.demo
+
+wellinformed peer list                     # 4 peers visible from peer A
+wellinformed ask --peers \
+  "open hardware Raman 532nm hydrogen" --k 5
+                                           # → top hit comes from peer B with
+                                           #   source_peer attribution
 ```
 
-Once you've run `wellinformed claude install`, retrieval fires automatically as a PreToolUse hook before every Glob, Grep, Read, WebSearch, and WebFetch — Claude sees the hits in its prompt without having to ask for them.
+Inside Claude Code (after `wellinformed claude install`), this same federated retrieval fires automatically as a PreToolUse hook before every Glob, Grep, Read, WebSearch, and WebFetch — Claude sees the peer-attributed hits in its prompt without asking for them.
 
 ## Why wellinformed exists
 

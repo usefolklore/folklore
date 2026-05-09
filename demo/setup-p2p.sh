@@ -194,7 +194,7 @@ NOW="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
     first=0
     # Persist peer id for the recording.
     echo "$pid" >"$A_HOME/peer-${p}-id"
-    echo "→ peer A knows peer $p: $addr"
+    echo "→ peer A knows peer $p: $addr" >&2
     i=$((i + 1))
   done
   echo '  ]'
@@ -220,6 +220,27 @@ while [[ $i -lt $NUM_PEERS ]]; do
 EOF
   i=$((i + 1))
 done
+
+# ── 5b. daemons need to reload to pick up peers.json. libp2p
+# only binds its TCP listener when the daemon has at least one
+# known peer at startup, so we must restart every daemon now that
+# peers.json files are written.
+sleep 0.5
+echo "→ restarting all daemons so they pick up peers.json"
+stop_daemon_quietly "$A_HOME"
+i=0
+while [[ $i -lt $NUM_PEERS ]]; do
+  stop_daemon_quietly "${HOMES[$i]}"
+  i=$((i + 1))
+done
+sleep 1
+WELLINFORMED_HOME="$A_HOME" wellinformed daemon start
+i=0
+while [[ $i -lt $NUM_PEERS ]]; do
+  WELLINFORMED_HOME="${HOMES[$i]}" wellinformed daemon start
+  i=$((i + 1))
+done
+sleep 3
 
 # ── 6. final readiness print ─────────────────────────────
 echo
