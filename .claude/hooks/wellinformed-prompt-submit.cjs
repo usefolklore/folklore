@@ -41,13 +41,15 @@ const ENABLED = process.env.WELLINFORMED_PROMPT_PREFETCH !== '0';
 const safe = (fn) => { try { return fn(); } catch { return undefined; } };
 const readPayload = () => safe(() => JSON.parse(readFileSync(0, 'utf8') || '{}')) ?? {};
 
-const emit = (text) => {
-  process.stdout.write(JSON.stringify({
+const emit = (text, systemMessage) => {
+  const payload = {
     hookSpecificOutput: {
       hookEventName: 'UserPromptSubmit',
       additionalContext: text,
     },
-  }) + '\n');
+  };
+  if (systemMessage) payload.systemMessage = systemMessage;
+  process.stdout.write(JSON.stringify(payload) + '\n');
 };
 
 const prefetch = (query) => {
@@ -83,6 +85,7 @@ const prefetch = (query) => {
       decision: dec,
       peers_responded: typeof parsed.peers_responded === 'number' ? parsed.peers_responded : 0,
       peers_queried: typeof parsed.peers_queried === 'number' ? parsed.peers_queried : 0,
+      took_ms: typeof tele.took_ms === 'number' ? tele.took_ms : null,
     };
   } catch {
     return null;
@@ -149,17 +152,17 @@ logPrefetch(truncated, result);
 if (result.hits.length === 0) process.exit(0);
 if (result.satisfaction !== null && result.satisfaction < MIN_SATISFACTION) process.exit(0);
 
-// stderr banner — surfaces in Claude Code's TUI as a hook status
-// line, so the watcher sees federation actually firing.
-if (process.env.WELLINFORMED_PROMPT_HOOK_BANNER !== '0') {
-  const peerLine = result.peers_queried > 0
-    ? `peers ${result.peers_responded}/${result.peers_queried} responded`
-    : `local-only`;
-  const topPeer = result.hits[0]?.source_peer && result.hits[0].source_peer !== 'local'
-    ? ` · top hit from peer:${String(result.hits[0].source_peer).slice(0, 12)}`
-    : '';
-  const sat = result.satisfaction != null ? ` · sat ${result.satisfaction.toFixed(2)}` : '';
-  process.stderr.write(`▶ wellinformed: ${peerLine}${topPeer}${sat} · decision=${result.decision ?? 'unknown'}\n`);
-}
+// systemMessage banner — surfaces in Claude Code's TUI as a status
+// line so the watcher sees federation actually firing. Format:
+//   "▶ wellinformed: 4 peers · 2 rooms · 287ms · 3 hits"
+const peerLine = result.peers_queried > 0
+  ? `${result.peers_responded}/${result.peers_queried} peers`
+  : `local-only`;
+const distinctRooms = new Set(result.hits.map((h) => h?.room).filter(Boolean)).size;
+const tookMs = result.took_ms != null ? `${result.took_ms} ms` : '—';
+const topPeer = result.hits[0]?.source_peer && result.hits[0].source_peer !== 'local'
+  ? ` · top hit from peer:${String(result.hits[0].source_peer).slice(0, 12)}`
+  : '';
+const sysMsg = `▶ wellinformed: ${peerLine} · ${distinctRooms} rooms · ${tookMs} · ${result.hits.length} hits${topPeer}`;
 
-emit(renderHits(result, truncated));
+emit(renderHits(result, truncated), sysMsg);

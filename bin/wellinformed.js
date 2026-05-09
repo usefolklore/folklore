@@ -24,6 +24,36 @@ import { homedir } from 'node:os';
 import { connect } from 'node:net';
 import { createInterface } from 'node:readline';
 
+// libp2p occasionally throws StreamStateError during peer-stream
+// teardown AFTER the actual work has completed and stdout has been
+// flushed. The process should exit clean (CLI) or keep serving (MCP)
+// rather than crash with a stack trace. We swallow those specific
+// teardown errors; anything else still crashes as normal so real
+// bugs aren't masked.
+const isP2pTeardownNoise = (err) => {
+  if (!err) return false;
+  const name = err.constructor?.name ?? err.name ?? '';
+  if (name === 'StreamStateError' || name === 'AbortError') return true;
+  const msg = String(err.message ?? '');
+  return /Cannot write to a stream that is closing|stream is .*closed|TimeoutController/i.test(msg);
+};
+process.on('uncaughtException', (err) => {
+  if (isP2pTeardownNoise(err)) {
+    if (process.env.WELLINFORMED_DEBUG) process.stderr.write(`[wi] libp2p teardown noise: ${err.message}\n`);
+    return;
+  }
+  console.error(err);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  if (isP2pTeardownNoise(reason)) {
+    if (process.env.WELLINFORMED_DEBUG) process.stderr.write(`[wi] libp2p teardown noise: ${reason?.message ?? reason}\n`);
+    return;
+  }
+  console.error(reason);
+  process.exit(1);
+});
+
 const here = dirname(fileURLToPath(import.meta.url));
 const distEntry = join(here, '..', 'dist', 'cli', 'index.js');
 const srcEntry = join(here, '..', 'src', 'cli', 'index.ts');
