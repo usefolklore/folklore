@@ -35,4 +35,4 @@ Sleep 9000ms
 Type "Anything across my peer network on an open hardware Raman kit for hydrogen detection?"
 Sleep 600ms
 Enter
-Sleep 130000ms
+Sleep 95000ms
