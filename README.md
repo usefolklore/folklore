@@ -11,11 +11,51 @@
 <h1 align="center">The globally accumulating knowledge network.<br/>For AI agents &mdash; and humans.</h1>
 
 <p align="center">
-  <img src="demo/scene-claude.gif" alt="Side-by-side: Claude alone (~14 s, hedged) vs Claude + wellinformed (~1.5 s, cited)" width="880" />
+  <em>What arrives <b>before</b> the LLM reads your prompt — captured from a real session against this repo's graph.</em>
 </p>
 
+````text
+You ▸ How does wellinformed sync rooms across peers, and what's the
+       security boundary?
+
+────────────────────────────────────────────────────────────────────────
+PreToolUse hook fires · 11 ms · zero LLM tokens spent
+────────────────────────────────────────────────────────────────────────
+action:        verify_one_source
+satisfaction:  0.83
+signals:       fresh=3 stale=0 missing_provenance=0 observed=4/5
+
+## semantic search results
+
+### .planning/phases/phase-16/16-CONTEXT.md   [wi-test, fresh]
+    relevance 0.640 (cosine 0.360)
+    "Mark rooms as public and sync their nodes across connected peers
+     using Y.js CRDTs. Metadata-only replication (same SEC-03 boundary
+     Phase 15 established). Incremental sync — peers exchange state
+     vectors and apply only the missing updates."
+
+### docs/P2P-VISION.md                        [wi-test, fresh]
+    relevance 0.515 (cosine 0.485)
+    "When researcher A indexes a paper about 'efficient attention',
+     researcher B (tracking 'GPU optimization') gets a tunnel
+     notification: your GPU optimization connects to A's paper."
+
+### .planning/v2.1-CANDIDATES.md              [wi-test, fresh]
+    relevance 0.348 (cosine 0.652)
+    "Phase 21 — DHT bootstrap + record publication: enable kad-dht,
+     configure bootstrap nodes, publish own peer record on join."
+────────────────────────────────────────────────────────────────────────
+
+Claude ▸ Rooms sync peer-to-peer with Y.js CRDTs — metadata-only
+         replication enforced by the same SEC-03 boundary as Phase 15.
+         Peers exchange state vectors and apply only missing updates;
+         offline peers queue changes and reconcile on reconnect. The
+         DHT layer in Phase 21–22 extends this to the public internet
+         without a central registry.
+````
+
 <p align="center">
-  <em>Same model. Same prompt. The only difference is wellinformed.</em>
+  <em>The block above is the actual <code>wellinformed ask</code> output. No web search. No hedging. The agent answers from your graph, citing the exact nodes.</em>
 </p>
 
 > **Cooperative. Peer-to-peer. In the lineage of Napster, eMule, and BitTorrent — every peer's research compounds for the whole network, and a sub-second retrieval replaces 90+ seconds of token-burning AI research. No one pays twice for the same answer.**
@@ -40,17 +80,16 @@ One query. Three rooms. A starred GitHub repo, your Go source, and your own Clau
   <b>13 documented null attacks</b> &nbsp;·&nbsp; W3C did:key identity &nbsp;·&nbsp; libp2p federation &nbsp;·&nbsp; MIT
 </p>
 
-## See it in action
+## Reproduce the demo
 
-| | |
-|---|---|
-| <img src="demo/scene-prompt-hook.gif" alt="UserPromptSubmit hook — answer arrives before Claude reads the message" width="420" /> | **The hook fires BEFORE the LLM reads your message.** UserPromptSubmit + wellinformed = retrieval at prompt time. Claude has the answer with citations *before* it considers a tool call. |
-| <img src="demo/timing.gif" alt="headline timing teaser" width="420" /> | **Direct query, sub-second.** 15 cryogenic-LH2 research notes, cold cache. Real `time` measurement. |
-| <img src="demo/scene-codebase.gif" alt="codebase Q&A" width="420" /> | **Codebase Q&A.** `claude -p` cites `src/daemon/job-queue.ts` directly via the wellinformed PreToolUse hook. |
-| <img src="demo/scene-touch.gif" alt="P2P touch — 5-peer mesh" width="420" /> | **P2P touch.** 5 daemons on 127.0.0.1; peer A pulls exclusive notes from peers B and D, attribution preserved. |
-| <img src="demo/screencast.gif" alt="full screencast" width="420" /> | **Full tour.** Agent contract, semantic search, entity recall, peer reputation table. |
+The block above is captured from `wellinformed ask` against this repo's graph. To get the same on yours:
 
-Reproduce locally — every gif in `demo/` is a real recording, not a mock-up. See `demo/README.md` for the one-shot setup script and the [shooting manuscript](demo/MANUSCRIPT.md).
+```bash
+wellinformed index                                              # ingest the cwd repo
+wellinformed ask "<your question>" --k 3                        # see the agent contract block + hits
+```
+
+Inside Claude Code, the same retrieval fires automatically as a PreToolUse hook before every Glob, Grep, Read, WebSearch, and WebFetch — Claude sees the hits in its prompt without having to ask.
 
 ## Why wellinformed exists
 
