@@ -51,20 +51,36 @@ const emit = (text) => {
 };
 
 const prefetch = (query) => {
+  const args = PREFETCH_PEERS
+    ? ['ask', '--peers', '--json', '--k', '3', query]
+    : ['ask', '--json', '--k', '3', query];
+  let out;
   try {
-    const args = PREFETCH_PEERS
-      ? ['ask', '--peers', '--json', '--k', '3', query]
-      : ['ask', '--json', '--k', '3', query];
-    const out = execFileSync('wellinformed', args, {
+    out = execFileSync('wellinformed', args, {
       timeout: PREFETCH_TIMEOUT_MS,
       encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
+  } catch (e) {
+    // The federated path prints valid JSON to stdout, then libp2p
+    // sometimes throws StreamStateError during teardown — non-zero
+    // exit but the JSON is already on stdout. Recover it here.
+    out = e.stdout && String(e.stdout).trim() ? String(e.stdout) : null;
+    if (!out) return null;
+  }
+  try {
     const parsed = JSON.parse(out);
+    const tele = parsed._telemetry ?? {};
+    const sat = typeof parsed.satisfaction === 'number'
+      ? parsed.satisfaction
+      : (typeof tele.satisfaction?.score === 'number' ? tele.satisfaction.score : null);
+    const dec = typeof parsed.decision === 'string'
+      ? parsed.decision
+      : (typeof tele.decision === 'string' ? tele.decision : null);
     return {
       hits: Array.isArray(parsed.hits) ? parsed.hits : [],
-      satisfaction: typeof parsed.satisfaction === 'number' ? parsed.satisfaction : null,
-      decision: typeof parsed.decision === 'string' ? parsed.decision : null,
+      satisfaction: sat,
+      decision: dec,
       peers_responded: typeof parsed.peers_responded === 'number' ? parsed.peers_responded : 0,
       peers_queried: typeof parsed.peers_queried === 'number' ? parsed.peers_queried : 0,
     };
@@ -132,5 +148,18 @@ logPrefetch(truncated, result);
 
 if (result.hits.length === 0) process.exit(0);
 if (result.satisfaction !== null && result.satisfaction < MIN_SATISFACTION) process.exit(0);
+
+// stderr banner — surfaces in Claude Code's TUI as a hook status
+// line, so the watcher sees federation actually firing.
+if (process.env.WELLINFORMED_PROMPT_HOOK_BANNER !== '0') {
+  const peerLine = result.peers_queried > 0
+    ? `peers ${result.peers_responded}/${result.peers_queried} responded`
+    : `local-only`;
+  const topPeer = result.hits[0]?.source_peer && result.hits[0].source_peer !== 'local'
+    ? ` · top hit from peer:${String(result.hits[0].source_peer).slice(0, 12)}`
+    : '';
+  const sat = result.satisfaction != null ? ` · sat ${result.satisfaction.toFixed(2)}` : '';
+  process.stderr.write(`▶ wellinformed: ${peerLine}${topPeer}${sat} · decision=${result.decision ?? 'unknown'}\n`);
+}
 
 emit(renderHits(result, truncated));

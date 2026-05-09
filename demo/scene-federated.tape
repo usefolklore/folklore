@@ -1,6 +1,5 @@
-# wellinformed — federated retrieval inside an active Claude Code session.
-# Driven by demo/scene-federated.sh (sets up 5-daemon mesh, records, tears down).
-# Output: demo/scene-federated.gif
+# wellinformed — natural Claude Code session, federated retrieval live.
+# Driven by demo/scene-federated.sh. Output: demo/scene-federated.gif
 
 Output demo/scene-federated.gif
 
@@ -29,16 +28,11 @@ Enter
 Sleep 200ms
 Show
 
-Type "claude --permission-mode bypassPermissions"
+Type "claude --permission-mode bypassPermissions --mcp-config /tmp/demo-mcp.json --strict-mcp-config"
 Enter
 Sleep 9000ms
 
-Type "Run this in Bash: wellinformed ask 'open hardware Raman LH2 spectrometer Munich' --peers --k 4. Then tell me which peer the top hit came from and what the note says."
-Sleep 800ms
+Type "Anything across my peer network on an open hardware Raman kit for hydrogen detection?"
+Sleep 600ms
 Enter
-Sleep 100000ms
-
-Ctrl+C
-Sleep 800ms
-Ctrl+C
-Sleep 1500ms
+Sleep 130000ms
