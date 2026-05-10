@@ -187,10 +187,33 @@ const handleTouchRequest = async (
     // System rooms are virtual — membership derived from source_uri
     // scheme and results sorted newest-first by fetched_at. Physical
     // rooms use the existing room-field filter.
+    //
+    // Bridging rule: if the requested room is a system room AND the
+    // responder has ALSO explicitly shared a physical room of the same
+    // name (e.g. `wellinformed share room research`), include nodes
+    // from that physical room in the response. This covers the natural
+    // user case where they save concept-type notes with `--room research`
+    // — those nodes don't match research's URI scheme prefixes
+    // (concept:// vs arxiv:/hn:/http(s)://) but the user's explicit
+    // share signal is unambiguous intent.
     const cap = Math.min(req.max_nodes ?? TOUCH_MAX_NODES, TOUCH_MAX_NODES);
-    const allRoomNodes = systemRoom
-      ? nodesInSystemRoom(graphRes.value.json.nodes, systemRoom, isolatedRooms)
-      : nodesInRoom(graphRes.value, req.room);
+    let allRoomNodes;
+    if (systemRoom) {
+      const virtualNodes = nodesInSystemRoom(graphRes.value.json.nodes, systemRoom, isolatedRooms);
+      const physicallySharedSameName = sharedRooms.some(
+        (r) => r.name === req.room && r.shareable !== false,
+      );
+      if (physicallySharedSameName) {
+        const physicalNodes = nodesInRoom(graphRes.value, req.room);
+        const seenIds = new Set(virtualNodes.map((n) => n.id));
+        const additions = physicalNodes.filter((n) => !seenIds.has(n.id));
+        allRoomNodes = [...virtualNodes, ...additions];
+      } else {
+        allRoomNodes = virtualNodes;
+      }
+    } else {
+      allRoomNodes = nodesInRoom(graphRes.value, req.room);
+    }
     const roomNodes = allRoomNodes.slice(0, cap);
 
     const { nodes: cleaned, redactions_by_node } = redactNodes(roomNodes, deps.patterns);

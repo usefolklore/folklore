@@ -41,6 +41,15 @@ export const OPAQUE_INTERNAL_PREFIXES = [
   'oracle-answer:',
   // Claude Code capture
   'claude-session:',
+  // User-saved typed notes via `wellinformed save --type ...`. These
+  // are first-class shareable content — synthesis / concept / decision
+  // / source — and produce ids like concept://YYYY-MM-DD/slug. Allow
+  // them across the validator so peers can replicate them through
+  // touch and CRDT sync.
+  'concept:',
+  'synthesis:',
+  'decision:',
+  'source:',
 ] as const;
 
 export type OpaqueInternalPrefix = (typeof OPAQUE_INTERNAL_PREFIXES)[number];

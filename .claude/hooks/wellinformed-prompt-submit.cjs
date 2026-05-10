@@ -94,22 +94,49 @@ const AUTO_PULL_PEER_BODY = process.env.WELLINFORMED_PREFETCH_AUTO_PULL !== '0';
 const AUTO_PULL_DISTANCE_MAX = Number(process.env.WELLINFORMED_PREFETCH_AUTO_PULL_DISTANCE ?? 0.95);
 const AUTO_PULL_TIMEOUT_MS = Number(process.env.WELLINFORMED_PREFETCH_AUTO_PULL_TIMEOUT_MS ?? 8000);
 
+const localGraphCache = { loaded: false, byId: new Map() };
+const loadLocalGraph = () => {
+  if (localGraphCache.loaded) return localGraphCache.byId;
+  try {
+    const raw = readFileSync(join(HOME, 'graph.json'), 'utf8');
+    const parsed = JSON.parse(raw);
+    for (const n of parsed.nodes ?? []) {
+      if (n?.id) localGraphCache.byId.set(n.id, n);
+    }
+  } catch { /* graph absent or corrupt — skip */ }
+  localGraphCache.loaded = true;
+  return localGraphCache.byId;
+};
+
+const fetchNodeLocal = (id) => {
+  // Force a re-read of graph.json so we see nodes added by the touch
+  // we just performed.
+  localGraphCache.loaded = false;
+  localGraphCache.byId.clear();
+  const byId = loadLocalGraph();
+  return byId.get(id) ?? null;
+};
+
 const maybeAutoPullPeerBody = (federatedResult, query) => {
   if (!AUTO_PULL_PEER_BODY) return federatedResult;
-  const hits = federatedResult.hits ?? [];
-  // Find any peer-exclusive high-relevance hit whose body isn't already
+  const hits = [...(federatedResult.hits ?? [])];
+  // Find peer-exclusive high-relevance hits whose body isn't already
   // local (no summary populated by federation, since metadata-only).
-  const peerHits = hits.filter((h) =>
-    h?.source_peer && h.source_peer !== 'local' &&
-    typeof h.distance === 'number' && h.distance <= AUTO_PULL_DISTANCE_MAX &&
-    !h.summary && h.room
-  );
-  if (peerHits.length === 0) return federatedResult;
-  // Pull the rooms touched by these hits — at most 2 distinct rooms,
-  // to bound prefetch cost.
+  const peerHitIdxs = [];
+  hits.forEach((h, i) => {
+    if (h?.source_peer && h.source_peer !== 'local' &&
+        typeof h.distance === 'number' && h.distance <= AUTO_PULL_DISTANCE_MAX &&
+        !h.summary && h.room) {
+      peerHitIdxs.push(i);
+    }
+  });
+  if (peerHitIdxs.length === 0) return federatedResult;
+  // Pull rooms touched by these hits — cap at 2 distinct (peer, room)
+  // pairs to bound prefetch cost.
   const seen = new Set();
   const targets = [];
-  for (const h of peerHits) {
+  for (const i of peerHitIdxs) {
+    const h = hits[i];
     const key = `${h.source_peer}::${h.room}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -117,24 +144,28 @@ const maybeAutoPullPeerBody = (federatedResult, query) => {
     if (targets.length >= 2) break;
   }
   for (const t of targets) {
-    runWellinformed(['touch', t.peer, '--room', t.room, '--max', '5'], AUTO_PULL_TIMEOUT_MS);
+    runWellinformed(['touch', t.peer, '--room', t.room, '--max', '10'], AUTO_PULL_TIMEOUT_MS);
   }
-  // Re-query locally; touched chunks are now in the local store and
-  // will surface with summary text populated.
-  const localOut = runWellinformed(['ask', '--json', '--k', '3', query], 4000);
-  if (!localOut) return federatedResult;
-  const localResult = parseAskOutput(localOut);
-  if (!localResult || localResult.hits.length === 0) return federatedResult;
-  // Annotate hits whose bodies came from peers so the contract block
-  // can attribute them.
-  const peerById = new Map(peerHits.map((h) => [h.id, h.source_peer]));
-  for (const h of localResult.hits) {
-    if (peerById.has(h.id)) h.source_peer = peerById.get(h.id);
+  // After touch the bodies now live locally. Look each peer hit up by id
+  // and graft the summary onto the federated hit so renderHits prints it.
+  let pulledCount = 0;
+  for (const i of peerHitIdxs) {
+    const node = fetchNodeLocal(hits[i].id);
+    if (node) {
+      hits[i] = {
+        ...hits[i],
+        label: hits[i].label ?? node.label,
+        summary: node.summary ?? node.body ?? hits[i].summary,
+        source_uri: hits[i].source_uri ?? node.source_uri,
+      };
+      pulledCount++;
+    }
   }
   return {
     ...federatedResult,
-    hits: localResult.hits,
-    auto_pulled: targets,
+    hits,
+    auto_pulled: pulledCount > 0 ? targets : [],
+    auto_pulled_count: pulledCount,
   };
 };
 
