@@ -52,24 +52,22 @@ const emit = (text, systemMessage) => {
   process.stdout.write(JSON.stringify(payload) + '\n');
 };
 
-const prefetch = (query) => {
-  const args = PREFETCH_PEERS
-    ? ['ask', '--peers', '--json', '--k', '3', query]
-    : ['ask', '--json', '--k', '3', query];
-  let out;
+const runWellinformed = (args, timeoutMs) => {
   try {
-    out = execFileSync('wellinformed', args, {
-      timeout: PREFETCH_TIMEOUT_MS,
+    return execFileSync('wellinformed', args, {
+      timeout: timeoutMs,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
   } catch (e) {
-    // The federated path prints valid JSON to stdout, then libp2p
-    // sometimes throws StreamStateError during teardown — non-zero
-    // exit but the JSON is already on stdout. Recover it here.
-    out = e.stdout && String(e.stdout).trim() ? String(e.stdout) : null;
-    if (!out) return null;
+    // Federated paths print valid JSON to stdout, then libp2p sometimes
+    // throws StreamStateError during teardown. Non-zero exit but stdout
+    // is intact — recover it here.
+    return e.stdout && String(e.stdout).trim() ? String(e.stdout) : null;
   }
+};
+
+const parseAskOutput = (out) => {
   try {
     const parsed = JSON.parse(out);
     const tele = parsed._telemetry ?? {};
@@ -90,6 +88,65 @@ const prefetch = (query) => {
   } catch {
     return null;
   }
+};
+
+const AUTO_PULL_PEER_BODY = process.env.WELLINFORMED_PREFETCH_AUTO_PULL !== '0';
+const AUTO_PULL_DISTANCE_MAX = Number(process.env.WELLINFORMED_PREFETCH_AUTO_PULL_DISTANCE ?? 0.95);
+const AUTO_PULL_TIMEOUT_MS = Number(process.env.WELLINFORMED_PREFETCH_AUTO_PULL_TIMEOUT_MS ?? 8000);
+
+const maybeAutoPullPeerBody = (federatedResult, query) => {
+  if (!AUTO_PULL_PEER_BODY) return federatedResult;
+  const hits = federatedResult.hits ?? [];
+  // Find any peer-exclusive high-relevance hit whose body isn't already
+  // local (no summary populated by federation, since metadata-only).
+  const peerHits = hits.filter((h) =>
+    h?.source_peer && h.source_peer !== 'local' &&
+    typeof h.distance === 'number' && h.distance <= AUTO_PULL_DISTANCE_MAX &&
+    !h.summary && h.room
+  );
+  if (peerHits.length === 0) return federatedResult;
+  // Pull the rooms touched by these hits — at most 2 distinct rooms,
+  // to bound prefetch cost.
+  const seen = new Set();
+  const targets = [];
+  for (const h of peerHits) {
+    const key = `${h.source_peer}::${h.room}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    targets.push({ peer: h.source_peer, room: h.room });
+    if (targets.length >= 2) break;
+  }
+  for (const t of targets) {
+    runWellinformed(['touch', t.peer, '--room', t.room, '--max', '5'], AUTO_PULL_TIMEOUT_MS);
+  }
+  // Re-query locally; touched chunks are now in the local store and
+  // will surface with summary text populated.
+  const localOut = runWellinformed(['ask', '--json', '--k', '3', query], 4000);
+  if (!localOut) return federatedResult;
+  const localResult = parseAskOutput(localOut);
+  if (!localResult || localResult.hits.length === 0) return federatedResult;
+  // Annotate hits whose bodies came from peers so the contract block
+  // can attribute them.
+  const peerById = new Map(peerHits.map((h) => [h.id, h.source_peer]));
+  for (const h of localResult.hits) {
+    if (peerById.has(h.id)) h.source_peer = peerById.get(h.id);
+  }
+  return {
+    ...federatedResult,
+    hits: localResult.hits,
+    auto_pulled: targets,
+  };
+};
+
+const prefetch = (query) => {
+  const args = PREFETCH_PEERS
+    ? ['ask', '--peers', '--json', '--k', '3', query]
+    : ['ask', '--json', '--k', '3', query];
+  const out = runWellinformed(args, PREFETCH_TIMEOUT_MS);
+  if (!out) return null;
+  const result = parseAskOutput(out);
+  if (!result) return null;
+  return PREFETCH_PEERS ? maybeAutoPullPeerBody(result, query) : result;
 };
 
 const renderHits = (result, query) => {
@@ -117,11 +174,14 @@ const renderHits = (result, query) => {
   }).join('\n');
   const closer = [
     ``,
-    `^ Pull a node's full content via mcp__wellinformed__get_node(id),`,
-    `  or run mcp__wellinformed__ask(query) for richer retrieval.`,
-    `  When decision=use_memory, the indexed context above answers`,
-    `  the user — no WebSearch needed unless the user explicitly`,
-    `  asked for fresh-from-the-web sources.`,
+    `^ Federation policy: peer-attributed hits show metadata only.`,
+    `  Chunk bodies stay on the source peer (SEC-03 boundary, by design).`,
+    `  When the answer is "peer X has Y", state that directly. Do not`,
+    `  ask the user for permission to fetch the body — the protocol`,
+    `  will not return it. Use mcp__wellinformed__get_node(id) for`,
+    `  local hits, mcp__wellinformed__ask(query) for richer local`,
+    `  retrieval. When decision=use_memory, the indexed context above`,
+    `  answers the user — no WebSearch needed.`,
   ].join('\n');
   return `${head}\n${body}${closer}`;
 };
@@ -154,7 +214,7 @@ if (result.satisfaction !== null && result.satisfaction < MIN_SATISFACTION) proc
 
 // systemMessage banner — surfaces in Claude Code's TUI as a status
 // line so the watcher sees federation actually firing. Format:
-//   "▶ wellinformed: 4 peers · 2 rooms · 287ms · 3 hits"
+//   "▶ wellinformed: 4 peers · 2 rooms · 287ms · 3 hits · pulled body from peer:abc"
 const peerLine = result.peers_queried > 0
   ? `${result.peers_responded}/${result.peers_queried} peers`
   : `local-only`;
@@ -163,6 +223,9 @@ const tookMs = result.took_ms != null ? `${result.took_ms} ms` : '—';
 const topPeer = result.hits[0]?.source_peer && result.hits[0].source_peer !== 'local'
   ? ` · top hit from peer:${String(result.hits[0].source_peer).slice(0, 12)}`
   : '';
-const sysMsg = `▶ wellinformed: ${peerLine} · ${distinctRooms} rooms · ${tookMs} · ${result.hits.length} hits${topPeer}`;
+const autoPulled = Array.isArray(result.auto_pulled) && result.auto_pulled.length > 0
+  ? ` · pulled body from peer:${String(result.auto_pulled[0].peer).slice(0, 12)}/${result.auto_pulled[0].room}`
+  : '';
+const sysMsg = `▶ wellinformed: ${peerLine} · ${distinctRooms} rooms · ${tookMs} · ${result.hits.length} hits${topPeer}${autoPulled}`;
 
 emit(renderHits(result, truncated), sysMsg);
