@@ -71,6 +71,14 @@ import {
   subscribeOracle,
   type SubscribeHandle as OracleSubscribeHandle,
 } from '../infrastructure/oracle-gossip.js';
+import {
+  registerSearchGossipResponder,
+  type SearchGossipResponderHandle,
+  type SearchGossipRequest,
+  type SearchGossipPeerMatch,
+} from '../infrastructure/search-gossip.js';
+import type { Match } from '../domain/vectors.js';
+import type { Room as VectorRoom } from '../domain/graph.js';
 import { runConsolidateTick } from './consolidate-tick.js';
 import {
   createHealthTracker,
@@ -359,6 +367,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
   let liveSearch: SearchRegistry | null = null; // Phase 17
   let liveTouch: TouchRegistry | null = null; // Phase 31
   let liveOracle: OracleSubscribeHandle | null = null; // Phase 39 — pubsub
+  let liveSearchGossip: SearchGossipResponderHandle | null = null; // P2P-scale phase 1
   let liveHealthTracker: HealthTracker | null = null; // Phase 18
   const identityPath = join(deps.homePath, 'peer-identity.json');
   if (existsSync(identityPath)) {
@@ -580,6 +589,48 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               liveOracle = oracleSub.value;
               daemonLog(deps.homePath, `oracle pubsub subscribed: /wellinformed/oracle/1.0.0`);
             }
+
+            // P2P-scale phase 1 — federated search over pubsub. Replaces
+            // the per-peer dialProtocol fan-out with a single publish +
+            // collect. The responder subscribes to the request topic and
+            // serves local-graph queries from the same VectorIndex the
+            // dial-based search registry uses; trust boundary is identical
+            // because both paths flow through search-sync.ts's response
+            // shape.
+            const localNodeForGossip = liveNode;
+            const vectorsForGossip = deps.vectors;
+            const gossipSub = await registerSearchGossipResponder(
+              localNodeForGossip,
+              {
+                runLocalQuery: async (req: SearchGossipRequest):
+                  Promise<ReadonlyArray<SearchGossipPeerMatch>> => {
+                  const embedding = Float32Array.from(req.embedding);
+                  const selfPeer = localNodeForGossip.peerId.toString();
+                  const res = req.room
+                    ? await vectorsForGossip.searchByRoom(
+                        req.room as VectorRoom,
+                        embedding,
+                        req.k,
+                      )
+                    : await vectorsForGossip.searchGlobal(embedding, req.k);
+                  if (res.isErr()) return [];
+                  return res.value.map((m: Match): SearchGossipPeerMatch => ({
+                    node_id: m.node_id,
+                    room: m.room,
+                    wing: m.wing,
+                    distance: m.distance,
+                    _source_peer: selfPeer,
+                  }));
+                },
+              },
+              (msg) => daemonLog(deps.homePath, msg),
+            );
+            if (gossipSub.isErr()) {
+              daemonLog(deps.homePath, `search-gossip register failed: ${formatError(gossipSub.error)}`);
+            } else {
+              liveSearchGossip = gossipSub.value;
+              daemonLog(deps.homePath, `search-gossip subscribed: /wellinformed/search/1.0.0`);
+            }
           }
         }
       }
@@ -610,9 +661,12 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
     if (cleanedUp) return;
     cleanedUp = true;
     try { clearInterval(interval); } catch { /* benign */ }
-    // Cleanup order: oracle pubsub → touch → search → share → node.stop
+    // Cleanup order: oracle pubsub → search-gossip → touch → search → share → node.stop
     if (liveOracle) {
       try { liveOracle.unsubscribe(); } catch { /* benign */ }
+    }
+    if (liveSearchGossip) {
+      try { liveSearchGossip.unsubscribe(); } catch { /* benign */ }
     }
     if (liveTouch) {
       try { await unregisterTouchProtocol(liveTouch); } catch { /* benign */ }
