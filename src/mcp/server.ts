@@ -356,10 +356,12 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
           );
         }
 
-        // 4. Run federated search
+        // 4. Run federated search. Skip cross-room tunnel pass — it
+        // adds ~150-250ms and the federated_search MCP response
+        // surface does not render tunnels.
         const result = await runFederatedSearch(
           { node, vectorIndex: runtime.vectors },
-          { embedding: embedRes.value, k: limit, room, text: query },
+          { embedding: embedRes.value, k: limit, room, text: query, skipTunnels: true },
         );
 
         // 5. Build the peer-pull telemetry block. Lands in every agent
