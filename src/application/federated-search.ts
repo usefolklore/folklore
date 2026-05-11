@@ -32,6 +32,7 @@ import { findTunnels as findTunnelsPure } from '../domain/vectors.js';
 import type { Room } from '../domain/graph.js';
 import type { PeerMatch, SearchRequest } from '../infrastructure/search-sync.js';
 import { openSearchStream } from '../infrastructure/search-sync.js';
+import { askGossip } from '../infrastructure/search-gossip.js';
 
 // ─────────────────────── output types ─────────────────────────────────────────
 
@@ -146,6 +147,27 @@ export interface FederatedSearchParams {
    * is undefined.
    */
   readonly topTierCount?: number;
+  /**
+   * P2P-scale phase 1 — use pubsub broadcast for fan-out instead of
+   * per-peer dialProtocol. Default true (gossip-first). When the
+   * gossip collector returns zero responses, the call falls through
+   * to the legacy per-peer dial path so a missing pubsub service
+   * never strands the request.
+   */
+  readonly useGossip?: boolean;
+  /**
+   * Collector window for gossip fan-out. Default 200 ms.
+   * Lower for tighter latency, higher for larger swarms (10k peers
+   * need ~300 ms floodsub propagation, ~80 ms gossipsub mesh).
+   */
+  readonly gossipWindowMs?: number;
+  /**
+   * Tail-aware merge cap (audit fold-in): never let a single peer
+   * contribute more than ⌈k/peerDiversityDivisor⌉ matches to the
+   * final top-k. Default 3 — i.e. top-3 peers collectively cannot
+   * monopolise more than k. Disabled by setting to Infinity.
+   */
+  readonly peerDiversityDivisor?: number;
 }
 
 // ─────────────────────── per-peer timeout helper ──────────────────────────────
@@ -282,9 +304,59 @@ export const runFederatedSearch = async (
 
   const t1 = Date.now();
 
-  // 2. Parallel fan-out — NEVER use ResultAsync.combine (short-circuits on first error).
-  // Use plain Promise.all with per-promise withTimeout guards.
-  // Anti-pattern locked from 17-RESEARCH.md: "Eager ResultAsync sequence on fan-out".
+  // 2a. P2P-scale phase 1 — pubsub fan-out (gossip-first).
+  //
+  // Replaces N × dialProtocol with one publish + one collector window.
+  // Falls through to the legacy per-peer dial path if the gossip
+  // collector returns zero responses (no pubsub service, no peers
+  // subscribed yet, or floodsub propagation budget exhausted).
+  //
+  // Tail-aware merge: cap each peer's contribution to ⌈k/divisor⌉
+  // so the top-k can't be monopolised by the closest-latency peer
+  // returning a stack of near-duplicates. Audit fold-in from
+  // .planning/p2p-scale-plan.md Phase 1 mod.
+  const gossipDisabled = params.useGossip === false
+    || process.env.WELLINFORMED_SEARCH_GOSSIP === '0';
+  let gossipPeerOutcomes: PeerOutcome[] | null = null;
+
+  if (!gossipDisabled) {
+    // Early-exit hint — when we know how many peers are connected,
+    // pass that as the max-responses ceiling so the collector
+    // resolves the moment everyone has answered instead of always
+    // burning the full window.
+    const connectedPeerCount = deps.node.getPeers().length;
+    const earlyExitCeiling = typeof params.maxPeers === 'number' && params.maxPeers > 0
+      ? Math.min(params.maxPeers, connectedPeerCount || params.maxPeers)
+      : connectedPeerCount > 0 ? connectedPeerCount : undefined;
+    const gossipRes = await askGossip(
+      deps.node,
+      params.embedding,
+      room ?? null,
+      k,
+      {
+        // Tight default: floodsub on a LAN mesh propagates in ~10-20ms;
+        // 80ms gives ~4× margin without burning the wallclock on small
+        // swarms. Larger swarms override via params.gossipWindowMs.
+        windowMs: params.gossipWindowMs ?? 80,
+        maxPeerResponses: earlyExitCeiling,
+      },
+    );
+    if (gossipRes.isOk() && gossipRes.value.responses.length > 0) {
+      const divisor = params.peerDiversityDivisor ?? 3;
+      const perPeerCap = Number.isFinite(divisor) && divisor > 0
+        ? Math.max(1, Math.ceil(k / divisor))
+        : Number.POSITIVE_INFINITY;
+      gossipPeerOutcomes = gossipRes.value.responses.map((r) => ({
+        peerId: r.peer_id,
+        matches: r.matches.slice(0, perPeerCap) as ReadonlyArray<PeerMatch>,
+        status: 'ok' as const,
+      }));
+    }
+  }
+
+  // 2b. Legacy parallel fan-out — used when gossip is disabled OR
+  // returned no responses. NEVER use ResultAsync.combine (short-circuits
+  // on first error). Plain Promise.all with per-promise withTimeout.
   const rawPeers = deps.node.getPeers().map((p) => p.toString());
   // Reputation ordering hook — caller may bubble high-rep peers to
   // the front with an epsilon-greedy floor. Defaults to libp2p's
@@ -310,7 +382,9 @@ export const runFederatedSearch = async (
     k,
   };
 
-  const peerOutcomes: PeerOutcome[] = peers.length === 0
+  const peerOutcomes: PeerOutcome[] = gossipPeerOutcomes !== null
+    ? gossipPeerOutcomes
+    : peers.length === 0
     ? []
     : await Promise.all(
         peers.map((peerId, idx) =>
