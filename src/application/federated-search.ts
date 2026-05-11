@@ -320,25 +320,25 @@ export const runFederatedSearch = async (
   let gossipPeerOutcomes: PeerOutcome[] | null = null;
 
   if (!gossipDisabled) {
-    // Early-exit hint — when we know how many peers are connected,
-    // pass that as the max-responses ceiling so the collector
-    // resolves the moment everyone has answered instead of always
-    // burning the full window.
-    const connectedPeerCount = deps.node.getPeers().length;
-    const earlyExitCeiling = typeof params.maxPeers === 'number' && params.maxPeers > 0
-      ? Math.min(params.maxPeers, connectedPeerCount || params.maxPeers)
-      : connectedPeerCount > 0 ? connectedPeerCount : undefined;
+    // Early-exit hint — pass an explicit maxPeers cap when the caller
+    // supplied one. Otherwise leave the collector to drain the window:
+    // swarm-sim responders can emit many more responses than there
+    // are connected libp2p peers, and we don't want to short-circuit
+    // those out. Larger swarms set gossipWindowMs to a higher value
+    // (e.g. 300ms for a 100-peer swarm).
     const gossipRes = await askGossip(
       deps.node,
       params.embedding,
       room ?? null,
       k,
       {
-        // Tight default: floodsub on a LAN mesh propagates in ~10-20ms;
-        // 80ms gives ~4× margin without burning the wallclock on small
-        // swarms. Larger swarms override via params.gossipWindowMs.
-        windowMs: params.gossipWindowMs ?? 80,
-        maxPeerResponses: earlyExitCeiling,
+        // Default 250ms — covers floodsub on a LAN mesh + parallel
+        // swarm-responder publish bursts. Tighter latency target?
+        // Set params.gossipWindowMs explicitly.
+        windowMs: params.gossipWindowMs ?? 250,
+        maxPeerResponses: typeof params.maxPeers === 'number' && params.maxPeers > 0
+          ? params.maxPeers
+          : undefined,
       },
     );
     if (gossipRes.isOk() && gossipRes.value.responses.length > 0) {

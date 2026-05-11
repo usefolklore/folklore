@@ -220,6 +220,132 @@ export const registerSearchGossipResponder = (
   );
 };
 
+// ─────────────────────── swarm-sim responder ──────────────
+//
+// Phase 3 of the P2P scale plan: when a daemon has a swarm corpus
+// loaded (~/.wellinformed/swarm-corpus.jsonl), it ALSO publishes
+// synthetic responses on behalf of virtual peers from that corpus.
+// Each virtual peer that owns a top-relevance hit gets its OWN
+// SearchGossipResponse published to the response topic.
+//
+// From the asker's vantage:
+//   peers_queried: 1 (the one real daemon)
+//   peers_responded: <K virtual peers from corpus> + 1 real
+//
+// The asker doesn't care; the gossip envelope's peer_id identifies
+// each virtual responder distinctly. This is a pure publish-side
+// amplification — no extra subscriptions, no extra sockets.
+
+export interface SwarmCorpusPeerHit {
+  readonly node_id: string;
+  readonly room: string;
+  readonly distance: number;
+  readonly peer_id: string;
+  /** Optional summary that bypasses auto-pull and goes straight
+   *  into the asker's prefetch render. */
+  readonly summary?: string;
+  readonly label?: string;
+  readonly source_uri?: string;
+}
+
+export interface SwarmRespondDeps {
+  /** Resolve the top-K hits from the swarm corpus for a request.
+   *  Implementation reads the corpus + scores against the request's
+   *  embedding (or text-based BM25 fallback if no embedding match). */
+  readonly findHits: (req: SearchGossipRequest) => Promise<ReadonlyArray<SwarmCorpusPeerHit>>;
+}
+
+/**
+ * Subscribe to the request topic alongside the real daemon's
+ * responder. On every inbound request, partition the swarm corpus
+ * top-hits across their owning virtual peers and publish one
+ * SearchGossipResponse per peer.
+ */
+export const registerSwarmSimResponder = (
+  node: Libp2p,
+  deps: SwarmRespondDeps,
+  onLog?: (msg: string) => void,
+): ResultAsync<SearchGossipResponderHandle, GraphError> => {
+  const pubsub = (() => {
+    try { return getPubsub(node); } catch (e) { return e as Error; }
+  })();
+  if (pubsub instanceof Error) {
+    return errAsync(GE.writeError('search-gossip:swarm', pubsub.message));
+  }
+  const p = pubsub;
+  const log = onLog ?? (() => undefined);
+
+  const handler = (event: CustomEvent<Message>): void => {
+    const message = event.detail;
+    if (message.topic !== SEARCH_REQ_TOPIC) return;
+    if (message.data.byteLength > MAX_REQUEST_BYTES) return;
+    let req: SearchGossipRequest;
+    try {
+      const parsed = JSON.parse(decoder.decode(message.data));
+      if (parsed?.type !== 'search-req' || typeof parsed.request_id !== 'string') return;
+      req = parsed as SearchGossipRequest;
+    } catch { return; }
+    void (async () => {
+      try {
+        const hits = await deps.findHits(req);
+        if (hits.length === 0) return;
+        // Group hits by owning virtual peer.
+        const byPeer = new Map<string, SwarmCorpusPeerHit[]>();
+        for (const h of hits) {
+          const arr = byPeer.get(h.peer_id) ?? [];
+          arr.push(h);
+          byPeer.set(h.peer_id, arr);
+        }
+        // Publish all virtual peer responses in PARALLEL — sequential
+        // awaits would take O(peers × pubsub_publish_ms) and overflow
+        // the asker's collector window. With N=100 peers + ~5ms per
+        // publish, sequential = 500ms; parallel = ~20ms.
+        const publishes: Promise<unknown>[] = [];
+        for (const [peerId, peerHits] of byPeer.entries()) {
+          const matches: SearchGossipPeerMatch[] = peerHits.map((h) => ({
+            node_id: h.node_id,
+            room: h.room,
+            // wing is part of the real Match type — synthesize a
+            // sensible default so the asker's typecheck passes.
+            wing: 'main' as unknown as Match['wing'],
+            distance: h.distance,
+            _source_peer: peerId,
+          }));
+          const resp: SearchGossipResponse = {
+            type: 'search-resp',
+            request_id: req.request_id,
+            peer_id: peerId,
+            matches,
+            emitted_at: new Date().toISOString(),
+          };
+          const json = JSON.stringify(resp);
+          if (json.length > MAX_RESPONSE_BYTES) continue;
+          publishes.push(p.publish(SEARCH_RESP_TOPIC, encoder.encode(json)).catch(() => undefined));
+        }
+        const settled = await Promise.allSettled(publishes);
+        const ok = settled.filter((s) => s.status === 'fulfilled').length;
+        log(`search-gossip swarm: published responses for ${byPeer.size} virtual peers (${ok}/${publishes.length} succeeded)`);
+      } catch (e) {
+        log(`search-gossip swarm: failed: ${(e as Error).message}`);
+      }
+    })();
+  };
+
+  return ResultAsync.fromPromise(
+    (async () => {
+      p.subscribe(SEARCH_REQ_TOPIC);
+      p.addEventListener('message', handler);
+      return {
+        unsubscribe: () => {
+          try { p.removeEventListener('message', handler); } catch { /* benign */ }
+          try { p.unsubscribe(SEARCH_REQ_TOPIC); } catch { /* benign */ }
+        },
+      } satisfies SearchGossipResponderHandle;
+    })(),
+    (e) => GE.writeError('search-gossip:swarm-subscribe', (e as Error).message),
+  );
+};
+
 // ─────────────────────── asker side ────────────────────────
 
 export interface AskGossipOptions {
@@ -305,6 +431,11 @@ export const askGossip = (
       const timer = setTimeout(finish, windowMs);
 
       p.subscribe(SEARCH_RESP_TOPIC);
+      // ALSO subscribe to the request topic so floodsub's subscription
+      // gossip layer knows we participate. Without this, peers
+      // sometimes skip propagating our publishes back since they
+      // don't see us advertising the topic. Idempotent + cheap.
+      p.subscribe(SEARCH_REQ_TOPIC);
       p.addEventListener('message', handler);
 
       const req: SearchGossipRequest = {
@@ -321,10 +452,17 @@ export const askGossip = (
         finish();
         return;
       }
-      // Publish is fire-and-forget; floodsub returns after fanning to
-      // direct neighbours. Any failure here just means no responses
-      // (collector will time out, return empty).
-      void p.publish(SEARCH_REQ_TOPIC, encoder.encode(json)).catch(() => undefined);
+      // Floodsub needs a small settle window so subscription gossip
+      // exchanges with peers — without this, the publish goes out
+      // before peers know we care about the response topic, and
+      // their responses get dropped. 80ms is enough for a LAN mesh.
+      const SETTLE_MS = 100;
+      setTimeout(() => {
+        // Publish is fire-and-forget; floodsub returns after fanning to
+        // direct neighbours. Any failure here just means no responses
+        // (collector will time out, return empty).
+        void p.publish(SEARCH_REQ_TOPIC, encoder.encode(json)).catch(() => undefined);
+      }, SETTLE_MS);
     }),
     (e) => GE.writeError('search-gossip:ask', (e as Error).message),
   );

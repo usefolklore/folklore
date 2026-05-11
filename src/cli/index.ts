@@ -53,6 +53,7 @@ import { evalCmd } from './commands/eval.js';
 import { metricsCmd } from './commands/metrics.js';
 import { login } from './commands/login.js';
 import { peersRep } from './commands/peers-rep.js';
+import { swarm } from './commands/swarm.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -105,6 +106,7 @@ const commands: Record<string, CommandFn> = {
   eval: evalCmd,
   metrics: metricsCmd,
   login,
+  swarm,
   // Plural-form alias: `wellinformed peers rep …` works as well as
   // `wellinformed peer rep …`. The subcommand dispatcher handles both.
   peers: async (args: string[]): Promise<number> => {
