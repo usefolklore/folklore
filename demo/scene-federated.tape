@@ -32,7 +32,12 @@ Type "claude --permission-mode bypassPermissions --mcp-config /tmp/demo-mcp.json
 Enter
 Sleep 9000ms
 
-Type "Anything across my peer network on an open hardware Raman kit for hydrogen detection?"
+Type "I'm building a hydrogen leak detection AI. What open-source tools, models, and best practices should I look at?"
 Sleep 600ms
 Enter
-Sleep 95000ms
+Sleep 75000ms
+
+Type "Which Hugging Face model would you start with for spectroscopy classification?"
+Sleep 600ms
+Enter
+Sleep 55000ms

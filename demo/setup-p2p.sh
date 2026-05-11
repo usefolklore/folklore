@@ -38,6 +38,22 @@ HOMES=(
   "${WELLINFORMED_DEMO_PEER_D_HOME:-$HOME/.wellinformed.demo-peerD}"
   "${WELLINFORMED_DEMO_PEER_E_HOME:-$HOME/.wellinformed.demo-peerE}"
 )
+# Demo-only github handles per peer (so federation surfaces a
+# recognisable identity instead of a 50-char libp2p PeerId in the
+# Claude Code TUI). Plumbed into peer-labels.json on peer A's home.
+GITHUB_HANDLES=(
+  "munich-h2-lab"
+  "stanford-cryo-lab"
+  "nasa-glenn-h2"
+  "eu-hbb-consortium"
+)
+
+# Each peer specialises in a slice of the hydrogen-detection-AI build:
+# open-source hardware + RAG tooling (B), research evals + HF models (C),
+# production benchmarks + code templates (D), industry standards +
+# evaluated HF models (E). Each peer holds 2 typed notes — concept or
+# synthesis — flagged with a code-score where applicable so peers
+# downstream can rank "best practice" candidates.
 LABELS=(
   "Open-hardware portable Raman LH2 spectrometer (peer B exclusive)"
   "PINN failure modes for cryogenic flow — overlooked in 2024 papers (peer C exclusive)"
@@ -45,10 +61,22 @@ LABELS=(
   "EU Hydrogen Backbone consortium working notes (peer E exclusive)"
 )
 NOTES=(
-  "A small Munich lab open-sourced a 4155 cm-1 Raman kit with 532 nm green laser, 600 lines/mm transmission grating, CMOS sensor. Total parts ~2400 EUR. BOM, firmware, CAD at github.com/open-h2-raman. Lives only on peer B."
-  "Critical analysis: most 2024 PINN papers ignore subcooled-to-saturated phase boundary discontinuities. A counterexample dataset from Stanford Cryo Lab shows 23 percent error blowup near the 25 K transition that the published Lagrange-multiplier scheme cannot recover from. Detailed in peer C notes."
-  "Plum Brook internal Q1 2025 benchmark: AE-channel false-positive rate during fill ops dropped 64 percent after switching the LSTM gating head loss from MSE to focal-Tversky. Not yet published; peer D obtained it from an in-person visit."
-  "EU Hydrogen Backbone Working Group meeting summary: Q4 2025 standardisation push for cryo-LH2 sensor data interchange via a JSON-LD vocabulary. ETH Zurich and Linde leading. Draft schema circulating among 14 partner orgs."
+  "Open-hardware portable Raman kit for H2: 4155 cm-1 Stokes line, 532 nm green laser, 600 lines/mm transmission grating, CMOS sensor. Total BOM ~2400 EUR. BOM, firmware, CAD at github.com/open-h2-raman (peer B). Reproduced by 3 university groups; suitable for benchtop H2 leak detection prototypes."
+  "Critical analysis: most 2024 PINN papers ignore subcooled-to-saturated phase boundary discontinuities. Stanford Cryo Lab counterexample dataset shows 23 percent error blowup near the 25 K transition that the published Lagrange-multiplier scheme cannot recover from. Mitigation: discontinuity-aware loss with focal-Tversky weighting near phase boundary."
+  "Plum Brook internal Q1 2025 benchmark: AE-channel false-positive rate during fill ops dropped 64 percent after switching the LSTM gating head loss from MSE to focal-Tversky. Reusable training template at github.com/nasa-glenn/h2-lstm-template — peer D code-score 0.88 (production-tested across 3 fill cycles, 30 fps Jetson Orin). Recommended starting point for new H2-leak LSTMs."
+  "EU Hydrogen Backbone Working Group meeting summary: Q4 2025 standardisation push for cryo-LH2 sensor data interchange via a JSON-LD vocabulary. ETH Zurich and Linde leading. Draft schema circulating among 14 partner orgs. Adopt this for any new H2 detection dataset to stay interoperable with industry pipelines."
+)
+LABELS_2=(
+  "Sensor-fusion GraphRAG for cryogenic H2 monitoring (peer B)"
+  "HF model eval — microsoft/spectro-transformer-base on H2 spectroscopy (peer C)"
+  "Jetson Orin inference pipeline for LH2 anomaly detection (peer D)"
+  "HF model eval — eth-aerospace/lh2-anomaly-detector-v2 on EU pilot data (peer E)"
+)
+NOTES_2=(
+  "Open-source GraphRAG implementation for multimodal H2 sensor fusion (Raman + AE + thermal). Cross-modal tunnels learnt over a sliding 10-min window. Code at github.com/munich-h2/sensor-fusion-rag — peer B code-score 0.91/1.00 on internal eval (high-quality: typed interfaces, 87 percent test coverage, 4 production rigs running it). Recommended as best-practice baseline for any new H2 sensor-fusion AI."
+  "Benchmarked microsoft/spectro-transformer-base (Hugging Face) on H2 leak classification: F1 0.94 macro-averaged across 4 leak modes, beats the published CNN baseline by 11 points. Inference 4 ms per spectrum on a single A10. Recommended over from-scratch CNN architectures for early-stage H2 detection prototypes. Eval notebook at github.com/peer-c-evals/h2-hf-bench."
+  "Production inference pipeline: 1.2M-param U-Net denoiser feeding the focal-Tversky LSTM, 30 fps sustained on Jetson Orin Nano (+3 dB SNR floor lift). Quantised INT8 weights, MQTT publish path. Template at github.com/nasa-glenn/h2-inference-orin — peer D code-score 0.88 (battle-tested under 6 fill-ops; well-documented power envelope). Use this when targeting embedded edge inference."
+  "Eval of eth-aerospace/lh2-anomaly-detector-v2 (Hugging Face) on the EU pilot dataset: AUROC 0.89 across 12 industrial LH2 storage sites, calibration ECE 0.04. License is Apache-2.0; fine-tuneable. Better choice than the v1 release for any deployment touching EU Hydrogen Backbone data — direct schema compatibility per peer E."
 )
 
 NUM_PEERS=${#PEERS[@]}
@@ -121,7 +149,7 @@ while [[ $i -lt $NUM_PEERS ]]; do
   port="${PORTS[$i]}"
   label="${LABELS[$i]}"
   note="${NOTES[$i]}"
-  echo "→ peer $p: identity + note + share room"
+  echo "→ peer $p: identity + 2 notes + share room"
   write_config "$h" "$port"
   if [[ -d "$A_HOME/models" ]] && [[ ! -e "$h/models" ]]; then
     ln -s "$A_HOME/models" "$h/models"
@@ -132,6 +160,12 @@ while [[ $i -lt $NUM_PEERS ]]; do
     --type concept \
     --label "$label" \
     --text "$note" \
+    >/dev/null
+  WELLINFORMED_HOME="$h" wellinformed save \
+    --room research \
+    --type concept \
+    --label "${LABELS_2[$i]}" \
+    --text "${NOTES_2[$i]}" \
     >/dev/null
   WELLINFORMED_HOME="$h" wellinformed share room research >/dev/null
   i=$((i + 1))
@@ -220,6 +254,36 @@ while [[ $i -lt $NUM_PEERS ]]; do
 EOF
   i=$((i + 1))
 done
+
+# ── 5a. write peer-labels.json on peer A so the prompt-submit hook
+# can substitute `github:<handle>` for the libp2p PeerId in its
+# rendering. Mirrors what real `wellinformed login` would produce
+# for each peer; here it's a static fixture for the demo.
+LABELS_JSON="$A_HOME/peer-labels.json"
+{
+  echo '{'
+  echo '  "version": 1,'
+  echo '  "peers": {'
+  i=0
+  first=1
+  while [[ $i -lt $NUM_PEERS ]]; do
+    h="${HOMES[$i]}"
+    handle="${GITHUB_HANDLES[$i]}"
+    pid=$(WELLINFORMED_HOME="$h" wellinformed peer status 2>/dev/null | awk '/peerId/ {print $2}')
+    did=$(WELLINFORMED_HOME="$h" wellinformed identity show 2>/dev/null | awk '/user DID/ {print $3}')
+    did_short=$(echo "$did" | sed -E 's/^did:key:z6Mk//;s/^(.{8}).*$/\1/')
+    if [[ $first -eq 0 ]]; then echo '    ,'; fi
+    echo "    \"$pid\": {"
+    echo "      \"github\":    \"$handle\","
+    echo "      \"did\":       \"$did\","
+    echo "      \"did_short\": \"$did_short\""
+    echo '    }'
+    first=0
+    i=$((i + 1))
+  done
+  echo '  }'
+  echo '}'
+} >"$LABELS_JSON"
 
 # ── 5b. daemons need to reload to pick up peers.json. libp2p
 # only binds its TCP listener when the daemon has at least one
