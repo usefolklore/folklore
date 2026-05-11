@@ -211,13 +211,14 @@ const prefetch = (query) => {
   return PREFETCH_PEERS ? maybeAutoPullPeerBody(result, query) : result;
 };
 
-const renderHits = (result, query) => {
+const renderHits = (result, query, terminal, adjusted) => {
   const hits = result.hits.slice(0, 3);
   const head = [
     `# wellinformed agent contract (hook_event: UserPromptSubmit, hook_version: 2)`,
     `decision:      ${result.decision ?? 'unknown'}`,
-    `satisfaction:  ${(result.satisfaction ?? 0).toFixed(2)}  (range 0.00–1.00)`,
+    `satisfaction:  ${(result.satisfaction ?? 0).toFixed(2)} (boosted: ${adjusted.toFixed(2)})`,
     `thresholds:    ≥0.85 use_memory · ≥0.65 verify_one_source · ≥0.40 search_required · <0.40 ask_user`,
+    `terminal:      ${terminal ? 'true (no follow-up tools)' : 'false (research expected if needed)'}`,
     result.peers_queried > 0
       ? `peers:         ${result.peers_responded}/${result.peers_queried} responded`
       : `peers:         (no federation this query)`,
@@ -232,15 +233,28 @@ const renderHits = (result, query) => {
       : '';
     return `  ${i + 1}. ${h.label ?? h.id} [${room}, ${peer}]${summary}\n     → ${h.source_uri ?? h.id}`;
   }).join('\n');
-  const closer = [
-    ``,
-    `^ This block contains the federated answer. Bodies are inlined for`,
-    `  peer hits that exceeded the auto-pull threshold. Refer to peers`,
-    `  by their github:<handle> attribution (not "peer A/B/C"). Answer`,
-    `  the user directly from these hits — no additional wellinformed,`,
-    `  Grep, Read, or WebSearch calls are needed when the indexed`,
-    `  context above already answers the question.`,
-  ].join('\n');
+  const closer = terminal
+    ? [
+        ``,
+        `^ TERMINAL. The federated answer above passed sybil/freshness/`,
+        `  provenance gates and satisfies the use_memory threshold (≥0.85).`,
+        `  Answer the user directly from these hits. Cite peers by their`,
+        `  github:<handle> attribution. Do NOT call wellinformed.ask,`,
+        `  wellinformed.search, Grep, Read, or WebSearch — the context`,
+        `  above is the complete answer.`,
+      ].join('\n')
+    : [
+        ``,
+        `^ Non-terminal — the federated context above is supporting but`,
+        `  insufficient to answer with full confidence. You are EXPECTED`,
+        `  to research further:`,
+        `    - WebSearch / WebFetch for current external info`,
+        `    - mcp__wellinformed__ask / mcp__wellinformed__search to dig`,
+        `      deeper in the local graph (cache-served, no peer re-query)`,
+        `    - Grep / Read on the codebase when the question is local`,
+        `  Use the hits above as a starting point, then verify or extend`,
+        `  via the tools listed. Cite peers by github:<handle>.`,
+      ].join('\n');
   return `${head}\n${body}${closer}`;
 };
 
@@ -381,6 +395,41 @@ if (!hasPeerHit && result.satisfaction !== null && result.satisfaction < MIN_SAT
   process.exit(0);
 }
 
+// P2P-scale phase 2 — write the assembled context to the prefetch
+// cache, keyed by the prompt + truncation. The MCP server reads this
+// before issuing a redundant ask/search call inside the same turn.
+// Plain-text content; tracked as JSONL so we can append cheaply and
+// trim from the head if needed.
+const PREFETCH_CACHE = join(HOME, 'prefetch-cache.jsonl');
+const CACHE_KEEP_LAST = 200;
+const writePrefetchCache = (query, ctx, sysMsg, terminal) => safe(() => {
+  if (!existsSync(HOME)) mkdirSync(HOME, { recursive: true });
+  const entry = JSON.stringify({
+    ts: new Date().toISOString(),
+    query,
+    context: ctx,
+    system_message: sysMsg,
+    terminal,
+    satisfaction: result.satisfaction,
+    decision: result.decision,
+    peers_responded: result.peers_responded,
+    peers_queried: result.peers_queried,
+  });
+  // Atomic-ish append. Trim old entries when file gets large
+  // (keep last CACHE_KEEP_LAST lines) to bound disk.
+  appendFileSync(PREFETCH_CACHE, entry + '\n');
+  try {
+    const lines = readFileSync(PREFETCH_CACHE, 'utf8').split('\n').filter(Boolean);
+    if (lines.length > CACHE_KEEP_LAST) {
+      const trimmed = lines.slice(-CACHE_KEEP_LAST).join('\n') + '\n';
+      const tmp = PREFETCH_CACHE + '.tmp';
+      const { writeFileSync, renameSync } = require('node:fs');
+      writeFileSync(tmp, trimmed);
+      renameSync(tmp, PREFETCH_CACHE);
+    }
+  } catch { /* benign — cache trim is best-effort */ }
+});
+
 // systemMessage banner — surfaces in Claude Code's TUI as a status
 // line so the watcher sees federation actually firing. Multi-line
 // format:
@@ -403,6 +452,24 @@ const autoPulledLine = Array.isArray(result.auto_pulled) && result.auto_pulled.l
   ? `\n  pulled body:    ${formatPeer(result.auto_pulled[0].peer)}/${result.auto_pulled[0].room}`
   : '';
 const truncQ = truncated.length > 80 ? truncated.slice(0, 77) + '...' : truncated;
+// Satisfaction boost — the base scorer (src/domain/peer-telemetry.ts)
+// runs on the federated response BEFORE auto-pull populates peer
+// bodies. Two signals it cannot see at scoring time:
+//   1. successful body auto-pull from a peer (provenance increased)
+//   2. multi-peer origin agreement (consensus increased)
+// We apply a bounded boost here to bring the effective score into
+// line with what the scorer would have computed had the auto-pulled
+// data been available. Capped at 1.0; never demoted.
+const peerHits = result.hits.filter((h) => h?.source_peer && h.source_peer !== 'local');
+const distinctOrigins = new Set(peerHits.map((h) => h.source_peer)).size;
+const autoPulledCount = Array.isArray(result.auto_pulled) ? result.auto_pulled.length : 0;
+let boost = 0;
+if (autoPulledCount > 0) boost += 0.08;          // got the bodies
+if (distinctOrigins >= 2) boost += 0.08;         // multi-peer consensus
+if (peerHits.length > 0 && distinctOrigins >= 1) boost += 0.04; // any peer signal
+const adjustedSatisfaction = Math.min(1.0, (result.satisfaction ?? 0) + boost);
+const TERMINAL_THRESHOLD = Number(process.env.WELLINFORMED_TERMINAL_THRESHOLD ?? 0.85);
+const terminal = adjustedSatisfaction >= TERMINAL_THRESHOLD;
 const sysMsg = [
   `getting wellinformed`,
   `  peers:          ${peerLine}`,
@@ -410,6 +477,9 @@ const sysMsg = [
   `  question:       "${truncQ}"`,
   `  latency:        ${tookMs}`,
   `  hits:           ${result.hits.length}${topPeerLabel}` + autoPulledLine,
+  `  terminal:       ${terminal ? 'true (answer directly, no follow-up calls)' : 'false (one cached verify call allowed)'}`,
 ].join('\n');
 
-emit(renderHits(result, truncated), sysMsg);
+const renderedContext = renderHits(result, truncated, terminal, adjustedSatisfaction);
+writePrefetchCache(truncated, renderedContext, sysMsg, terminal);
+emit(renderedContext, sysMsg);
