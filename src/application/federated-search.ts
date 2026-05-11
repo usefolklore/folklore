@@ -102,6 +102,15 @@ export interface FederatedSearchParams {
   readonly text?: string;
   /** Cross-room tunnel threshold. Default 0.6 matches MCP find_tunnels default. */
   readonly tunnelThreshold?: number;
+  /**
+   * Skip the cross-room tunnel pass at the end of the merge.
+   * Tunnel detection runs findTunnelsPure on the merged result set,
+   * which on a 5–10 hit return adds ~150-250ms because it embeds
+   * pairs of records and compares. The agent contract block does
+   * not currently use tunnel output; --peers callers should set
+   * this to true to skip the cost.
+   */
+  readonly skipTunnels?: boolean;
   /** Per-peer deadline. Default 2000ms matches CONTEXT.md locked decision. */
   readonly perPeerTimeoutMs?: number;
   /**
@@ -404,7 +413,19 @@ export const runFederatedSearch = async (
         ),
       );
 
-  const peers_queried = peers.length;
+  // peers_queried bookkeeping
+  // ─────────────────────────
+  // On the gossip path, the asker fans out via a single publish; the
+  // responders are whoever subscribes to the request topic and chooses
+  // to answer (including swarm-sim virtual peers behind one physical
+  // daemon). Reporting peers_queried = peers.length (real libp2p
+  // connections) would understate the cooperating set when the
+  // responders outnumber the directly-connected peers. Use the
+  // outcome count when it exceeds the direct-peer count — that's the
+  // honest answer to "how many peers were asked AND chose to answer."
+  const peers_queried = gossipPeerOutcomes !== null
+    ? Math.max(peers.length, peerOutcomes.length)
+    : peers.length;
   const peers_responded = peerOutcomes.filter((o) => o.status === 'ok' && o.matches.length > 0).length;
   const peers_timed_out = peerOutcomes.filter((o) => o.status === 'timeout').length;
   const peers_errored = peerOutcomes.filter((o) => o.status === 'error').length;
@@ -457,11 +478,17 @@ export const runFederatedSearch = async (
   // findTunnelsPure requires VectorRecord[] with `vector` field. We don't have
   // raw vectors from peers — tunnel pass uses local vectors only for merged matches.
   // Peer-only entries are skipped (see computeCrossRoomTunnels comment).
-  const tunnels = await computeCrossRoomTunnels(
-    deps.vectorIndex,
-    merged,
-    tunnelThreshold,
-  );
+  //
+  // Skip path: when params.skipTunnels is set (eg --peers callers), we
+  // omit the tunnel pass entirely. Cuts ~150-250ms off the wallclock
+  // for federated queries that don't render tunnel output.
+  const tunnels = params.skipTunnels
+    ? []
+    : await computeCrossRoomTunnels(
+        deps.vectorIndex,
+        merged,
+        tunnelThreshold,
+      );
 
   const t3 = Date.now();
 

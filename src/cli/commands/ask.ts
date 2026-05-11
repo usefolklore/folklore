@@ -354,7 +354,13 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
 
     const result = await runFederatedSearch(
       { node, vectorIndex: runtime.vectors },
-      { embedding, k: parsed.k, room: parsed.room, text: parsed.query, peerOrder },
+      {
+        embedding, k: parsed.k, room: parsed.room, text: parsed.query, peerOrder,
+        // CLI --peers is the hot demo path. Skip the cross-room
+        // tunnel pass — it adds ~150-250ms and the CLI rendering
+        // doesn't display tunnels anyway.
+        skipTunnels: true,
+      },
     );
 
     // 5. Print results with _source_peer annotation

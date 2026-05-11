@@ -32,7 +32,7 @@
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { wellinformedHome } from '../runtime.js';
+import { defaultRuntime, wellinformedHome } from '../runtime.js';
 
 // ───────────────────────── helpers ─────────────────────────
 
@@ -51,6 +51,15 @@ interface SwarmNote {
   readonly source_uri: string;
   readonly fetched_at: string;
   readonly peer_id: string;         // owning virtual peer
+  /**
+   * Real MiniLM-384 embedding of (label + summary), baked into the
+   * corpus at gen time. The swarm-sim responder uses this to compute
+   * actual cosine distance against incoming query embeddings — so
+   * ranking is semantically meaningful instead of uniform-random in
+   * [0.9, 1.0]. Stored as number[] for JSON round-trip; converted
+   * back to Float32Array on the responder side.
+   */
+  readonly embedding?: ReadonlyArray<number>;
 }
 
 interface SwarmCorpus {
@@ -239,6 +248,31 @@ const cmdGen = async (args: readonly string[]): Promise<number> => {
   const outPath = join(home, 'swarm-corpus.jsonl');
   const corpus = genCorpus(count, domain, adversarialFrac, seed);
 
+  // Embed every note's (label + summary) so the swarm-sim responder
+  // can rank by real cosine-distance instead of random noise.
+  // Loading the runtime takes ~200ms once; embedBatch on 500 notes
+  // is ~2-3s with the ONNX model warm.
+  console.log(`swarm gen: embedding ${corpus.notes.length} notes (this takes a few seconds)...`);
+  const rtRes = await defaultRuntime();
+  const notesWithEmbeddings: ReadonlyArray<SwarmNote> = await (async () => {
+    if (rtRes.isErr()) {
+      console.warn(`swarm gen: embedder unavailable (${rtRes.error}); falling back to ranking-less corpus`);
+      return corpus.notes;
+    }
+    const rt = rtRes.value;
+    const texts = corpus.notes.map((n) => `${n.label}\n${n.summary}`);
+    const embedRes = await rt.embedder.embedBatch(texts);
+    rt.close();
+    if (embedRes.isErr()) {
+      console.warn(`swarm gen: embedding failed; falling back to ranking-less corpus`);
+      return corpus.notes;
+    }
+    return corpus.notes.map((n, i) => ({
+      ...n,
+      embedding: Array.from(embedRes.value[i]),
+    }));
+  })();
+
   // Write JSONL (header line + one line per note). The peer table
   // lives in a sibling file so the sim mode can load it without
   // streaming the entire note stream.
@@ -246,8 +280,9 @@ const cmdGen = async (args: readonly string[]): Promise<number> => {
     type: 'header', version: corpus.version, count: corpus.count, domain: corpus.domain,
     generated_at: corpus.generated_at, total_notes: corpus.notes.length,
     adversarial_count: corpus.peers.filter((p) => p.adversarial).length,
+    embeddings_baked: notesWithEmbeddings[0]?.embedding ? true : false,
   });
-  const noteLines = corpus.notes.map((n) => JSON.stringify({ type: 'note', ...n }));
+  const noteLines = notesWithEmbeddings.map((n) => JSON.stringify({ type: 'note', ...n }));
   writeFileSync(outPath, [header, ...noteLines].join('\n') + '\n');
 
   const peersPath = join(home, 'swarm-peers.json');

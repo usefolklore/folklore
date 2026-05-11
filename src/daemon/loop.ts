@@ -414,22 +414,56 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                   id: string; label: string; summary: string;
                   room: string; source_uri: string; fetched_at: string;
                   peer_id: string;
+                  embedding?: ReadonlyArray<number>;
                 }>;
                 if (corpusNotes.length > 0) {
                   const distinctPeers = new Set(corpusNotes.map((n) => n.peer_id)).size;
-                  daemonLog(deps.homePath, `swarm-sim corpus loaded: ${corpusNotes.length} notes across ${distinctPeers} virtual peers`);
+                  const embeddedCount = corpusNotes.filter((n) => Array.isArray(n.embedding)).length;
+                  daemonLog(deps.homePath, `swarm-sim corpus loaded: ${corpusNotes.length} notes across ${distinctPeers} virtual peers (${embeddedCount} embedded)`);
+                  // Pre-convert each note's embedding to Float32Array once
+                  // so cosine-distance per request is just a dot product
+                  // and norm divides.
+                  const corpusEmb = corpusNotes.map((n) => {
+                    if (!Array.isArray(n.embedding)) {
+                      return { note: n, vec: null as Float32Array | null, norm: 0 };
+                    }
+                    const vec = Float32Array.from(n.embedding);
+                    let ss = 0;
+                    for (let i = 0; i < vec.length; i++) ss += vec[i] * vec[i];
+                    return { note: n, vec, norm: Math.sqrt(ss) };
+                  });
                   const findSwarmHits = async (
-                    _req: SearchGossipRequest,
+                    req: SearchGossipRequest,
                   ): Promise<ReadonlyArray<SwarmCorpusPeerHit>> => {
-                    const cap = Math.min(corpusNotes.length, 200);
-                    return corpusNotes.slice(0, cap).map((n) => ({
-                      node_id: n.id,
-                      room: n.room,
-                      distance: 0.9 + (Math.random() * 0.1),
-                      peer_id: n.peer_id,
-                      summary: n.summary,
-                      label: n.label,
-                      source_uri: n.source_uri,
+                    const reqVec = Float32Array.from(req.embedding);
+                    let reqNormSq = 0;
+                    for (let i = 0; i < reqVec.length; i++) reqNormSq += reqVec[i] * reqVec[i];
+                    const reqNorm = Math.sqrt(reqNormSq);
+                    // Cosine-distance ranking when both sides carry
+                    // embeddings. Fallback: uniform-ish noise for the
+                    // few notes that didn't embed at corpus-gen time.
+                    const scored = corpusEmb.map(({ note, vec, norm }) => {
+                      if (!vec || vec.length !== reqVec.length || reqNorm === 0 || norm === 0) {
+                        return { note, distance: 0.95 + Math.random() * 0.05 };
+                      }
+                      let dot = 0;
+                      for (let i = 0; i < vec.length; i++) dot += vec[i] * reqVec[i];
+                      const cosine = dot / (norm * reqNorm);
+                      const distance = Math.max(0, 1 - cosine);
+                      return { note, distance };
+                    });
+                    // Sort ascending (closest first), cap at 200 to
+                    // bound the per-request publish burst.
+                    scored.sort((a, b) => a.distance - b.distance);
+                    const cap = Math.min(scored.length, 200);
+                    return scored.slice(0, cap).map(({ note, distance }) => ({
+                      node_id: note.id,
+                      room: note.room,
+                      distance,
+                      peer_id: note.peer_id,
+                      summary: note.summary,
+                      label: note.label,
+                      source_uri: note.source_uri,
                     }));
                   };
                   const swarmSub = await registerSwarmSimResponder(
