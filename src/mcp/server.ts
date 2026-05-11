@@ -22,6 +22,7 @@
  */
 
 import { join } from 'node:path';
+import { readFileSync, existsSync } from 'node:fs';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -102,6 +103,52 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
 
   // ─────────────── ask ──────────────────
 
+  // ─────────────── prefetch cache (Phase 2 — one-call hook) ──────
+  //
+  // The UserPromptSubmit hook writes the assembled federated answer
+  // to ~/.wellinformed/prefetch-cache.jsonl, keyed by exact prompt
+  // string. When the agent issues a redundant `ask` with the same
+  // query inside the same turn (which Claude tends to do as a
+  // verification step), we short-circuit by returning the cached
+  // block. No peer re-query, no local re-scan, no extra latency.
+  //
+  // Cache window: 60 seconds. Entries older than that are ignored
+  // so a stale answer never bleeds across sessions.
+
+  const PREFETCH_CACHE_MAX_AGE_MS = 60_000;
+
+  interface PrefetchCacheEntry {
+    readonly ts: string;
+    readonly query: string;
+    readonly context: string;
+    readonly system_message?: string;
+    readonly terminal?: boolean;
+    readonly satisfaction?: number | null;
+  }
+
+  const homeFromRuntime = (_rt: Runtime): string => wellinformedHome();
+
+  const readPrefetchCache = (
+    home: string,
+    query: string,
+  ): PrefetchCacheEntry | null => {
+    const path = join(home, 'prefetch-cache.jsonl');
+    if (!existsSync(path)) return null;
+    let raw: string;
+    try { raw = readFileSync(path, 'utf8'); } catch { return null; }
+    const lines = raw.split('\n').filter(Boolean);
+    // Walk newest-first.
+    for (let i = lines.length - 1; i >= 0; i--) {
+      let entry: PrefetchCacheEntry;
+      try { entry = JSON.parse(lines[i]); } catch { continue; }
+      if (entry?.query !== query) continue;
+      const ageMs = Date.now() - Date.parse(entry.ts);
+      if (Number.isNaN(ageMs) || ageMs > PREFETCH_CACHE_MAX_AGE_MS) continue;
+      return entry;
+    }
+    return null;
+  };
+
   server.registerTool(
     'ask',
     {
@@ -114,6 +161,22 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
       },
     },
     async ({ query, room, k }) => {
+      // P2P-scale phase 2 — prefetch-cache short-circuit.
+      // The UserPromptSubmit hook writes the assembled federated
+      // answer to ~/.wellinformed/prefetch-cache.jsonl. When the
+      // agent issues a verifying `ask` with the same query inside
+      // the same turn, return the cached block instead of re-running
+      // the local + federated pipeline. The cache is bounded by the
+      // hook (last 200 entries) and trimmed by 30s freshness here.
+      const cached = readPrefetchCache(homeFromRuntime(runtime), query);
+      if (cached) {
+        return {
+          content: [
+            { type: 'text' as const, text: cached.context },
+          ],
+        };
+      }
+
       const matches = room
         ? await searchByRoom(deps)({ room, text: query, k })
         : await searchGlobal(deps)({ text: query, k });
