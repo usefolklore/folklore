@@ -350,9 +350,12 @@ const classifyPrompt = (raw) => {
   }
   // Question or research intent — fire.
   if (looksLikeQuestion(p) || RESEARCH_INTENT.test(p)) return 'fire';
-  // Ambiguous — fire-by-default. Better false-positive than missing
-  // a genuine research need.
-  return 'fire';
+  // Default for everything else: SKIP. The hook only fires on
+  // explicit triggers, questions, or research-intent prompts. Short
+  // imperatives, follow-ups ("show me X", "do that"), and ambiguous
+  // prose ("the bug is in line 12") never burn federation budget
+  // unless the user explicitly invokes the network.
+  return 'skip-ambiguous';
 };
 
 // ─────────────── main ──────────────────────
