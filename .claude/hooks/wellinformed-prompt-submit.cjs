@@ -91,7 +91,14 @@ const parseAskOutput = (out) => {
 };
 
 const AUTO_PULL_PEER_BODY = process.env.WELLINFORMED_PREFETCH_AUTO_PULL !== '0';
-const AUTO_PULL_DISTANCE_MAX = Number(process.env.WELLINFORMED_PREFETCH_AUTO_PULL_DISTANCE ?? 0.95);
+// Distance threshold for triggering an auto-pull. Federation returns
+// MiniLM-384 cosine distances; relevance for genuinely useful hits
+// typically sits in 0.85–1.25 on a hybrid (BM25+vec) scorer. Default
+// 1.30 catches the long tail of "peer has *something*" matches and
+// errs toward fetching too much rather than too little — the network
+// cost is tiny (metadata + few KB summary) and Claude can ignore
+// irrelevant hits but cannot make up for absent ones.
+const AUTO_PULL_DISTANCE_MAX = Number(process.env.WELLINFORMED_PREFETCH_AUTO_PULL_DISTANCE ?? 1.30);
 const AUTO_PULL_TIMEOUT_MS = Number(process.env.WELLINFORMED_PREFETCH_AUTO_PULL_TIMEOUT_MS ?? 8000);
 
 const localGraphCache = { loaded: false, byId: new Map() };
@@ -115,6 +122,30 @@ const fetchNodeLocal = (id) => {
   localGraphCache.byId.clear();
   const byId = loadLocalGraph();
   return byId.get(id) ?? null;
+};
+
+// peer-labels.json (written by `wellinformed login` / demo setup)
+// maps libp2p PeerId → {github, did_short, display}. When a peer hit
+// carries a known PeerId, render it as `github:<handle>` instead of
+// `peer:<short_libp2p_id>`. Fall through to the libp2p form otherwise.
+let peerLabelsCache = null;
+const loadPeerLabels = () => {
+  if (peerLabelsCache !== null) return peerLabelsCache;
+  try {
+    const raw = readFileSync(join(HOME, 'peer-labels.json'), 'utf8');
+    peerLabelsCache = JSON.parse(raw)?.peers ?? {};
+  } catch { peerLabelsCache = {}; }
+  return peerLabelsCache;
+};
+const formatPeer = (peerId) => {
+  if (!peerId || peerId === 'local') return 'local';
+  const labels = loadPeerLabels();
+  const entry = labels[peerId];
+  if (entry?.github) {
+    const didShort = entry.did_short ? `:${entry.did_short}` : '';
+    return `github:${entry.github}${didShort}`;
+  }
+  return `peer:${String(peerId).slice(0, 12)}`;
 };
 
 const maybeAutoPullPeerBody = (federatedResult, query) => {
@@ -195,9 +226,7 @@ const renderHits = (result, query) => {
   ].join('\n');
   const body = hits.map((h, i) => {
     const room = h.room ?? '?';
-    const peer = h.source_peer && h.source_peer !== 'local'
-      ? `peer:${String(h.source_peer).slice(0, 12)}`
-      : 'local';
+    const peer = formatPeer(h.source_peer);
     const summary = typeof h.summary === 'string'
       ? ` — ${h.summary.slice(0, 200).replace(/\s+/g, ' ')}`
       : '';
@@ -241,7 +270,14 @@ if (!result) process.exit(0);
 logPrefetch(truncated, result);
 
 if (result.hits.length === 0) process.exit(0);
-if (result.satisfaction !== null && result.satisfaction < MIN_SATISFACTION) process.exit(0);
+// Surface peer-attributed hits unconditionally — even a mid-satisfaction
+// fan-out is valuable when a peer has the answer. Only gate on
+// satisfaction when ALL hits are local (local-only retrievals fall back
+// to the global threshold so noise gets filtered out).
+const hasPeerHit = result.hits.some((h) => h?.source_peer && h.source_peer !== 'local');
+if (!hasPeerHit && result.satisfaction !== null && result.satisfaction < MIN_SATISFACTION) {
+  process.exit(0);
+}
 
 // systemMessage banner — surfaces in Claude Code's TUI as a status
 // line so the watcher sees federation actually firing. Format:
@@ -252,10 +288,10 @@ const peerLine = result.peers_queried > 0
 const distinctRooms = new Set(result.hits.map((h) => h?.room).filter(Boolean)).size;
 const tookMs = result.took_ms != null ? `${result.took_ms} ms` : '—';
 const topPeer = result.hits[0]?.source_peer && result.hits[0].source_peer !== 'local'
-  ? ` · top hit from peer:${String(result.hits[0].source_peer).slice(0, 12)}`
+  ? ` · top hit from ${formatPeer(result.hits[0].source_peer)}`
   : '';
 const autoPulled = Array.isArray(result.auto_pulled) && result.auto_pulled.length > 0
-  ? ` · pulled body from peer:${String(result.auto_pulled[0].peer).slice(0, 12)}/${result.auto_pulled[0].room}`
+  ? ` · pulled body from ${formatPeer(result.auto_pulled[0].peer)}/${result.auto_pulled[0].room}`
   : '';
 const sysMsg = `▶ wellinformed: ${peerLine} · ${distinctRooms} rooms · ${tookMs} · ${result.hits.length} hits${topPeer}${autoPulled}`;
 
