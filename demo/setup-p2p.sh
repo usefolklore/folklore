@@ -55,28 +55,28 @@ GITHUB_HANDLES=(
 # synthesis — flagged with a code-score where applicable so peers
 # downstream can rank "best practice" candidates.
 LABELS=(
-  "Open-hardware portable Raman LH2 spectrometer (peer B exclusive)"
-  "PINN failure modes for cryogenic flow — overlooked in 2024 papers (peer C exclusive)"
-  "NASA Plum Brook 2025 internal benchmark — peer D private summary"
-  "EU Hydrogen Backbone consortium working notes (peer E exclusive)"
+  "Open-hardware portable Raman LH2 spectrometer"
+  "PINN failure modes for cryogenic flow — overlooked in 2024 papers"
+  "NASA Plum Brook 2025 internal LSTM gating-loss benchmark"
+  "EU Hydrogen Backbone consortium — sensor-interchange schema notes"
 )
 NOTES=(
-  "Open-hardware portable Raman kit for H2: 4155 cm-1 Stokes line, 532 nm green laser, 600 lines/mm transmission grating, CMOS sensor. Total BOM ~2400 EUR. BOM, firmware, CAD at github.com/open-h2-raman (peer B). Reproduced by 3 university groups; suitable for benchtop H2 leak detection prototypes."
-  "Critical analysis: most 2024 PINN papers ignore subcooled-to-saturated phase boundary discontinuities. Stanford Cryo Lab counterexample dataset shows 23 percent error blowup near the 25 K transition that the published Lagrange-multiplier scheme cannot recover from. Mitigation: discontinuity-aware loss with focal-Tversky weighting near phase boundary."
-  "Plum Brook internal Q1 2025 benchmark: AE-channel false-positive rate during fill ops dropped 64 percent after switching the LSTM gating head loss from MSE to focal-Tversky. Reusable training template at github.com/nasa-glenn/h2-lstm-template — peer D code-score 0.88 (production-tested across 3 fill cycles, 30 fps Jetson Orin). Recommended starting point for new H2-leak LSTMs."
-  "EU Hydrogen Backbone Working Group meeting summary: Q4 2025 standardisation push for cryo-LH2 sensor data interchange via a JSON-LD vocabulary. ETH Zurich and Linde leading. Draft schema circulating among 14 partner orgs. Adopt this for any new H2 detection dataset to stay interoperable with industry pipelines."
+  "Open-hardware portable Raman kit for H2: 4155 cm-1 Stokes line, 532 nm green laser, 600 lines/mm transmission grating, CMOS sensor. Total BOM ~2400 EUR. Repo, firmware, CAD at github.com/munich-h2-lab/open-h2-raman. Reproduced by 3 university groups; suitable for benchtop H2 leak detection prototypes. Author: github:munich-h2-lab."
+  "Critical analysis: most 2024 PINN papers ignore subcooled-to-saturated phase boundary discontinuities. Counterexample dataset at github.com/stanford-cryo-lab/pinn-h2-counterexample shows 23 percent error blowup near the 25 K transition that the published Lagrange-multiplier scheme cannot recover from. Mitigation: discontinuity-aware loss with focal-Tversky weighting near phase boundary. Author: github:stanford-cryo-lab."
+  "Internal Q1 2025 benchmark: AE-channel false-positive rate during fill ops dropped 64 percent after switching the LSTM gating head loss from MSE to focal-Tversky. Reusable training template at github.com/nasa-glenn-h2/h2-lstm-template — code-score 0.88 (production-tested across 3 fill cycles, 30 fps Jetson Orin). Recommended starting point for new H2-leak LSTMs. Author: github:nasa-glenn-h2."
+  "Q4 2025 standardisation push for cryo-LH2 sensor data interchange via a JSON-LD vocabulary. ETH Zurich and Linde leading the working group; draft schema circulating among 14 partner orgs. Adopt this for any new H2 detection dataset to stay interoperable with industry pipelines. Reference repo at github.com/eu-hbb-consortium/lh2-schema. Author: github:eu-hbb-consortium."
 )
 LABELS_2=(
-  "Sensor-fusion GraphRAG for cryogenic H2 monitoring (peer B)"
-  "HF model eval — microsoft/spectro-transformer-base on H2 spectroscopy (peer C)"
-  "Jetson Orin inference pipeline for LH2 anomaly detection (peer D)"
-  "HF model eval — eth-aerospace/lh2-anomaly-detector-v2 on EU pilot data (peer E)"
+  "Sensor-fusion GraphRAG for cryogenic H2 monitoring"
+  "HF model eval — microsoft/spectro-transformer-base on H2 spectroscopy"
+  "Jetson Orin inference pipeline for LH2 anomaly detection"
+  "HF model eval — eth-aerospace/lh2-anomaly-detector-v2 on EU pilot data"
 )
 NOTES_2=(
-  "Open-source GraphRAG implementation for multimodal H2 sensor fusion (Raman + AE + thermal). Cross-modal tunnels learnt over a sliding 10-min window. Code at github.com/munich-h2/sensor-fusion-rag — peer B code-score 0.91/1.00 on internal eval (high-quality: typed interfaces, 87 percent test coverage, 4 production rigs running it). Recommended as best-practice baseline for any new H2 sensor-fusion AI."
-  "Benchmarked microsoft/spectro-transformer-base (Hugging Face) on H2 leak classification: F1 0.94 macro-averaged across 4 leak modes, beats the published CNN baseline by 11 points. Inference 4 ms per spectrum on a single A10. Recommended over from-scratch CNN architectures for early-stage H2 detection prototypes. Eval notebook at github.com/peer-c-evals/h2-hf-bench."
-  "Production inference pipeline: 1.2M-param U-Net denoiser feeding the focal-Tversky LSTM, 30 fps sustained on Jetson Orin Nano (+3 dB SNR floor lift). Quantised INT8 weights, MQTT publish path. Template at github.com/nasa-glenn/h2-inference-orin — peer D code-score 0.88 (battle-tested under 6 fill-ops; well-documented power envelope). Use this when targeting embedded edge inference."
-  "Eval of eth-aerospace/lh2-anomaly-detector-v2 (Hugging Face) on the EU pilot dataset: AUROC 0.89 across 12 industrial LH2 storage sites, calibration ECE 0.04. License is Apache-2.0; fine-tuneable. Better choice than the v1 release for any deployment touching EU Hydrogen Backbone data — direct schema compatibility per peer E."
+  "Open-source GraphRAG implementation for multimodal H2 sensor fusion (Raman + AE + thermal). Cross-modal tunnels learnt over a sliding 10-min window. Code at github.com/munich-h2-lab/sensor-fusion-rag — code-score 0.91/1.00 on internal eval (typed interfaces, 87 percent test coverage, 4 production rigs running it). Recommended as best-practice baseline for any new H2 sensor-fusion AI. Author: github:munich-h2-lab."
+  "Benchmarked microsoft/spectro-transformer-base on H2 leak classification: F1 0.94 macro-averaged across 4 leak modes, beats the published CNN baseline by 11 points. Inference 4 ms per spectrum on a single A10. Recommended over from-scratch CNN architectures for early-stage H2 detection prototypes. Eval notebook at github.com/stanford-cryo-lab/h2-hf-bench. Author: github:stanford-cryo-lab."
+  "Production inference pipeline: 1.2M-param U-Net denoiser feeding the focal-Tversky LSTM, 30 fps sustained on Jetson Orin Nano (+3 dB SNR floor lift). Quantised INT8 weights, MQTT publish path. Template at github.com/nasa-glenn-h2/h2-inference-orin — code-score 0.88 (battle-tested under 6 fill-ops; well-documented power envelope). Use this when targeting embedded edge inference. Author: github:nasa-glenn-h2."
+  "Eval of eth-aerospace/lh2-anomaly-detector-v2 on the EU pilot dataset: AUROC 0.89 across 12 industrial LH2 storage sites, calibration ECE 0.04. License is Apache-2.0; fine-tuneable. Better choice than the v1 release for any deployment touching EU Hydrogen Backbone data — direct schema compatibility. Author: github:eu-hbb-consortium."
 )
 
 NUM_PEERS=${#PEERS[@]}
@@ -122,6 +122,23 @@ fi
 write_config "$A_HOME" "$A_PORT"
 WELLINFORMED_HOME="$A_HOME" wellinformed identity init >/dev/null 2>&1 || true
 WELLINFORMED_HOME="$A_HOME" wellinformed share room research >/dev/null
+
+# Wipe any concept://* nodes synced from earlier demo runs — they
+# carry old labels (e.g. "(peer C exclusive)") that pollute the
+# federated response. CRDT replays will populate fresh ones from
+# the rebuilt peer homes below.
+if [[ -f "$A_HOME/graph.json" ]]; then
+  python3 - "$A_HOME/graph.json" <<'PY' >/dev/null 2>&1 || true
+import json, sys
+p = sys.argv[1]
+g = json.load(open(p))
+ids = {n.get('id') for n in g['nodes'] if n.get('id','').startswith('concept://')}
+g['nodes'] = [n for n in g['nodes'] if n.get('id') not in ids]
+g['edges'] = [e for e in g.get('edges', []) if e.get('source') not in ids and e.get('target') not in ids]
+json.dump(g, open(p, 'w'), indent=2)
+PY
+fi
+rm -f "$A_HOME/ydocs/research.ydoc"
 
 # ── 2. tear down + rebuild peer B/C/D/E homes ─────────────
 i=0
