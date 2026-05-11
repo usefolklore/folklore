@@ -10,6 +10,16 @@
             "timeout": 5000
           }
         ]
+      },
+      {
+        "matcher": "mcp__wellinformed__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-mcp-pre.cjs\"'",
+            "timeout": 3000
+          }
+        ]
       }
     ],
     "PostToolUse": [
