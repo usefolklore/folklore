@@ -255,12 +255,116 @@ const logPrefetch = (query, result) => safe(() => {
   }) + '\n');
 });
 
+// ─────────────── prompt classifier ──────────────────────
+//
+// Filter the prompt at hook entry so we only burn federation budget
+// on prompts that actually need external knowledge. Three categories:
+//
+//   skip-edit         : imperative code/file edits — "fix this", "rename
+//                       X to Y", "add a test", "remove the comment".
+//                       The prompt names operations on local state;
+//                       the agent has all it needs.
+//   skip-conversation : meta or conversational — "ok", "go ahead",
+//                       "thanks", "continue", "what's next".
+//   fire              : questions or research prompts — "is there",
+//                       "what is", "how do I", "find papers on",
+//                       "tell me about", "best practices for".
+//   fire-explicit     : explicit federation triggers — the user
+//                       *names* peers, the network, web, search,
+//                       arxiv, github, references, etc.
+//
+// Override: WELLINFORMED_HOOK_ALWAYS_FIRE=1 fires on every prompt
+// (legacy behaviour). WELLINFORMED_HOOK_NEVER_FIRE=1 disables.
+
+const ALWAYS_FIRE = process.env.WELLINFORMED_HOOK_ALWAYS_FIRE === '1';
+const NEVER_FIRE = process.env.WELLINFORMED_HOOK_NEVER_FIRE === '1';
+
+// Explicit federation triggers — user named peers, web, network, etc.
+// These fire even if other heuristics would skip ("ask my peers about X"
+// is intent-clear even though "ask" + a code-noun could look edit-y).
+const EXPLICIT_TRIGGERS = /\b(?:check|ask|query|search|look\s?up|find|fetch|consult|poll|hit|browse|crawl|scrape|look\s+for)\s+(?:the\s+|my\s+|our\s+|in\s+)?(?:net|web|google|bing|duckduckgo|peers?|network|graph|wellinformed|swarm|community|arxiv|github|huggingface|hf|model\s?hub|registry|crates\.io|npm|pypi|hackernews|reddit|twitter|x\.com)\b/i;
+// Compound-phrase triggers — same scope as EXPLICIT_TRIGGERS but
+// expressed as compound nouns. We deliberately match only the
+// space-separated forms (federated SEARCH, peer NETWORK) so that
+// hyphenated code identifiers like `federated-search` or
+// `peer-transport` aren't mistaken for federation intent.
+const EXPLICIT_TRIGGERS_2 = /\b(?:across\s+(?:my\s+)?peers?|peer\s+network|peer-?to-?peer|federated\s+search|federation\s+(?:layer|protocol|pipeline)|web\s?search|web\s?fetch)\b/i;
+
+// Research-intent words. Fire when present anywhere.
+const RESEARCH_INTENT = /(?:\bwhat\s+(?:is|are|do|does|would|kind)\b|\bwho(?:\s+(?:is|are|does)|'?s)\b|\bwhen\s+(?:is|did|will|was|does)\b|\bwhere\s+(?:is|are|can|do)\b|\bwhy\s+(?:is|does|did|do)\b|\bhow\s+(?:do|does|can|would|to|much|many)\b|\bwhich\s+(?:is|are|model|library|tool|framework|paper|repo)\b|\bany\s+(?:known|good|recommended|best|examples?)\b|\bis\s+there\b|\bare\s+there\b|\bany\s+research\b|\bbest\s+practice|\brecommended?\b|\bcurrent\s+state\b|\bsota\b|\bstate\s+of\s+the\s+art\b|\bbenchmark|\bcite\b|\bsource\b|\breference|\bpaper\b|\barxiv|\bsurvey|\bpublication|\bevaluat|\bcompar(?:e|ison|ed)\b|\btell\s+me\s+(?:about|how)\b|\bexplain|\bsuggest|\bideas?\s+for\b|\bopinions?\s+on\b|\bthoughts?\s+on\b|\boptions?\s+for\b)/i;
+
+// Imperative-edit verbs (likely paired with a local code/file target).
+// Anchored at start so a question like "How do I implement X?" doesn't
+// match. We also require the prompt to be short OR to not contain a
+// research-intent word (a long edit with no research-intent words is
+// pure imperative; a short prompt that starts with an edit verb is
+// almost always a direct task).
+const EDIT_VERBS_AT_START = /^(?:please\s+)?(?:can\s+you\s+|could\s+you\s+|would\s+you\s+)?(?:fix|rename|refactor|add|remove|delete|drop|change|update|edit|patch|move|copy|extract|inline|wrap|swap|replace|implement|build|create|write|generate|format|reorder|sort|comment|uncomment|merge|rebase|commit|push|squash|revert|undo|redo|run|exec|execute|test|lint|typecheck|compile|deploy|ship|release|tag|init|setup|install|configure|enable|disable|toggle|stub|mock|seed|migrate)\b/i;
+
+// Pure conversational acks. Allow them to chain ("ok thanks, continue").
+const CONVO_TOKENS = /^(?:ok(?:ay)?|sure|cool|thanks?|thank\s+you|great|nice|got\s+it|continue|keep\s+going|go\s+on|go\s+ahead|do\s+it|do\s+that|yes|yep|yeah|no|nope|nvm|never\s+mind|wait|stop|pause|hold\s+on|hmm+|umm+|huh|wow|what(?:'?s|\s+is)?\s+next|next|previous|back|done|finish(?:ed)?)$/i;
+
+// Word-level conversational ack — a prompt is conversational iff
+// every whitespace-delimited token is in the ack vocabulary. This
+// catches "ok thanks, continue", "yep go ahead", "sure thanks!", etc.
+const CONVO_WORDS = new Set([
+  'ok','okay','sure','cool','thanks','thx','great','nice','yep','yes','yeah',
+  'no','nope','nvm','wait','stop','pause','done','hmm','hmmm','umm','huh',
+  'wow','next','back','previous','finish','finished','continue','go','ahead',
+  'keep','going','on','do','it','that','please','thank','you','got',
+]);
+const isConversational = (p) => {
+  const cleaned = p.replace(/[\s.,!?;:&]+$/g, '').toLowerCase();
+  if (cleaned.length === 0 || cleaned.length > 60) return false;
+  const tokens = cleaned.split(/[\s,;.!?:&]+/).filter(Boolean);
+  if (tokens.length === 0 || tokens.length > 6) return false;
+  return tokens.every((t) => CONVO_WORDS.has(t));
+};
+
+const looksLikeQuestion = (p) => p.endsWith('?') || /\?\s*$/.test(p);
+
+const classifyPrompt = (raw) => {
+  const p = raw.trim();
+  if (p.length < MIN_PROMPT_LEN) return 'skip-too-short';
+  // User intent wins — explicit triggers override everything.
+  if (EXPLICIT_TRIGGERS.test(p) || EXPLICIT_TRIGGERS_2.test(p)) return 'fire-explicit';
+  // Pure conversational ack.
+  if (isConversational(p)) return 'skip-convo';
+  // Imperative edit prompt with no research signal — skip.
+  if (EDIT_VERBS_AT_START.test(p) && !RESEARCH_INTENT.test(p) && !looksLikeQuestion(p)) {
+    return p.length > 240 ? 'skip-edit-long' : 'skip-edit';
+  }
+  // Question or research intent — fire.
+  if (looksLikeQuestion(p) || RESEARCH_INTENT.test(p)) return 'fire';
+  // Ambiguous — fire-by-default. Better false-positive than missing
+  // a genuine research need.
+  return 'fire';
+};
+
 // ─────────────── main ──────────────────────
 
 if (!ENABLED) process.exit(0);
+if (NEVER_FIRE) process.exit(0);
 const payload = readPayload();
 const prompt = String(payload.prompt ?? '').trim();
 if (prompt.length < MIN_PROMPT_LEN) process.exit(0);
+
+const verdict = ALWAYS_FIRE ? 'fire-always' : classifyPrompt(prompt);
+if (verdict.startsWith('skip-')) {
+  // Log the skip for observability so users can tune the rules.
+  safe(() => {
+    if (!existsSync(HOME)) mkdirSync(HOME, { recursive: true });
+    appendFileSync(PROMPT_LOG, JSON.stringify({
+      ts: new Date().toISOString(),
+      query: prompt.slice(0, MAX_PROMPT_LEN),
+      verdict,
+      decision: null,
+      satisfaction: null,
+      hits: 0,
+    }) + '\n');
+  });
+  process.exit(0);
+}
 
 const truncated = prompt.length > MAX_PROMPT_LEN ? prompt.slice(0, MAX_PROMPT_LEN) : prompt;
 const result = prefetch(truncated);
