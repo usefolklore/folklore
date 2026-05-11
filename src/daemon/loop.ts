@@ -73,10 +73,13 @@ import {
 } from '../infrastructure/oracle-gossip.js';
 import {
   registerSearchGossipResponder,
+  registerSwarmSimResponder,
   type SearchGossipResponderHandle,
   type SearchGossipRequest,
   type SearchGossipPeerMatch,
+  type SwarmCorpusPeerHit,
 } from '../infrastructure/search-gossip.js';
+import { readFileSync as nodeReadFileSync, existsSync as nodeExistsSync } from 'node:fs';
 import type { Match } from '../domain/vectors.js';
 import type { Room as VectorRoom } from '../domain/graph.js';
 import { runConsolidateTick } from './consolidate-tick.js';
@@ -368,6 +371,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
   let liveTouch: TouchRegistry | null = null; // Phase 31
   let liveOracle: OracleSubscribeHandle | null = null; // Phase 39 — pubsub
   let liveSearchGossip: SearchGossipResponderHandle | null = null; // P2P-scale phase 1
+  let liveSwarmSim: SearchGossipResponderHandle | null = null; // P2P-scale phase 3
   let liveHealthTracker: HealthTracker | null = null; // Phase 18
   const identityPath = join(deps.homePath, 'peer-identity.json');
   if (existsSync(identityPath)) {
@@ -394,6 +398,56 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
             daemonLog(deps.homePath, `share sync skipped — libp2p: ${formatError(nodeRes.error)}`);
           } else {
             liveNode = nodeRes.value;
+
+            // P2P-scale phase 3 — swarm-sim responder. Lifted out
+            // of the share-sync block so it fires the moment libp2p
+            // is up, regardless of peer connectivity. If a swarm
+            // corpus exists in this daemon's home, this responder
+            // publishes synthetic gossip responses on behalf of
+            // every virtual peer in the corpus. One physical daemon,
+            // N attributed responses on the wire.
+            try {
+              const swarmCorpusPath = `${deps.homePath}/swarm-corpus.jsonl`;
+              if (nodeExistsSync(swarmCorpusPath)) {
+                const lines = nodeReadFileSync(swarmCorpusPath, 'utf8').split('\n').filter(Boolean);
+                const corpusNotes = lines.slice(1).map((l: string) => JSON.parse(l)) as ReadonlyArray<{
+                  id: string; label: string; summary: string;
+                  room: string; source_uri: string; fetched_at: string;
+                  peer_id: string;
+                }>;
+                if (corpusNotes.length > 0) {
+                  const distinctPeers = new Set(corpusNotes.map((n) => n.peer_id)).size;
+                  daemonLog(deps.homePath, `swarm-sim corpus loaded: ${corpusNotes.length} notes across ${distinctPeers} virtual peers`);
+                  const findSwarmHits = async (
+                    _req: SearchGossipRequest,
+                  ): Promise<ReadonlyArray<SwarmCorpusPeerHit>> => {
+                    const cap = Math.min(corpusNotes.length, 200);
+                    return corpusNotes.slice(0, cap).map((n) => ({
+                      node_id: n.id,
+                      room: n.room,
+                      distance: 0.9 + (Math.random() * 0.1),
+                      peer_id: n.peer_id,
+                      summary: n.summary,
+                      label: n.label,
+                      source_uri: n.source_uri,
+                    }));
+                  };
+                  const swarmSub = await registerSwarmSimResponder(
+                    liveNode,
+                    { findHits: findSwarmHits },
+                    (msg) => daemonLog(deps.homePath, msg),
+                  );
+                  if (swarmSub.isErr()) {
+                    daemonLog(deps.homePath, `swarm-sim register failed: ${formatError(swarmSub.error)}`);
+                  } else {
+                    liveSwarmSim = swarmSub.value;
+                    daemonLog(deps.homePath, `swarm-sim subscribed: ${distinctPeers} virtual peers active`);
+                  }
+                }
+              }
+            } catch (e) {
+              daemonLog(deps.homePath, `swarm-sim bootstrap threw: ${(e as Error).message}`);
+            }
 
             // ── Phase 18: connection health tracker ──────────────────────────
             // Create the in-memory tracker and register the connection:close
@@ -631,6 +685,10 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               liveSearchGossip = gossipSub.value;
               daemonLog(deps.homePath, `search-gossip subscribed: /wellinformed/search/1.0.0`);
             }
+
+            // P2P-scale phase 3 — swarm-sim registration was lifted
+            // higher up (right after liveNode init) so it fires
+            // regardless of share-sync state. Nothing to do here.
           }
         }
       }
@@ -667,6 +725,9 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
     }
     if (liveSearchGossip) {
       try { liveSearchGossip.unsubscribe(); } catch { /* benign */ }
+    }
+    if (liveSwarmSim) {
+      try { liveSwarmSim.unsubscribe(); } catch { /* benign */ }
     }
     if (liveTouch) {
       try { await unregisterTouchProtocol(liveTouch); } catch { /* benign */ }
