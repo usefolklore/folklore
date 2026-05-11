@@ -234,14 +234,12 @@ const renderHits = (result, query) => {
   }).join('\n');
   const closer = [
     ``,
-    `^ Federation policy: peer-attributed hits show metadata only.`,
-    `  Chunk bodies stay on the source peer (SEC-03 boundary, by design).`,
-    `  When the answer is "peer X has Y", state that directly. Do not`,
-    `  ask the user for permission to fetch the body — the protocol`,
-    `  will not return it. Use mcp__wellinformed__get_node(id) for`,
-    `  local hits, mcp__wellinformed__ask(query) for richer local`,
-    `  retrieval. When decision=use_memory, the indexed context above`,
-    `  answers the user — no WebSearch needed.`,
+    `^ This block contains the federated answer. Bodies are inlined for`,
+    `  peer hits that exceeded the auto-pull threshold. Refer to peers`,
+    `  by their github:<handle> attribution (not "peer A/B/C"). Answer`,
+    `  the user directly from these hits — no additional wellinformed,`,
+    `  Grep, Read, or WebSearch calls are needed when the indexed`,
+    `  context above already answers the question.`,
   ].join('\n');
   return `${head}\n${body}${closer}`;
 };
@@ -280,19 +278,34 @@ if (!hasPeerHit && result.satisfaction !== null && result.satisfaction < MIN_SAT
 }
 
 // systemMessage banner — surfaces in Claude Code's TUI as a status
-// line so the watcher sees federation actually firing. Format:
-//   "▶ wellinformed: 4 peers · 2 rooms · 287ms · 3 hits · pulled body from peer:abc"
+// line so the watcher sees federation actually firing. Multi-line
+// format:
+//   getting wellinformed
+//     peers:          4/4 responded
+//     domains:        cryogenic-h2, spectroscopy
+//     question:       "..."
+//     latency:        287 ms
+//     hits:           3 (top: github:stanford-cryo-lab:hr7DHqKy)
+//     pulled body:    github:munich-h2-lab/research
 const peerLine = result.peers_queried > 0
-  ? `${result.peers_responded}/${result.peers_queried} peers`
+  ? `${result.peers_responded}/${result.peers_queried} responded`
   : `local-only`;
-const distinctRooms = new Set(result.hits.map((h) => h?.room).filter(Boolean)).size;
+const domains = Array.from(new Set(result.hits.map((h) => h?.room).filter(Boolean))).join(', ');
 const tookMs = result.took_ms != null ? `${result.took_ms} ms` : '—';
-const topPeer = result.hits[0]?.source_peer && result.hits[0].source_peer !== 'local'
-  ? ` · top hit from ${formatPeer(result.hits[0].source_peer)}`
+const topPeerLabel = result.hits[0]?.source_peer && result.hits[0].source_peer !== 'local'
+  ? ` (top: ${formatPeer(result.hits[0].source_peer)})`
   : '';
-const autoPulled = Array.isArray(result.auto_pulled) && result.auto_pulled.length > 0
-  ? ` · pulled body from ${formatPeer(result.auto_pulled[0].peer)}/${result.auto_pulled[0].room}`
+const autoPulledLine = Array.isArray(result.auto_pulled) && result.auto_pulled.length > 0
+  ? `\n  pulled body:    ${formatPeer(result.auto_pulled[0].peer)}/${result.auto_pulled[0].room}`
   : '';
-const sysMsg = `▶ wellinformed: ${peerLine} · ${distinctRooms} rooms · ${tookMs} · ${result.hits.length} hits${topPeer}${autoPulled}`;
+const truncQ = truncated.length > 80 ? truncated.slice(0, 77) + '...' : truncated;
+const sysMsg = [
+  `getting wellinformed`,
+  `  peers:          ${peerLine}`,
+  `  domains:        ${domains || '(local-only)'}`,
+  `  question:       "${truncQ}"`,
+  `  latency:        ${tookMs}`,
+  `  hits:           ${result.hits.length}${topPeerLabel}` + autoPulledLine,
+].join('\n');
 
 emit(renderHits(result, truncated), sysMsg);
