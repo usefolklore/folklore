@@ -117,35 +117,35 @@ const quickAsk = (query) => {
   try {
     const parsed = JSON.parse(out);
     const tele = parsed._telemetry ?? {};
+    const sat = typeof parsed.satisfaction === 'number'
+      ? parsed.satisfaction
+      : (typeof tele.satisfaction?.score === 'number' ? tele.satisfaction.score : null);
     return {
       hits: Array.isArray(parsed.hits) ? parsed.hits : [],
       peers_responded: typeof parsed.peers_responded === 'number' ? parsed.peers_responded : 0,
       peers_queried: typeof parsed.peers_queried === 'number' ? parsed.peers_queried : 0,
       took_ms: typeof tele.took_ms === 'number' ? tele.took_ms : null,
+      satisfaction: sat,
     };
   } catch { return null; }
 };
 
 // ─────────────── banner render ──────
 
-const renderBanner = (query, peers_responded, peers_queried, took_ms, hits) => {
-  const peerLine = peers_queried > 0
-    ? `${peers_responded}/${peers_queried} responded`
-    : `local-only`;
-  const domains = Array.from(new Set(hits.map((h) => h?.room).filter(Boolean))).join(', ');
-  const tookMs = took_ms != null ? `${took_ms} ms` : '—';
-  const topPeerLabel = hits[0]?.source_peer && hits[0].source_peer !== 'local'
-    ? ` (top: ${formatPeer(hits[0].source_peer)})`
+// One-line status, bold-prefixed (the *...* renders bold in Claude
+// Code's TUI the same way WebFetch's status line does). Shape the
+// user asked for:
+//   *Getting Informed* — "<question>" | <N> peers available | domain <D> | <H> hits
+const renderBanner = (query, peers_responded, peers_queried, took_ms, hits, satisfaction) => {
+  const peerCount = peers_queried > 0 ? `${peers_queried} peers available` : `local-only`;
+  const domains = Array.from(new Set(hits.map((h) => h?.room).filter(Boolean))).join(', ') || 'local';
+  const topPeer = hits[0]?.source_peer && hits[0].source_peer !== 'local'
+    ? `, top ${formatPeer(hits[0].source_peer)}`
     : '';
-  const truncQ = query.length > 80 ? query.slice(0, 77) + '...' : query;
-  return [
-    `getting wellinformed`,
-    `  peers:          ${peerLine}`,
-    `  domains:        ${domains || '(local-only)'}`,
-    `  question:       "${truncQ}"`,
-    `  latency:        ${tookMs}`,
-    `  hits:           ${hits.length}${topPeerLabel}`,
-  ].join('\n');
+  const truncQ = query.length > 64 ? query.slice(0, 61) + '...' : query;
+  const lat = took_ms != null ? ` | ${took_ms} ms` : '';
+  const conf = satisfaction != null ? ` | confidence ${satisfaction.toFixed(2)}` : '';
+  return `*Getting Informed* — "${truncQ}" | ${peerCount} | domain ${domains} | ${hits.length} hits${topPeer}${conf}${lat}`;
 };
 
 const emit = (text) => {
@@ -164,10 +164,16 @@ const payload = readPayload();
 const query = extractQuery(payload.tool_input);
 if (!query) process.exit(0);
 
-// Short-circuit on a fresh cache hit.
+// Short-circuit on a fresh cache hit — reconstruct the one-liner
+// from the cached entry's metadata (the full hits array isn't
+// cached, so domain/top-peer are best-effort here).
 const cached = readFreshCacheEntry(query);
-if (cached && cached.system_message) {
-  emit(cached.system_message);
+if (cached) {
+  const pc = (cached.peers_queried ?? 0) > 0
+    ? `${cached.peers_queried} peers available`
+    : 'local-only';
+  const truncQ = query.length > 64 ? query.slice(0, 61) + '...' : query;
+  emit(`*Getting Informed* — "${truncQ}" | ${pc} | (cached prefetch)`);
   process.exit(0);
 }
 
@@ -181,4 +187,5 @@ emit(renderBanner(
   result.peers_queried,
   result.took_ms,
   result.hits,
+  result.satisfaction,
 ));
