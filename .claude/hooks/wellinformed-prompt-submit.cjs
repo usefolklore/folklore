@@ -137,14 +137,18 @@ const loadPeerLabels = () => {
   } catch { peerLabelsCache = {}; }
   return peerLabelsCache;
 };
+// Peer identity rendering. The github handle here is the user's
+// OAuth-verified github username (from `wellinformed login`), not a
+// repo path — peer identity is the parallel of a DID anchored in a
+// centrally-credible github account. Render as `@handle` (handle
+// form, not org/repo form) to keep the distinction clean. The DID
+// fragment is reachable via `wellinformed identity show` if a verifier
+// needs it; not inlined here.
 const formatPeer = (peerId) => {
   if (!peerId || peerId === 'local') return 'local';
   const labels = loadPeerLabels();
   const entry = labels[peerId];
-  if (entry?.github) {
-    const didShort = entry.did_short ? `:${entry.did_short}` : '';
-    return `github:${entry.github}${didShort}`;
-  }
+  if (entry?.github) return `@${entry.github}`;
   return `peer:${String(peerId).slice(0, 12)}`;
 };
 
