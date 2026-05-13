@@ -450,7 +450,49 @@ const writePrefetchCache = (query, ctx, sysMsg, terminal) => safe(() => {
 const peerLine = result.peers_queried > 0
   ? `${result.peers_responded}/${result.peers_queried} responded`
   : `local-only`;
-const domains = Array.from(new Set(result.hits.map((h) => h?.room).filter(Boolean))).join(', ');
+// Topic extractor — same algorithm as the mcp-pre hook. Aggregates
+// the dominant tokens across hit labels + summaries so the banner's
+// "domains" slot reflects subject matter, not just the room name.
+const TOPIC_STOPWORDS = new Set([
+  'a','an','the','of','in','on','at','for','to','from','with','by','as','via',
+  'and','or','but','if','then','else','this','that','these','those','their','its','our','your','his','her','they','them','it',
+  'is','are','was','were','be','been','being','am',
+  'have','has','had','having','do','does','did','done','doing',
+  'eval','build','version','peer','exclusive','notes','summary','use','using','used',
+  'new','old','first','last','top','bottom','more','most','less','least',
+  'one','two','three','many','few','some','any','all','no','not','only','just',
+  'how','what','which','why','where','when','who','whom',
+  'web','file','code','chunk','part','example','test','run','runs',
+]);
+const extractTopicsFromHits = (hits, n = 3) => {
+  const freq = new Map();
+  for (const h of hits || []) {
+    const idSlug = typeof h?.id === 'string'
+      ? h.id.replace(/^[a-z0-9\-]+:\/\//, '').replace(/^\d{4}-\d{2}-\d{2}\//, '').replace(/[\-_/]+/g, ' ')
+      : '';
+    const text = `${h?.label ?? ''} ${h?.summary ?? ''} ${idSlug}`;
+    if (!text.trim()) continue;
+    const tokens = text
+      .split(/[\s,;:!?()\[\]\\"'`<>{}|*/=]+/)
+      .map((t) => t.toLowerCase().replace(/^[\-.]+|[\-.,;:!?]+$/g, ''))
+      .filter((t) => {
+        if (t.length < 3) return false;
+        if (TOPIC_STOPWORDS.has(t)) return false;
+        if (/^\d+$/.test(t)) return false;
+        if (/^https?:\/\//.test(t)) return false;
+        if (/^[a-z0-9\-]+:\/\//.test(t)) return false;
+        return true;
+      });
+    for (const t of tokens) freq.set(t, (freq.get(t) ?? 0) + 1);
+  }
+  return [...freq.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, n)
+    .map(([t]) => t);
+};
+const _topics = extractTopicsFromHits(result.hits, 3);
+const _rooms = Array.from(new Set(result.hits.map((h) => h?.room).filter(Boolean)));
+const domains = _topics.length >= 2 ? _topics.join(', ') : (_rooms.join(', ') || 'local');
 const tookMs = result.took_ms != null ? `${result.took_ms} ms` : '—';
 const topPeerLabel = result.hits[0]?.source_peer && result.hits[0].source_peer !== 'local'
   ? ` (top: ${formatPeer(result.hits[0].source_peer)})`
