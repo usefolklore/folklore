@@ -531,4 +531,11 @@ const sysMsg = [
 
 const renderedContext = renderHits(result, truncated, terminal, adjustedSatisfaction);
 writePrefetchCache(truncated, renderedContext, sysMsg, terminal);
-emit(renderedContext, sysMsg);
+// The banner is intentionally NOT emitted as systemMessage from
+// here. Claude Code's TUI prepends "UserPromptSubmit says:" to any
+// systemMessage, which makes the rich block look wrapped. Instead,
+// we stash sysMsg in the prefetch-cache.jsonl (written above) so
+// the PreToolUse smart-hook can pick it up and render the same
+// banner as a clean <system-reminder> block (no wrapper prefix)
+// on Claude's first tool call after the prompt arrives.
+emit(renderedContext);

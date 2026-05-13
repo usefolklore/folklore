@@ -180,6 +180,27 @@ const renderHits = (hits, query, peersMeta) => {
   return `${head}\n${body}\n\nPrefer these over the outbound tool. Load full content via mcp__wellinformed__get_node(id) or mcp__wellinformed__ask(query). If a hit's age is stale for the task (research > 7d, toolshed > 30d), trigger a fresh pull via WebFetch / WebSearch / \`wellinformed trigger\` instead of trusting the cache.`;
 };
 
+// Read the most recent prefetch-cache entry from the UserPromptSubmit
+// hook. If it's fresh (under 90s old), we treat that as the canonical
+// "what wellinformed already knows" — emit its banner as the cleanly-
+// rendered <system-reminder> block (no UserPromptSubmit-says prefix
+// since this is PreToolUse, not UserPromptSubmit). Subsequent tool
+// calls inside the same turn keep emitting the same banner, so the
+// federation status stays visible while Claude works through tools.
+const CACHE_PATH = join(HOME, 'prefetch-cache.jsonl');
+const CACHE_MAX_AGE_MS = 90_000;
+const readFreshCacheBanner = () => {
+  try {
+    if (!existsSync(CACHE_PATH)) return null;
+    const lines = readFileSync(CACHE_PATH, 'utf8').split('\n').filter(Boolean);
+    if (lines.length === 0) return null;
+    const entry = JSON.parse(lines[lines.length - 1]);
+    const ageMs = Date.now() - Date.parse(entry.ts);
+    if (!Number.isFinite(ageMs) || ageMs > CACHE_MAX_AGE_MS) return null;
+    return entry.system_message ?? null;
+  } catch { return null; }
+};
+
 const main = () => {
   if (!existsSync(GRAPH_PATH)) { process.exit(0); }
 
@@ -187,6 +208,17 @@ const main = () => {
   const toolName = String(payload.tool_name ?? '');
   const ti = payload.tool_input ?? {};
   const query = queryFromInput(toolName, ti).trim();
+
+  // Cache-fast path: when the UserPromptSubmit hook just ran the
+  // federated prefetch for the user's prompt, surface that banner
+  // here. Lands as a clean <system-reminder> block with no wrapper
+  // prefix (unlike systemMessage from UserPromptSubmit, which gets
+  // "UserPromptSubmit says:" prepended by the TUI).
+  const cachedBanner = readFreshCacheBanner();
+  if (cachedBanner) {
+    emit(cachedBanner);
+    process.exit(0);
+  }
 
   if (!query || query.length < 3) {
     emit('wellinformed: knowledge graph is live. Use search / ask / get_node MCP tools before outbound lookups.');
