@@ -67,11 +67,13 @@ Or reproduce the recording itself: `bash demo/scene-federated.sh` regenerates `d
 
 The technical detail lives in `docs/`:
 
-- [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) — full BEIR v1, Phase 25 SOTA, 13 documented null attacks, reproduction scripts
-- [`docs/VISION.md`](docs/VISION.md) — the agent-memory protocol problem
-- [`docs/MANIFESTO.md`](docs/MANIFESTO.md) — why this exists, the cooperative knowledge layer
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — north star, priorities, definition of done
-- [`docs/P2P-VISION.md`](docs/P2P-VISION.md) — federation, identity, room sharing
+- [`docs/`](docs/) — full index of long-form documentation
+- [`docs/product/BENCHMARKS.md`](docs/product/BENCHMARKS.md) — full BEIR v1, Phase 25 SOTA, 13 documented null attacks, reproduction scripts
+- [`docs/product/VISION.md`](docs/product/VISION.md) — the agent-memory protocol problem
+- [`docs/product/MANIFESTO.md`](docs/product/MANIFESTO.md) — why this exists, the cooperative knowledge layer
+- [`docs/product/ROADMAP.md`](docs/product/ROADMAP.md) — north star, priorities, definition of done
+- [`docs/p2p/P2P-VISION.md`](docs/p2p/P2P-VISION.md) — federation, identity, room sharing
+- [`docs/p2p/satisfaction-scoring.md`](docs/p2p/satisfaction-scoring.md) — how the agent-contract satisfaction number is calculated
 
 Architecture surface: 23 MCP tools (`search`, `ask`, `get_node`, `get_neighbors`, `find_tunnels`, `federated_search`, `oracle_ask`, `code_graph_query`, …); W3C `did:key` over Ed25519 with BIP39 recovery; libp2p Noise-encrypted transport with circuit-relay-v2 + dcutr NAT traversal; Y.js CRDT room sync.
 

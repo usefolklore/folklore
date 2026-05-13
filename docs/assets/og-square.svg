@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" width="1200" height="1200" role="img" aria-label="wellinformed — The globally accumulating knowledge network. For AI agents and humans.">
+  <title>wellinformed — Open Graph square / LinkedIn carousel cover</title>
+  <defs>
+    <style>
+      .og-display  { font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; letter-spacing: -0.035em; fill: #e8e8ed; }
+      .og-mark     { font-family: 'Outfit', system-ui, sans-serif; font-weight: 700; letter-spacing: -0.02em; fill: #34d399; }
+      .og-claim    { font-family: 'JetBrains Mono', monospace; font-weight: 500; fill: #34d399; letter-spacing: -0.01em; }
+      .og-meta     { font-family: 'JetBrains Mono', monospace; font-weight: 400; fill: #a4a4af; }
+    </style>
+    <radialGradient id="meshGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.18"/>
+      <stop offset="60%" stop-color="#34d399" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="1200" fill="#0c0c14"/>
+  <circle cx="600" cy="900" r="320" fill="url(#meshGlow)"/>
+
+  <!-- Brand mark (top-left) -->
+  <g transform="translate(96, 96)">
+    <circle cx="14" cy="14" r="14" fill="#34d399"/>
+    <circle cx="14" cy="14" r="22" fill="none" stroke="#34d399" stroke-width="1.3" opacity="0.45"/>
+    <text x="56" y="22" class="og-mark" font-size="32">wellinformed</text>
+  </g>
+
+  <!-- H1 (left aligned) -->
+  <text class="og-display" font-size="92" x="96" y="380">The globally</text>
+  <text class="og-display" font-size="92" x="96" y="488">accumulating</text>
+  <text class="og-display" font-size="92" x="96" y="596">knowledge network.</text>
+  <text class="og-display" font-size="64" x="96" y="688">For AI agents <tspan fill="#34d399">— and humans.</tspan></text>
+
+  <!-- Wedge claim -->
+  <text class="og-claim" font-size="34" x="96" y="784">Deep research in 11 ms.</text>
+  <text class="og-claim" font-size="34" x="96" y="828">Cited.  Zero tokens.</text>
+
+  <!-- Mesh diagram (centered bottom) -->
+  <g transform="translate(450, 880)" stroke="#34d399" stroke-linecap="round" fill="none">
+    <g stroke-width="1.8" opacity="0.55">
+      <line x1="150" y1="0"   x2="0"   y2="100"/>
+      <line x1="150" y1="0"   x2="300" y2="100"/>
+      <line x1="0"   y1="100" x2="0"   y2="240"/>
+      <line x1="300" y1="100" x2="300" y2="240"/>
+      <line x1="0"   y1="240" x2="150" y2="340"/>
+      <line x1="300" y1="240" x2="150" y2="340"/>
+      <line x1="150" y1="0"   x2="150" y2="340"/>
+      <line x1="0"   y1="100" x2="300" y2="240"/>
+      <line x1="300" y1="100" x2="0"   y2="240"/>
+    </g>
+    <g stroke-width="2.6" fill="#0c0c14">
+      <circle cx="150" cy="0"   r="11"/>
+      <circle cx="0"   cy="100" r="11"/>
+      <circle cx="300" cy="100" r="11"/>
+      <circle cx="0"   cy="240" r="11"/>
+      <circle cx="300" cy="240" r="11"/>
+      <circle cx="150" cy="340" r="11"/>
+    </g>
+    <circle cx="150" cy="170" r="22" fill="#34d399" stroke="none"/>
+    <circle cx="150" cy="170" r="32" fill="none" stroke-width="1.4" opacity="0.55"/>
+  </g>
+
+  <!-- Footer -->
+  <text class="og-meta" font-size="20" x="96" y="1140">github.com/twocirclestudios/wellinformed</text>
+  <text class="og-meta" font-size="20" x="1104" y="1140" text-anchor="end">MIT  ·  CPU-only</text>
+</svg>

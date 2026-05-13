@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 220" width="1100" height="220" role="img" aria-label="lineage timeline: Napster, eMule, BitTorrent, IPFS, wellinformed">
+  <title>wellinformed — cooperative-network lineage timeline</title>
+  <defs>
+    <style>
+      .ln-mark   { font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; font-size: 18px; letter-spacing: -0.018em; fill: #e8e8ed; }
+      .ln-year   { font-family: 'JetBrains Mono', monospace; font-weight: 400; font-size: 12px; fill: #a4a4af; }
+      .ln-tag    { font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; fill: #8c8c98; }
+      .ln-now    { fill: #34d399; }
+    </style>
+  </defs>
+
+  <!-- Spine -->
+  <line x1="80" y1="110" x2="1020" y2="110" stroke="#34d399" stroke-width="1.4" opacity="0.55" stroke-dasharray="4 6"/>
+
+  <!-- Stops -->
+  <!-- Napster — 1999, music -->
+  <g transform="translate(120,110)">
+    <circle r="8"  fill="#0c0c14" stroke="#34d399" stroke-width="1.6" opacity="0.85"/>
+    <circle r="4"  fill="#34d399" opacity="0.55"/>
+    <text class="ln-year" text-anchor="middle" y="-22">1999</text>
+    <text class="ln-mark" text-anchor="middle" y="34">Napster</text>
+    <text class="ln-tag"  text-anchor="middle" y="52">music</text>
+  </g>
+
+  <!-- eMule — 2002, files -->
+  <g transform="translate(310,110)">
+    <circle r="8"  fill="#0c0c14" stroke="#34d399" stroke-width="1.6" opacity="0.85"/>
+    <circle r="4"  fill="#34d399" opacity="0.55"/>
+    <text class="ln-year" text-anchor="middle" y="-22">2002</text>
+    <text class="ln-mark" text-anchor="middle" y="34">eMule</text>
+    <text class="ln-tag"  text-anchor="middle" y="52">files</text>
+  </g>
+
+  <!-- BitTorrent — 2001, files-at-scale -->
+  <g transform="translate(500,110)">
+    <circle r="8"  fill="#0c0c14" stroke="#34d399" stroke-width="1.6" opacity="0.85"/>
+    <circle r="4"  fill="#34d399" opacity="0.55"/>
+    <text class="ln-year" text-anchor="middle" y="-22">2001</text>
+    <text class="ln-mark" text-anchor="middle" y="34">BitTorrent</text>
+    <text class="ln-tag"  text-anchor="middle" y="52">files at scale</text>
+  </g>
+
+  <!-- IPFS — 2014, content-addressed data -->
+  <g transform="translate(700,110)">
+    <circle r="8"  fill="#0c0c14" stroke="#34d399" stroke-width="1.6" opacity="0.85"/>
+    <circle r="4"  fill="#34d399" opacity="0.55"/>
+    <text class="ln-year" text-anchor="middle" y="-22">2014</text>
+    <text class="ln-mark" text-anchor="middle" y="34">IPFS</text>
+    <text class="ln-tag"  text-anchor="middle" y="52">content-addressed data</text>
+  </g>
+
+  <!-- wellinformed — 2026, knowledge -->
+  <g transform="translate(940,110)">
+    <circle r="14" fill="#34d399" opacity="0.18"/>
+    <circle r="9"  fill="#0c0c14" stroke="#34d399" stroke-width="2"/>
+    <circle r="4.5" class="ln-now"/>
+    <text class="ln-year ln-now" text-anchor="middle" y="-26">2026</text>
+    <text class="ln-mark" text-anchor="middle" y="36" font-weight="700">wellinformed</text>
+    <text class="ln-tag" text-anchor="middle" y="54" fill="#34d399">knowledge</text>
+  </g>
+
+  <!-- Caption -->
+  <text x="80" y="190" class="ln-tag">cooperative networks · lineage</text>
+  <text x="1020" y="190" class="ln-tag" text-anchor="end" fill="#a4a4af">→ what was true for files is now true for knowledge</text>
+</svg>

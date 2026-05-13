@@ -1,0 +1,41 @@
+<!doctype html><meta charset=utf-8>
+<title>probe</title>
+<style>html,body{margin:0;background:#0c0c14;color:#fff;font:14px ui-monospace,monospace}
+#stats{position:fixed;top:0;left:0;right:0;padding:10px;background:#0008;z-index:99}</style>
+<div id=stats>probe loading…</div>
+<iframe id=ifr src="/index.html#try" style="width:100vw;height:calc(100vh - 60px);border:0;margin-top:60px"></iframe>
+<script>
+const out = document.getElementById('stats');
+const ifr = document.getElementById('ifr');
+ifr.addEventListener('load', () => {
+  let n = 0;
+  const t = setInterval(() => {
+    n++;
+    try {
+      const w = ifr.contentWindow;
+      const s = w.__wiStats && w.__wiStats();
+      const T = w.__THREE__ || w.THREE;
+      const Graph = w.ForceGraph3D ? null : null;
+      // also probe scene
+      const scene = w.document && w.document.querySelector('#try-graph-canvas');
+      let geomKinds = [];
+      try {
+        const sceneObj = (w.__wiUpgradeMaterials && (() => {
+          // Find via 3d-force-graph instance via known id pattern
+          return null;
+        }))();
+      } catch(_){}
+      // Inspect via direct scene walk
+      let sphereCount = 0, meshCount = 0, geomTypes = {};
+      try {
+        // The Graph instance is bound as a closure; we read .scene() from the canvas's 3d-force-graph
+        const fg = w.document.querySelector('#try-graph-canvas');
+        // 3d-force-graph stores the instance on the element via a __scene private prop ; try using getScene
+        // Fallback: traverse all WebGL canvases — but easier: locate via __THREE__ scene roots
+      } catch(_){}
+      out.textContent = `tick ${n} :: stats=${JSON.stringify(s)} :: THREE=${T && T.REVISION}`;
+    } catch(e) { out.textContent = 'err: ' + e.message; }
+    if (n > 20) clearInterval(t);
+  }, 800);
+});
+</script>

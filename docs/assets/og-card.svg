@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="wellinformed — The globally accumulating knowledge network. For AI agents and humans.">
+  <title>wellinformed — Open Graph social card</title>
+  <defs>
+    <style>
+      .og-display  { font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; letter-spacing: -0.035em; fill: #e8e8ed; }
+      .og-mark     { font-family: 'Outfit', system-ui, sans-serif; font-weight: 700; letter-spacing: -0.02em; fill: #34d399; }
+      .og-claim    { font-family: 'JetBrains Mono', monospace; font-weight: 500; fill: #34d399; letter-spacing: -0.01em; }
+      .og-meta     { font-family: 'JetBrains Mono', monospace; font-weight: 400; fill: #a4a4af; }
+    </style>
+    <radialGradient id="meshGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.18"/>
+      <stop offset="60%" stop-color="#34d399" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Base -->
+  <rect width="1200" height="630" fill="#0c0c14"/>
+
+  <!-- Soft mesh glow behind decorative diagram (bottom-right) -->
+  <circle cx="940" cy="450" r="220" fill="url(#meshGlow)"/>
+
+  <!-- Brand mark (top-left) -->
+  <g transform="translate(72, 72)">
+    <circle cx="14" cy="14" r="14" fill="#34d399"/>
+    <circle cx="14" cy="14" r="22" fill="none" stroke="#34d399" stroke-width="1.3" opacity="0.45"/>
+    <text x="56" y="22" class="og-mark" font-size="32">wellinformed</text>
+  </g>
+
+  <!-- H1 (left-aligned, asymmetric per VARIANCE 8) -->
+  <text class="og-display" font-size="76" x="72" y="262">The globally accumulating</text>
+  <text class="og-display" font-size="76" x="72" y="346">knowledge network.</text>
+  <text class="og-display" font-size="76" x="72" y="430">For AI agents <tspan fill="#34d399">— and humans.</tspan></text>
+
+  <!-- Wedge claim -->
+  <text class="og-claim" font-size="28" x="72" y="500">Deep research in 11 ms.  Cited.  Zero tokens.</text>
+
+  <!-- Footer (left + right split) -->
+  <text class="og-meta" font-size="18" x="72" y="572">github.com/twocirclestudios/wellinformed</text>
+  <text class="og-meta" font-size="18" x="1128" y="572" text-anchor="end">MIT  ·  CPU-only  ·  no API key</text>
+
+  <!-- Decorative 6-peer mesh (bottom-right) -->
+  <g transform="translate(820, 330)" stroke="#34d399" stroke-linecap="round" fill="none">
+    <g stroke-width="1.6" opacity="0.55">
+      <line x1="120" y1="0"   x2="0"   y2="80"/>
+      <line x1="120" y1="0"   x2="240" y2="80"/>
+      <line x1="0"   y1="80"  x2="0"   y2="200"/>
+      <line x1="240" y1="80"  x2="240" y2="200"/>
+      <line x1="0"   y1="200" x2="120" y2="280"/>
+      <line x1="240" y1="200" x2="120" y2="280"/>
+      <line x1="120" y1="0"   x2="120" y2="280"/>
+      <line x1="0"   y1="80"  x2="240" y2="200"/>
+      <line x1="240" y1="80"  x2="0"   y2="200"/>
+    </g>
+    <g stroke-width="2.4" fill="#0c0c14">
+      <circle cx="120" cy="0"   r="9"/>
+      <circle cx="0"   cy="80"  r="9"/>
+      <circle cx="240" cy="80"  r="9"/>
+      <circle cx="0"   cy="200" r="9"/>
+      <circle cx="240" cy="200" r="9"/>
+      <circle cx="120" cy="280" r="9"/>
+    </g>
+    <circle cx="120" cy="140" r="18" fill="#34d399" stroke="none"/>
+    <circle cx="120" cy="140" r="26" fill="none" stroke-width="1.4" opacity="0.55"/>
+  </g>
+</svg>

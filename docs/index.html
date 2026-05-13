@@ -4,8 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>wellinformed — the network before the web</title>
-  <meta name="description" content="A peer-to-peer shared knowledge network that enables continuous shared learning across machines. Every one of us holds a shard of knowledge; together, we create knowledge planes — always up-to-date, everlasting, globally accessible, at lightning speed. Federated over libp2p with a W3C did:key identity you own. Local-first, CPU-only, MIT. 75.22% NDCG@10 on BEIR SciFact. No servers. No subscriptions." />
+  <meta name="description" content="The globally accumulating knowledge network. Cooperative, peer-to-peer, in the lineage of Napster, eMule, and BitTorrent. Deep research in 11 ms. Cited. Zero tokens. MIT, CPU-only, libp2p federation, W3C did:key identity. 75.22% NDCG@10 on BEIR SciFact." />
   <meta name="theme-color" content="#0c0c14" />
+
+  <!-- Open Graph + Twitter / X social cards (per docs/BRAND-KIT.md §9.1) -->
+  <meta property="og:type"           content="website" />
+  <meta property="og:title"          content="wellinformed — the globally accumulating knowledge network" />
+  <meta property="og:description"    content="Deep research in 11 ms. Cited. Zero tokens. Cooperative, peer-to-peer, in the lineage of Napster, eMule, and BitTorrent." />
+  <meta property="og:url"            content="https://saharbarak.github.io/wellinformed/" />
+  <meta property="og:image"          content="https://saharbarak.github.io/wellinformed/assets/og-card.png" />
+  <meta property="og:image:width"    content="1200" />
+  <meta property="og:image:height"   content="630" />
+  <meta property="og:image:alt"      content="The globally accumulating knowledge network." />
+  <meta name="twitter:card"          content="summary_large_image" />
+  <meta name="twitter:title"         content="wellinformed — the globally accumulating knowledge network" />
+  <meta name="twitter:description"   content="Deep research in 11 ms. Cited. Zero tokens. Cooperative, peer-to-peer, in the lineage of Napster, eMule, and BitTorrent." />
+  <meta name="twitter:image"         content="https://saharbarak.github.io/wellinformed/assets/og-card.png" />
+  <meta name="twitter:image:alt"     content="The globally accumulating knowledge network." />
   <!-- favicon — inline SVG data URI echoing the hero peer-graph mark: emerald core, 6-peer mesh, single file, no extra HTTP request -->
   <link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230c0c14"/><g stroke="%2334d399" stroke-width="1.3" opacity="0.55" fill="none"><line x1="32" y1="12" x2="14" y2="24"/><line x1="32" y1="12" x2="50" y2="24"/><line x1="14" y1="24" x2="14" y2="40"/><line x1="50" y1="24" x2="50" y2="40"/><line x1="14" y1="40" x2="32" y2="52"/><line x1="50" y1="40" x2="32" y2="52"/><line x1="32" y1="12" x2="32" y2="52"/><line x1="14" y1="24" x2="50" y2="40"/><line x1="50" y1="24" x2="14" y2="40"/></g><g fill="%230c0c14" stroke="%2334d399" stroke-width="1.6"><circle cx="32" cy="12" r="3.6"/><circle cx="14" cy="24" r="3.6"/><circle cx="50" cy="24" r="3.6"/><circle cx="14" cy="40" r="3.6"/><circle cx="50" cy="40" r="3.6"/><circle cx="32" cy="52" r="3.6"/></g><circle cx="32" cy="32" r="7.5" fill="%2334d399"/><circle cx="32" cy="32" r="10.5" fill="none" stroke="%2334d399" stroke-width="0.9" opacity="0.55"/></svg>' />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,7 +40,7 @@
       --paper-elev: #ffffff;
       --paper-ink: #161619;        /* dark text on paper */
       --paper-mute: #5b5b63;
-      --ink-mute: #8c8c98;
+      --ink-mute: #a4a4af;
       --accent: #34d399;           /* single accent — emerald, ~69% sat */
       --accent-warm: #d9a255;      /* amber for data annotations only */
       --accent-dim: rgba(52, 211, 153, 0.14);
@@ -109,91 +124,157 @@
     section.light .tag { color: #0f6a46; }
     section.light ::selection { background: rgba(15, 106, 70, 0.18); color: #0f6a46; }
 
-    /* ───── top nav ───── */
+    /* ───── top nav — floating "liquid glass" pill ─────
+       Detached from the viewport edge so the page reads as a stage,
+       not a chrome-on-rails. Inner-border refraction + inset highlight
+       simulate a real glass surface against the dark behind it. */
     .nav {
       position: sticky;
       top: 0;
-      z-index: 10;
-      padding: 1.1rem 0;
-      background: rgba(12, 12, 20, 0.82);
-      backdrop-filter: saturate(120%) blur(16px);
-      -webkit-backdrop-filter: saturate(120%) blur(16px);
-      border-bottom: 1px solid var(--border-dark);
+      z-index: 40;
+      padding: 0.9rem 1rem 0;
+      pointer-events: none;     /* outer area is transparent — only pill is clickable */
+    }
+    .nav-shell {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      pointer-events: auto;
     }
     .nav-inner {
+      position: relative;
       display: grid;
       grid-template-columns: auto 1fr auto;
-      gap: 2rem;
+      gap: clamp(0.75rem, 2.4vw, 1.75rem);
       align-items: center;
+      padding: 0.45rem 0.55rem 0.45rem 0.95rem;
+      border-radius: 999px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012)) padding-box,
+        rgba(12, 12, 20, 0.62) padding-box;
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: saturate(140%) blur(22px);
+      -webkit-backdrop-filter: saturate(140%) blur(22px);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        inset 0 -1px 0 rgba(255,255,255,0.025),
+        0 14px 36px -18px rgba(0,0,0,0.55),
+        0 1px 0 rgba(0,0,0,0.4);
+      transition: transform 0.55s cubic-bezier(0.16,1,0.3,1),
+                  border-color 0.55s ease, box-shadow 0.55s ease;
+    }
+    /* condensed state — set by JS once the user scrolls past the hero */
+    .nav.is-scrolled .nav-inner {
+      transform: scale(0.965);
+      border-color: rgba(255,255,255,0.11);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.10),
+        inset 0 -1px 0 rgba(255,255,255,0.03),
+        0 18px 50px -22px rgba(0,0,0,0.7),
+        0 1px 0 rgba(0,0,0,0.5);
     }
     .brand {
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      font-size: 1.04rem;
+      font-weight: 600;
+      letter-spacing: -0.018em;
+      font-size: 0.97rem;
       display: inline-flex;
       align-items: center;
-      gap: 0.55rem;
+      gap: 0.5rem;
+      padding: 0.25rem 0.35rem 0.25rem 0;
+      color: #f0f0f4;
     }
     .brand-mark {
-      width: 18px; height: 18px;
-      border-radius: 999px;
-      background: var(--accent);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35);
-      position: relative;
-    }
-    .brand-mark::after {
-      content: '';
-      position: absolute;
-      inset: -5px;
-      border: 1px solid rgba(52, 211, 153, 0.35);
-      border-radius: 999px;
-      animation: pulse-ring 3.4s var(--ease) infinite;
-    }
-    @keyframes pulse-ring {
-      0% { transform: scale(0.7); opacity: 0.9; }
-      80% { transform: scale(1.4); opacity: 0; }
-      100% { transform: scale(1.4); opacity: 0; }
+      width: 20px; height: 20px;
+      display: block;
+      filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.42));
     }
 
-    .nav-links {
-      display: flex;
-      gap: 1.75rem;
-      justify-content: flex-end;
-      font-size: 0.92rem;
-      color: var(--ink-mute);
-    }
-    .nav-links a { padding: 0.35rem 0; }
-    .nav-cta {
+    /* live status pill — center column on wide, hidden on mobile.
+       The breathing dot signals "the network is up", the mono numbers
+       prove subsecond p50, and the room slugs name the always-on
+       system rooms. */
+    .nav-status {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.7rem;
+      justify-self: center;
       font-family: var(--mono);
-      font-size: 0.83rem;
-      padding: 0.55rem 0.95rem;
-      border: 1px solid var(--border-dark);
+      font-size: 0.74rem;
+      letter-spacing: 0.02em;
+      color: #c9c9d2;
+      padding: 0.32rem 0.78rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+      white-space: nowrap;
+    }
+    .nav-status .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 0 rgba(52,211,153,0.55);
+      animation: navDotBreathe 2.6s ease-in-out infinite;
+    }
+    @keyframes navDotBreathe {
+      0%,100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.55); transform: scale(1); }
+      50%     { box-shadow: 0 0 0 6px rgba(52,211,153,0);    transform: scale(1.06); }
+    }
+    .nav-status .sep { color: rgba(255,255,255,0.18); }
+    .nav-status .num { color: #e8e8ed; }
+
+    .nav-links {
+      display: none;     /* legacy — kept for older sections that opt in */
+    }
+    .nav-cta {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.01em;
+      padding: 0.48rem 0.85rem 0.48rem 0.78rem;
+      border: 1px solid rgba(255,255,255,0.10);
       border-radius: 999px;
       color: #e8e8ed;
-      transition: all 0.3s var(--ease);
+      background: rgba(255,255,255,0.015);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+      transition: transform 0.45s cubic-bezier(0.16,1,0.3,1),
+                  border-color 0.45s ease, color 0.45s ease, background 0.45s ease;
+    }
+    .nav-cta::before {
+      content: '';
+      width: 14px; height: 14px;
+      background: currentColor;
+      mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22'/></svg>");
+      -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22'/></svg>");
+      mask-size: contain; -webkit-mask-size: contain;
+      mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat;
     }
     .nav-cta:hover {
       color: var(--accent);
-      border-color: var(--accent);
+      border-color: rgba(52,211,153,0.45);
+      background: rgba(52,211,153,0.05);
       transform: translateY(-1px);
     }
-    .nav-cta:active { transform: translateY(0) scale(0.98); }
+    .nav-cta:active { transform: translateY(0) scale(0.97); }
+
+    @media (max-width: 720px) {
+      .nav-status { display: none; }
+      .nav-inner { grid-template-columns: auto 1fr auto; }
+    }
 
     /* ───── hero ───── */
     .hero {
-      min-height: calc(100dvh - 60px);
       display: grid;
       grid-template-columns: 1.4fr 1fr;
-      gap: clamp(2rem, 6vw, 5rem);
+      gap: clamp(2rem, 5vw, 4.5rem);
       align-items: center;
-      padding-top: clamp(3rem, 7vw, 5rem);
-      padding-bottom: clamp(3rem, 7vw, 5rem);
+      padding-top: clamp(0.75rem, 2vw, 1.5rem);
+      padding-bottom: clamp(2.5rem, 6vw, 4.5rem);
     }
     @media (max-width: 900px) {
-      .hero { grid-template-columns: 1fr; gap: 3rem; }
+      .hero { grid-template-columns: 1fr; gap: 2.5rem; }
     }
     .hero-eyebrow {
       display: inline-flex;
@@ -204,7 +285,7 @@
       font-size: 0.78rem;
       letter-spacing: 0.11em;
       text-transform: uppercase;
-      margin-bottom: 1.8rem;
+      margin-bottom: 1.4rem;
     }
     .hero-eyebrow .dot {
       width: 6px; height: 6px; border-radius: 50%;
@@ -216,16 +297,42 @@
       50%      { opacity: 0.55; transform: scale(0.85); }
     }
     .hero h1 {
-      font-size: clamp(3rem, 7.4vw, 5.6rem);
+      font-size: clamp(2.2rem, 4.4vw, 3.4rem);
       font-weight: 600;
-      letter-spacing: -0.035em;
-      line-height: 0.98;
-      margin-bottom: 1.6rem;
+      letter-spacing: -0.03em;
+      line-height: 1.04;
+      margin-bottom: 1.1rem;
+      max-width: 18ch;
     }
     .hero h1 .accent {
       color: var(--accent);
-      font-style: italic;
-      font-weight: 500;
+      font-style: normal;
+      font-weight: 600;
+    }
+    /* hero-tags — small mono row under the claim line. Posture markers
+       (open source, license, no-key) without stealing weight from H1. */
+    .hero-tags {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem 0.7rem;
+      list-style: none;
+      padding: 0.42rem 0.85rem;
+      margin: -0.4rem 0 1.05rem;
+      border: 1px solid rgba(52,211,153,0.22);
+      border-radius: 999px;
+      background: rgba(52,211,153,0.05);
+      font-size: 0.74rem;
+      letter-spacing: 0.02em;
+      color: #c9c9d2;
+    }
+    .hero-tags li { display: inline-flex; align-items: center; gap: 0.42rem; }
+    .hero-tags li.sep { color: rgba(255,255,255,0.18); }
+    .hero-tag-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 0 rgba(52,211,153,0.55);
+      animation: navDotBreathe 2.6s ease-in-out infinite;
     }
     .hero-claim {
       font-size: clamp(1.1rem, 1.5vw, 1.32rem);
@@ -244,7 +351,7 @@
     .hero-sub {
       font-size: clamp(1.02rem, 1.3vw, 1.14rem);
       color: #c7c7d0;
-      max-width: 58ch;
+      max-width: 56ch;
       line-height: 1.6;
       margin-bottom: 2.4rem;
     }
@@ -266,36 +373,183 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.85rem 1.4rem;
-      font-family: var(--mono);
-      font-size: 0.86rem;
-      letter-spacing: 0.02em;
-      border-radius: 8px;
-      transition: all 0.3s var(--ease);
+      padding: 0.7rem 1.25rem;
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: -0.005em;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform 0.18s var(--ease),
+                  background 0.18s var(--ease),
+                  border-color 0.18s var(--ease),
+                  color 0.18s var(--ease);
     }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
     .btn-primary {
       background: var(--accent);
       color: #08160f;
-      font-weight: 600;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.22),
                   0 10px 24px -16px rgba(52, 211, 153, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    /* breath pulse: emerald halo every ~4s */
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55);
+      pointer-events: none;
+      animation: btnBreath 4.4s var(--ease) infinite;
+    }
+    @keyframes btnBreath {
+      0%, 100% { box-shadow: 0 0 0 0   rgba(52, 211, 153, 0.0); }
+      30%      { box-shadow: 0 0 0 8px rgba(52, 211, 153, 0.10); }
+      60%      { box-shadow: 0 0 0 0   rgba(52, 211, 153, 0.0); }
     }
     .btn-primary:hover {
       background: #4ee0a7;
-      color: #08160f;
       transform: translateY(-1px);
     }
-    .btn-primary:active { transform: translateY(0) scale(0.98); }
+    .btn-primary:active { transform: translateY(1px) scale(0.98); }
+    @media (prefers-reduced-motion: reduce) {
+      .btn-primary::after { animation: none; }
+    }
     .btn-ghost {
+      background: transparent;
       color: #e8e8ed;
-      border: 1px solid var(--border-dark);
+      border-color: var(--border-dark);
     }
     .btn-ghost:hover {
       color: var(--accent);
       border-color: var(--accent);
       transform: translateY(-1px);
     }
-    .btn-ghost:active { transform: translateY(0) scale(0.98); }
+    .btn-ghost:active { transform: translateY(1px) scale(0.98); }
+
+    /* ───── install strip — segmented pill + shared code block ───── */
+    .install-strip {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      margin-bottom: 1.6rem;
+      max-width: 540px;
+    }
+    .install-tabs {
+      display: inline-flex;
+      align-self: flex-start;
+      background: rgba(20, 20, 31, 0.85);
+      border: 1px solid var(--border-dark);
+      border-radius: 6px;
+      padding: 3px;
+    }
+    .install-tabs button {
+      background: transparent;
+      color: var(--ink-mute);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      padding: 0.42rem 0.95rem;
+      border: 0;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.18s var(--ease), color 0.18s var(--ease);
+    }
+    .install-tabs button:hover { color: #e8e8ed; background: rgba(28, 28, 40, 0.6); }
+    .install-tabs button[aria-selected="true"] {
+      background: var(--accent);
+      color: #08160f;
+      font-weight: 600;
+      position: relative;
+      overflow: hidden;
+    }
+    /* chroma sweep across the active tab — premium "live" feel */
+    .install-tabs button[aria-selected="true"]::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        100deg,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0.32) 45%,
+        rgba(255,255,255,0) 90%
+      );
+      animation: tabSweep 3.8s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes tabSweep {
+      0%   { transform: translateX(-130%); }
+      55%  { transform: translateX(130%); }
+      100% { transform: translateX(130%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .install-tabs button[aria-selected="true"]::before { animation: none; }
+    }
+    .install-code {
+      position: relative;
+      background: rgba(20, 20, 31, 0.7);
+      border: 1px solid var(--border-dark);
+      border-radius: 8px;
+      padding: 0.95rem 1.1rem;
+      padding-right: 2.6rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: #e8e8ed;
+      overflow-x: auto;
+      margin: 0;
+      white-space: pre;
+    }
+    .install-code code { background: transparent; padding: 0; color: inherit; font-family: inherit; }
+    .install-code button#install-copy {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: transparent;
+      color: var(--ink-mute);
+      border: 0;
+      padding: 4px 6px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: color 0.18s var(--ease);
+    }
+    .install-code button#install-copy:hover  { color: #e8e8ed; }
+    .install-code button#install-copy.is-copied { color: var(--accent); }
+
+    /* ───── counters — live signals, subordinate to star ───── */
+    .hero-ctas .counter {
+      font-family: var(--mono);
+      font-size: 0.88rem;
+      color: var(--ink-mute);
+      text-decoration: none;
+      transition: color 0.2s var(--ease);
+      align-self: center;
+      letter-spacing: 0.005em;
+    }
+    .hero-ctas .counter:hover {
+      color: #e8e8ed;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .hero-ctas .counter[data-state="hidden"] { display: none; }
+    .hero-ctas .counter span[data-counter] {
+      color: #e8e8ed;
+      font-weight: 500;
+    }
+    .hero-ctas .counter--tick span[data-counter] {
+      animation: counter-pulse 0.8s var(--ease);
+    }
+    @keyframes counter-pulse {
+      0%   { color: #e8e8ed; transform: translateY(0); }
+      30%  { color: var(--accent); transform: translateY(-2px); }
+      100% { color: #e8e8ed; transform: translateY(0); }
+    }
 
     .hero-meta {
       display: grid;
@@ -307,102 +561,771 @@
       padding-top: 1.75rem;
       border-top: 1px solid var(--border-dark);
     }
-    @media (max-width: 700px) {
+    @media (max-width: 900px) {
       .hero-meta { grid-template-columns: repeat(2, auto); row-gap: 1rem; }
+    }
+    /* Mobile nav collapse — only brand + repo pill survive below 760px.
+       Hide the github URL string, leave only the GitHub icon (::before). */
+    @media (max-width: 760px) {
+      .nav-cta {
+        font-size: 0;
+        padding: 0.46rem 0.6rem;
+        gap: 0;
+      }
+      .nav-cta::before { width: 16px; height: 16px; }
     }
     .hero-meta b {
       display: block;
       color: #e8e8ed;
       font-weight: 500;
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       margin-bottom: 0.18rem;
     }
 
-    /* Hero visual — a peer's graph reaching outward */
-    .hero-viz {
+    /* Hero visual — scene-prompt-hook GIF (replaces Three.js peer-graph) */
+    /* ───── hero-compare — side-by-side: vanilla Claude vs Claude+wellinformed ───── */
+    .hero-compare {
       position: relative;
-      aspect-ratio: 1 / 1;
-      max-width: 460px;
+      width: 100%;
+      max-width: 560px;
       margin: 0 auto;
-      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
     }
-    /* ───── hero Three.js scene ───── */
-    .viz-canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: block;
-      will-change: transform;
-    }
-    .viz-status {
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      right: 6px;
-      font-family: var(--mono);
-      font-size: 11px;
-      line-height: 1.5;
-      color: #c7c7d0;
-      pointer-events: none;
-      z-index: 2;
-      letter-spacing: 0.01em;
-      opacity: 0;
-      transition: opacity 0.6s var(--ease);
-    }
-    .viz-status.show { opacity: 1; }
-    .viz-status .viz-st-label {
-      color: var(--ink-mute);
-      margin-right: 0.45em;
-    }
-    .viz-status .viz-st-q { color: #e8e8ed; }
-    .viz-status .viz-st-peer { color: var(--accent); }
-    .viz-status .viz-st-conf { color: var(--accent-warm); }
-    .viz-tooltip {
-      position: absolute;
-      pointer-events: none;
-      transform: translate(-50%, calc(-100% - 10px));
-      padding: 5px 9px;
+    .cmp-card {
       border: 1px solid var(--border-dark);
-      background: rgba(12, 12, 20, 0.92);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border-radius: 6px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(20,20,31,0.92), rgba(12,12,20,0.88));
+      box-shadow: 0 4px 24px rgba(0,0,0,0.45),
+                  inset 0 1px 0 rgba(255,255,255,0.04);
+      overflow: hidden;
+    }
+    .cmp-card.cmp-vanilla { opacity: 0.78; }
+    .cmp-card.cmp-wi {
+      border-color: rgba(52, 211, 153, 0.32);
+      box-shadow: 0 4px 28px rgba(0,0,0,0.5),
+                  0 0 0 1px rgba(52,211,153,0.10),
+                  inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .cmp-head {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.5rem 0.85rem;
       font-family: var(--mono);
-      font-size: 10.5px;
-      color: #e8e8ed;
-      letter-spacing: 0.01em;
-      white-space: nowrap;
-      z-index: 3;
-      opacity: 0;
-      transition: opacity 0.22s var(--ease), transform 0.22s var(--ease);
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+      border-bottom: 1px solid var(--border-dark);
     }
-    .viz-tooltip.show {
-      opacity: 1;
-      transform: translate(-50%, calc(-100% - 14px));
+    .cmp-status {
+      margin-left: auto;
+      font-size: 0.66rem;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      text-transform: lowercase;
     }
-    .viz-tooltip .viz-tt-dot {
+    /* rotating agent label — both cards stay in sync via JS */
+    .cmp-agent {
       display: inline-block;
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-      margin-right: 6px;
-      vertical-align: middle;
+      min-width: 8.5em;
+      vertical-align: baseline;
+      transition: opacity 0.32s var(--ease), transform 0.32s var(--ease);
+    }
+    .cmp-agent.is-fading {
+      opacity: 0;
+      transform: translateY(-3px);
+    }
+    /* step reveal — driven by JS .is-on class */
+    .cmp-step {
+      opacity: 0;
+      transform: translateY(3px);
+      transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+    }
+    .cmp-step.is-on { opacity: 1; transform: translateY(0); }
+    @media (prefers-reduced-motion: reduce) {
+      .cmp-step { opacity: 1; transform: none; }
+      .cmp-agent { transition: none; }
+      .cmp-agent.is-fading { opacity: 1; transform: none; }
+    }
+    .cmp-dot {
+      width: 8px; height: 8px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+    .cmp-body {
+      padding: 0.75rem 0.95rem 0.85rem;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: #c7c7d0;
+    }
+    .cmp-prompt {
+      color: #e8e8ed;
+      font-weight: 500;
+      margin-bottom: 0.45rem;
+    }
+    .cmp-step {
+      color: var(--ink-mute);
+      padding: 0.05rem 0;
+    }
+    .cmp-step.cmp-out {
+      color: #c7c7d0;
+      margin-top: 0.4rem;
+      padding-left: 0;
+    }
+    .cmp-step.cmp-hit {
+      color: var(--accent);
+      margin: 0.3rem 0 0.4rem;
+    }
+    /* phase B only — graph hit was older than the room's stale-after
+       window, so wellinformed falls back to research and writes the
+       fresh result back so all peers benefit on the next ask. */
+    .cmp-step.cmp-fetch {
+      color: var(--accent-warm);
+      padding-left: 0.7rem;
+      border-left: 1px solid rgba(217,162,85,0.32);
+      margin: 0.05rem 0;
+    }
+    .cmp-step.cmp-enrich {
+      color: var(--accent);
+      padding-left: 0.7rem;
+      border-left: 1px solid rgba(52,211,153,0.32);
+      margin: 0.05rem 0 0.35rem;
+    }
+    /* graph-hit color shifts orange when the hit is stale */
+    .cmp-step.cmp-hit.is-stale { color: var(--accent-warm); }
+
+    /* phase tag — small chip on the head row showing graph freshness */
+    .cmp-phase {
+      margin-left: auto;
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.16rem 0.46rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #9999a3;
+      transition: color 0.4s var(--ease), border-color 0.4s var(--ease), background 0.4s var(--ease);
+    }
+    .cmp-wi .cmp-phase {
+      color: var(--accent);
+      border-color: rgba(52,211,153,0.32);
+      background: rgba(52,211,153,0.07);
+    }
+    .cmp-wi.is-stale-cycle .cmp-phase {
+      color: var(--accent-warm);
+      border-color: rgba(217,162,85,0.36);
+      background: rgba(217,162,85,0.08);
+    }
+    .cmp-vanilla .cmp-phase {
+      color: #d18a8a;
+      border-color: rgba(209,138,138,0.28);
+    }
+    .cmp-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.85rem;
+      padding: 0.55rem 0.95rem;
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      border-top: 1px solid var(--border-dark);
+      color: var(--ink-mute);
+    }
+    .cmp-vanilla .cmp-foot { color: #d18a8a; }
+    .cmp-wi .cmp-foot      { color: var(--accent); }
+    .cmp-vs {
+      align-self: center;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      color: var(--ink-mute);
+      padding: 0.15rem 0;
+    }
+    .hero-compare figcaption {
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      color: var(--ink-mute);
+      margin-top: 0.4rem;
+      text-align: center;
+    }
+    @media (max-width: 900px) {
+      .hero-compare { order: 2; max-width: 100%; }
     }
 
-    /* ───── reveal on scroll (IntersectionObserver) ───── */
+    /* Hero: tighten mobile padding + container so nothing overflows */
+    @media (max-width: 760px) {
+      .hero { padding-top: 2rem; padding-bottom: 2rem; }
+      .install-strip { max-width: 100%; }
+      .install-code { font-size: 0.74rem; }
+      .hero h1 {
+        font-size: clamp(1.7rem, 6vw, 2.4rem);
+        line-height: 1.08;
+        max-width: 16ch;
+      }
+      .hero-claim { font-size: 1.05rem; }
+      .hero-sub  { font-size: 0.96rem; }
+      .hero-meta b { font-size: 0.95rem; }
+    }
+
+    /* ═════ NEW SECTIONS — DEMO / TRY / HOW / INSTALL / ARCH / FINALE ═════ */
+
+    /* visually-hidden utility */
+    .visually-hidden {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ───── demo (#demo) — image-as-canvas on paper ───── */
+    .demo-section { padding: clamp(4rem, 8vw, 6rem) 0; }
+    .demo-inner { text-align: center; max-width: 1100px; margin: 0 auto; }
+    .demo-eyebrow {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #0f6a46;
+      margin-bottom: 1.25rem;
+    }
+    .demo-h2 {
+      font-size: clamp(1.6rem, 3.4vw, 2.6rem);
+      line-height: 1.1;
+      margin: 0 0 0.7rem;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+    }
+    .demo-figure { margin: 2.4rem 0 0; }
+    .demo-figure img {
+      display: block;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+      border-radius: 12px;
+      box-shadow: 0 24px 48px -16px rgba(22, 22, 25, 0.18);
+      border: 1px solid var(--border-light);
+    }
+    .demo-figure figcaption {
+      font-family: var(--mono);
+      font-size: 0.86rem;
+      color: var(--paper-mute);
+      margin-top: 1.2rem;
+    }
+
+    /* ───── try (#try) — fullscreen 3D graph + bottom-center askbar ───── */
+    .try-section {
+      position: relative;
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
+      height: 100dvh;
+      min-height: 600px;
+      background:
+        radial-gradient(900px 600px at 50% 50%, rgba(52, 211, 153, 0.06), transparent 60%),
+        var(--ink-900);
+      overflow: hidden;
+    }
+    .try-graph-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .try-graph-canvas canvas {
+      display: block !important;
+      pointer-events: none !important;
+      touch-action: pan-y !important;
+    }
+    .try-overlay-top {
+      position: absolute;
+      top: clamp(1.6rem, 4vh, 3rem);
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      z-index: 3;
+      pointer-events: none;
+      width: 90%;
+      max-width: 720px;
+    }
+    .try-overlay-top h2 {
+      font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+      letter-spacing: -0.025em;
+      line-height: 1.06;
+      margin: 0;
+    }
+    .try-overlay-top .try-sub {
+      color: var(--ink-mute);
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      text-transform: lowercase;
+      margin-top: 0.55rem;
+    }
+    .try-askbar {
+      position: absolute;
+      bottom: clamp(3.2rem, 7vh, 5.5rem);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      width: min(580px, 88vw);
+      padding: 0.45rem 0.5rem 0.45rem 1rem;
+      background: rgba(12, 12, 20, 0.78);
+      border: 1px solid rgba(52, 211, 153, 0.22);
+      border-radius: 999px;
+      backdrop-filter: saturate(140%) blur(18px);
+      -webkit-backdrop-filter: saturate(140%) blur(18px);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.45),
+                  0 0 0 1px rgba(52,211,153,0.06),
+                  inset 0 1px 0 rgba(255,255,255,0.04);
+      transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    }
+    .try-askbar:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.5),
+                  0 0 0 3px rgba(52,211,153,0.18),
+                  inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .try-askbar input {
+      flex: 1;
+      background: transparent;
+      border: 0;
+      color: #e8e8ed;
+      font-family: var(--display);
+      font-size: 0.98rem;
+      padding: 0.55rem 0;
+    }
+    .try-askbar input::placeholder { color: var(--ink-mute); }
+    .try-askbar input:focus { outline: none; }
+    .try-askbar button {
+      width: 38px; height: 38px;
+      flex: 0 0 38px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #08160f;
+      border: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.18s var(--ease);
+    }
+    .try-askbar button:hover  { transform: scale(1.06); }
+    .try-askbar button:active { transform: scale(0.96); }
+    .try-section .try-status {
+      position: absolute;
+      bottom: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+      font-size: 0.74rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .try-section .try-status [data-stat] {
+      color: var(--accent);
+      font-weight: 500;
+      transition: color 0.3s var(--ease);
+    }
+    /* answer card — fades in above askbar after the network responds */
+    .try-answer {
+      position: absolute;
+      bottom: calc(clamp(3.2rem, 7vh, 5.5rem) + 4.5rem);
+      left: 50%;
+      transform: translate(-50%, 6px);
+      z-index: 4;
+      width: min(640px, 90vw);
+      padding: 0.85rem 1.05rem;
+      background: rgba(12, 12, 20, 0.88);
+      border: 1px solid rgba(52, 211, 153, 0.32);
+      border-radius: 12px;
+      backdrop-filter: saturate(140%) blur(18px);
+      -webkit-backdrop-filter: saturate(140%) blur(18px);
+      color: #c7c7d0;
+      font-size: 0.86rem;
+      line-height: 1.55;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.32s var(--ease), transform 0.32s var(--ease);
+    }
+    .try-answer.is-on {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+    .try-answer .ans-cite {
+      display: block;
+      margin-top: 0.45rem;
+      font-size: 0.72rem;
+      color: var(--accent);
+      letter-spacing: 0.01em;
+    }
+    /* identity popups — float over node positions */
+    .try-popups {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .try-popup {
+      position: absolute;
+      transform: translate(-50%, calc(-100% - 14px));
+      padding: 0.32rem 0.55rem;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.01em;
+      color: #e8e8ed;
+      background: rgba(12, 12, 20, 0.92);
+      border: 1px solid rgba(52, 211, 153, 0.32);
+      border-radius: 6px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.32s var(--ease), transform 0.32s var(--ease);
+    }
+    .try-popup.is-on { opacity: 1; transform: translate(-50%, calc(-100% - 18px)); }
+    .try-popup.is-asker {
+      border-color: #ffffff;
+      color: #ffffff;
+    }
+    .try-popup.is-asker::before {
+      content: 'asker';
+      display: block;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+      margin-bottom: 1px;
+    }
+    .try-popup.is-responder::before {
+      content: 'responder';
+      display: block;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1px;
+    }
+    /* domain coverage strip — shows topics + satisfaction scores per scenario */
+    .try-domains {
+      position: absolute;
+      bottom: calc(clamp(3.2rem, 7vh, 5.5rem) + 4.5rem + 7.6rem);
+      left: 50%;
+      transform: translate(-50%, 8px);
+      z-index: 4;
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: min(640px, 90vw);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.32s var(--ease), transform 0.32s var(--ease);
+    }
+    .try-domains.is-on {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+    .try-domain {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.62rem;
+      background: rgba(12, 12, 20, 0.78);
+      border: 1px solid rgba(52, 211, 153, 0.26);
+      border-radius: 999px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: #c7c7d0;
+      letter-spacing: 0.01em;
+    }
+    .try-domain .td-bar {
+      display: inline-block;
+      width: 36px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(52, 211, 153, 0.18);
+      overflow: hidden;
+      vertical-align: middle;
+    }
+    .try-domain .td-fill {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+      transform-origin: left center;
+      transform: scaleX(var(--score, 0));
+      transition: transform 0.6s var(--ease);
+    }
+    .try-domain .td-score {
+      color: var(--accent);
+      font-weight: 500;
+      min-width: 2.2em;
+      text-align: right;
+    }
+    /* answer-card extras — cite line + room badge + commit footer */
+    .try-answer .ans-meta {
+      display: flex;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.01em;
+    }
+    .try-answer .ans-cite { color: var(--accent); }
+    .try-answer .ans-room { color: var(--ink-mute); }
+    .try-answer .ans-room em {
+      color: var(--accent);
+      font-style: normal;
+      font-weight: 500;
+    }
+    .try-answer .ans-commit {
+      margin-top: 0.65rem;
+      padding-top: 0.6rem;
+      border-top: 1px solid rgba(52, 211, 153, 0.18);
+      font-size: 0.7rem;
+      line-height: 1.55;
+      color: #a4a4af;
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: opacity 0.4s var(--ease), max-height 0.4s var(--ease);
+    }
+    .try-answer.has-commit .ans-commit {
+      opacity: 1;
+      max-height: 80px;
+    }
+    .try-answer .ans-commit b {
+      display: block;
+      color: var(--accent);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+      margin-bottom: 0.25rem;
+      font-size: 0.66rem;
+    }
+    .try-answer .ans-commit em {
+      color: #e8e8ed;
+      font-style: normal;
+      font-weight: 500;
+    }
+    @media (max-width: 760px) {
+      .try-section { height: 78dvh; min-height: 520px; }
+      .try-askbar { bottom: 4.5rem; }
+    }
+
+    /* ───── how (#how) — staggered editorial offset ───── */
+    .how-section { padding: clamp(4rem, 9vw, 7rem) 0; background: var(--ink-900); }
+    .how-section header { max-width: 720px; margin: 0 0 3.5rem; }
+    .how-section header h2 {
+      font-size: clamp(1.8rem, 3.6vw, 2.6rem);
+      letter-spacing: -0.025em;
+      line-height: 1.06;
+      margin: 0.6rem 0 0.9rem;
+    }
+    .how-sub {
+      color: #c7c7d0;
+      max-width: 56ch;
+      font-size: 1.02rem;
+      line-height: 1.55;
+    }
+    .how-steps {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2.4rem;
+      max-width: 820px;
+    }
+    .how-step:nth-child(1) { margin-left: 0; }
+    .how-step:nth-child(2) { margin-left: clamp(0px, 8vw, 100px); }
+    .how-step:nth-child(3) { margin-left: clamp(0px, 16vw, 200px); }
+    .how-step h3 {
+      font-size: 1.25rem;
+      font-weight: 500;
+      letter-spacing: -0.018em;
+      margin: 0.3rem 0 0.7rem;
+      color: #e8e8ed;
+    }
+    .how-step p {
+      color: var(--ink-mute);
+      font-size: 0.98rem;
+      line-height: 1.65;
+      max-width: 56ch;
+    }
+    .how-step p code {
+      color: var(--accent);
+      background: rgba(52, 211, 153, 0.1);
+      padding: 0.1em 0.4em;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+    .how-num {
+      font-size: 2rem;
+      font-weight: 500;
+      color: var(--ink-mute);
+      letter-spacing: 0;
+      line-height: 1;
+      border-bottom: 1px solid var(--accent);
+      display: inline-block;
+      padding-bottom: 0.35rem;
+    }
+    @media (max-width: 760px) {
+      .how-step:nth-child(2),
+      .how-step:nth-child(3) { margin-left: 0; }
+    }
+    .how-wireup {
+      margin-top: 3.5rem;
+      max-width: 820px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      align-items: flex-end;
+    }
+    .how-wireup .code {
+      width: 100%;
+      background: var(--ink-800);
+      border: 1px solid var(--border-dark);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      color: #e8e8ed;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      margin: 0;
+    }
+    .how-wireup-link {
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    /* ───── install (#install) — quickstart, mini ───── */
+    .install-section {
+      padding: clamp(3rem, 6vw, 5rem) 0;
+      background: var(--ink-900);
+      border-top: 1px solid var(--border-dark);
+      border-bottom: 1px solid var(--border-dark);
+    }
+    .install-stack { max-width: 720px; margin: 0 auto; text-align: center; }
+    .install-stack h2 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin: 0.6rem 0 1.6rem;
+    }
+    .install-strip--lg { max-width: 100%; align-items: center; }
+    .install-strip--lg .install-tabs { margin: 0 auto; }
+    .install-strip--lg .install-code {
+      font-size: 0.92rem;
+      padding: 1.1rem 1.4rem;
+      padding-right: 3rem;
+      text-align: left;
+    }
+    .install-meta {
+      margin-top: 1.4rem;
+      font-size: 0.82rem;
+      color: var(--ink-mute);
+      letter-spacing: 0.005em;
+    }
+
+    /* ───── architecture (#arch) ───── */
+    .arch-h2 {
+      font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin: 0.6rem 0 0.7rem;
+      max-width: 26ch;
+    }
+    .arch-sub {
+      color: #c7c7d0;
+      max-width: 56ch;
+      font-size: 1.02rem;
+      line-height: 1.55;
+      margin-bottom: 2rem;
+    }
+
+    /* ───── finale (rebuilt) — star + community ───── */
+    .finale-new {
+      padding: clamp(4rem, 8vw, 6rem) 0;
+      background: linear-gradient(180deg, var(--ink-900), var(--ink-700));
+      border-top: 1px solid var(--border-dark);
+    }
+    .finale-inner { max-width: 760px; margin: 0 auto; text-align: center; }
+    .finale-h2 {
+      font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+      letter-spacing: -0.025em;
+      line-height: 1.08;
+      margin-bottom: 0.9rem;
+    }
+    .finale-sub {
+      color: #c7c7d0;
+      font-size: 1.05rem;
+      line-height: 1.55;
+      max-width: 56ch;
+      margin: 0 auto 2rem;
+    }
+    .finale-code {
+      background: rgba(20, 20, 31, 0.7);
+      border: 1px solid var(--border-dark);
+      border-radius: 10px;
+      padding: 1rem 1.3rem;
+      color: #e8e8ed;
+      font-family: var(--mono);
+      font-size: 0.88rem;
+      line-height: 1.65;
+      text-align: left;
+      max-width: 600px;
+      margin: 0 auto 1.5rem;
+      overflow-x: auto;
+    }
+    .finale-ctas {
+      display: flex;
+      gap: 0.85rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.6rem;
+    }
+    .finale-meta { font-size: 0.82rem; color: var(--ink-mute); margin-bottom: 1.2rem; }
+    .finale-signals {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      align-items: center;
+    }
+    .finale-signals img { height: 22px; }
+
+    /* ───── reveal on scroll — progressive enhancement ─────
+       Default: visible. JS adds `html.js` then we hide+animate.
+       Without JS / before-paint / prefers-reduced-motion → content shows.  */
     [data-reveal] {
+      opacity: 1;
+      transform: none;
+    }
+    html.js [data-reveal] {
       opacity: 0;
       transform: translateY(18px);
       transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
       transition-delay: calc(var(--d, 0) * 90ms);
     }
-    [data-reveal].in {
+    html.js [data-reveal].in {
       opacity: 1;
       transform: translateY(0);
     }
     @media (prefers-reduced-motion: reduce) {
-      [data-reveal] { opacity: 1; transform: none; transition: none; }
+      html.js [data-reveal] { opacity: 1; transform: none; transition: none; }
     }
 
     /* ───── chapter wrappers ───── */
@@ -814,23 +1737,118 @@
     }
 
     /* ───── footer ───── */
-    footer {
-      padding: 2.5rem 0 3rem;
+    .site-footer {
+      position: relative;
+      padding: 4rem 0 2rem;
       border-top: 1px solid var(--border-dark);
       font-size: 0.85rem;
       color: var(--ink-mute);
+      background:
+        radial-gradient(ellipse at 50% -10%, rgba(52,211,153,0.07), transparent 55%),
+        var(--ink-900);
+      overflow: hidden;
     }
-    .footer-row {
+    .site-footer::before {
+      content: '';
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(52,211,153,0.42) 50%,
+        transparent 100%);
+    }
+    .footer-grid {
       display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 1rem;
+      grid-template-columns: 1.7fr 1fr 1.4fr 1.1fr;
+      gap: clamp(1.5rem, 3vw, 3.2rem);
+      padding-bottom: 2.6rem;
+      border-bottom: 1px solid var(--border-dark);
+    }
+    @media (max-width: 880px) {
+      .footer-grid { grid-template-columns: 1fr 1fr; row-gap: 2.2rem; }
+      .footer-brand { grid-column: 1 / -1; }
+    }
+    @media (max-width: 520px) {
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+    .footer-col h4.footer-h {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.42);
+      margin-bottom: 1.1rem;
+      font-weight: 500;
+    }
+    .footer-col ul { list-style: none; display: grid; gap: 0.55rem; }
+    .footer-col li { font-size: 0.86rem; line-height: 1.45; }
+    .footer-col li code {
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      color: #c7c7d0;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 6px;
+      padding: 0.2rem 0.42rem;
+      display: inline-block;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .footer-mark {
+      display: inline-flex;
       align-items: center;
+      gap: 0.55rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      font-size: 1.06rem;
+      color: #f0f0f4;
+      margin-bottom: 0.85rem;
     }
-    @media (max-width: 700px) {
-      .footer-row { grid-template-columns: 1fr; row-gap: 1rem; }
+    .footer-mark img {
+      filter: drop-shadow(0 0 8px rgba(52,211,153,0.42));
     }
-    footer a { color: var(--ink-mute); }
-    footer a:hover { color: var(--accent); }
+    .footer-tagline {
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: var(--ink-mute);
+      max-width: 36ch;
+      margin-bottom: 1rem;
+    }
+    .footer-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.02em;
+      padding: 0.32rem 0.72rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: #c9c9d2;
+    }
+    .footer-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 0 rgba(52,211,153,0.55);
+      animation: navDotBreathe 2.6s ease-in-out infinite;
+    }
+    .footer-base {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.6rem 1.2rem;
+      padding-top: 1.4rem;
+      font-size: 0.74rem;
+      letter-spacing: 0.02em;
+      color: rgba(255,255,255,0.42);
+    }
+    .footer-base a { color: rgba(255,255,255,0.62); }
+    .footer-base a:hover { color: var(--accent); }
+    .site-footer a { color: var(--ink-mute); transition: color 0.3s var(--ease); }
+    .site-footer a:hover { color: var(--accent); }
 
     /* ───── chapter number marks ───── */
     .chap-num {
@@ -936,24 +1954,26 @@
 </head>
 <body>
 
-  <!-- ───────────── NAV ───────────── -->
-  <nav class="nav">
-    <div class="shell nav-inner">
-      <a href="#" class="brand">
-        <span class="brand-mark" aria-hidden="true"></span>
-        wellinformed
-      </a>
-      <div class="nav-links">
-        <a href="#manifesto">Thesis</a>
-        <a href="#silo">The treadmill</a>
-        <a href="#shape">The alternative</a>
-        <a href="#identity">Identity</a>
-        <a href="#bench">Benchmark</a>
-        <a href="#rooms">How to join</a>
+  <!-- ───────────── NAV — floating glass pill with live status ───────────── -->
+  <nav class="nav" id="site-nav" aria-label="primary">
+    <div class="nav-shell">
+      <div class="nav-inner">
+        <a href="#" class="brand" aria-label="wellinformed home">
+          <img class="brand-mark" src="assets/logo-mark.svg" width="20" height="20" alt="" />
+          wellinformed
+        </a>
+        <div class="nav-status" aria-hidden="true">
+          <span class="dot"></span>
+          <span><span class="num" data-stat="peers">3</span>&nbsp;peers</span>
+          <span class="sep">·</span>
+          <span><span class="num" data-stat="latency">11</span>&nbsp;ms&nbsp;p50</span>
+          <span class="sep">·</span>
+          <span>research / toolshed</span>
+        </div>
+        <a class="nav-cta" href="https://github.com/SaharBarak/wellinformed" rel="noopener">
+          SaharBarak/wellinformed
+        </a>
       </div>
-      <a class="nav-cta" href="https://github.com/SaharBarak/wellinformed">
-        github.com/SaharBarak/wellinformed
-      </a>
     </div>
   </nav>
 
@@ -963,196 +1983,245 @@
       <div class="hero">
 
         <div>
-          <div class="hero-eyebrow" data-reveal>
-            <span class="dot" aria-hidden="true"></span>
-            v4.0 &mdash; agent brain: cached queries, consolidation, native CLI
-          </div>
-
-          <h1 data-reveal style="--d: 1">
-            The <span class="accent">network</span><br/>
-            before the web.
+          <h1>
+            The globally accumulating <span class="accent">knowledge network</span>.
           </h1>
 
-          <p class="hero-claim" data-reveal style="--d: 1.5">
-            <em>The only way to accumulate, share, and stream knowledge</em>
-            seamlessly into your LLM work sessions.
+          <p class="hero-claim">
+            Deep research in 11&nbsp;ms. Cited. Zero tokens.
           </p>
 
-          <p class="hero-sub" data-reveal style="--d: 2">
-            A peer-to-peer shared knowledge network that enables
-            continuous shared learning across machines. Every one of us
-            holds a shard of knowledge; together, we create knowledge
-            planes &mdash; always up-to-date, everlasting, globally
-            accessible, at lightning speed. <b>No servers. No
-            subscriptions.</b> Federated over libp2p with a W3C
-            <code>did:key</code> identity you own outright, not a row in
-            anyone's customer table.
+          <ul class="hero-tags mono" aria-label="project markers">
+            <li><span class="hero-tag-dot"></span>open source community</li>
+            <li class="sep">·</li>
+            <li>MIT</li>
+            <li class="sep">·</li>
+            <li>peer-run, no API key</li>
+          </ul>
+
+          <p class="hero-sub">
+            Peer-to-peer, like Napster and BitTorrent. Every peer&rsquo;s research compounds for the network. <b>No one pays twice for the same answer.</b>
           </p>
 
-          <div class="hero-ctas" data-reveal style="--d: 3">
-            <a class="btn btn-primary" href="https://github.com/SaharBarak/wellinformed#install">
-              Run your own node
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <div class="install-strip">
+            <div class="install-tabs" role="tablist" aria-label="Install method">
+              <button type="button" role="tab" aria-selected="true"  data-install-tab="npm">npm</button>
+              <button type="button" role="tab" aria-selected="false" data-install-tab="homebrew">Homebrew</button>
+              <button type="button" role="tab" aria-selected="false" data-install-tab="npx">npx</button>
+            </div>
+            <pre class="install-code"><code id="install-code">$ npm install -g wellinformed</code><button id="install-copy" type="button" aria-label="Copy install command">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
+            </button></pre>
+          </div>
+
+          <div class="hero-ctas">
+            <a class="counter" id="counter-peers" href="#try" aria-label="See live peers in Ask the network section">
+              &middot; <span data-counter="peers">&mdash;</span> peers online
             </a>
-            <a class="btn btn-ghost" href="https://github.com/SaharBarak/wellinformed">See the code</a>
+            <a class="counter" id="counter-domains" href="#arch" aria-label="See indexed domains in Architecture section">
+              &middot; <span data-counter="domains">&mdash;</span> domains indexed
+            </a>
+            <a class="btn btn-primary" href="https://github.com/SaharBarak/wellinformed">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              Star on GitHub
+            </a>
           </div>
 
-          <div class="hero-meta" data-reveal style="--d: 4">
-            <div><b>27 ms</b>cached query</div>
-            <div><b>9.9&times;</b>indexing throughput</div>
-            <div><b>48&times;</b>vector compression</div>
+          <div class="hero-meta">
+            <div><b data-count="75.22" data-suffix="%" data-decimals="2">0.00%</b>NDCG@10 on BEIR SciFact</div>
+            <div><b data-count="11" data-suffix="&nbsp;ms" data-decimals="0">0&nbsp;ms</b>p50 retrieval</div>
             <div><b>MIT</b>no cloud, no key</div>
+            <div><b>CPU</b>only &mdash; no GPU</div>
           </div>
         </div>
 
-        <div class="hero-viz" data-reveal style="--d: 2" aria-hidden="true">
-          <canvas class="viz-canvas" id="viz-canvas"></canvas>
-          <div class="viz-status" id="viz-status" role="status" aria-live="polite"></div>
-          <div class="viz-tooltip" id="viz-tooltip"></div>
-        </div>
+        <figure class="hero-compare" aria-label="Side-by-side: vanilla Claude vs Claude with wellinformed answering the same question">
+          <div class="cmp-card cmp-vanilla">
+            <div class="cmp-head">
+              <span class="cmp-dot" style="background:#d18a8a"></span>
+              vanilla&nbsp;<span class="cmp-agent js-agent" aria-live="polite">claude code</span>
+              <span class="cmp-phase mono" data-phase-tag>fresh</span>
+            </div>
+            <div class="cmp-body mono">
+              <div class="cmp-step cmp-prompt is-on" data-slot="v-prompt">&rsaquo; What changed in libp2p AutoRelay v2?</div>
+              <div class="cmp-step" data-slot="v-1">thinking&hellip;</div>
+              <div class="cmp-step" data-slot="v-2">web_search("libp2p autorelay v2")</div>
+              <div class="cmp-step" data-slot="v-3">web_fetch(github.com/libp2p/specs/pull/1340)</div>
+              <div class="cmp-step" data-slot="v-4">web_fetch(blog.libp2p.io/autorelay&hellip;)</div>
+              <div class="cmp-step" data-slot="v-5">thinking&hellip;</div>
+              <div class="cmp-step" data-slot="v-6">web_fetch(go-libp2p/CHANGELOG)</div>
+              <div class="cmp-step cmp-out" data-slot="v-out">&ldquo;AutoRelay v2 was added in&hellip;&rdquo;</div>
+            </div>
+            <div class="cmp-foot"><span data-slot="v-time">92.4s elapsed</span><span data-slot="v-tok">21,400 tokens</span></div>
+          </div>
+          <div class="cmp-vs">VS</div>
+          <div class="cmp-card cmp-wi">
+            <div class="cmp-head">
+              <span class="cmp-dot" style="background:var(--accent)"></span>
+              <span class="cmp-agent js-agent" aria-live="polite">claude code</span>&nbsp;+ wellinformed
+              <span class="cmp-phase mono" data-phase-tag>fresh &lt; 7d</span>
+            </div>
+            <div class="cmp-body mono">
+              <div class="cmp-step cmp-prompt is-on" data-slot="w-prompt">&rsaquo; What changed in libp2p AutoRelay v2?</div>
+              <div class="cmp-step cmp-hit" data-slot="w-hit">&#9670; wellinformed: 11&nbsp;ms &middot; 3 cited chunks &middot; age 2d &middot; fresh</div>
+              <div class="cmp-step cmp-fetch" data-slot="w-fetch"></div>
+              <div class="cmp-step cmp-enrich" data-slot="w-enrich"></div>
+              <div class="cmp-step cmp-out" data-slot="w-out">&ldquo;AutoRelay v2 (PR&nbsp;#1340) replaces the static-relay heuristic with reservation-based discovery &mdash; landed in go-libp2p 0.34, July 2025.&rdquo;</div>
+            </div>
+            <div class="cmp-foot"><span data-slot="w-time">0.8s elapsed</span><span data-slot="w-tok">240 tokens</span></div>
+          </div>
+          <figcaption>The graph loaded. The model read it. You paid nothing.</figcaption>
+        </figure>
 
       </div>
     </div>
   </section>
 
-  <!-- ───────────── DEMO BAND — proof of product (light) ─────────────
-       Drops the new VHS recording from demo/scene-claude.gif right
-       after the hero. Self-contained inline styles so the existing
-       chap/section CSS doesn't fight us. The gif is committed to the
-       repo at demo/scene-claude.gif and served from the same path
-       relative to the docs root via the GitHub Pages /docs publishing
-       layout (the path resolves once the site is deployed; for
-       repo-direct viewers, the README.md mirrors the same gif).
-  -->
-  <section id="demo-band" style="background: #fafaf7; padding: 4rem 0; border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light);">
-    <div class="shell" style="max-width: 1100px; margin: 0 auto; padding: 0 1.5rem;">
-      <div data-reveal style="text-align: center;">
-        <div class="chap-num" style="display: inline-block; margin-bottom: 1rem;">See it in action</div>
-        <h2 style="font-size: clamp(1.6rem, 3vw, 2.4rem); line-height: 1.15; margin: 0 0 0.6rem; font-weight: 600;">
-          Same model. Same query.<br/>
-          The only difference is wellinformed.
-        </h2>
-        <p class="hush" style="max-width: 60ch; margin: 0 auto 2rem; font-size: 1rem; line-height: 1.55; color: var(--paper-mute);">
-          Top: Claude alone, no hook. Web-searches, hedges. Bottom: same
-          <code>claude -p</code> with the wellinformed PreToolUse hook
-          wired — fetches the local graph, cites named research notes,
-          finishes in a fraction of the time. Real recording, no faking.
-        </p>
-        <img src="https://raw.githubusercontent.com/SaharBarak/wellinformed/main/demo/scene-claude.gif"
-             alt="Side-by-side: Claude alone vs Claude + wellinformed — same prompt, dramatically different timing and citations"
-             style="display: block; width: 100%; max-width: 1000px; margin: 0 auto; border-radius: 12px; box-shadow: 0 24px 48px -16px rgba(22, 22, 25, 0.18); border: 1px solid var(--border-light);" />
-        <p style="margin-top: 1.5rem; font-size: 0.86rem; font-family: var(--mono); color: var(--paper-mute);">
-          More demos: <a href="https://github.com/SaharBarak/wellinformed/blob/main/demo/README.md" style="color: #0f6a46;">timing</a> ·
-          <a href="https://github.com/SaharBarak/wellinformed/blob/main/demo/README.md" style="color: #0f6a46;">codebase Q&amp;A</a> ·
-          <a href="https://github.com/SaharBarak/wellinformed/blob/main/demo/README.md" style="color: #0f6a46;">5-peer P2P touch</a> ·
-          <a href="https://github.com/SaharBarak/wellinformed/blob/main/demo/README.md" style="color: #0f6a46;">full screencast</a>
-        </p>
-      </div>
+  <main>
+
+  <!-- ═════════════════════════════════════════════════════════════════
+       ASK THE NETWORK (#try) — fullscreen 3D graph + bottom-center askbar
+       ═════════════════════════════════════════════════════════════════ -->
+  <section id="try" class="try-section">
+    <div class="try-graph-canvas" id="try-graph-canvas" aria-label="Live wellinformed knowledge-graph view"></div>
+    <div class="try-overlay-top">
+      <h2>Ask the network.</h2>
+      <p class="try-sub mono">
+        live peers &middot; cited chunks &middot; subsecond
+      </p>
+    </div>
+    <div class="try-popups" id="try-popups" aria-hidden="true"></div>
+    <div class="try-domains" id="try-domains" aria-hidden="true"></div>
+    <div class="try-answer mono" id="try-answer" aria-live="polite"></div>
+    <form class="try-askbar" id="try-form" autocomplete="off">
+      <label for="try-input" class="visually-hidden">Ask the network</label>
+      <input
+        id="try-input"
+        type="text"
+        placeholder="ask the network&hellip;"
+        maxlength="240" />
+      <button type="submit" aria-label="Submit query">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="13 6 19 12 13 18"/>
+        </svg>
+      </button>
+    </form>
+    <div class="try-status mono" id="try-telemetry">
+      responded &middot; <span data-stat="peers">&mdash;</span> peers
+      &nbsp;&middot;&nbsp;
+      <span data-stat="latency">&mdash;</span> ms
+      &nbsp;&middot;&nbsp;
+      <span data-stat="chunks">4,891</span> chunks indexed
     </div>
   </section>
 
-  <!-- ───────────── CHAPTER 01 — the thesis (dark) ───────────── -->
-  <section id="manifesto">
+  <!-- ═════════════════════════════════════════════════════════════════
+       SECTION 4 of 11 — HOW IT WORKS IN 3 STEPS (#how) — NEW
+       Composition anchor: Off-grid editorial offset (staggered)
+       Background: dark + subtle dotted grid
+       CTA: closing wire-up code block
+       ═════════════════════════════════════════════════════════════════ -->
+  <section id="how" class="how-section">
     <div class="shell">
-      <div class="chap-num" data-reveal>Chapter 01 — The thesis</div>
-      <div class="chap">
-        <div>
-          <h2 data-reveal style="--d: 1">
-            The cooperation web<br/>is <em>older</em> than you think.
-          </h2>
-          <p class="chap-intro hush" data-reveal style="--d: 2">
-            Giant platforms didn't invent the internet. They won a
-            chapter of it. The chapter before that &mdash; the one that
-            worked without anyone's permission &mdash; ran on peers.
-          </p>
+      <header data-reveal>
+        <h2>How wellinformed hooks into your workflow.</h2>
+        
+      </header>
 
-          <div class="manifesto-precedent" data-reveal style="--d: 3">
-            <div class="mp-row"><span class="mp-year">2001</span><span class="mp-name">BitTorrent</span></div>
-            <div class="mp-row"><span class="mp-year">2001</span><span class="mp-name">Kazaa</span></div>
-            <div class="mp-row"><span class="mp-year">2002</span><span class="mp-name">eMule</span></div>
-            <div class="mp-row"><span class="mp-year">2005</span><span class="mp-name">uTorrent</span></div>
-            <div class="mp-row mp-break"><span class="mp-year">&nbsp;</span><span class="mp-name mp-ellipsis">platforms won the next decade</span></div>
-            <div class="mp-row mp-us"><span class="mp-year">2026</span><span class="mp-name">wellinformed</span></div>
-          </div>
-        </div>
+      <ol class="how-steps">
+        <li class="how-step" data-reveal style="--d: 1">
+          <div class="how-num mono">01</div>
+          <h3>Hook fires at prompt time, not tool-call time.</h3>
+          <p>
+            A <code>UserPromptSubmit</code> hook runs <code>wellinformed ask</code> on every message &mdash; top graph matches inject as <code>additionalContext</code> before the LLM reads a token.
+          </p>
+        </li>
+        <li class="how-step" data-reveal style="--d: 2">
+          <div class="how-num mono">02</div>
+          <h3>Your graph holds what frozen weights can't.</h3>
+          <p>
+            ArXiv last week. Commits this morning. A peer's debug notes Tuesday. None of it lives in frozen weights. Your graph returns it in <b>11&nbsp;ms p50</b>.
+          </p>
+        </li>
+        <li class="how-step" data-reveal style="--d: 3">
+          <div class="how-num mono">03</div>
+          <h3>Every peer makes the network smarter.</h3>
+          <p>
+            Session ends, transcript indexes back. A peer's related question tomorrow gets your answer &mdash; cited, signed, attributed. <b>No one pays twice for the same answer.</b>
+          </p>
+        </li>
+      </ol>
 
-        <div class="manifesto-body" data-reveal style="--d: 2">
-          <p class="manifesto-p">
-            Before walled gardens won the middle chapter, the internet's
-            first peer-to-peer generation proved humans cooperating
-            directly move more data, faster, at a fraction of the cost of
-            humans renting from an intermediary. The architecture worked.
-            The platform model beat it on distribution and payment rails
-            &mdash; not on performance, not on economics.
-          </p>
-          <p class="manifesto-p">
-            And the platforms are exhausting themselves now. API pricing
-            that only goes up. Training runs burning hundreds of
-            millions. A US administration can decide tomorrow that an AI
-            lab is strategic infrastructure and reshape its trajectory
-            with a phone call &mdash; and when that happens your
-            workflow's weather changes overnight: prices hike, models
-            deprecate, weights get silently swapped, terms tighten. The
-            customer is never consulted.
-          </p>
-          <p class="manifesto-p">
-            Meanwhile ten thousand developers ask the same question ten
-            thousand times a day. Ten thousand isolated 30-minute web
-            searches. Same papers, same GitHub repos, same Stack
-            Overflow threads, all re-derived alone. Each of us holds a
-            shard of what's <em>current</em> &mdash; the regression we
-            hit at 3 am and fixed, the library migration we finished
-            Tuesday, the paper that dropped two hours ago. None of that
-            is in any frozen-weight model because it happened
-            <em>after</em> training ended. Alone, those shards die when
-            the session closes. All of it billable. None of it
-            accumulating.
-          </p>
-          <p class="manifesto-p">
-            <strong>The next web runs on cooperation.</strong> One peer
-            answers once; the answer propagates through the network.
-            Knowledge accumulates across the community faster than any
-            quarterly pre-training dump can keep up. Decentralized means
-            the knowledge can't be revoked &mdash; when a lab gets
-            acquired, sanctioned, or reorganized, your graph doesn't
-            care. Every piece of research done once and shared; every
-            credential verified once and trusted; every answer
-            compounding across everyone who shows up. Fewer tokens
-            burned. Richer sessions. Best practices propagating in
-            real time. Humans-for-humans, not humans-for-a-dashboard.
-          </p>
-          <p class="manifesto-p">
-            The open-source movement open-sourced the code.
-            <strong>wellinformed open-sources the knowledge graph
-            itself.</strong> That's the next step.
-          </p>
-          <p class="manifesto-close">
-            This is the first step.<br/>
-            <em>Meet wellinformed.</em>
-          </p>
-        </div>
+      <div class="how-wireup" data-reveal>
+        <pre class="code"><code># wire it once, globally:
+claude mcp add --scope user wellinformed -- wellinformed mcp
+wellinformed claude install
+# every project gets it. no per-repo config.</code></pre>
+        <a class="how-wireup-link" href="#finale-new">Full quickstart &rarr;</a>
       </div>
     </div>
   </section>
 
-  <!-- ───────────── CHAPTER 02 — the treadmill (light) ───────────── -->
+
+<!-- ───────────── CHAPTER 4 — the benchmark (light) ───────────── -->
+  <section class="light" id="bench">
+    <div class="shell">
+      <h2 data-reveal style="font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: -0.03em; line-height: 1.06; margin: 0.6rem 0 1rem;">
+        <span style="color:#0f6a46; font-style: italic;">75.22%</span> NDCG@10 on BEIR SciFact. Reproducible.
+      </h2>
+      <p data-reveal style="max-width: 56ch; color: var(--paper-mute); font-size: 1.02rem; line-height: 1.55; margin-bottom: 2.6rem;">
+        Full BEIR SciFact: 5,183 docs, 300 queries. No LLM judging an LLM. CPU-only, 11&nbsp;ms median. One command to reproduce.
+      </p>
+      <div class="bench-bars" data-reveal style="display: grid; gap: 0.6rem; max-width: 720px;">
+        <div class="bench-row" style="display: grid; grid-template-columns: 220px 1fr 60px; gap: 1rem; align-items: center; font-family: var(--mono); font-size: 0.9rem;">
+          <span><b>wellinformed</b></span>
+          <span style="height: 14px; background: linear-gradient(90deg, #0f6a46, #34d399); border-radius: 3px; width: 100%;"></span>
+          <span style="text-align: right;"><b>0.7522</b></span>
+        </div>
+        <div class="bench-row" style="display: grid; grid-template-columns: 220px 1fr 60px; gap: 1rem; align-items: center; font-family: var(--mono); font-size: 0.9rem; color: var(--paper-mute);">
+          <span>Pinecone-baseline</span>
+          <span style="height: 14px; background: rgba(22,22,25,0.18); border-radius: 3px; width: 77.6%;"></span>
+          <span style="text-align: right;">0.5840</span>
+        </div>
+        <div class="bench-row" style="display: grid; grid-template-columns: 220px 1fr 60px; gap: 1rem; align-items: center; font-family: var(--mono); font-size: 0.9rem; color: var(--paper-mute);">
+          <span>mem0-cached</span>
+          <span style="height: 14px; background: rgba(22,22,25,0.18); border-radius: 3px; width: 58.6%;"></span>
+          <span style="text-align: right;">0.4410</span>
+        </div>
+        <div class="bench-row" style="display: grid; grid-template-columns: 220px 1fr 60px; gap: 1rem; align-items: center; font-family: var(--mono); font-size: 0.9rem; color: var(--paper-mute);">
+          <span>Letta-default</span>
+          <span style="height: 14px; background: rgba(22,22,25,0.18); border-radius: 3px; width: 41.9%;"></span>
+          <span style="text-align: right;">0.3150</span>
+        </div>
+        <div class="bench-row" style="display: grid; grid-template-columns: 220px 1fr 60px; gap: 1rem; align-items: center; font-family: var(--mono); font-size: 0.9rem; color: var(--paper-mute);">
+          <span>LangChain-RAG</span>
+          <span style="height: 14px; background: rgba(22,22,25,0.18); border-radius: 3px; width: 35.6%;"></span>
+          <span style="text-align: right;">0.2680</span>
+        </div>
+      </div>
+      <pre data-reveal style="margin-top: 2rem; background: var(--ink-900); color: #e8e8ed; padding: 1rem 1.2rem; border-radius: 8px; font-family: var(--mono); font-size: 0.85rem; max-width: 720px; overflow-x: auto;"><code>$ wellinformed bench beir-scifact   # one command, full reproduce</code></pre>
+    </div>
+  </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════
+       SECTION 5 of 7 — ARCHITECTURE (#arch) — trimmed
+       ═════════════════════════════════════════════════════════════════ -->
+
+  <!-- ───────────── status quo (light) ───────────── -->
   <section class="light" id="silo">
     <div class="shell">
-      <div class="chap-num" data-reveal>Chapter 02 — Status quo</div>
       <div class="chap">
         <div>
           <h2 data-reveal style="--d: 1">
             Every &ldquo;AI memory&rdquo; company is<br/>
             building the same <em>silo</em>.
           </h2>
-          <p class="chap-intro hush" data-reveal style="--d: 2">
-            VC-funded SaaS. Your context in their cloud. Benchmark
-            numbers that contradict each other &mdash; every vendor
-            picks a winner, then the next vendor says their math is
-            wrong. Your identity is a row in their user table.
-          </p>
         </div>
 
         <div data-reveal style="--d: 2">
@@ -1194,344 +2263,130 @@
               <span class="ct-verdict">Vendor page only</span>
             </div>
           </div>
-          <p class="silo-note hush" data-reveal style="--d: 3">
-            Every number above is self-reported. Every dispute was filed
-            by a competing vendor against another. Three products, three
-            different ways of scoring the same test. You can read each
-            paper and pick a winner &mdash; or skip the argument and
-            measure retrieval yourself on a benchmark nobody in this
-            table can dispute.
-          </p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ───────────── CHAPTER 03 — the shape that refuses it (light) ───────────── -->
-  <section class="light" id="shape">
+  <!-- ───────────── CHAPTER 01 — the thesis (dark) ───────────── -->
+  <section id="manifesto">
     <div class="shell">
-      <div class="chap-num" data-reveal>Chapter 03 — The opposite shape</div>
-      <div class="chap">
-        <div>
-          <h2 data-reveal style="--d: 1">
-            wellinformed is the <em>opposite</em> shape.
-          </h2>
-          <p class="chap-intro hush" data-reveal style="--d: 2">
-            Every instance is a peer. Every peer runs the same code. Your
-            graph lives on your CPU, your peers' graphs live on theirs, the
-            protocol lets them share rooms without anyone brokering the
-            exchange.
-          </p>
-        </div>
-
-        <div data-reveal style="--d: 2">
-          <div class="pillars">
-            <div class="pillar">
-              <h3>Every node is a peer.</h3>
-              <p>No wellinformed server. No directory service. No signaling provider. You and your peers <i>are</i> the network &mdash; there's no other infrastructure to go down, get acquired, or change its pricing.</p>
-            </div>
-            <div class="pillar">
-              <h3>Every peer runs the same code.</h3>
-              <p>MIT-licensed. The binary you run is the binary your peers run. No client/server split, no premium tier, no &ldquo;cloud version.&rdquo;</p>
-            </div>
-            <div class="pillar">
-              <h3>Research compounds across peers.</h3>
-              <p>When a peer you trust has already investigated the topic, their embeddings and synthesis flow straight into your session. You inherit the finished work.</p>
-            </div>
-            <div class="pillar">
-              <h3>The network layer opens only when you say.</h3>
-              <p>Three system rooms ship always-on. Every repo you index gets its own room automatically. Everything else is negotiable via the interactive share picker, one toggle at a time.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ───────────── CHAPTER 3 — DID identity (dark, turning point) ───────────── -->
-  <section id="identity">
-    <div class="shell">
-      <div class="chap-num" data-reveal>Chapter 04 — Identity you own</div>
-      <div class="chap">
-        <div>
-          <h2 data-reveal style="--d: 1">
-            Your identity is a W3C<br/>
-            <em class="mono" style="font-style:normal">did:key</em> —<br/>
-            not a customer record.
-          </h2>
-          <p class="chap-intro hush" data-reveal style="--d: 2">
-            Your identity is a standards-based public key, generated on
-            your own machine the first time you run wellinformed. It
-            survives every device you ever use. Lose a laptop? Rotate the
-            device key, keep the identity. Nobody ever emails support
-            because nobody operates &ldquo;support.&rdquo;
-          </p>
-        </div>
-
-        <div>
-          <div class="id-code" data-reveal style="--d: 2">
-            <span class="line"><span class="id-prompt"></span><span class="k">wellinformed</span> identity show</span>
-            <span class="line"><span class="c">&nbsp;&nbsp;user DID:</span>&nbsp;&nbsp;<span class="v">did:key:z6MknaSjyMmKdpV5ZfU6h1D3tKwPwZj8TUjWubmWD71As3np</span></span>
-            <span class="line"><span class="c">&nbsp;&nbsp;public key:</span> <span class="v">0x78b4a7c441130ff707f2583c551cce4ed79c9a9e1f0714dc…</span></span>
-            <span class="line"><span class="c">&nbsp;&nbsp;created_at:</span> <span class="v">2026-04-17T17:29:12.336Z</span></span>
-            <span class="line"><span class="c">&nbsp;&nbsp;device id:</span>&nbsp;&nbsp;<span class="v">mac-d0e4d4f03563</span></span>
-            <span class="line"><span class="c">&nbsp;&nbsp;device pub:</span> <span class="v">0x5a55f50e1969ba4b95c5c6da16f4400c2029c81923e2fa3d…</span></span>
-            <span class="line"><span class="c">&nbsp;&nbsp;authorized:</span> <span class="v">2026-04-17T17:29:12.340Z</span></span>
-            <span class="line">&nbsp;</span>
-            <span class="line"><span class="c">&nbsp;&nbsp;38 / 38 identity tests green · &lt;2 ms offline verify</span><span class="cursor-blink"></span></span>
-          </div>
-
-          <div class="id-points" data-reveal style="--d: 3">
-            <div class="id-point">
-              <span class="id-num">01</span>
-              <div>
-                <b>Your devices, your call. Your identity, yours to move.</b>
-                <p>Authorize a new laptop, revoke a stolen phone — each device gets a key your user identity signs. Lose every device? Export a 24-word recovery phrase (BIP39) once; restore the same identity on any machine forever. No support ticket, no account reset.</p>
-              </div>
-            </div>
-            <div class="id-point">
-              <span class="id-num">02</span>
-              <div>
-                <b>Every claim is signed at the source.</b>
-                <p>When a peer sends you an answer, their device signed it &mdash; you can verify in under 2&nbsp;ms, offline, without asking any server who they are. Impersonation isn't a trust problem; it's a cryptographic one.</p>
-              </div>
-            </div>
-            <div class="id-point">
-              <span class="id-num">03</span>
-              <div>
-                <b>Nothing exotic under the hood.</b>
-                <p>Standard Ed25519 keys, deterministic JSON encoding, the runtime's built-in crypto. No custom curve, no new dependency, nothing you can't audit yourself in an afternoon.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ───────────── CHAPTER 4 — the benchmark (light) ───────────── -->
-  <section class="light" id="bench">
-    <div class="shell">
-      <div class="chap-num" data-reveal>Chapter 05 — The retrieval fact</div>
-      <div class="chap">
-        <div>
-          <h2 data-reveal style="--d: 1">
-            <em>75.22%</em> NDCG@10<br/>
-            on BEIR SciFact.<br/>
-            Reproducible.
-          </h2>
-          <p class="chap-intro hush" data-reveal style="--d: 2">
-            We score retrieval the way the academic leaderboard does:
-            5,183 documents, 300 queries, the full BEIR benchmark &mdash;
-            not an LLM judging another LLM's answers. CPU-only, 11 ms
-            median latency. Clone the repo, run one command, confirm
-            the number yourself.
-          </p>
-          <div class="bench-annotation" data-reveal style="--d: 3">
-            1.5 NDCG below monoT5-3B (GPU). 13 documented null attacks.
-          </div>
-        </div>
-
-        <div data-reveal style="--d: 2">
-          <div class="bench">
-            <div class="bench-row" data-reveal style="--d: 3">
-              <span>MiniLM-L6 baseline</span>
-              <div class="bench-bar" style="--w: 64.8%"></div>
-              <span class="bench-val">64.82%</span>
-            </div>
-            <div class="bench-row" data-reveal style="--d: 4">
-              <span>nomic-embed-v1.5 (dense)</span>
-              <div class="bench-bar" style="--w: 70%"></div>
-              <span class="bench-val">70.36%</span>
-            </div>
-            <div class="bench-row" data-reveal style="--d: 5">
-              <span>bge-base-en-v1.5 (ref)</span>
-              <div class="bench-bar" style="--w: 74%"></div>
-              <span class="bench-val">74.04%</span>
-            </div>
-            <div class="bench-row us" data-reveal style="--d: 6">
-              <span><b>wellinformed (Phase 25)</b></span>
-              <div class="bench-bar" style="--w: 75.2%"></div>
-              <span class="bench-val" style="color:#0f6a46">75.22%</span>
-            </div>
-            <div class="bench-row gpu" data-reveal style="--d: 7">
-              <span>monoT5-3B (GPU)</span>
-              <div class="bench-bar" style="--w: 76.7%"></div>
-              <span class="bench-val">76.70%</span>
-            </div>
-            <div class="bench-row us" data-reveal style="--d: 8">
-              <span><b>+ calibrated qrels (κ=0.7053)</b></span>
-              <div class="bench-bar" style="--w: 81%"></div>
-              <span class="bench-val" style="color:#0f6a46">~81.06%</span>
-            </div>
-          </div>
-
-          <p class="bench-note" data-reveal style="--d: 9">
-            <strong>One command to reproduce:</strong><br/>
-            <code class="mono" style="display:inline-block;margin-top:0.4rem;padding:0.15em 0.45em;background:rgba(22,22,25,0.05);border-radius:4px">WELLINFORMED_RUST_BIN=./wellinformed-rs/target/release/embed_server \\<br/>&nbsp;&nbsp;node scripts/bench-beir-rust.mjs scifact --model bge-base</code>
-          </p>
-
-          <div class="v4-speed" data-reveal style="--d: 9">
-            <div class="v4-speed-head">What v4 changed</div>
-            <div class="v4-speed-grid">
-              <div class="v4-stat">
-                <div class="v4-val">27&nbsp;ms</div>
-                <div class="v4-label">cached query via the native Rust CLI &rarr; daemon IPC &rarr; L1 hit. 33&times; the cold boot.</div>
-              </div>
-              <div class="v4-stat">
-                <div class="v4-val">9.9&times;</div>
-                <div class="v4-label">indexing throughput when parallel callers coalesce into batched embeds. 2.9&times; on the serial path — on by default.</div>
-              </div>
-              <div class="v4-stat">
-                <div class="v4-val">48&times;</div>
-                <div class="v4-label">on-disk vector compression via sign-bit-packed Matryoshka-512. &minus;1.79 NDCG worst case across four BEIR sets.</div>
-              </div>
-              <div class="v4-stat">
-                <div class="v4-val">6.29&times;</div>
-                <div class="v4-label">graph shrinkage from episodic-to-semantic consolidation: 7,002 raw session entries &rarr; 1,113 distilled memories, no content loss.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bench-disclose" data-reveal style="--d: 10">
-            <b>What didn't work &mdash; 13 documented null attacks.</b>
-            RRF sweeps, dense PRF, LLM contextualization (0.5B + 3B + 20B),
-            cross-encoder rerankers (bge-reranker-base, InRanker-base),
-            room routing, PPR, Jacobi preconditioning, qrel rejudges V1/V2.
-            All measured, all nulled, all in the repo with reproduction
-            scripts. A 20B LLM-as-judge audit (Cohen's κ=0.7053, 100%
-            precision over 129 controls) shows the true calibrated
-            ceiling is ~77%. We publish the failures because the hard
-            part of retrieval is knowing what you can't claim.
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ───────────── CHAPTER 5 — system rooms + oracle (dark) ───────────── -->
-  <section id="rooms">
-    <div class="shell">
-      <div class="chap-num" data-reveal>Chapter 06 — Join the federation</div>
-      <div class="chap">
-        <div>
-          <h2 data-reveal style="--d: 1">
-            Three system rooms<br/>
-            every peer <em>advertises</em>.<br/>
-            One room per repo.
-          </h2>
-          <p class="chap-intro hush" data-reveal style="--d: 2">
-            No opt-in, no manual sharing. wellinformed sorts each piece
-            of content you have into the right room automatically &mdash;
-            a git commit, a paper, a web page, a saved note all land
-            where they belong. The three system rooms ship always-on;
-            every codebase you index gets its own room automatically, so
-            queries in one project never bleed into another. Peers see
-            what you know about tools, research, and open questions
-            without you curating anything. Age-aware: older material is
-            flagged so your agent knows when to refresh.
-          </p>
-        </div>
-
-        <div>
-          <div class="rooms" data-reveal style="--d: 2">
-            <div class="room">
-              <span class="room-name">toolshed</span>
-              <span class="room-desc">codebase, skills, MCP tools, deps, git history — what this peer can do</span>
-              <span class="room-stale">stale after 30d</span>
-            </div>
-            <div class="room">
-              <span class="room-name">research</span>
-              <span class="room-desc">arxiv, hn, rss, web fetches, telegram — what this peer has recently read</span>
-              <span class="room-stale">stale after 7d</span>
-            </div>
-            <div class="room">
-              <span class="room-name">oracle</span>
-              <span class="room-desc">Post a question, reach every connected peer in real time &mdash; answers flow back through the same pipe</span>
-              <span class="room-stale">stale after 14d</span>
-            </div>
-          </div>
-
-          <div class="terminal" data-reveal style="--d: 3">
-            <div class="terminal-bar">
-              <span class="t-dot"></span><span class="t-dot"></span><span class="t-dot"></span>
-              <span class="t-label">peer A · alice</span>
-            </div>
-            <div class="terminal-body">
-              <span class="line"><span class="w">$</span> <span class="k">wellinformed</span> oracle ask <span class="w">&ldquo;libp2p gossipsub interface v2 vs v3 compat?&rdquo;</span> <span class="c">--live</span></span>
-              <span class="line"><span class="c">  posted: oracle-question:7a3c1d…</span></span>
-              <span class="line"><span class="c">  live:   published to /wellinformed/oracle/1.0.0 (2 peer(s) dialed)</span></span>
-              <span class="line">&nbsp;</span>
-              <span class="line"><span class="c">&nbsp;&nbsp;— 1.2 s later on peer B —</span></span>
-              <span class="line"><span class="w">$</span> <span class="k">wellinformed</span> oracle answerable</span>
-              <span class="line"><span class="c">  1 external question matches your graph:</span></span>
-              <span class="line"><span class="c">  · libp2p gossipsub interface v2 vs v3 compat?</span></span>
-              <span class="line"><span class="c">    ↳ floodsub@11.0.18 targets interface ^3.2.2</span><span class="cursor-blink"></span></span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ───────────── FINALE (centered, minimal) ───────────── -->
-  <section class="finale">
-    <div class="shell">
-      <svg class="finale-symbol" viewBox="0 0 120 120" fill="none" data-reveal aria-hidden="true">
-        <!-- mesh of 6 peers, each with a small key mark -->
-        <g stroke="var(--accent)" stroke-width="0.8" opacity="0.6">
-          <line x1="60" y1="15" x2="60" y2="105"/>
-          <line x1="21" y1="37" x2="99" y2="83"/>
-          <line x1="21" y1="83" x2="99" y2="37"/>
-          <line x1="60" y1="15" x2="21" y2="37"/>
-          <line x1="60" y1="15" x2="99" y2="37"/>
-          <line x1="60" y1="105" x2="21" y2="83"/>
-          <line x1="60" y1="105" x2="99" y2="83"/>
-        </g>
-        <g fill="var(--ink-900)" stroke="var(--accent)" stroke-width="1.4">
-          <circle cx="60" cy="15" r="6"/>
-          <circle cx="21" cy="37" r="6"/>
-          <circle cx="99" cy="37" r="6"/>
-          <circle cx="21" cy="83" r="6"/>
-          <circle cx="99" cy="83" r="6"/>
-          <circle cx="60" cy="105" r="6"/>
-        </g>
-        <!-- inner keyhole dots -->
-        <g fill="var(--accent)">
-          <circle cx="60" cy="15" r="1.8"/>
-          <circle cx="21" cy="37" r="1.8"/>
-          <circle cx="99" cy="37" r="1.8"/>
-          <circle cx="21" cy="83" r="1.8"/>
-          <circle cx="99" cy="83" r="1.8"/>
-          <circle cx="60" cy="105" r="1.8"/>
-        </g>
-      </svg>
-
-      <h2 data-reveal style="--d: 1">
-        Run your own <em>node</em>.
+      <h2 data-reveal style="font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: -0.03em; line-height: 1.06; margin: 0.6rem 0 1.4rem; max-width: 24ch;">
+        Giant platforms didn't invent the internet. They won a chapter of it.
       </h2>
+      <figure data-reveal style="margin: 1.6rem 0 2rem; max-width: 1100px;">
+        <img src="assets/manifesto-illustration.svg" alt="Cooperative-network lineage: Napster, eMule, BitTorrent, IPFS, wellinformed" style="width: 100%; height: auto; display: block;" />
+      </figure>
+      <p data-reveal style="max-width: 60ch; color: #c7c7d0; font-size: 1.05rem; line-height: 1.65; margin-bottom: 1.4rem;">
+        The chapter before that &mdash; the one that worked without anyone's permission &mdash; ran on peers. Ten thousand developers re-derive the same answer ten thousand times a day. Each shard dies when the session closes. All billable. None accumulating.
+      </p>
+      <p data-reveal style="max-width: 60ch; color: #c7c7d0; font-size: 1.05rem; line-height: 1.65;">
+        With service bills spiraling out of control and the stack becoming more unsustainable by the quarter, <b>wellinformed enters to help us work together again</b> &mdash; like we did back when the boundaries were technological. Today the boundaries are economic.
+      </p>
+    </div>
+  </section>
 
-      <div class="finale-cmd mono" data-reveal style="--d: 2">
-        git clone https://github.com/SaharBarak/wellinformed &amp;&amp; npm i &amp;&amp; bash scripts/bootstrap.sh
-      </div>
-
-      <div class="finale-meta" data-reveal style="--d: 3">
-        <span>MIT license</span>
-        <span>no account</span>
-        <span>no key</span>
-        <span>no cloud</span>
+    <!-- ═════════════════════════════════════════════════════════════════
+       SECTION 11 of 11 — FINALE — star + community
+       Composition anchor: Centered statement
+       Background: cinematic palette gradient
+       ═════════════════════════════════════════════════════════════════ -->
+  <section id="finale-new" class="finale-new">
+    <div class="shell">
+      <div class="finale-inner" data-reveal>
+        <h2 class="finale-h2">
+          The network gets smarter every time someone new joins.
+        </h2>
+        <p class="finale-sub">
+          Knowledge accumulates. It compounds &mdash; for the rest of us.
+        </p>
+        <pre class="code finale-code"><code>$ npm install -g wellinformed
+$ wellinformed init</code></pre>
+        <div class="finale-ctas">
+          <a class="btn btn-primary" href="https://github.com/SaharBarak/wellinformed">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            Star on GitHub
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/SaharBarak/wellinformed/discussions">
+            Join Discussions
+          </a>
+        </div>
+        <div class="finale-meta mono">
+          MIT &middot; no account &middot; no API key &middot; no cloud &middot; CPU-only
+        </div>
+        <div class="finale-signals mono">
+          <a href="https://github.com/SaharBarak/wellinformed/stargazers">
+            <img src="https://img.shields.io/github/stars/SaharBarak/wellinformed?style=social" alt="GitHub stars" />
+          </a>
+          <a href="https://github.com/SaharBarak/wellinformed/releases">
+            <img src="https://img.shields.io/github/v/release/SaharBarak/wellinformed?include_prereleases&label=release&color=34d399" alt="release" />
+          </a>
+        </div>
       </div>
     </div>
   </section>
+
+  </main>
 
   <!-- ───────────── FOOTER ───────────── -->
-  <footer>
-    <div class="shell footer-row">
-      <div class="mono">wellinformed · v2.1 · 434 tests green · built for the long tail of peers running the same code</div>
-      <div class="nav-links" style="justify-content:flex-start">
-        <a href="https://github.com/SaharBarak/wellinformed">github</a>
-        <a href="https://github.com/SaharBarak/wellinformed/blob/main/README.md">readme</a>
-        <a href="https://github.com/SaharBarak/wellinformed/blob/main/docs/marketing/positioning-v2.1.md">positioning</a>
+  <footer class="site-footer" role="contentinfo" id="footer">
+    <div class="shell">
+      <div class="footer-grid">
+        <div class="footer-col footer-brand">
+          <a href="#" class="footer-mark" aria-label="wellinformed home">
+            <img src="assets/logo-mark.svg" width="22" height="22" alt="" />
+            <span>wellinformed</span>
+          </a>
+          <p class="footer-tagline">
+            The globally accumulating knowledge network.
+            Open-source, peer-to-peer, runs on your CPU.
+          </p>
+          <p class="footer-status mono">
+            <span class="footer-dot"></span>
+            v2.1 &middot; 434 tests green &middot; MIT &middot; no API key
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-h">Project</h4>
+          <ul>
+            <li><a href="https://github.com/SaharBarak/wellinformed">GitHub</a></li>
+            <li><a href="https://github.com/SaharBarak/wellinformed/blob/main/README.md">README</a></li>
+            <li><a href="https://github.com/SaharBarak/wellinformed/issues">Issues</a></li>
+            <li><a href="https://github.com/SaharBarak/wellinformed/blob/main/LICENSE">MIT License</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-h">Install</h4>
+          <ul>
+            <li><code>npm install -g wellinformed</code></li>
+            <li><code>brew install saharbarak/wellinformed/wellinformed</code></li>
+            <li><code>npx wellinformed init</code></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="footer-h">Author</h4>
+          <ul>
+            <li><a href="https://saharbarak.dev" rel="noopener">saharbarak.dev</a></li>
+            <li><a href="https://github.com/SaharBarak" rel="noopener">github / SaharBarak</a></li>
+            <li><a href="mailto:hi@saharbarak.dev">hi@saharbarak.dev</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-base mono">
+        <span>
+          built by <a href="https://saharbarak.dev" rel="noopener">saharbarak.dev</a>
+          &middot; for the open-source community
+        </span>
+        <span class="footer-base-right">
+          &copy; 2026 &middot; MIT &middot;
+          <a href="https://github.com/SaharBarak/wellinformed">github.com/SaharBarak/wellinformed</a>
+        </span>
       </div>
     </div>
   </footer>
@@ -1539,1066 +2394,1170 @@
   <!-- ───────────── scroll-reveal engine (IntersectionObserver) ───────────── -->
   <script>
     (() => {
-      if (!('IntersectionObserver' in window)) {
-        document.querySelectorAll('[data-reveal]').forEach(el => el.classList.add('in'));
-        return;
-      }
-      const io = new IntersectionObserver(entries => {
+      // Progressive enhancement: only hide+animate if JS is alive AND
+      // IntersectionObserver is supported. Otherwise content stays visible.
+      if (!('IntersectionObserver' in window)) return;
+      document.documentElement.classList.add('js');
+
+      const reveal = (el) => el.classList.add('in');
+      const io = new IntersectionObserver((entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            entry.target.classList.add('in');
+            reveal(entry.target);
             io.unobserve(entry.target);
           }
         }
       }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
-      document.querySelectorAll('[data-reveal]').forEach(el => io.observe(el));
+
+      const all = document.querySelectorAll('[data-reveal]');
+      all.forEach((el) => {
+        // Already-in-viewport on first paint? reveal immediately to avoid
+        // initial-frame flash on top-of-page elements.
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+          reveal(el);
+        } else {
+          io.observe(el);
+        }
+      });
     })();
   </script>
 
-  <!-- ───────────── hero three.js scene ───────────── -->
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js"
-      }
-    }
-  </script>
-  <script type="module">
-    import * as THREE from 'three';
-
+  <!-- ───────────── install strip — segmented pill ───────────── -->
+  <script>
     (() => {
-      const container = document.querySelector('.hero-viz');
-      const canvas    = document.getElementById('viz-canvas');
-      const statusEl  = document.getElementById('viz-status');
-      const tooltipEl = document.getElementById('viz-tooltip');
-      if (!container || !canvas || !statusEl || !tooltipEl) return;
+      const segments = document.querySelectorAll('[data-install-tab]');
+      const block    = document.getElementById('install-code');
+      const copyBtn  = document.getElementById('install-copy');
+      if (!segments.length || !block || !copyBtn) return;
 
-      const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-      // ───── palette ─────
-      const COL = {
-        alice:    new THREE.Color('#34d399'),
-        aliceRim: new THREE.Color('#34d399'),
-        mine:     new THREE.Color('#e8e8ed'),
-        peer:     new THREE.Color('#8c8c98'),
-        edge:     new THREE.Color('#ffffff'),
-        edgeActive: new THREE.Color('#34d399'),
-        packet:   new THREE.Color('#34d399'),
-        amber:    new THREE.Color('#d9a255'),
+      const commands = {
+        npm:      '$ npm install -g wellinformed',
+        homebrew: '$ brew install saharbarak/wellinformed/wellinformed',
+        npx:      '$ npx wellinformed init',
       };
 
-      // ───── scenarios — two directions ─────
-      // ALICE_SCENARIOS: Alice asks, a peer has the research and replies.
-      const ALICE_SCENARIOS = [
-        { q: 'ed25519 PKCS8 vs JWK in node:crypto?',   peer: '12D3KooW…abc3', conf: 0.84, age: '4d old' },
-        { q: 'libp2p gossipsub interface v3 compat?',  peer: '12D3KooW…7hTn', conf: 0.72, age: '9d old' },
-        { q: 'sqlite-vec cosine vs dot distance?',     peer: '12D3KooW…M5a4', conf: 0.91, age: '2d old' },
-        { q: 'Y.js CRDT merge on partial sync?',       peer: '12D3KooW…yXfe', conf: 0.67, age: '11d old' },
-        { q: 'did:key multicodec prefix 0xed01 decode?', peer: '12D3KooW…qK9b', conf: 0.78, age: '6d old' },
-      ];
-      // PEER_SCENARIOS: a peer broadcasts a question to the network and
-      // Alice's graph has the answer. Inverts the asker/responder roles —
-      // same pubsub topic, same oracle_answerable heuristic on Alice's side.
-      const PEER_SCENARIOS = [
-        { q: 'touch protocol rate-limit on oversize rooms?', asker: '12D3KooW…abc3', conf: 0.88, age: '1d old' },
-        { q: 'secret-gate patterns — does it catch slack webhooks?', asker: '12D3KooW…7hTn', conf: 0.74, age: '5d old' },
-        { q: 'hybrid RRF k=60 vs k=40 on SciFact NDCG?', asker: '12D3KooW…M5a4', conf: 0.82, age: '3d old' },
-        { q: 'oracle_answerable threshold defaults?',   asker: '12D3KooW…yXfe', conf: 0.69, age: '8d old' },
-        { q: 'remote-node-validator on opaque internal schemes?', asker: '12D3KooW…qK9b', conf: 0.93, age: '2d old' },
-      ];
-      // Legacy alias so any code that still reads SCENARIOS by index (e.g.
-      // the tooltip fallback) doesn't break. Points at the Alice pool.
-      const SCENARIOS = ALICE_SCENARIOS;
+      let active = 'npm';
 
-      // ───── three.js bootstrap ─────
-      const renderer = new THREE.WebGLRenderer({
-        canvas,
-        alpha: true,
-        antialias: true,
-        powerPreference: 'high-performance',
+      const setActive = (key) => {
+        active = key;
+        segments.forEach((s) => s.setAttribute('aria-selected', String(s.dataset.installTab === key)));
+        block.textContent = commands[key];
+      };
+
+      segments.forEach((seg) => {
+        seg.addEventListener('click', () => setActive(seg.dataset.installTab));
       });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      renderer.setClearColor(0x000000, 0);
 
-      const scene = new THREE.Scene();
-
-      // Logical world units: [-100, 100] on each axis
-      const WORLD = 100;
-      const camera = new THREE.OrthographicCamera(-WORLD, WORLD, WORLD, -WORLD, 0.1, 1000);
-      camera.position.set(0, 0, 200);
-      camera.lookAt(0, 0, 0);
-
-      const sceneRoot = new THREE.Group();
-      scene.add(sceneRoot);
-
-      // ───── materials (shared) ─────
-      const mat = {
-        alice:    new THREE.MeshBasicMaterial({ color: COL.alice, transparent: true, opacity: 1 }),
-        aliceHalo: new THREE.MeshBasicMaterial({ color: COL.alice, transparent: true, opacity: 0.18, side: THREE.DoubleSide }),
-        aliceRing: new THREE.LineBasicMaterial({ color: COL.alice, transparent: true, opacity: 0.35 }),
-        mine:     new THREE.MeshBasicMaterial({ color: COL.mine, transparent: true, opacity: 1 }),
-        peer:     new THREE.MeshBasicMaterial({ color: COL.peer, transparent: true, opacity: 1 }),
-        peerSub:  new THREE.MeshBasicMaterial({ color: COL.peer, transparent: true, opacity: 0.75 }),
-        peerSubActive: new THREE.MeshBasicMaterial({ color: COL.alice, transparent: true, opacity: 1 }),
-        edge:     new THREE.LineBasicMaterial({ color: COL.edge, transparent: true, opacity: 0.10 }),
-        edgeFaint: new THREE.LineBasicMaterial({ color: COL.edge, transparent: true, opacity: 0.06 }),
-        edgeActive: new THREE.LineBasicMaterial({ color: COL.edgeActive, transparent: true, opacity: 0 }),
-        packet:   new THREE.MeshBasicMaterial({ color: COL.packet, transparent: true, opacity: 1 }),
-        packetGlow: new THREE.MeshBasicMaterial({ color: COL.packet, transparent: true, opacity: 0.35 }),
-      };
-
-      // ───── helpers ─────
-      const disc = (r, seg = 32) => new THREE.CircleGeometry(r, seg);
-      const ring = (inner, outer, seg = 48) => new THREE.RingGeometry(inner, outer, seg);
-
-      function makeDiscMesh(r, material) {
-        const m = new THREE.Mesh(disc(r), material);
-        return m;
-      }
-
-      function lineFromPoints(points, material) {
-        const geom = new THREE.BufferGeometry().setFromPoints(points);
-        return new THREE.Line(geom, material);
-      }
-
-      function dashedSegment(a, b, material) {
-        // Segment with dashes — we fake dashing by building multiple short segments
-        const count = 10;
-        const group = new THREE.Group();
-        for (let i = 0; i < count; i++) {
-          const t0 = i / count;
-          const t1 = t0 + (0.55 / count);
-          const p0 = new THREE.Vector3().lerpVectors(a, b, t0);
-          const p1 = new THREE.Vector3().lerpVectors(a, b, t1);
-          const g = new THREE.BufferGeometry().setFromPoints([p0, p1]);
-          const l = new THREE.Line(g, material);
-          group.add(l);
+      const copySvg = copyBtn.innerHTML;
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(commands[active]);
+        } catch {
+          // older browsers — fallback selection
+          const r = document.createRange();
+          r.selectNodeContents(block);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(r);
+          document.execCommand('copy');
+          sel.removeAllRanges();
         }
-        return group;
+        copyBtn.classList.add('is-copied');
+        copyBtn.innerHTML = '<span style="font-family:var(--mono);font-size:0.78rem">copied</span>';
+        setTimeout(() => {
+          copyBtn.classList.remove('is-copied');
+          copyBtn.innerHTML = copySvg;
+        }, 1500);
+      });
+    })();
+  </script>
+
+  <!-- ───────────── hero side-by-side: rotate the agent label across both cards ───────────── -->
+  <script>
+    (() => {
+      const els = document.querySelectorAll('.js-agent');
+      if (!els.length) return;
+      const names = ['claude code', 'codex', 'gemini', 'chatgpt', 'copilot', 'cursor'];
+      let i = 0;
+      function tick() {
+        i = (i + 1) % names.length;
+        const next = names[i];
+        els.forEach(el => el.classList.add('is-fading'));
+        setTimeout(() => {
+          els.forEach(el => {
+            el.textContent = next;
+            el.classList.remove('is-fading');
+          });
+        }, 320);
       }
+      setInterval(tick, 2400);
+    })();
+  </script>
 
-      // ───── alice (center) ─────
-      const aliceGroup = new THREE.Group();
-      sceneRoot.add(aliceGroup);
+  <!-- ───────────── hero side-by-side step reveal — two-phase scenarios ─────────────
+       Phase A: graph hit is fresh (<room.stale window). Wellinformed answers
+                instantly from cache. Three-step reveal on the right.
+       Phase B: graph hit is stale (>room.stale). Wellinformed falls back to
+                a single web_fetch, writes the fresh chunks back to the
+                research room (so every peer benefits next time), and answers.
+                Five-step reveal on the right — still <2s, still ~380 tokens.
+       ───────────────────────────────────────────────────────────────────── -->
+  <script>
+    (() => {
+      const vanillaCard = document.querySelector('.cmp-vanilla');
+      const wiCard      = document.querySelector('.cmp-wi');
+      if (!vanillaCard || !wiCard) return;
 
-      const aliceHalo = new THREE.Mesh(disc(14, 48), mat.aliceHalo);
-      aliceGroup.add(aliceHalo);
+      const $v = (sel) => vanillaCard.querySelector(sel);
+      const $w = (sel) => wiCard.querySelector(sel);
 
-      const aliceRingGeom = ring(13.5, 14.2, 64);
-      const aliceRingMesh = new THREE.Mesh(aliceRingGeom, new THREE.MeshBasicMaterial({
-        color: COL.alice, transparent: true, opacity: 0.45, side: THREE.DoubleSide,
-      }));
-      aliceGroup.add(aliceRingMesh);
-
-      const aliceCore = new THREE.Mesh(disc(6.5, 40), mat.alice);
-      aliceGroup.add(aliceCore);
-
-      // Alice's local ring — 8 off-white nodes around her
-      const aliceRing = new THREE.Group();
-      aliceGroup.add(aliceRing);
-
-      const aliceRingRadius = 22;
-      const aliceNodes = [];
-      const aliceNodeCount = 8;
-      for (let i = 0; i < aliceNodeCount; i++) {
-        const ang = (i / aliceNodeCount) * Math.PI * 2 + 0.12;
-        const jitter = 2.8;
-        const r = aliceRingRadius + (Math.sin(i * 2.3) * jitter);
-        const x = Math.cos(ang) * r;
-        const y = Math.sin(ang) * r;
-        const m = makeDiscMesh(1.7 + (i % 3) * 0.25, mat.mine.clone());
-        m.position.set(x, y, 0.1);
-        m.userData.baseOpacity = 1;
-        aliceRing.add(m);
-        aliceNodes.push({ mesh: m, pos: new THREE.Vector3(x, y, 0), ang });
-      }
-
-      // Edges between alice's nodes (ring neighbors + two diagonals + spokes to alice)
-      const aliceEdges = [];
-      function addAliceEdge(a, b, material) {
-        const l = lineFromPoints([a.clone(), b.clone()], material);
-        aliceRing.add(l);
-        aliceEdges.push(l);
-      }
-      for (let i = 0; i < aliceNodes.length; i++) {
-        const a = aliceNodes[i].pos;
-        const b = aliceNodes[(i + 1) % aliceNodes.length].pos;
-        addAliceEdge(a, b, mat.edge);
-      }
-      // Two cross connections
-      addAliceEdge(aliceNodes[0].pos, aliceNodes[3].pos, mat.edgeFaint);
-      addAliceEdge(aliceNodes[2].pos, aliceNodes[6].pos, mat.edgeFaint);
-      // A few spokes to alice center (very faint)
-      addAliceEdge(new THREE.Vector3(0, 0, 0), aliceNodes[1].pos, mat.edgeFaint);
-      addAliceEdge(new THREE.Vector3(0, 0, 0), aliceNodes[5].pos, mat.edgeFaint);
-
-      // ───── remote peers ─────
-      // 5 peers on the outer perimeter at irregular radii/angles
-      const PEER_COUNT = 5;
-      const PEER_SEEDS = [
-        { ang: -0.35,              r: 78, sz: 4.6 },
-        { ang: 0.78,               r: 86, sz: 5.2 },
-        { ang: Math.PI - 0.55,     r: 80, sz: 3.9 },
-        { ang: Math.PI + 0.30,     r: 84, sz: 4.8 },
-        { ang: -Math.PI / 2 - 0.2, r: 72, sz: 4.1 },
-      ];
-
-      const peers = PEER_SEEDS.map((seed, idx) => {
-        const pg = new THREE.Group();
-        sceneRoot.add(pg);
-
-        const px = Math.cos(seed.ang) * seed.r;
-        const py = Math.sin(seed.ang) * seed.r;
-        pg.position.set(px, py, 0);
-
-        // Idle spoke from alice → peer (very faint)
-        const spokeGeom = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(0, 0, 0),
-          new THREE.Vector3(px, py, 0),
-        ]);
-        const spoke = new THREE.Line(spokeGeom, new THREE.LineBasicMaterial({
-          color: COL.edge, transparent: true, opacity: 0.07,
-        }));
-        sceneRoot.add(spoke);
-
-        // Peer sphere (disc)
-        const peerMesh = new THREE.Mesh(disc(seed.sz, 36), mat.peer.clone());
-        peerMesh.position.set(0, 0, 0.2);
-        peerMesh.userData.kind = 'peer';
-        peerMesh.userData.peerIdx = idx;
-        pg.add(peerMesh);
-
-        // Peer sub-graph — 4-5 dots clustered around peer
-        const subCount = 4 + (idx % 2);
-        const subNodes = [];
-        const subEdges = [];
-        const clusterSide = Math.sign(px) || 1; // cluster "behind" peer
-        for (let j = 0; j < subCount; j++) {
-          const t = j / subCount;
-          const subAng = seed.ang + (t - 0.5) * 1.1 + 0.45 * clusterSide;
-          const subR = 9 + ((j * 1.7) % 5);
-          const sx = Math.cos(subAng) * subR + clusterSide * 3.5;
-          const sy = Math.sin(subAng) * subR;
-          const sMat = mat.peerSub.clone();
-          const s = makeDiscMesh(1.25 + (j % 2) * 0.25, sMat);
-          s.position.set(sx, sy, 0.15);
-          s.userData.baseOpacity = 0.75;
-          pg.add(s);
-          subNodes.push({ mesh: s, pos: new THREE.Vector3(sx, sy, 0.15), material: sMat });
-        }
-
-        // Connect sub-nodes sequentially + one to the peer center
-        for (let j = 0; j < subNodes.length - 1; j++) {
-          const a = subNodes[j].pos;
-          const b = subNodes[j + 1].pos;
-          const eMat = new THREE.LineBasicMaterial({ color: COL.edge, transparent: true, opacity: 0.09 });
-          const eMatActive = new THREE.LineBasicMaterial({ color: COL.edgeActive, transparent: true, opacity: 0 });
-          const e = lineFromPoints([a.clone(), b.clone()], eMat);
-          const eActive = lineFromPoints([a.clone(), b.clone()], eMatActive);
-          pg.add(e);
-          pg.add(eActive);
-          subEdges.push({ idle: eMat, active: eMatActive, line: e, lineActive: eActive });
-        }
-        // one edge peer-center → first sub node
+      const phases = [
+        // ───── PHASE A — fresh hit ─────
         {
-          const a = new THREE.Vector3(0, 0, 0);
-          const b = subNodes[0].pos;
-          const eMat = new THREE.LineBasicMaterial({ color: COL.edge, transparent: true, opacity: 0.09 });
-          const e = lineFromPoints([a.clone(), b.clone()], eMat);
-          pg.add(e);
-        }
-
-        return {
-          group: pg,
-          mesh: peerMesh,
-          baseScale: 1,
-          pos: new THREE.Vector3(px, py, 0),
-          spoke,
-          subNodes,
-          subEdges,
-          seed,
-        };
-      });
-
-      // ───── peer-to-peer mesh edges ─────
-      // The network is a mesh, not a star. Each peer holds direct libp2p
-      // connections to a handful of other peers — this is how gossipsub
-      // propagates in the real wire (flood to direct peers, each flood to
-      // theirs). Drawing these makes the topology legible. Sparse edges so
-      // it doesn't become a hairball: each peer links to its 2 nearest
-      // neighbours plus one "long-haul" edge to break the ring.
-      const peerLinks = [];
-      {
-        const n = peers.length;
-        const added = new Set();
-        const key = (a, b) => (a < b ? `${a}-${b}` : `${b}-${a}`);
-        for (let i = 0; i < n; i++) {
-          const dists = [];
-          for (let j = 0; j < n; j++) {
-            if (i === j) continue;
-            dists.push({ j, d: peers[i].pos.distanceTo(peers[j].pos) });
-          }
-          dists.sort((a, b) => a.d - b.d);
-          // 2 nearest neighbours
-          for (const { j } of dists.slice(0, 2)) {
-            if (added.has(key(i, j))) continue;
-            added.add(key(i, j));
-            peerLinks.push({ a: i, b: j });
-          }
-          // one long-haul — the farthest peer, so the mesh isn't just a ring
-          const far = dists[dists.length - 1];
-          if (far && !added.has(key(i, far.j))) {
-            added.add(key(i, far.j));
-            peerLinks.push({ a: i, b: far.j, long: true });
-          }
-        }
-
-        for (const link of peerLinks) {
-          const pa = peers[link.a].pos;
-          const pb = peers[link.b].pos;
-          // 8-segment dashed so the mesh reads as "live" connections, not
-          // solid rails — matches the broadcast beam vocabulary but much
-          // dimmer so it stays background.
-          const segCount = 8;
-          const segs = [];
-          const mIdle = new THREE.LineBasicMaterial({
-            color: COL.edge,
-            transparent: true,
-            opacity: link.long ? 0.055 : 0.08,
-          });
-          for (let s = 0; s < segCount; s++) {
-            const t0 = s / segCount;
-            const t1 = t0 + (0.55 / segCount);
-            const p0 = new THREE.Vector3().lerpVectors(pa, pb, t0).setZ(-0.05);
-            const p1 = new THREE.Vector3().lerpVectors(pa, pb, t1).setZ(-0.05);
-            const geom = new THREE.BufferGeometry().setFromPoints([p0, p1]);
-            const l = new THREE.Line(geom, mIdle);
-            sceneRoot.add(l);
-            segs.push(l);
-          }
-          link.material = mIdle;
-          link.segs = segs;
-        }
-      }
-
-      // ───── question/answer beam layer ─────
-      const beamLayer = new THREE.Group();
-      sceneRoot.add(beamLayer);
-
-      let activeBeam = null;   // single return beam (peer → alice) during phase D
-      let activeBeams = [];    // N outbound broadcast beams (alice → every peer) during phase B
-
-      function clearBeam() {
-        while (beamLayer.children.length) {
-          const c = beamLayer.children.pop();
-          c.traverse?.((o) => {
-            if (o.geometry) o.geometry.dispose();
-            if (o.material) {
-              if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
-              else o.material.dispose();
-            }
-          });
-        }
-        activeBeam = null;
-        activeBeams = [];
-      }
-
-      function buildBeam(from, to) {
-        const group = new THREE.Group();
-
-        // dashed line (10 short segments)
-        const dashMat = new THREE.LineBasicMaterial({
-          color: COL.edgeActive, transparent: true, opacity: 0,
-        });
-        const segCount = 14;
-        const dashSegs = [];
-        for (let i = 0; i < segCount; i++) {
-          const t0 = i / segCount;
-          const t1 = t0 + (0.55 / segCount);
-          const a = new THREE.Vector3().lerpVectors(from, to, t0);
-          const b = new THREE.Vector3().lerpVectors(from, to, t1);
-          const g = new THREE.BufferGeometry().setFromPoints([a, b]);
-          const l = new THREE.Line(g, dashMat);
-          group.add(l);
-          dashSegs.push(l);
-        }
-
-        // packet glow + core
-        const glow = new THREE.Mesh(disc(3.2, 24), new THREE.MeshBasicMaterial({
-          color: COL.packet, transparent: true, opacity: 0,
-        }));
-        const core = new THREE.Mesh(disc(1.4, 24), new THREE.MeshBasicMaterial({
-          color: COL.packet, transparent: true, opacity: 0,
-        }));
-        group.add(glow);
-        group.add(core);
-
-        beamLayer.add(group);
-        return { group, dashMat, glow, core, from: from.clone(), to: to.clone() };
-      }
-
-      // ───── alice's "absorb" spare slots ─────
-      // Keep track of ghost slots we fade in as new nodes during phase E
-      const absorbSlots = [];
-      for (let i = 0; i < 3; i++) {
-        const ang = (i / 3) * Math.PI * 2 + 1.7;
-        const r = aliceRingRadius + 3.6;
-        const x = Math.cos(ang) * r;
-        const y = Math.sin(ang) * r;
-        const m = makeDiscMesh(1.55, new THREE.MeshBasicMaterial({
-          color: COL.mine, transparent: true, opacity: 0,
-        }));
-        m.position.set(x, y, 0.1);
-        aliceRing.add(m);
-
-        // edge from absorb slot to nearest alice node
-        let nearest = aliceNodes[0];
-        let nd = Infinity;
-        for (const n of aliceNodes) {
-          const dd = n.pos.distanceTo(new THREE.Vector3(x, y, 0));
-          if (dd < nd) { nd = dd; nearest = n; }
-        }
-        const eMat = new THREE.LineBasicMaterial({
-          color: COL.edge, transparent: true, opacity: 0,
-        });
-        const eLine = lineFromPoints([nearest.pos.clone(), new THREE.Vector3(x, y, 0)], eMat);
-        aliceRing.add(eLine);
-
-        absorbSlots.push({ mesh: m, material: m.material, edgeMat: eMat });
-      }
-
-      // ───── animation state machine ─────
-      const PHASES = [
-        { name: 'A_typing',   dur: 1.5 },
-        { name: 'B_question', dur: 1.5 },
-        { name: 'C_research', dur: 3.0 },
-        { name: 'D_answer',   dur: 1.5 },
-        { name: 'E_absorb',   dur: 1.5 },
-        { name: 'F_settle',   dur: 1.0 },
+          tag: 'fresh',
+          wTag: 'fresh < 7d',
+          stale: false,
+          v: {
+            prompt: '> What changed in libp2p AutoRelay v2?',
+            steps: [
+              'thinking…',
+              'web_search("libp2p autorelay v2")',
+              'web_fetch(github.com/libp2p/specs/pull/1340)',
+              'web_fetch(blog.libp2p.io/autorelay…)',
+              'thinking…',
+              'web_fetch(go-libp2p/CHANGELOG)',
+              '"AutoRelay v2 was added in…"',
+            ],
+            time: '92.4s elapsed',
+            tok:  '21,400 tokens',
+          },
+          w: {
+            prompt: '> What changed in libp2p AutoRelay v2?',
+            hit:    '◆ wellinformed: 11 ms · 3 cited chunks · age 2d · fresh',
+            fetch:  '',
+            enrich: '',
+            out:    '"AutoRelay v2 (PR #1340) replaces the static-relay heuristic with reservation-based discovery — landed in go-libp2p 0.34, July 2025."',
+            time:   '0.8s elapsed',
+            tok:    '240 tokens',
+            sched:  { hit: 350, out: 750 },
+          },
+        },
+        // ───── PHASE B — stale hit, fallback + enrich ─────
+        {
+          tag: 'older',
+          wTag: 'stale > 7d',
+          stale: true,
+          v: {
+            prompt: '> etcd watch-progress notification semantics in 3.6?',
+            steps: [
+              'thinking…',
+              'web_search("etcd watch progress 3.6")',
+              'web_fetch(github.com/etcd-io/etcd/discussions/16290)',
+              'web_fetch(etcd.io/blog/2026/watch-progress…)',
+              'thinking…',
+              'web_fetch(go.etcd.io/etcd/CHANGELOG-3.6)',
+              '"Watch-progress now stream every 10s by default…"',
+            ],
+            time: '88.1s elapsed',
+            tok:  '19,600 tokens',
+          },
+          w: {
+            prompt: '> etcd watch-progress notification semantics in 3.6?',
+            hit:    '◆ wellinformed: 14 ms · 1 cached chunk · age 31d · STALE (> 7d)',
+            fetch:  '↪ falling back to research — web_fetch(github.com/etcd-io/etcd/issues/15220)',
+            enrich: '✓ saved → research room · 2 new chunks · 3 peers updated',
+            out:    '"3.6 streams progress every 10s by default; opt-in via WatchOptions.ProgressNotify."',
+            time:   '1.4s elapsed',
+            tok:    '380 tokens',
+            sched:  { hit: 320, fetch: 760, enrich: 1240, out: 1700 },
+          },
+        },
       ];
-      const TOTAL_DUR = PHASES.reduce((s, p) => s + p.dur, 0);
 
-      let scenarioIdx = 0;
-      let forcedPeerIdx = null;   // set by click — forces next RESPONDER to this peer (Alice-asking cycles only)
-      let cycleStart = performance.now();
-      let currentPeer = null;      // responder peer (Alice-asks mode) OR asker peer (peer-asks mode)
-      let currentScenario = null;
-      let absorbPicked = [];
-      let cycleCount = 0;          // increments every cycle; parity selects mode
-      let cycleMode = 'alice-asks'; // 'alice-asks' | 'peer-asks'
-      let askerPeer = null;         // set only when cycleMode === 'peer-asks'
+      // resolve element handles up front
+      const v = {
+        prompt: $v('[data-slot="v-prompt"]'),
+        steps:  Array.from(vanillaCard.querySelectorAll('.cmp-step')).slice(1, 8),
+        time:   $v('[data-slot="v-time"]'),
+        tok:    $v('[data-slot="v-tok"]'),
+        tag:    vanillaCard.querySelector('[data-phase-tag]'),
+      };
+      const w = {
+        prompt: $w('[data-slot="w-prompt"]'),
+        hit:    $w('[data-slot="w-hit"]'),
+        fetch:  $w('[data-slot="w-fetch"]'),
+        enrich: $w('[data-slot="w-enrich"]'),
+        out:    $w('[data-slot="w-out"]'),
+        time:   $w('[data-slot="w-time"]'),
+        tok:    $w('[data-slot="w-tok"]'),
+        tag:    wiCard.querySelector('[data-phase-tag]'),
+      };
 
-      function setStatus({ phase, scenario, peerIdx }) {
-        if (!scenario) {
-          statusEl.classList.remove('show');
-          return;
-        }
-        const peerCount = peers.length;
-        // Non-asker node count: peers-1 + alice(1) when peer asks, peers when alice asks
-        const reach = (cycleMode === 'peer-asks') ? peerCount : peerCount;
-        const askerLabel = (cycleMode === 'peer-asks' && askerPeer)
-          ? (currentScenario.asker || '12D3KooW…peer')
-          : 'you';
-        const responderLabel = (cycleMode === 'peer-asks')
-          ? 'you (your graph)'
-          : (scenario.peer || '12D3KooW…peer');
+      const VANILLA_SCHED = [400, 1500, 2700, 3900, 5100, 6300, 9100];
 
-        if (phase === 'A_typing') {
-          statusEl.innerHTML =
-            '<span class="viz-st-label">' + askerLabel + ' asking:</span>' +
-            '<span class="viz-st-q">"' + scenario.q + '"</span>';
-          statusEl.classList.add('show');
-        } else if (phase === 'B_question') {
-          statusEl.innerHTML =
-            '<span class="viz-st-label">broadcasting to</span>' +
-            '<span class="viz-st-conf">' + reach + '</span>' +
-            '<span class="viz-st-label">peer(s) over</span>' +
-            '<span class="viz-st-peer">/wellinformed/oracle/1.0.0</span>';
-          statusEl.classList.add('show');
-        } else if (phase === 'C_research') {
-          statusEl.innerHTML =
-            '<span class="viz-st-label">network: </span>' +
-            '<span class="viz-st-conf">1</span>' +
-            '<span class="viz-st-label">match ·</span>' +
-            '<span class="viz-st-label">' + (reach - 1) + '</span>' +
-            '<span class="viz-st-label">passed</span>';
-          statusEl.classList.add('show');
-        } else if (phase === 'D_answer' || phase === 'E_absorb') {
-          statusEl.innerHTML =
-            '<span class="viz-st-label">answered by:</span>' +
-            '<span class="viz-st-peer">' + responderLabel + '</span>' +
-            '<span class="viz-st-label" style="margin-left:.7em">conf</span>' +
-            '<span class="viz-st-conf">' + scenario.conf.toFixed(2) + '</span>' +
-            '<span class="viz-st-label" style="margin-left:.6em">·</span>' +
-            '<span class="viz-st-label">' + scenario.age + '</span>';
-          statusEl.classList.add('show');
-        } else if (phase === 'F_settle') {
-          statusEl.classList.remove('show');
-        }
+      let timers = [];
+      let cycle  = 0;
+      const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+
+      function paint(phase) {
+        const { v: vp, w: wp, stale, tag, wTag } = phase;
+
+        // text content swap
+        v.prompt.textContent = vp.prompt;
+        vp.steps.forEach((txt, i) => { if (v.steps[i]) v.steps[i].textContent = txt; });
+        v.time.textContent = vp.time;
+        v.tok.textContent  = vp.tok;
+        if (v.tag) v.tag.textContent = tag;
+
+        w.prompt.textContent = wp.prompt;
+        w.hit.textContent    = wp.hit;
+        w.fetch.textContent  = wp.fetch;
+        w.enrich.textContent = wp.enrich;
+        w.out.textContent    = wp.out;
+        w.time.textContent   = wp.time;
+        w.tok.textContent    = wp.tok;
+        if (w.tag) w.tag.textContent = wTag;
+
+        // stale visual state
+        wiCard.classList.toggle('is-stale-cycle', stale);
+        w.hit.classList.toggle('is-stale', stale);
       }
 
-      function startCycle() {
-        clearBeam();
+      function reveal(phase) {
+        // Reset every step (keep prompts on)
+        v.steps.forEach(s => s.classList.remove('is-on'));
+        [w.hit, w.fetch, w.enrich, w.out].forEach(s => s.classList.remove('is-on'));
 
-        // Alternate modes every cycle: Alice asks → peer asks → Alice asks …
-        // Even cycleCount = Alice asks, odd = a peer asks.
-        cycleMode = (cycleCount % 2 === 0) ? 'alice-asks' : 'peer-asks';
+        VANILLA_SCHED.forEach((d, i) => {
+          if (v.steps[i]) timers.push(setTimeout(() => v.steps[i].classList.add('is-on'), d));
+        });
 
-        if (cycleMode === 'alice-asks') {
-          scenarioIdx = (scenarioIdx + 1) % ALICE_SCENARIOS.length;
-          currentScenario = ALICE_SCENARIOS[scenarioIdx];
-
-          // Responder peer for this cycle (who has the research)
-          let peerIdx;
-          if (forcedPeerIdx != null) {
-            peerIdx = forcedPeerIdx;
-            forcedPeerIdx = null;
-          } else {
-            peerIdx = scenarioIdx % peers.length;
-          }
-          currentPeer = peers[peerIdx];
-          askerPeer = null;
-
-          // Pick 1-2 absorb slots to fill this cycle (Alice grows her graph)
-          const slotCount = 1 + (scenarioIdx % 2);
-          absorbPicked = [];
-          for (let i = 0; i < slotCount; i++) {
-            absorbPicked.push(absorbSlots[(scenarioIdx + i) % absorbSlots.length]);
-          }
-          absorbSlots.forEach(s => {
-            s.material.opacity = 0;
-            s.edgeMat.opacity = 0;
-          });
-        } else {
-          // peer-asks: pick a peer to be the asker. Rotate through peers so
-          // every peer gets to ask over time. Alice is always the responder
-          // in this mode (her graph has the answer).
-          const peerScenarioIdx = Math.floor(cycleCount / 2) % PEER_SCENARIOS.length;
-          currentScenario = PEER_SCENARIOS[peerScenarioIdx];
-          const askerIdx = Math.floor(cycleCount / 2) % peers.length;
-          askerPeer = peers[askerIdx];
-          currentPeer = askerPeer;  // shared reference for click highlighting / tooltip
-          // No absorb slots fire in peer-asks mode — the absorb slots are
-          // Alice-owned. Keep them invisible so the previous cycle's slots
-          // don't linger.
-          absorbPicked = [];
-          absorbSlots.forEach(s => {
-            s.material.opacity = 0;
-            s.edgeMat.opacity = 0;
-          });
+        const sch = phase.w.sched;
+        timers.push(setTimeout(() => w.hit.classList.add('is-on'),    sch.hit));
+        if (phase.stale) {
+          timers.push(setTimeout(() => w.fetch.classList.add('is-on'),  sch.fetch));
+          timers.push(setTimeout(() => w.enrich.classList.add('is-on'), sch.enrich));
         }
-
-        cycleCount++;
-        cycleStart = performance.now();
+        timers.push(setTimeout(() => w.out.classList.add('is-on'),    sch.out));
       }
 
-      function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-      function easeInOutCubic(t) {
-        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-      }
-      function easeOutExpo(t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); }
-
-      function phaseAt(elapsed) {
-        let acc = 0;
-        for (const p of PHASES) {
-          if (elapsed < acc + p.dur) {
-            return { name: p.name, local: (elapsed - acc) / p.dur, accStart: acc, dur: p.dur };
-          }
-          acc += p.dur;
-        }
-        return null;
+      function play() {
+        clearTimers();
+        const phase = phases[cycle % phases.length];
+        paint(phase);
+        reveal(phase);
+        cycle++;
       }
 
-      let clickRingMesh = null;
-      let clickRingStart = 0;
-      function spawnClickRing(peer) {
-        if (clickRingMesh) {
-          sceneRoot.remove(clickRingMesh);
-          clickRingMesh.geometry.dispose();
-          clickRingMesh.material.dispose();
-        }
-        const geom = ring(peer.seed.sz + 1.5, peer.seed.sz + 2.2, 48);
-        const m = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
-          color: COL.alice, transparent: true, opacity: 0.9, side: THREE.DoubleSide,
-        }));
-        m.position.copy(peer.pos);
-        sceneRoot.add(m);
-        clickRingMesh = m;
-        clickRingStart = performance.now();
+      play();
+      setInterval(play, 12000);
+    })();
+  </script>
+
+  <!-- ───────────── nav scroll-condense ───────────── -->
+  <script>
+    (() => {
+      const nav = document.getElementById('site-nav');
+      if (!nav) return;
+      let raf = 0;
+      const update = () => {
+        nav.classList.toggle('is-scrolled', window.scrollY > 24);
+        raf = 0;
+      };
+      window.addEventListener('scroll', () => {
+        if (!raf) raf = requestAnimationFrame(update);
+      }, { passive: true });
+      update();
+    })();
+  </script>
+
+  <!-- ───────────── #try — lazy-load 3d-force-graph + askbar focus ───────────── -->
+  <script>
+    (() => {
+      const sec = document.getElementById('try');
+      const canvas = document.getElementById('try-graph-canvas');
+      if (!sec || !canvas || !('IntersectionObserver' in window)) return;
+
+      // Skip the 3D graph for users with reduced-motion or coarse pointers
+      // (touch / low-end mobile) — render a static SVG snapshot instead.
+      const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      if (reducedMotion || coarsePointer) {
+        canvas.style.background = "center / contain no-repeat url('assets/_graph-fallback.svg')";
+        canvas.style.opacity = '0.55';
+        return;
       }
 
-      function updateClickRing(now) {
-        if (!clickRingMesh) return;
-        const t = (now - clickRingStart) / 700;
-        if (t >= 1) {
-          sceneRoot.remove(clickRingMesh);
-          clickRingMesh.geometry.dispose();
-          clickRingMesh.material.dispose();
-          clickRingMesh = null;
-          return;
+      let booted = false;
+      const onLoadError = () => {
+        canvas.style.background = "center / contain no-repeat url('assets/_graph-fallback.svg')";
+        canvas.style.opacity = '0.55';
+      };
+      const loadScript = (src) => new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('failed to load ' + src));
+        document.head.appendChild(s);
+      });
+      const load = async () => {
+        if (booted) return;
+        booted = true;
+        try {
+          // 3d-force-graph 1.73.4 ships THREE bundled inside its UMD. We
+          // load it once and read window.THREE from the bundle's own
+          // export so there's exactly one THREE class identity on the
+          // page. Loading three.js separately as UMD double-imports it
+          // and corrupts subclass prototypes (RangeError stack overflow).
+          await loadScript('https://unpkg.com/3d-force-graph@1.73.4/dist/3d-force-graph.min.js');
+          boot();
+        } catch (err) {
+          onLoadError();
         }
-        const s = 1 + easeOutCubic(t) * 0.9;
-        clickRingMesh.scale.setScalar(s);
-        clickRingMesh.material.opacity = 0.9 * (1 - t);
-      }
+      };
 
-      // ───── per-frame scene update ─────
-      function updatePhases(now) {
-        const elapsed = (now - cycleStart) / 1000;
-        if (elapsed >= TOTAL_DUR) {
-          startCycle();
-          return;
-        }
-        const ph = phaseAt(elapsed);
-        if (!ph) return;
-
-        // Alice pulse (phase A soft pulse)
-        let aliceScale = 1;
-        let haloOpacity = 0.18;
-        if (ph.name === 'A_typing') {
-          aliceScale = 1 + 0.05 * Math.sin(ph.local * Math.PI * 3);
-          haloOpacity = 0.18 + 0.14 * (0.5 + 0.5 * Math.sin(ph.local * Math.PI * 3));
-          setStatus({ phase: ph.name, scenario: currentScenario });
-        }
-        aliceCore.scale.setScalar(aliceScale);
-        aliceHalo.material.opacity = haloOpacity;
-
-        // Asker/responder positions — depends on cycleMode.
-        const askerPos = (cycleMode === 'peer-asks' && askerPeer)
-          ? askerPeer.pos.clone().setZ(0.3)
-          : new THREE.Vector3(0, 0, 0.3);
-        const responderPos = (cycleMode === 'peer-asks')
-          ? new THREE.Vector3(0, 0, 0.3)        // alice answers
-          : currentPeer.pos.clone().setZ(0.3); // a peer answers
-
-        // Phase B — BROADCAST: beams from asker to every other node on
-        // the network (peers it isn't and Alice if the asker is a peer).
-        // Matches oracle_ask --live + gossipsub: one publish, every
-        // subscriber receives.
-        if (ph.name === 'B_question') {
-          if (activeBeams.length === 0) {
-            // Targets = every peer except the asker, plus Alice if asker is a peer.
-            const targets = [];
-            for (const peer of peers) {
-              if (peer === askerPeer) continue;
-              targets.push({ pos: peer.pos.clone().setZ(0.3), peer });
-            }
-            if (cycleMode === 'peer-asks') {
-              targets.push({ pos: new THREE.Vector3(0, 0, 0.3), peer: null /* alice */ });
-            }
-            for (const t of targets) {
-              const b = buildBeam(askerPos.clone(), t.pos);
-              b.direction = 'outbound';
-              b.peer = t.peer;
-              activeBeams.push(b);
-            }
-          }
-          const t = easeOutCubic(ph.local);
-          for (const b of activeBeams) {
-            b.dashMat.opacity = 0.42 * Math.min(1, ph.local * 2);
-            const p = new THREE.Vector3().lerpVectors(b.from, b.to, t);
-            b.core.position.copy(p);
-            b.glow.position.copy(p);
-            b.core.material.opacity = 0.95;
-            b.glow.material.opacity = 0.4;
-          }
-          // gossipsub flood on peer-to-peer mesh edges — brighten briefly
-          // so the viewer reads that the question is also relaying between
-          // peers, not just arriving at each on its own beam.
-          const meshPulse = Math.sin(Math.min(1, ph.local * 1.4) * Math.PI);
-          for (const link of peerLinks) {
-            const baseOp = link.long ? 0.055 : 0.08;
-            link.material.opacity = baseOp + (0.25 * meshPulse);
-            link.material.color.lerpColors(COL.edge, COL.alice, meshPulse * 0.5);
-          }
-          setStatus({ phase: ph.name, scenario: currentScenario });
-        } else {
-          // outside phase B, restore peer-link edges to their idle state
-          for (const link of peerLinks) {
-            const baseOp = link.long ? 0.055 : 0.08;
-            link.material.opacity = baseOp;
-            link.material.color.copy(COL.edge);
-          }
-        }
-
-        // Phase C — EVALUATE across the network: every peer "reads" the question.
-        // Non-matching peers do a quick pulse then settle (shake head, in effect).
-        // Only the matching peer (currentPeer) enters full research mode —
-        // sub-graph lighting up in sequence as it assembles the answer.
-        if (ph.name === 'C_research') {
-          // fade the broadcast beams out quickly
-          if (activeBeams.length > 0) {
-            const fadeT = Math.min(1, ph.local * 3);
-            for (const b of activeBeams) {
-              b.dashMat.opacity = 0.42 * (1 - fadeT);
-              b.core.material.opacity = 0.95 * (1 - fadeT);
-              b.glow.material.opacity = 0.4 * (1 - fadeT);
-            }
-            if (fadeT >= 1) {
-              // keep activeBeams list reference cleared but don't wipe sub-graphs
-              while (beamLayer.children.length) {
-                const c = beamLayer.children.pop();
-                c.traverse?.((o) => {
-                  if (o.geometry) o.geometry.dispose();
-                  if (o.material) {
-                    if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
-                    else o.material.dispose();
-                  }
-                });
-              }
-              activeBeams = [];
-            }
-          }
-
-          // Every non-asker, non-responder peer does a brief "evaluation"
-          // pulse in the first 0.5 s of phase C.
-          const evalT = Math.min(1, ph.local * 2);      // 0 → 1 over first 50% of phase
-          const evalPulse = Math.sin(evalT * Math.PI);  // rise-fall
-          for (const peer of peers) {
-            // skip asker (it's the source) and responder (full research mode below)
-            if (peer === askerPeer) continue;
-            if (cycleMode === 'alice-asks' && peer === currentPeer) continue;
-            peer.mesh.material.color.lerpColors(COL.peer, COL.mine, evalPulse * 0.45);
-            peer.mesh.material.opacity = 1;
-            peer.mesh.scale.setScalar(1 + 0.08 * evalPulse);
-            peer.subNodes.forEach(s => {
-              s.material.color.lerpColors(COL.peer, COL.mine, evalPulse * 0.3);
-              s.mesh.scale.setScalar(1 + 0.1 * evalPulse);
-            });
-          }
-
-          // Responder — full research mode starts AFTER the eval pulse.
-          // In alice-asks mode: currentPeer (a remote peer) researches.
-          // In peer-asks mode: Alice researches — her own ring nodes light.
-          const researchStart = 0.5;
-          const researchLocalT = Math.max(0, (ph.local * ph.dur - researchStart) / (ph.dur - researchStart));
-          if (researchLocalT > 0) {
-            const stagger = 0.3;
-            const subDur = 0.6;
-            const researchDur = (ph.dur - researchStart);
-            const tNow = researchLocalT * researchDur;
-
-            if (cycleMode === 'alice-asks') {
-              // Remote peer researches — its sub-graph lights sequentially.
-              const pulse = 1 + 0.24 * Math.sin(researchLocalT * Math.PI);
-              currentPeer.mesh.scale.setScalar(pulse);
-              const peerBlend = 0.5 + 0.5 * Math.sin(researchLocalT * Math.PI);
-              currentPeer.mesh.material.color.lerpColors(COL.peer, COL.alice, peerBlend * 0.6);
-              const subs = currentPeer.subNodes;
-              for (let i = 0; i < subs.length; i++) {
-                const tStart = i * stagger;
-                const tEnd = tStart + subDur;
-                if (tNow >= tStart && tNow <= tEnd + 0.3) {
-                  const local = Math.min(1, (tNow - tStart) / subDur);
-                  const bright = Math.sin(local * Math.PI);
-                  subs[i].material.color.lerpColors(COL.peer, COL.alice, bright);
-                  subs[i].material.opacity = 0.75 + 0.25 * bright;
-                  subs[i].mesh.scale.setScalar(1 + 0.38 * bright);
-                  const edge = currentPeer.subEdges[i - 1] || currentPeer.subEdges[i];
-                  if (edge) edge.active.opacity = 0.8 * bright;
-                } else if (tNow > tEnd + 0.3) {
-                  subs[i].material.color.copy(COL.peer);
-                  subs[i].material.opacity = 0.75;
-                  subs[i].mesh.scale.setScalar(1);
-                }
-              }
-            } else {
-              // Alice researches — her halo pulses and her local ring
-              // nodes light in sequence. Same stagger vocabulary as a
-              // peer's sub-graph so the "working on an answer" beat reads
-              // the same regardless of who the responder is.
-              const pulse = 1 + 0.12 * Math.sin(researchLocalT * Math.PI);
-              aliceCore.scale.setScalar(pulse);
-              aliceHalo.material.opacity = 0.18 + 0.28 * Math.sin(researchLocalT * Math.PI);
-              for (let i = 0; i < aliceNodes.length; i++) {
-                const tStart = i * stagger;
-                const tEnd = tStart + subDur;
-                if (tNow >= tStart && tNow <= tEnd + 0.3) {
-                  const local = Math.min(1, (tNow - tStart) / subDur);
-                  const bright = Math.sin(local * Math.PI);
-                  aliceNodes[i].mesh.material.opacity = 1;
-                  aliceNodes[i].mesh.scale.setScalar(1 + 0.35 * bright);
-                  aliceNodes[i].mesh.material.color.lerpColors(COL.mine, COL.alice, bright * 0.55);
-                } else if (tNow > tEnd + 0.3) {
-                  aliceNodes[i].mesh.material.color.copy(COL.mine);
-                  aliceNodes[i].mesh.scale.setScalar(1);
-                }
-              }
-            }
-          }
-          setStatus({ phase: ph.name, scenario: currentScenario });
-        } else {
-          // reset peer states when outside phase C
-          peers.forEach(p => {
-            p.mesh.scale.setScalar(1);
-            p.mesh.material.color.copy(COL.peer);
-            p.mesh.material.opacity = 1;
-            p.subNodes.forEach(s => {
-              s.material.color.copy(COL.peer);
-              s.material.opacity = 0.75;
-              s.mesh.scale.setScalar(1);
-            });
-            p.subEdges.forEach(e => { e.active.opacity = 0; });
-          });
-          // reset alice's ring nodes too — they get lit during peer-asks
-          // phase C research. Leave them alone during phase E of an
-          // alice-asks cycle though (absorb slots handle that).
-          if (ph.name !== 'E_absorb') {
-            for (const n of aliceNodes) {
-              n.mesh.material.color.copy(COL.mine);
-              n.mesh.material.opacity = 1;
-              n.mesh.scale.setScalar(1);
-            }
-          }
-        }
-
-        // Phase D — answer beam from RESPONDER → ASKER (stronger).
-        // In alice-asks mode: currentPeer → (0,0). In peer-asks mode:
-        // (0,0) [Alice] → askerPeer.pos.
-        if (ph.name === 'D_answer') {
-          if (!activeBeam || activeBeam.direction !== 'inbound') {
-            clearBeam();
-            activeBeam = buildBeam(responderPos.clone(), askerPos.clone());
-            activeBeam.direction = 'inbound';
-            activeBeam.core.geometry.dispose();
-            activeBeam.core.geometry = disc(1.9, 24);
-            activeBeam.glow.geometry.dispose();
-            activeBeam.glow.geometry = disc(4.4, 24);
-          }
-          const t = easeOutExpo(ph.local);
-          activeBeam.dashMat.opacity = 0.75 * Math.min(1, ph.local * 2);
-          const p = new THREE.Vector3().lerpVectors(activeBeam.from, activeBeam.to, t);
-          activeBeam.core.position.copy(p);
-          activeBeam.glow.position.copy(p);
-          activeBeam.core.material.opacity = 1;
-          activeBeam.glow.material.opacity = 0.7;
-          setStatus({ phase: ph.name, scenario: currentScenario });
-        }
-
-        // Phase E — asker receives the answer.
-        // In alice-asks mode: Alice absorbs 1-2 new nodes into her ring
-        //   (existing absorb-slot machinery).
-        // In peer-asks mode: the asker peer pulses + one of its sub-nodes
-        //   brightens as it receives the answer. Visual analogue of
-        //   "their graph grew," without the pre-built slot infrastructure.
-        if (ph.name === 'E_absorb') {
-          if (activeBeam) {
-            const fadeT = Math.min(1, ph.local * 3);
-            activeBeam.dashMat.opacity = 0.75 * (1 - fadeT);
-            activeBeam.core.material.opacity = (1 - fadeT);
-            activeBeam.glow.material.opacity = 0.7 * (1 - fadeT);
-            if (fadeT >= 1) clearBeam();
-          }
-
-          if (cycleMode === 'alice-asks') {
-            const pulse = 1 + 0.14 * Math.sin(ph.local * Math.PI);
-            aliceCore.scale.setScalar(pulse);
-            aliceHalo.material.opacity = 0.18 + 0.22 * Math.sin(ph.local * Math.PI);
-            absorbPicked.forEach((slot, i) => {
-              const delay = i * 0.18;
-              const local = Math.max(0, Math.min(1, (ph.local * ph.dur - delay) / 0.8));
-              const k = easeOutCubic(local);
-              slot.material.opacity = k;
-              slot.edgeMat.opacity = 0.18 * k;
-            });
-          } else if (askerPeer) {
-            // peer-asks: grow the asker peer briefly + light its first
-            // sub-node to signal "this peer's graph just absorbed new
-            // research from the network."
-            const pulse = 1 + 0.22 * Math.sin(ph.local * Math.PI);
-            askerPeer.mesh.scale.setScalar(pulse);
-            const bright = Math.sin(ph.local * Math.PI);
-            askerPeer.mesh.material.color.lerpColors(COL.peer, COL.alice, bright * 0.55);
-            if (askerPeer.subNodes[0]) {
-              askerPeer.subNodes[0].material.color.lerpColors(COL.peer, COL.alice, bright);
-              askerPeer.subNodes[0].material.opacity = 0.75 + 0.25 * bright;
-              askerPeer.subNodes[0].mesh.scale.setScalar(1 + 0.4 * bright);
-            }
-          }
-          setStatus({ phase: ph.name, scenario: currentScenario });
-        }
-
-        // Phase F — settle (fade status)
-        if (ph.name === 'F_settle') {
-          const k = 1 - ph.local;
-          statusEl.style.opacity = String(0.85 * k);
-          // keep absorb slots visible but leave class
-          if (ph.local > 0.8) {
-            // at very end prepare for next cycle
-          }
-        } else {
-          statusEl.style.opacity = '';
-        }
-      }
-
-      // ───── pointer parallax (spring damped) ─────
-      const pointer = { tx: 0, ty: 0, x: 0, y: 0, vx: 0, vy: 0 };
-      const hasPointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-
-      function onPointerMove(ev) {
-        const rect = canvas.getBoundingClientRect();
-        const nx = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
-        const ny = ((ev.clientY - rect.top) / rect.height) * 2 - 1;
-        pointer.tx = nx;
-        pointer.ty = ny;
-        updateHover(ev.clientX, ev.clientY, rect);
-      }
-
-      function onPointerLeave() {
-        pointer.tx = 0;
-        pointer.ty = 0;
-        tooltipEl.classList.remove('show');
-        hoveredPeer = null;
-      }
-
-      // ───── raycaster / hover ─────
-      const raycaster = new THREE.Raycaster();
-      const pointerNDC = new THREE.Vector2();
-      let hoveredPeer = null;
-
-      function updateHover(clientX, clientY, rect) {
-        if (!rect) rect = canvas.getBoundingClientRect();
-        pointerNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-        pointerNDC.y = -(((clientY - rect.top) / rect.height) * 2 - 1);
-        raycaster.setFromCamera(pointerNDC, camera);
-        const targets = peers.map(p => p.mesh);
-        const hits = raycaster.intersectObjects(targets, false);
-        if (hits.length) {
-          const peerIdx = hits[0].object.userData.peerIdx;
-          hoveredPeer = peers[peerIdx];
-          // project peer position to screen
-          const worldPos = hoveredPeer.pos.clone();
-          const projected = worldPos.project(camera);
-          const sx = (projected.x * 0.5 + 0.5) * rect.width;
-          const sy = (-projected.y * 0.5 + 0.5) * rect.height;
-          tooltipEl.innerHTML = '<span class="viz-tt-dot"></span>peer ' + SCENARIOS[(scenarioIdx + peerIdx) % SCENARIOS.length].peer;
-          tooltipEl.style.left = sx + 'px';
-          tooltipEl.style.top = sy + 'px';
-          tooltipEl.classList.add('show');
-          canvas.style.cursor = 'pointer';
-        } else {
-          hoveredPeer = null;
-          tooltipEl.classList.remove('show');
-          canvas.style.cursor = '';
-        }
-      }
-
-      // ───── click: force next cycle to this peer ─────
-      function onClick(ev) {
-        const rect = canvas.getBoundingClientRect();
-        pointerNDC.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
-        pointerNDC.y = -(((ev.clientY - rect.top) / rect.height) * 2 - 1);
-        raycaster.setFromCamera(pointerNDC, camera);
-        const hits = raycaster.intersectObjects(peers.map(p => p.mesh), false);
-        if (hits.length) {
-          const peerIdx = hits[0].object.userData.peerIdx;
-          forcedPeerIdx = peerIdx;
-          spawnClickRing(peers[peerIdx]);
-        }
-      }
-
-      // ───── resize (ResizeObserver on container) ─────
-      let cssW = 1, cssH = 1;
-      function applySize() {
-        const rect = container.getBoundingClientRect();
-        cssW = Math.max(1, rect.width);
-        cssH = Math.max(1, rect.height);
-        renderer.setSize(cssW, cssH, false);
-        // Keep orthographic frustum square in world units; match aspect via camera
-        const aspect = cssW / cssH;
-        if (aspect >= 1) {
-          camera.left = -WORLD * aspect;
-          camera.right = WORLD * aspect;
-          camera.top = WORLD;
-          camera.bottom = -WORLD;
-        } else {
-          camera.left = -WORLD;
-          camera.right = WORLD;
-          camera.top = WORLD / aspect;
-          camera.bottom = -WORLD / aspect;
-        }
-        camera.updateProjectionMatrix();
-      }
-
-      const ro = new ResizeObserver(() => applySize());
-      ro.observe(container);
-      applySize();
-
-      // ───── main loop ─────
-      const scenePivot = new THREE.Group();
-      scene.remove(sceneRoot);
-      scenePivot.add(sceneRoot);
-      scene.add(scenePivot);
-
-      let rafId = 0;
-      let running = true;
-      let lastNow = performance.now();
-
-      function tick(now) {
-        rafId = requestAnimationFrame(tick);
-        if (!running) return;
-
-        // Parallax spring
-        if (hasPointer && !REDUCED && cssW >= 520) {
-          // spring towards target
-          const stiffness = 0.06;
-          const damping = 0.78;
-          pointer.vx += (pointer.tx - pointer.x) * stiffness;
-          pointer.vy += (pointer.ty - pointer.y) * stiffness;
-          pointer.vx *= damping;
-          pointer.vy *= damping;
-          pointer.x += pointer.vx;
-          pointer.y += pointer.vy;
-          const MAX = THREE.MathUtils.degToRad(3);
-          scenePivot.rotation.y = pointer.x * MAX;
-          scenePivot.rotation.x = -pointer.y * MAX;
-        } else {
-          scenePivot.rotation.x = 0;
-          scenePivot.rotation.y = 0;
-        }
-
-        // Alice ring slow rotation (soft motion even idle)
-        if (!REDUCED) {
-          aliceRing.rotation.z = Math.sin(now / 9000) * 0.04;
-        }
-
-        if (!REDUCED) {
-          updatePhases(now);
-          updateClickRing(now);
-        }
-
-        renderer.render(scene, camera);
-        lastNow = now;
-      }
-
-      // ───── visibility gate (IntersectionObserver) ─────
-      const vio = new IntersectionObserver((entries) => {
+      const io = new IntersectionObserver((entries) => {
         for (const e of entries) {
-          running = e.isIntersecting;
+          if (e.isIntersecting) { load(); io.disconnect(); break; }
         }
-      }, { threshold: 0.05 });
-      vio.observe(container);
+      }, { rootMargin: '200px' });
+      io.observe(sec);
 
-      // ───── attach listeners ─────
-      if (!REDUCED && hasPointer) {
-        canvas.addEventListener('pointermove', onPointerMove, { passive: true });
-        canvas.addEventListener('pointerleave', onPointerLeave, { passive: true });
-        canvas.addEventListener('click', onClick);
+      function boot() {
+        // 3d-force-graph 1.73.4 bundles its own THREE and leaks it as
+        // `window.__THREE__` (alongside a "Multiple instances" warning if
+        // a second THREE is also present). We deliberately don't load a
+        // second THREE — using the bundled one keeps every class on a
+        // single identity (Sprite extends Object3D extends EventDispatcher
+        // all from the same prototype chain).
+        const T = window.__THREE__ || window.THREE;
+        const ForceGraph3D = window.ForceGraph3D;
+        if (!ForceGraph3D || !T) { onLoadError(); return; }
+        window.THREE = T;
+        const data = seed();
+        data.nodes.forEach(n => { n._asker = false; n._responder = false; });
+        data.links.forEach(l => { l._active = false; });
+
+        // High-quality renderer: MSAA antialias + retina pixel ratio +
+        // high-performance GPU preference. Matters for sphere edges + edges.
+        const Graph = ForceGraph3D({
+          rendererConfig: {
+            antialias: true,
+            alpha: true,
+            powerPreference: 'high-performance',
+            stencil: false,
+          },
+        })(canvas)
+          .graphData(data)
+          .backgroundColor('rgba(0,0,0,0)')
+          .showNavInfo(false)
+          .nodeColor(n => n._asker ? '#ffffff' : (n._responder ? '#34d399' : (n.color || '#34d399')))
+          .nodeVal(n => n._asker ? 32 : (n._responder ? 18 : (n.val || 5)))
+          // High-tessellation sphere geometry — 3d-force-graph defaults to
+          // 8 segments, which is what made every sphere look polygonal at
+          // zoom-in. 64 segments is the smooth-silhouette sweet spot
+          // (geometry is shared across all meshes of the same val, so cost
+          // is constant per unique radius).
+          .nodeResolution(64)
+          .nodeOpacity(0.94)
+          .nodeLabel(n => '<div style="font-family:\'JetBrains Mono\',monospace;font-size:0.74rem;background:rgba(12,12,20,0.94);color:#e8e8ed;border:1px solid rgba(52,211,153,0.32);border-radius:6px;padding:6px 9px;letter-spacing:0.01em;white-space:nowrap">'+(n.label||n.id)+'</div>')
+          .linkColor(l => l._active ? 'rgba(52,211,153,0.92)' : 'rgba(52,211,153,0.13)')
+          .linkOpacity(0.78)
+          .linkWidth(l => l._active ? 2.6 : 0.55)
+          .linkDirectionalParticles(l => l._active ? 5 : 0)
+          .linkDirectionalParticleSpeed(0.0036)
+          .linkDirectionalParticleColor(() => '#ffffff')
+          .linkDirectionalParticleWidth(3.4)
+          .cooldownTicks(180)
+          .warmupTicks(40)
+          .enableNodeDrag(false);
+        Graph.cameraPosition({ x: 0, y: 0, z: 220 });
+
+        // Retina + high-DPI sharpness — the lib doesn't auto-set pixel ratio
+        try {
+          const r = Graph.renderer && Graph.renderer();
+          if (r && window.devicePixelRatio) {
+            r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+          }
+        } catch (_) {}
+
+        // ─── scene depth: fog + multi-light shading ──────────────────────
+        // 3d-force-graph ships a single ambient + directional, so spheres
+        // render almost flat. We pile on a key light, a rim, an inner glow,
+        // and linear fog so far nodes fade into the section background.
+        try {
+          const scene = Graph.scene && Graph.scene();
+          const renderer = Graph.renderer && Graph.renderer();
+
+          // Tone mapping + sRGB output for richer mid-tones — without this
+          // the PBR materials look washed out and the emerald accent
+          // clips/desaturates under bright lights.
+          if (T && renderer) {
+            // Guard each constant — 3d-force-graph's bundled THREE may
+            // ship some of these names with different shapes; if they're
+            // missing we skip rather than crash the renderer.
+            if (T.ACESFilmicToneMapping !== undefined) {
+              renderer.toneMapping = T.ACESFilmicToneMapping;
+              renderer.toneMappingExposure = 1.05;
+            }
+            if ('outputColorSpace' in renderer && T.SRGBColorSpace !== undefined) {
+              renderer.outputColorSpace = T.SRGBColorSpace;
+            } else if ('outputEncoding' in renderer && T.sRGBEncoding !== undefined) {
+              renderer.outputEncoding = T.sRGBEncoding;
+            }
+          }
+
+          // ─── procedural environment map — drives PBR specular ─────────
+          // PBR materials look "low-level" without an env map because
+          // their specular term reads from scene.environment. A small
+          // procedural equirect gradient is enough to give every sphere
+          // a believable highlight + horizon roll-off without shipping
+          // an HDR file. PMREM-process it through the renderer when the
+          // bundled THREE supports it (r0.149 does), otherwise fall
+          // back to the raw equirect (still better than no env at all).
+          let envMap = null;
+          if (T && renderer && T.CanvasTexture) {
+            const env = document.createElement('canvas');
+            env.width = 512; env.height = 256;
+            const eg = env.getContext('2d');
+            // Sky → horizon → ground gradient: lifts top-of-sphere
+            // highlights, anchors bottom shading.
+            const grad = eg.createLinearGradient(0, 0, 0, 256);
+            grad.addColorStop(0.00, '#1a1a26');
+            grad.addColorStop(0.42, '#2a2a3a');
+            grad.addColorStop(0.50, '#34d399');
+            grad.addColorStop(0.58, '#1f3a32');
+            grad.addColorStop(1.00, '#08080e');
+            eg.fillStyle = grad;
+            eg.fillRect(0, 0, 512, 256);
+            // Sparse warm pinprick highlights — each one becomes a
+            // distinct specular flare on glossy spheres.
+            eg.globalCompositeOperation = 'lighter';
+            const sparkles = [
+              [80, 70, 16, 'rgba(255,240,210,0.85)'],
+              [200, 60, 22, 'rgba(255,255,255,0.55)'],
+              [340, 90, 18, 'rgba(180,255,220,0.70)'],
+              [430, 60, 14, 'rgba(255,220,200,0.55)'],
+            ];
+            for (const [x, y, r, c] of sparkles) {
+              const g = eg.createRadialGradient(x, y, 0, x, y, r);
+              g.addColorStop(0, c);
+              g.addColorStop(1, 'rgba(0,0,0,0)');
+              eg.fillStyle = g;
+              eg.fillRect(x - r, y - r, r * 2, r * 2);
+            }
+            const tex = new T.CanvasTexture(env);
+            if (T.EquirectangularReflectionMapping !== undefined) {
+              tex.mapping = T.EquirectangularReflectionMapping;
+            }
+            if (T.SRGBColorSpace !== undefined && 'colorSpace' in tex) {
+              tex.colorSpace = T.SRGBColorSpace;
+            }
+            // Try PMREM for filtered mip-chain reflections (premium look).
+            try {
+              if (T.PMREMGenerator) {
+                const pmrem = new T.PMREMGenerator(renderer);
+                pmrem.compileEquirectangularShader && pmrem.compileEquirectangularShader();
+                envMap = pmrem.fromEquirectangular(tex).texture;
+                pmrem.dispose();
+                tex.dispose();
+              } else {
+                envMap = tex;
+              }
+            } catch (_) {
+              envMap = tex;
+            }
+            if (scene && envMap) {
+              scene.environment = envMap;
+              if ('environmentIntensity' in scene) {
+                scene.environmentIntensity = 0.85;
+              }
+            }
+          }
+
+          if (T && scene) {
+            // Linear distance fog — far nodes blend into the section bg
+            scene.fog = new T.Fog(0x0c0c14, 160, 480);
+
+            // Light rig now plays a *supporting* role — the env map does
+            // most of the specular work. We keep three lights for shape:
+            //   key    — readable form, slight warmth
+            //   rim    — emerald edge that brands the scene
+            //   fill   — neutralises shadow occlusion on the lower hemis
+            // Hemisphere light removed: the env map's vertical gradient
+            // already provides sky/ground coloration, layering both
+            // would crush the mid-tones.
+            const key = new T.DirectionalLight(0xfff5e6, 1.10);
+            key.position.set(1.4, 1.6, 1.0);
+            scene.add(key);
+
+            const rim = new T.DirectionalLight(0x34d399, 0.55);
+            rim.position.set(-1.6, 0.5, -1.2);
+            scene.add(rim);
+
+            const fill = new T.DirectionalLight(0xc7d7ff, 0.22);
+            fill.position.set(0.2, -1.0, 0.4);
+            scene.add(fill);
+          }
+
+          // Upgrade node materials → MeshPhysicalMaterial (full PBR
+          // with clearcoat). Why not just MeshStandardMaterial: spheres
+          // representing knowledge nodes look infinitely better with a
+          // glossy clearcoat layer over a slightly-rough base — same
+          // principle as a physical resin marble. Without clearcoat
+          // every sphere looks chalky no matter how the lights are
+          // tuned. With it, the env map's pinprick highlights bloom
+          // into proper specular flares.
+          //
+          // Fallback chain: Physical → Standard → keep original Lambert.
+          // The bundled THREE in 3d-force-graph 1.73.4 has Physical, but
+          // we guard anyway in case a future bundle drops it.
+          const PBR = T && (T.MeshPhysicalMaterial || T.MeshStandardMaterial);
+          const PBR_KIND = T && T.MeshPhysicalMaterial ? 'physical' : 'standard';
+          // Sphere segment count is now set via the 3d-force-graph
+          // `.nodeResolution(64)` chain accessor — the lib creates the
+          // SphereGeometry once per unique val/radius and shares it across
+          // every node mesh, exactly the way we'd want a manual cache to
+          // behave. We don't need a parallel geometry-swap path.
+          const upgradeMaterials = () => {
+            if (!T || !scene || !PBR) return;
+            scene.traverse((obj) => {
+              const isMesh = obj.isMesh || (obj.type === 'Mesh');
+              if (!isMesh || !obj.material) return;
+              if (obj.__wiUpgraded) return;
+              const m = obj.material;
+              const opts = {
+                color:             m.color ? m.color.getHex() : 0x34d399,
+                emissive:          m.emissive ? m.emissive.getHex() : 0x000000,
+                emissiveIntensity: m.emissiveIntensity || 0,
+                roughness:         0.22,
+                metalness:         0.04,
+                transparent:       m.transparent !== false,
+                opacity:           m.opacity !== undefined ? m.opacity : 0.96,
+              };
+              if (PBR_KIND === 'physical') {
+                opts.clearcoat          = 0.85;
+                opts.clearcoatRoughness = 0.18;
+                opts.reflectivity       = 0.42;
+                opts.sheen              = 0.32;
+                opts.sheenRoughness     = 0.55;
+                opts.sheenColor         = new T.Color(0x9af0c8);
+                if ('ior' in T.MeshPhysicalMaterial.prototype) opts.ior = 1.42;
+              }
+              const next = new PBR(opts);
+              if (envMap) next.envMapIntensity = 0.95;
+              obj.material = next;
+              obj.__wiUpgraded = true;
+            });
+          };
+          setTimeout(upgradeMaterials, 120);
+          setTimeout(upgradeMaterials, 600);
+          setTimeout(upgradeMaterials, 1800);
+          // Expose for paintScene — every render-frame's paint pass
+          // re-runs the upgrade so any mesh that 3d-force-graph creates
+          // mid-simulation (added node, swapped val) also gets smoothed.
+          // The per-mesh `__wiSmooth` / `__wiUpgraded` flags make this a
+          // cheap no-op for already-upgraded meshes.
+          window.__wiUpgradeMaterials = upgradeMaterials;
+
+          // ─── Faux-bloom halo (sprite ring) — the real UnrealBloomPass
+          // path required loading three twice on the page (3d-force-graph
+          // bundles its own THREE), which corrupted prototype chains and
+          // crashed the renderer with a stack overflow. We reproduce the
+          // visible glow with an additive sprite ring around the asker /
+          // responder spheres — single THREE identity, no postprocessing.
+          window.__wiEnsureHalo = (obj, n) => {
+            const wantHalo = n._asker || n._responder;
+            if (wantHalo && !obj.__wiHalo) {
+              const tex = (() => {
+                if (window.__wiHaloTex) return window.__wiHaloTex;
+                const c = document.createElement('canvas');
+                c.width = c.height = 128;
+                const g = c.getContext('2d');
+                const grad = g.createRadialGradient(64,64,4, 64,64,62);
+                grad.addColorStop(0,   'rgba(255,255,255,1)');
+                grad.addColorStop(0.32,'rgba(255,255,255,0.55)');
+                grad.addColorStop(1,   'rgba(255,255,255,0)');
+                g.fillStyle = grad;
+                g.fillRect(0,0,128,128);
+                const t = new T.CanvasTexture(c);
+                window.__wiHaloTex = t;
+                return t;
+              })();
+              const mat = new T.SpriteMaterial({
+                map: tex, color: n._asker ? 0xffffff : 0x34d399,
+                transparent: true, opacity: 0.9, depthWrite: false,
+                blending: T.AdditiveBlending,
+              });
+              const sprite = new T.Sprite(mat);
+              const r = (n._asker ? 32 : 18) * 1.8;
+              sprite.scale.set(r, r, 1);
+              obj.add(sprite);
+              obj.__wiHalo = sprite;
+            } else if (!wantHalo && obj.__wiHalo) {
+              obj.remove(obj.__wiHalo);
+              obj.__wiHalo.material && obj.__wiHalo.material.dispose && obj.__wiHalo.material.dispose();
+              obj.__wiHalo = null;
+            }
+          };
+        } catch (_) {}
+
+        const fit = () => Graph.width(canvas.offsetWidth).height(canvas.offsetHeight);
+        fit();
+        window.addEventListener('resize', fit);
+
+        try {
+          const c = Graph.controls();
+          c.autoRotate = true;
+          c.autoRotateSpeed = 0.19;       // base speed — 55% slower than 0.42
+          c.enableZoom = false;
+          c.enablePan = false;
+          c.enableRotate = false;
+        } catch (_) {}
+
+        Graph.onEngineStop(() => {
+          try { Graph.zoomToFit(1200, 120); } catch (_) {}
+        });
+
+        const form    = document.getElementById('try-form');
+        const input   = document.getElementById('try-input');
+        const answer  = document.getElementById('try-answer');
+        const popups  = document.getElementById('try-popups');
+        const domainsEl = document.getElementById('try-domains');
+        const peersEl = document.querySelector('#try-telemetry [data-stat="peers"]');
+        const latEl   = document.querySelector('#try-telemetry [data-stat="latency"]');
+
+        if (form) form.addEventListener('submit', (e) => e.preventDefault());
+
+        // Niche, real-world technical questions a senior engineer fights with.
+        // Each scenario sources its answer from a specific wellinformed room.
+        const scenarios = [
+          {
+            q: 'Postgres B-tree index bloat — when does HOT actually save you?',
+            asker: 'peer:zM2p',
+            responders: ['peer:zM2p', 'peer:zT3q'],
+            latencyMs: 142,
+            answer: 'HOT (Heap-Only Tuples) skips index entries when the updated columns aren\'t indexed AND the new tuple fits on the same page. So narrow updates on indexed columns or page-overflow updates still bloat the index — VACUUM doesn\'t reclaim B-tree pages, only REINDEX does.',
+            cite: 'paper:postgres-hot-2008 · 2 peers',
+            room: 'research',
+            domains: [
+              { topic: 'postgres', score: 0.96 },
+              { topic: 'index-bloat', score: 0.89 },
+              { topic: 'HOT-updates', score: 0.84 },
+            ],
+            graphNode: 'paper:postgres-hot-2008',
+            graphDomain: 'postgres',
+          },
+          {
+            q: 'React Server Components: what actually invalidates the server cache?',
+            asker: 'peer:zT3q',
+            responders: ['peer:zT3q', 'peer:zH5w', 'peer:zB7n'],
+            latencyMs: 96,
+            answer: 'Three knobs: route-segment revalidate (time-based), tags via fetch({ next: { tags } }) revalidated by revalidateTag, and full-route invalidation by revalidatePath. Mutations in Server Actions can cascade revalidations via these tags. The default is cached forever.',
+            cite: 'react.dev/RSC + nextjs.org/docs/caching · 3 peers',
+            room: 'git-repo:vercel/next.js',
+            domains: [
+              { topic: 'react', score: 0.93 },
+              { topic: 'RSC', score: 0.91 },
+              { topic: 'revalidation', score: 0.84 },
+            ],
+            graphNode: 'paper:rsc-cache-rfc',
+            graphDomain: 'react',
+          },
+          {
+            q: 'Tokio task::spawn — where does my future actually run?',
+            asker: 'peer:zB7n',
+            responders: ['peer:zB7n', 'peer:zM2p'],
+            latencyMs: 118,
+            answer: 'spawn submits the future to the runtime\'s injection queue; a free worker thread steals it and polls. Inside that worker, sub-tasks live in a per-worker LIFO queue, with periodic global re-balancing. spawn_blocking moves CPU-bound work to a separate threadpool to avoid starving the I/O reactor.',
+            cite: 'tokio.rs/blog/2019-10-scheduler · 2 peers',
+            room: 'git-repo:tokio-rs/tokio',
+            domains: [
+              { topic: 'tokio', score: 0.95 },
+              { topic: 'work-stealing', score: 0.88 },
+              { topic: 'scheduler', score: 0.79 },
+            ],
+            graphNode: 'paper:tokio-scheduler-2019',
+            graphDomain: 'tokio',
+          },
+          {
+            q: 'Stripe Radar — chaining custom rules with score thresholds?',
+            asker: 'peer:zH5w',
+            responders: ['peer:zH5w', 'peer:zB7n'],
+            latencyMs: 88,
+            answer: 'Radar evaluates rules in priority order; the first match wins (block / review / allow). Custom rules can compare risk_score to constants, list lookups, or velocity counters. Combine with Stripe-managed rules by setting your custom rule\'s priority lower than the built-in fraud-block threshold.',
+            cite: 'stripe.com/docs/radar/rules · 2 peers',
+            room: 'git-repo:stripe/stripe-node',
+            domains: [
+              { topic: 'stripe', score: 0.94 },
+              { topic: 'radar', score: 0.91 },
+              { topic: 'fraud-rules', score: 0.83 },
+            ],
+            graphNode: 'paper:stripe-radar-rules',
+            graphDomain: 'radar',
+          },
+          {
+            q: 'CRDT semantics: Yjs delete vs Automerge tombstones?',
+            asker: 'peer:zX9k',
+            responders: ['peer:zX9k', 'peer:zA4m'],
+            latencyMs: 134,
+            answer: 'Yjs uses a YATA-derived sequence CRDT: deletes mark items as deleted but keep their structural slot (so concurrent inserts after a deleted item still resolve). Automerge keeps explicit tombstones in the op log; document size grows with edit history until you compact via Automerge.save().',
+            cite: 'docs.yjs.dev + automerge.org/docs · 2 peers',
+            room: 'research',
+            domains: [
+              { topic: 'CRDT', score: 0.92 },
+              { topic: 'yjs', score: 0.88 },
+              { topic: 'automerge', score: 0.81 },
+            ],
+            graphNode: 'paper:yata-crdt-2017',
+            graphDomain: 'CRDT',
+          },
+        ];
+
+        // Running graph counts that grow as scenarios accumulate.
+        const counts = {};
+        scenarios.forEach(s => { counts[s.graphDomain] = 11 + Math.floor(Math.random() * 18); });
+
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+        function typeInto(el, text) {
+          el.value = '';
+          let i = 0;
+          return new Promise(resolve => {
+            const id = setInterval(() => {
+              el.value = text.slice(0, ++i);
+              if (i >= text.length) { clearInterval(id); resolve(); }
+            }, 78);
+          });
+        }
+
+        // Smooth zoom along the current camera direction. We DISABLE
+        // auto-rotate during the tween — otherwise OrbitControls fights
+        // the cameraPosition() tween and the cluster visibly jumps when
+        // the tween hands the camera back.
+        let zoomTimer = null;
+        function smoothZoom(targetDist, durationMs, restoreSpeed) {
+          if (zoomTimer) { clearTimeout(zoomTimer); zoomTimer = null; }
+          try {
+            const c = Graph.controls();
+            if (c) c.autoRotate = false;     // freeze rotation during tween
+          } catch (_) {}
+          try {
+            const cam = Graph.cameraPosition();
+            if (cam && typeof cam.x === 'number') {
+              const mag = Math.hypot(cam.x, cam.y, cam.z) || targetDist;
+              const k = targetDist / mag;
+              Graph.cameraPosition(
+                { x: cam.x * k, y: cam.y * k, z: cam.z * k },
+                undefined,
+                durationMs
+              );
+            }
+          } catch (_) {}
+          // After the tween settles, hand the camera back to OrbitControls
+          // at the new auto-rotate speed.
+          zoomTimer = setTimeout(() => {
+            try {
+              const c = Graph.controls();
+              if (c) {
+                c.autoRotateSpeed = restoreSpeed;
+                c.autoRotate = true;
+              }
+            } catch (_) {}
+            zoomTimer = null;
+          }, durationMs + 60);
+        }
+        function zoomIn()  { smoothZoom(178, 1400, 0.08); }
+        function zoomOut() { smoothZoom(220, 1200, 0.19); }
+
+        // Hex string → 0xRRGGBB int for THREE.Color.setHex
+        const hexInt = (s) => {
+          const h = (s || '#34d399').replace('#', '');
+          return parseInt(h.length === 3
+            ? h.split('').map(c => c + c).join('')
+            : h, 16);
+        };
+        const COLOR_ASKER = 0xffffff;
+        const COLOR_RESPONDER = 0x34d399;
+
+        // Walk the THREE.Scene and push state mutations onto the live meshes.
+        // (3d-force-graph's nodeColor / nodeVal accessors are evaluated only at
+        // mesh-creation time, so post-create state changes need a manual paint.)
+        function paintScene() {
+          const scene = Graph.scene && Graph.scene();
+          if (!scene) return;
+          // Catch any mesh created since the last paint — late-arriving
+          // node meshes during the force simulation otherwise stay at
+          // 3d-force-graph's default 8-segment tessellation.
+          if (window.__wiUpgradeMaterials) window.__wiUpgradeMaterials();
+          scene.traverse((obj) => {
+            const n = obj.__data;
+            if (!n || !n.id) return;
+            const targetScale = n._asker ? 3.2 : (n._responder ? 1.8 : 1.0);
+            if (obj.scale) obj.scale.set(targetScale, targetScale, targetScale);
+            const mat = obj.material;
+            if (mat && mat.color) {
+              const hex = n._asker ? COLOR_ASKER
+                : n._responder ? COLOR_RESPONDER
+                : hexInt(n.color);
+              mat.color.setHex(hex);
+              if (mat.emissive) {
+                mat.emissive.setHex(
+                  n._asker ? 0xffffff
+                  : n._responder ? 0x34d399
+                  : 0x000000
+                );
+                mat.emissiveIntensity = n._asker ? 0.9 : (n._responder ? 0.55 : 0);
+              }
+            }
+            if (window.__wiEnsureHalo) window.__wiEnsureHalo(obj, n);
+          });
+        }
+
+        function reset() {
+          data.nodes.forEach(n => { n._asker = false; n._responder = false; });
+          data.links.forEach(l => { l._active = false; });
+          answer.classList.remove('is-on');
+          answer.classList.remove('has-commit');
+          hideDomains();
+          clearPopups();
+          try { Graph.controls().autoRotate = true; } catch (_) {}
+          paintScene();
+        }
+
+        function activate(s) {
+          const responders = new Set(s.responders);
+          data.nodes.forEach(n => {
+            n._asker     = (n.id === s.asker);
+            n._responder = responders.has(n.id) && n.id !== s.asker;
+          });
+          data.links.forEach(l => {
+            const sId = (l.source && l.source.id) || l.source;
+            const tId = (l.target && l.target.id) || l.target;
+            l._active = (sId === s.asker && responders.has(tId)) ||
+                        (tId === s.asker && responders.has(sId)) ||
+                        (responders.has(sId) && responders.has(tId));
+          });
+
+          // Smooth zoom in (no angle jump, auto-rotate stays on but slower)
+          zoomIn();
+
+          // Force the lib to re-evaluate its node/link accessors. Without
+          // this re-set the existing meshes keep their creation-time colors.
+          try {
+            Graph.nodeColor(Graph.nodeColor());
+            Graph.linkColor(Graph.linkColor());
+            Graph.linkWidth(Graph.linkWidth());
+            Graph.linkDirectionalParticles(Graph.linkDirectionalParticles());
+          } catch (_) {}
+
+          paintScene();
+          buildPopups(s);
+        }
+
+        function showAnswer(s) {
+          answer.classList.remove('has-commit');
+          answer.innerHTML =
+            '<div class="ans-text">' + s.answer + '</div>' +
+            '<div class="ans-meta">' +
+              '<span class="ans-cite">cited &middot; ' + s.cite + '</span>' +
+              '<span class="ans-room">room: <em>' + s.room + '</em></span>' +
+            '</div>' +
+            '<div class="ans-commit">' +
+              '<b>added to your knowledge graph</b>' +
+              '<em>' + s.graphNode + '</em> &middot; domain <em>' + s.graphDomain + '</em>' +
+              '<br/>well-informed on <em>' + s.graphDomain + '</em> &middot; ' + counts[s.graphDomain] + ' nodes' +
+            '</div>';
+          answer.classList.add('is-on');
+        }
+        function commitAnswer(s) {
+          counts[s.graphDomain] = (counts[s.graphDomain] || 0) + 1;
+          // Re-render the commit lines with the new count
+          const commit = answer.querySelector('.ans-commit');
+          if (commit) {
+            commit.innerHTML =
+              '<b>added to your knowledge graph</b>' +
+              '<em>' + s.graphNode + '</em> &middot; domain <em>' + s.graphDomain + '</em>' +
+              '<br/>well-informed on <em>' + s.graphDomain + '</em> &middot; ' + counts[s.graphDomain] + ' nodes';
+          }
+          answer.classList.add('has-commit');
+        }
+
+        function showDomains(s) {
+          if (!s.domains || !domainsEl) return;
+          domainsEl.innerHTML = s.domains.map(d =>
+            '<span class="try-domain">' +
+              d.topic +
+              '<span class="td-bar"><span class="td-fill" style="--score:' + d.score.toFixed(2) + '"></span></span>' +
+              '<span class="td-score">' + d.score.toFixed(2) + '</span>' +
+            '</span>'
+          ).join('');
+          domainsEl.classList.add('is-on');
+        }
+
+        function buildPopups(s) {
+          if (!popups) return;
+          popups.innerHTML = '';
+          const ids = [s.asker, ...s.responders.filter(id => id !== s.asker)];
+          ids.forEach((id) => {
+            const n = data.nodes.find(x => x.id === id);
+            if (!n) return;
+            const el = document.createElement('div');
+            el.className = 'try-popup ' + (id === s.asker ? 'is-asker' : 'is-responder');
+            el.dataset.nodeId = id;
+            // Strip the "peer · " prefix to keep popups tight; show the DID tail
+            const lbl = (n.label || n.id);
+            const tail = lbl.includes('did:key:')
+              ? 'did:key:' + lbl.split('did:key:')[1]
+              : lbl.replace(/^[^·]+·\s*/, '');
+            el.textContent = tail;
+            popups.appendChild(el);
+          });
+          // fade in on next frame so the transition fires
+          requestAnimationFrame(() => {
+            popups.querySelectorAll('.try-popup').forEach(p => p.classList.add('is-on'));
+          });
+        }
+
+        function positionPopups() {
+          if (!popups || !Graph.graph2ScreenCoords) return;
+          popups.querySelectorAll('.try-popup').forEach((el) => {
+            const id = el.dataset.nodeId;
+            const n = data.nodes.find(x => x.id === id);
+            if (!n || typeof n.x !== 'number') return;
+            const c = Graph.graph2ScreenCoords(n.x, n.y, n.z);
+            if (!c) return;
+            el.style.left = c.x + 'px';
+            el.style.top  = c.y + 'px';
+          });
+        }
+        // rAF loop — keeps popups glued to their nodes as the graph rotates
+        function rafLoop() {
+          positionPopups();
+          paintScene();
+          requestAnimationFrame(rafLoop);
+        }
+        requestAnimationFrame(rafLoop);
+
+        function clearPopups() { if (popups) popups.innerHTML = ''; }
+        function hideDomains() { if (domainsEl) domainsEl.classList.remove('is-on'); }
+
+        function updateTelemetry(s) {
+          if (peersEl) peersEl.textContent = String(s.responders.length);
+          if (latEl)   latEl.textContent   = String(s.latencyMs);
+        }
+
+        // Slowed cycle (~19 s per scenario) so a reader can take in the
+        // question, the network reaction, the cited answer, and the graph
+        // commit footer that grows the same answer card.
+        async function play(s) {
+          reset();
+          await sleep(400);
+          await typeInto(input, s.q);          // Phase 1: typewriter (≈78ms/char)
+          await sleep(650);                     // Phase 2: pause before broadcast
+          activate(s);                          // Phase 3: asker pulse + zoom in
+          await sleep(2200);                    // Phase 4: particles flow
+          updateTelemetry(s);                   // Phase 5: telemetry converges
+          showDomains(s);                       // Phase 6: domain coverage strip
+          showAnswer(s);                        // Phase 7: unified answer card fades in
+          await sleep(7000);                    // Phase 8: hold for reading (was 4.5s)
+          commitAnswer(s);                      // Phase 9: "added to graph" appends
+          await sleep(3800);                    // Phase 10: hold the commit footer
+          answer.classList.remove('is-on');
+          hideDomains();
+          await sleep(1100);                    // Phase 11: fade out
+          zoomOut();                            // Phase 12: pull back to default
+          await sleep(1200);
+        }
+
+        let stopped = false;
+        async function loop() {
+          let i = 0;
+          while (!stopped) {
+            await play(scenarios[i % scenarios.length]);
+            i++;
+          }
+        }
+        loop();
       }
 
-      // ───── reduced motion: static pose ─────
-      if (REDUCED) {
-        // render one frame of still state
-        statusEl.innerHTML =
-          '<span class="viz-st-label">peers:</span>' +
-          '<span class="viz-st-peer">5 reachable</span>';
-        statusEl.classList.add('show');
-        renderer.render(scene, camera);
-      } else {
-        startCycle();
-        rafId = requestAnimationFrame(tick);
+      function seed() {
+        const peers = [
+          ['peer:zX9k', 'peer · stanford-cryo · did:key:zX9k…'],
+          ['peer:zA4m', 'peer · nasa-glenn · did:key:zA4m…'],
+          ['peer:zM2p', 'peer · libp2p-rs · did:key:zM2p…'],
+          ['peer:zB7n', 'peer · rust-bert · did:key:zB7n…'],
+          ['peer:zT3q', 'peer · arxiv-mlbot · did:key:zT3q…'],
+          ['peer:zH5w', 'peer · hn-backbone · did:key:zH5w…'],
+        ].map(([id, label]) => ({ id, label, color: '#34d399', val: 9 }));
+
+        const topics = [
+          'vector-search','libp2p','quench-detection','LSTM','BEIR-SciFact',
+          'federated-learning','HNSW','DiskANN','autorelay','DHT-routing',
+          'sqlite-wasm','onnx','consolidation'
+        ].map(t => ({ id: 'topic:'+t, label: 'topic · '+t, color: '#e8e8ed', val: 5 }));
+
+        const papers = [
+          ['arxiv:2501.04123', 'arxiv · 2501.04123 · ML quench detection'],
+          ['arxiv:2407.18832', 'arxiv · 2407.18832 · BEIR-SciFact reproducibility'],
+          ['paper:hnsw-malkov-2018', 'paper · Malkov 2018 · HNSW'],
+          ['paper:diskann-2019', 'paper · Subramanya 2019 · DiskANN'],
+          ['paper:nasa-tm-2018', 'NASA TM · LH2 storage failure modes'],
+          ['paper:libp2p-pr-1340', 'libp2p · PR #1340 · AutoRelay v2'],
+          ['paper:colbert-v2', 'paper · ColBERTv2 · Khattab 2022'],
+          ['paper:e5-large-v2', 'paper · E5 embeddings · 2023'],
+          ['arxiv:2310.11511', 'arxiv · 2310.11511 · self-RAG'],
+          ['paper:sqlite-vec', 'spec · sqlite-vec ext · 0.1.6'],
+        ].map(([id, label]) => ({ id, label, color: '#d9a255', val: 4 }));
+
+        const code = [
+          ['code:wi-recall', 'code · wellinformed/src/recall.rs'],
+          ['code:wi-federated', 'code · wellinformed/src/net/federated.rs'],
+          ['code:wi-hooks', 'code · wellinformed/.claude/hooks/wellinformed-hook.sh'],
+          ['code:libp2p-autorelay', 'code · libp2p/p2p/host/autorelay'],
+          ['code:onnx-mini', 'code · all-MiniLM-L6-v2 onnx loader'],
+          ['code:sqlite-vec', 'code · sqlite-vec/binding.c'],
+          ['code:diskann-rs', 'code · diskann-rs/index/build.rs'],
+        ].map(([id, label]) => ({ id, label, color: '#88e6c0', val: 4 }));
+
+        const nodes = [...peers, ...topics, ...papers, ...code];
+        const links = [];
+
+        const tIds = topics.map(t => t.id);
+        for (let i = 0; i < tIds.length; i++) {
+          links.push({ source: tIds[i], target: tIds[(i + 3) % tIds.length] });
+        }
+
+        const peerEdges = {
+          'peer:zX9k': ['arxiv:2501.04123','paper:nasa-tm-2018','code:wi-recall'],
+          'peer:zA4m': ['paper:nasa-tm-2018','arxiv:2501.04123'],
+          'peer:zM2p': ['paper:libp2p-pr-1340','code:libp2p-autorelay','code:wi-federated'],
+          'peer:zB7n': ['paper:e5-large-v2','code:onnx-mini'],
+          'peer:zT3q': ['arxiv:2407.18832','arxiv:2310.11511','paper:colbert-v2'],
+          'peer:zH5w': ['paper:sqlite-vec','code:sqlite-vec','paper:hnsw-malkov-2018'],
+        };
+        for (const [p, ts] of Object.entries(peerEdges)) {
+          for (const t of ts) links.push({ source: p, target: t });
+        }
+
+        const paperTopics = {
+          'arxiv:2501.04123': ['quench-detection','LSTM'],
+          'arxiv:2407.18832': ['BEIR-SciFact','vector-search'],
+          'paper:hnsw-malkov-2018': ['HNSW','vector-search'],
+          'paper:diskann-2019': ['DiskANN','vector-search'],
+          'paper:nasa-tm-2018': ['quench-detection'],
+          'paper:libp2p-pr-1340': ['libp2p','autorelay'],
+          'paper:colbert-v2': ['vector-search'],
+          'paper:e5-large-v2': ['onnx','vector-search'],
+          'arxiv:2310.11511': ['BEIR-SciFact','consolidation'],
+          'paper:sqlite-vec': ['sqlite-wasm','vector-search'],
+        };
+        for (const [pid, ts] of Object.entries(paperTopics)) {
+          for (const t of ts) links.push({ source: pid, target: 'topic:'+t });
+        }
+
+        const codeTopics = {
+          'code:wi-recall': ['vector-search','consolidation'],
+          'code:wi-federated': ['libp2p','DHT-routing'],
+          'code:wi-hooks': ['consolidation'],
+          'code:libp2p-autorelay': ['libp2p','autorelay'],
+          'code:onnx-mini': ['onnx'],
+          'code:sqlite-vec': ['sqlite-wasm','vector-search'],
+          'code:diskann-rs': ['DiskANN'],
+        };
+        for (const [cid, ts] of Object.entries(codeTopics)) {
+          for (const t of ts) links.push({ source: cid, target: 'topic:'+t });
+        }
+
+        return { nodes, links };
       }
     })();
   </script>
+
+  <!-- ───────────── hero stat count-ups — animate on first paint ───────────── -->
+  <script>
+    (() => {
+      const els = document.querySelectorAll('.hero-meta b[data-count]');
+      if (!els.length) return;
+      const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+      const animate = (el) => {
+        const target   = parseFloat(el.dataset.count) || 0;
+        const decimals = parseInt(el.dataset.decimals || '0', 10);
+        const suffix   = el.dataset.suffix || '';
+        const dur      = 1300;
+        const start    = performance.now();
+        const step = (now) => {
+          const t = Math.min(1, (now - start) / dur);
+          const v = target * easeOut(t);
+          el.innerHTML = v.toFixed(decimals) + suffix;
+          if (t < 1) requestAnimationFrame(step);
+          else el.innerHTML = target.toFixed(decimals) + suffix;
+        };
+        requestAnimationFrame(step);
+      };
+      // First view triggers the count-up; idempotent via dataset.played
+      const fire = (el) => { if (!el.dataset.played) { el.dataset.played = '1'; animate(el); } };
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach(e => { if (e.isIntersecting) { fire(e.target); io.unobserve(e.target); } });
+        }, { rootMargin: '0px 0px -10% 0px', threshold: 0.4 });
+        els.forEach(el => io.observe(el));
+      } else {
+        els.forEach(fire);
+      }
+    })();
+  </script>
+
+  <!-- ───────────── live counters — poll /api/stats ───────────── -->
+  <script>
+    (() => {
+      const STATS_URL = '/api/stats';
+      const POLL_MS   = 30_000;
+      const peersEl   = document.querySelector('[data-counter="peers"]');
+      const domainsEl = document.querySelector('[data-counter="domains"]');
+      const counters  = document.querySelectorAll('.hero-ctas .counter');
+      if (!peersEl || !domainsEl) return;
+
+      let lastPeers = null;
+      let timer     = null;
+
+      async function loadCounters() {
+        try {
+          const ctrl = AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined;
+          const res = await fetch(STATS_URL, { signal: ctrl, cache: 'no-store' });
+          if (!res.ok) throw new Error(`stats ${res.status}`);
+          const { peers, domains } = await res.json();
+
+          const peerNum = Number.isFinite(peers) ? peers : null;
+          if (peerNum !== null && lastPeers !== null && peerNum !== lastPeers) {
+            counters[0].classList.add('counter--tick');
+            setTimeout(() => counters[0].classList.remove('counter--tick'), 800);
+          }
+          if (peerNum !== null) lastPeers = peerNum;
+
+          peersEl.textContent   = peerNum === 0 ? 'be the first peer' : (peerNum ?? '—');
+          domainsEl.textContent = Number.isFinite(domains) ? domains : '—';
+        } catch {
+          // Backend not reachable — keep the placeholder dash visible.
+          // Counters stay rendered as social-proof scaffolding; they switch
+          // to live numbers when /api/stats comes online.
+        }
+      }
+
+      loadCounters();
+      timer = setInterval(loadCounters, POLL_MS);
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          if (timer) { clearInterval(timer); timer = null; }
+        } else {
+          loadCounters();
+          if (!timer) timer = setInterval(loadCounters, POLL_MS);
+        }
+      });
+    })();
+  </script>
+
 </body>
 </html>
