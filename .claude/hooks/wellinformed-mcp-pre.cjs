@@ -44,14 +44,16 @@ const loadPeerLabels = () => {
   } catch { peerLabelsCache = {}; }
   return peerLabelsCache;
 };
+// Peer identity rendering. The github handle here is the user's
+// OAuth-verified github username (from `wellinformed login`), not a
+// repo path — peer identity is the parallel of a DID anchored in a
+// centrally-credible github account. Render as `@handle` (handle
+// form, not org/repo form) to keep the distinction clean.
 const formatPeer = (peerId) => {
   if (!peerId || peerId === 'local') return 'local';
   const labels = loadPeerLabels();
   const entry = labels[peerId];
-  if (entry?.github) {
-    const didShort = entry.did_short ? `:${entry.did_short}` : '';
-    return `github:${entry.github}${didShort}`;
-  }
+  if (entry?.github) return `@${entry.github}`;
   return `peer:${String(peerId).slice(0, 12)}`;
 };
 
@@ -139,13 +141,10 @@ const quickAsk = (query) => {
 const renderBanner = (query, peers_responded, peers_queried, took_ms, hits, satisfaction) => {
   const peerCount = peers_queried > 0 ? `${peers_queried} peers available` : `local-only`;
   const domains = Array.from(new Set(hits.map((h) => h?.room).filter(Boolean))).join(', ') || 'local';
-  const topPeer = hits[0]?.source_peer && hits[0].source_peer !== 'local'
-    ? `, top ${formatPeer(hits[0].source_peer)}`
-    : '';
   const truncQ = query.length > 64 ? query.slice(0, 61) + '...' : query;
   const lat = took_ms != null ? ` | ${took_ms} ms` : '';
   const conf = satisfaction != null ? ` | confidence ${satisfaction.toFixed(2)}` : '';
-  return `*Getting Informed* — "${truncQ}" | ${peerCount} | domain ${domains} | ${hits.length} hits${topPeer}${conf}${lat}`;
+  return `*Getting Informed* — "${truncQ}" | ${peerCount} | domain ${domains} | ${hits.length} hits${conf}${lat}`;
 };
 
 const emit = (text) => {
