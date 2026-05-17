@@ -262,14 +262,18 @@ const renderHits = (result, query, terminal, adjusted) => {
   return `${head}\n${body}${closer}`;
 };
 
-const logPrefetch = (query, result) => safe(() => {
+const logPrefetch = (query, result, terminal = null, boostedSatisfaction = null) => safe(() => {
   if (!existsSync(HOME)) mkdirSync(HOME, { recursive: true });
   appendFileSync(PROMPT_LOG, JSON.stringify({
     ts: new Date().toISOString(),
     query: query.slice(0, MAX_PROMPT_LEN),
     decision: result?.decision ?? null,
     satisfaction: result?.satisfaction ?? null,
-    hits: result?.hits.length ?? 0,
+    boosted_satisfaction: boostedSatisfaction,
+    terminal,
+    peers_responded: result?.peers_responded ?? 0,
+    peers_queried: result?.peers_queried ?? 0,
+    hits: result?.hits?.length ?? 0,
   }) + '\n');
 });
 
@@ -390,7 +394,11 @@ if (verdict.startsWith('skip-')) {
 const truncated = prompt.length > MAX_PROMPT_LEN ? prompt.slice(0, MAX_PROMPT_LEN) : prompt;
 const result = prefetch(truncated);
 if (!result) process.exit(0);
-logPrefetch(truncated, result);
+// NOTE: logPrefetch is now called near the bottom of the file with
+// terminal flag included so the metrics CLI can compute bypass rates
+// against ACTUAL terminal verdicts, not just hook fires. Early-exit
+// paths below land before terminal is computed and skip logging —
+// those represent "hook ran but didn't surface a contract."
 
 if (result.hits.length === 0) process.exit(0);
 // Surface peer-attributed hits unconditionally — even a mid-satisfaction
@@ -531,6 +539,11 @@ const sysMsg = [
 
 const renderedContext = renderHits(result, truncated, terminal, adjustedSatisfaction);
 writePrefetchCache(truncated, renderedContext, sysMsg, terminal);
+// Log the verdict with terminal + boosted satisfaction so
+// `wellinformed metrics bypass` can compute bypass rates
+// against ACTUAL terminal verdicts.
+logPrefetch(truncated, result, terminal, adjustedSatisfaction);
+
 // The banner is intentionally NOT emitted as systemMessage from
 // here. Claude Code's TUI prepends "UserPromptSubmit says:" to any
 // systemMessage, which makes the rich block look wrapped. Instead,

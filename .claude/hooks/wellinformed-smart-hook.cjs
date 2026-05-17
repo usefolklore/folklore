@@ -189,7 +189,9 @@ const renderHits = (hits, query, peersMeta) => {
 // federation status stays visible while Claude works through tools.
 const CACHE_PATH = join(HOME, 'prefetch-cache.jsonl');
 const CACHE_MAX_AGE_MS = 90_000;
-const readFreshCacheBanner = () => {
+const BYPASS_LOG = join(HOME, 'bypass-log.jsonl');
+
+const readFreshCacheEntry = () => {
   try {
     if (!existsSync(CACHE_PATH)) return null;
     const lines = readFileSync(CACHE_PATH, 'utf8').split('\n').filter(Boolean);
@@ -197,8 +199,32 @@ const readFreshCacheBanner = () => {
     const entry = JSON.parse(lines[lines.length - 1]);
     const ageMs = Date.now() - Date.parse(entry.ts);
     if (!Number.isFinite(ageMs) || ageMs > CACHE_MAX_AGE_MS) return null;
-    return entry.system_message ?? null;
+    return entry;
   } catch { return null; }
+};
+
+// Bypass measurement — every outbound tool call after a terminal
+// verdict gets logged here, regardless of whether deny-on-terminal
+// is active. Lets us compute the bypass rate over time:
+//   tools-attempted-after-terminal / terminal-verdicts-issued
+// Anything > 0 with deny-on-terminal active means the harness is
+// honouring our deny but the model still tries (acceptable); > 0
+// without deny means soft persuasion isn't working (tune the contract).
+const logBypassAttempt = (toolName, query, cachedEntry) => {
+  try {
+    if (!existsSync(HOME)) mkdirSync(HOME, { recursive: true });
+    const entry = JSON.stringify({
+      ts: new Date().toISOString(),
+      tool: toolName,
+      query: String(query ?? '').slice(0, 200),
+      terminal_query: cachedEntry.query,
+      satisfaction: cachedEntry.satisfaction ?? null,
+      peers_responded: cachedEntry.peers_responded ?? 0,
+      peers_queried: cachedEntry.peers_queried ?? 0,
+      denied: process.env.WELLINFORMED_DENY_ON_TERMINAL === '1',
+    });
+    appendFileSync(BYPASS_LOG, entry + '\n');
+  } catch { /* never block the tool over a logging miss */ }
 };
 
 const main = () => {
@@ -209,15 +235,35 @@ const main = () => {
   const ti = payload.tool_input ?? {};
   const query = queryFromInput(toolName, ti).trim();
 
-  // Cache-fast path: when the UserPromptSubmit hook just ran the
-  // federated prefetch for the user's prompt, surface that banner
-  // here. Lands as a clean <system-reminder> block with no wrapper
-  // prefix (unlike systemMessage from UserPromptSubmit, which gets
-  // "UserPromptSubmit says:" prepended by the TUI).
-  const cachedBanner = readFreshCacheBanner();
-  if (cachedBanner) {
-    emit(cachedBanner);
-    process.exit(0);
+  // Cache-fast path: surface the prompt-submit hook's banner here
+  // (PreToolUse renders cleanly as <system-reminder>, no wrapper).
+  // ALSO: if the cached verdict is terminal AND this tool is an
+  // outbound knowledge-grabber (Glob/Grep/Read/WebSearch/WebFetch),
+  // log the call as a potential bypass + optionally DENY it via
+  // permissionDecision. The measurement is enabled by default; the
+  // hard deny is gated on WELLINFORMED_DENY_ON_TERMINAL=1 so it
+  // doesn't surprise users who haven't opted in.
+  const cached = readFreshCacheEntry();
+  if (cached) {
+    const isTerminal = cached.terminal === true;
+    const isOutbound = ['Glob','Grep','Read','WebSearch','WebFetch'].includes(toolName);
+    if (isTerminal && isOutbound) {
+      logBypassAttempt(toolName, query, cached);
+      if (process.env.WELLINFORMED_DENY_ON_TERMINAL === '1') {
+        emit(
+          cached.system_message ?? 'wellinformed terminal: answer from indexed context above.',
+          {
+            permissionDecision: 'deny',
+            permissionDecisionReason: `wellinformed terminal verdict (satisfaction ${(cached.satisfaction ?? 0).toFixed(2)}, ${cached.peers_responded ?? 0}/${cached.peers_queried ?? 0} peers). Answer from the indexed context block. Set WELLINFORMED_DENY_ON_TERMINAL=0 to disable hard-deny.`,
+          },
+        );
+        process.exit(0);
+      }
+    }
+    if (cached.system_message) {
+      emit(cached.system_message);
+      process.exit(0);
+    }
   }
 
   if (!query || query.length < 3) {
