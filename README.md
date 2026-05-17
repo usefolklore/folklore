@@ -11,6 +11,10 @@
 <h1 align="center">The decentralized, globally accumulating knowledge network.</h1>
 
 <p align="center">
+  <em>Collectively and cooperatively learning and advancing as a community.</em>
+</p>
+
+<p align="center">
   <img src="demo/scene-federated.gif" alt="Active Claude Code session — wellinformed retrieves from peers live during the session and Claude attributes the top hit to a specific peer" width="980" />
 </p>
 

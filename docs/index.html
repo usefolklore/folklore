@@ -334,6 +334,16 @@
       box-shadow: 0 0 0 0 rgba(52,211,153,0.55);
       animation: navDotBreathe 2.6s ease-in-out infinite;
     }
+    .hero-tagline {
+      font-size: clamp(1rem, 1.25vw, 1.15rem);
+      font-style: italic;
+      color: var(--ink-2, var(--ink, #ccc));
+      max-width: 60ch;
+      line-height: 1.45;
+      margin: 0.6rem 0 1.2rem 0;
+      letter-spacing: -0.003em;
+      opacity: 0.85;
+    }
     .hero-claim {
       font-size: clamp(1.1rem, 1.5vw, 1.32rem);
       font-weight: 600;
@@ -1986,6 +1996,10 @@
           <h1>
             The globally accumulating <span class="accent">knowledge network</span>.
           </h1>
+
+          <p class="hero-tagline">
+            Collectively and cooperatively learning and advancing as a community.
+          </p>
 
           <p class="hero-claim">
             Deep research in 11&nbsp;ms. Cited. Zero tokens.
