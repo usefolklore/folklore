@@ -118,6 +118,43 @@ function getLastTrigger() {
   return null;
 }
 
+function getLastFederation() {
+  // Reads ~/.wellinformed/prefetch-cache.jsonl — written by the
+  // UserPromptSubmit + mcp-pre hooks every time wellinformed
+  // federates. Shows the latest verdict in the status bar
+  // persistently — the watcher can always see what wellinformed
+  // last reported, even when Claude Code's TUI folds the hook's
+  // additionalContext into a (ctrl+o to expand) collapse.
+  //
+  // Returned object: { ageMs, peers_responded, peers_queried,
+  //   satisfaction, terminal, query }
+  const cachePath = path.join(HOME, 'prefetch-cache.jsonl');
+  if (!fs.existsSync(cachePath)) return null;
+  try {
+    const raw = fs.readFileSync(cachePath, 'utf8');
+    const lines = raw.split('\n').filter(Boolean);
+    if (lines.length === 0) return null;
+    const entry = JSON.parse(lines[lines.length - 1]);
+    const ts = Date.parse(entry.ts);
+    if (!Number.isFinite(ts)) return null;
+    return {
+      ageMs: Date.now() - ts,
+      peers_responded: entry.peers_responded ?? 0,
+      peers_queried: entry.peers_queried ?? 0,
+      satisfaction: entry.satisfaction ?? null,
+      terminal: entry.terminal === true,
+      query: entry.query ?? '',
+    };
+  } catch { return null; }
+}
+
+function formatAge(ms) {
+  if (ms < 1000) return 'just now';
+  if (ms < 60_000) return Math.floor(ms / 1000) + 's ago';
+  if (ms < 3_600_000) return Math.floor(ms / 60_000) + 'm ago';
+  return Math.floor(ms / 3_600_000) + 'h ago';
+}
+
 function getNodeKindBreakdown(graphNodes) {
   const kinds = { code: 0, external: 0, dep: 0, git: 0 };
   if (!Array.isArray(graphNodes)) return kinds;
@@ -172,7 +209,25 @@ function main() {
   parts.push(`🤖 ${daemonStr}${triggerStr}`);
 
   // MCP
-  parts.push(`${c.brightPurple}MCP${c.reset} ${c.dim}11 tools${c.reset}`);
+  parts.push(`${c.brightPurple}MCP${c.reset} ${c.dim}23 tools${c.reset}`);
+
+  // Federation status — the persistent "Getting Informed" surface.
+  // Always renders when there's a recent prefetch-cache entry (under
+  // 5 min old); falls off after that to avoid stale banners.
+  const fed = getLastFederation();
+  if (fed && fed.ageMs < 5 * 60_000) {
+    const peerStr = fed.peers_queried > 0
+      ? `${c.brightCyan}${fed.peers_responded}/${fed.peers_queried}${c.reset} peers`
+      : `${c.dim}local-only${c.reset}`;
+    const confStr = fed.satisfaction != null
+      ? ` ${c.dim}conf${c.reset} ${(fed.terminal ? c.brightGreen : c.yellow)}${fed.satisfaction.toFixed(2)}${c.reset}`
+      : '';
+    const qStr = fed.query
+      ? ` ${c.dim}q${c.reset} "${fed.query.length > 40 ? fed.query.slice(0, 37) + '…' : fed.query}"`
+      : '';
+    const ageStr = ` ${c.dim}${formatAge(fed.ageMs)}${c.reset}`;
+    parts.push(`${c.brightPurple}⌐${c.reset} ${peerStr}${confStr}${qStr}${ageStr}`);
+  }
 
   // Join with separators
   const line = parts.join(`  ${c.dim}│${c.reset}  `);
