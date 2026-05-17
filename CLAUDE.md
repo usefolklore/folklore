@@ -248,17 +248,74 @@ npx @claude-flow/cli@latest doctor --fix
 <!-- wellinformed:start -->
 
 # wellinformed
-- **wellinformed** (`.claude/skills/wellinformed/SKILL.md`) — knowledge graph research skill. Trigger: `/wellinformed`
-When the user types `/wellinformed`, or asks about research, sources, rooms, tunnels, or their knowledge graph, invoke the Skill tool with `skill: "wellinformed"` before doing anything else.
+wellinformed is a knowledge-graph-first research layer with P2P
+federation. A PreToolUse hook prefetches the graph before
+Glob/Grep/Read/WebSearch/WebFetch and injects top matches into your
+context. A PostToolUse hook auto-saves WebSearch / WebFetch results to
+the system-managed `research` room so the graph absorbs everything
+you learn from the web.
 
-Rules:
-1. Use the wellinformed MCP tools (`search`, `ask`, `get_node`, `get_neighbors`) BEFORE searching raw files
-2. ALWAYS narrate operations with visible progress (banners, per-source status, summaries) — never silently call MCP tools
-3. The knowledge graph contains indexed ArXiv papers, HN stories, RSS posts, GitHub Trending repos, your codebase, dependencies, and git history
-4. `search` takes a query string and optional room filter — use it like a research database
-5. `find_tunnels` surfaces surprising connections across research domains
-6. `trigger_room` refreshes the data if the user asks for latest research
-7. `discover_loop` recursively expands sources from indexed content keywords
-8. After any operation, show the current graph state (nodes, edges, vectors, sources)
+## System rooms (always-on, P2P-shared, auto-populated)
+
+Two canonical rooms every wellinformed peer advertises out of the box:
+
+- **`toolshed`** — codebase, skills, MCP tools, deps, git history.
+  "What can this peer do." Stale-after: 30 days.
+- **`research`** — arxiv, hn, rss, web searches, web fetches.
+  "What has this peer recently read." Stale-after: 7 days.
+
+Membership is virtual — derived from each node's `source_uri` scheme,
+not from its `room` field. You don't need to set the room when you
+`wellinformed save`: a URL-sourced save lands in `research`
+automatically; a codebase save lands in `toolshed`. The system rooms
+are always present in shared-rooms.json and cannot be unshared.
+
+Every other room is user-negotiable — opt-in via the share TUI.
+
+## Freshness rule (data aging)
+
+Every graph hit returned by `ask --json` and the prefetch hook carries
+`age_days` and `fetched_at`. The smart-hook render shows it inline:
+`label [room, 3d] d=0.82`. When choosing whether to trust a cache
+hit vs re-fetch:
+
+- If the hit is younger than the room's stale-after window, trust the
+  cache. (research: <7d, toolshed: <30d.)
+- If the hit is older, prefer a fresh pull — `mcp__wellinformed__trigger_room`
+  or the original WebFetch / WebSearch — and let the auto-save hook put
+  the newer version back into the graph.
+- If a hit has no `fetched_at` at all, treat it as stale of unknown age.
+
+## When to invoke wellinformed
+
+**For research-style questions where the user benefits from seeing
+peer attribution live (the WebFetch-style real-time display):**
+prefer `Bash(wellinformed ask --peers "<query>" --k 5)` over the
+MCP tools. The CLI prints a rich telemetry block as it runs —
+`─── wellinformed peer pull ───` with peer count, latency, hits,
+satisfaction, decision — and Claude Code renders Bash output inline
+in real time, not folded behind `(ctrl+o to expand)`. The MCP tools
+are silent: Claude sees their response but the user only sees
+"Called wellinformed".
+
+Concretely:
+- **Visible federation needed** (the user is watching, the demo is
+  recording, the question is research): `Bash(wellinformed ask
+  --peers "..." --k 5)`. Output renders live.
+- **Background reasoning only** (internal step, no need for the user
+  to see it): use the MCP tools (`mcp__wellinformed__search`,
+  `mcp__wellinformed__ask`, etc.).
+- Either way, the prompt-submit hook has ALREADY federated and
+  pre-loaded the agent contract — both paths are zero-extra-latency
+  for the first call.
+
+Other rules:
+
+1. `search` / `ask` take a query string and optional room filter.
+2. `find_tunnels` surfaces surprising connections across domains.
+3. After reasoning through an external result, use
+   `wellinformed save --type synthesis --room <room>` to file the
+   distilled insight alongside the raw source node the auto-save hook
+   already captured.
 
 <!-- wellinformed:end -->

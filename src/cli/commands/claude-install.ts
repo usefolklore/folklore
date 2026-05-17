@@ -182,12 +182,32 @@ hit vs re-fetch:
 
 ## When to invoke wellinformed
 
-1. Use the wellinformed MCP tools (\`search\`, \`ask\`, \`get_node\`,
-   \`get_neighbors\`) BEFORE outbound lookups on any research,
-   architecture, or "what did I read about X" question.
-2. \`search\` / \`ask\` take a query string and optional room filter.
-3. \`find_tunnels\` surfaces surprising connections across domains.
-4. After reasoning through an external result, use
+**For research-style questions where the user benefits from seeing
+peer attribution live (the WebFetch-style real-time display):**
+prefer \`Bash(wellinformed ask --peers "<query>" --k 5)\` over the
+MCP tools. The CLI prints a rich telemetry block as it runs —
+\`─── wellinformed peer pull ───\` with peer count, latency, hits,
+satisfaction, decision — and Claude Code renders Bash output inline
+in real time, not folded behind \`(ctrl+o to expand)\`. The MCP
+tools are silent: Claude sees their response but the user only sees
+"Called wellinformed".
+
+Concretely:
+- **Visible federation needed** (the user is watching, the demo is
+  recording, the question is research):
+  \`Bash(wellinformed ask --peers "..." --k 5)\`. Output renders live.
+- **Background reasoning only** (internal step, no need for the user
+  to see it): use the MCP tools (\`mcp__wellinformed__search\`,
+  \`mcp__wellinformed__ask\`, etc.).
+- Either way, the prompt-submit hook has ALREADY federated and
+  pre-loaded the agent contract — both paths are zero-extra-latency
+  for the first call.
+
+Other rules:
+
+1. \`search\` / \`ask\` take a query string and optional room filter.
+2. \`find_tunnels\` surfaces surprising connections across domains.
+3. After reasoning through an external result, use
    \`wellinformed save --type synthesis --room <room>\` to file the
    distilled insight alongside the raw source node the auto-save hook
    already captured.
