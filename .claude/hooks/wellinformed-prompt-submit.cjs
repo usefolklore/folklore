@@ -419,6 +419,14 @@ const PREFETCH_CACHE = join(HOME, 'prefetch-cache.jsonl');
 const CACHE_KEEP_LAST = 200;
 const writePrefetchCache = (query, ctx, sysMsg, terminal) => safe(() => {
   if (!existsSync(HOME)) mkdirSync(HOME, { recursive: true });
+  // Extra fields for the statusline panel: took_ms (federation
+  // latency) + top_peer (the @handle / peer-id at rank 1, when
+  // peer-attributed). Both pulled from result so the statusline
+  // doesn't have to re-parse system_message.
+  const topHit = result.hits?.[0];
+  const top_peer = topHit?.source_peer && topHit.source_peer !== 'local'
+    ? topHit.source_peer
+    : null;
   const entry = JSON.stringify({
     ts: new Date().toISOString(),
     query,
@@ -429,6 +437,8 @@ const writePrefetchCache = (query, ctx, sysMsg, terminal) => safe(() => {
     decision: result.decision,
     peers_responded: result.peers_responded,
     peers_queried: result.peers_queried,
+    took_ms: result.took_ms ?? null,
+    top_peer,
   });
   // Atomic-ish append. Trim old entries when file gets large
   // (keep last CACHE_KEEP_LAST lines) to bound disk.

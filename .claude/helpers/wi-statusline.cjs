@@ -144,8 +144,27 @@ function getLastFederation() {
       satisfaction: entry.satisfaction ?? null,
       terminal: entry.terminal === true,
       query: entry.query ?? '',
+      took_ms: entry.took_ms ?? null,
+      decision: entry.decision ?? null,
+      top_peer: entry.top_peer ?? null,
     };
   } catch { return null; }
+}
+
+// Resolve a peer-id → @handle via peer-labels.json (same format
+// as the prompt-submit hook). Falls back to a short peer-id slice.
+let peerLabelsCache = null;
+function formatPeerForStatusline(peerId) {
+  if (!peerId) return null;
+  if (peerLabelsCache === null) {
+    try {
+      const raw = fs.readFileSync(path.join(HOME, 'peer-labels.json'), 'utf8');
+      peerLabelsCache = JSON.parse(raw)?.peers ?? {};
+    } catch { peerLabelsCache = {}; }
+  }
+  const entry = peerLabelsCache[peerId];
+  if (entry?.github) return `@${entry.github}`;
+  return `peer:${String(peerId).slice(0, 8)}`;
 }
 
 function formatAge(ms) {
@@ -222,11 +241,21 @@ function main() {
     const confStr = fed.satisfaction != null
       ? ` ${c.dim}conf${c.reset} ${(fed.terminal ? c.brightGreen : c.yellow)}${fed.satisfaction.toFixed(2)}${c.reset}`
       : '';
+    const latStr = fed.took_ms != null
+      ? ` ${c.dim}${fed.took_ms}ms${c.reset}`
+      : '';
+    const decStr = fed.decision
+      ? ` ${c.dim}→${c.reset} ${(fed.terminal ? c.brightGreen : c.yellow)}${fed.decision}${c.reset}`
+      : '';
+    const topPeerLabel = formatPeerForStatusline(fed.top_peer);
+    const topStr = topPeerLabel
+      ? ` ${c.dim}top${c.reset} ${c.brightPurple}${topPeerLabel}${c.reset}`
+      : '';
     const qStr = fed.query
-      ? ` ${c.dim}q${c.reset} "${fed.query.length > 40 ? fed.query.slice(0, 37) + '…' : fed.query}"`
+      ? ` ${c.dim}q${c.reset} "${fed.query.length > 32 ? fed.query.slice(0, 29) + '…' : fed.query}"`
       : '';
     const ageStr = ` ${c.dim}${formatAge(fed.ageMs)}${c.reset}`;
-    parts.push(`${c.brightPurple}⌐${c.reset} ${peerStr}${confStr}${qStr}${ageStr}`);
+    parts.push(`${c.brightPurple}⌐${c.reset} ${peerStr}${confStr}${latStr}${decStr}${topStr}${qStr}${ageStr}`);
   }
 
   // Join with separators
