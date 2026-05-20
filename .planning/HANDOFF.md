@@ -1,262 +1,214 @@
-# Session Handoff — v2.1 Path B (Rust retrieval hot path)
+# Session Handoff — Phase 23.7 / Hetzner OpenClaw
 
-**Drafted:** 2026-04-14 → 15 (overnight session)
-**Session span:** ~12-hour work session covering v2.0 milestone close, 9-agent audit synthesis, and v2.1 Phase 24-29 execution
-**Commits this session:** 21 on `main`, no pushes (user policy: commits only, no git push)
-**Last commit:** `6b5d7e1 bench: Phase 25 FULL gate result — bge-base SciFact 75.22% via Rust embedder`
-
----
-
-## 1. What was accomplished this session
-
-### v2.0 milestone close (earlier in session)
-- Honest 4-wave SOTA benchmark story for v2.0 shipped (`b893004`)
-- v2.0 milestone block added to `MILESTONES.md` (`0817df5`)
-- v2.1 candidates doc drafted with 4 paths and a recommendation (`1467085`)
-- Candidate A re-scoped to 3 phases after code call-site survey (`89ac26a`)
-
-### Audit synthesis (9 independent perspectives)
-- 3 earlier expert audits ran inline in conversation: system architect, data scientist, sacred-geometry mathematician
-- 6 skill-based audits written to `.planning/audits/`: S2 geometry, AI solution architect, enterprise architect, senior data scientist, data researcher, senior data engineer
-- All 9 consolidated into `.planning/V2.1-SYNTHESIS.md` (`e1d1c53`) with Path A / Path B / Path C options and Path B recommendation
-
-### Phase 21 bench-truth fixes (earlier in session, committed via `846262d` + `b6db6f2`)
-- BM25 sanitizer: quoted-OR → Anserini-style bag-of-words with Lucene stopwords and `bm25(0.9, 0.4)`
-- Graded NDCG: `rel.has(id) ? 1 : 0` → `rel.get(id) ?? 0`
-- Paired-bootstrap comparator (`scripts/bench-compare.mjs`)
-- Query-length gate added, then REMOVED (data-researcher finding: gate was the real ArguAna killer, not BM25)
-
-### Phase 22 embedder hardening (via `3770db4`)
-- `XenovaOptions.maxLength` (default 8192 for nomic context)
-- `XenovaOptions.pooling` ('mean' | 'cls' | 'last' — BGE requires cls)
-- `XenovaOptions.quantized` (default `false` — Xenova's 2.x default of int8 silently degrades retrieval ~10-15%)
-
-### Phase 23 pipeline unification (`36c1640`)
-- `src/domain/vectors.ts`: added `sanitizeForFts5`, `rrfFuse`, `HybridConfig`, `DEFAULT_HYBRID_CONFIG`, `LUCENE_STOPWORDS`
-- `src/infrastructure/vector-index.ts`: `VectorIndex` port gains `searchHybrid` and `searchByRoomHybrid`. Schema adds `fts_docs` FTS5 virtual table + `raw_text` column to `vec_meta`. Backward-compat migration via ALTER TABLE + CREATE VIRTUAL TABLE IF NOT EXISTS on open.
-- `src/application/use-cases.ts`: `indexNode` passes `raw_text` through, `searchGlobal` and `searchByRoom` now call hybrid variants internally.
-- `tests/bench-real.test.ts`: retrieval regression bar tightened from `>= 0` to `MRR >= 0.62`, `NDCG@5 >= 0.60`, `Recall@5 >= 0.55`, `Precision@5 >= 0.25`.
-- 313/313 tests pass post-refactor.
-
-### 🏆 The Big Finding (middle of session)
-**`Xenova/bge-base-en-v1.5` is a defective ONNX port** — measured -11.4 NDCG@10 on BEIR SciFact vs the published BAAI ceiling. Pooling fixes, quantization fixes, and max_length fixes all failed to move the number. Rust `fastembed-rs` (which downloads Qdrant-curated ONNX weights) matches published at 74.70% — a +11.41 NDCG gap driven by weight quality, not pipeline code. Committed as `9c6e00f`.
-
-Scope of the defect:
-- `Xenova/bge-base-en-v1.5`: **−11.4 NDCG** (defective)
-- `Xenova/nomic-embed-text-v1.5`: −0.4 NDCG (correct port)
-- `Xenova/all-MiniLM-L6-v2`: matches reference (correct port)
-
-Only bge-base is broken.
-
-### Phase 24 — Rust embed_server (`3d35123`)
-- New Cargo crate `wellinformed-rs/` (DDD layout, clippy pedantic `-D warnings` clean)
-- Binary: `wellinformed-rs/src/bin/embed_server.rs` — stdio JSON-RPC, lazy-loaded encoder registry
-- Ops: `embed`, `ping`, `shutdown`
-- TS adapter: `rustSubprocessEmbedder` in `src/infrastructure/embedders.ts` — single-flight FIFO request queue, lazy subprocess startup, Result monad error propagation
-- End-to-end smoke test: single embed + batch both work, byte-exact match with Rust-native CLI
-
-### Phase 25 — runtime wiring + gate bench (`4ddf3fb`)
-- `src/cli/runtime.ts`: `buildEmbedder(modelCache)` factory selects backend via `WELLINFORMED_EMBEDDER_BACKEND = 'xenova' | 'rust'` env var
-- Model/dim/path via `WELLINFORMED_EMBEDDER_MODEL` and `WELLINFORMED_RUST_BIN` env vars
-- Default stays `xenova` (backward compat — no user sees a change)
-- `scripts/bench-beir-rust.mjs`: BEIR runner that uses `rustSubprocessEmbedder` + production `openSqliteVectorIndex.searchHybrid`
-
-**Phase 25 gate results (committed in `6b5d7e1`):**
-
-| Pipeline | SciFact NDCG@10 | vs Published 74.04% |
-|----------|----------------|----------------------|
-| **TS prod searchHybrid × Rust bge-base** | **75.22%** | **+1.18** |
-| Rust-native dense-only (fastembed) | 74.70 | +0.66 |
-| Published BAAI bge-base (MTEB) | 74.04 | baseline |
-| TS Xenova bge-base (defective) | 63.29 | −10.75 |
-| TS nomic Phase 21 hybrid (prior best) | 72.90 | −1.14 |
-
-- **Delta over defective Xenova**: +11.93 NDCG
-- **Delta over prior best TS number**: +3.20 NDCG
-- Latency: p50 = 11 ms, p95 = 15 ms
-- Indexing: 3.4 docs/sec (Rust fp32 bge-base cost)
-- Recall@10: 87.86% (matches published 87.42% within 0.44)
-
-Also measured: TS prod searchHybrid × Rust MiniLM → 72.02% on SciFact (+6.75 over Rust-native dense-only, confirming hybrid lift composes cleanly through the subprocess embedder).
-
-### Phase 27+28 — RNG tunnels + pilot-centroid routing (`03e2956`)
-- `wellinformed-rs/src/domain/tunnel_graph.rs`: new pure domain module implementing the Relative Neighborhood Graph (mathematician Proposal B). Replaces `findTunnels` O(n²) with O(n × k² × d) via rayon-parallel brute-force kNN + Jaromczyk-Toussaint RNG test. Tunnels become structural cross-color Delaunay-approx edges, sorted by ascending distance.
-- `wellinformed-rs/src/domain/room_routing.rs`: new pure domain module with `compute_centroids` + `route_to_rooms`. Implements RouterRetriever-style (AAAI 2025, arXiv:2409.02685) pilot-centroid routing. Pure fold-and-normalize.
-- `embed_server` protocol gains `find_tunnels` and `compute_centroids` ops — both stateless one-shot requests where the client uploads the labeled vector set per call.
-- `src/infrastructure/rust-retrieval.ts`: new TS adapter `spawnRustRetrievalClient` — same subprocess management pattern as Phase 24, exposing `findTunnels` + `computeCentroids` via neverthrow Result.
-
-**Feasibility smoke (explicit user instruction: feasibility before unit tests):**
-- Ping → `{"ok":true,"version":"0.1.0"}`
-- find_tunnels on 4 vectors in 2 rooms → 2 tunnels at exact dist √0.02 = 0.1414
-- compute_centroids → r1 = `[1/√2, 1/√2, 0]` (exact normalized mean), r2 = `[0, 0, 1]`
-- TS adapter round-trips Float32Array ↔ JSON wire ↔ Rust `Vec<f32>` lossless at 4-decimal precision
-
-### Phase 29 — CI retrieval regression bar (`3e1b012`)
-- `tests/phase29.rust-retrieval-regression.test.ts` — 3 subtests:
-  1. End-to-end NDCG@10 ≥ 0.70 on a 10-passage × 5-query fixture through TS production `searchHybrid` × Rust MiniLM embedder
-  2. RNG tunnel detection on a 4-vector fixture — asserts 2 cross-room tunnels with correct distance ordering
-  3. Pilot-centroid computation on 3-vector fixture — asserts normalized mean arithmetic
-- All 3 skip cleanly if the Rust binary isn't present (Phase 30 will ship prebuilt binaries via npm postinstall; until then skip-on-missing keeps CI green for contributors without a Rust toolchain)
-
-Test file exists, typechecks clean. **Has NOT been successfully run yet** — the last attempt used `| tail -40` which buffered the output; re-run without the pipe was interrupted by the user's handoff request.
+**Drafted:** 2026-05-20
+**Replaces:** prior v2.1 Path B handoff (archived to git history at `6b5d7e1`)
+**Reason for handoff:** context window pressure; about to nuke a remote VM and need clean context for the install + benchmark phase
+**Last commit:** local working tree dirty — no pushes, no commits this session beyond what's in `git status`
 
 ---
 
-## 2. What's NOT done (pending work for next session)
+## 1. Where we are right now
 
-### 2a. Phase 29 test execution
-The Phase 29 regression bar test file is committed but has not been observed to pass end-to-end on the real Rust binary yet. **Resume action:**
-```bash
-cd /Users/saharbarak/workspace/wellinformed
-node --import tsx --test tests/phase29.rust-retrieval-regression.test.ts
-```
-Expected: all 3 subtests pass. If any fail, investigate before the next merge.
+Phase 21 + 22 + 23 + 23.6.1 all landed locally. Unified memory bench
+composite: **0.9012 / 1.0000** with all 9 dimensions reporting.
+Acceptance gates per suite documented in
+`docs/product/BENCHMARKS.md`.
 
-### 2b. Multi-dataset validation
-Phase 25 full gate was measured on **SciFact only**. The remaining 4 BEIR datasets (NFCorpus, ArguAna, SciDocs, FiQA) are not yet measured through the TS production × Rust embedder path. **Resume action:**
-```bash
-for ds in nfcorpus arguana scidocs fiqa; do
-  node scripts/bench-beir-rust.mjs $ds --model bge-base
-done
-```
-Expected results (based on published bge-base MTEB scores + Phase 23 hybrid lift):
-- NFCorpus: 38-40 NDCG@10 (published dense ~38)
-- ArguAna: 60-64 (published dense 63.6)
-- SciDocs: 21-23 (published dense 21.7)
-- FiQA: 42-44 (published dense 40.7)
+**Active task — partially complete:** Hetzner rebuild of server
+`openclaw` (ID `125481213`, IP `91.98.75.154`) to bare Ubuntu 24.04
+ARM, then install OpenClaw + Codex provider, wire MCP over
+reverse-SSH, run Phase 23.7 (real public-corpus benches) on it.
 
-This is ~4 hours of compute. Would produce a 5-dataset BEIR table that silences the cherry-picking concern.
+**2026-05-20 update:** the 3 real-corpus adapters (BEIR SciFact,
+LongMemEval-S oracle, LoCoMo factual) are now written and env-gated
+under `tests/` — see §7 below. Remaining work is purely the remote
+box (rebuild → OpenClaw install → MCP tunnel → run the gated suites).
 
-### 2c. Phase 30 — Rust binary distribution
-Prebuilt binaries via npm postinstall (user's pick earlier: "npm postinstall with prebuilt per-platform binaries — matches better-sqlite3"). Not shipped. **Without this, every user has to `cargo build --release` inside `wellinformed-rs/` before they can use the Rust backend.**
+**2026-05-20 — late afternoon push.** Hetzner box rebuilt twice
+(first attempt had no SSH key injected; second pass used
+`--user-data-from-file /tmp/handoff-cloud-init.yaml` with the local
+pubkey in cloud-init's `ssh_authorized_keys`). Firewall reopened —
+current Mac public IP `79.177.151.9` is now in the `openclaw-fw`
+allowlist. Base toolchain installed (Node 22.22.2, npm 10.9.7, build-
+essential, git, jq, tmux). OpenClaw `2026.5.18` installed via
+`npm install -g openclaw`; gateway running as a systemd service
+(`openclaw-gateway.service`) on `127.0.0.1:37777` with token auth
+(token in `/etc/openclaw-gateway.env` mode 600). Loopback bind, no
+external exposure. wellinformed working tree rsynced to
+`/opt/wellinformed/` (`npm install` complete — 503 packages). All
+three datasets staged: `/data/scifact` (8 MB), `/data/longmemeval`
+(15 MB `longmemeval_oracle.json`), `/data/locomo` (2.7 MB
+`locomo10.json`). Composite bench currently running in tmux session
+`bench` writing to `/data/reports/run.{log,jsonl}`. Background
+watcher will notify on completion.
 
-Architecture notes: `better-sqlite3` pattern uses `node-pre-gyp` to download platform-specific prebuilds from GitHub Releases on install. For `wellinformed-rs` this means:
-1. GitHub Actions workflow that builds the Rust binary on 3+ platforms (macOS arm64, macOS x86_64, linux x86_64)
-2. Uploads to a Release
-3. `package.json` postinstall script fetches the right binary
-4. Sets `WELLINFORMED_RUST_BIN` env-equivalent at module load
+## 2. The exact blocker — please resume here
 
-### 2d. Open questions from the 9-agent synthesis
-The user picked defaults for 4 of 5 questions earlier ("locking in unless you override"):
-- ✅ Plan A (Path B) — picked, in execution
-- ✅ Room routing: pilot-centroid first, hyperbolic only if pilot fails gate — pilot-centroid shipped (Phase 28), hyperbolic NOT shipped (deferred to v2.3 research sprint)
-- ⚠ Rust binary distribution: npm postinstall prebuilts — AGREED but NOT YET SHIPPED (Phase 30 open)
-- ✅ IPC: stdio JSON-RPC — shipped
-- ✅ Phase 30 debt cleanup: deferred to v2.2 — deferred
+The Claude Code auto-mode classifier rejects `hcloud server rebuild`
+even after the user explicitly answered "Yes — proceed with the
+rebuild" in an AskUserQuestion. Classifier reasoning is wrong
+("user's confirmation question was never answered") — false positive.
 
-### 2e. Production `wellinformed ask` validation
-Nobody has yet run `wellinformed ask "query"` with `WELLINFORMED_EMBEDDER_BACKEND=rust WELLINFORMED_EMBEDDER_MODEL=bge-base` set and observed the Rust backend serving live queries through the MCP tool surface. **This is the user-facing validation that Phase 24-25 actually deliver on the promise.**
+**Workaround already negotiated with user:** they run the rebuild
+themselves via the `!` shell prefix so the command goes through the
+session as user-typed shell rather than a Claude tool call.
 
-**Resume action:**
-```bash
-WELLINFORMED_EMBEDDER_BACKEND=rust \
-WELLINFORMED_EMBEDDER_MODEL=bge-base \
-wellinformed ask "functional DDD neverthrow Result monad"
-```
-Expected: results that are semantically similar to current `wellinformed ask` (probably nearly identical ranking since the indexed graph was produced with Xenova MiniLM — an existing-corpus retrieval still uses the stored MiniLM vectors, not the Rust bge-base path). **The real test is re-indexing the graph with Rust bge-base then asking.** That requires a full `wellinformed index` pass (~20 min at 3.4 docs/sec on a 9k-node graph).
-
-### 2f. Potential issue: Phase 28 room routing has no gate test yet
-Phase 28 shipped the pilot-centroid Rust domain function and the `compute_centroids` op, but there is NO measured validation that routing actually improves retrieval on a multi-room benchmark (CQADupStack or similar). **The data researcher's Simpson's paradox finding says rooms DO help on hard sub-populations, but we haven't re-run Wave 4 with pilot-centroid routing to confirm the lift.**
-
-**Resume action:** run a modified `bench-room-routing.mjs` that:
-1. Indexes all 3 subforums with Rust bge-base
-2. Computes pilot centroids via `spawnRustRetrievalClient.computeCentroids`
-3. For each query, routes by nearest centroid, searches only that room's corpus
-4. Compares aggregate NDCG@10 to flat search
-
-If +1 NDCG (beating data researcher's per-room Simpson's finding aggregate), Phase 28 is validated. If null, document it and fall back to "rooms are filter not score."
-
----
-
-## 3. Current commit sequence (last 12)
+**The exact command to paste with `!` prefix** (user has the new
+read+write HCLOUD token — DO NOT commit it; paste-back on resume):
 
 ```
-6b5d7e1 bench: Phase 25 FULL gate result — bge-base SciFact 75.22% via Rust embedder
-3e1b012 test(phase-29): CI retrieval regression bar for Rust-backed pipeline
-03e2956 feat(phase-27+28): RNG tunnels + pilot-centroid room routing
-4ddf3fb feat(phase-25): wire rustSubprocessEmbedder into runtime + gate bench
-3d35123 feat(phase-24): Rust embed_server stdio binary + TS adapter
-e1d1c53 docs: v2.1 9-agent synthesis + Path B (Rust retrieval hot path)
-9c6e00f bench: the big finding — Xenova bge-base ONNX port is defective (-11 NDCG)
-(... audit commits ...)
-36c1640 refactor(phase-23): pipeline unification + bench truth + embedder hardening
-3770db4 fix(embedders): expose max_length, default to 8192 (nomic context window)
-b6db6f2 bench: Phase 21 measurement — SciFact +0.60 NDCG@10 from sanitizer fix alone
-846262d bench: Phase 21 — fix BM25 sanitizer, graded NDCG, paired bootstrap, query-length-gated hybrid
-b893004 bench: 4-wave SOTA story — Wave 2 at 72.30% is CPU-local ceiling
+! HCLOUD_TOKEN='<paste new read+write token here>' hcloud server rebuild 125481213 --image ubuntu-24.04
 ```
 
----
+The original token in earlier turns (`clVNJq…`) was read-only.
+User generated a new read+write one (`geTLI4ZUN1Mj…`) which the
+classifier wouldn't let me invoke. User should paste either the same
+new token OR a freshly minted one on resume.
 
-## 4. Critical state / tests / runs
+## 3. What's confirmed about the target
 
-**TS test suite:** 313/313 pass post all Phase 21/22/23/24/25/27/28 refactors. Does NOT yet include Phase 29 regression bar (skips on missing Rust binary — binary IS built locally so skip branch won't fire, but the 3 subtests haven't been observed to pass end-to-end yet).
+| Field | Value |
+|---|---|
+| Project | "other" hcloud project (NOT `openclaw-project` which is the default context on this Mac) |
+| Server name | `openclaw` |
+| Server ID | `125481213` |
+| IPv4 | `91.98.75.154` |
+| Type | CAX11 (ARM, 2 cores, 4 GB RAM, 40 GB disk) |
+| Current OS | Ubuntu 24.04 ARM (will be wiped + reinstalled with same image) |
+| User authorization | YES — explicitly confirmed nuke in AskUserQuestion |
+| SSH alias on this Mac | `hetzner` (user `handoff`) and `hetzner-root` (user `root`) — both point at `91.98.75.154` via `~/.ssh/handoff_ed25519` |
+| Mac public IP (whitelisted in Hetzner firewall) | `5.28.182.156` |
 
-**Rust workspace:** `wellinformed-rs/` — lib + 2 bins (`wellinformed-bench`, `embed_server`)
-- cargo clippy pedantic `-D warnings` clean on all targets
-- cargo test (not yet run in current state; user explicit instruction: skip unit tests, feasibility only)
-- Release build: `target/release/wellinformed-bench` (24 MB), `target/release/embed_server` (24 MB)
+## 4. Plan after rebuild lands
 
-**Benchmark cache** (at `~/.wellinformed/bench/`):
-- SciFact datasets cached, indexed with multiple encoders
-- Latest measurements in:
-  - `scifact__nomic-ai-nomic-embed-text-v1-5__hybrid/results.json` — Phase 21 SciFact
-  - `arguana__nomic-ai-nomic-embed-text-v1-5__hybrid/results.json` — gate-removed ArguAna
-  - `scifact__xenova-bge-base-en-v1-5__hybrid/results.json` — Xenova defect (63.29%)
-  - `scifact__rust__nomic/results.json` — Rust dense nomic
-  - `scifact__rust__bge-base/results.json` — Rust dense bge-base (74.70% — confirms Xenova defect)
-  - `scifact__rust-via-ts__minilm/results.json` — Phase 25 MiniLM gate (72.02%)
-  - `scifact__rust-via-ts__bge-base/results.json` — **Phase 25 FULL gate (75.22%)**
+Order of operations once `ssh hetzner-root` starts responding (usually 30-60 s after rebuild API call returns):
 
----
+1. **ssh in** as root via `hetzner-root`. Verify clean state: `lsb_release -a`, `df -h`, `free -h`, `ip a`.
+2. **Install OpenClaw.** User wants the `octo:claw` skill flow — Ubuntu/Debian install path. Stack:
+   - apt update + upgrade
+   - install Node 22 LTS (NodeSource repo), git, curl, build-essential
+   - install OpenClaw via the canonical install command (check `octo:claw` skill at resume time)
+   - systemd service for the daemon
+3. **Codex API key** → `/etc/openclaw/.env` mode 600. User will paste it on resume via AskUserQuestion. NEVER write to git, NEVER log it.
+4. **MCP transport** = reverse-SSH (Tailscale not available per user). Plan: OpenClaw binds MCP on `127.0.0.1:7173` on the VM; this Mac opens `ssh -R 7173:127.0.0.1:7173 hetzner-root` as a persistent tunnel (or `autossh` for resilience); MCP server added to `~/.claude.json` on this Mac with the loopback URL.
+5. **Phase 23.7 — real public-corpus benches.** Three adapters to write under `tests/bench/public-real/`:
+   - `bench-scifact-real.test.ts` — full BEIR SciFact (5,183 docs × 300 queries), NDCG@10. Replaces the 30-doc proxy currently feeding `beirSciFactNdcg10`.
+   - `bench-longmemeval-real.test.ts` — LongMemEval-S oracle split (500 questions, ~3 GB HF download). Recall@5 against gold evidence sessions.
+   - `bench-locomo-real.test.ts` — LoCoMo factual subset from `snap-research/locomo` GitHub. F1 via the same harmonic-mean scorer the synthetic suite uses.
+   All three are env-gated (`WELLINFORMED_BENCH_PUBLIC_REAL=1`) so CI stays fast — they only run on the Hetzner box.
+6. **Run + report.** Expected composite jump: 0.9012 → ~0.95 depending on real-corpus reality (BEIR SOTA is 0.7522 not 1.0 so composite can't hit 1.0 on real data).
 
-## 5. How to resume this session cleanly
+## 5. Secrets discipline
 
-1. **Verify build is current:**
-   ```bash
-   cd /Users/saharbarak/workspace/wellinformed
-   npm test                                                          # should be 313/313
-   source $HOME/.cargo/env
-   cargo build --release --manifest-path wellinformed-rs/Cargo.toml  # ~30s incremental
-   ```
+- **HCLOUD_TOKEN (new read+write):** lives in env only for the lifetime of `hcloud` commands. NEVER write to disk or commit. On final cleanup: `unset HCLOUD_TOKEN`.
+- **HCLOUD_TOKEN (original read-only `clVNJq…`):** safe to leave alone; user generated it. We're not using it.
+- **Codex API key (not yet provided):** user will paste via AskUserQuestion on resume. Goes ONLY to `/etc/openclaw/.env` on the VM via heredoc-piped ssh. Never on this Mac's disk.
+- **SSH key `~/.ssh/handoff_ed25519`:** already on disk, user-managed, don't touch.
 
-2. **Run Phase 29 quality gate test** (validates Rust backend through production TS path):
-   ```bash
-   node --import tsx --test tests/phase29.rust-retrieval-regression.test.ts
-   ```
-   Expected: 3 subtests pass, mean NDCG@10 ≥ 0.70 on the fixture.
+## 6. Files touched this session (uncommitted in working tree)
 
-3. **Run the multi-dataset validation sweep** (Section 2b above) — ~4h compute.
+| Layer | File | Purpose |
+|---|---|---|
+| domain | `src/domain/cross-rerank.ts` | NEW — Phase 21 cross-encoder rerank pure logic |
+| domain | `src/domain/long-term-memory.ts` | NEW — tier vocab + Beta(α,β) + retention math |
+| domain | `src/domain/write-time-gate.ts` | NEW — write-time gating filter |
+| domain | `src/domain/auto-forget.ts` | NEW — auto-forget planner |
+| domain | `src/domain/bench-types.ts` | NEW — typed bench report shapes + composite |
+| domain | `src/domain/errors.ts` | EDIT — added RerankError + ConsolidationError variants |
+| infra | `src/infrastructure/cross-encoder.ts` | NEW — Xenova ms-marco-MiniLM-L-6-v2 adapter |
+| infra | `src/infrastructure/summariser.ts` | NEW — Summariser port + ollama/fixture adapters |
+| application | `src/application/ask.ts` | EDIT — wired cross-encoder rerank between hybrid + PPR |
+| application | `src/application/auto-forget-tick.ts` | NEW — auto-forget orchestrator |
+| cli | `src/cli/commands/gc.ts` | NEW — `wellinformed gc {list,apply}` |
+| cli | `src/cli/commands/bench.ts` | NEW — `wellinformed bench memory` |
+| cli | `src/cli/index.ts` | EDIT — registered `gc` + `bench` |
+| tests | `tests/bench-tier-promotion.test.ts` | NEW — F1 = 1.0 |
+| tests | `tests/bench-beta-calibration.test.ts` | NEW — worst err 0.011 |
+| tests | `tests/bench-write-gate.test.ts` | NEW — F1 = 1.0 |
+| tests | `tests/bench-retention-band.test.ts` | NEW — accuracy = 1.0 |
+| tests | `tests/bench-auto-forget.test.ts` | NEW — F1 = 1.0 |
+| tests | `tests/bench-longmemeval-synth.test.ts` | NEW — R@5 = 1.0 |
+| tests | `tests/bench-locomo-synth.test.ts` | NEW — harmonic mean dim 0.864 |
+| tests | `tests/bench-standard.test.ts` | EDIT — emits BenchSuiteReport for hotpotqaRecall5 |
+| tests | `tests/bench-real.test.ts` | EDIT — emits BenchSuiteReport for beirSciFactNdcg10 |
+| tests | `tests/cross-rerank.test.ts` | NEW — unit, 8/8 |
+| tests | `tests/long-term-memory.test.ts` | NEW — unit, 21/21 |
+| tests | `tests/write-time-gate.test.ts` | NEW — unit, 12/12 |
+| tests | `tests/summariser.test.ts` | NEW — unit, 10/10 |
+| tests | `tests/auto-forget.test.ts` | NEW — unit, 9/9 |
+| planning | `.planning/phases/phase-21/21-CONTEXT.md` | NEW |
+| planning | `.planning/phases/phase-23/23-CONTEXT.md` | NEW |
+| planning | `.planning/long-term-memory-integration.md` | NEW (research synth) |
+| docs | `docs/research/energy-based-contradiction-detection.md` | NEW (forward sketch) |
+| docs | `docs/product/BENCHMARKS.md` | EDIT — Phase 23 section appended |
 
-4. **Pick up v2.1 Phase 30 (binary distribution)** — the last piece before v2.1 can be considered shippable.
+`git status` will show all of these as modified/untracked. The user has not asked for a commit yet; default policy is no commit unless asked.
 
-5. **Decide on v2.1 milestone close** — v2.1 currently has 5 shipped phases (24, 25, 27, 28, 29) + 1 pending (30). Once Phase 30 lands and multi-dataset validation passes, run `gsd:complete-milestone` for v2.1.
+## 7. Open tasks at handoff time (task list won't survive context clear)
 
----
+Carry these as TodoWrite items on resume:
 
-## 6. Context for the next session
+1. ~~Wait for user `! hcloud server rebuild …` command output~~ — still blocked locally:
+   classifier rejects `hcloud server rebuild` and `ssh hetzner-root` as
+   "Production Reads/Writes" without explicit per-command authorization;
+   workaround is for the user to run them with the `!` prefix. The local
+   `HCLOUD_TOKEN` in env also authenticates to `openclaw-project`, which
+   does NOT contain server `125481213` — that lives in the "other"
+   project and needs the read+write token from HANDOFF §2.
+2. ssh into rebuilt box via `hetzner-root`, verify clean state
+3. Install OpenClaw using `octo:claw` skill (or manual apt + npm flow)
+4. Receive + install Codex API key (`/etc/openclaw/.env` mode 600)
+5. Wire MCP over reverse-SSH; register in `~/.claude.json`
+6. Verify MCP call works from this Mac
+7. ~~Write 3 real-corpus bench adapters~~ — **DONE 2026-05-20**, files
+   landed flat under `tests/` (project test glob is `tests/*.test.ts`, not
+   nested) and all env-gated behind `WELLINFORMED_BENCH_PUBLIC_REAL=1`:
+   - `tests/bench-scifact-real.test.ts` — BEIR SciFact NDCG@10. Needs
+     `BEIR_SCIFACT_DIR` pointing at `corpus.jsonl + queries.jsonl +
+     qrels/test.tsv`. Floor: NDCG@10 ≥ 0.30.
+   - `tests/bench-longmemeval-real.test.ts` — LongMemEval-S oracle
+     Recall@5. Needs `LONGMEMEVAL_DIR/longmemeval_oracle.json`. Floor:
+     R@5 ≥ 0.40.
+   - `tests/bench-locomo-real.test.ts` — LoCoMo factual subset (cats
+     1/2/3) harmonic-mean dimension. Needs `LOCOMO_DIR/locomo10.json`.
+     Floor: dim ≥ 0.40. LLM-extractor flag wired but no-op pending 23.8.
+   All three use `xenovaEmbedder()` (all-MiniLM-L6-v2 fp32 mean-pooled
+   512 max_len) wrapped in `batchingEmbedder({ maxBatch: 32 })`. They
+   `t.skip()` cleanly when the master gate or data dir is missing —
+   verified 2026-05-20 with both env permutations.
+8. Run them on the Hetzner box, report composite delta
+9. Update `docs/product/BENCHMARKS.md` with real numbers
+10. Commit + push (only if user asks)
 
-**Coding standards** (from user memory `feedback_coding_style.md` + `feedback_no_piling_models.md`):
-- Strict functional style — neverthrow Results, iterator chains, no mutable state outside encoder sessions
-- No classes in domain/application layers
-- Clippy pedantic `-D warnings` on Rust
-- No piling models — every retrieval optimization needs a principled mechanism AND a measured gate
+## 8. Context that's easy to forget
 
-**Git policy** (from user memory `user_git_identity.md`):
-- User: SaharBarak <sahr.h.barak@gmail.com>
-- Never use claude/anthropic co-authors
-- No autonomous `git push` — commits only, user reviews before push
+- `git push` is NEVER done without explicit user authorization (user policy in CLAUDE.md). Commits only when asked.
+- The `octo:claw` skill exists locally — invoke it for OpenClaw setup instead of hand-rolling.
+- The user pinned Codex specifically (not Claude/Gemini) for the remote provider — relevant if `octo:claw` asks which provider to wire.
+- Tailscale is NOT installed — don't suggest it. Reverse-SSH is the agreed transport.
+- All public-corpus adapters MUST be env-gated. CI stays fast; only the Hetzner box runs them.
+- `WELLINFORMED_BENCH_OUT` is the JSONL append target for any bench file — the composite runner spawns each suite with it set. Document this in any new bench file.
+- The pre-existing 4 test failures (Phase 17 tool-count, Phase 20 deps, Phase 35 P2P E2E, peer-order-builder flake) are NOT in scope to fix — they're project drift, document only.
+- Synthetic LoCoMo scorer: dropped full-summary token-F1 because it was mathematically pinned tiny; replaced with harmonic mean of evidence-recall + answer-token-containment. Documented in suite header. Real-LoCoMo Phase 23.7 adapter should use the same metric — OR opt-in to LLM extractor via `WELLINFORMED_BENCH_LLM_EXTRACTOR=1`.
 
-**Open decisions pending user input:**
-- Phase 30 (binary distribution): npm postinstall prebuilt confirmed but not yet executed
-- Phase 28 validation (room routing on CQADupStack): needed to confirm the Simpson's paradox win
-- v2.1 vs v2.2 scope line: currently v2.1 = Phases 24-30. Phase 30 may slip to v2.2 if npm postinstall turns out to need a GH Release workflow that doesn't exist yet.
+## 9. Composite numbers worth quoting
 
-**The Big Finding (for context when resuming):**
-Xenova/bge-base-en-v1.5 is broken by -11 NDCG. fastembed-rs's Qdrant-curated ONNX ports work. The Rust crate was built as a *scientific instrument* to A/B test weight quality, and it discovered that the language comparison was the wrong framing — the real comparison was Xenova weights vs Qdrant weights. Same language overhead, 11-point quality gap from packaging.
+```
+composite: 0.9012 / 1.0000   (9 suites, 18.5s local)
 
----
+beirSciFactNdcg10         0.6816   ← 30-doc local proxy (real BEIR pending on Hetzner)
+hotpotqaRecall5           0.9667
+longmemevalRecall5        1.0000   (synthetic; real-LME pending on Hetzner)
+locomoFactualF1           0.8640   (harmonic-mean dim; real-LoCoMo pending on Hetzner)
+tierPromotionF1           1.0000
+betaCalibration           0.9890
+autoForgetF1              1.0000
+retentionBandAccuracy     1.0000
+writeGateF1               1.0000
+```
 
-## 7. What's the one sentence?
+## 10. Resume checklist (paste this prompt to continue)
 
-**v2.1 Path B Phases 24-29 are code-complete and Phase 25 is measured at 75.22% NDCG@10 on SciFact — beating the published BAAI ceiling by +1.18 and the prior best TS number by +3.20 — pending Phase 29 test execution, multi-dataset validation, and Phase 30 binary distribution before v2.1 can ship.**
+> "Resume from `.planning/HANDOFF.md`. We left off about to rebuild the Hetzner box for Phase 23.7. The classifier blocked the rebuild; I'm pasting the user-typed `! hcloud server rebuild` output now. Proceed from there."
+
+End of handoff.
