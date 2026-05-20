@@ -98,20 +98,31 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 60 * 60 * 1000 }, a
     t.skip('WELLINFORMED_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
     return;
   }
+  // Two ways to point at a split:
+  //   LONGMEMEVAL_FILE  — absolute path to any split's JSON (takes
+  //                       precedence; lets the same adapter run
+  //                       oracle / S / M without copy-renames)
+  //   LONGMEMEVAL_DIR   — directory containing `longmemeval_oracle.json`
+  //                       (default — oracle is the easiest split and
+  //                       the original Phase 23.7 deliverable)
+  const explicitFile = process.env.LONGMEMEVAL_FILE;
   const dir = process.env.LONGMEMEVAL_DIR;
-  if (!dir) {
-    t.skip('LONGMEMEVAL_DIR not set — see suite header for layout');
+  if (!explicitFile && !dir) {
+    t.skip('LONGMEMEVAL_FILE or LONGMEMEVAL_DIR not set — see suite header for layout');
     return;
   }
-  const oraclePath = join(dir, 'longmemeval_oracle.json');
-  if (!existsSync(oraclePath)) {
-    t.skip(`missing ${oraclePath} — see suite header for download instructions`);
+  const datasetPath = explicitFile ?? join(dir as string, 'longmemeval_oracle.json');
+  if (!existsSync(datasetPath)) {
+    t.skip(`missing ${datasetPath} — see suite header for download instructions`);
     return;
   }
+  // Split name derived from the filename — flows into the report
+  // notes so any cross-split comparison stays honest.
+  const splitName = datasetPath.match(/longmemeval_([a-z0-9]+)\.json$/)?.[1] ?? 'unknown';
 
   const t0 = performance.now();
-  const dataset = JSON.parse(readFileSync(oraclePath, 'utf8')) as readonly LmeQuestion[];
-  assert.ok(Array.isArray(dataset) && dataset.length > 0, `expected non-empty array in ${oraclePath}`);
+  const dataset = JSON.parse(readFileSync(datasetPath, 'utf8')) as readonly LmeQuestion[];
+  assert.ok(Array.isArray(dataset) && dataset.length > 0, `expected non-empty array in ${datasetPath}`);
 
   // One embedder reused across questions — the model loads once.
   const embedder = batchingEmbedder(
@@ -206,7 +217,7 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 60 * 60 * 1000 }, a
     },
     perQuery,
     elapsedMs,
-    notes: `Real LongMemEval-S oracle split — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Replaces the 20-session synthetic proxy.`,
+    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Replaces the 20-session synthetic proxy.`,
   };
 
   if (process.env.WELLINFORMED_BENCH_OUT) {
