@@ -54,6 +54,8 @@ import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
 import { xenovaEmbedder, batchingEmbedder } from '../src/infrastructure/embedders.js';
 import { indexNode, searchByRoom } from '../src/application/use-cases.js';
+import { llmExtractorFromEnv } from '../src/infrastructure/llm-extractor.js';
+import { squadF1, squadExactMatch } from '../src/domain/llm-extractor.js';
 import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 import type { Room } from '../src/domain/graph.js';
 
@@ -203,9 +205,13 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 60 * 60 * 1000 },
     return;
   }
   const useLlmExtractor = process.env.WELLINFORMED_BENCH_LLM_EXTRACTOR === '1';
-  if (useLlmExtractor) {
-    // Phase 23.8 follow-up wires this; for now we fall back loudly.
-    console.log('  WELLINFORMED_BENCH_LLM_EXTRACTOR set but the extractor is a Phase 23.8 follow-up — falling back to pure-compute scoring.');
+  const extractor = useLlmExtractor ? llmExtractorFromEnv() : null;
+  if (useLlmExtractor && extractor === null) {
+    t.skip('WELLINFORMED_BENCH_LLM_EXTRACTOR=1 but no extractor resolvable from env (set WELLINFORMED_OLLAMA_URL or WELLINFORMED_BENCH_LLM_EXTRACTOR_FIXTURE=1)');
+    return;
+  }
+  if (extractor) {
+    console.log(`  LLM extractor enabled: ${extractor.model} — scoring with SQuAD-F1 alongside the harmonic-mean dimension.`);
   }
 
   const t0 = performance.now();
@@ -219,9 +225,11 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 60 * 60 * 1000 },
 
   let totalContainment = 0;
   let totalEvidenceHits = 0;
+  let totalSquadF1 = 0;
+  let totalSquadEm = 0;
   let totalQ = 0;
   const perQuery: { id: string; metric: string; value: number }[] = [];
-  const perCategory: Record<string, { sumContain: number; sumEv: number; n: number }> = {};
+  const perCategory: Record<string, { sumContain: number; sumEv: number; sumF1: number; sumEm: number; n: number }> = {};
 
   for (let sIdx = 0; sIdx < dataset.length; sIdx++) {
     const sample = dataset[sIdx];
@@ -292,10 +300,29 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 60 * 60 * 1000 },
         const qid = `${sample.sample_id ?? `s${sIdx}`}#q${qIdx}`;
         perQuery.push({ id: qid, metric: 'answer-token-containment', value: containment });
 
+        // ─── opt-in LLM extractor + SQuAD-F1 scoring ───
+        let qF1 = 0;
+        let qEm = 0;
+        if (extractor) {
+          const exRes = await extractor.extract({ question: q.question, evidence: retrievedText });
+          if (exRes.isErr()) {
+            console.log(`  extract ${qid}: ${JSON.stringify(exRes.error)}`);
+          } else {
+            const predicted = exRes.value;
+            qF1 = squadF1(predicted, q.answer);
+            qEm = squadExactMatch(predicted, q.answer);
+            totalSquadF1 += qF1;
+            totalSquadEm += qEm;
+            perQuery.push({ id: qid, metric: 'squad-f1', value: qF1 });
+          }
+        }
+
         const catKey = `cat${q.category ?? '?'}`;
-        const bucket = perCategory[catKey] ?? { sumContain: 0, sumEv: 0, n: 0 };
+        const bucket = perCategory[catKey] ?? { sumContain: 0, sumEv: 0, sumF1: 0, sumEm: 0, n: 0 };
         bucket.sumContain += containment;
         bucket.sumEv += evidenceFound ? 1 : 0;
+        bucket.sumF1 += qF1;
+        bucket.sumEm += qEm;
         bucket.n += 1;
         perCategory[catKey] = bucket;
       }
@@ -311,7 +338,21 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 60 * 60 * 1000 },
   const meanContainment = totalQ > 0 ? totalContainment / totalQ : 0;
   const evidenceRecall = totalQ > 0 ? totalEvidenceHits / totalQ : 0;
   const dimensionScore = harmonicMean(meanContainment, evidenceRecall);
+  const meanSquadF1 = totalQ > 0 ? totalSquadF1 / totalQ : 0;
+  const meanSquadEm = totalQ > 0 ? totalSquadEm / totalQ : 0;
   const elapsedMs = performance.now() - t0;
+
+  // The composite-feeding metric (`locomoFactualF1`) stays the pure-
+  // compute harmonic-mean dimension — that's the contract for the
+  // composite runner across machines without an LLM available. The
+  // SQuAD-F1 / EM are reported alongside for mem0-comparable numbers
+  // when the extractor was wired in (`WELLINFORMED_BENCH_LLM_EXTRACTOR=1`).
+  const extractorMetrics: Record<string, number> = extractor
+    ? {
+        squadF1: meanSquadF1,
+        squadExactMatch: meanSquadEm,
+      }
+    : {};
 
   const report: BenchSuiteReport = {
     suite: 'locomo-real',
@@ -320,6 +361,7 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 60 * 60 * 1000 },
       evidenceRecall,
       answerTokenContainment: meanContainment,
       scoredQuestions: totalQ,
+      ...extractorMetrics,
       ...Object.fromEntries(
         Object.entries(perCategory).map(([k, v]) => [
           `contain_${k}`, v.n > 0 ? v.sumContain / v.n : 0,
@@ -330,10 +372,17 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 60 * 60 * 1000 },
           `evrecall_${k}`, v.n > 0 ? v.sumEv / v.n : 0,
         ]),
       ),
+      ...(extractor
+        ? Object.fromEntries(
+            Object.entries(perCategory).map(([k, v]) => [
+              `squadF1_${k}`, v.n > 0 ? v.sumF1 / v.n : 0,
+            ]),
+          )
+        : {}),
     },
     perQuery,
     elapsedMs,
-    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Replaces the 4-persona synthetic proxy.`,
+    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
   };
 
   if (process.env.WELLINFORMED_BENCH_OUT) {
@@ -341,8 +390,12 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 60 * 60 * 1000 },
   }
 
   console.log(`bench locomo-real: dimension=${dimensionScore.toFixed(4)} (evidence-recall=${evidenceRecall.toFixed(3)}, containment=${meanContainment.toFixed(3)}) over ${totalQ} questions in ${(elapsedMs / 1000).toFixed(1)}s`);
+  if (extractor) {
+    console.log(`  LLM extractor (${extractor.model}): SQuAD-F1=${meanSquadF1.toFixed(4)} EM=${meanSquadEm.toFixed(4)}`);
+  }
   for (const [c, b] of Object.entries(perCategory)) {
-    console.log(`  ${c.padEnd(8)} contain=${(b.sumContain / b.n).toFixed(3)}  ev=${(b.sumEv / b.n).toFixed(3)}  (n=${b.n})`);
+    const f1Part = extractor ? `  f1=${(b.sumF1 / b.n).toFixed(3)}` : '';
+    console.log(`  ${c.padEnd(8)} contain=${(b.sumContain / b.n).toFixed(3)}  ev=${(b.sumEv / b.n).toFixed(3)}${f1Part}  (n=${b.n})`);
   }
 
   // mem0 reports ~92.5 composite on full LoCoMo with LLM judge.
