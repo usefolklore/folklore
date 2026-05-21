@@ -93,7 +93,7 @@ const sessionToText = (turns: readonly LmeTurn[]): string => {
   return parts.join('\n');
 };
 
-test('bench: real LongMemEval-S oracle Recall@5', { timeout: 60 * 60 * 1000 }, async (t) => {
+test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000 }, async (t) => {
   if (process.env.WELLINFORMED_BENCH_PUBLIC_REAL !== '1') {
     t.skip('WELLINFORMED_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
     return;

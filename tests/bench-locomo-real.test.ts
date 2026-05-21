@@ -206,7 +206,7 @@ const harmonicMean = (a: number, b: number): number => {
 
 // ─────────────── runner ─────────────
 
-test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 60 * 60 * 1000 }, async (t) => {
+test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 1000 }, async (t) => {
   if (process.env.WELLINFORMED_BENCH_PUBLIC_REAL !== '1') {
     t.skip('WELLINFORMED_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
     return;

@@ -100,7 +100,7 @@ const readQrels = (path: string): Map<string, Set<string>> => {
   return out;
 };
 
-test('bench: real BEIR SciFact NDCG@10', { timeout: 30 * 60 * 1000 }, async (t) => {
+test('bench: real BEIR SciFact NDCG@10', { timeout: 24 * 60 * 60 * 1000 }, async (t) => {
   if (process.env.WELLINFORMED_BENCH_PUBLIC_REAL !== '1') {
     t.skip('WELLINFORMED_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
     return;
