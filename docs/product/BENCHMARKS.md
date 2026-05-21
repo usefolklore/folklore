@@ -284,8 +284,51 @@ Three observations worth recording:
 
 1. **Real BEIR SciFact NDCG@10 = 0.7202** beats the 30-doc local proxy (0.6816) and lands within striking distance of the published all-MiniLM-L6-v2 baseline (~0.42) — the gap comes from our hybrid lex+vec + PPR rerank on top of the bi-encoder. SOTA via SPLADE/ColBERTv2 is ~0.75 NDCG@10; we're 5pp below SOTA with a pure CPU pipeline.
 2. **Real LongMemEval-S oracle R@5 = 0.999** is essentially at-ceiling. Oracle is the easiest split (haystack is per-question and small); the harder S / M splits with 50 / 500 distractor sessions per question are the next ratchet.
-3. **Real LoCoMo factual F1 = 0.3536 vs synth 0.864** is the brutal one — real LoCoMo has 3+ gold evidence sessions per question often, and strict-recall (`every gold tag in top-3`) is unforgiving. mem0's 92.5 LoCoMo composite uses an **LLM judge over accuracy**, not retrieval-only — directly comparable only via the Phase 23.8 SQuAD-F1 path (`WELLINFORMED_BENCH_LLM_EXTRACTOR=1`). That run pending Ollama install on the box.
+3. **Real LoCoMo factual F1 = 0.3536 vs synth 0.864** is the brutal one — real LoCoMo has 3+ gold evidence sessions per question often, and strict-recall (`every gold tag in top-3`) is unforgiving. mem0's 92.5 LoCoMo composite uses an **LLM judge over accuracy**, not retrieval-only — directly comparable only via the Phase 23.8 SQuAD-F1 path (`WELLINFORMED_BENCH_LLM_EXTRACTOR=1`).
 
 Per-suite report JSONL is captured to `/data/reports/run.log` on the box; the composite renderer in `src/cli/commands/bench.ts` regenerates the table above from those reports.
+
+### Extended runs — harder splits + LLM-extractor F1 (2026-05-20/21)
+
+Phase 23.7+ stretch results, not folded into the headline composite (which stays on the easier oracle / pure-compute paths to keep the regression ratchet portable):
+
+#### LongMemEval-S with 50 distractor sessions per question
+
+Set via `LONGMEMEVAL_FILE=/data/longmemeval/longmemeval_s.json` — uses the same adapter, harder haystack.
+
+| | R@5 |
+|---|---:|
+| oracle (per-question pruned, 500 q) | 0.9990 |
+| **S (50 distractors/q, 500 q)** | **0.9202** |
+| single-session-assistant   | 1.0000 (n=56)  |
+| knowledge-update           | 0.9740 (n=78)  |
+| multi-session              | 0.9050 (n=133) |
+| temporal-reasoning         | 0.8710 (n=133) |
+| single-session-preference  | 0.8670 (n=30)  |
+
+The 0.9202 lands within a hair of ByteRover's claimed 92.8% on the same public benchmark — *retrieval-only, no LLM judge*. agentmemory claims 95.2%; we're 3pp behind their best path. Hetzner CAX11, ~110 min wall-time.
+
+#### LoCoMo with qwen2.5:1.5b SQuAD-F1 extractor (Mac M-series)
+
+`WELLINFORMED_BENCH_LLM_EXTRACTOR=1` + `WELLINFORMED_BENCH_LLM_EXTRACTOR_MODEL=qwen2.5:1.5b` on the same 699-question factual subset:
+
+| Metric | Value |
+|---|---:|
+| dimension (harmonic mean, unchanged from compute path) | 0.3536 |
+| evidence-recall | 0.3920 |
+| answer-token-containment | 0.3221 |
+| **SQuAD-F1** (mem0-comparable axis) | **0.1602** |
+| SQuAD EM | 0.0286 |
+| n | 699 |
+
+Per category (cat1=single-hop, cat2=multi-hop, cat3=temporal):
+
+| | contain | ev | squadF1 | n |
+|---|---:|---:|---:|---:|
+| cat1 | 0.495 | 0.145 | 0.238 | 282 |
+| cat2 | 0.179 | 0.648 | 0.103 | 321 |
+| cat3 | 0.293 | 0.260 | 0.123 | 96 |
+
+qwen2.5:1.5b is a small model and the SQuAD-F1 metric is strict token-overlap — these numbers aren't comparable to mem0's 92.5 (LLM-as-judge over a stronger pipeline + extractor). They establish the baseline for the SQuAD-F1 axis; rerunning with `gpt-oss:20b` or `claude-haiku-4-5` would lift them meaningfully.
 
 
