@@ -56,8 +56,11 @@ import { xenovaEmbedder, batchingEmbedder } from '../src/infrastructure/embedder
 import { indexNode, searchByRoom } from '../src/application/use-cases.js';
 import { llmExtractorFromEnv } from '../src/infrastructure/llm-extractor.js';
 import { squadF1, squadExactMatch } from '../src/domain/llm-extractor.js';
+import { rerankMatches } from '../src/domain/cross-rerank.js';
+import { crossEncoderFromEnv } from '../src/infrastructure/cross-encoder.js';
 import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 import type { Room } from '../src/domain/graph.js';
+import type { Match } from '../src/domain/vectors.js';
 
 const ROOM = 'locomo' as Room;
 const DIM = 384;
@@ -240,6 +243,16 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
     { maxBatch: 32 },
   );
 
+  // E1' (Phase 23.9): opt-in cross-encoder rerank in the bench path.
+  // For LoCoMo evidence-recall (K=3) we still over-retrieve a wider
+  // candidate window so the cross-encoder can reshape the top-3.
+  const reranker = crossEncoderFromEnv();
+  const RERANK_HEAD = 20;
+  const overRetrieveK = reranker ? Math.max(RERANK_HEAD, K * 7) : K;
+  if (reranker) {
+    console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
+  }
+
   let totalContainment = 0;
   let totalEvidenceHits = 0;
   let totalSquadF1 = 0;
@@ -290,14 +303,21 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
 
       for (let qIdx = 0; qIdx < factualQa.length; qIdx++) {
         const q = factualQa[qIdx];
-        const r = await searchByRoom({ graphs, vectors, embedder })({
+        const r0 = await searchByRoom({ graphs, vectors, embedder })({
           room: ROOM,
           text: q.question,
-          k: K,
+          k: overRetrieveK,
         });
-        if (r.isErr()) throw new Error(`search ${sIdx}.${qIdx}: ${JSON.stringify(r.error)}`);
-
-        const retrievedNodeIds = r.value.map((m) => m.node_id as string);
+        if (r0.isErr()) throw new Error(`search ${sIdx}.${qIdx}: ${JSON.stringify(r0.error)}`);
+        let head: readonly Match[] = r0.value;
+        if (reranker) {
+          const docTextOf = (m: Match): string | undefined =>
+            sessionTextByNode.get(m.node_id as string);
+          const rerankRes = await rerankMatches(q.question, head, docTextOf, reranker, { headSize: RERANK_HEAD });
+          head = rerankRes.isOk() ? rerankRes.value : head;
+        }
+        const topK: readonly Match[] = head.slice(0, K);
+        const retrievedNodeIds = topK.map((m) => m.node_id as string);
         const retrievedTags = new Set(
           retrievedNodeIds.map((id) => nodeIdToTag.get(id) ?? '').filter((t) => t.length > 0),
         );
@@ -400,7 +420,7 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
     },
     perQuery,
     elapsedMs,
-    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
+    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
   };
 
   if (process.env.WELLINFORMED_BENCH_OUT) {
