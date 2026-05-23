@@ -54,6 +54,7 @@ import { indexNode, searchByRoom } from '../src/application/use-cases.js';
 import { recallAtK, reciprocalRank } from '../src/domain/eval-metrics.js';
 import { rerankMatches } from '../src/domain/cross-rerank.js';
 import { crossEncoderFromEnv } from '../src/infrastructure/cross-encoder.js';
+import { enrichText, isContextualEnrichEnabled } from '../src/domain/contextual-enrich.js';
 import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 import type { Room } from '../src/domain/graph.js';
 import type { Match } from '../src/domain/vectors.js';
@@ -147,6 +148,18 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
     console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
   }
 
+  // E11 (Phase 23.9): rule-based contextual enrichment — write-path.
+  // When `WELLINFORMED_BENCH_CONTEXTUAL_ENRICH=1`, prepend
+  // `[date: ...] [session: ...]` to every session's text BEFORE
+  // embedding so the bi-encoder vector latches onto date / session-id
+  // signal — targets multi-session and temporal-reasoning headroom.
+  // Participants on LME are always {user, assistant} so we skip that
+  // field (no signal); date comes from `haystack_dates`.
+  const enrichOn = isContextualEnrichEnabled();
+  if (enrichOn) {
+    console.log(`  contextual enrichment ON · prepending [date] [session] [participants] to each haystack session before embedding`);
+  }
+
   let sumR5 = 0;
   let sumMrr = 0;
   const perQuery: { id: string; metric: string; value: number }[] = [];
@@ -171,21 +184,30 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
         const sid = q.haystack_session_ids[s];
         const turns = q.haystack_sessions[s];
         if (!sid || !Array.isArray(turns) || turns.length === 0) continue;
-        const text = sessionToText(turns);
-        if (text.length === 0) continue;
-        sessionTextByNode.set(sid, text);
+        const rawText = sessionToText(turns);
+        if (rawText.length === 0) continue;
+        const date = q.haystack_dates?.[s];
+        // Collect unique speaker roles (LME has 'user' / 'assistant');
+        // when enrichment is off, this is unused.
+        const participants = enrichOn
+          ? Array.from(new Set(turns.map((t) => String(t.role ?? '').toLowerCase()).filter((r) => r.length > 0)))
+          : undefined;
+        const indexedText = enrichOn
+          ? enrichText(rawText, { date, sessionId: sid, participants })
+          : rawText;
+        sessionTextByNode.set(sid, indexedText);
         const r = await indexNode({ graphs, vectors, embedder })({
           node: {
             id: sid,
-            label: text.slice(0, 120),
+            label: rawText.slice(0, 120),
             file_type: 'document',
             source_file: sid,
             source_uri: `session://${sid}`,
             room: ROOM,
-            summary: text.slice(0, 400),
-            fetched_at: q.haystack_dates?.[s] ?? '2026-05-19T00:00:00Z',
+            summary: rawText.slice(0, 400),
+            fetched_at: date ?? '2026-05-19T00:00:00Z',
           },
-          text,
+          text: indexedText,
           room: ROOM,
         });
         if (r.isErr()) throw new Error(`index ${sid}: ${JSON.stringify(r.error)}`);
@@ -247,7 +269,7 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
     },
     perQuery,
     elapsedMs,
-    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Replaces the 20-session synthetic proxy.`,
+    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix)' : 'off'}. Replaces the 20-session synthetic proxy.`,
   };
 
   if (process.env.WELLINFORMED_BENCH_OUT) {
