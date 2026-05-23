@@ -44,8 +44,11 @@ import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
 import { xenovaEmbedder, batchingEmbedder } from '../src/infrastructure/embedders.js';
 import { indexNode, searchByRoom } from '../src/application/use-cases.js';
 import { ndcgAtK, recallAtK, reciprocalRank } from '../src/domain/eval-metrics.js';
+import { rerankMatches } from '../src/domain/cross-rerank.js';
+import { crossEncoderFromEnv } from '../src/infrastructure/cross-encoder.js';
 import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 import type { Room } from '../src/domain/graph.js';
+import type { Match } from '../src/domain/vectors.js';
 
 const ROOM = 'scifact' as Room;
 const DIM = 384;
@@ -145,11 +148,26 @@ test('bench: real BEIR SciFact NDCG@10', { timeout: 24 * 60 * 60 * 1000 }, async
       { maxBatch: 32 },
     );
 
+    // E1' (Phase 23.9): opt-in cross-encoder rerank in the bench path.
+    // Activated via WELLINFORMED_RERANK=1; model selectable via
+    // WELLINFORMED_RERANK_MODEL (default Xenova/ms-marco-MiniLM-L-6-v2,
+    // recommended swap Xenova/bge-reranker-base for SciFact since BGE
+    // is trained on a wider mix of retrieval domains).
+    const reranker = crossEncoderFromEnv();
+    const RERANK_HEAD = 50;  // BEIR convention: rerank top-50 for NDCG@10
+    const overRetrieveK = reranker ? Math.max(RERANK_HEAD, K * 5) : K;
+    if (reranker) {
+      console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → NDCG@${K}`);
+    }
+
     // ─── index corpus ───
     const tIndex0 = performance.now();
     let indexed = 0;
+    // Map doc-id → text for the rerank docTextOf callback.
+    const docTextById = new Map<string, string>();
     for (const d of corpus) {
       const text = d.title ? `${d.title}. ${d.text}` : d.text;
+      docTextById.set(d._id, text);
       const r = await indexNode({ graphs, vectors, embedder })({
         node: {
           id: d._id,
@@ -179,13 +197,20 @@ test('bench: real BEIR SciFact NDCG@10', { timeout: 24 * 60 * 60 * 1000 }, async
     const perQuery: { id: string; metric: string; value: number }[] = [];
 
     for (const q of queries) {
-      const r = await searchByRoom({ graphs, vectors, embedder })({
+      const r0 = await searchByRoom({ graphs, vectors, embedder })({
         room: ROOM,
         text: q.text,
-        k: K,
+        k: overRetrieveK,
       });
-      if (r.isErr()) throw new Error(`search ${q._id}: ${JSON.stringify(r.error)}`);
-      const retrieved = r.value.map((m) => m.node_id as string);
+      if (r0.isErr()) throw new Error(`search ${q._id}: ${JSON.stringify(r0.error)}`);
+      let head: readonly Match[] = r0.value;
+      if (reranker) {
+        const docTextOf = (m: Match): string | undefined =>
+          docTextById.get(m.node_id as string);
+        const rerankRes = await rerankMatches(q.text, head, docTextOf, reranker, { headSize: RERANK_HEAD });
+        head = rerankRes.isOk() ? rerankRes.value : head;
+      }
+      const retrieved = head.slice(0, K).map((m) => m.node_id as string);
       const relevant = qrels.get(q._id) ?? new Set<string>();
 
       const ndcg = ndcgAtK(retrieved, relevant, K);
@@ -219,7 +244,7 @@ test('bench: real BEIR SciFact NDCG@10', { timeout: 24 * 60 * 60 * 1000 }, async
       },
       perQuery,
       elapsedMs,
-      notes: `Real BEIR SciFact — ${corpus.length} docs × ${queries.length} test queries via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Replaces the 30-doc labeled proxy.`,
+      notes: `Real BEIR SciFact — ${corpus.length} docs × ${queries.length} test queries via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}). Replaces the 30-doc labeled proxy.`,
     };
 
     if (process.env.WELLINFORMED_BENCH_OUT) {

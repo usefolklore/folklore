@@ -52,8 +52,11 @@ import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
 import { xenovaEmbedder, batchingEmbedder } from '../src/infrastructure/embedders.js';
 import { indexNode, searchByRoom } from '../src/application/use-cases.js';
 import { recallAtK, reciprocalRank } from '../src/domain/eval-metrics.js';
+import { rerankMatches } from '../src/domain/cross-rerank.js';
+import { crossEncoderFromEnv } from '../src/infrastructure/cross-encoder.js';
 import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 import type { Room } from '../src/domain/graph.js';
+import type { Match } from '../src/domain/vectors.js';
 
 const ROOM = 'sessions' as Room;
 const DIM = 384;
@@ -130,6 +133,20 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
     { maxBatch: 32 },
   );
 
+  // E1' (Phase 23.9): opt-in cross-encoder rerank in the bench path.
+  // Set `WELLINFORMED_RERANK=1` to activate; `WELLINFORMED_RERANK_MODEL`
+  // chooses the reranker (default `Xenova/ms-marco-MiniLM-L-6-v2`; swap
+  // to `Xenova/bge-reranker-base` for NLI-trained domain match).
+  // When active, we over-retrieve K*4 candidates from the hybrid stage
+  // and let the cross-encoder rerank the top-20 head down to the
+  // reported top-K. Off path is unchanged.
+  const reranker = crossEncoderFromEnv();
+  const RERANK_HEAD = 20;
+  const overRetrieveK = reranker ? Math.max(RERANK_HEAD, K * 4) : K;
+  if (reranker) {
+    console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
+  }
+
   let sumR5 = 0;
   let sumMrr = 0;
   const perQuery: { id: string; metric: string; value: number }[] = [];
@@ -144,6 +161,11 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
       if (vecRes.isErr()) throw new Error(JSON.stringify(vecRes.error));
       const vectors = vecRes.value;
 
+      // Map node-id → full session text, used by the optional cross-
+      // encoder rerank's docTextOf callback. Built during indexing so
+      // we don't re-render turn lists on every query.
+      const sessionTextByNode = new Map<string, string>();
+
       // Index every haystack session as one node.
       for (let s = 0; s < q.haystack_session_ids.length; s++) {
         const sid = q.haystack_session_ids[s];
@@ -151,6 +173,7 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
         if (!sid || !Array.isArray(turns) || turns.length === 0) continue;
         const text = sessionToText(turns);
         if (text.length === 0) continue;
+        sessionTextByNode.set(sid, text);
         const r = await indexNode({ graphs, vectors, embedder })({
           node: {
             id: sid,
@@ -168,13 +191,20 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
         if (r.isErr()) throw new Error(`index ${sid}: ${JSON.stringify(r.error)}`);
       }
 
-      const r = await searchByRoom({ graphs, vectors, embedder })({
+      const r0 = await searchByRoom({ graphs, vectors, embedder })({
         room: ROOM,
         text: q.question,
-        k: K,
+        k: overRetrieveK,
       });
-      if (r.isErr()) throw new Error(`search ${q.question_id}: ${JSON.stringify(r.error)}`);
-      const retrieved = r.value.map((m) => m.node_id as string);
+      if (r0.isErr()) throw new Error(`search ${q.question_id}: ${JSON.stringify(r0.error)}`);
+      let head: readonly Match[] = r0.value;
+      if (reranker) {
+        const docTextOf = (m: Match): string | undefined =>
+          sessionTextByNode.get(m.node_id as string);
+        const rerankRes = await rerankMatches(q.question, head, docTextOf, reranker, { headSize: RERANK_HEAD });
+        head = rerankRes.isOk() ? rerankRes.value : head;
+      }
+      const retrieved = head.slice(0, K).map((m) => m.node_id as string);
       const relevant = new Set(q.answer_session_ids);
 
       const r5 = recallAtK(retrieved, relevant, K);
@@ -217,7 +247,7 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
     },
     perQuery,
     elapsedMs,
-    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Replaces the 20-session synthetic proxy.`,
+    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Replaces the 20-session synthetic proxy.`,
   };
 
   if (process.env.WELLINFORMED_BENCH_OUT) {
