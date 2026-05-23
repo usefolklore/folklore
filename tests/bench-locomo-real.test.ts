@@ -58,6 +58,7 @@ import { llmExtractorFromEnv } from '../src/infrastructure/llm-extractor.js';
 import { squadF1, squadExactMatch } from '../src/domain/llm-extractor.js';
 import { rerankMatches } from '../src/domain/cross-rerank.js';
 import { crossEncoderFromEnv } from '../src/infrastructure/cross-encoder.js';
+import { enrichText, isContextualEnrichEnabled } from '../src/domain/contextual-enrich.js';
 import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 import type { Room } from '../src/domain/graph.js';
 import type { Match } from '../src/domain/vectors.js';
@@ -95,6 +96,8 @@ interface ParsedSession {
   readonly sessionTag: string;    // e.g. `D1` — what evidence refs use
   readonly summary: string;
   readonly fetchedAt: string;
+  /** Distinct speaker names in this session — fed into E11 contextual enrichment. */
+  readonly participants: readonly string[];
 }
 
 /**
@@ -122,12 +125,14 @@ const parseSessions = (sample: LocomoSample): ParsedSession[] => {
     if (!Array.isArray(turns)) continue;
 
     const parts: string[] = [];
+    const speakerSet = new Set<string>();
     for (const turn of turns) {
       if (typeof turn !== 'object' || turn === null) continue;
       const t = turn as LocomoTurn;
       const speaker = (t.speaker ?? '').toString().trim();
       const content = ((t.text ?? t.dia ?? '') as string).replace(/\s+/g, ' ').trim();
       if (content.length === 0) continue;
+      if (speaker.length > 0) speakerSet.add(speaker);
       parts.push(speaker.length > 0 ? `${speaker}: ${content.slice(0, 1000)}` : content.slice(0, 1000));
     }
     const summary = parts.join('\n');
@@ -138,6 +143,7 @@ const parseSessions = (sample: LocomoSample): ParsedSession[] => {
       sessionTag,
       summary,
       fetchedAt,
+      participants: Array.from(speakerSet),
     });
   }
   return out;
@@ -253,6 +259,17 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
     console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
   }
 
+  // E11 (Phase 23.9): rule-based contextual enrichment — write-path.
+  // For LoCoMo we have rich metadata: per-session date_time, the LoCoMo
+  // tag (D1/D2/...), and actual speaker names. All three signals get
+  // folded into the index-time vector. The containment scorer below
+  // operates on RAW session text (not enriched) so date / participant
+  // tokens don't inflate token-overlap scores.
+  const enrichOn = isContextualEnrichEnabled();
+  if (enrichOn) {
+    console.log(`  contextual enrichment ON · prepending [date] [session] [participants] to each session before embedding`);
+  }
+
   let totalContainment = 0;
   let totalEvidenceHits = 0;
   let totalSquadF1 = 0;
@@ -282,6 +299,13 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
       const nodeIdToTag = new Map<string, string>();
       for (const s of sessions) {
         nodeIdToTag.set(s.nodeId, s.sessionTag);
+        const indexedText = enrichOn
+          ? enrichText(s.summary, {
+              date: s.fetchedAt,
+              sessionId: s.sessionTag,
+              participants: s.participants,
+            })
+          : s.summary;
         const r = await indexNode({ graphs, vectors, embedder })({
           node: {
             id: s.nodeId,
@@ -293,7 +317,7 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
             summary: s.summary.slice(0, 400),
             fetched_at: s.fetchedAt,
           },
-          text: s.summary,
+          text: indexedText,
           room: ROOM,
         });
         if (r.isErr()) throw new Error(`index ${s.nodeId}: ${JSON.stringify(r.error)}`);
@@ -420,7 +444,7 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
     },
     perQuery,
     elapsedMs,
-    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
+    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix, scoring on raw text)' : 'off'}. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
   };
 
   if (process.env.WELLINFORMED_BENCH_OUT) {
