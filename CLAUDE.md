@@ -249,11 +249,33 @@ npx @claude-flow/cli@latest doctor --fix
 
 # wellinformed
 wellinformed is a knowledge-graph-first research layer with P2P
-federation. A PreToolUse hook prefetches the graph before
-Glob/Grep/Read/WebSearch/WebFetch and injects top matches into your
-context. A PostToolUse hook auto-saves WebSearch / WebFetch results to
-the system-managed `research` room so the graph absorbs everything
-you learn from the web.
+federation. It is **network-before-web** by design: local tool calls
+(Read / Grep / Glob) run unaffected, but the moment you reach for
+`WebSearch` or `WebFetch`, a PreToolUse hook asks your own graph +
+connected peers first. If a confident answer exists (satisfaction ≥
+0.85 with ≥ 2 hits), the hook **denies the web call outright** and
+injects the graph hits into your context — you reason from cached
+peer knowledge instead of paying the network trip. If the graph
+can't satisfy the query, the web call proceeds normally and a
+PostToolUse hook auto-saves the result into the system-managed
+`research` room so the next session (yours or any peer's) hits the
+graph instead of the web.
+
+What this means in practice:
+- Routine prompts ("fix this typo", "rename X to Y") never touch
+  wellinformed — zero overhead, zero noise.
+- Local code exploration (Read / Grep / Glob) runs without the hook.
+- Only outbound network lookups trigger the prefetch + possible deny.
+- When you (or other peers) have already researched something, you
+  pay the network cost zero additional times after the first.
+
+Tuning knobs (env in `.claude/settings.json`):
+- `WELLINFORMED_DENY_WEBSEARCH=1` — enable deny-on-confidence (on by
+  default in this project).
+- `WELLINFORMED_DENY_THRESHOLD=0.85` — confidence floor for deny.
+- `WELLINFORMED_DENY_MIN_HITS=2` — minimum graph hits before denying.
+- `WELLINFORMED_PREFETCH_PEERS=0` — force local-only (skip federated
+  fan-out).
 
 ## System rooms (always-on, P2P-shared, auto-populated)
 
@@ -288,20 +310,49 @@ hit vs re-fetch:
 
 ## When to invoke wellinformed
 
-1. Use the wellinformed MCP tools (`search`, `ask`, `get_node`,
-   `get_neighbors`) BEFORE outbound lookups on any research,
-   architecture, or "what did I read about X" question. MCP is the
-   right default: type-safe schemas, ~50 ms per call (vs ~500 ms
-   Node-boot for a CLI subprocess), proper permission-deny support,
-   and cross-harness portability (the same MCP server speaks to
-   Claude Code, Cursor, Cline, Gemini CLI, etc.). The visibility of
-   federation is handled separately by the statusline panel and the
-   `wellinformed metrics bypass` audit, not by routing through Bash.
-2. `search` / `ask` take a query string and optional room filter.
-3. `find_tunnels` surfaces surprising connections across domains.
-4. After reasoning through an external result, use
-   `wellinformed save --type synthesis --room <room>` to file the
-   distilled insight alongside the raw source node the auto-save hook
-   already captured.
+The hook handles the **passive** lane — outbound `WebSearch` /
+`WebFetch` calls are gated by the graph automatically, you don't have
+to think about it. The **active** lane is when you want to consult
+memory explicitly, before deciding whether you even need a web call:
+
+1. **Pull from memory first, web second.** For any "what did I read
+   about X?", "how did we approach Y before?", "is this concept
+   already indexed?" question, call the wellinformed MCP tools
+   (`search`, `ask`, `get_node`, `get_neighbors`, `find_tunnels`,
+   `recall`) before deciding to WebSearch. The deny-on-confidence
+   hook will cancel a WebSearch you launch redundantly, but it's
+   cheaper to skip the launch entirely.
+
+2. **MCP is the right default for active calls.** Type-safe schemas,
+   ~50 ms per call (vs ~500 ms Node-boot for a CLI subprocess),
+   proper permission-deny support, and cross-harness portability
+   (the same MCP server speaks to Claude Code, Cursor, Cline, Gemini
+   CLI, etc.). The visibility of federation is handled separately by
+   the statusline panel and the `wellinformed metrics bypass` audit,
+   not by routing through Bash.
+
+3. **`search` / `ask`** take a query string and optional room filter.
+   `ask` is the higher-level one — it does multi-stage retrieval
+   (hybrid lex+vec → cross-encoder rerank → graph PPR rerank) and
+   returns a satisfaction-scored result. `search` is the raw k-NN.
+
+4. **`find_tunnels`** surfaces surprising connections across domains
+   — useful when you suspect two ideas are related but aren't sure.
+
+5. **`get_node` / `get_neighbors`** for graph traversal when you
+   already have a node id (from a prior search hit or a citation).
+
+6. **Save synthesized insights with `wellinformed save --type
+   synthesis --room <room>`** after reasoning through an external
+   result. The auto-save hook already filed the raw source; your
+   synthesis adds the *distilled* claim alongside it. Future
+   retrieval hits the synthesis first (shorter, denser signal) and
+   pulls the raw source as the neighbor.
+
+7. **When the deny-hook overrides your WebSearch.** If you see the
+   tool call denied with a graph hit injected, treat the graph data
+   as the authoritative answer. If it turns out wrong or stale,
+   tune `WELLINFORMED_DENY_THRESHOLD` upward (0.90 / 0.95) or trigger
+   a refresh via `mcp__wellinformed__trigger_room` then retry.
 
 <!-- wellinformed:end -->
