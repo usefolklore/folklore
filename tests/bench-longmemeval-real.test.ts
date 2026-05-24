@@ -143,7 +143,17 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
   // reported top-K. Off path is unchanged.
   const reranker = crossEncoderFromEnv();
   const RERANK_HEAD = 20;
-  const overRetrieveK = reranker ? Math.max(RERANK_HEAD, K * 4) : K;
+  // T1 diagnostic (Phase 23.10): always fetch deep enough to compute
+  // R@5 / R@10 / R@20 / R@50 from a single retrieval pass. Lets us
+  // diagnose head saturation — if R@20 ≈ R@5 ≈ baseline 0.92, the
+  // gold is concentrated in the head and rerank cannot lift recall.
+  // If R@50 jumps materially over R@20, the candidate pool has more
+  // gold and a wider rerank window (or write-path lift) could
+  // surface it. Pure observability — adds ~30 ms per query of
+  // additional sqlite-vec depth, no model cost.
+  const RECALL_KS = [5, 10, 20, 50] as const;
+  const KMAX = Number(process.env.WELLINFORMED_BENCH_LME_KMAX ?? 50);
+  const overRetrieveK = Math.max(KMAX, reranker ? RERANK_HEAD : 5);
   if (reranker) {
     console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
   }
@@ -162,6 +172,11 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
 
   let sumR5 = 0;
   let sumMrr = 0;
+  // T1 diagnostic accumulators — recall at multiple K values from the
+  // same retrieval pass, plus per-type breakdown at R@5 / R@50 (the
+  // two head-saturation diagnostic anchors).
+  const sumRK: Record<number, number> = Object.fromEntries(RECALL_KS.map((k) => [k, 0]));
+  const perTypeRK: Record<string, { hits: Record<number, number>; total: number }> = {};
   const perQuery: { id: string; metric: string; value: number }[] = [];
   const perType: Record<string, { hits: number; total: number }> = {};
 
@@ -226,7 +241,14 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
         const rerankRes = await rerankMatches(q.question, head, docTextOf, reranker, { headSize: RERANK_HEAD });
         head = rerankRes.isOk() ? rerankRes.value : head;
       }
-      const retrieved = head.slice(0, K).map((m) => m.node_id as string);
+      // Full retrieved list (KMAX-deep) for the T1 multi-K diagnostic.
+      // The reranker (when ON) only reshuffles the top-RERANK_HEAD; the
+      // tail past 20 stays in bi-encoder order, which is exactly what
+      // we want for the R@50 diagnostic — measure the bi-encoder's
+      // candidate-pool quality without rerank influence on positions
+      // 21-50.
+      const retrievedFull = head.map((m) => m.node_id as string);
+      const retrieved = retrievedFull.slice(0, K);
       const relevant = new Set(q.answer_session_ids);
 
       const r5 = recallAtK(retrieved, relevant, K);
@@ -235,10 +257,27 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
       sumMrr += rr;
       perQuery.push({ id: q.question_id, metric: 'R@5', value: r5 });
 
+      // T1 diagnostic — recall at the full ladder from one retrieval call.
+      const rkPerQ: Record<number, number> = {};
+      for (const k of RECALL_KS) {
+        const rk = recallAtK(retrievedFull, relevant, k);
+        sumRK[k] += rk;
+        rkPerQ[k] = rk;
+      }
+
       const bucket = perType[q.question_type] ?? { hits: 0, total: 0 };
       bucket.hits += r5;
       bucket.total += 1;
       perType[q.question_type] = bucket;
+
+      // Per-type ladder so we can see whether head saturation is
+      // type-specific (e.g. temporal queries may have a flat ladder
+      // — gold simply isn't in the candidate pool at all — while
+      // single-session-assistant may saturate at K=5).
+      const tbucket = perTypeRK[q.question_type] ?? { hits: Object.fromEntries(RECALL_KS.map((k) => [k, 0])), total: 0 };
+      for (const k of RECALL_KS) tbucket.hits[k] += rkPerQ[k];
+      tbucket.total += 1;
+      perTypeRK[q.question_type] = tbucket;
 
       vectors.close();
     } finally {
@@ -254,6 +293,10 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
 
   const r5 = sumR5 / dataset.length;
   const mrr = sumMrr / dataset.length;
+  // T1 diagnostic ladder averaged across all questions.
+  const rkAvg: Record<number, number> = Object.fromEntries(
+    RECALL_KS.map((k) => [k, sumRK[k] / dataset.length]),
+  );
   const elapsedMs = performance.now() - t0;
 
   const report: BenchSuiteReport = {
@@ -263,22 +306,40 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
       recall5: r5,
       mrr,
       scoredQuestions: dataset.length,
+      // T1 ladder — recall at multiple K values from one retrieval pass.
+      // Head-saturation diagnostic: if r20 ≈ r5, the head is full and
+      // reranking it can't help; the lever is changing what enters
+      // the candidate pool, not what's reranked inside it.
+      recall10: rkAvg[10],
+      recall20: rkAvg[20],
+      recall50: rkAvg[50],
       ...Object.fromEntries(Object.entries(perType).map(([k, v]) => [
         `r5_${k}`, v.total > 0 ? v.hits / v.total : 0,
+      ])),
+      // Per-type R@50 — flat ladder by type (e.g. r5≈r50 on temporal
+      // means gold isn't in the candidate pool at all for that type;
+      // a steep ladder means it's in the tail and a wider rerank
+      // window would help).
+      ...Object.fromEntries(Object.entries(perTypeRK).map(([k, v]) => [
+        `r50_${k}`, v.total > 0 ? v.hits[50] / v.total : 0,
       ])),
     },
     perQuery,
     elapsedMs,
-    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix)' : 'off'}. Replaces the 20-session synthetic proxy.`,
+    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix)' : 'off'}. T1 diagnostic: R@5/10/20/50 from a single KMAX=${KMAX} retrieval pass. Replaces the 20-session synthetic proxy.`,
   };
 
   if (process.env.WELLINFORMED_BENCH_OUT) {
     appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
   }
 
-  console.log(`bench longmemeval-real: R@5=${r5.toFixed(4)} MRR=${mrr.toFixed(4)} (n=${dataset.length}) in ${(elapsedMs / 1000).toFixed(1)}s`);
+  console.log(`bench longmemeval-real: R@5=${r5.toFixed(4)} R@10=${rkAvg[10].toFixed(4)} R@20=${rkAvg[20].toFixed(4)} R@50=${rkAvg[50].toFixed(4)} MRR=${mrr.toFixed(4)} (n=${dataset.length}) in ${(elapsedMs / 1000).toFixed(1)}s`);
   for (const [tname, v] of Object.entries(perType)) {
-    console.log(`  ${tname.padEnd(28)} R@5=${(v.hits / v.total).toFixed(3)} (n=${v.total})`);
+    const ladder = perTypeRK[tname];
+    const r50t = ladder ? (ladder.hits[50] / ladder.total).toFixed(3) : '-';
+    const r20t = ladder ? (ladder.hits[20] / ladder.total).toFixed(3) : '-';
+    const r10t = ladder ? (ladder.hits[10] / ladder.total).toFixed(3) : '-';
+    console.log(`  ${tname.padEnd(28)} R@5=${(v.hits / v.total).toFixed(3)}  R@10=${r10t}  R@20=${r20t}  R@50=${r50t}  (n=${v.total})`);
   }
 
   // agentmemory claims ~95% Recall@5 on the public benchmark with
