@@ -257,7 +257,14 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
   const reranker = crossEncoderFromEnv();
   const listwiseScorer = listwiseScorerFromEnv();
   const RERANK_HEAD = Number(process.env.WELLINFORMED_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
-  const overRetrieveK = (reranker || listwiseScorer) ? Math.max(RERANK_HEAD, K * 7) : K;
+  // Phase 23.13 — LoCoMo recall ladder. Always over-retrieve to KMAX
+  // so we can compute evidence-recall at K=3 / 10 / 30 / 50 from one
+  // pass, mirroring the LME-S T1 diagnostic. If R@30 ≈ R@3 the rerank
+  // ceiling is structurally low (gold not in pool); if R@30 jumps
+  // materially above R@3, there's recall headroom worth chasing.
+  const RECALL_KS = [3, 10, 30, 50] as const;
+  const KMAX = Number(process.env.WELLINFORMED_BENCH_LOCOMO_KMAX ?? 50);
+  const overRetrieveK = Math.max(KMAX, (reranker || listwiseScorer) ? RERANK_HEAD : K);
   if (listwiseScorer) {
     console.log(`  LLM-listwise rerank ON · model=${listwiseScorer.model} · over-retrieve k=${overRetrieveK} → listwise head=${RERANK_HEAD} → final K=${K}`);
   } else if (reranker) {
@@ -279,6 +286,9 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
   let totalEvidenceHits = 0;
   let totalSquadF1 = 0;
   let totalSquadEm = 0;
+  // Phase 23.13 — recall ladder accumulators (binary all-gold-in-top-K
+  // per question, averaged across all factual QA pairs).
+  const sumEvHitsK: Record<number, number> = Object.fromEntries(RECALL_KS.map((k) => [k, 0]));
   let totalQ = 0;
   const perQuery: { id: string; metric: string; value: number }[] = [];
   const perCategory: Record<string, { sumContain: number; sumEv: number; sumF1: number; sumEm: number; n: number }> = {};
@@ -360,6 +370,21 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
 
         const goldTags = evidenceToSessionTags(q.evidence);
         const evidenceFound = goldTags.size > 0 && [...goldTags].every((tag) => retrievedTags.has(tag));
+
+        // Phase 23.13 recall ladder — strict-all-gold evidence-recall at
+        // K=3 / 10 / 30 / 50 from the same (post-rerank-if-any) head.
+        // When rerank is OFF, head = bi-encoder top-overRetrieveK, so
+        // this measures the bi-encoder's raw candidate-pool recall.
+        if (goldTags.size > 0) {
+          for (const k of RECALL_KS) {
+            const tagsK = new Set(
+              head.slice(0, k)
+                .map((m) => nodeIdToTag.get(m.node_id as string) ?? '')
+                .filter((t) => t.length > 0),
+            );
+            if ([...goldTags].every((tag) => tagsK.has(tag))) sumEvHitsK[k] += 1;
+          }
+        }
         const goldAnswer = toAnswerString(q.answer);
         const containment = answerTokenContainment(retrievedText, goldAnswer);
 
@@ -424,6 +449,13 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
       }
     : {};
 
+  // Phase 23.13 recall ladder — strict-all-gold evidence-recall at
+  // K=3 / 10 / 30 / 50. Set-based metric; rerank within the head
+  // affects at-K ordering but NOT membership in the larger pool.
+  const evrecallK: Record<number, number> = Object.fromEntries(
+    RECALL_KS.map((k) => [k, totalQ > 0 ? sumEvHitsK[k] / totalQ : 0]),
+  );
+
   const report: BenchSuiteReport = {
     suite: 'locomo-real',
     metrics: {
@@ -431,6 +463,11 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
       evidenceRecall,
       answerTokenContainment: meanContainment,
       scoredQuestions: totalQ,
+      // Phase 23.13 recall ladder.
+      evrecall3: evrecallK[3],
+      evrecall10: evrecallK[10],
+      evrecall30: evrecallK[30],
+      evrecall50: evrecallK[50],
       ...extractorMetrics,
       ...Object.fromEntries(
         Object.entries(perCategory).map(([k, v]) => [
@@ -460,6 +497,7 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
   }
 
   console.log(`bench locomo-real: dimension=${dimensionScore.toFixed(4)} (evidence-recall=${evidenceRecall.toFixed(3)}, containment=${meanContainment.toFixed(3)}) over ${totalQ} questions in ${(elapsedMs / 1000).toFixed(1)}s`);
+  console.log(`  evidence-recall ladder (strict all-gold): R@3=${evrecallK[3].toFixed(3)} R@10=${evrecallK[10].toFixed(3)} R@30=${evrecallK[30].toFixed(3)} R@50=${evrecallK[50].toFixed(3)}`);
   if (extractor) {
     console.log(`  LLM extractor (${extractor.model}): SQuAD-F1=${meanSquadF1.toFixed(4)} EM=${meanSquadEm.toFixed(4)}`);
   }
