@@ -58,6 +58,8 @@ import { llmExtractorFromEnv } from '../src/infrastructure/llm-extractor.js';
 import { squadF1, squadExactMatch } from '../src/domain/llm-extractor.js';
 import { rerankMatches } from '../src/domain/cross-rerank.js';
 import { crossEncoderFromEnv } from '../src/infrastructure/cross-encoder.js';
+import { rerankMatchesListwise } from '../src/domain/llm-listwise-rerank.js';
+import { listwiseScorerFromEnv } from '../src/infrastructure/llm-listwise-rerank.js';
 import { enrichText, isContextualEnrichEnabled } from '../src/domain/contextual-enrich.js';
 import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 import type { Room } from '../src/domain/graph.js';
@@ -253,9 +255,12 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
   // For LoCoMo evidence-recall (K=3) we still over-retrieve a wider
   // candidate window so the cross-encoder can reshape the top-3.
   const reranker = crossEncoderFromEnv();
-  const RERANK_HEAD = 20;
-  const overRetrieveK = reranker ? Math.max(RERANK_HEAD, K * 7) : K;
-  if (reranker) {
+  const listwiseScorer = listwiseScorerFromEnv();
+  const RERANK_HEAD = Number(process.env.WELLINFORMED_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
+  const overRetrieveK = (reranker || listwiseScorer) ? Math.max(RERANK_HEAD, K * 7) : K;
+  if (listwiseScorer) {
+    console.log(`  LLM-listwise rerank ON · model=${listwiseScorer.model} · over-retrieve k=${overRetrieveK} → listwise head=${RERANK_HEAD} → final K=${K}`);
+  } else if (reranker) {
     console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
   }
 
@@ -334,9 +339,12 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
         });
         if (r0.isErr()) throw new Error(`search ${sIdx}.${qIdx}: ${JSON.stringify(r0.error)}`);
         let head: readonly Match[] = r0.value;
-        if (reranker) {
-          const docTextOf = (m: Match): string | undefined =>
-            sessionTextByNode.get(m.node_id as string);
+        const docTextOf = (m: Match): string | undefined =>
+          sessionTextByNode.get(m.node_id as string);
+        if (listwiseScorer) {
+          const rerankRes = await rerankMatchesListwise(q.question, head, docTextOf, listwiseScorer, { headSize: RERANK_HEAD });
+          head = rerankRes.isOk() ? rerankRes.value : head;
+        } else if (reranker) {
           const rerankRes = await rerankMatches(q.question, head, docTextOf, reranker, { headSize: RERANK_HEAD });
           head = rerankRes.isOk() ? rerankRes.value : head;
         }
@@ -444,7 +452,7 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
     },
     perQuery,
     elapsedMs,
-    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix, scoring on raw text)' : 'off'}. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
+    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix, scoring on raw text)' : 'off'}. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
   };
 
   if (process.env.WELLINFORMED_BENCH_OUT) {
