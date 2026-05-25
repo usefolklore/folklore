@@ -78,6 +78,26 @@ export interface ListwiseRerankOptions {
    * for a 30-candidate head.
    */
   readonly maxCharsPerCandidate?: number;
+  /**
+   * Shuffle candidates before showing them to the LLM. Default `true`.
+   *
+   * Listwise rerankers have a well-known *input-order bias* — when
+   * candidates arrive sorted (e.g. by bi-encoder cosine, as they do
+   * from our retriever) the LLM tends to passively confirm that
+   * order rather than independently rank by content. RankGPT et al.
+   * report this and address it via sliding-window scans or input
+   * permutation; we use deterministic-per-query shuffling.
+   *
+   * Empirically validated 2026-05-25: on real LoCoMo questions both
+   * qwen2.5:1.5b and the bench-time gpt-oss:20b path produced
+   * IDENTICAL top-3 sets to the bi-encoder when candidates were
+   * presented in cosine order. Shuffling breaks the bias and lets
+   * the model rank on its own merits.
+   *
+   * Set to `false` for ablation studies or when the upstream retriever
+   * does not return a sorted list.
+   */
+  readonly shuffleInput?: boolean;
 }
 
 // ─────────────── algorithm ─────────────
@@ -104,6 +124,7 @@ export const rerankMatchesListwise = (
 ): ResultAsync<readonly Match[], RerankError> => {
   const headSize = opts.headSize ?? 30;
   const maxChars = opts.maxCharsPerCandidate ?? 500;
+  const shuffleInput = opts.shuffleInput !== false;
 
   if (matches.length === 0) return okAsync(matches);
 
@@ -128,8 +149,12 @@ export const rerankMatchesListwise = (
 
   if (candidates.length === 0) return okAsync(matches);
 
+  // Break input-order bias — shuffle deterministically per query.
+  // See `ListwiseRerankOptions.shuffleInput` for rationale.
+  const presented = shuffleInput ? shuffleSeeded(candidates, hashString(query)) : candidates;
+
   return scorer
-    .score({ query, candidates, topK: candidates.length })
+    .score({ query, candidates: presented, topK: candidates.length })
     .map((orderedIds) => {
       const reranked: Match[] = [];
       const placed = new Set<string>();
@@ -156,6 +181,33 @@ export const rerankMatchesListwise = (
 
 const truncate = (s: string, maxChars: number): string =>
   s.length > maxChars ? `${s.slice(0, maxChars)}…` : s;
+
+/**
+ * Deterministic-per-query shuffle. Uses Fisher-Yates with a seeded
+ * xorshift32 PRNG so the same (query, candidates) always produces
+ * the same presentation order — bench runs reproduce, debug-replay
+ * works, peer comparisons are valid.
+ */
+const shuffleSeeded = <T>(arr: readonly T[], seed: number): T[] => {
+  const out = [...arr];
+  let s = seed === 0 ? 1 : seed;
+  for (let i = out.length - 1; i > 0; i--) {
+    // xorshift32 step
+    s ^= s << 13; s ^= s >>> 17; s ^= s << 5;
+    const j = ((s >>> 0) % (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+};
+
+/** djb2 hash → 32-bit seed for the shuffle PRNG. Deterministic. */
+const hashString = (s: string): number => {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 33) ^ s.charCodeAt(i);
+  }
+  return h >>> 0;
+};
 
 // ─────────────── prompt builder (shared between adapters) ─────────────
 
