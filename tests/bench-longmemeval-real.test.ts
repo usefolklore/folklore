@@ -54,6 +54,8 @@ import { indexNode, searchByRoom } from '../src/application/use-cases.js';
 import { recallAtK, reciprocalRank } from '../src/domain/eval-metrics.js';
 import { rerankMatches } from '../src/domain/cross-rerank.js';
 import { crossEncoderFromEnv } from '../src/infrastructure/cross-encoder.js';
+import { rerankMatchesListwise } from '../src/domain/llm-listwise-rerank.js';
+import { listwiseScorerFromEnv } from '../src/infrastructure/llm-listwise-rerank.js';
 import { enrichText, isContextualEnrichEnabled } from '../src/domain/contextual-enrich.js';
 import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 import type { Room } from '../src/domain/graph.js';
@@ -141,8 +143,14 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
   // When active, we over-retrieve K*4 candidates from the hybrid stage
   // and let the cross-encoder rerank the top-20 head down to the
   // reported top-K. Off path is unchanged.
+  // E1' cross-encoder reranker (Xenova ms-marco / bge / etc.).
   const reranker = crossEncoderFromEnv();
-  const RERANK_HEAD = 20;
+  // Phase 23.12 LLM listwise reranker (Ollama-backed) — opt-in via
+  // `WELLINFORMED_LLM_RERANK=1`. When both are set, LISTWISE WINS
+  // (the cross-encoder path is bypassed). This lets E1' and listwise
+  // be A/B'd cleanly without code changes.
+  const listwiseScorer = listwiseScorerFromEnv();
+  const RERANK_HEAD = Number(process.env.WELLINFORMED_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
   // T1 diagnostic (Phase 23.10): always fetch deep enough to compute
   // R@5 / R@10 / R@20 / R@50 from a single retrieval pass. Lets us
   // diagnose head saturation — if R@20 ≈ R@5 ≈ baseline 0.92, the
@@ -153,8 +161,10 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
   // additional sqlite-vec depth, no model cost.
   const RECALL_KS = [5, 10, 20, 50] as const;
   const KMAX = Number(process.env.WELLINFORMED_BENCH_LME_KMAX ?? 50);
-  const overRetrieveK = Math.max(KMAX, reranker ? RERANK_HEAD : 5);
-  if (reranker) {
+  const overRetrieveK = Math.max(KMAX, (reranker || listwiseScorer) ? RERANK_HEAD : 5);
+  if (listwiseScorer) {
+    console.log(`  LLM-listwise rerank ON · model=${listwiseScorer.model} · over-retrieve k=${overRetrieveK} → listwise head=${RERANK_HEAD} → final K=${K}`);
+  } else if (reranker) {
     console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
   }
 
@@ -235,9 +245,19 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
       });
       if (r0.isErr()) throw new Error(`search ${q.question_id}: ${JSON.stringify(r0.error)}`);
       let head: readonly Match[] = r0.value;
-      if (reranker) {
-        const docTextOf = (m: Match): string | undefined =>
-          sessionTextByNode.get(m.node_id as string);
+      const docTextOf = (m: Match): string | undefined =>
+        sessionTextByNode.get(m.node_id as string);
+      // Phase 23.12 — listwise wins when both rerankers are configured.
+      if (listwiseScorer) {
+        const rerankRes = await rerankMatchesListwise(
+          q.question,
+          head,
+          docTextOf,
+          listwiseScorer,
+          { headSize: RERANK_HEAD },
+        );
+        head = rerankRes.isOk() ? rerankRes.value : head;
+      } else if (reranker) {
         const rerankRes = await rerankMatches(q.question, head, docTextOf, reranker, { headSize: RERANK_HEAD });
         head = rerankRes.isOk() ? rerankRes.value : head;
       }
@@ -326,7 +346,7 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
     },
     perQuery,
     elapsedMs,
-    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix)' : 'off'}. T1 diagnostic: R@5/10/20/50 from a single KMAX=${KMAX} retrieval pass. Replaces the 20-session synthetic proxy.`,
+    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix)' : 'off'}. T1 diagnostic: R@5/10/20/50 from a single KMAX=${KMAX} retrieval pass. Replaces the 20-session synthetic proxy.`,
   };
 
   if (process.env.WELLINFORMED_BENCH_OUT) {
