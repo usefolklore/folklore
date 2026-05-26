@@ -1,6 +1,6 @@
-# wellinformed — social launch pack
+# Akashik — social launch pack
 
-The copy that ships when wellinformed leaves the bench. One source of
+The copy that ships when Akashik leaves the bench. One source of
 truth for every channel: X, HN, LinkedIn, Reddit, captions, slide
 subheads, email blurbs. Pull from here; do not improvise.
 
@@ -27,7 +27,7 @@ contradicts them, the variant is wrong.
 
 ### 1.2 — Launch tweet (single, 280 chars)
 
-> Just shipped wellinformed — the globally accumulating knowledge
+> Just shipped Akashik — the globally accumulating knowledge
 > network for AI agents, and the humans who run them.
 >
 > Cooperative, peer-to-peer (Napster lineage, BitTorrent lineage).
@@ -42,7 +42,7 @@ contradicts them, the variant is wrong.
 
 > Most retrieval systems wait until your AI agent decides to search.
 >
-> wellinformed lands in the prompt itself.
+> Akashik lands in the prompt itself.
 >
 > 🧵
 
@@ -69,7 +69,7 @@ contradicts them, the variant is wrong.
 
 > Demo: same prompt, same model. Two terminals.
 >
-> One uses wellinformed. ~10× faster. Cited from local research. Hook
+> One uses Akashik. ~10× faster. Cited from local research. Hook
 > fired before any tool call.
 >
 > [scene-claude.gif]
@@ -85,7 +85,7 @@ contradicts them, the variant is wrong.
 
 ### 1.4 — Reply hooks (use when someone asks "isn't this just RAG?")
 
-> Every other RAG fires when the agent calls a tool. wellinformed
+> Every other RAG fires when the agent calls a tool. Akashik
 > fires when the user types. The retrieval happens before the LLM
 > reads the question.
 
@@ -100,15 +100,15 @@ contradicts them, the variant is wrong.
 
 Two options, ordered by my preference:
 
-1. **Show HN: wellinformed — retrieval lands before the LLM reads the prompt**
-2. **Show HN: wellinformed — globally accumulating knowledge network for AI agents and the humans who run them (P2P, MIT)**
+1. **Show HN: Akashik — retrieval lands before the LLM reads the prompt**
+2. **Show HN: Akashik — globally accumulating knowledge network for AI agents and the humans who run them (P2P, MIT)**
 
 Option 1 leads with the technical wedge HN respects. Option 2 leads
 with the category claim.
 
 ### 2.2 — Body
 
-> wellinformed is a local-first knowledge graph + libp2p P2P
+> Akashik is a local-first knowledge graph + libp2p P2P
 > federation that hooks into Claude Code, Codex, Gemini, and any MCP
 > host. The wedge: retrieval happens at *prompt* time, not at
 > *tool-call* time. By the time the LLM reads the user's message, the
@@ -140,7 +140,7 @@ with the category claim.
 
 > Different layer. Mem0 and Letta are agent-memory frameworks; you
 > bolt them into the agent's runtime. LangChain RAG fires when the
-> agent decides it needs context. wellinformed fires *before the agent
+> agent decides it needs context. Akashik fires *before the agent
 > reads the prompt* — the result is injected as
 > `additionalContext` on UserPromptSubmit, so the LLM never has to
 > decide to search. It just reads.
@@ -176,7 +176,7 @@ with the category claim.
 > I shipped something I think changes how knowledge flows in AI agent
 > workflows.
 >
-> **wellinformed is the globally accumulating knowledge network for AI
+> **Akashik is the globally accumulating knowledge network for AI
 > agents — and humans.** Cooperative, peer-to-peer, in the lineage of
 > Napster, eMule, and BitTorrent. Every peer's research compounds for
 > the whole network. A sub-second retrieval replaces 90+ seconds of
@@ -189,7 +189,7 @@ with the category claim.
 > sessions, every peer's contribution.
 >
 > The technical wedge: while every other RAG framework wires retrieval
-> into the agent's tool-call path, wellinformed wires it into the
+> into the agent's tool-call path, Akashik wires it into the
 > *prompt* path. By the time Claude (or Codex, or Gemini) reads your
 > message, the local + federated graph's answer is already in context.
 >
@@ -205,7 +205,7 @@ with the category claim.
 
 > The bit that hooked me: retrieval fires *before* the LLM reads the
 > prompt. Most "RAG" frameworks bolt search into the agent's tool path
-> — wellinformed lands the answer in the context window before the
+> — Akashik lands the answer in the context window before the
 > model thinks. Different layer.
 
 ---
@@ -214,7 +214,7 @@ with the category claim.
 
 ### 4.1 — r/programming title
 
-> [Show] wellinformed — local-first knowledge graph + P2P federation that hooks into Claude Code's prompt path
+> [Show] Akashik — local-first knowledge graph + P2P federation that hooks into Claude Code's prompt path
 
 ### 4.2 — r/programming body
 
@@ -222,7 +222,7 @@ with the category claim.
 > into the agent's tool-call path — meaning Claude has to *decide* to
 > search before it gets context. That's the wrong layer.
 >
-> wellinformed wires retrieval into the prompt itself. The hook fires
+> Akashik wires retrieval into the prompt itself. The hook fires
 > on UserPromptSubmit (a Claude Code lifecycle event), runs
 > `wellinformed ask` against a local knowledge graph + connected
 > peers, and injects the result as `additionalContext` before the LLM
@@ -244,7 +244,7 @@ with the category claim.
 
 ### 4.3 — r/MachineLearning angle
 
-> [P] wellinformed — peer-federated knowledge retrieval with
+> [P] Akashik — peer-federated knowledge retrieval with
 > subject-scoped Bayesian reputation
 >
 > The reputation system might interest folks here: each peer
@@ -273,7 +273,7 @@ Ship these as alt-text, video subheads, screenshot captions.
 
 **scene-claude.gif** (the ~10× side-by-side)
 
-> Same model. Same prompt. The only difference is wellinformed.
+> Same model. Same prompt. The only difference is Akashik.
 
 **scene-prompt-hook.gif** (UserPromptSubmit hook in flight)
 
@@ -293,12 +293,12 @@ For talks, decks, podcast intros, conference badges:
 
 - *The globally accumulating knowledge network. For AI agents — and humans.*
 - *One graph. Two readers: your agent, and you.*
-- *Most RAG fires when the agent calls a tool. wellinformed fires when the user types.*
+- *Most RAG fires when the agent calls a tool. Akashik fires when the user types.*
 - *Cooperative knowledge — Napster lineage.*
 - *Sub-second retrieval. 90 seconds of AI research, every time.*
 - *No server. No subscription. No revoke.*
 - *The peer who answered last week answers your agent today.*
-- *Same model. Same prompt. The only difference is wellinformed.*
+- *Same model. Same prompt. The only difference is Akashik.*
 - *W3C did:key identity. Your math, not someone's user table.*
 
 ---
@@ -307,24 +307,24 @@ For talks, decks, podcast intros, conference badges:
 
 **Long (180 chars)**
 
-> Building wellinformed — the globally accumulating knowledge network
+> Building Akashik — the globally accumulating knowledge network
 > for AI agents and humans. Cooperative, P2P, MIT.
 > github.com/SaharBarak/wellinformed
 
 **Medium (120 chars)**
 
-> wellinformed — knowledge before the prompt. Cooperative, P2P, MIT.
+> Akashik — knowledge before the prompt. Cooperative, P2P, MIT.
 > github.com/SaharBarak/wellinformed
 
 **Short (60 chars)**
 
-> wellinformed — knowledge before the prompt.
+> Akashik — knowledge before the prompt.
 
 ---
 
 ## 8 · What NOT to say
 
-These phrases dilute wellinformed by tying it to weaker incumbents.
+These phrases dilute Akashik by tying it to weaker incumbents.
 Keep them out of every channel:
 
 - *AI-powered* — every product says it; says nothing.
@@ -353,7 +353,7 @@ When the launch goes live, post in this order:
 7. **r/programming** — paste 4.1 + 4.2 (Tuesday morning ET, peak engagement).
 8. **r/MachineLearning** — paste 4.3 if reputation work is the angle that lands.
 9. **Slack/Discord communities** — short blurb (section 7 medium) + GIF link.
-10. **Email blast (if list exists)** — short subject line: "wellinformed is live"; body = mission paragraph + repo link.
+10. **Email blast (if list exists)** — short subject line: "Akashik is live"; body = mission paragraph + repo link.
 
 Don't post simultaneously. Stagger by ~30 min so each channel can
 absorb its first wave of feedback before the next.

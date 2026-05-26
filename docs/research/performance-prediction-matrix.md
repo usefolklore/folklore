@@ -112,7 +112,7 @@ Total wall-time: ~6 hours for all four, spread across Hetzner + Mac. Each one in
 
 The defensible positioning *isn't* "we beat agentmemory on R@5" — that depends on a tier they probably already use and we're catching up to. The defensible positioning is:
 
-> **wellinformed is the only retrieval system that adapts to whatever hardware its user has.**
+> **Akashik is the only retrieval system that adapts to whatever hardware its user has.**
 > On a Raspberry Pi we run a fast cross-encoder and hit ~0.94.
 > On a M3 Max we run gpt-oss:20b listwise and hit ~0.98.
 > On a workstation we run anything that fits.

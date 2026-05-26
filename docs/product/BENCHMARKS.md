@@ -1,6 +1,6 @@
 # Benchmarks — full BEIR v1, Phase 25 SOTA + 13 documented null attacks
 
-Real retrieval quality measured against canonical BEIR datasets using wellinformed's runtime pipeline. All numbers directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
+Real retrieval quality measured against canonical BEIR datasets using Akashik's runtime pipeline. All numbers directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════╗
@@ -26,7 +26,7 @@ Real retrieval quality measured against canonical BEIR datasets using wellinform
 | all-MiniLM-L6-v2 (v1 baseline) | 23M | 64.82% | CPU |
 | nomic-embed-text-v1.5 (dense) | 137M | 70.36% | CPU |
 | bge-base-en-v1.5 (dense) | 110M | 74.04% | CPU |
-| **wellinformed Phase 25 (hybrid + Rust)** | **137M** | **75.22%** | **CPU, 11ms p50** |
+| **Akashik Phase 25 (hybrid + Rust)** | **137M** | **75.22%** | **CPU, 11ms p50** |
 | monoT5-3B reranker on top | 3B | 76.70% | **GPU** |
 | InRanker-3B (monoT5-distilled) | 3B | 78.31% | **GPU** |
 
@@ -194,7 +194,7 @@ Three families:
 - `longmemeval-synth` — 20-session × 20-query synthetic conversational fixture covering the 5 LongMemEval-S abilities: information extraction, multi-session reasoning, temporal reasoning, knowledge updates, abstention. Real LongMemEval-S oracle adapter (500q, ~115k tokens/Q, 3 GB HF dataset) pending Phase 23.7+.
 - `locomo-synth` — 4-persona × 40-session × 6-month synthetic conversational corpus covering LoCoMo's long-horizon factual recall + temporal/causal reasoning axes. 30 queries with declared evidence-session ground truth; dimension scored on evidence-session retrieval recall (retrieval-only, no answer extractor). Real LoCoMo + extractor pending Phase 23.7+.
 
-**B. Wellinformed-specific synthetic suites — five gap axes no public benchmark covers:**
+**B. Akashik-specific synthetic suites — five gap axes no public benchmark covers:**
 
 | Axis | Why no public benchmark | What this suite stresses |
 |---|---|---|
@@ -235,8 +235,8 @@ The benchmark structure was synthesised against a 30+-paper survey covering memo
 | mem0 | BEAM 1M tokens | 64.1 | < 7K retrieval tokens |
 | MemMachine | LoCoMo (gpt-4.1-mini) | 0.9169 | |
 | GSW | EpBench-200 F1 | 0.850 | ≥10pp over next-best RAG |
-| **wellinformed** (synth fallback) | unified composite | **0.9107** | 9 dimensions, no LLM judge |
-| **wellinformed** (Hetzner, Phase 23.7 real public corpora) | unified composite | **0.8597** | real BEIR SciFact + LongMemEval-S oracle + LoCoMo factual; synthetic in 5 of 9 dimensions |
+| **Akashik** (synth fallback) | unified composite | **0.9107** | 9 dimensions, no LLM judge |
+| **Akashik** (Hetzner, Phase 23.7 real public corpora) | unified composite | **0.8597** | real BEIR SciFact + LongMemEval-S oracle + LoCoMo factual; synthetic in 5 of 9 dimensions |
 
 Direct apples-to-apples comparisons land in Phase 23.5 when the real LongMemEval-S / LoCoMo / BEIR SciFact / HotpotQA full adapters ship. Until then the composite is comparable across our own commits as a regression ratchet, not against external systems.
 

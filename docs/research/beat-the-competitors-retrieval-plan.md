@@ -1,9 +1,9 @@
-# How wellinformed beats the retrieval leaderboard (forward plan)
+# How Akashik beats the retrieval leaderboard (forward plan)
 
 **Status:** strategic sketch — Phase 24 candidate ratchets
 **Drafted:** 2026-05-21
 **Anchor numbers (Phase 23.7+ measured):**
-| Benchmark | wellinformed | Competitor best | Gap |
+| Benchmark | Akashik | Competitor best | Gap |
 |---|---:|---:|---:|
 | LongMemEval-S R@5 (50-distractor, n=500) | **0.9202** | agentmemory 0.952, ByteRover 0.928 | -3pp / -0.6pp |
 | LongMemEval-S R@5 (oracle) | 0.9990 | (at ceiling) | — |
@@ -86,7 +86,7 @@ Combined plausible end-state:
   BEIR SciFact NDCG@10   0.7202  →  0.78-0.82   (beats ColBERTv2 0.7522)
 ```
 
-If those land, **wellinformed becomes the published-leaderboard leader on LME-S** with a fully open-source, CPU-only, retrieval-only pipeline. No LLM judge, no GPT-4 reasoning loop, no closed-weight model — just a clean hybrid sparse+dense+rerank+graph pipeline that beats the proprietary stacks.
+If those land, **Akashik becomes the published-leaderboard leader on LME-S** with a fully open-source, CPU-only, retrieval-only pipeline. No LLM judge, no GPT-4 reasoning loop, no closed-weight model — just a clean hybrid sparse+dense+rerank+graph pipeline that beats the proprietary stacks.
 
 **E4 / E5 / E6 / E7** are second-wave once E1–E3 are measured. They target the *remaining* loss after the easy wins — by then we'll know which question types are still bleeding.
 
@@ -121,9 +121,9 @@ Run with `WELLINFORMED_RERANK=1` env on the Hetzner box. Compare against today's
 
 ## 6. Stretch — Phase 24 candidates
 
-Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes wellinformed comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
+Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes Akashik comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
 
-Beyond that: **federated retrieval** (the unique wellinformed bet) — measure how P2P-shared rooms across multiple peers lift recall on out-of-distribution questions, vs single-peer baselines. No public benchmark covers this today; we'd publish one.
+Beyond that: **federated retrieval** (the unique Akashik bet) — measure how P2P-shared rooms across multiple peers lift recall on out-of-distribution questions, vs single-peer baselines. No public benchmark covers this today; we'd publish one.
 
 ---
 

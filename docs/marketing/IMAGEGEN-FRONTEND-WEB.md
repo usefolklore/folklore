@@ -1,7 +1,7 @@
-# wellinformed — imagegen / frontend-web visual direction
+# Akashik — imagegen / frontend-web visual direction
 
 Per-section art direction produced by applying `imagegen-frontend-web`
-(from leonxlnx/taste-skill) to wellinformed's redesign. Pairs with:
+(from leonxlnx/taste-skill) to Akashik's redesign. Pairs with:
 
 - **What to build** → SITE-REDESIGN-SPEC.md
 - **How it should look** → BRAND-KIT.md (visual contract)
@@ -32,7 +32,7 @@ Production assets remain SVG line-art per BRAND-KIT.md §8.
 ## 1 · Active baseline configuration
 
 Per `imagegen-frontend-web` §1 dials, with adaptations for
-wellinformed's "premium SaaS / infra / product" brief:
+Akashik's "premium SaaS / infra / product" brief:
 
 | Dial | Value | Notes |
 |------|-------|-------|
@@ -45,7 +45,7 @@ wellinformed's "premium SaaS / infra / product" brief:
 | `LAYOUT_VARIATION` | **9** | Maximize composition variety across the 11 sections |
 | `CONVERSION_DISCIPLINE` | **8** | Conversion-aware, premium-balanced |
 
-Brief mapping (per skill §1.5): wellinformed = **SaaS / infra /
+Brief mapping (per skill §1.5): Akashik = **SaaS / infra /
 premium product** → Mid Editorial hero · solid + inline asset
 backgrounds · subtle palette-matched gradients · clear product
 framing.
@@ -57,7 +57,7 @@ framing.
 These choices commit the entire page to a single coherent visual
 identity. Every section in §5 derives from them.
 
-| Category | Pick | Why this for wellinformed |
+| Category | Pick | Why this for Akashik |
 |----------|------|---------------------------|
 | **Theme paradigm** | **Deep Dark Mode** (`--ink-900: #0c0c14` charcoal-graphite, emerald glow only when justified) | Matches the existing token system; proof-of-product feels engineering-grade |
 | **Background character** | **Subtle technical grid / dotted field** + **Pure solid field with soft ambient gradient depth** (the existing 24px grain dot field stays) | Reinforces the graph-native pillar (§1.2 brand kit) without being literal |
@@ -139,7 +139,7 @@ note.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│  ●  wellinformed                Demo · How · Bench · Install     ☆ Star  │
+│  ●  Akashik                     Demo · How · Bench · Install     ☆ Star  │
 ├──────────────────────────────────────────────────────────────────────────┤
 │                                                                           │
 │  ● v4.0 — agent brain: cached queries, native CLI                         │
@@ -215,12 +215,12 @@ SITE-REDESIGN-SPEC.md §2.
 │              ─────────────────                                            │
 │                                                                           │
 │              Same model. Same query.                                      │
-│              The only difference is wellinformed.                         │
+│              The only difference is Akashik.                              │
 │                                                                           │
 │         ┌────────────────────────────────────────────────────┐           │
 │         │                                                    │           │
 │         │     scene-claude.gif                               │           │
-│         │     (Claude alone vs Claude + wellinformed,        │           │
+│         │     (Claude alone vs Claude + Akashik,             │           │
 │         │      side-by-side timing comparison,               │           │
 │         │      ~10× speedup,                                 │           │
 │         │      cited from local research)                    │           │
@@ -240,10 +240,10 @@ SITE-REDESIGN-SPEC.md §2.
 > centered composition. Top: small uppercase eyebrow "SEE IT IN
 > ACTION" in mono. Below: a calm two-line statement in Outfit 600
 > dark charcoal "Same model. Same query. The only difference is
-> wellinformed." Center: a single horizontal animated terminal
+> Akashik." Center: a single horizontal animated terminal
 > recording showing two side-by-side terminal windows running the
 > same Claude Code prompt. The left terminal is bare and slow
-> (~14 s). The right terminal injects context from a wellinformed
+> (~14 s). The right terminal injects context from an Akashik
 > hook and answers in ~1.5 s. Both terminals share the same
 > JetBrains Mono typeface, dark Catppuccin Mocha theme inside the
 > recording but rounded with 12px radius and soft diffusion shadow
@@ -345,7 +345,7 @@ canvas. Comp shows Phase B end-state.
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                                                                           │
-│   How wellinformed hooks into your workflow                               │
+│   How Akashik hooks into your workflow                                    │
 │   Three things make the network compound. None are tool-calls.           │
 │                                                                           │
 │   01                                                                      │
@@ -476,9 +476,9 @@ job is to give a paste-ready install path while interest is hot.
 │  Real numbers. CPU-only.                                 │  75.22%        │
 │  No GPU. No cloud.                                       │  NDCG@10       │
 │                                                          │  on BEIR       │
-│  BEIR SciFact NDCG@10 — wellinformed vs incumbents       │  SciFact       │
+│  BEIR SciFact NDCG@10 — Akashik vs incumbents            │  SciFact       │
 │                                                          │                │
-│  wellinformed       ████████████████████████  75.22%     │  vs the next   │
+│  Akashik            ████████████████████████  75.22%     │  vs the next   │
 │  Pinecone-baseline  ███████████████░░░░░░░░░  58.40%     │  closest:      │
 │  mem0-cached        ████████████░░░░░░░░░░░░  44.10%     │  +16.82 pts    │
 │  Letta-default      █████████░░░░░░░░░░░░░░░  31.50%     │                │
@@ -496,10 +496,10 @@ job is to give a paste-ready install path while interest is hot.
 > top-left anchor: tiny mono uppercase eyebrow "CHAPTER 05 —
 > BENCHMARK", then a tight Outfit 600 two-line H2 "Real numbers.
 > CPU-only. No GPU. No cloud.", then a small mono caption "BEIR
-> SciFact NDCG@10 — wellinformed vs incumbents". Below: a
-> horizontal bar chart with 5 rows (wellinformed, Pinecone-baseline,
+> SciFact NDCG@10 — Akashik vs incumbents". Below: a
+> horizontal bar chart with 5 rows (Akashik, Pinecone-baseline,
 > mem0-cached, Letta-default, LangChain-RAG); each row is a label
-> in mono left-aligned, followed by a horizontal bar — wellinformed
+> in mono left-aligned, followed by a horizontal bar — Akashik
 > is the longest (75.22%) in saturated emerald #34d399, the others
 > shorter and in muted gray with subtle hatching. To the right of
 > each bar, the percentage in JetBrains Mono. Below the chart, a
@@ -592,7 +592,7 @@ tile content.
 │                                                                           │
 │  ┌──────────┐                                                             │
 │  │ CH. 02   │                                                             │
-│  │ THE      │   wellinformed is not on the treadmill.                     │
+│  │ THE      │   Akashik is not on the treadmill.                          │
 │  │ TREADMILL│   Five categories chase the same problem from the wrong end.│
 │  └──────────┘                                                             │
 │                                                                           │
@@ -610,7 +610,7 @@ tile content.
 │   Mastra        │ agent stack     │ MCP server               │ framework  │
 │   ─────────────────────────────────────────────────────────────────────   │
 │                                                                           │
-│   wellinformed adds: federation, peer reputation, signed envelopes.      │
+│   Akashik adds: federation, peer reputation, signed envelopes.           │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -620,7 +620,7 @@ tile content.
 > editorial offset. Upper-left corner: a small tagged label box
 > "CH. 02 / THE TREADMILL" in mono uppercase, the box itself is
 > a 1px charcoal border on paper. To the right of and below the
-> label: a tight Outfit 600 H2 "wellinformed is not on the
+> label: a tight Outfit 600 H2 "Akashik is not on the
 > treadmill." with a smaller subline "Five categories chase the
 > same problem from the wrong end." Below the heading, a clean
 > data table with 4 columns (product, category, what they share,
@@ -629,7 +629,7 @@ tile content.
 > Use JetBrains Mono for product names, Outfit 400 for body cells.
 > The "verdict" column right-aligns single-word verdicts in muted
 > emerald-ink #0f6a46. Below the table: one summary line in mono
-> "wellinformed adds: federation, peer reputation, signed
+> "Akashik adds: federation, peer reputation, signed
 > envelopes." 16:10 aspect, premium-data-grid feel, NO card
 > chrome.
 
@@ -652,7 +652,7 @@ brand kit Rule 4 says ditch the cards, use `divide-y`.
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │  charcoal bg #0c0c14, manifesto-illustration.svg as 18%-opacity bg       │
-│  (Napster→eMule→BitTorrent→IPFS→wellinformed timeline, dimmed)            │
+│  (Napster→eMule→BitTorrent→IPFS→Akashik timeline, dimmed)                 │
 │                                                                           │
 │                                                                           │
 │                                                                           │
@@ -670,7 +670,7 @@ brand kit Rule 4 says ditch the cards, use `divide-y`.
 > Mini section on deep charcoal #0c0c14, with a faint horizontal
 > timeline illustration as ambient background at ~18% opacity —
 > the timeline shows nodes labeled "Napster 1999", "eMule 2002",
-> "BitTorrent 2001", "IPFS 2014", and "wellinformed 2026" connected
+> "BitTorrent 2001", "IPFS 2014", and "Akashik 2026" connected
 > by a dashed emerald line, all rendered in single-color emerald
 > line art and subtly dimmed to feel atmospheric. Foreground:
 > bottom-left anchor with a tiny mono uppercase eyebrow "CH. 03 —
@@ -708,7 +708,7 @@ device for the section, not a card row.
 │              shape of what each of us has learned.                        │
 │                                                                           │
 │              Frontier labs trained on what existed six months             │
-│              ago. wellinformed open-sources the knowledge graph          │
+│              ago. Akashik open-sources the knowledge graph               │
 │              itself.                                                      │
 │                                                                           │
 │                          Read the full thesis →                           │
@@ -857,7 +857,7 @@ against the comp.
 
 ## 7 · Brand-kit reconciliation
 
-This skill normally produces raster image-gen prompts. wellinformed's
+This skill normally produces raster image-gen prompts. Akashik's
 BRAND-KIT.md §8.4 explicitly bans Midjourney/DALL-E/SD/FLUX raster in
 production. The two are reconciled by:
 

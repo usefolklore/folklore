@@ -1,4 +1,4 @@
-# wellinformed — landing page redesign spec
+# Akashik — landing page redesign spec
 
 This document is the single source of truth for the upcoming landing
 page rewrite. Synthesized from a three-agent audit (marketing,
@@ -78,7 +78,7 @@ quality dimension by directly competing with the category readers know
 (ChatGPT Deep Research, Claude Research mode — products that take 5–10
 minutes and burn tokens). "11 ms" is the cached-query p50; "Cited" is
 the proof artifact (every match returns provenance); "Zero tokens" is
-the cost reframe — wellinformed's retrieval doesn't go through an LLM.
+the cost reframe — Akashik's retrieval doesn't go through an LLM.
 
 What we explicitly rejected and why:
 - *"Retrieval fires before the LLM reads your prompt"* — the founder
@@ -106,7 +106,7 @@ Plus three smaller misses:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ NAV ▸ wellinformed   Demo · How it works · Bench · Install   ☆  │
+│ NAV ▸ Akashik   Demo · How it works · Bench · Install   ☆  │
 ├──────────────────────────────────────────────────────────────────┤
 │                                                                   │
 │  ● v4.0 — agent brain: cached queries, native CLI                │
@@ -241,7 +241,7 @@ of `width="600"` was 67 px wider than the column. **Corrected to
 > The graph loaded. The model read it. You paid nothing.
 
 Three short declarative sentences narrating what the gif just showed.
-Beat 1 = the wellinformed graph fired. Beat 2 = the LLM read the
+Beat 1 = the Akashik graph fired. Beat 2 = the LLM read the
 context. Beat 3 = the cost reframe — the punchline. The third
 sentence is the gut-punch: it makes the visitor feel the wedge as
 relief, not as a feature.
@@ -270,7 +270,7 @@ the gif loads — zero CLS.
 ### 2.4 What this hero does that the current one doesn't
 
 1. Tells you what it is (H1 — unchanged)
-2. Tells you the *one fact only wellinformed has* (claim line — NEW)
+2. Tells you the *one fact only Akashik has* (claim line — NEW)
 3. Tells you the philosophy (sub line — same content, demoted)
 4. Shows you the product working (gif — replaces canvas)
 5. Lowers the install threshold (3-channel install strip — NEW above the fold)
@@ -669,7 +669,7 @@ Anchor: `#how`. Position: between Demo (`#demo`) and Quickstart
 
 ### 4.1 Section header
 
-> **How wellinformed hooks into your workflow**
+> **How Akashik hooks into your workflow**
 >
 > Three things make the network compound. None of them are tool-calls.
 
@@ -679,7 +679,7 @@ Anchor: `#how`. Position: between Demo (`#demo`) and Quickstart
 > tool-call path. That means the LLM has to decide it needs context
 > before it gets context.
 >
-> wellinformed registers a `UserPromptSubmit` hook with Claude Code
+> Akashik registers a `UserPromptSubmit` hook with Claude Code
 > (Codex, Gemini, and any MCP host work the same way). When you type
 > a message, the hook runs `wellinformed ask` against your local
 > graph — and injects the top matches as `additionalContext` before
@@ -692,12 +692,12 @@ Anchor: `#how`. Position: between Demo (`#demo`) and Quickstart
 > same library failure three days ago. None of that is in any
 > foundation model — it happened after the training cut.
 >
-> wellinformed's graph holds it, ranks it by freshness and provenance,
+> Akashik's graph holds it, ranks it by freshness and provenance,
 > and surfaces it in 11 ms p50.
 
 ### 4.4 Step 03 — `Every peer makes the network smarter`
 
-> When your session ends, wellinformed indexes your transcript back
+> When your session ends, Akashik indexes your transcript back
 > into the graph. When a peer in your network asks a related question
 > tomorrow, your work answers it — cited, signed, attributed.
 >
@@ -801,7 +801,7 @@ New:
      decoding="async"
      width="1000"
      height="auto"
-     alt="Side-by-side: Claude alone (~14s, hedged) vs Claude + wellinformed (~1.5s, cited)">
+     alt="Side-by-side: Claude alone (~14s, hedged) vs Claude + Akashik (~1.5s, cited)">
 ```
 
 Same fix applies to the second gif (`scene-prompt-hook.gif`) when it's
@@ -845,7 +845,7 @@ paragraphs, ~120 words total:
 
 1. Keep: "ten thousand people published the thing you actually need
    yesterday, none of whom got asked" paragraph (the inequality framing)
-2. Keep: "wellinformed open-sources the knowledge graph itself" close
+2. Keep: "Akashik open-sources the knowledge graph itself" close
 3. Drop: the rest
 
 The full manifesto becomes a separate `docs/manifesto.html` page,
@@ -1082,7 +1082,7 @@ spec?* If the spec is wrong, edit this file before changing the code.
 ## 11 · "Ask the network" — live 3D graph + federated query (NEW section)
 
 This is the section that turns the page from sales artifact into live
-product demo. Visitors don't read about wellinformed — they query the
+product demo. Visitors don't read about Akashik — they query the
 real network from the page. Section anchor: `#try`. Position: 3 (between
 the gif demo and "How it works").
 

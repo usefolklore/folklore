@@ -1,4 +1,4 @@
-# wellinformed — positioning (v2.1)
+# Akashik — positioning (v2.1)
 
 **Audience:** open-source developers who believe the VC-funded "AI
 memory" product category is structurally unsustainable — and that the
@@ -13,7 +13,7 @@ all riding the same treadmill: raise a round, put your context in
 their cloud, argue about LOCOMO numbers, lock in a pricing model that
 only works if the free tier eventually shrinks.
 
-**The counter:** Every wellinformed instance is a node in a peer mesh.
+**The counter:** Every Akashik instance is a node in a peer mesh.
 Your knowledge graph lives on your CPU. You share rooms with peers
 you trust via libp2p. Questions reach peers via an oracle bulletin
 board. Answers flow back through the same pipe that auto-saved your
@@ -22,7 +22,7 @@ web research. No cloud. No subscription. No benchmark theater.
 **The hook that lands:** *These companies exist because every agent
 needs a memory — and every one of them is building the same locked
 silo on top of the same open-source primitives. The locked silo is
-the business model, not the memory. Run wellinformed instead. Share
+the business model, not the memory. Run Akashik instead. Share
 what your graph knows with peers. The network grows, and nobody needs
 a Series A.*
 
@@ -40,7 +40,7 @@ with the VC-funded category.
 > The network before the web.
 
 > **Subheadline**
-> Your peers already did this research. wellinformed asks their
+> Your peers already did this research. Akashik asks their
 > graphs before letting your agent hit the web — their embeddings,
 > their citations, their synthesis flow straight into your Claude Code
 > session. Local-first when you're offline, peer-first when you're
@@ -53,7 +53,7 @@ with the VC-funded category.
 **Why this works:** "the network before the web" is the one-line
 claim nobody else in the AI-memory category can make. VC-funded
 memory SaaS locks your context in their silo — by design, my graph
-can't help answer your question and vice versa. wellinformed's
+can't help answer your question and vice versa. Akashik's
 entire architecture is the opposite: the prefetch hook consults
 connected peers *before* letting Claude reach for WebSearch, and
 the PostToolUse hook saves what Claude did fetch back into a room
@@ -72,7 +72,7 @@ rules the VC-funded category out without naming anyone.
 > Stop paying rent on your agent's memory.
 
 > **Subheadline**
-> Every AI memory SaaS is a silo with a pricing model. wellinformed
+> Every AI memory SaaS is a silo with a pricing model. Akashik
 > is the same memory layer, MIT-licensed, running on your machine,
 > federated across peers you trust. 23 source adapters, 21 MCP tools,
 > 396 tests — all in-tree. No API key, no seat pricing, no benchmark
@@ -90,7 +90,7 @@ the permanent homepage.
 > A knowledge graph for coding agents — built to federate, not to host.
 
 > **Subheadline**
-> Every developer running wellinformed is a peer in the network. Your
+> Every developer running Akashik is a peer in the network. Your
 > graph syncs with the peers you trust. Questions you can't answer
 > reach the ones who can. We're not building a platform — we're
 > building the protocol that makes platforms unnecessary. MIT-licensed,
@@ -120,11 +120,11 @@ Use after the hero. Single idea per column.
 
 ### The solution
 
-> wellinformed is the opposite shape. Every instance is a peer. Every
+> Akashik is the opposite shape. Every instance is a peer. Every
 > peer runs the same code. Your graph lives on your CPU; your peers'
 > graphs live on theirs; the P2P layer lets them share rooms without
 > anyone brokering the exchange. **When your agent needs context it
-> doesn't have, wellinformed checks the peers you trust before it
+> doesn't have, Akashik checks the peers you trust before it
 > reaches for the web** — their embeddings, their fetched articles,
 > their saved syntheses flow directly into the MCP context Claude
 > reads from. You inherit their research instead of repeating it.
@@ -150,7 +150,7 @@ compounding to happen.
 
 ### 2. Your identity is a keypair you own, not a row in someone's DB.
 
-Every wellinformed install provisions a W3C `did:key` (Ed25519,
+Every Akashik install provisions a W3C `did:key` (Ed25519,
 32-byte pubkey, base58btc-encoded, multicodec-prefixed per the spec)
 during first boot. Your user DID is long-lived and survives device
 changes. Your device key is authorized by that DID via a signed
@@ -167,7 +167,7 @@ of pure domain code.
 Every node is embedded locally. Every query hits your SQLite file
 first, connected peers second, the open web last. The network layer
 opens only for rooms you explicitly share or the always-on system
-rooms you opt into. There is no wellinformed server — nobody to buy
+rooms you opt into. There is no Akashik server — nobody to buy
 out, nobody to shut down, nobody to raise prices. Three system rooms
 (`toolshed`, `research`, `oracle`) every peer advertises by default;
 every other room is negotiable room-by-room via the interactive
@@ -218,7 +218,7 @@ Two paths, both in-tree:
 ### "Isn't this just another fragmented OSS project?"
 
 The big AI-memory repos are ~50k stars each, and none of them
-federate. They're each their own fragmentation. wellinformed is the
+federate. They're each their own fragmentation. Akashik is the
 interop layer. One MIT-licensed protocol, one wire format, one
 validator at the trust boundary. Peers running the same version
 exchange graphs without negotiating.
@@ -253,7 +253,7 @@ you, and the protocol enforces the rest.
 
 ### "Why should I believe you won't become another VC-funded SaaS?"
 
-The architecture refuses the move. There is no wellinformed server
+The architecture refuses the move. There is no Akashik server
 to operate. Every node is authoritative for its own graph. A cloud
 offering would be strictly worse than running the binary — slower,
 more expensive, weaker privacy. The business model that could kill
@@ -272,7 +272,7 @@ Don't invent testimonials. Use what's real:
   in-tree doc names every SaaS alternative, their real star counts,
   their benchmark status ("contested", "inflated", "unverified"). Put
   a summary table on the page. Let the VC-funded category make
-  wellinformed's argument for it.
+  Akashik's argument for it.
 - **Transparent phase log** — 13 phases of v2.0 + v2.1 shipped with
   commit history. Contrast with SaaS product pages where the release
   notes stop when the free-tier changes start.
@@ -346,9 +346,9 @@ federated by protocol not by platform."
 
 ### Chapter 2 — the shape that refuses it (light)
 
-- Headline: **wellinformed is the opposite shape.**
+- Headline: **Akashik is the opposite shape.**
 - Key points: every node is a peer, runs the same code, answers
-  answers FROM its own graph. No wellinformed server. No directory.
+  answers FROM its own graph. No Akashik server. No directory.
   Just multiaddrs.
 - Proof: screenshot of `wellinformed peer list` with real peer IDs.
   MIT license. 396 tests pass. Phase log with commit SHAs.
@@ -377,7 +377,7 @@ federated by protocol not by platform."
 - Proof: `scripts/bench-beir-sota.mjs scifact --hybrid` one-line
   reproduction. Link to MTEB leaderboard. Wave 3 (reranker) regressed
   — we shipped the null result anyway, with root-cause.
-- Visual: a clean bar chart — wellinformed Wave 2 vs bge-base-en
+- Visual: a clean bar chart — Akashik Wave 2 vs bge-base-en
   vs monoT5-3B. Annotated per visual-storytelling-design rules:
   "within 2 NDCG of GPU-required SOTA." No cherry-pick, no missing
   denominators.
@@ -417,5 +417,5 @@ federated by protocol not by platform."
 
 ## Meta
 
-**Page title (SEO):** wellinformed — the network before the web
-**Description:** The federated knowledge graph for AI agents. Your peers already did this research — wellinformed asks their graphs before your Claude Code session hits the web. Your identity is a W3C did:key you own. MIT-licensed, CPU-local, 75.22% NDCG@10 on BEIR SciFact. No cloud, no subscription.
+**Page title (SEO):** Akashik — the network before the web
+**Description:** The federated knowledge graph for AI agents. Your peers already did this research — Akashik asks their graphs before your Claude Code session hits the web. Your identity is a W3C did:key you own. MIT-licensed, CPU-local, 75.22% NDCG@10 on BEIR SciFact. No cloud, no subscription.

@@ -1,4 +1,4 @@
-# X/Twitter Launch Posts — wellinformed
+# X/Twitter Launch Posts — Akashik
 
 ## Thread 1: Launch announcement
 
@@ -55,19 +55,19 @@ All deps verified via gh API + ossinsight.io before selection.
 **Post 1:**
 RAG is usually "embed your docs, hope for the best."
 
-wellinformed is different: it partitions by research domain (rooms), detects cross-domain connections (tunnels), and actively fetches from ArXiv + HN + RSS on a schedule.
+Akashik is different: it partitions by research domain (rooms), detects cross-domain connections (tunnels), and actively fetches from ArXiv + HN + RSS on a schedule.
 
 It's a knowledge graph, not a vector store with a search box.
 
 **Post 2:**
 The tunnel detection is the interesting part.
 
-You track "homelab" and "ml-papers" separately. When a paper about embedding quantization in ml-papers is semantically close to a memory issue in homelab, wellinformed flags it.
+You track "homelab" and "ml-papers" separately. When a paper about embedding quantization in ml-papers is semantically close to a memory issue in homelab, Akashik flags it.
 
 Cross-domain insight. Automated.
 
 **Post 3:**
-I indexed wellinformed's own codebase into its own graph.
+I indexed Akashik's own codebase into its own graph.
 
 55 TypeScript files, 14 npm deps, 11 git commits, 1 submodule.
 
@@ -82,7 +82,7 @@ Self-referential RAG.
 **Post 1:**
 If you use Claude Code, Codex, or OpenClaw, your agent has no memory of what you've been reading.
 
-wellinformed fixes that in 4 commands:
+Akashik fixes that in 4 commands:
 
 ```
 wellinformed init
@@ -110,14 +110,14 @@ Keyword-driven source expansion.
 **Short post 1:**
 Your AI coding agent reads 0 of the 50 articles you read this week.
 
-wellinformed changes that.
+Akashik changes that.
 
 github.com/SaharBarak/wellinformed
 
 **Short post 2:**
 Every AI memory tool is key-value or markdown files.
 
-wellinformed is a knowledge graph with rooms, tunnels, 8 source adapters, and a daemon that keeps it current.
+Akashik is a knowledge graph with rooms, tunnels, 8 source adapters, and a daemon that keeps it current.
 
 Open source. Runs locally. No API keys.
 

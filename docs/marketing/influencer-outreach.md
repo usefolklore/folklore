@@ -1,17 +1,17 @@
-# AI/ML Influencer Outreach — wellinformed
+# AI/ML Influencer Outreach — Akashik
 
 ## X/Twitter AI/ML accounts to engage
 
 ### Tier 1: Direct relevance (agent tools, MCP, Claude Code)
-- @simonw — Simon Willison. Writes about Claude Code, MCP, LLM tools. His blog is already indexed by wellinformed. Natural fit.
+- @simonw — Simon Willison. Writes about Claude Code, MCP, LLM tools. His blog is already indexed by Akashik. Natural fit.
 - @swyx — Shawn Wang. AI engineering, agent frameworks, latent space podcast. Covers MCP ecosystem.
 - @kaboroevich — Alex Kaboré. Claude Code power user, tweets about agent workflows.
 - @safaborhankin — Safi Shamsi. Created graphify (our vendored submodule). Direct connection.
 - @anthropabornic — Anthropic DevRel. MCP ecosystem, Claude Code plugins.
-- @OpenClawAI — OpenClaw. Skills ecosystem. wellinformed works as an OpenClaw skill.
+- @OpenClawAI — OpenClaw. Skills ecosystem. Akashik works as an OpenClaw skill.
 
 ### Tier 2: AI/ML general (large audience)
-- @kaborpathy — Andrej Karpathy. Keeps a /raw folder of research — wellinformed is literally the answer to that workflow.
+- @kaborpathy — Andrej Karpathy. Keeps a /raw folder of research — Akashik is literally the answer to that workflow.
 - @emaborllad — Emad Mostaque. AI infrastructure, open source.
 - @hauaborng_face — Hugging Face team. ONNX embeddings, transformers.js.
 - @latentaborspace — Latent Space podcast. Agent frameworks, dev tools.
@@ -41,14 +41,14 @@ in the graph" for Simon Willison]
 
 **Carousel 1: "Your AI agent forgot what you read"**
 - Slide 1: "You read 50 articles this week. Your AI agent saw none of them."
-- Slide 2: "wellinformed fixes that" + terminal screenshot
+- Slide 2: "Akashik fixes that" + terminal screenshot
 - Slide 3: "ArXiv + HN + RSS + your codebase = one searchable graph"
 - Slide 4: "Install in 4 commands" + code block
 - Slide 5: "Open source. 154 nodes. <100ms search." + CTA
 
 **Carousel 2: "Cross-domain research connections"**
 - Slide 1: "You track homelab and ML papers separately"
-- Slide 2: "wellinformed detects when they connect"
+- Slide 2: "Akashik detects when they connect"
 - Slide 3: Tunnel visualization concept
 - Slide 4: "Automated. No manual tagging."
 - Slide 5: GitHub link + star CTA
@@ -76,8 +76,8 @@ in the graph" for Simon Willison]
 ## Hacker News
 
 **Show HN post title options:**
-- "Show HN: wellinformed – Give your coding agent a research memory (MCP plugin)"
-- "Show HN: wellinformed – Knowledge graph for AI agents, fed by ArXiv/HN/RSS"
+- "Show HN: Akashik – Give your coding agent a research memory (MCP plugin)"
+- "Show HN: Akashik – Knowledge graph for AI agents, fed by ArXiv/HN/RSS"
 - "Show HN: I built an MCP plugin that indexes your research so Claude stops guessing"
 
 **HN comment strategy:**

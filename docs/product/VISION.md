@@ -1,6 +1,6 @@
 # Vision — the agent-memory protocol problem
 
-wellinformed is not a vector store with peer sync bolted on. It is an attempt
+Akashik is not a vector store with peer sync bolted on. It is an attempt
 at the protocol that decides whether peer knowledge is good enough for an
 agent to trust, cite, or use *instead of* a live web search. The product
 question:
@@ -10,7 +10,7 @@ question:
 
 If that question is weak, the whole P2P story is vibes — sometimes helpful,
 sometimes stale, sometimes wrong, impossible to defend. If it's strong,
-wellinformed becomes a serious agent-memory protocol. Full thinking surface
+Akashik becomes a serious agent-memory protocol. Full thinking surface
 (60+ pages, evolving) in
 [`docs/PROTOCOL-QUALITY-QUESTIONS.md`](./docs/PROTOCOL-QUALITY-QUESTIONS.md).
 
@@ -23,7 +23,7 @@ Agent systems are stuck on one thing right now:
 
 The failure mode is not only hallucination. It's **premature closure** — an
 agent sees a plausible chunk, forms a plan, and stops searching before it has
-the missing fact that would change the action. wellinformed treats this as a
+the missing fact that would change the action. Akashik treats this as a
 protocol problem, not a model problem:
 
 - Context is not evidence.

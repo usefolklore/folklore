@@ -1,4 +1,4 @@
-# wellinformed v4 — Agent Brain
+# Akashik v4 — Agent Brain
 
 **Status:** preview — primitives shipped, gate measurements in progress
 **Target:** v4.0.0 tag on 2026-04-30 (pending Phase 4 tentpole gate)
@@ -7,7 +7,7 @@
 
 ## One-liner
 
-> wellinformed v4 is the first OSS P2P agent memory framework with cryptographic identity, brain-shaped caching, and episodic-to-semantic background consolidation. CPU-local, Apache 2.0 / MIT, zero SaaS dependencies.
+> Akashik v4 is the first OSS P2P agent memory framework with cryptographic identity, brain-shaped caching, and episodic-to-semantic background consolidation. CPU-local, Apache 2.0 / MIT, zero SaaS dependencies.
 
 ---
 
@@ -102,7 +102,7 @@ node scripts/bench-lab.mjs                        # 192-config sweep
 
 ### 4. Consolidation worker — episodic → semantic distillation
 
-**Claim**: wellinformed v4 is the first OSS agent memory framework that ships **episodic→semantic background consolidation as a reusable primitive**. A `sessions` room of 7,002 raw Claude Code transcript entries gets clustered by cosine similarity, each cluster LLM-summarized, and persisted as a `consolidated_memory` graph node with cryptographic provenance chain.
+**Claim**: Akashik v4 is the first OSS agent memory framework that ships **episodic→semantic background consolidation as a reusable primitive**. A `sessions` room of 7,002 raw Claude Code transcript entries gets clustered by cosine similarity, each cluster LLM-summarized, and persisted as a `consolidated_memory` graph node with cryptographic provenance chain.
 
 **Measured on the live graph** (smoke test, `forge` room, 40 entries):
 - 6 clusters found (threshold=0.5, min_size=3)
@@ -169,7 +169,7 @@ Unexpected bonus: the linear bridge **repairs defective ONNX ports** — bridged
 
 ### 6. Identity — W3C did:key + device hierarchy + signed envelopes
 
-**Claim**: Every memory entry wellinformed emits can be cryptographically attributed to a **user DID** (not a device, not a provider). Cross-device memory portability is proven end-to-end — a signed envelope on device A verifies on a freshly-recovered device B with zero prior contact.
+**Claim**: Every memory entry Akashik emits can be cryptographically attributed to a **user DID** (not a device, not a provider). Cross-device memory portability is proven end-to-end — a signed envelope on device A verifies on a freshly-recovered device B with zero prior contact.
 
 **Shipped in v3, unchanged in v4**:
 - W3C did:key over Ed25519 (0xed01 multicodec)

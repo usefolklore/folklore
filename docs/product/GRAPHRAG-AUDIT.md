@@ -1,4 +1,4 @@
-# GraphRAG audit — wellinformed against 2025/2026 SOTA
+# GraphRAG audit — Akashik against 2025/2026 SOTA
 
 ## 1. State of the art (2025-2026)
 
@@ -6,7 +6,7 @@ Consensus across the field has hardened around three pillars: an entity-relation
 
 Still contested: chunking strategy, whether to summarize on traversal versus pre-compute, and how to evaluate. The [GraphRAG-Bench / ICLR'26 paper](https://arxiv.org/html/2506.05690v3) finds Community-GraphRAG (Local) wins on multi-hop (HotPotQA, MultiHop-RAG) but Global hallucinates on Null queries, and vanilla RAG still beats GraphRAG on single-hop detail. [LightRAG](https://arxiv.org/abs/2410.05779) argues for cheap dual-level (entity-specific + topic-abstract) retrieval over expensive community trees. Long-conversation memory is its own axis: [LoCoMo](https://snap-research.github.io/locomo/) shows top RAG systems still trail human ceiling by ~56% on 32-session dialogues, with temporal reasoning the worst gap. Hybrid sparse+dense fusion via RRF is now the default starting point in production stacks ([NetApp on hybrid RAG](https://community.netapp.com/t5/Tech-ONTAP-Blogs/Hybrid-RAG-in-the-Real-World-Graphs-BM25-and-the-End-of-Black-Box-Retrieval/ba-p/464834)).
 
-## 2. Where wellinformed aligns with best practice
+## 2. Where Akashik aligns with best practice
 
 - Entity-relation graph with embeddings: `src/domain/entity-extract.ts`, `src/domain/graph.ts`, `src/domain/vectors.ts` — same substrate as GraphRAG/HippoRAG.
 - Hybrid retrieval already on the roadmap (BM25 + dense fusion via SQLite FTS5): `.planning/SOTA-UPGRADE-PLAN.md` chunk 8, plus `src/infrastructure/rust-retrieval.ts`.
@@ -17,7 +17,7 @@ Still contested: chunking strategy, whether to summarize on traversal versus pre
 - 75.22% NDCG@10 on BEIR SciFact (`docs/BENCHMARKS.md`) — competitive with published hybrid RAG baselines and reproducible CPU-only.
 - Coverage-map output planned over top-k chunk lists (`docs/VISION.md` §Coverage map) — matches the agent-contract framing emerging in 2025/2026 literature.
 
-## 3. Where wellinformed diverges intentionally
+## 3. Where Akashik diverges intentionally
 
 - **P2P federation over centralized index.** No comparable GraphRAG ships a libp2p gossip layer; we want the network effect of compounding research across peers, not a single corpus owner.
 - **Virtual room membership derived from `source_uri` scheme**, not a per-node `room` field. Keeps `toolshed` and `research` self-healing without manual curation and avoids the rigid taxonomy GraphRAG community trees impose.
