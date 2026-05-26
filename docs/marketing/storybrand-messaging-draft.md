@@ -104,20 +104,30 @@ The Akashic Records reference is an undertone, not a costume.
 > forward. You just don't have a mechanism.
 
 **Three authority proof points to display:**
-1. **The Akashik protocol is open and federated** — libp2p
-   gossip, no central server. Every peer holds the full record.
-   The same architectural family that lets git scale from 1 repo
-   to 100 million.
+1. **Compounding by construction — not by promise.** Each peer
+   holds only what its user has asked for or contributed. When
+   the federation can't answer a query, the harness does web
+   research on the asking peer's machine, and the result is saved
+   *there*, cryptographically signed by that user. The next
+   contributor who asks a similar question pulls the cached
+   research from that "ambitioned" peer — paying nothing for work
+   that was done once. The network's working set grows by what
+   the community is curious about. See [how Akashik
+   works](./how-akashik-works.md) for the architecture.
 2. **Every contribution is cryptographically signed** —
    Ed25519-attested decentralized identifiers (DIDs). Knowledge
-   compounds *with provenance*: you can see who contributed
-   what, when, and follow the chain forever.
-3. **Runs on commodity hardware** — every component (Xenova
-   ONNX embedders, sqlite-vec, the Rust embed-server) is
-   reproducible from public sources. A $7/mo VPS, a laptop, a
-   Raspberry Pi. The whole community can run a peer — the
-   record scales with the community's adoption, not with any
-   one company's funding.
+   compounds *with provenance*: every record in the federation
+   carries the curator's signature, room, source URLs, and
+   timestamp. The community sees who figured out what, and
+   when — forever, without "trust the platform" being part of
+   the contract.
+3. **Runs on commodity hardware. The whole community can run a
+   peer.** Every component (Xenova ONNX embedders, sqlite-vec,
+   the Rust embed-server) is reproducible from public sources.
+   A $7/mo VPS, a laptop, a Raspberry Pi. Disk cost on each
+   peer scales with *that peer's own curiosity*, not with the
+   community's total contribution volume — so the record can
+   actually be community-of-millions sized.
 
 **Guide introduction (2 sentences, leads with empathy, closes with authority — About-page copy):**
 > We watched open source build the freest software stack in
@@ -243,21 +253,25 @@ The Akashic Records reference is an undertone, not a costume.
 **Success section (website copy — present tense, "you", paint the after-state):**
 
 > You open a fresh Claude session about a topic you've never
-> touched before. Instead of starting from zero, you query the
-> Akashik — and see what 47 other contributors in your field
-> have already learned, attributed to each of them. The paper
-> Saiful read in Tokyo last week. The bug Lena debugged in
-> São Paulo last month. The architectural insight Felix wrote a
-> tweet about back in 2024 that nobody could find anymore.
+> touched before. Akashik checks your local peer, then asks the
+> federation. 47 other contributors in your field have already
+> read on this — Saiful in Tokyo last week, Lena in São Paulo
+> last month, Felix back in 2024 (the tweet you'd never have
+> found). Their research, signed by them, lands in your
+> session in seconds.
 >
-> *The community already learned this.* Now you can read the
-> record.
+> *The community already learned this.* Now you read the record.
 >
-> You contribute what you learn back to the federation. Six
-> months from now someone in Berlin or Chennai or Lagos queries
-> your peer and gets your reading, signed and attributed to
-> you. The community's progress compounds. Your reading hours
-> pay forward. Open source's knowledge stack starts existing.
+> When you investigate something nobody else has touched yet,
+> the harness reaches for the web, finishes the research on your
+> machine, and saves it locally — signed by you. You're now the
+> ambitioned curator of that knowledge. The next contributor
+> who asks a similar question (Berlin tomorrow, Chennai next
+> month, Lagos in six months) pulls your work directly — paying
+> nothing for the hour you spent doing it.
+>
+> The community's progress compounds. Your reading hours pay
+> forward. Open source's knowledge stack starts existing.
 >
 > It always wanted to. We just never built it before.
 
@@ -287,9 +301,10 @@ The Akashic Records reference is an undertone, not a costume.
 │   tweets aren't queryable by them. You'd love to compound        │
 │   that knowledge forward. You just don't have a mechanism.       │
 │                                                                  │
-│   ✓ Open, federated protocol — every peer holds the full record  │   ← Prompt 3 authority points
-│   ✓ Ed25519-signed contributions — provenance preserved forever  │
-│   ✓ Commodity hardware — anyone in the community can run a peer  │
+│   ✓ Compounding by construction — every web fetch becomes the   │   ← Prompt 3 authority points
+│     network's cache; the next contributor pays nothing            │
+│   ✓ Ed25519-signed contributions — provenance preserved forever   │
+│   ✓ Commodity hardware — anyone in the community can run a peer   │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -337,9 +352,34 @@ For social bios, npm description, README header:
 - **Akashik — every contributor's reading, compounding into the community's progress.**
 - **Akashik — open source's knowledge stack. P2P, signed, contributor-owned.**
 - **Akashik — read the record the community already wrote.**
+- **Akashik — each peer holds what it's asked for. Every query compounds the network.**
 
-Probably the first or third. The first emphasises *what it is*;
-the third emphasises *how it differs from everything else*.
+The last one names the *mechanism* in a single line — and the
+mechanism is the brand's credibility anchor. For audiences that
+need the "how" before they trust the "what" (engineering-heavy
+crowds, OSS contributors evaluating yet another knowledge-graph
+pitch), lead with it.
+
+## How it works — the loop (sidebar copy for the homepage)
+
+Two short paragraphs intended for a homepage "how it works"
+sidebar — sits below the above-the-fold and links to the full
+mechanism doc.
+
+> When you ask Akashik something, it checks your peer first.
+> Then it asks every contributor you're federated with — each
+> peer answers with what it has. If the federation can't
+> answer, the harness reaches for the web on your machine,
+> finishes the research, and saves it locally — signed by you.
+> The next contributor who asks a similar question pulls your
+> work, attributed to you, paying nothing for the hour you
+> spent doing it.
+>
+> Each peer holds only what its user has asked for or
+> contributed. There is no global graph and no central server —
+> just a network of curated peers, where curiosity drives what
+> gets cached and provenance lives forever. Read the
+> architecture →
 
 ---
 
