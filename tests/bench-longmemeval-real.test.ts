@@ -51,7 +51,7 @@ import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
 import { xenovaEmbedder, batchingEmbedder } from '../src/infrastructure/embedders.js';
 import { indexNode, searchByRoom } from '../src/application/use-cases.js';
-import { recallAtK, reciprocalRank } from '../src/domain/eval-metrics.js';
+import { recallAtK, reciprocalRank, ndcgAtK } from '../src/domain/eval-metrics.js';
 import { rerankMatches } from '../src/domain/cross-rerank.js';
 import { crossEncoderFromEnv } from '../src/infrastructure/cross-encoder.js';
 import { rerankMatchesListwise } from '../src/domain/llm-listwise-rerank.js';
@@ -187,6 +187,11 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
   // two head-saturation diagnostic anchors).
   const sumRK: Record<number, number> = Object.fromEntries(RECALL_KS.map((k) => [k, 0]));
   const perTypeRK: Record<string, { hits: Record<number, number>; total: number }> = {};
+  // Phase 23.15 — order-sensitive NDCG accumulators alongside the
+  // existing recall ladder. Catches rerank lift that R@K hides
+  // (e.g. gold moved from rank 7 to rank 2 — R@5 unchanged, NDCG@5
+  // jumps materially).
+  const sumNdcgK: Record<number, number> = Object.fromEntries(RECALL_KS.map((k) => [k, 0]));
   const perQuery: { id: string; metric: string; value: number }[] = [];
   const perType: Record<string, { hits: number; total: number }> = {};
 
@@ -283,6 +288,8 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
         const rk = recallAtK(retrievedFull, relevant, k);
         sumRK[k] += rk;
         rkPerQ[k] = rk;
+        // Phase 23.15 — order-sensitive NDCG@k on the same retrieval.
+        sumNdcgK[k] += ndcgAtK(retrievedFull, relevant, k);
       }
 
       const bucket = perType[q.question_type] ?? { hits: 0, total: 0 };
@@ -317,6 +324,10 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
   const rkAvg: Record<number, number> = Object.fromEntries(
     RECALL_KS.map((k) => [k, sumRK[k] / dataset.length]),
   );
+  // Phase 23.15 order-sensitive NDCG ladder.
+  const ndcgAvg: Record<number, number> = Object.fromEntries(
+    RECALL_KS.map((k) => [k, sumNdcgK[k] / dataset.length]),
+  );
   const elapsedMs = performance.now() - t0;
 
   const report: BenchSuiteReport = {
@@ -333,6 +344,15 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
       recall10: rkAvg[10],
       recall20: rkAvg[20],
       recall50: rkAvg[50],
+      // Phase 23.15 — order-sensitive NDCG ladder. Where R@K is
+      // set-based and insensitive to rank order, NDCG@K rewards
+      // ranking gold higher in the head. A rerank that promotes
+      // gold from position 4 to position 1 shifts NDCG@5 but
+      // leaves R@5 unchanged.
+      ndcg5: ndcgAvg[5],
+      ndcg10: ndcgAvg[10],
+      ndcg20: ndcgAvg[20],
+      ndcg50: ndcgAvg[50],
       ...Object.fromEntries(Object.entries(perType).map(([k, v]) => [
         `r5_${k}`, v.total > 0 ? v.hits / v.total : 0,
       ])),
@@ -354,6 +374,7 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
   }
 
   console.log(`bench longmemeval-real: R@5=${r5.toFixed(4)} R@10=${rkAvg[10].toFixed(4)} R@20=${rkAvg[20].toFixed(4)} R@50=${rkAvg[50].toFixed(4)} MRR=${mrr.toFixed(4)} (n=${dataset.length}) in ${(elapsedMs / 1000).toFixed(1)}s`);
+  console.log(`  NDCG ladder: NDCG@5=${ndcgAvg[5].toFixed(4)} NDCG@10=${ndcgAvg[10].toFixed(4)} NDCG@20=${ndcgAvg[20].toFixed(4)} NDCG@50=${ndcgAvg[50].toFixed(4)}`);
   for (const [tname, v] of Object.entries(perType)) {
     const ladder = perTypeRK[tname];
     const r50t = ladder ? (ladder.hits[50] / ladder.total).toFixed(3) : '-';
