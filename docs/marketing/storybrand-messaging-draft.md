@@ -5,137 +5,152 @@ workflow (`marketing/storybrand-messaging-engine.md` in the
 `SaharBarak/skills-and-workflows` repo) against wellinformed's
 actual positioning. Captured 2026-05-26.
 
-**Core positioning anchor:** wellinformed is **shared, cooperative,
-peer-to-peer memory for trusted groups** — NOT a single-user
-personal-memory product competing with mem0 / agentmemory / ByteRover
-on raw R@5 numbers. Those companies all built single-user systems;
-the differentiated value of wellinformed is what *no* competitor
-offers: a group's knowledge becomes a group resource, federated
-across machines, owned by the group rather than the vendor.
+**Core positioning anchor:** wellinformed is the **federated
+knowledge protocol for the open-source community as a whole** —
+not a personal-memory product, not a B2B team-collaboration tool.
+The mission is to give the OSS community what it has always
+lacked: a shared, contributor-owned memory substrate where every
+piece of reading, debugging, and figuring-out compounds into the
+community's collective progress.
 
-The 7 prompts below were re-run with that anchor. The retrieval
-benchmark numbers still show up as authority proof points — they
-matter as table stakes — but they're not the hero of the story.
-**The hero is the group.**
+The 7 prompts below were run with that mission as the anchor. The
+retrieval benchmark numbers still show up as authority proof
+points — they're table stakes — but the hero is not an individual
+and not a team. **The hero is the open-source community itself,
+and the desire is to make its progress compound.**
+
+This is the third pass on this draft. The framing iterations went:
+1. *Personal memory layer for individual engineers* — too small,
+   put us in direct R@5 competition with mem0 / agentmemory.
+2. *Shared memory for small high-trust teams* — closer, but still
+   private-by-default and missing the actual mission.
+3. *Federated knowledge commons for the whole OSS community* —
+   this is the real anchor.
 
 ---
 
 ## Prompt 1 — Hero Identifier
 
 **Business (one sentence):**
-> wellinformed is a peer-to-peer knowledge graph that lets trusted
-> groups — teams, research collectives, friend circles — share
-> their AI's memory, federated across their machines. When one
-> person saves what they read, everyone in the room benefits.
+> wellinformed is a peer-to-peer knowledge graph protocol for the
+> open-source community — a shared substrate where every
+> researcher, maintainer, and engineer contributes their reading
+> and reasoning so the community's collective progress compounds
+> instead of getting rediscovered, generation after generation.
 
 **Ideal customer:**
-> Engineering teams, research groups, study collectives, founder
-> networks — small high-trust groups (3-30 people) where everyone
-> is reading, building, and figuring things out in parallel, and
-> the same knowledge keeps getting rediscovered because there's no
-> good way to share what each person's AI has helped them learn.
+> Open-source maintainers, indie researchers, ML practitioners,
+> hobbyist builders, anyone working in public who has been
+> frustrated watching the same problems get solved in parallel
+> by hundreds of people across the community — because the
+> knowledge between the code (what we read, what we figured out,
+> what we learned together) has no shared infrastructure.
 
 **Dominant survival-level desire** (not a list of wants):
-> A group brain. The shared memory that small high-trust groups
-> always wish they had — pooled, retrievable, attributed — without
-> coughing the data up to Slack / Notion / Roam and watching their
-> collective knowledge become someone else's product.
+> Compounding. They want the hours they spend reading and
+> figuring things out to **pay forward** — to the next person in
+> the community who hits the same wall, to the next generation of
+> contributors who would otherwise re-tread the same path. The
+> open-source ethos has always been about making your work matter
+> beyond yourself; this is the natural extension to knowledge
+> work itself.
 
 **Website opening line (no cleverness, no brand name):**
-> **When one of you reads it, all of you remember.**
+> **Open source has memory. We just never let it talk to itself.**
 
 ---
 
 ## Prompt 2 — Three-Layer Problem Mapper
 
 **External problem (the customer can name this):**
-> "My team keeps researching the same things. Anna read that paper
-> in March. In October, Bob asks what it said and Carol's already
-> pulling it from arxiv for the third time. None of them knew the
-> others had touched it."
+> "Every time I dig into a new topic, I rediscover things
+> hundreds of people in this community already figured out. The
+> answers exist — in dead blogs, in lost Discord threads, in
+> someone's local Obsidian — but they're not retrievable from
+> outside the original author's head."
 
 **Internal problem (the frustration underneath):**
-> "Knowledge is leaking out of our group every week. Slack threads
-> die on Friday. The wiki nobody updated. The conversation buried
-> in DMs. We're paying for AI tokens to re-research what we
-> already collectively know — and the next hire is going to redo
-> all of it."
+> "My reading hours don't compound. I figure something out, write
+> notes only I'll see, and three months later someone else burns
+> the same weekend solving the same problem. We're all doing the
+> same work in parallel — and getting paid in nothing for the
+> work that should be the community's substrate."
 
 **Philosophical problem (the injustice they feel):**
-> "Small high-trust groups should be the unit of knowledge work,
-> not lone individuals or whole companies. We should be able to
-> pool our reading and our reasoning with the people we actually
-> trust — without surrendering it all to a SaaS that mines it for
-> training data or gates the cross-search behind an enterprise
-> tier."
+> "Open source built the freest software stack in history because
+> we shared *code*. We built CRAN, npm, PyPI, GitHub, arxiv —
+> knowledge infrastructure that compounds. But for everything
+> *between* the code — what we read, what we learned, what we
+> figured out together — we have *nothing*. Each generation of
+> OSS contributors starts over. That's not how open source is
+> supposed to work."
 
 **Three test subheadlines (one per layer):**
-- External — `Stop researching the same papers three times.`
-- Internal — `Your team has a shared brain. Use it.`
-- Philosophical — `Small groups should own their knowledge. Together.`
+- External — `Stop rediscovering what your community already solved.`
+- Internal — `Your reading hours should compound. They don't.`
+- Philosophical — `Open source built the world's code stack. Time to build the knowledge stack.`
 
 ---
 
 ## Prompt 3 — Empathy-Authority Positioner
 
 **Empathy statement (mirrors the internal problem, not generic):**
-> Every week your team rediscovers something one of you already
-> figured out. Slack search doesn't find it. The wiki nobody
-> updated. The conversation buried in DMs. You *know* the
-> knowledge is in there somewhere — it just doesn't reach the
-> person who needs it. That's exhausting, and it's not how a
-> small high-trust group should have to work.
+> You spent last weekend learning about something — a paper, a
+> tool, a technique. You took notes. Maybe you wrote a blog post
+> or a tweet. Two months from now, someone in your community will
+> burn the same weekend learning the same thing, because your
+> notes and your post and your tweets aren't queryable by them.
+> You'd love to compound that knowledge forward. You just don't
+> have a mechanism.
 
 **Three authority proof points to display:**
-1. **P2P federation, no central server** — every peer holds the
-   full graph; sharing is gossip between peers, not a round-trip
-   through a vendor's API. If the wellinformed company disappears
-   tomorrow, your group's knowledge keeps working.
-2. **Cryptographically signed envelopes** — Ed25519-signed nodes
-   on every share. Every piece of knowledge you receive from the
-   room is provably attributed to a teammate you've already
-   trusted.
-3. **Open protocol, open source** — peers from any vendor can
-   federate via the same spec. The protocol is the contract. No
-   lock-in by design.
+1. **P2P federation built to scale to the whole community** —
+   libp2p gossip, no central server, sub-second propagation in
+   the connected mesh. The same architectural family that makes
+   git scale from 1 repo to a hundred million.
+2. **Cryptographically signed contributions** — every node carries
+   an Ed25519-signed DID, so knowledge compounds *with provenance*.
+   You can see who contributed what, when, and follow the chain.
+3. **Commodity hardware, open protocol** — every component (Xenova
+   ONNX, sqlite-vec, the Rust embed-server) reproducible from
+   public sources. Runs on a $7/mo VPS or a laptop. The whole
+   community can run a peer, not just well-funded teams.
 
 **Guide introduction (2 sentences, leads with empathy, closes with authority — About-page copy):**
-> We're a small group of engineers who watched our own team waste
-> hours every week re-investigating things we'd collectively
-> already figured out — and the alternatives (Slack search, Notion
-> wikis, "team memory" SaaS) either didn't work or turned our
-> group's knowledge into someone else's product. wellinformed is
-> the opposite: peers gossip cryptographically-signed memory
-> between each other, with no server in the middle, and a
-> retrieval pipeline that already matches every benchmark mem0
-> and ByteRover publish.
+> We watched open source build the freest software stack in
+> history through distributed collaboration — but the knowledge
+> *above* the code (what we read, what we learned, what we
+> figured out together) never got the same infrastructure.
+> wellinformed is the protocol the community needs to compound
+> everything between the code — federated, cryptographically
+> signed, and owned by the contributors themselves.
 
 ---
 
 ## Prompt 4 — Clarity Plan Builder
 
-**Process Plan (3 steps, how a group adopts wellinformed — each ≤5 words):**
-1. Install on your machines.
-2. Share a room.
-3. One reads → all remember.
+**Process Plan (3 steps, how a contributor joins the federation — each ≤5 words):**
+1. Run a peer. 30 seconds.
+2. Save what teaches you.
+3. Federate. Compound. Continue.
 
 **Agreement Plan (4 commitments that eliminate buying fears):**
+- Always open protocol.
+- Your contributions, signed by you.
 - No central server. Ever.
-- Your group's data stays in your group.
-- Every share is signed. Provably.
-- Works offline. Syncs when peers connect.
+- Attribution preserved forever.
 
 ---
 
 ## Prompt 5 — Action Trigger
 
-**Direct CTA (3-5 words, action verb first — invites cooperative behavior):**
-> **Pair with a teammate**
+**Direct CTA (3-5 words, action verb first — invites contribution):**
+> **Run your first peer**
 
 **Transitional CTA (free resource concept):**
-> **Read the protocol** — Ed25519-signed envelopes, libp2p gossip,
-> sqlite-vec retrieval. Three pages, no fluff, fully implementable
-> by a competing vendor if they wanted to interop.
+> **Read the protocol spec** — Ed25519 identities, libp2p gossip,
+> sqlite-vec hybrid retrieval. Three pages. Designed so any
+> vendor or any contributor can build interoperable peers.
 
 **Button placement strategy:**
 - Direct CTA appears 3× on the homepage:
@@ -143,178 +158,200 @@ matter as table stakes — but they're not the hero of the story.
   2. Center-fold (right after the hero subheadline)
   3. End of every doc page
 - Transitional CTA appears 3× more gently:
-  1. Below the hero (alternative path for not-yet-ready visitors)
+  1. Below the hero (for not-yet-ready visitors)
   2. Sidebar on docs pages
   3. Footer
-- Direct CTA visually leads transitional CTA — confident first,
-  generous after.
+- Direct CTA leads transitional CTA visually — invitation first,
+  spec second.
 
 ---
 
 ## Prompt 6 — Stakes Amplifier
 
 **What specific negative outcome happens if they do nothing?**
-> Their group keeps re-investigating things it collectively
-> already knows. The institutional memory they've built leaks out
-> every time someone leaves. The "knowledge management"
-> alternatives either trap them (Slack/Notion lock-in) or expose
-> them (public wikis where competitors can read everything).
+> The community keeps rediscovering. Every new generation of OSS
+> contributors starts over. Knowledge that wants to be free stays
+> locked in fragmented decaying surfaces — dead blogs, deleted
+> tweets, abandoned Discord servers. Search engines decay. SEO
+> spam wins. The collective intelligence the community *could*
+> have, simply isn't.
 
-**What does life look like in 6 months without solving this?**
-> Same papers re-read. Same bugs re-debugged. Same architectural
-> decisions re-litigated by people who weren't in the room when
-> the original call was made. Compounding wasted hours every
-> week. New hires spend 3-6 months in "where do we keep this?"
-> mode before they're net positive contributors.
+**What does the community look like in 6 months without solving this?**
+> The same problems get solved another hundred times by another
+> hundred people. The same papers get re-explained in another
+> fifty blog posts that will 404 within a year. AI assistants
+> trained on the community's knowledge from two years ago can't
+> answer questions about anything new the community has actually
+> figured out. The community keeps *generating* more knowledge
+> than it *accumulates*.
 
 **What's the cost of inaction in dollars, time, or status?**
-- Time: every redundant research cycle is 30-60 min × every
-  person on the team × every time it happens
-- Dollars: API tokens to re-fetch what's already in someone's
-  head; per-seat SaaS fees for tools that don't actually share
-  the underlying knowledge
-- Status: new hires lose months of "where's the institutional
-  context?" before they're productive
+- Person-years of redundant rediscovery, every week, across
+  thousands of contributors
+- Loss of provenance — work gets recycled without attribution,
+  contributors burn out unrecognized
+- Erosion of the OSS knowledge commons as every alternative
+  substrate (blogs, tweets, Discord, wikis) continues to decay
 
 **Stakes paragraph (for the sales page):**
-> Every week your team isn't sharing what it learns, a small
-> piece of your collective knowledge dies. The paper Anna read
-> becomes a question Bob has to research again next quarter. The
-> bug Carol fixed becomes a 4-hour debugging session for the new
-> hire. The architectural decision you made in 2024 becomes the
-> topic of a Slack thread in 2026 — re-debated by people who
-> weren't even there. You don't have to keep paying for the same
-> realisations.
+> Every week the open-source community doesn't have a shared
+> memory layer, the same problems get solved in parallel by
+> hundreds of people, the same papers get re-explained in posts
+> that will 404 within a year, and the same lessons get forgotten
+> as old contributors burn out and new ones start over. We built
+> the freest code stack in history. We can build the knowledge
+> stack too — or we can let the community's collective progress
+> keep evaporating, blog post by blog post, conversation by
+> conversation.
 
 ---
 
 ## Prompt 7 — Transformation Close
 
 **Customer STATUS after (how others see them):**
-> The team that doesn't re-explain things. The group that picks
-> up new hires fast. The collective that ships consistently
-> because their knowledge isn't trapped in any one person's head.
+> A contributor whose work compounds. Part of a federation that
+> knows what it collectively knows. A maintainer whose project's
+> institutional memory outlives any one person leaving. A
+> researcher whose questions get traction because the substrate
+> is queryable.
 
 **Customer STORY after (how they see themselves):**
-> "We're a small group with shared memory. We learn together, not
-> in parallel. When one of us reads something useful, all of us
-> benefit — and none of it lives on someone else's server."
+> "I'm part of an open-source community with a *shared memory*.
+> What I read and learn isn't trapped in my notes — it's
+> contributable. My time compounds into something larger than my
+> own work. Open source figured out how to make code compound;
+> now we've figured out how to make knowledge compound too."
 
 **Customer EXPERIENCE after (what changes in daily life):**
-- Someone in the room saves a paper → next time *anyone* asks
-  about that topic, the answer is instant, attributed to the
-  person who saved it
-- New hire joins the room → onboarding goes from "where's the
-  doc?" to "ask the AI, it has everything we've collectively saved"
-- One person solves a hard problem → the solution surfaces six
-  months later when anyone in the group hits the same issue
-- Someone leaves the team or company → they take *their* signed
-  copy of the knowledge with them; the room keeps working
-- Working offline on a plane → memory still queryable; syncs when
-  peers reconnect
+- New topic to dig into → query the federation, see what
+  ~dozens-to-thousands of contributors in your field have already
+  learned, attributed, dated.
+- Saved a paper to your peer → six months later, a contributor in
+  Lagos or Chennai or Berlin queries it and benefits.
+- Onboarding new contributors to a project → the entire "how we
+  figured this out" history is queryable from day one.
+- Searching for someone working on adjacent problems → the
+  federation graph shows you who has been touching what.
+- Old contributors leaving the community → their reading and
+  reasoning stays in the federation, signed and attributed to
+  them forever.
 
 **Success section (website copy — present tense, "you", paint the after-state):**
 
-> You open a fresh Claude session. Someone on your team — Anna,
-> last March — read the exact paper you need. Your AI pulls it
-> instantly. Not from a Slack search. Not from a wiki nobody
-> maintained. From your room.
+> You open a fresh Claude session about a topic you've never
+> touched before. Instead of starting from zero, you see what 47
+> other contributors in your field have already learned —
+> attributed to each of them. The paper Saiful read in Tokyo last
+> week. The bug Lena debugged in São Paulo last month. The
+> architectural insight Felix wrote a tweet about back in 2024
+> that nobody could find anymore.
 >
-> You're not the human glue between your team's investigations
-> anymore.
+> *The community already learned this.* Now you can ask it.
 >
-> The new hire joining next month gets all of it on day one. The
-> architectural decision you made together in 2024 is still
-> there, attributed to the person who made it, when the question
-> comes up in 2026. The bug Carol fixed last quarter surfaces the
-> moment anyone hits the same stack trace.
+> You contribute what you learn back to the federation. Six
+> months from now someone in Berlin or Chennai or Lagos queries
+> your peer and gets your reading, signed and attributed to you.
+> The community's progress compounds. Your reading hours pay
+> forward. Open source's knowledge stack starts existing.
 >
-> You didn't pay for an enterprise tier. You didn't trap your
-> knowledge in a SaaS. You shared a room. And one by one, every
-> redundant research cycle stopped happening.
+> It always wanted to. We just never built it before.
 
 ---
 
 ## Assembled draft homepage (above-the-fold)
 
-The highest-impact pieces from the 7 prompts in a single
-above-the-fold layout draft.
-
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                                                                  │
-│      When one of you reads it, all of you remember.              │   ← Prompt 1 opening line
+│   Open source has memory.                                        │   ← Prompt 1 opening line
+│   We just never let it talk to itself.                           │
 │                                                                  │
-│      Stop researching the same papers three times.               │   ← Prompt 2 external subheadline
+│   Stop rediscovering what your community already solved.         │   ← Prompt 2 external subheadline
 │                                                                  │
-│      [ Pair with a teammate ]                                    │   ← Prompt 5 direct CTA
-│      Read the protocol →                                         │   ← Prompt 5 transitional CTA
+│   [ Run your first peer ]                                        │   ← Prompt 5 direct CTA
+│   Read the protocol spec →                                       │   ← Prompt 5 transitional CTA
 │                                                                  │
-│      ────────────────────────────────────────                    │
+│   ────────────────────────────────────────                       │
 │                                                                  │
-│      Your team has a shared brain. Use it.                       │   ← Prompt 2 internal subheadline
+│   Your reading hours should compound. They don't.                │   ← Prompt 2 internal subheadline
 │                                                                  │
-│      Every week your team rediscovers something one of you       │   ← Prompt 3 empathy statement
-│      already figured out. Slack search doesn't find it. The      │
-│      wiki nobody updated. The conversation buried in DMs.        │
-│      You know the knowledge is in there somewhere — it just      │
-│      doesn't reach the person who needs it.                      │
+│   You spent last weekend learning something — a paper, a         │   ← Prompt 3 empathy statement
+│   tool, a technique. Two months from now, someone in your        │
+│   community will burn the same weekend learning the same         │
+│   thing, because your notes aren't queryable by them. You'd      │
+│   love to compound that knowledge forward. You just don't        │
+│   have a mechanism.                                              │
 │                                                                  │
-│      ✓ P2P federation — no central server, ever                  │   ← Prompt 3 authority points
-│      ✓ Ed25519-signed shares — every node provably attributed    │
-│      ✓ Open protocol — no vendor lock-in by design               │
+│   ✓ P2P federation built to scale to the whole community         │   ← Prompt 3 authority points
+│   ✓ Ed25519-signed contributions — provenance preserved          │
+│   ✓ Open protocol, commodity hardware — anyone can run a peer    │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-Below the fold: process plan, agreement plan, stakes paragraph,
-success section, guide introduction.
+Below the fold: process plan, agreement plan, stakes paragraph
+("…blog post by blog post…"), success section, guide introduction.
 
 ---
 
-## What changed vs the first pass
+## What changed across the three passes
 
-The previous draft (now archived in git history) anchored on
-"memory that belongs to you, not OpenAI" — a single-user framing
-that put wellinformed in direct R@5 competition with mem0 /
-agentmemory / ByteRover. That's a fight where the win condition is
-"beat their published number" and the differentiation is hard.
+| | Pass 1 — Personal | Pass 2 — Small teams | Pass 3 — OSS community |
+|---|---|---|---|
+| Hero | Lone engineer paying for AI | Small high-trust group (3-30) | The whole OSS community |
+| Desire | Own my personal memory | Share with my team | Compound community progress |
+| Real competitors | mem0, agentmemory, ByteRover | Slack, Notion, "team memory" SaaS | The current state of the OSS knowledge stack (none) |
+| Headline | "Memory that belongs to you" | "When one of you reads it, all of you remember" | **"Open source has memory. We just never let it talk to itself."** |
+| Authority | R@5 benchmark numbers | P2P + signed shares + open protocol | Federation scale + signed provenance + commodity hardware |
+| Direct CTA | "Install in 30 seconds" | "Pair with a teammate" | **"Run your first peer"** |
+| Stakes | "Paying twice for personal AI" | "Collective knowledge dying every week" | **"Person-years of redundant rediscovery — the community generates more than it accumulates"** |
+| Story analog | "Roam-like local memory" | "Git-but-for-knowledge in a team" | **"npm/PyPI/arxiv but for what we read and figured out"** |
 
-This pass anchors on the **P2P / cooperative dimension** instead:
+The retrieval benchmark numbers — 0.9268 R@5 on LongMemEval-S, the
+ladder ceiling at R@30=0.993, the E11 lift, etc. — are still real
+proof points. They belong on the page, but **lower down**, as
+"and by the way the underlying retrieval is also benchmark-grade",
+not as the lead. The lead is the **mission**: make the OSS
+community's progress compound.
 
-| First pass (wrong anchor) | This pass (correct anchor) |
-|---|---|
-| Hero: individual engineer paying for AI | Hero: small high-trust group |
-| Desire: control over personal memory | Desire: shared brain for the group |
-| Competitors: mem0 / agentmemory / ByteRover | Competitors: Slack search / Notion / lock-in SaaS |
-| Headline: "Memory that belongs to you" | Headline: "When one of you reads it, all of you remember" |
-| Proof points: benchmark numbers | Proof points: P2P + signed shares + open protocol |
-| Stakes: paying twice for personal AI | Stakes: collective knowledge dying every week |
+## Notes for the rewrite
 
-The retrieval benchmark numbers are still relevant — they're table
-stakes that prove the underlying retrieval is competitive — but
-they're no longer the headline. The headline is the differentiator
-no competitor can copy: **federated cooperative memory for trusted
-groups**, owned by the group, not the vendor.
+- **The brand name `wellinformed` is missing from the headline on
+  purpose.** StoryBrand explicitly forbids putting the brand name
+  in the headline — the headline is the desire, stated plainly.
+  The brand earns the mention later.
+- **The "we built the freest code stack in history" line** is
+  doing a lot of work — it activates the OSS reader's identity,
+  invokes the historical accomplishment, and sets up the natural
+  next step (the knowledge stack). Worth protecting in any
+  rewrite.
+- **"Knowledge that wants to be free stays locked in fragmented
+  decaying surfaces"** — the line in Prompt 6. Specific, true,
+  not hype. The reader has lived this.
+- **The success section names actual contributors in actual cities
+  (Saiful, Lena, Felix)** — concrete > abstract. Pick names from
+  the actual OSS contributor population if possible. Avoid US-only
+  names; the federation framing is global.
+- **The direct CTA "Run your first peer"** assumes a contributor
+  motivation. For visitors who arrive as consumers ("I want to
+  query the federation, not contribute"), there should be a
+  secondary entry point: "Query the federation" or "Browse what
+  contributors have saved".
 
 ## What to do with this draft
 
-1. **Re-read Prompt 1's business + customer descriptions** — if the
-   "small high-trust group of 3-30" sizing is off, every downstream
-   prompt shifts.
-2. **The three subheadlines from Prompt 2 are A/B candidates** —
-   external (cost), internal (frustration), philosophical
-   (ownership). Different audiences land on different layers; the
-   "Small groups should own their knowledge" one may be the
-   strongest in a privacy-conscious moment.
-3. **The direct CTA "Pair with a teammate"** assumes the visitor
-   has a teammate in mind. If most landing-page traffic is solo
-   founders or solo developers, swap to "Start your first room" or
-   "Invite a peer".
-4. **The authority points list omits the retrieval benchmark
-   numbers** — they should still appear, but lower on the page (in
-   a "by the way, our retrieval is also state-of-the-art" callout
-   block) so they don't compete with the federation/ownership
-   narrative.
-5. **Hand the assembled homepage block to a designer** — copy is
-   done, layout/visual is not.
+1. **Validate the mission claim with the OSS community itself.**
+   Post the headline + first 3 prompts as a community thread
+   (HN, Lobsters, OSS Discord), measure resonance. The
+   philosophical subheadline ("Open source built the world's
+   code stack. Time to build the knowledge stack.") is the
+   highest-conviction A/B candidate.
+2. **Refresh the federation-scale authority point** with real
+   numbers when the federation has more peers — "X peers across Y
+   countries" lands harder than "built to scale".
+3. **Hand the assembled homepage block to a designer** — copy
+   is done, layout is not.
+4. **Build the secondary entry path for consumers**, not just
+   contributors. Some visitors arrive ready to query; others
+   arrive ready to contribute. The current draft is contributor-
+   first.
