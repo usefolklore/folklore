@@ -4,6 +4,7 @@ node_modules/
 # build output
 dist/
 *.tsbuildinfo
+docs/comps/
 
 # logs
 *.log
@@ -32,3 +33,13 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# local agent state — never commit (contains provider tokens, transient session IDs)
+.claude-octopus/
+.agents/
+.claude-plugin/
+
+# editor / IDE drafts and backups
+*.bak
+*.bak.*
+findings.md
