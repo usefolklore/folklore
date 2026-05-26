@@ -311,10 +311,20 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
       rmSync(home, { recursive: true, force: true });
     }
 
-    if ((i + 1) % 25 === 0) {
-      const r5avg = sumR5 / (i + 1);
-      const eps = ((i + 1) / ((performance.now() - t0) / 1000)).toFixed(2);
-      console.log(`  ${i + 1}/${dataset.length} done — running R@5=${r5avg.toFixed(4)} (${eps} q/s)`);
+    // Phase 23.16 — fine-grained progress log. Tunable via
+    // `WELLINFORMED_BENCH_PROGRESS_EVERY_N` (default 25). Live tails
+    // see R@5 alongside NDCG@5 and MRR so order-sensitive lift shows
+    // up before the bench finishes (catches the case where R@5 is
+    // flat but NDCG@5 is rising — exactly what set-based metrics
+    // were hiding).
+    const PROGRESS_EVERY_N = Number(process.env.WELLINFORMED_BENCH_PROGRESS_EVERY_N ?? 25);
+    if ((i + 1) % PROGRESS_EVERY_N === 0) {
+      const n = i + 1;
+      const r5avg = sumR5 / n;
+      const ndcg5avg = sumNdcgK[5] / n;
+      const mrrSoFar = sumMrr / n;
+      const eps = (n / ((performance.now() - t0) / 1000)).toFixed(2);
+      console.log(`  ${n}/${dataset.length} done — R@5=${r5avg.toFixed(4)} NDCG@5=${ndcg5avg.toFixed(4)} MRR=${mrrSoFar.toFixed(4)} (${eps} q/s)`);
     }
   }
 

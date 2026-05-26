@@ -407,6 +407,21 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
         if (evidenceFound) totalEvidenceHits++;
         totalQ++;
 
+        // Phase 23.16 — fine-grained progress log for long-running
+        // (LLM-listwise / cross-encoder) bench runs. Per-sample logs
+        // arrive every ~70 questions which is too coarse when each
+        // question costs 5-30 s; this logs every N questions so live
+        // tailing on Hetzner / Mac shows the bench breathing.
+        // Tunable via `WELLINFORMED_BENCH_PROGRESS_EVERY_N` (default 25).
+        const PROGRESS_EVERY_N = Number(process.env.WELLINFORMED_BENCH_PROGRESS_EVERY_N ?? 25);
+        if (totalQ % PROGRESS_EVERY_N === 0) {
+          const r3 = sumEvHitsK[3] / totalQ;
+          const ndcg3 = sumNdcgK[3] / totalQ;
+          const mrrSoFar = sumMrr / totalQ;
+          const qps = totalQ / ((performance.now() - t0) / 1000);
+          console.log(`  progress n=${totalQ} R@3=${r3.toFixed(3)} NDCG@3=${ndcg3.toFixed(3)} MRR=${mrrSoFar.toFixed(3)} ev=${(totalEvidenceHits / totalQ).toFixed(3)} (${qps.toFixed(2)} q/s)`);
+        }
+
         const qid = `${sample.sample_id ?? `s${sIdx}`}#q${qIdx}`;
         perQuery.push({ id: qid, metric: 'answer-token-containment', value: containment });
 
