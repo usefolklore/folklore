@@ -3,18 +3,16 @@
  * wellinformed PostToolUse auto-save hook.
  *
  * Runs AFTER Claude calls WebSearch / WebFetch. Captures the tool
- * result and files it as a `source` note in a dedicated `research-inbox`
- * room so the next search hits the graph instead of the web. User can
- * later promote, reroom, or delete via `wellinformed lint` / `save`.
+ * result and files it as a `source` note in the global graph so the
+ * next search hits the graph instead of the web.
  *
  * Rationale: the real cost of "going somewhere else" isn't the trip —
  * it's repeating the trip. If Claude fetches the same URL twice in two
  * sessions, we paid the network cost twice AND lost the reasoning from
  * round one. Auto-saving closes that loop.
  *
- * Room choice: hardcoded `research-inbox` (not the user's current room)
- * so public / shared rooms don't get polluted by incidental web grabs.
- * Users promote the good ones with `wellinformed save --room <real>`.
+ * V5: web fetches land in the global graph; public (not --private).
+ * Workspace is auto-detected from cwd by the save CLI.
  *
  * Graceful degradation: any error → exit 0 silently. We never want a
  * post-hook to interrupt Claude's reasoning loop.
@@ -31,11 +29,7 @@ const HOME = process.env.WELLINFORMED_HOME || join(os.homedir(), '.wellinformed'
 const GRAPH_PATH = join(HOME, 'graph.json');
 const SAVE_TIMEOUT_MS = 8000;
 const MAX_BODY_BYTES = 32_000;
-// System room — every WebSearch / WebFetch result lands here so every
-// peer can touch `research` and see what this agent has read lately.
-// Deliberately not tunable: the system-rooms contract is that toolshed
-// and research are the two canonical, always-available surfaces.
-const ROOM = 'research';
+// V5: web fetches land in the global graph; public (not --private).
 
 const safe = (fn) => { try { return fn(); } catch { return undefined; } };
 
@@ -69,7 +63,7 @@ const sourceUriFor = (toolName, ti) => {
 };
 
 const saveToGraph = (label, body, sourceUri) => new Promise((resolve) => {
-  const args = ['save', '--room', ROOM, '--type', 'source', '--label', label];
+  const args = ['save', '--type', 'source', '--label', label];
   if (sourceUri) args.push('--source-uri', sourceUri);
   const child = spawn('wellinformed', args, {
     stdio: ['pipe', 'ignore', 'ignore'],
