@@ -12,21 +12,10 @@
 GRAPH="${WELLINFORMED_HOME:-$HOME/.wellinformed}/graph.json"
 if [ ! -f "$GRAPH" ]; then exit 0; fi
 
-# Only capture if graph exists and has at least one room
-ROOMS="${WELLINFORMED_HOME:-$HOME/.wellinformed}/rooms.json"
-if [ ! -f "$ROOMS" ]; then exit 0; fi
-
-DEFAULT_ROOM=$(python3 -c "
-import json, sys
-try:
-    r = json.load(open('$ROOMS'))
-    print(r.get('default_room', r.get('rooms', [{}])[0].get('id', '')))
-except: pass
-" 2>/dev/null)
-
-if [ -z "$DEFAULT_ROOM" ]; then exit 0; fi
-
-# Write a session marker node (lightweight — no embedding, just graph)
+# Write a session marker node (lightweight — no embedding, just graph).
+# V5: workspace is left unset here (auto-detected by CLI path; this hook
+# writes raw JSON for performance). Sharing gate (`private: false`)
+# is set so the node is federation-eligible.
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 SESSION_ID="session-$(date +%s)"
 
@@ -39,10 +28,10 @@ try:
         'label': 'Claude session at $TIMESTAMP',
         'file_type': 'rationale',
         'source_file': 'session-capture',
-        'room': '$DEFAULT_ROOM',
         'source_uri': 'session://$SESSION_ID',
         'fetched_at': '$TIMESTAMP',
-        'kind': 'session_capture'
+        'kind': 'session_capture',
+        'private': False
     }
     g['nodes'].append(node)
     with open('$GRAPH', 'w') as f:
