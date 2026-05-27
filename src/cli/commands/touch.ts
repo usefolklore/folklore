@@ -1,16 +1,16 @@
 /**
- * `wellinformed touch <peer-id-or-multiaddr> --room <name> [--max N] [--dry-run]`
+ * `wellinformed touch <peer-id-or-multiaddr> [--max N] [--dry-run]`
  *
- * Asymmetric P2P pull — ask the remote peer for every node they publish
- * in <name>, receive them with server-side secret redaction, merge into
- * the local graph (dry-run prints + discards).
+ * V5 (Phase 24): asymmetric P2P pull — ask the remote peer for their
+ * freshest non-private nodes, receive them with server-side secret
+ * redaction, merge into the local graph (dry-run prints + discards).
  *
- * Unlike `share room`, no local publishing is required — this is a
- * one-direction read. The peer may still refuse if the room isn't shared
- * on their side.
+ * No --room flag — touch is now a uniform "give me your public nodes"
+ * request. The remote peer filters its own graph on `private === false`
+ * via the V5 share gate.
  *
- * Uses a short-lived libp2p node (same pattern as `peer add`) so it works
- * whether or not the daemon is running.
+ * Uses a short-lived libp2p node (same pattern as `peer add`) so it
+ * works whether or not the daemon is running.
  */
 
 import { join } from 'node:path';
@@ -36,38 +36,33 @@ const graphPath = (): string => join(wellinformedHome(), 'graph.json');
 
 interface TouchArgs {
   readonly target: string;
-  readonly room: string;
   readonly maxNodes: number;
   readonly dryRun: boolean;
 }
 
 const parseArgs = (rest: readonly string[]): TouchArgs | string => {
   if (rest.length === 0) {
-    return 'touch: missing <peer-id-or-multiaddr>. usage: wellinformed touch <peer> --room <name> [--max N] [--dry-run]';
+    return 'touch: missing <peer-id-or-multiaddr>. usage: wellinformed touch <peer> [--max N] [--dry-run]';
   }
   const target = rest[0];
   const flags = rest.slice(1);
-  let room: string | undefined;
   let maxNodes: number = TOUCH_MAX_NODES;
   let dryRun = false;
   for (let i = 0; i < flags.length; i++) {
     const f = flags[i];
-    if (f === '--room') { room = flags[++i]; continue; }
     if (f === '--max')  { maxNodes = parseInt(flags[++i], 10); continue; }
     if (f === '--dry-run') { dryRun = true; continue; }
+    if (f === '--room' || f.startsWith('--room=')) {
+      console.error('touch: --room is removed in V5 (ignored).');
+      if (f === '--room') i++;
+      continue;
+    }
     return `touch: unknown flag '${f}'`;
   }
-  if (!room) return 'touch: --room <name> is required';
   if (!Number.isFinite(maxNodes) || maxNodes <= 0) return 'touch: --max must be a positive integer';
-  return { target, room, maxNodes, dryRun };
+  return { target, maxNodes, dryRun };
 };
 
-/**
- * Resolve a user-supplied target into (peerId, addr) for dialAndTag.
- * Two shapes accepted:
- *   1. Full multiaddr "/ip4/.../p2p/12D3..."
- *   2. Bare peer id "12D3..." — looked up in peers.json
- */
 const resolveTarget = async (
   target: string,
 ): Promise<{ peerId: string; addr: string } | string> => {
@@ -121,10 +116,6 @@ export const touch = async (rest: readonly string[]): Promise<number> => {
     return 1;
   }
 
-  // CLI dialer uses an ephemeral port — the fixed peer.port is reserved for
-  // the daemon listener, and binding it twice causes EADDRINUSE when the
-  // daemon is already running. listenHost stays on 127.0.0.1 since the CLI
-  // only initiates outbound connections and does not need to accept dials.
   const nodeRes = await createNode(idRes.value, {
     listenPort: 0,
     listenHost: '127.0.0.1',
@@ -142,7 +133,7 @@ export const touch = async (rest: readonly string[]): Promise<number> => {
       return 1;
     }
 
-    const streamRes = await openTouchStream(node, resolved.peerId, parsed.room, parsed.maxNodes);
+    const streamRes = await openTouchStream(node, resolved.peerId, parsed.maxNodes);
     if (streamRes.isErr()) {
       console.error(`touch: ${formatError(streamRes.error)}`);
       return 1;
@@ -150,7 +141,7 @@ export const touch = async (rest: readonly string[]): Promise<number> => {
     const { nodes, redactions_applied, rejected } = streamRes.value;
 
     console.log(
-      `touch: peer ${resolved.peerId} returned ${nodes.length} node(s) from room '${parsed.room}'${redactions_applied > 0 ? ` (${redactions_applied} redaction${redactions_applied === 1 ? '' : 's'} applied server-side)` : ''}`,
+      `touch: peer ${resolved.peerId} returned ${nodes.length} node(s)${redactions_applied > 0 ? ` (${redactions_applied} redaction${redactions_applied === 1 ? '' : 's'} applied server-side)` : ''}`,
     );
     if (rejected.length > 0) {
       console.error(

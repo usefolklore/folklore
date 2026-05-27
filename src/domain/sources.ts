@@ -54,11 +54,15 @@ export interface SourceDescriptor {
   /** Stable opaque id; used in logs and SourceRun reports. */
   readonly id: string;
   readonly kind: SourceKind;
-  /** The room this source feeds into. */
-  readonly room: Room;
+  /**
+   * @deprecated V5 (Phase 24) — rooms were deleted. The field remains
+   * to round-trip legacy sources.json entries; new descriptors should
+   * omit it. Adapters MUST NOT depend on this field for routing.
+   */
+  readonly room?: Room;
   /** Optional sub-partition on the emitted nodes. */
   readonly wing?: Wing;
-  /** If false, the source is skipped by trigger-room. Defaults to true. */
+  /** If false, the source is skipped by trigger. Defaults to true. */
   readonly enabled?: boolean;
   /** Adapter-specific configuration. */
   readonly config: Readonly<Record<string, unknown>>;
@@ -72,13 +76,19 @@ export interface Source {
 }
 
 /**
- * Result of running one source through the ingest pipeline. Aggregated
- * into a `RoomRun` at the trigger-room level.
+ * Result of running one source through the ingest pipeline.
+ *
+ * V5 (Phase 24): the `room` field is retained on the report shape for
+ * back-compat with telemetry consumers and the daemon's TickResult.
+ * Producers may omit it when no legacy room data is around.
  */
 export interface SourceRun {
   readonly source_id: string;
   readonly kind: SourceKind;
-  readonly room: Room;
+  /**
+   * @deprecated V5 — present only for legacy telemetry display.
+   */
+  readonly room?: Room;
   readonly items_seen: number;
   readonly items_new: number;
   readonly items_updated: number;
@@ -86,9 +96,12 @@ export interface SourceRun {
   readonly error?: AppError;
 }
 
-/** Aggregate of all source runs for one room. */
+/**
+ * @deprecated V5 (Phase 24) — kept as the daemon tick aggregator shape
+ * for back-compat. New code should consume SourceRun[] directly.
+ */
 export interface RoomRun {
-  readonly room: Room;
+  readonly room?: Room;
   readonly runs: readonly SourceRun[];
   readonly started_at: string;
   readonly finished_at: string;
@@ -99,12 +112,6 @@ export interface RoomRun {
 /** Default predicate — a descriptor is enabled unless explicitly disabled. */
 export const isEnabled = (d: SourceDescriptor): boolean => d.enabled !== false;
 
-/** Filter descriptors to those matching a room and currently enabled. */
-export const forRoom = (
-  descriptors: readonly SourceDescriptor[],
-  room: Room,
-): readonly SourceDescriptor[] => descriptors.filter((d) => d.room === room && isEnabled(d));
-
 /**
  * Build an empty SourceRun for a descriptor — used by the ingest
  * pipeline when a source produces no items or fails before fetching.
@@ -112,7 +119,6 @@ export const forRoom = (
 export const emptyRun = (d: SourceDescriptor): SourceRun => ({
   source_id: d.id,
   kind: d.kind,
-  room: d.room,
   items_seen: 0,
   items_new: 0,
   items_updated: 0,

@@ -1,16 +1,16 @@
 /**
- * `wellinformed export obsidian [--room R] [--output DIR]`
+ * `wellinformed export obsidian [--workspace W] [--output DIR]`
  *
- * Exports the knowledge graph as an Obsidian vault: one .md file per
- * node with YAML frontmatter + backlinks for edges.
+ * V5 (Phase 24): exports the global graph (or workspace-filtered
+ * slice) as an Obsidian vault: one .md file per node with YAML
+ * frontmatter + backlinks for edges.
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { formatError } from '../../domain/errors.js';
-import { defaultRoom } from '../../domain/rooms.js';
 import type { GraphNode, GraphEdge } from '../../domain/graph.js';
-import { defaultRuntime, runtimePaths } from '../runtime.js';
+import { defaultRuntime, runtimePaths, detectWorkspace } from '../runtime.js';
 
 const sanitizeFilename = (s: string): string =>
   s.replace(/[<>:"/\\|?*#]/g, '_').replace(/\s+/g, ' ').trim().slice(0, 200);
@@ -22,10 +22,10 @@ const nodeToMarkdown = (
 ): string => {
   const lines: string[] = [];
 
-  // YAML frontmatter
   lines.push('---');
   lines.push(`id: "${node.id}"`);
-  lines.push(`room: "${node.room ?? 'unassigned'}"`);
+  if (node.workspace) lines.push(`workspace: "${node.workspace}"`);
+  if (node.private === true) lines.push(`private: true`);
   if (node.wing) lines.push(`wing: "${node.wing}"`);
   if (node.file_type) lines.push(`type: "${node.file_type}"`);
   if (node.source_uri) lines.push(`source: "${node.source_uri}"`);
@@ -35,17 +35,14 @@ const nodeToMarkdown = (
   lines.push('---');
   lines.push('');
 
-  // Title
   lines.push(`# ${node.label}`);
   lines.push('');
 
-  // Source link
   if (node.source_uri) {
     lines.push(`Source: [${node.source_uri}](${node.source_uri})`);
     lines.push('');
   }
 
-  // Connected nodes as backlinks
   const related = edges.filter((e) => e.source === node.id || e.target === node.id);
   if (related.length > 0) {
     lines.push('## Connections');
@@ -63,16 +60,27 @@ const nodeToMarkdown = (
 };
 
 export const exportObsidian = async (args: readonly string[]): Promise<number> => {
-  let room: string | undefined;
+  let workspaceFlag: string | undefined;
+  let workspaceExplicit = false;
   let output: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     const next = (): string => args[++i] ?? '';
-    if (a === '--room') room = next();
-    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
+    if (a === '--workspace') { workspaceFlag = next(); workspaceExplicit = true; }
+    else if (a.startsWith('--workspace=')) { workspaceFlag = a.slice('--workspace='.length); workspaceExplicit = true; }
     else if (a === '--output' || a === '-o') output = next();
     else if (a.startsWith('--output=')) output = a.slice('--output='.length);
+    else if (a === '--room' || a.startsWith('--room=')) {
+      console.error('export: --room is removed in V5 (ignored). Use --workspace.');
+      if (a === '--room') i++;
+    }
+  }
+  let workspace: string | undefined;
+  if (workspaceExplicit) {
+    workspace = workspaceFlag === 'all' ? undefined : (workspaceFlag || undefined);
+  } else {
+    workspace = detectWorkspace();
   }
 
   const rt = await defaultRuntime();
@@ -80,35 +88,29 @@ export const exportObsidian = async (args: readonly string[]): Promise<number> =
   const runtime = rt.value;
 
   try {
-    if (!room) {
-      const reg = await runtime.rooms.load();
-      if (reg.isOk()) room = defaultRoom(reg.value);
-    }
-
     const graphResult = await runtime.graphs.load();
     if (graphResult.isErr()) { console.error(`export: ${formatError(graphResult.error)}`); return 1; }
 
     const graph = graphResult.value;
-    const nodes = room
-      ? graph.json.nodes.filter((n) => n.room === room)
+    const nodes = workspace
+      ? graph.json.nodes.filter((n) => n.workspace === workspace)
       : [...graph.json.nodes];
     const nodeIds = new Set(nodes.map((n) => n.id));
     const edges = graph.json.links.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target));
 
-    const vaultDir = output ?? join(runtimePaths().home, 'obsidian-vault', room ?? 'all');
+    const vaultDir = output ?? join(runtimePaths().home, 'obsidian-vault', workspace ?? 'all');
     mkdirSync(vaultDir, { recursive: true });
 
-    // Write index
-    const indexLines = [`# wellinformed vault — ${room ?? 'all rooms'}`, '', `${nodes.length} nodes, ${edges.length} edges`, ''];
-    const byRoom = new Map<string, GraphNode[]>();
+    const indexLines = [`# wellinformed vault — ${workspace ?? 'all workspaces'}`, '', `${nodes.length} nodes, ${edges.length} edges`, ''];
+    const byWorkspace = new Map<string, GraphNode[]>();
     for (const n of nodes) {
-      const r = (n.room as string) ?? 'unassigned';
-      const arr = byRoom.get(r) ?? [];
+      const ws = typeof n.workspace === 'string' ? n.workspace : 'unassigned';
+      const arr = byWorkspace.get(ws) ?? [];
       arr.push(n);
-      byRoom.set(r, arr);
+      byWorkspace.set(ws, arr);
     }
-    for (const [r, ns] of byRoom) {
-      indexLines.push(`## ${r} (${ns.length})`);
+    for (const [ws, ns] of byWorkspace) {
+      indexLines.push(`## ${ws} (${ns.length})`);
       for (const n of ns.slice(0, 50)) {
         indexLines.push(`- [[${sanitizeFilename(n.label)}]]`);
       }
@@ -116,7 +118,6 @@ export const exportObsidian = async (args: readonly string[]): Promise<number> =
     }
     writeFileSync(join(vaultDir, 'index.md'), indexLines.join('\n'));
 
-    // Write one file per node
     let written = 0;
     for (const node of nodes) {
       const filename = sanitizeFilename(node.label) + '.md';

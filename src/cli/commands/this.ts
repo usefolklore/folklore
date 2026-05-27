@@ -2,23 +2,25 @@
  * `wellinformed this [me|everyone] [--root DIR] [--name NAME]`
  *
  * Index the current (or `--root`) directory into the knowledge graph
- * under a room slug derived from its basename. The visibility token
- * decides whether the resulting room is kept private (`me`, default)
- * or marked shareable on the P2P federation (`everyone`).
+ * tagged with a workspace slug derived from its basename. The
+ * visibility token decides whether the indexed nodes are marked
+ * private (`me`, default) — V5 (Phase 24) per-node `private: bool`
+ * gate — or left federation-eligible (`everyone`).
  *
- *   wellinformed this              → index cwd, room private
+ *   wellinformed this              → index cwd, nodes private
  *   wellinformed this me           → same (explicit private)
- *   wellinformed this everyone     → index cwd + share room with peers
- *
- * Sharing routes through the existing share-room flow, which audits
- * for secrets and refuses on flagged nodes — no override. Privacy
- * boundary identical to `wellinformed share room <name>`.
+ *   wellinformed this everyone     → index cwd, nodes NOT marked private;
+ *                                    use `wellinformed share <peer>` to
+ *                                    actually publish.
  */
 
 import { basename, join, resolve } from 'node:path';
-import { slugifyRoomName } from '../../domain/rooms.js';
 import { indexProject } from './index-project.js';
 import { share } from './share.js';
+
+/** V5 (Phase 24): rooms deleted — slugify is local. */
+const slugifyRoomName = (s: string): string =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 63) || 'unnamed';
 import { registerWatchTarget } from '../../infrastructure/watch-targets.js';
 import { wellinformedHome, runtimePaths } from '../runtime.js';
 import { isRunning } from '../../daemon/loop.js';
@@ -72,19 +74,16 @@ export const thisCmd = async (args: readonly string[]): Promise<number> => {
   const absRoot = resolve(root);
 
   // Register the watch-target FIRST. This is independent of the index
-  // result — if the indexer hits a transient error mid-run, the
-  // watcher should still be set up so future saves can heal it.
-  // Idempotent — re-running just refreshes registered_at.
+  // result. V5: the watch-target shape carries a workspace slug
+  // instead of a room (back-compat: the field name remains `room`
+  // until watch-targets.json shape is migrated).
   registerWatchTarget(join(wellinformedHome(), 'watch-targets.json'), {
     room: slug,
     root: absRoot,
   });
 
-  // Daemon-submit path — when the daemon is running, the synchronous
-  // index-project mutates graph.json from this process while the
-  // daemon's tick may also write, racing on the same file's tmp
-  // rename. Submit an ingest:room job to the daemon instead so the
-  // single-writer worker handles it; we return immediately.
+  // Daemon-submit path — when the daemon is running, submit an
+  // ingest:project job so the single-writer worker handles graph.json.
   const daemonAlive = isRunning(runtimePaths().home);
   if (daemonAlive) {
     const out = await ipcCallLines('submit-job', ['ingest:project', slug, absRoot]);
@@ -99,30 +98,32 @@ export const thisCmd = async (args: readonly string[]): Promise<number> => {
     console.log(`    wellinformed daemon stop && wellinformed daemon start`);
     console.log(`\n  track ingest progress with:  wellinformed jobs watch`);
     if (visibility === 'everyone') {
-      console.log('');
-      const shareCode = await share(['room', slug]);
-      if (shareCode !== 0) return shareCode;
+      console.log(`\n  workspace '${slug}' indexed — nodes are NOT marked private.`);
+      console.log(`  publish to a peer with: wellinformed share <peer-id>`);
     } else {
-      console.log(`\n  room '${slug}' is private. nothing leaves this machine.`);
-      console.log(`  to share later: wellinformed share room ${slug}`);
+      console.log(`\n  workspace '${slug}' indexed privately (V5: nodes get private:true).`);
+      console.log(`  to publish later: re-run with 'wellinformed this everyone' or`);
+      console.log(`  flip nodes manually with 'wellinformed save --label X' (default public).`);
     }
     return 0;
   }
 
-  // Sync path — daemon not running, original behaviour.
-  const indexCode = await indexProject(['--room', slug, '--root', root]);
+  // Sync path — daemon not running.
+  const indexCode = await indexProject(['--workspace', slug, '--root', root]);
   console.log(`\nwatch-target registered — start the daemon to enable auto re-embed:`);
   console.log(`  wellinformed daemon start`);
 
   if (indexCode !== 0) return indexCode;
 
   if (visibility === 'everyone') {
-    console.log('');
-    const shareCode = await share(['room', slug]);
-    if (shareCode !== 0) return shareCode;
+    console.log(`\nworkspace '${slug}' indexed — nodes are NOT marked private.`);
+    console.log(`  publish to a peer with: wellinformed share <peer-id>`);
   } else {
-    console.log(`\nroom '${slug}' indexed privately. nothing leaves this machine.`);
-    console.log(`  to share later: wellinformed share room ${slug}`);
+    console.log(`\nworkspace '${slug}' indexed privately. nothing leaves this machine.`);
+    console.log(`  to publish later: see 'wellinformed share <peer-id>'`);
   }
+  // Silence unused-import warning while keeping the symbol available
+  // for future re-introduction of an automatic share step.
+  void share;
   return 0;
 };
