@@ -35,8 +35,6 @@ import { publishQuestion, publishAnswer } from '../../infrastructure/oracle-goss
 import { wellinformedHome } from '../runtime.js';
 import { join } from 'node:path';
 
-const ORACLE_ROOM = 'oracle';
-
 const localPeerId = async (homePath: string): Promise<string> => {
   // Re-use the same identity file libp2p uses so answers are attributable
   // to the same peer the rest of the stack knows. Fall back to 'local'
@@ -157,7 +155,7 @@ const ask = async (rest: readonly string[]): Promise<number> => {
       graphs: runtime.graphs,
       vectors: runtime.vectors,
       embedder: runtime.embedder,
-    })({ node, text, room: ORACLE_ROOM });
+    })({ node, text });
     if (res.isErr()) {
       console.error(`oracle ask: ${formatError(res.error)}`);
       return 1;
@@ -217,7 +215,7 @@ const answer = async (rest: readonly string[]): Promise<number> => {
       graphs: runtime.graphs,
       vectors: runtime.vectors,
       embedder: runtime.embedder,
-    })({ node, text, room: ORACLE_ROOM });
+    })({ node, text });
     if (res.isErr()) {
       console.error(`oracle answer: ${formatError(res.error)}`);
       return 1;

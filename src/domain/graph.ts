@@ -55,8 +55,18 @@ export interface WellinformedNodeFields {
   /** Optional workspace tag — populated from cwd's git toplevel basename at write time.
    *  LOCAL-ONLY. Never enters federation wire envelope. */
   readonly workspace?: string;
-  /** Sharing gate. True = never federates. Defaults to false at write time. */
-  readonly private: boolean;
+  /**
+   * Sharing gate. True = never federates. Defaults to false at write time.
+   *
+   * V5 (Phase 24): optional at the type level so existing source
+   * adapters (claude_sessions, generic_rss, codebase, …) can be
+   * surgically edited in later waves without forcing a synchronous
+   * sweep of every node-construction site. The persistence layer
+   * (graph repository → indexNode) stamps `private: false` whenever
+   * the field is absent, preserving the "explicit at the boundary"
+   * intent of the original schema.
+   */
+  readonly private?: boolean;
 }
 
 /** A single graph node. Arbitrary extra keys are preserved through round-trip. */

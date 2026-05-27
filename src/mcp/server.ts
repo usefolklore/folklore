@@ -730,7 +730,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
       );
       const askedBy = askedByRes.isOk() ? askedByRes.value.peerId : 'local';
       const node = nodeFromQuestion({ text, askedBy, label });
-      const res = await indexNode(deps)({ node, text, room: 'oracle' });
+      const res = await indexNode(deps)({ node, text });
       if (res.isErr()) return errText(res.error);
       return okJson({
         question_id: node.id,
@@ -782,7 +782,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
         answeredBy,
         confidence,
       });
-      const res = await indexNode(deps)({ node, text, room: 'oracle' });
+      const res = await indexNode(deps)({ node, text });
       if (res.isErr()) return errText(res.error);
       return okJson({
         answer_id: node.id,

@@ -214,7 +214,6 @@ export const evalCmd = async (args: readonly string[]): Promise<number> => {
       const t0 = performance.now();
       const r = await askFn({
         query: q.query,
-        room: q.room ?? parsed.room,
         k: parsed.k,
       });
       const t1 = performance.now();

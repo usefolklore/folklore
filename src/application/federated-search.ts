@@ -340,7 +340,6 @@ export const runFederatedSearch = async (
     const gossipRes = await askGossip(
       deps.node,
       params.embedding,
-      null,
       k,
       {
         // Default 250ms — covers floodsub on a LAN mesh + parallel
