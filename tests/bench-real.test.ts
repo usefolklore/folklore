@@ -11,7 +11,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, statSync } from 'node:fs';
+import { mkdtempSync, rmSync, statSync, appendFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -19,8 +19,9 @@ import { test } from 'node:test';
 import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
 import { fixtureEmbedder } from '../src/infrastructure/embedders.js';
-import { indexNode, searchByRoom, searchGlobal } from '../src/application/use-cases.js';
+import { indexNode, searchGlobal } from '../src/application/use-cases.js';
 import { sparse } from '../src/domain/vectors.js';
+import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 
 // ─────────── corpus with ground truth ───────────
 
@@ -143,7 +144,6 @@ const buildIndex = async (tmp: string) => {
         tags: item.tags,
       },
       text: `${item.label}. ${item.text}`,
-      room: 'bench',
     });
   }
 
@@ -161,8 +161,7 @@ test('real-bench: IR metrics on labeled corpus (P@5, R@5, MRR, NDCG@5)', async (
     const results: Array<{ query: string; p5: number; r5: number; mrr_val: number; ndcg5: number }> = [];
 
     for (const q of QUERIES) {
-      const searchResult = (await searchByRoom(searchDeps)({
-        room: 'bench',
+      const searchResult = (await searchGlobal(searchDeps)({
         text: q.query,
         k: 10,
       }))._unsafeUnwrap();
@@ -225,6 +224,29 @@ test('real-bench: IR metrics on labeled corpus (P@5, R@5, MRR, NDCG@5)', async (
       `retrieval Precision@5 regressed below 0.25 floor: ${avgP5.toFixed(3)}`,
     );
 
+    // Emit BenchSuiteReport for the composite runner (Phase 23).
+    // The 30-item labeled corpus with NDCG@5 is wellinformed's BEIR
+    // SciFact proxy until the real 5,183-doc SciFact adapter ships in
+    // Phase 23.5. Mapping NDCG@5 → beirSciFactNdcg10 is documented in
+    // the report's notes field so the dimension is honest about its
+    // source.
+    if (process.env.WELLINFORMED_BENCH_OUT) {
+      const report: BenchSuiteReport = {
+        suite: 'dense-retrieval-labeled',
+        metrics: {
+          beirSciFactNdcg10: avgNDCG5,  // proxy until real BEIR adapter ships
+          ndcg5: avgNDCG5,
+          recall5: avgR5,
+          precision5: avgP5,
+          mrr: avgMRR,
+        },
+        perQuery: results.map((r, i) => ({ id: `q-${i}`, metric: 'ndcg5', value: r.ndcg5 })),
+        elapsedMs: 0,
+        notes: 'Local 30-item labeled corpus (3-domain tag-based relevance) as BEIR SciFact proxy. Real 5183-doc SciFact adapter pending in Phase 23.5. NDCG@5 reported in lieu of NDCG@10 because the relevance set per query is small (1-3 docs).',
+      };
+      appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
+    }
+
     close();
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 });
@@ -237,7 +259,7 @@ test('real-bench: latency percentiles over 100 searches', async () => {
 
     // Warm up
     for (let i = 0; i < 5; i++) {
-      await searchByRoom(searchDeps)({ room: 'bench', text: 'warmup query', k: 5 });
+      await searchGlobal(searchDeps)({ text: 'warmup query', k: 5 });
     }
 
     // 100 searches with varying queries
@@ -245,7 +267,7 @@ test('real-bench: latency percentiles over 100 searches', async () => {
     for (let i = 0; i < 100; i++) {
       const q = QUERIES[i % QUERIES.length];
       const start = performance.now();
-      await searchByRoom(searchDeps)({ room: 'bench', text: q.query, k: 5 });
+      await searchGlobal(searchDeps)({ text: q.query, k: 5 });
       latencies.push(performance.now() - start);
     }
 
@@ -295,7 +317,6 @@ test('real-bench: scale test — index 100/500/1000 nodes, measure throughput', 
             source_file: `scale/${i}`,
           },
           text: `${item.label}. ${item.text}. Instance ${i}.`,
-          room: 'scale',
         });
       }
       const indexMs = performance.now() - indexStart;
@@ -303,7 +324,7 @@ test('real-bench: scale test — index 100/500/1000 nodes, measure throughput', 
       // Search
       const searchStart = performance.now();
       for (let i = 0; i < 10; i++) {
-        await searchByRoom({ graphs, vectors, embedder })({ room: 'scale', text: QUERIES[i % QUERIES.length].query, k: 5 });
+        await searchGlobal({ graphs, vectors, embedder })({ text: QUERIES[i % QUERIES.length].query, k: 5 });
       }
       const searchMs = (performance.now() - searchStart) / 10;
 
@@ -355,7 +376,6 @@ test('real-bench: dedup correctness — mutation detection rate', async () => {
           content_sha256: `hash-${i}-original`,
         },
         text: item.text,
-        room: 'dedup',
       });
     }
 
@@ -374,7 +394,6 @@ test('real-bench: dedup correctness — mutation detection rate', async () => {
           content_sha256: `hash-${i}-original`,
         },
         text: item.text,
-        room: 'dedup',
       });
     }
 
@@ -393,7 +412,6 @@ test('real-bench: dedup correctness — mutation detection rate', async () => {
           content_sha256: `hash-${i}-MUTATED`,
         },
         text: `UPDATED: ${item.text}`,
-        room: 'dedup',
       });
     }
 

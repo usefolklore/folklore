@@ -15,7 +15,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, appendFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -24,6 +24,7 @@ import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
 import { xenovaEmbedder } from '../src/infrastructure/embedders.js';
 import { indexNode, searchGlobal } from '../src/application/use-cases.js';
+import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 
 // ─────────── HotPotQA-style multi-hop corpus ───────────
 // Each question requires reasoning across 2+ documents.
@@ -134,7 +135,6 @@ test('BEIR/HotPotQA-style: multi-hop retrieval with real ONNX embeddings', async
       await useCase({
         node: { id, label: doc.title, file_type: 'document', source_file: `wiki/${id}` },
         text: `${doc.title}. ${doc.text}`,
-        room: 'beir',
       });
     }
     const indexTime = performance.now() - indexStart;
@@ -218,6 +218,27 @@ test('BEIR/HotPotQA-style: multi-hop retrieval with real ONNX embeddings', async
     console.log(`\n  Per-query:`);
     for (const r of results) {
       console.log(`    [${r.type.padEnd(10)}] ${r.query.slice(0, 52).padEnd(52)} NDCG=${(r.ndcg10 * 100).toFixed(0).padStart(3)}% R@5=${(r.r5 * 100).toFixed(0).padStart(3)}% ${r.latency.toFixed(0)}ms`);
+    }
+
+    // Emit BenchSuiteReport for the composite runner (Phase 23).
+    if (process.env.WELLINFORMED_BENCH_OUT) {
+      const report: BenchSuiteReport = {
+        suite: 'hotpotqa-style',
+        metrics: {
+          hotpotqaRecall5: overall.r5,
+          ndcg10: overall.ndcg10,
+          map10: overall.map10,
+          recall5: overall.r5,
+          recall10: overall.r10,
+          precision5: overall.p5,
+          mrr: overall.mrr,
+          latency_p50_ms: overall.latency_p50,
+        },
+        perQuery: results.map((r) => ({ id: r.id, metric: 'r5', value: r.r5 })),
+        elapsedMs: performance.now() - indexStart,
+        notes: 'Multi-hop HotpotQA-style: 15 wiki passages, 20 queries, Xenova all-MiniLM-L6-v2 fp32',
+      };
+      appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
     }
 
     // Assertions

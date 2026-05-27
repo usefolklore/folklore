@@ -42,7 +42,7 @@ import { test } from 'node:test';
 import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
 import { xenovaEmbedder, batchingEmbedder } from '../src/infrastructure/embedders.js';
-import { indexNode, searchByRoom } from '../src/application/use-cases.js';
+import { indexNode, searchGlobal } from '../src/application/use-cases.js';
 import { ndcgAtK, recallAtK, reciprocalRank } from '../src/domain/eval-metrics.js';
 import { rerankMatches } from '../src/domain/cross-rerank.js';
 import { crossEncoderFromEnv } from '../src/infrastructure/cross-encoder.js';
@@ -175,10 +175,8 @@ test('bench: real BEIR SciFact NDCG@10', { timeout: 24 * 60 * 60 * 1000 }, async
           file_type: 'document',
           source_file: `scifact/${d._id}`,
           source_uri: `scifact://${d._id}`,
-          room: ROOM,
         },
         text,
-        room: ROOM,
       });
       if (r.isErr()) throw new Error(`index ${d._id}: ${JSON.stringify(r.error)}`);
       indexed++;
@@ -197,8 +195,7 @@ test('bench: real BEIR SciFact NDCG@10', { timeout: 24 * 60 * 60 * 1000 }, async
     const perQuery: { id: string; metric: string; value: number }[] = [];
 
     for (const q of queries) {
-      const r0 = await searchByRoom({ graphs, vectors, embedder })({
-        room: ROOM,
+      const r0 = await searchGlobal({ graphs, vectors, embedder })({
         text: q.text,
         k: overRetrieveK,
       });

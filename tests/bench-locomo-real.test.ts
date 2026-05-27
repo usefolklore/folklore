@@ -53,7 +53,7 @@ import { test } from 'node:test';
 import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
 import { xenovaEmbedder, batchingEmbedder } from '../src/infrastructure/embedders.js';
-import { indexNode, searchByRoom } from '../src/application/use-cases.js';
+import { indexNode, searchGlobal } from '../src/application/use-cases.js';
 import { llmExtractorFromEnv } from '../src/infrastructure/llm-extractor.js';
 import { squadF1, squadExactMatch } from '../src/domain/llm-extractor.js';
 import { rerankMatches } from '../src/domain/cross-rerank.js';
@@ -338,12 +338,10 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
             file_type: 'document',
             source_file: s.nodeId,
             source_uri: `session://${s.nodeId}`,
-            room: ROOM,
             summary: s.summary.slice(0, 400),
             fetched_at: s.fetchedAt,
           },
           text: indexedText,
-          room: ROOM,
         });
         if (r.isErr()) throw new Error(`index ${s.nodeId}: ${JSON.stringify(r.error)}`);
       }
@@ -352,8 +350,7 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
 
       for (let qIdx = 0; qIdx < factualQa.length; qIdx++) {
         const q = factualQa[qIdx];
-        const r0 = await searchByRoom({ graphs, vectors, embedder })({
-          room: ROOM,
+        const r0 = await searchGlobal({ graphs, vectors, embedder })({
           text: q.question,
           k: overRetrieveK,
         });
