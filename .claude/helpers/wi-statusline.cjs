@@ -13,8 +13,34 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const HOME = process.env.WELLINFORMED_HOME || path.join(require('os').homedir(), '.wellinformed');
+
+// Repo-derived room: basename of the git toplevel for the current
+// working directory (CLAUDE_PROJECT_DIR wins, then cwd). Slugified to
+// match the room-id alphabet (lowercase alnum + hyphen). Returns null
+// outside a git repo so the caller can fall back to registry default.
+function getRepoRoom() {
+  const cwd = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  try {
+    const top = execSync('git rev-parse --show-toplevel', {
+      cwd,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: 'utf8',
+      timeout: 500,
+    }).trim();
+    if (!top) return null;
+    const slug = path.basename(top)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 63);
+    return slug || null;
+  } catch {
+    return null;
+  }
+}
 
 const c = {
   reset: '\x1b[0m',
@@ -200,9 +226,17 @@ function main() {
 
   const parts = [];
 
-  // Project name + room
-  const roomLabel = roomInfo.default || 'no room';
-  parts.push(`${c.brightPurple}wellinformed${c.reset} ${c.dim}•${c.reset} ${c.cyan}${roomLabel}${c.reset}`);
+  // Project name + room. Prefer the repo-derived room (basename of
+  // `git rev-parse --show-toplevel` for the harness cwd) so the
+  // statusline reflects the codebase you're actually in, not a stale
+  // global default. Falls back to the registry default outside a repo.
+  const repoRoom = getRepoRoom();
+  const registryHasRepoRoom = repoRoom && Array.isArray(graph?.nodes)
+    ? graphStats.rooms.has(repoRoom)
+    : false;
+  const roomLabel = repoRoom || roomInfo.default || 'no room';
+  const roomMarker = repoRoom && !registryHasRepoRoom ? `${c.dim}*${c.reset}` : '';
+  parts.push(`${c.brightPurple}Akashik${c.reset} ${c.dim}•${c.reset} ${c.cyan}${roomLabel}${c.reset}${roomMarker}`);
 
   // Node stats with kind breakdown
   const nodeStr = `${c.brightGreen}${graphStats.nodes}${c.reset} nodes`;
