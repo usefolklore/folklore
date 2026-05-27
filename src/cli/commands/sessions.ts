@@ -12,9 +12,9 @@
  * The reingest path:
  *   1. Acquire the cross-process write lock (same as consolidate does)
  *   2. Delete ~/.wellinformed/sessions-state.json
- *   3. Print next-step guidance (`trigger --room sessions` re-walks from
- *      offset 0; the source file `claude-sessions-default` was auto-
- *      provisioned by ensureSessionsRoom on first daemon boot)
+ *   3. Print next-step guidance (`trigger` re-walks every JSONL from
+ *      offset 0; the `claude_sessions` source is auto-provisioned on
+ *      first daemon boot)
  *
  * We intentionally do NOT kick off the trigger here — it's a long-
  * running ingest, better run explicitly so the operator sees progress.
@@ -34,7 +34,7 @@ const reingest = async (args: readonly string[]): Promise<number> => {
 
   if (!existsSync(statePath)) {
     console.log('sessions-state.json not present — nothing to reset.');
-    console.log('  next run of `wellinformed trigger --room sessions` will re-ingest from offset 0.');
+    console.log('  next run of `wellinformed trigger` will re-ingest from offset 0.');
     return 0;
   }
 
@@ -42,7 +42,7 @@ const reingest = async (args: readonly string[]): Promise<number> => {
     const stat = statSync(statePath);
     console.error(`sessions reingest: about to DELETE ${statePath} (${stat.size} bytes).`);
     console.error(`  this forces a full re-walk of ~/.claude/projects/**/*.jsonl on the next`);
-    console.error(`  'wellinformed trigger --room sessions' (can re-create thousands of nodes).`);
+    console.error(`  'wellinformed trigger' (can re-create thousands of nodes).`);
     console.error(``);
     console.error(`  pass --force (or -y) to actually delete the state file.`);
     return 1;
@@ -69,11 +69,11 @@ const reingest = async (args: readonly string[]): Promise<number> => {
     console.log(`✓ deleted ${statePath}`);
     console.log('');
     console.log('Next step:');
-    console.log('  wellinformed trigger --room sessions');
+    console.log('  wellinformed trigger');
     console.log('');
     console.log('That will re-walk every JSONL under ~/.claude/projects/ from offset 0.');
-    console.log('Existing consolidated_memory nodes in the sessions room are preserved;');
-    console.log('raw entries get re-ingested alongside with fresh vectors.');
+    console.log('Existing consolidated_memory nodes are preserved; raw entries get');
+    console.log('re-ingested alongside with fresh vectors.');
     return 0;
   } finally {
     await lock.release();

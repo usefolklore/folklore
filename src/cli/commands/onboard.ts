@@ -6,7 +6,7 @@
  *   1. Pick the data home directory
  *   2. Run doctor (informational)
  *   3. Materialise the libp2p identity
- *   4. Ensure system rooms (toolshed + research) are shareable
+ *   4. Confirm per-node sharing primitives ready (V5: no system rooms)
  *   5. Wire Claude Code hooks + strip ghost helper-script entries
  *   6. Optionally ingest past Claude Code sessions (detached)
  *   7. Start the daemon
@@ -289,12 +289,12 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
   }
   const explainer = [
     'Reads every transcript under ~/.claude/projects/**/*.jsonl.',
-    'Each becomes a searchable node in the local-only "sessions" room.',
+    'Each becomes a searchable, locally-stored node (V5: private:true by default).',
     'Secrets pre-scan strips API keys / tokens / .env values before embed.',
-    "The 'sessions' room is hard-blocked from P2P sharing — stays local.",
+    "Session nodes never federate — they're hard-blocked at the sharing gate.",
     '',
     'Default is NO because re-walking can be heavy on the first run.',
-    "Skip if unsure; you can always run 'wellinformed trigger --room sessions' later.",
+    "Skip if unsure; you can always run 'wellinformed trigger' later.",
   ].join('\n');
   note(explainer, 'past Claude sessions');
 
@@ -307,7 +307,7 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
         }),
       );
   if (!yes) {
-    log.message('skipped — run `wellinformed trigger --room sessions` when convenient');
+    log.message('skipped — run `wellinformed trigger` when convenient');
     return;
   }
 
@@ -358,11 +358,11 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
   }
   if (!childAlive) {
     if (childExitCode === 0) {
-      sp.stop('ingest finished quickly — sessions room is up to date');
+      sp.stop('ingest finished quickly — session entries are up to date');
     } else {
       sp.stop(`ingest exited early (code=${childExitCode ?? 'error'})`);
       note(
-        `The 'wellinformed trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - WELLINFORMED_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  wellinformed trigger --room sessions`,
+        `The 'wellinformed trigger' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - WELLINFORMED_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  wellinformed trigger`,
         'session ingest failed',
       );
     }
@@ -459,8 +459,8 @@ const USAGE = `usage: wellinformed onboard [--yes] [--home DIR] [--no-sessions]
   --home DIR      data home (graph + vectors + model cache); also via $WELLINFORMED_HOME
   --no-sessions   skip ingesting past Claude Code sessions
 
-  Run once on a fresh machine. Sets up identity, system rooms, hooks,
-  daemon, and prints what wellinformed will do on every session.
+  Run once on a fresh machine. Sets up identity, hooks, daemon, and prints
+  what wellinformed will do on every session.
 
   Onboard does NOT index any folder. To index a project, cd into it and
   run 'wellinformed this me' (private) or 'wellinformed this everyone'
@@ -497,7 +497,7 @@ export const onboard = async (args: readonly string[]): Promise<number> => {
   log.step('4/9 · link GitHub identity (optional)');
   await stepLoginGithub(flags);
 
-  log.step('5/9 · system rooms');
+  log.step('5/9 · sharing primitives');
   await stepSystemRooms(home);
 
   log.step('6/9 · wire Claude Code hooks');

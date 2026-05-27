@@ -18,8 +18,8 @@ import { basename, join, resolve } from 'node:path';
 import { indexProject } from './index-project.js';
 import { share } from './share.js';
 
-/** V5 (Phase 24): rooms deleted — slugify is local. */
-const slugifyRoomName = (s: string): string =>
+/** V5 (Phase 24): rooms deleted — slugify is local, used for workspace slugs. */
+const slugifyWorkspace = (s: string): string =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 63) || 'unnamed';
 import { registerWatchTarget } from '../../infrastructure/watch-targets.js';
 import { wellinformedHome, runtimePaths } from '../runtime.js';
@@ -54,13 +54,13 @@ const parseArgs = (args: readonly string[]): Parsed => {
 
 const USAGE = `usage: wellinformed this [me|everyone] [--root DIR] [--name NAME]
 
-  me           keep room private (default; nothing leaves the host)
-  everyone     index + mark room shareable on the P2P network
+  me           keep workspace private (default; nothing leaves the host)
+  everyone     index + mark workspace shareable on the P2P network
                (audited for secrets; flagged content is refused)
 
 flags:
   --root DIR   index DIR instead of the current working directory
-  --name NAME  override the room slug (default: basename of root)`;
+  --name NAME  override the workspace slug (default: basename of root)`;
 
 export const thisCmd = async (args: readonly string[]): Promise<number> => {
   if (args.includes('--help') || args.includes('-h') || args.includes('help')) {
@@ -68,9 +68,9 @@ export const thisCmd = async (args: readonly string[]): Promise<number> => {
     return 0;
   }
   const { visibility, root, name } = parseArgs(args);
-  const slug = slugifyRoomName(name ?? basename(root));
+  const slug = slugifyWorkspace(name ?? basename(root));
 
-  console.log(`wellinformed this ${visibility} — room '${slug}' (${root})\n`);
+  console.log(`wellinformed this ${visibility} — workspace '${slug}' (${root})\n`);
   const absRoot = resolve(root);
 
   // Register the watch-target FIRST. This is independent of the index

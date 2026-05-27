@@ -1,13 +1,13 @@
 /**
- * `wellinformed init` — non-room project setup wizard.
+ * `wellinformed init` — register external content sources.
  *
  * V5 (Phase 24): rooms deleted. The original wizard walked the user
  * through creating a research room + seeding RSS / ArXiv / HN sources
- * scoped to that room. Without rooms, this becomes a thin alias to
- * `wellinformed onboard` and `wellinformed this` for the index step.
+ * scoped to that room. Without rooms, this becomes a non-interactive
+ * helper for registering external sources globally.
  *
  * Kept as an entry point so legacy docs / scripts that call
- * `wellinformed init` don't 404. New usage should prefer:
+ * `wellinformed init` don't 404. New usage may also prefer:
  *
  *   wellinformed onboard     — installer + identity + hooks
  *   wellinformed this me     — index current cwd into the graph

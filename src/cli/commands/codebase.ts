@@ -4,15 +4,16 @@
  * Subcommands:
  *   index <path> [--name N]   parse a codebase into ~/.wellinformed/code-graph.db
  *   list [--json]             list all indexed codebases
- *   show <id> [--json]        detail view: node breakdown + attached rooms
+ *   show <id> [--json]        detail view: node breakdown
  *   reindex <id>              incremental re-index (content-hash diff)
- *   attach <id> --room <r>    attach codebase to a research room (M:N)
- *   detach <id> --room <r>    detach (non-destructive — codebase + rooms both remain)
  *   search <query> [--codebase I] [--kind K] [--limit N] [--json]
- *   remove <id>               delete codebase + all nodes + edges + attachments
+ *   remove <id>               delete codebase + all nodes + edges
  *
- * Separate from `wellinformed index` (shallow research-room indexing — NOT modified
- * in Phase 19 per 19-CONTEXT.md decisions).
+ * V5 (Phase 24): the `attach`/`detach <id> --room <r>` subcommands were
+ * removed alongside the room primitive. The repo-layer M:N join methods
+ * (attachToRoom / detachFromRoom / getRoomsForCodebase in code-graph.ts)
+ * remain temporarily and are no longer reachable from the CLI; they will
+ * be excised by Phase 25 alongside the brand sweep.
  */
 
 import { resolve } from 'node:path';
@@ -127,12 +128,7 @@ const listSub = async (rest: readonly string[]): Promise<number> => {
     }
     const codebases = res.value;
     if (json) {
-      const enriched = [];
-      for (const cb of codebases) {
-        const rooms = await repo.getRoomsForCodebase(cb.id);
-        enriched.push({ ...cb, rooms: rooms.isOk() ? rooms.value : [] });
-      }
-      console.log(JSON.stringify({ count: codebases.length, codebases: enriched }, null, 2));
+      console.log(JSON.stringify({ count: codebases.length, codebases }, null, 2));
       return 0;
     }
     if (codebases.length === 0) {
@@ -141,13 +137,10 @@ const listSub = async (rest: readonly string[]): Promise<number> => {
     }
     console.log(`indexed codebases (${codebases.length}):\n`);
     for (const cb of codebases) {
-      const rooms = await repo.getRoomsForCodebase(cb.id);
-      const roomList = rooms.isOk() ? rooms.value.join(', ') || '—' : '—';
       console.log(`  ${cb.id}  ${cb.name}`);
       console.log(`    root:       ${cb.root_path}`);
       console.log(`    languages:  ${cb.language_summary}`);
       console.log(`    nodes:      ${cb.node_count}`);
-      console.log(`    rooms:      ${roomList}`);
       console.log(`    indexed_at: ${cb.indexed_at}`);
       console.log('');
     }
@@ -186,11 +179,9 @@ const showSub = async (rest: readonly string[]): Promise<number> => {
       return 1;
     }
     const cb = cbRes.value;
-    const rooms = await repo.getRoomsForCodebase(id);
-    const roomList = rooms.isOk() ? rooms.value : [];
 
     if (json) {
-      console.log(JSON.stringify({ codebase: cb, rooms: roomList }, null, 2));
+      console.log(JSON.stringify({ codebase: cb }, null, 2));
       return 0;
     }
     console.log(`codebase ${cb.name} (${cb.id})`);
@@ -199,7 +190,6 @@ const showSub = async (rest: readonly string[]): Promise<number> => {
     console.log(`  node count: ${cb.node_count}`);
     console.log(`  root sha:   ${cb.root_sha.slice(0, 16)}...`);
     console.log(`  indexed at: ${cb.indexed_at}`);
-    console.log(`  rooms:      ${roomList.join(', ') || '—'}`);
     return 0;
   } finally {
     repo.close();
@@ -245,73 +235,6 @@ const reindexSub = async (rest: readonly string[]): Promise<number> => {
     }
     console.log(`  nodes total:     ${r.node_count}`);
     console.log(`  edges total:     ${r.edge_count}`);
-    return 0;
-  } finally {
-    repo.close();
-  }
-};
-
-// ─────────────────────── attach / detach ──────────────
-
-const attachSub = async (rest: readonly string[]): Promise<number> => {
-  const { positional, flags } = parseArgs(rest);
-  if (positional.length === 0 || typeof flags.room !== 'string') {
-    console.error('codebase attach: usage: wellinformed codebase attach <id> --room <room-id>');
-    return 1;
-  }
-  const id = positional[0] as CodebaseId;
-  const roomId = flags.room;
-
-  const repoRes = await openCodeGraph({ path: runtimePaths().codeGraph });
-  if (repoRes.isErr()) {
-    console.error(`codebase attach: ${formatError(repoRes.error)}`);
-    return 1;
-  }
-  const repo = repoRes.value;
-  try {
-    const existsRes = await repo.getCodebase(id);
-    if (existsRes.isErr()) {
-      console.error(`codebase attach: ${formatError(existsRes.error)}`);
-      return 1;
-    }
-    if (existsRes.value === null) {
-      console.error(`codebase attach: codebase '${id}' not found`);
-      return 1;
-    }
-    const res = await repo.attachToRoom(id, roomId);
-    if (res.isErr()) {
-      console.error(`codebase attach: ${formatError(res.error)}`);
-      return 1;
-    }
-    console.log(`attached codebase ${id} to room ${roomId}`);
-    return 0;
-  } finally {
-    repo.close();
-  }
-};
-
-const detachSub = async (rest: readonly string[]): Promise<number> => {
-  const { positional, flags } = parseArgs(rest);
-  if (positional.length === 0 || typeof flags.room !== 'string') {
-    console.error('codebase detach: usage: wellinformed codebase detach <id> --room <room-id>');
-    return 1;
-  }
-  const id = positional[0] as CodebaseId;
-  const roomId = flags.room;
-
-  const repoRes = await openCodeGraph({ path: runtimePaths().codeGraph });
-  if (repoRes.isErr()) {
-    console.error(`codebase detach: ${formatError(repoRes.error)}`);
-    return 1;
-  }
-  const repo = repoRes.value;
-  try {
-    const res = await repo.detachFromRoom(id, roomId);
-    if (res.isErr()) {
-      console.error(`codebase detach: ${formatError(res.error)}`);
-      return 1;
-    }
-    console.log(`detached codebase ${id} from room ${roomId}`);
     return 0;
   } finally {
     repo.close();
@@ -403,15 +326,13 @@ const removeSub = async (rest: readonly string[]): Promise<number> => {
 
 // ─────────────────────── usage ────────────────────────
 
-const USAGE = `usage: wellinformed codebase <index|list|show|reindex|attach|detach|search|remove>
+const USAGE = `usage: wellinformed codebase <index|list|show|reindex|search|remove>
 
 subcommands:
   index <path> [--name N] [--json]     parse a codebase into ~/.wellinformed/code-graph.db
   list [--json]                         list all indexed codebases
-  show <id> [--json]                    detail view: breakdown + attached rooms
+  show <id> [--json]                    detail view: breakdown
   reindex <id> [--json]                 incremental re-index (content hash diff)
-  attach <id> --room <room-id>          attach codebase to a research room (M:N)
-  detach <id> --room <room-id>          detach (codebase + rooms both remain)
   search <query> [--codebase <id>] [--kind <kind>] [--limit <n>] [--json]
   remove <id>                           delete the codebase entirely`;
 
@@ -424,8 +345,6 @@ export const codebase = async (args: string[]): Promise<number> => {
     case 'list':    return listSub(rest);
     case 'show':    return showSub(rest);
     case 'reindex': return reindexSub(rest);
-    case 'attach':  return attachSub(rest);
-    case 'detach':  return detachSub(rest);
     case 'search':  return searchSub(rest);
     case 'remove':  return removeSub(rest);
     default:
