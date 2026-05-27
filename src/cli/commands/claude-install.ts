@@ -145,58 +145,51 @@ const CLAUDE_MD_SECTION = `
 wellinformed is a knowledge-graph-first research layer with P2P
 federation. A PreToolUse hook prefetches the graph before
 Glob/Grep/Read/WebSearch/WebFetch and injects top matches into your
-context. A PostToolUse hook auto-saves WebSearch / WebFetch results to
-the system-managed \`research\` room so the graph absorbs everything
-you learn from the web.
+context. A PostToolUse hook auto-saves WebSearch / WebFetch results so
+the graph absorbs everything you learn from the web.
 
-## System rooms (always-on, P2P-shared, auto-populated)
+## Privacy + workspace model (V5)
 
-Two canonical rooms every wellinformed peer advertises out of the box:
+Two graph-level primitives replace the legacy room abstraction:
 
-- **\`toolshed\`** — codebase, skills, MCP tools, deps, git history.
-  "What can this peer do." Stale-after: 30 days.
-- **\`research\`** — arxiv, hn, rss, web searches, web fetches.
-  "What has this peer recently read." Stale-after: 7 days.
+- **\`private: boolean\`** — defaults to \`false\`. Set with
+  \`wellinformed save --private\` when a node must never federate.
+  Sharing gates on \`private === false\` at the share-sync layer.
+- **\`workspace?: string\`** — populated automatically from the slug
+  of the current git repo's basename. Local-only; never enters the
+  federation wire envelope. Use \`--workspace <slug>\` to override or
+  \`--workspace all\` to opt out of the cwd pre-filter.
 
-Membership is virtual — derived from each node's \`source_uri\` scheme,
-not from its \`room\` field. You don't need to set the room when you
-\`wellinformed save\`: a URL-sourced save lands in \`research\`
-automatically; a codebase save lands in \`toolshed\`. The system rooms
-are always present in shared-rooms.json and cannot be unshared.
-
-Every other room is user-negotiable — opt-in via the share TUI.
+Source-URI scheme still tells you provenance (\`arxiv://\`, \`hn://\`,
+\`git://\`, \`oracle-question:\`, etc.). Use it to filter queries when
+you want only a specific provenance class.
 
 ## Freshness rule (data aging)
 
 Every graph hit returned by \`ask --json\` and the prefetch hook carries
 \`age_days\` and \`fetched_at\`. The smart-hook render shows it inline:
-\`label [room, 3d] d=0.82\`. When choosing whether to trust a cache
+\`label [workspace, 3d] d=0.82\`. When choosing whether to trust a cache
 hit vs re-fetch:
 
-- If the hit is younger than the room's stale-after window, trust the
-  cache. (research: <7d, toolshed: <30d.)
-- If the hit is older, prefer a fresh pull — \`mcp__wellinformed__trigger_room\`
-  or the original WebFetch / WebSearch — and let the auto-save hook put
-  the newer version back into the graph.
+- If the hit is younger than a reasonable window for its source-URI
+  scheme, trust the cache.
+- If the hit is older, prefer a fresh pull — re-run the source's
+  ingest (\`wellinformed trigger\`) or the original WebFetch / WebSearch
+  — and let the auto-save hook put the newer version back into the
+  graph.
 - If a hit has no \`fetched_at\` at all, treat it as stale of unknown age.
 
 ## When to invoke wellinformed
 
 1. Use the wellinformed MCP tools (\`search\`, \`ask\`, \`get_node\`,
    \`get_neighbors\`) BEFORE outbound lookups on any research,
-   architecture, or "what did I read about X" question. MCP is the
-   right default: type-safe schemas, ~50 ms per call (vs ~500 ms
-   Node-boot for a CLI subprocess), proper permission-deny support,
-   and cross-harness portability (the same MCP server speaks to
-   Claude Code, Cursor, Cline, Gemini CLI, etc.). The visibility of
-   federation is handled separately by the statusline panel and the
-   \`wellinformed metrics bypass\` audit, not by routing through Bash.
-2. \`search\` / \`ask\` take a query string and optional room filter.
-3. \`find_tunnels\` surfaces surprising connections across domains.
-4. After reasoning through an external result, use
-   \`wellinformed save --type synthesis --room <room>\` to file the
+   architecture, or "what did I read about X" question.
+2. \`search\` / \`ask\` take a query string. The active workspace is
+   applied as a pre-filter automatically when cwd is inside a git repo.
+3. After reasoning through an external result, use
+   \`wellinformed save --type synthesis --label "..."\` to file the
    distilled insight alongside the raw source node the auto-save hook
-   already captured.
+   already captured. Add \`--private\` to keep the synthesis local.
 `;
 
 const CLAUDE_MD_MARKER_START = '<!-- wellinformed:start -->';
