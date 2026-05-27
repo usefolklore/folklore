@@ -6,7 +6,7 @@
  * Extracts a query from the tool input, runs `wellinformed ask --json`
  * against the knowledge graph, and injects results into additionalContext.
  *
- * Hit path  : top-3 nodes + ids + rooms + source URIs → Claude answers
+ * Hit path  : top-3 nodes + ids + workspace + source URIs → Claude answers
  *             from the graph without the outbound tool call.
  * Miss path : append {tool, query, ts} to ~/.wellinformed/miss-log.jsonl
  *             so the user can later decide whether to ingest.
@@ -175,9 +175,9 @@ const renderHits = (hits, query, peersMeta) => {
   const head = `wellinformed: ${hits.length} indexed node(s) match "${query.slice(0, 80)}"${peerSummary}`;
   const body = hits.map((h, i) => {
     const snippet = h.summary ? ` — ${String(h.summary).slice(0, SNIPPET_LEN).replace(/\s+/g, ' ')}` : '';
-    return `  ${i + 1}. ${h.label ?? h.id} [${h.room ?? '?'}, ${renderAge(h)}, ${renderPeer(h)}] d=${h.distance}${snippet}\n     → ${h.source_uri ?? h.id}`;
+    return `  ${i + 1}. ${h.label ?? h.id} [${h.workspace ?? '-'}, ${renderAge(h)}, ${renderPeer(h)}] d=${h.distance}${snippet}\n     → ${h.source_uri ?? h.id}`;
   }).join('\n');
-  return `${head}\n${body}\n\nPrefer these over the outbound tool. Load full content via mcp__wellinformed__get_node(id) or mcp__wellinformed__ask(query). If a hit's age is stale for the task (research > 7d, toolshed > 30d), trigger a fresh pull via WebFetch / WebSearch / \`wellinformed trigger\` instead of trusting the cache.`;
+  return `${head}\n${body}\n\nPrefer these over the outbound tool. Load full content via mcp__wellinformed__get_node(id) or mcp__wellinformed__ask(query). If a hit's age is stale for the task, trigger a fresh pull via WebFetch / WebSearch / \`wellinformed trigger\` instead of trusting the cache.`;
 };
 
 // Read the most recent prefetch-cache entry from the UserPromptSubmit
