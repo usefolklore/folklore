@@ -24,6 +24,7 @@ import { appendFile, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import type { Libp2p, Stream, Connection } from '@libp2p/interface';
 import { peerIdFromString } from '@libp2p/peer-id';
+import { loadPeerLabels, lookupGithub } from './peer-labels.js';
 import { Uint8ArrayList } from 'uint8arraylist';
 import type { ShareError } from '../domain/errors.js';
 import { ShareError as SE, formatError } from '../domain/errors.js';
@@ -190,12 +191,15 @@ export const syncNodeIntoYDoc = (
   }
 
   // Y.Map upsert. ShareableNode.room is omitted from the wire payload (V5).
+  // V5.1 (Phase 26): github_user rides along so receiving peers can pin
+  // it against their peer-labels.json mapping.
   const s: ShareableNode = scanResult.value;
   doc.transact(() => {
     const map = doc.getMap(MAP_NAME) as Y.Map<unknown>;
     map.set(s.id, {
       id: s.id, label: s.label,
       embedding_id: s.embedding_id, source_uri: s.source_uri, fetched_at: s.fetched_at,
+      ...(s.github_user ? { github_user: s.github_user } : {}),
     });
   });
 
@@ -211,13 +215,19 @@ export const collectShareable = (graph: Graph): readonly GraphNode[] =>
 
 interface Screened { readonly payload: ShareableNode; readonly signedBy?: string }
 
-/** Policy gate (crypto trust). Bumps metric, records signed-DID provenance. */
+/**
+ * Policy gate (crypto trust). Bumps metric, records signed-DID provenance.
+ * Phase 26: when `expectedGithubUser` is supplied, the envelope's
+ * payload.github_user is pinned — mismatched/omitted handle fails as
+ * `signed_invalid` with reason `github_mismatch:...`.
+ */
 const screenInbound = (
   value: unknown,
   policyMode: SharePolicyMode,
   identityResolver: IdentityResolver,
+  expectedGithubUser?: string,
 ): Screened | null => {
-  const c = classifyInboundShare(value, policyMode);
+  const c = classifyInboundShare(value, policyMode, undefined, expectedGithubUser);
   metrics.counter(`share.inbound.${VERDICT_METRIC[c.verdict]}`).inc();
   if (c.verdict === 'signed_ok') {
     identityResolver.record({
@@ -234,6 +244,10 @@ const buildImportedNode = (peer: string, v: ShareableNode, signedBy?: string): G
   id: v.id, label: v.label,
   file_type: 'document', source_file: `peer:${peer}`, private: false,
   embedding_id: v.embedding_id, source_uri: v.source_uri, fetched_at: v.fetched_at,
+  // Phase 26: preserve the author's github handle through the import so
+  // local reads (`recall`, `recent_sessions`, statusline summaries)
+  // continue to attribute foreign nodes correctly.
+  ...(v.github_user ? { github_user: v.github_user } : {}),
   _akashik_source_peer: peer,
   ...(signedBy ? { _akashik_signed_by: signedBy } : {}),
 } as GraphNode);
@@ -258,6 +272,14 @@ const attachInboundObserver = (
   logPath: string,
   policyMode: SharePolicyMode,
   identityResolver: IdentityResolver,
+  /**
+   * Phase 26 — expected GitHub handle for this peer. Looked up by the
+   * caller from peer-labels.json. When supplied, every inbound signed
+   * envelope must have payload.github_user === expectedGithubUser
+   * (substitution + omission both rejected). Undefined ⇒ no pinning
+   * (graceful degrade for unlabelled peers).
+   */
+  expectedGithubUser?: string,
 ): { detach: () => void; cancel: () => void } => {
   let dirty = false;
   let timer: NodeJS.Timeout | null = null;
@@ -273,7 +295,7 @@ const attachInboundObserver = (
     let graph: Graph = loaded.value;
     const map = doc.getMap(MAP_NAME) as Y.Map<unknown>;
     map.forEach((value) => {
-      const s = screenInbound(value, policyMode, identityResolver);
+      const s = screenInbound(value, policyMode, identityResolver, expectedGithubUser);
       if (!s) return;
       const r = upsertNode(graph, buildImportedNode(peer, s.payload, s.signedBy));
       if (r.isOk()) graph = r.value;
@@ -286,7 +308,7 @@ const attachInboundObserver = (
     // Policy first (crypto trust) → secrets scan against unwrapped payload.
     const map = doc.getMap(MAP_NAME) as Y.Map<unknown>;
     map.forEach((value, key) => {
-      const s = screenInbound(value, policyMode, identityResolver);
+      const s = screenInbound(value, policyMode, identityResolver, expectedGithubUser);
       if (!s) {
         map.delete(key);
         const nid = typeof (value as { id?: unknown })?.id === 'string'
@@ -442,9 +464,15 @@ const runStreamSession = async (
   if (docResult.isErr()) { fs.close(); return; }
   const doc = docResult.value;
 
+  // Phase 26: look up the expected GitHub handle for this peer from
+  // peer-labels.json so the inbound verifier can pin signed envelopes.
+  // Unlabelled peer ⇒ undefined ⇒ no pin (graceful degrade).
+  const labels = loadPeerLabels(join(registry.homePath, 'peer-labels.json'));
+  const expectedGithubUser = lookupGithub(labels, remotePeerIdStr);
   const inbound = attachInboundObserver(
     doc, remotePeerIdStr, registry.patterns, registry.graphRepo,
     registry.logPath, registry.policyMode, registry.identityResolver,
+    expectedGithubUser,
   );
   const detachOutbound = attachOutboundObserver(doc, [fs]);
 
