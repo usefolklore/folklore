@@ -53,6 +53,9 @@ import { metricsCmd } from './commands/metrics.js';
 import { login } from './commands/login.js';
 import { peersRep } from './commands/peers-rep.js';
 import { swarm } from './commands/swarm.js';
+import { gc } from './commands/gc.js';
+import { bench } from './commands/bench.js';
+import { migrateCommand } from './commands/migrate.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -105,6 +108,9 @@ const commands: Record<string, CommandFn> = {
   metrics: metricsCmd,
   login,
   swarm,
+  gc,
+  bench,
+  'migrate': migrateCommand,
   // Plural-form alias: `wellinformed peers rep …` works as well as
   // `wellinformed peer rep …`. The subcommand dispatcher handles both.
   peers: async (args: string[]): Promise<number> => {
