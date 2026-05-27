@@ -8,7 +8,8 @@
  */
 
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { ResultAsync, errAsync } from 'neverthrow';
 import type { AppError } from '../domain/errors.js';
 import { fileGraphRepository, type GraphRepository } from '../infrastructure/graph-repository.js';
@@ -20,18 +21,44 @@ import {
   type Embedder,
 } from '../infrastructure/embedders.js';
 import { fileSourcesConfig, type SourcesConfig } from '../infrastructure/sources-config.js';
-import { fileRoomsConfig, type RoomsConfig } from '../infrastructure/rooms-config.js';
 import { httpFetcher, type HttpFetcher } from '../infrastructure/http/fetcher.js';
 import { xmlParser, type XmlParserPort } from '../infrastructure/parsers/xml-parser.js';
 import { readabilityExtractor, type HtmlExtractor } from '../infrastructure/parsers/html-extractor.js';
 import { sourceRegistry, type SourceRegistry } from '../infrastructure/sources/registry.js';
 import { loadConfig } from '../infrastructure/config-loader.js';
 import { buildPatterns } from '../domain/sharing.js';
-import { ensureSystemRoomsShared } from '../infrastructure/share-store.js';
 import { asyncMutex, type AsyncMutex } from '../infrastructure/async-mutex.js';
 import { fileEntityRegistry, type EntityRegistry } from '../infrastructure/entity-registry.js';
 import { extractMentions } from '../domain/entity-extract.js';
 import type { IngestDeps, MentionsExtractorPort } from '../application/ingest.js';
+
+/**
+ * V5 workspace detection — replaces the deleted rooms abstraction for
+ * read-side pre-filtering. Returns a slugged form of the cwd's git
+ * toplevel basename, or undefined when cwd is not in a git repo.
+ *
+ * Used by `ask`, `save`, `recall`, `report` (Wave 3 surgical edits)
+ * to scope queries/writes to the current workspace by default.
+ * Pass `--workspace all` from the CLI to opt out.
+ *
+ * Local-only — never enters the federation wire envelope.
+ */
+const slugify = (s: string): string =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 63);
+
+export const detectWorkspace = (cwd: string = process.cwd()): string | undefined => {
+  try {
+    const top = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (!top) return undefined;
+    return slugify(basename(top));
+  } catch {
+    return undefined;
+  }
+};
 
 export const wellinformedHome = (): string =>
   process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
@@ -120,7 +147,6 @@ export interface RuntimePaths {
   readonly graph: string;
   readonly vectors: string;
   readonly sources: string;
-  readonly rooms: string;
   readonly modelCache: string;
   readonly codeGraph: string;
 }
@@ -132,7 +158,6 @@ export const runtimePaths = (): RuntimePaths => {
     graph: join(home, 'graph.json'),
     vectors: join(home, 'vectors.db'),
     sources: join(home, 'sources.json'),
-    rooms: join(home, 'rooms.json'),
     modelCache: join(home, 'models'),
     codeGraph: join(home, 'code-graph.db'),
   };
@@ -145,7 +170,6 @@ export interface Runtime {
   readonly vectors: VectorIndex;
   readonly embedder: Embedder;
   readonly sources: SourcesConfig;
-  readonly rooms: RoomsConfig;
   readonly http: HttpFetcher;
   readonly xml: XmlParserPort;
   readonly html: HtmlExtractor;
@@ -185,12 +209,9 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
   const paths = runtimePaths();
   const cfgPath = join(paths.home, 'config.yaml');
 
-  // Fire-and-forget: guarantee toolshed + research are present and
-  // marked shareable in shared-rooms.json. Boot-time invariant —
-  // doesn't block runtime return; any failure is non-fatal since the
-  // touch handler already auto-allows system rooms regardless of
-  // shared-rooms.json state.
-  void ensureSystemRoomsShared(join(paths.home, 'shared-rooms.json'));
+  // V5 cutover (Phase 24): the boot path no longer reads or writes
+  // the old room registry or share-policy files. The rooms
+  // abstraction was deleted entirely — see ROOMS-DEL-02.
 
   return loadConfig(cfgPath)
     .mapErr((e): AppError => e)
@@ -205,7 +226,6 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
           const graphs = fileGraphRepository(paths.graph);
           const embedder = buildEmbedder(paths.modelCache);
           const sources = fileSourcesConfig(paths.sources);
-          const rooms = fileRoomsConfig(paths.rooms);
           const http = httpFetcher();
           const xml = xmlParser();
           const html = readabilityExtractor();
@@ -246,7 +266,6 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
             vectors,
             embedder,
             sources,
-            rooms,
             http,
             xml,
             html,
