@@ -2,16 +2,13 @@
  * VectorIndex — port + sqlite-vec adapter.
  *
  * The port is a narrow capability interface: anything that can upsert
- * a vector record, search globally, search by room, run hybrid (dense +
- * BM25) search, and enumerate all records (for offline passes like
- * tunnel detection).
+ * a vector record, search globally, run hybrid (dense + BM25) search,
+ * and enumerate all records (for offline passes like tunnel detection).
  *
  * The adapter `sqliteVectorIndex` is backed by better-sqlite3 +
- * sqlite-vec 0.1.x + SQLite FTS5. Room filtering uses an auxiliary
- * `vec_meta` table joined against the `vec0` virtual table, because the
- * npm-packaged 0.1.x doesn't consistently expose partition keys across
- * platforms. BM25 uses the built-in `bm25(fts_docs, 0.9, 0.4)` auxiliary
- * function — the BEIR-tuned Anserini defaults (Pyserini SIGIR 2021).
+ * sqlite-vec 0.1.x + SQLite FTS5. BM25 uses the built-in
+ * `bm25(fts_docs, 0.9, 0.4)` auxiliary function — the BEIR-tuned
+ * Anserini defaults (Pyserini SIGIR 2021).
  *
  * Single responsibility: it indexes vectors and answers proximity
  * queries. It does NOT know about tunnels — that's pure domain logic
@@ -19,6 +16,12 @@
  *
  * Hybrid fuse logic is also pure domain (`rrfFuse` in vectors.ts); this
  * adapter only produces the two ranked lists and delegates merging.
+ *
+ * V5: workspace filter is the CALLER's responsibility — `searchGlobal`
+ * is the only search primitive here. Callers post-filter on `workspace`
+ * when needed. The auxiliary `room` column in `vec_meta` is preserved
+ * for backward read-compat of pre-migration data; the migration command
+ * is responsible for clearing/repurposing it.
  */
 
 import { existsSync, mkdirSync } from 'node:fs';
@@ -35,13 +38,12 @@ import type {
 } from '../domain/vectors.js';
 import { DEFAULT_DIM, DEFAULT_HYBRID_CONFIG, rrfFuse, sanitizeForFts5 } from '../domain/vectors.js';
 import { matryoshkaBinary, hammingDistance } from '../domain/binary-quantize.js';
-import type { NodeId, Room, Wing } from '../domain/graph.js';
+import type { NodeId, Wing } from '../domain/graph.js';
 
 /** Port — the application layer depends on this. */
 export interface VectorIndex {
   upsert(record: VectorRecord): ResultAsync<void, VectorError>;
   searchGlobal(query: Vector, k: number): ResultAsync<readonly Match[], VectorError>;
-  searchByRoom(room: Room, query: Vector, k: number): ResultAsync<readonly Match[], VectorError>;
   /**
    * Hybrid dense + BM25 retrieval with RRF fusion (Cormack-Clarke-Büttcher
    * SIGIR 2009). Uses the raw text query for BM25 and the embedded vector
@@ -52,14 +54,6 @@ export interface VectorIndex {
    * falls back silently — always logs.
    */
   searchHybrid(
-    rawQuery: string,
-    queryVec: Vector,
-    k: number,
-    cfg?: HybridConfig,
-  ): ResultAsync<readonly Match[], VectorError>;
-  /** Hybrid with a room filter. */
-  searchByRoomHybrid(
-    room: Room,
     rawQuery: string,
     queryVec: Vector,
     k: number,
@@ -77,13 +71,6 @@ export interface VectorIndex {
    * caller should route through `searchHybrid` when binary is off.
    */
   searchHybridBinary(
-    rawQuery: string,
-    queryVec: Vector,
-    k: number,
-    cfg?: HybridConfig,
-  ): ResultAsync<readonly Match[], VectorError>;
-  searchByRoomHybridBinary(
-    room: Room,
     rawQuery: string,
     queryVec: Vector,
     k: number,
@@ -108,18 +95,11 @@ export interface SqliteVectorIndexOptions {
   readonly path: string;
   readonly dim?: number;
   /**
-   * searchByRoom implementation detail — how many extra candidates to
-   * pull from the global KNN before filtering down to one room.
-   * Defaults to 10 (so searchByRoom(k=5) probes the global top-50).
-   */
-  readonly roomSearchOverfetch?: number;
-  /**
    * Enables Matryoshka-binary quantized storage alongside fp32.
    * When set, every `upsert` also writes the sign-bit-packed truncation
    * of the input vector at this dim into `vec_meta.raw_bin`, and the
-   * `searchHybridBinary` / `searchByRoomHybridBinary` methods are
-   * available as an alternative retrieval path (48× storage per §2f of
-   * BENCH-v2.md).
+   * `searchHybridBinary` method is available as an alternative retrieval
+   * path (48× storage per §2f of BENCH-v2.md).
    *
    * Valid values: 128, 256, 384, 512. When unset, binary storage is
    * disabled and the binary search methods return empty results.
@@ -156,7 +136,6 @@ export const openSqliteVectorIndex = (
   opts: SqliteVectorIndexOptions,
 ): ResultAsync<VectorIndex, VectorError> => {
   const dim = opts.dim ?? DEFAULT_DIM;
-  const overfetch = opts.roomSearchOverfetch ?? 10;
   const binaryDim = isValidBinaryDim(opts.binaryDim) ? opts.binaryDim : null;
   // v4.1 binary-only mode requires binaryDim to be set. Without binaryDim,
   // there's no binary path to skip-fp32-in-favor-of, so we silently coerce
@@ -177,6 +156,9 @@ export const openSqliteVectorIndex = (
 
       if (firstTime) {
         db.exec(`CREATE VIRTUAL TABLE vec_nodes USING vec0(embedding float[${dim}])`);
+        // V5: vec_meta retains the `room` column for backward read-compat
+        // of pre-migration data — the migration command is responsible for
+        // clearing it. Writes go in as empty string; reads ignore it.
         db.exec(`CREATE TABLE IF NOT EXISTS vec_meta (
           rowid    INTEGER PRIMARY KEY,
           node_id  TEXT    UNIQUE NOT NULL,
@@ -186,7 +168,6 @@ export const openSqliteVectorIndex = (
           raw_bin  BLOB,
           created  INTEGER NOT NULL
         )`);
-        db.exec(`CREATE INDEX IF NOT EXISTS idx_vec_meta_room ON vec_meta(room)`);
         db.exec(`CREATE VIRTUAL TABLE fts_docs USING fts5(
           text,
           tokenize='porter unicode61 remove_diacritics 2'
@@ -218,7 +199,7 @@ export const openSqliteVectorIndex = (
         }
       }
 
-      return build(db, dim, overfetch, binaryDim, binaryOnly);
+      return build(db, dim, binaryDim, binaryOnly);
     })(),
     (e) => VectorError.openError(opts.path, (e as Error).message),
   );
@@ -229,7 +210,6 @@ export const openSqliteVectorIndex = (
 const build = (
   db: Database.Database,
   dim: number,
-  overfetch: number,
   binaryDim: number | null,
   binaryOnly: boolean,
 ): VectorIndex => {
@@ -241,6 +221,9 @@ const build = (
   const stInsertVec = db.prepare('INSERT INTO vec_nodes(rowid, embedding) VALUES (?, ?)');
   // Upsert includes raw_bin (Phase 3). When binary mode is off we pass
   // null and the column stays NULL — no behavioral change for fp32 callers.
+  // V5: the `room` column is preserved as a NOT NULL constraint for backward
+  // compat, but new writes always pass empty string. Workspace tagging lives
+  // at the graph node level, not the vector-index level.
   const stUpsertMeta = db.prepare(
     'INSERT OR REPLACE INTO vec_meta(rowid, node_id, room, wing, raw_text, raw_bin, created) VALUES (?, ?, ?, ?, ?, ?, ?)',
   );
@@ -249,15 +232,12 @@ const build = (
   const stGetRowid = db.prepare('SELECT rowid FROM vec_meta WHERE node_id = ?');
   const stCount = db.prepare('SELECT COUNT(*) AS n FROM vec_meta');
   const stMaxRowid = db.prepare('SELECT COALESCE(MAX(rowid), 0) AS m FROM vec_meta');
-  const stAllMeta = db.prepare('SELECT rowid, node_id, room, wing, raw_text FROM vec_meta ORDER BY rowid');
+  const stAllMeta = db.prepare('SELECT rowid, node_id, wing, raw_text FROM vec_meta ORDER BY rowid');
   const stAllVectors = db.prepare('SELECT rowid, embedding FROM vec_nodes');
-  // Binary retrieval: stream (rowid, node_id, room, wing, raw_bin) for
-  // rows where the binary blob exists. NULL rows are skipped.
+  // Binary retrieval: stream (rowid, node_id, wing, raw_bin) for rows where
+  // the binary blob exists. NULL rows are skipped.
   const stAllBin = db.prepare(
-    'SELECT rowid, node_id, room, wing, raw_bin FROM vec_meta WHERE raw_bin IS NOT NULL ORDER BY rowid',
-  );
-  const stAllBinByRoom = db.prepare(
-    'SELECT rowid, node_id, room, wing, raw_bin FROM vec_meta WHERE raw_bin IS NOT NULL AND room = ? ORDER BY rowid',
+    'SELECT rowid, node_id, wing, raw_bin FROM vec_meta WHERE raw_bin IS NOT NULL ORDER BY rowid',
   );
   // Phase 4.1 — delete-by-node_id for the consolidate prune path. Need
   // the rowid lookup first because vec0 + fts_docs key on rowid (not
@@ -268,7 +248,7 @@ const build = (
   // (`k = ?`), not as a trailing LIMIT. LIMIT is evaluated AFTER the
   // vec0 scan, so using it alone makes sqlite-vec reject the prepare.
   const stSearch = db.prepare(
-    `SELECT m.node_id, m.room, m.wing, v.distance
+    `SELECT m.node_id, m.wing, v.distance
      FROM vec_nodes v
      JOIN vec_meta  m ON v.rowid = m.rowid
      WHERE v.embedding MATCH ? AND k = ?
@@ -277,18 +257,10 @@ const build = (
   // BM25 with BEIR-tuned Anserini parameters (k1=0.9, b=0.4). FTS5's
   // bm25() aux returns negative Lucene-style scores, so ORDER BY rank ASC.
   const stBm25 = db.prepare(
-    `SELECT m.node_id, m.room, m.wing
+    `SELECT m.node_id, m.wing
        FROM fts_docs f
        JOIN vec_meta m ON m.rowid = f.rowid
       WHERE fts_docs MATCH ?
-      ORDER BY bm25(fts_docs, 0.9, 0.4)
-      LIMIT ?`,
-  );
-  const stBm25Room = db.prepare(
-    `SELECT m.node_id, m.room, m.wing
-       FROM fts_docs f
-       JOIN vec_meta m ON m.rowid = f.rowid
-      WHERE fts_docs MATCH ? AND m.room = ?
       ORDER BY bm25(fts_docs, 0.9, 0.4)
       LIMIT ?`,
   );
@@ -329,10 +301,12 @@ const build = (
         if (!binaryOnly) {
           stInsertVec.run(rowid, buf);
         }
+        // V5: `room` column is empty-string for new writes. Workspace tag
+        // (when present) lives on the graph node, not the vector index.
         stUpsertMeta.run(
           rowidNum,
           record.node_id,
-          record.room,
+          '',
           record.wing ?? null,
           rawText,
           rawBin,
@@ -357,13 +331,12 @@ const build = (
     try {
       const rows = stSearch.all(toVecBuffer(query), k) as Array<{
         node_id: NodeId;
-        room: Room;
         wing: Wing | null;
         distance: number;
       }>;
       const matches: readonly Match[] = rows.map((r) => ({
         node_id: r.node_id,
-        room: r.room,
+        room: '',
         wing: r.wing ?? undefined,
         distance: r.distance,
       }));
@@ -373,36 +346,19 @@ const build = (
     }
   };
 
-  const searchByRoom = (
-    room: Room,
-    query: Vector,
-    k: number,
-  ): ResultAsync<readonly Match[], VectorError> =>
-    searchGlobal(query, k * overfetch).map((all) => {
-      const filtered = all.filter((m) => m.room === room);
-      return filtered.slice(0, k);
-    });
-
   // BM25 sparse retrieval via FTS5. Returns ranked candidates, not Matches,
   // so the RRF fuse can combine with dense ranks.
-  const bm25Search = (
-    rawQuery: string,
-    k: number,
-    roomFilter?: Room,
-  ): readonly RankedCandidate[] => {
+  const bm25Search = (rawQuery: string, k: number): readonly RankedCandidate[] => {
     const ftsQuery = sanitizeForFts5(rawQuery);
     if (ftsQuery === '') return [];
     try {
-      const rows = (roomFilter
-        ? stBm25Room.all(ftsQuery, roomFilter, k)
-        : stBm25.all(ftsQuery, k)) as Array<{
+      const rows = stBm25.all(ftsQuery, k) as Array<{
         node_id: NodeId;
-        room: Room;
         wing: Wing | null;
       }>;
       return rows.map((r, idx) => ({
         node_id: r.node_id,
-        room: r.room,
+        room: '',
         wing: r.wing ?? undefined,
         denseRank: null,
         bm25Rank: idx,
@@ -442,39 +398,11 @@ const build = (
       const fused = rrfFuse(dense, bm25, cfg);
       return fused.slice(0, k).map((c) => ({
         node_id: c.node_id,
-        room: c.room as Room,
+        room: '',
         wing: c.wing,
         distance: c.distance ?? 0,
       }));
     });
-
-  const searchByRoomHybrid = (
-    room: Room,
-    rawQuery: string,
-    queryVec: Vector,
-    k: number,
-    cfg: HybridConfig = DEFAULT_HYBRID_CONFIG,
-  ): ResultAsync<readonly Match[], VectorError> =>
-    searchGlobal(queryVec, cfg.denseK * overfetch)
-      .map((allMatches) => allMatches.filter((m) => m.room === room).slice(0, cfg.denseK))
-      .map((denseMatches) => {
-        const dense: RankedCandidate[] = denseMatches.map((m, idx) => ({
-          node_id: m.node_id,
-          room: m.room,
-          wing: m.wing,
-          denseRank: idx,
-          bm25Rank: null,
-          distance: m.distance,
-        }));
-        const bm25 = bm25Search(rawQuery, cfg.bm25K, room);
-        const fused = rrfFuse(dense, bm25, cfg);
-        return fused.slice(0, k).map((c) => ({
-          node_id: c.node_id,
-          room: c.room as Room,
-          wing: c.wing,
-          distance: c.distance ?? 0,
-        }));
-      });
 
   // ─── Phase 3 — binary-quantized retrieval path ───
   //
@@ -493,7 +421,6 @@ const build = (
   const binarySearchRanked = (
     queryVec: Vector,
     k: number,
-    roomFilter?: Room,
   ): ResultAsync<readonly RankedCandidate[], VectorError> => {
     if (binaryDim === null) {
       return okAsync([]);
@@ -510,12 +437,9 @@ const build = (
       }
       const queryBin = packedRes.value;
 
-      const rows = (
-        roomFilter ? stAllBinByRoom.all(roomFilter) : stAllBin.all()
-      ) as Array<{
+      const rows = stAllBin.all() as Array<{
         rowid: number;
         node_id: NodeId;
-        room: Room;
         wing: Wing | null;
         raw_bin: Buffer;
       }>;
@@ -538,7 +462,7 @@ const build = (
       const topN = scored.slice(0, k);
       const ranked: RankedCandidate[] = topN.map((s, idx) => ({
         node_id: s.row.node_id,
-        room: s.row.room,
+        room: '',
         wing: s.row.wing ?? undefined,
         denseRank: idx,
         bm25Rank: null,
@@ -562,26 +486,7 @@ const build = (
       const fused = rrfFuse(dense, bm25, cfg);
       return fused.slice(0, k).map((c) => ({
         node_id: c.node_id,
-        room: c.room as Room,
-        wing: c.wing,
-        distance: c.distance ?? 0,
-      }));
-    });
-
-  const searchByRoomHybridBinary = (
-    room: Room,
-    rawQuery: string,
-    queryVec: Vector,
-    k: number,
-    cfg: HybridConfig = DEFAULT_HYBRID_CONFIG,
-  ): ResultAsync<readonly Match[], VectorError> =>
-    binarySearchRanked(queryVec, cfg.denseK, room).map((dense) => {
-      if (dense.length === 0 && binaryDim === null) return [];
-      const bm25 = bm25Search(rawQuery, cfg.bm25K, room);
-      const fused = rrfFuse(dense, bm25, cfg);
-      return fused.slice(0, k).map((c) => ({
-        node_id: c.node_id,
-        room: c.room as Room,
+        room: '',
         wing: c.wing,
         distance: c.distance ?? 0,
       }));
@@ -609,7 +514,6 @@ const build = (
       const metas = stAllMeta.all() as Array<{
         rowid: number;
         node_id: NodeId;
-        room: Room;
         wing: Wing | null;
         raw_text: string | null;
       }>;
@@ -622,7 +526,7 @@ const build = (
           if (!vec) return null;
           const record: VectorRecord = {
             node_id: m.node_id,
-            room: m.room,
+            room: '',
             wing: m.wing ?? undefined,
             vector: vec,
             raw_text: m.raw_text ?? undefined,
@@ -648,11 +552,8 @@ const build = (
   return {
     upsert,
     searchGlobal,
-    searchByRoom,
     searchHybrid,
-    searchByRoomHybrid,
     searchHybridBinary,
-    searchByRoomHybridBinary,
     deleteByNodeId,
     all,
     size,
