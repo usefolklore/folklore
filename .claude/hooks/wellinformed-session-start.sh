@@ -3,7 +3,6 @@
 # Shows: stats, recent activity, trending topics, tunnel candidates
 
 GRAPH="${WELLINFORMED_HOME:-$HOME/.wellinformed}/graph.json"
-ROOMS="${WELLINFORMED_HOME:-$HOME/.wellinformed}/rooms.json"
 SOURCES="${WELLINFORMED_HOME:-$HOME/.wellinformed}/sources.json"
 LOG="${WELLINFORMED_HOME:-$HOME/.wellinformed}/daemon.log"
 
@@ -11,7 +10,6 @@ if [ ! -f "$GRAPH" ]; then exit 0; fi
 
 NODES=$(grep -c '"id"' "$GRAPH" 2>/dev/null || echo 0)
 EDGES=$(grep -c '"source"' "$GRAPH" 2>/dev/null || echo 0)
-ROOM_COUNT=$(grep -c '"id"' "$ROOMS" 2>/dev/null || echo 0)
 SOURCE_COUNT=$(grep -c '"id"' "$SOURCES" 2>/dev/null || echo 0)
 
 # Get recent activity from daemon log
@@ -35,7 +33,7 @@ except: pass
 " 2>/dev/null)
 fi
 
-MSG="━━ wellinformed ━━ ${NODES} nodes │ ${EDGES} edges │ ${ROOM_COUNT} rooms │ ${SOURCE_COUNT} sources"
+MSG="━━ wellinformed ━━ ${NODES} nodes │ ${EDGES} edges │ ${SOURCE_COUNT} sources"
 
 if [ -n "$RECENT" ]; then
   MSG="$MSG
