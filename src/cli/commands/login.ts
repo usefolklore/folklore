@@ -136,6 +136,7 @@ const loginGithub = async (): Promise<number> => {
     handle: user.login,
     user_id: String(user.id),
     profile_url: user.html_url,
+    email: user.email ?? undefined,
     verified_at: new Date().toISOString(),
   });
   if (persisted.isErr()) {
@@ -147,6 +148,11 @@ const loginGithub = async (): Promise<number> => {
   console.log(`✓ linked github.com/${user.login}${user.name ? ` (${user.name})` : ''}`);
   console.log(`  user_id:    ${user.id}`);
   console.log(`  profile:    ${user.html_url}`);
+  if (user.email) {
+    console.log(`  email:      ${user.email}`);
+  } else {
+    console.log(`  email:      <not granted — re-run with user:email scope to capture>`);
+  }
   console.log(`  recorded:   ~/.wellinformed/linked-accounts.json`);
   console.log('');
   console.log('  Your DID can now claim this handle for signed envelopes + future did:web resolution.');

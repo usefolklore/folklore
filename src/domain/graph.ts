@@ -67,6 +67,23 @@ export interface WellinformedNodeFields {
    * intent of the original schema.
    */
   readonly private?: boolean;
+  /**
+   * GitHub identity of the author at write time. Optional pending
+   * Phase 26 (GitHub-as-primary identity); the field is reserved so
+   * future write sites and federation envelopes can key on a single
+   * canonical user identity without re-bumping the schema. Reads the
+   * `accounts.github.handle` from ~/.wellinformed/linked-accounts.json
+   * at write time when `wellinformed login github` has been run.
+   *
+   * IMPORTANT: Phase 26 will:
+   *   1. Stamp this field at every write site (save, source adapters,
+   *      consolidation, etc.)
+   *   2. Add a write-time gate that refuses unsigned nodes
+   *   3. Migrate existing nodes via `migrate v5 --stamp-github`
+   * Until then, the field is unset on existing nodes and treated as
+   * "unknown author" by readers.
+   */
+  readonly github_user?: string;
 }
 
 /** A single graph node. Arbitrary extra keys are preserved through round-trip. */
