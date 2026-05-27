@@ -52,6 +52,8 @@ import { ScanError as SE } from './errors.js';
 /**
  * V5 (Phase 24): no `room` field. Sharing is per-node via the
  * `private: boolean` gate enforced upstream of `scanNode`.
+ * V5.1 (Phase 26): `github_user` rides along so receiving peers can
+ * pin the claimed handle against their peer-labels.json mapping.
  */
 export interface ShareableNode {
   readonly id: string;
@@ -59,6 +61,13 @@ export interface ShareableNode {
   readonly embedding_id?: string;
   readonly source_uri?: string;
   readonly fetched_at?: string;
+  /**
+   * Phase 26 — verified GitHub handle of the author. Stamped at write
+   * time by `indexNode` from ~/.akashik/linked-accounts.json. Travels
+   * over the wire so peers can pin the claimed handle against their
+   * peer-labels.json mapping via VerifyShareableOptions.expectedGithubUser.
+   */
+  readonly github_user?: string;
 }
 
 export interface AuditResult {
@@ -144,6 +153,7 @@ export const scanNode = (
     embedding_id: node.embedding_id,
     source_uri: node.source_uri,
     fetched_at: node.fetched_at,
+    github_user: node.github_user,
   };
 
   const matches: ScanMatch[] = [];

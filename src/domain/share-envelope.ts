@@ -54,6 +54,7 @@ export type VerifiedShareableNode = VerifiedEnvelope<ShareableNode>;
 export type ShareEnvelopeError =
   | { readonly type: 'ShareEnvelopeInvalidPayload'; readonly reason: string }
   | { readonly type: 'ShareEnvelopeAuthorMismatch'; readonly expected: DID; readonly actual: DID }
+  | { readonly type: 'ShareEnvelopeGithubMismatch'; readonly expected: string; readonly actual: string | undefined }
   | { readonly type: 'ShareEnvelopeIdentityError'; readonly cause: IdentityError };
 
 export const ShareEnvelopeError = {
@@ -63,6 +64,11 @@ export const ShareEnvelopeError = {
   }),
   authorMismatch: (expected: DID, actual: DID): ShareEnvelopeError => ({
     type: 'ShareEnvelopeAuthorMismatch',
+    expected,
+    actual,
+  }),
+  githubMismatch: (expected: string, actual: string | undefined): ShareEnvelopeError => ({
+    type: 'ShareEnvelopeGithubMismatch',
     expected,
     actual,
   }),
@@ -137,6 +143,22 @@ export interface VerifyShareableOptions {
   readonly verifiedAt?: string;
   /** Optional pinning: reject envelope if signer DID ≠ this. */
   readonly expectedAuthorDid?: DID;
+  /**
+   * Phase 26 — optional pinning of the claimed GitHub handle. When set,
+   * the payload's `github_user` field MUST equal this value, otherwise
+   * the envelope is rejected with ShareEnvelopeGithubMismatch.
+   *
+   * Use case: the verifier looks up the sender peer's expected handle
+   * from peer-labels.json (peer-id → github mapping) and pins the
+   * envelope to it. Catches a peer trying to claim a github identity
+   * they're not actually entitled to (the DID's keypair signed the
+   * envelope, but the *claimed* GitHub handle in the payload was tampered).
+   *
+   * Strict matching: missing github_user on the payload also fails
+   * (mismatch where actual is undefined) so a peer can't simply omit
+   * the field to bypass the check.
+   */
+  readonly expectedGithubUser?: string;
 }
 
 /**
@@ -148,8 +170,9 @@ export interface VerifyShareableOptions {
  *      a) device signature over payload+metadata
  *      b) device authorization signature by user DID
  *      c) signed_at within plausible bounds
- *   3. (Optional) author pinning — if expectedAuthorDid is set, the
- *      envelope's signer_did must match exactly.
+ *   3. (Optional) author DID pinning — envelope's signer_did must match.
+ *   4. (Optional) github_user pinning — payload's claimed handle must
+ *      match. Phase 26 binding between DID + GitHub identity.
  */
 export const verifyShareableNode = (
   envelope: SignedShareableNode,
@@ -166,6 +189,14 @@ export const verifyShareableNode = (
       opts.expectedAuthorDid,
       verified.value.verified_user_did,
     ));
+  }
+
+  if (opts.expectedGithubUser !== undefined) {
+    const claimed = (envelope.payload as { github_user?: unknown }).github_user;
+    const claimedStr = typeof claimed === 'string' ? claimed : undefined;
+    if (claimedStr !== opts.expectedGithubUser) {
+      return err(ShareEnvelopeError.githubMismatch(opts.expectedGithubUser, claimedStr));
+    }
   }
   return ok(verified.value);
 };

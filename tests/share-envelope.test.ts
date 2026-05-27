@@ -200,3 +200,99 @@ test('share-envelope: signature byte flip → verify rejects', () => {
   const verified = verifyShareableNode(tampered);
   assert.ok(verified.isErr(), 'payload-sig tamper should fail');
 });
+
+// ─────────────── Phase 26 — github_user pinning ───────────────
+
+const sampleNodeWithGithub = (handle: string): ShareableNode => ({
+  id: 'node-gh-1',
+  label: 'phase 26 sample',
+  embedding_id: 'emb-1',
+  source_uri: 'https://example.com/p',
+  fetched_at: '2026-05-27T00:00:00Z',
+  github_user: handle,
+});
+
+test('phase-26: expectedGithubUser matches payload → verify ok', () => {
+  const id = buildIdentity();
+  const signed = signShareableNode({
+    devicePrivateKey: id.devicePriv,
+    deviceKey: id.deviceKey,
+    node: sampleNodeWithGithub('SaharBarak'),
+    signedAt: '2026-05-27T00:00:02Z',
+  });
+  assert.ok(signed.isOk());
+  const env = signed._unsafeUnwrap();
+  const verified = verifyShareableNode(env, {
+    verifiedAt: '2026-05-27T00:00:03Z',
+    expectedGithubUser: 'SaharBarak',
+  });
+  assert.ok(verified.isOk(), `verify should pass with matching handle: ${verified.isErr() ? JSON.stringify(verified.error) : ''}`);
+});
+
+test('phase-26: expectedGithubUser mismatch → ShareEnvelopeGithubMismatch', () => {
+  const id = buildIdentity();
+  const signed = signShareableNode({
+    devicePrivateKey: id.devicePriv,
+    deviceKey: id.deviceKey,
+    node: sampleNodeWithGithub('Imposter'),
+    signedAt: '2026-05-27T00:00:02Z',
+  });
+  assert.ok(signed.isOk());
+  const env = signed._unsafeUnwrap();
+  const verified = verifyShareableNode(env, {
+    verifiedAt: '2026-05-27T00:00:03Z',
+    expectedGithubUser: 'SaharBarak',
+  });
+  assert.ok(verified.isErr(), 'verify must reject mismatched handle');
+  if (verified.isErr()) {
+    assert.equal(verified.error.type, 'ShareEnvelopeGithubMismatch');
+    if (verified.error.type === 'ShareEnvelopeGithubMismatch') {
+      assert.equal(verified.error.expected, 'SaharBarak');
+      assert.equal(verified.error.actual, 'Imposter');
+    }
+  }
+});
+
+test('phase-26: expectedGithubUser set but payload missing the field → mismatch (omission attack)', () => {
+  const id = buildIdentity();
+  // Payload deliberately WITHOUT github_user — a malicious peer might
+  // strip it hoping to bypass the binding check.
+  const noHandlePayload: ShareableNode = {
+    id: 'node-no-gh',
+    label: 'no handle',
+    embedding_id: 'emb',
+    source_uri: 'https://example.com/x',
+    fetched_at: '2026-05-27T00:00:00Z',
+  };
+  const signed = signShareableNode({
+    devicePrivateKey: id.devicePriv,
+    deviceKey: id.deviceKey,
+    node: noHandlePayload,
+    signedAt: '2026-05-27T00:00:02Z',
+  });
+  assert.ok(signed.isOk());
+  const env = signed._unsafeUnwrap();
+  const verified = verifyShareableNode(env, {
+    verifiedAt: '2026-05-27T00:00:03Z',
+    expectedGithubUser: 'SaharBarak',
+  });
+  assert.ok(verified.isErr(), 'omitted handle must still fail when pin is set');
+  if (verified.isErr() && verified.error.type === 'ShareEnvelopeGithubMismatch') {
+    assert.equal(verified.error.expected, 'SaharBarak');
+    assert.equal(verified.error.actual, undefined);
+  }
+});
+
+test('phase-26: expectedGithubUser unset → no pinning, verify uses crypto only', () => {
+  const id = buildIdentity();
+  const signed = signShareableNode({
+    devicePrivateKey: id.devicePriv,
+    deviceKey: id.deviceKey,
+    node: sampleNodeWithGithub('AnyHandle'),
+    signedAt: '2026-05-27T00:00:02Z',
+  });
+  assert.ok(signed.isOk());
+  const env = signed._unsafeUnwrap();
+  const verified = verifyShareableNode(env, { verifiedAt: '2026-05-27T00:00:03Z' });
+  assert.ok(verified.isOk(), 'verify with no pin must succeed regardless of handle');
+});
