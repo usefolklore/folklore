@@ -133,6 +133,8 @@ export const classifyInboundShare = (
           ? `identity_error:${e.cause.type}`
           : e.type === 'ShareEnvelopeAuthorMismatch'
           ? `author_mismatch:${e.expected}!=${e.actual}`
+          : e.type === 'ShareEnvelopeGithubMismatch'
+          ? `github_mismatch:${e.expected}!=${e.actual ?? '<missing>'}`
           : `invalid:${e.reason}`;
       return { verdict: 'signed_invalid', reason };
     }

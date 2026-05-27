@@ -191,35 +191,57 @@ const stepIdentity = async (home: string): Promise<string | null> => {
 };
 
 /**
- * Optional GitHub OAuth link — wires a verified GitHub handle to the
- * local DID via Device Flow. Skippable; users without
- * `AKASHIK_GITHUB_CLIENT_ID` configured see a clear "skip + how
- * to enable later" message rather than a broken flow.
+ * MANDATORY GitHub OAuth link (Phase 26 stage B). akashik communication
+ * and identity are GitHub-anchored — every node is tagged github_user
+ * at write time, federation envelopes pin the peer's claimed handle —
+ * so a fresh install MUST link an account before the wizard advances.
  *
- * The actual OAuth round-trip lives in src/cli/commands/login.ts; this
- * step calls it via the same dispatcher the standalone command uses.
+ * Three abort paths:
+ *   - No AKASHIK_GITHUB_CLIENT_ID  → process.exit(1) with setup steps
+ *   - User declines the prompt     → process.exit(1) with re-run hint
+ *   - OAuth flow fails             → process.exit(1) with retry hint
+ *
+ * Idempotent: if linked-accounts.json already has a github entry, the
+ * step short-circuits with "already linked" and proceeds. Re-running
+ * onboard never re-triggers an OAuth round-trip the user doesn't need.
+ *
+ * The actual OAuth flow lives in src/cli/commands/login.ts; this step
+ * calls it via the same dispatcher the standalone command uses.
  */
-const stepLoginGithub = async (flags: Flags): Promise<void> => {
+const stepLoginGithub = async (flags: Flags, home: string): Promise<void> => {
+  // Idempotency: skip cleanly when already linked.
+  const { loadLinkedAccounts } = await import('../../infrastructure/linked-accounts.js');
+  const linked = loadLinkedAccounts(home);
+  if (linked.accounts.github?.handle) {
+    const gh = linked.accounts.github;
+    log.success(`github already linked · @${gh.handle}${gh.email ? ` <${gh.email}>` : ''}`);
+    return;
+  }
+
   const clientId = process.env.AKASHIK_GITHUB_CLIENT_ID;
   if (!clientId || clientId.trim().length === 0) {
     note(
       [
-        'Linking a GitHub identity to your local DID lets P2P peers verify',
-        'your signed envelopes against your public GitHub profile.',
+        'akashik identity is GitHub-anchored — every node you author is',
+        'tagged with your verified handle, and peers verify that handle',
+        'against your local signing key before accepting your nodes.',
         '',
-        'To enable later:',
+        'No GitHub login = no shared graph. To finish onboarding:',
         '  1. Register a Device Flow OAuth app:',
         '     https://github.com/settings/applications/new',
+        '     (any callback URL; enable "Device Flow" in app settings)',
         '  2. export AKASHIK_GITHUB_CLIENT_ID="Iv1.<your_id>"',
-        '  3. akashik login',
+        '  3. Re-run `akashik onboard`',
       ].join('\n'),
-      'GitHub login (optional, skipped — no client id configured)',
+      'GitHub login required — AKASHIK_GITHUB_CLIENT_ID not set',
     );
-    return;
+    cancel('onboarding cannot proceed without a GitHub identity.');
+    process.exit(1);
   }
 
+  // --yes auto-confirms login (CI path). Interactive: explicit confirm.
   const proceed = flags.yes
-    ? false
+    ? true
     : ensure(
         await confirm({
           message: `Link your GitHub identity now via ${clientId.slice(0, 8)}…?`,
@@ -227,18 +249,18 @@ const stepLoginGithub = async (flags: Flags): Promise<void> => {
         }),
       );
   if (!proceed) {
-    log.message('skipped — run `akashik login` when convenient');
-    return;
+    cancel('GitHub link declined — onboarding aborted. Re-run when you\'re ready to link.');
+    process.exit(1);
   }
 
   // Defer to the standalone login command so the flow + persistence
-  // logic is identical to `akashik login`. One canonical path
-  // keeps the codex round-3 "behavioral inconsistency across parallel
-  // surfaces" verdict from re-emerging here.
+  // logic is identical to `akashik login`. One canonical path keeps
+  // behavior consistent across the wizard and the direct command.
   const { login } = await import('./login.js');
   const exit = await login([]);
   if (exit !== 0) {
-    log.warn('login failed — `akashik login` to retry');
+    cancel('GitHub login failed — onboarding aborted. Run `akashik login` to retry.');
+    process.exit(1);
   }
 };
 
@@ -495,7 +517,7 @@ export const onboard = async (args: readonly string[]): Promise<number> => {
   const peerId = await stepIdentity(home);
 
   log.step('4/9 · link GitHub identity (optional)');
-  await stepLoginGithub(flags);
+  await stepLoginGithub(flags, home);
 
   log.step('5/9 · sharing primitives');
   await stepSystemRooms(home);
