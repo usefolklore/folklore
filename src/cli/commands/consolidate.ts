@@ -83,7 +83,7 @@ const parseRunArgs = (args: readonly string[]): RunArgs | string => {
     else if (a === '--model') model = next();
     else if (!a.startsWith('-')) room = room ?? a;
   }
-  if (!room) return 'missing <room>. usage: wellinformed consolidate run <room> [--dry-run] [--prune [--backup PATH | --no-backup]]';
+  if (!room) return 'missing <workspace>. usage: wellinformed consolidate run <workspace> [--dry-run] [--prune [--backup PATH | --no-backup]]';
   if (dryRun && prune) return 'cannot use --dry-run and --prune together';
   return { room, dryRun, threshold, minSize, maxSize, model, prune, backup, backupPath };
 };
@@ -253,7 +253,7 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
     console.error(`consolidate: ollama ${ping.value} @ ${process.env.WELLINFORMED_OLLAMA_URL ?? 'http://localhost:11434'}, model=${parsed.model}`);
 
     console.error(
-      `consolidate: room=${parsed.room} threshold=${parsed.threshold} ` +
+      `consolidate: workspace=${parsed.room} threshold=${parsed.threshold} ` +
       `min_size=${parsed.minSize} max_size=${parsed.maxSize} ${parsed.dryRun ? '(dry-run)' : ''}`,
     );
 
@@ -439,17 +439,17 @@ const status = async (): Promise<number> => {
 const help = (): number => {
   console.log('usage: wellinformed consolidate <sub>');
   console.log('');
-  console.log('  run <room> [--dry-run | --prune [--backup PATH | --no-backup]]');
+  console.log('  run <workspace> [--dry-run | --prune [--backup PATH | --no-backup]]');
   console.log('             [--threshold 0.8] [--min-size 5] [--max-size 100] [--model M]');
-  console.log('                    Cluster raw entries in <room>, LLM-summarize each cluster,');
+  console.log('                    Cluster raw entries in <workspace>, LLM-summarize each cluster,');
   console.log('                    persist as consolidated_memory nodes, mark sources.');
   console.log('                    --prune: also DELETE source raw entries (graph + vectors)');
   console.log('                             after consolidation. NDJSON backup written by default.');
   console.log('                             Mutually exclusive with --dry-run.');
-  console.log('  prune-marked <room> [--force|-y] [--no-backup | --backup PATH]');
+  console.log('  prune-marked <workspace> [--force|-y] [--no-backup | --backup PATH]');
   console.log('                    Retroactively prune all consolidated_at-marked raw entries');
-  console.log('                    in <room> (from prior consolidate runs that did not --prune).');
-  console.log('  status            Counts of raw / consolidated entries per room.');
+  console.log('                    in <workspace> (from prior consolidate runs that did not --prune).');
+  console.log('  status            Counts of raw / consolidated entries per workspace.');
   console.log('  help              This text.');
   console.log('');
   console.log('Consolidation runs against your local Ollama (default http://localhost:11434).');
@@ -485,7 +485,7 @@ const pruneMarkedCmd = async (args: readonly string[]): Promise<number> => {
     else if (!a.startsWith('-')) room = room ?? a;
   }
   if (!room) {
-    console.error('consolidate prune-marked: missing <room>. usage: wellinformed consolidate prune-marked <room> [--no-backup | --backup PATH] [--force]');
+    console.error('consolidate prune-marked: missing <workspace>. usage: wellinformed consolidate prune-marked <workspace> [--no-backup | --backup PATH] [--force]');
     return 1;
   }
 
@@ -508,11 +508,11 @@ const pruneMarkedCmd = async (args: readonly string[]): Promise<number> => {
     );
 
     if (candidates.length === 0) {
-      console.log(`no consolidated_at-marked raw entries in room '${room}'. nothing to prune.`);
+      console.log(`no consolidated_at-marked raw entries in workspace '${room}'. nothing to prune.`);
       return 0;
     }
 
-    console.error(`consolidate prune-marked: ${candidates.length} candidates in room '${room}'`);
+    console.error(`consolidate prune-marked: ${candidates.length} candidates in workspace '${room}'`);
     if (!force) {
       console.error(`  DESTRUCTIVE. pass --force (or -y) to actually delete.`);
       return 1;
