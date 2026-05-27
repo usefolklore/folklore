@@ -1,97 +1,62 @@
 /**
  * Phase 20 — session ingest orchestrator.
  *
- * Thin application-layer wiring between the claude-sessions source adapter,
- * the rooms registry (auto-provision `sessions` room), the shared-rooms
- * registry (mark sessions room shareable: false), and the retention pruner.
+ * V5 (Phase 24): the `sessions` pseudo-room is gone. Session nodes are
+ * identified by their source_uri scheme `claude_sessions:` (set by the
+ * claude-sessions adapter). The boot-time `ensureSessionsRoom`
+ * room-provisioning step is a no-op; what remains is the retention
+ * pruner that drops aged-out session nodes lacking key signals.
  *
- * Does NOT re-implement the ingest pipeline — the claude-sessions source
- * is registered as a normal SourceDescriptor and picked up by the existing
- * daemon tick via triggerRoom('sessions').
+ * The claude-sessions source descriptor still gets auto-registered if
+ * missing — but without a room field. The daemon's flat per-source
+ * tick (Phase 24-04 `runSources`) picks it up like any other source.
  */
 
 import { ResultAsync, okAsync } from 'neverthrow';
-import { join } from 'node:path';
 import type { AppError } from '../domain/errors.js';
 import type { SessionError } from '../domain/errors.js';
 import { SessionError as SE } from '../domain/errors.js';
 import type { GraphRepository } from '../infrastructure/graph-repository.js';
-import type { RoomsConfig } from '../infrastructure/rooms-config.js';
 import type { SourcesConfig } from '../infrastructure/sources-config.js';
-import { mutateSharedRooms, addSharedRoom } from '../infrastructure/share-store.js';
 import { hasKeySignal } from '../domain/sessions.js';
-import { nodesInRoom } from '../domain/graph.js';
 import type { GraphNode } from '../domain/graph.js';
 
-const SESSIONS_ROOM = 'sessions' as const;
 const DEFAULT_SOURCE_ID = 'claude-sessions-default' as const;
+const SESSION_URI_PREFIX = 'claude_sessions:' as const;
 
-// ─────────────────────── room auto-provision ──────────────
+// ─────────────────────── source registration ─────────────
 
 export interface SessionEnsureDeps {
-  readonly rooms: RoomsConfig;
   readonly sources: SourcesConfig;
   readonly homePath: string;
 }
 
 /**
- * Ensure the `sessions` room exists, the claude_sessions source is
- * registered, and the shared-rooms.json entry for `sessions` is marked
- * shareable: false. Idempotent — safe to call on every daemon tick.
+ * Ensure the `claude_sessions` source adapter is registered. Idempotent.
  *
- * Steps:
- *   1. rooms.create (idempotent — addRoom deduplicates by id)
- *   2. sources.list → add claude-sessions-default if absent
- *   3. mutateSharedRooms → ensure record exists with shareable: false
+ * V5: no room or shared-rooms.json side-effects — sharing decisions
+ * happen per-node via `private: boolean`. The claude-sessions adapter
+ * itself stamps `private: true` on session nodes so they never federate.
  */
 export const ensureSessionsRoom = (
   deps: SessionEnsureDeps,
-): ResultAsync<void, AppError> => {
-  const roomMeta = {
-    id: SESSIONS_ROOM,
-    name: 'sessions',
-    description: 'Auto-ingested Claude Code session transcripts',
-    keywords: ['session', 'claude', 'history'],
-    created_at: new Date().toISOString(),
-  };
-
-  return deps.rooms
-    .create(roomMeta)
+): ResultAsync<void, AppError> =>
+  deps.sources
+    .list()
     .mapErr((e): AppError => e)
-    .andThen(() =>
-      deps.sources
-        .list()
-        .mapErr((e): AppError => e)
-        .andThen((all) => {
-          const exists = all.some((s) => s.id === DEFAULT_SOURCE_ID);
-          if (exists) return okAsync<void, AppError>(undefined);
-          return deps.sources
-            .add({
-              id: DEFAULT_SOURCE_ID,
-              kind: 'claude_sessions',
-              room: SESSIONS_ROOM,
-              config: {},
-              enabled: true,
-            })
-            .mapErr((e): AppError => e)
-            .map(() => undefined);
-        }),
-    )
-    .andThen(() => {
-      const path = join(deps.homePath, 'shared-rooms.json');
-      return mutateSharedRooms(path, (current) => {
-        const existing = current.rooms.find((r) => r.name === SESSIONS_ROOM);
-        if (existing && existing.shareable === false) return current;
-        return addSharedRoom(current, {
-          name: SESSIONS_ROOM,
-          sharedAt: new Date().toISOString(),
-          shareable: false,
-        });
-      })
+    .andThen((all) => {
+      const exists = all.some((s) => s.id === DEFAULT_SOURCE_ID);
+      if (exists) return okAsync<void, AppError>(undefined);
+      return deps.sources
+        .add({
+          id: DEFAULT_SOURCE_ID,
+          kind: 'claude_sessions',
+          config: {},
+          enabled: true,
+        })
         .mapErr((e): AppError => e)
         .map(() => undefined);
     });
-};
 
 // ─────────────────────── retention ─────────────────────────
 
@@ -102,14 +67,8 @@ export interface RetentionDeps {
 /**
  * Prune session nodes older than `retentionDays` that lack key signals.
  *
- * Key signals (defined in domain/sessions.ts hasKeySignal):
- *   - Git commit hashes in label or content_summary
- *   - External API URLs
- *   - Blocked-secret markers (content replaced by scanner)
- *
- * Nodes WITH key signals are retained indefinitely regardless of age.
- * Returns the count of dropped nodes. Errors become SessionError so the
- * daemon can log and swallow them without crashing the tick.
+ * V5: identifies sessions via the source_uri scheme `claude_sessions:`,
+ * not by room membership.
  */
 export const enforceRetention = (
   deps: RetentionDeps,
@@ -119,11 +78,14 @@ export const enforceRetention = (
 
   return deps.graphs
     .load()
-    .mapErr((e): SessionError =>
+    .mapErr((e: AppError): SessionError =>
       SE.retentionError(`graph load failed: ${JSON.stringify(e)}`),
     )
     .andThen((graph) => {
-      const nodes = nodesInRoom(graph, SESSIONS_ROOM);
+      const nodes = graph.json.nodes.filter((n) => {
+        const uri = typeof n.source_uri === 'string' ? n.source_uri : '';
+        return uri.startsWith(SESSION_URI_PREFIX);
+      });
       const toDrop: GraphNode[] = [];
 
       for (const node of nodes) {
@@ -133,7 +95,6 @@ export const enforceRetention = (
             : NaN;
         if (!Number.isFinite(ts) || ts >= cutoffMs) continue;
 
-        // Retain nodes with key signals (git hashes, API URLs, blocked markers)
         const labelStr = typeof node.label === 'string' ? node.label : '';
         const summaryStr =
           typeof node.content_summary === 'string'
@@ -146,7 +107,6 @@ export const enforceRetention = (
 
       if (toDrop.length === 0) return okAsync<number, SessionError>(0);
 
-      // Filter the graph in-memory then save atomically.
       const dropIds = new Set(toDrop.map((n) => n.id));
       const nextGraph = {
         ...graph,
@@ -161,7 +121,7 @@ export const enforceRetention = (
 
       return deps.graphs
         .save(nextGraph)
-        .mapErr((e): SessionError =>
+        .mapErr((e: AppError): SessionError =>
           SE.retentionError(`graph save failed: ${JSON.stringify(e)}`),
         )
         .map(() => toDrop.length);

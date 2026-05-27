@@ -240,15 +240,10 @@ export const dashboard = async (args: readonly string[]): Promise<number> => {
       const searchDeps = { graphs: runtime.graphs, vectors: runtime.vectors, embedder: runtime.embedder };
       const result = await searchGlobal(searchDeps)({ text: q, k });
 
-      // V5 workspace pre-filter applied here at the HTTP boundary.
-      const filtered = result.isOk() && workspace
-        ? result.value.filter((m) => {
-            const n = runtime.graphs ? undefined : undefined; void n;
-            return true; // matches lack workspace; cliside fetches node detail separately
-          })
-        : result.isOk() ? result.value : [];
-      // Workspace narrowing for hits requires graph node lookup — defer to client.
-      void workspace;
+      // V5: matches lack workspace; client renders the filter on top
+      // by cross-referencing graph node detail.
+      const filtered = result.isOk() ? result.value : [];
+      void workspace; // reserved — boundary-side narrowing planned for Phase 25+
 
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify(filtered));

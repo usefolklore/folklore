@@ -201,7 +201,6 @@ const run = async (): Promise<number> => {
 
   const loop: LoopHandle = await startLoop({
     ingestDeps: rt.value.ingestDeps,
-    rooms: rt.value.rooms,
     graphs: rt.value.graphs,
     vectors: rt.value.vectors,
     sources: rt.value.sources,

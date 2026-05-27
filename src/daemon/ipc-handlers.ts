@@ -146,7 +146,7 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     vectors: runtime.vectors,
     embedder: runtime.embedder,
     entityRegistry: runtime.entityRegistry,
-  })({ query: parsed.query, room: parsed.room, k: parsed.k });
+  })({ query: parsed.query, k: parsed.k });
 
   if (result.isErr()) {
     return { stdout: '', stderr: `ask: ${formatError(result.error)}\n`, exit: 1 };
@@ -157,7 +157,7 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     const hits = r.search_hits.map((h) => ({
       id: h.node_id,
       label: h.label,
-      room: h.room ?? null,
+      workspace: h.workspace ?? null,
       distance: Number(h.distance.toFixed(4)),
       source_uri: h.source_uri ?? null,
       summary: typeof h.summary === 'string' ? h.summary.slice(0, 400) : null,
@@ -167,7 +167,6 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     }));
     const payload: Record<string, unknown> = {
       query: r.query,
-      room: r.room ?? null,
       hits,
       reranked: r.reranked,
       // Agent contract — completeness/decision so callers can
@@ -225,26 +224,25 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     lines.push('');
     lines.push(`## entity recall (top ${r.recall_result.hits.length})`);
     for (const h of r.recall_result.hits) {
-      const room = h.room ?? '-';
+      const ws = h.workspace ?? '-';
       const ageStr =
         h.age_days === undefined ? ''
         : h.age_days < 1 ? ' · today'
         : h.age_days < 14 ? ` · ${Math.round(h.age_days)}d`
         : h.age_days < 90 ? ` · ${Math.round(h.age_days / 7)}w`
         : ` · ${Math.round(h.age_days / 30)}mo`;
-      lines.push(`  - ${h.label} [${room}${ageStr}] surface: "${h.surface}"`);
+      lines.push(`  - ${h.label} [${ws}${ageStr}] surface: "${h.surface}"`);
     }
     lines.push('');
   }
 
   if (r.search_hits.length > 0) {
     lines.push('## semantic search results');
-    if (r.room) lines.push(`room: ${r.room}`);
     if (r.reranked) lines.push('ranked by: relevance × recency-decay');
     lines.push('');
     for (const h of r.search_hits) {
       lines.push(`### ${h.label}`);
-      lines.push(`distance: ${h.distance.toFixed(3)} | room: ${h.room ?? '-'}`);
+      lines.push(`distance: ${h.distance.toFixed(3)} | workspace: ${h.workspace ?? '-'}`);
       if (h.source_uri) lines.push(`source: ${h.source_uri}`);
       if (h.mentioned_entities.length > 0) {
         const ents = h.mentioned_entities.slice(0, 5).map((e) => e.label).join(', ');

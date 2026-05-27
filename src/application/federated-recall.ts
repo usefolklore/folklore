@@ -107,7 +107,6 @@ export const runFederatedRecall = async (
   const req: RecallRequest = {
     type: 'recall',
     entity_id: entityId,
-    room: params.room,
     limit: params.limit,
   };
 

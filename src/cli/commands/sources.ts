@@ -89,7 +89,7 @@ const list = async (): Promise<number> => {
   for (const d of all) {
     const enabled = d.enabled === false ? 'no ' : 'yes';
     const configStr = JSON.stringify(d.config);
-    const line = `${d.id.padEnd(31)} ${d.kind.padEnd(15)} ${d.room.padEnd(15)} ${enabled}      ${configStr}`;
+    const line = `${d.id.padEnd(31)} ${d.kind.padEnd(15)} ${(d.room ?? '-').padEnd(15)} ${enabled}      ${configStr}`;
     console.log(line);
   }
   return 0;
