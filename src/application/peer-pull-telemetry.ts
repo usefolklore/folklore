@@ -5,6 +5,18 @@
  *
  * Shared by: MCP `federated_search` / `ask` tools, the PreToolUse
  * smart-hook, and `wellinformed ask --peers` CLI tail.
+ *
+ * V5 (Phase 24-03, ROOMS-DEL-05): per-peer telemetry only — the room
+ * dimension was dropped 2026-05-27. Pre-V5 telemetry tracked the (peer,
+ * room) tuple so the agent could surface "this peer was strong in
+ * research, weak in toolshed"; V5 collapses that to a per-peer signal
+ * because the room abstraction no longer exists. The peer dimension is
+ * what actually drives reputation — the room dimension was extra
+ * detail that became dead weight when rooms vanished.
+ *
+ * Open Question 5 (RESOLVED): rewrite per-peer, do not delete. The
+ * per-peer signal still matters for reputation and consensus scoring;
+ * only the room slice goes away.
  */
 
 import type { FederatedSearchResult } from './federated-search.js';
@@ -18,20 +30,20 @@ import {
   type PeerPullTelemetry,
   type SatisfactionScore,
 } from '../domain/peer-telemetry.js';
-import { isSystemRoomName, TOOLSHED, RESEARCH, ORACLE } from '../domain/system-rooms.js';
 
-const staleWindowFor = (room: string | undefined): number | undefined => {
-  if (!room) return undefined;
-  if (room === TOOLSHED.name) return TOOLSHED.staleAfterDays;
-  if (room === RESEARCH.name) return RESEARCH.staleAfterDays;
-  if (room === ORACLE.name) return ORACLE.staleAfterDays;
-  if (isSystemRoomName(room)) return undefined;
-  return undefined; // user rooms have no canonical window — scorer falls back to 14d
-};
+/**
+ * V5 default stale window — 14 days. Pre-V5 system rooms (toolshed/research/
+ * oracle) had bespoke windows (30d / 7d / 14d) baked into per-room metadata;
+ * with rooms deleted the scorer falls back to a single global default.
+ *
+ * If finer-grained staleness control is needed later, it should be expressed
+ * per-node (e.g. `node.stale_after_days?`) so it travels with the node
+ * itself rather than through a global room registry.
+ */
+const DEFAULT_STALE_AFTER_DAYS = 14 as const;
 
 export interface BuildTelemetryParams {
   readonly query: string;
-  readonly room?: string;
   readonly result: FederatedSearchResult;
   readonly graph: Graph;
   readonly now?: number;
@@ -40,7 +52,7 @@ export interface BuildTelemetryParams {
 export const buildPeerPullTelemetry = (
   params: BuildTelemetryParams,
 ): PeerPullTelemetry => {
-  const { query, room, result, graph } = params;
+  const { query, result, graph } = params;
   const now = params.now ?? Date.now();
 
   const enriched: EnrichedMatch[] = result.matches.map((m) => {
@@ -53,17 +65,21 @@ export const buildPeerPullTelemetry = (
         : node && typeof node.source_file === 'string'
           ? node.source_file
           : undefined;
-    const nodeRoom = node?.room ?? m.room;
     return {
       node_id: m.node_id,
-      room: nodeRoom,
+      // EnrichedMatch.room is structural metadata for the scorer's consensus
+      // diagnostics — V5 has no room, so we pass an empty string. The scorer
+      // does not branch on the value (only on source_peer), so this preserves
+      // back-compat with the shared EnrichedMatch shape without leaking the
+      // deleted abstraction into satisfaction math.
+      room: '',
       distance: m.distance,
       source_peer: m._source_peer ?? null,
       also_from_peers: m._also_from_peers ?? [],
       source_uri: sourceUri,
       fetched_at: fetchedAt,
       age_days: ageInDays(fetchedAt, now),
-      stale_after_days: staleWindowFor(nodeRoom),
+      stale_after_days: DEFAULT_STALE_AFTER_DAYS,
       // has_signature surfaces in v4.x when the share envelope verifier
       // exposes per-node verdicts; left undefined here so the scorer
       // treats signature as 'unknown' (0.5 component contribution).
@@ -80,7 +96,6 @@ export const buildPeerPullTelemetry = (
 
   return {
     query,
-    room,
     took_ms: result._telemetry.took_total_ms,
     took_local_ms: result._telemetry.took_local_ms,
     took_merge_ms: result._telemetry.took_merge_ms,
