@@ -161,25 +161,25 @@ const maybeAutoPullPeerBody = (federatedResult, query) => {
   hits.forEach((h, i) => {
     if (h?.source_peer && h.source_peer !== 'local' &&
         typeof h.distance === 'number' && h.distance <= AUTO_PULL_DISTANCE_MAX &&
-        !h.summary && h.room) {
+        !h.summary) {
       peerHitIdxs.push(i);
     }
   });
   if (peerHitIdxs.length === 0) return federatedResult;
-  // Pull rooms touched by these hits — cap at 2 distinct (peer, room)
-  // pairs to bound prefetch cost.
+  // V5: auto-touch-by-room is removed along with the room primitive.
+  // The federation peer-pull path now operates per-peer with no room
+  // filter — bodies are fetched by node id, not by (peer, room) tuple.
   const seen = new Set();
   const targets = [];
   for (const i of peerHitIdxs) {
     const h = hits[i];
-    const key = `${h.source_peer}::${h.room}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    targets.push({ peer: h.source_peer, room: h.room });
+    if (seen.has(h.source_peer)) continue;
+    seen.add(h.source_peer);
+    targets.push({ peer: h.source_peer });
     if (targets.length >= 2) break;
   }
   for (const t of targets) {
-    runWellinformed(['touch', t.peer, '--room', t.room, '--max', '10'], AUTO_PULL_TIMEOUT_MS);
+    runWellinformed(['touch', t.peer, '--max', '10'], AUTO_PULL_TIMEOUT_MS);
   }
   // After touch the bodies now live locally. Look each peer hit up by id
   // and graft the summary onto the federated hit so renderHits prints it.
@@ -230,12 +230,12 @@ const renderHits = (result, query, terminal, adjusted) => {
     `## indexed context for: "${query.slice(0, 80)}"`,
   ].join('\n');
   const body = hits.map((h, i) => {
-    const room = h.room ?? '?';
+    const workspace = h.workspace ?? '-';
     const peer = formatPeer(h.source_peer);
     const summary = typeof h.summary === 'string'
       ? ` — ${h.summary.slice(0, 200).replace(/\s+/g, ' ')}`
       : '';
-    return `  ${i + 1}. ${h.label ?? h.id} [${room}, ${peer}]${summary}\n     → ${h.source_uri ?? h.id}`;
+    return `  ${i + 1}. ${h.label ?? h.id} [${workspace}, ${peer}]${summary}\n     → ${h.source_uri ?? h.id}`;
   }).join('\n');
   const closer = terminal
     ? [
@@ -509,14 +509,14 @@ const extractTopicsFromHits = (hits, n = 3) => {
     .map(([t]) => t);
 };
 const _topics = extractTopicsFromHits(result.hits, 3);
-const _rooms = Array.from(new Set(result.hits.map((h) => h?.room).filter(Boolean)));
-const domains = _topics.length >= 2 ? _topics.join(', ') : (_rooms.join(', ') || 'local');
+const _workspaces = Array.from(new Set(result.hits.map((h) => h?.workspace).filter(Boolean)));
+const domains = _topics.length >= 2 ? _topics.join(', ') : (_workspaces.join(', ') || 'local');
 const tookMs = result.took_ms != null ? `${result.took_ms} ms` : '—';
 const topPeerLabel = result.hits[0]?.source_peer && result.hits[0].source_peer !== 'local'
   ? ` (top: ${formatPeer(result.hits[0].source_peer)})`
   : '';
 const autoPulledLine = Array.isArray(result.auto_pulled) && result.auto_pulled.length > 0
-  ? `\n  pulled body:    ${formatPeer(result.auto_pulled[0].peer)}/${result.auto_pulled[0].room}`
+  ? `\n  pulled body:    ${formatPeer(result.auto_pulled[0].peer)}`
   : '';
 const truncQ = truncated.length > 80 ? truncated.slice(0, 77) + '...' : truncated;
 // Satisfaction boost — the base scorer (src/domain/peer-telemetry.ts)
