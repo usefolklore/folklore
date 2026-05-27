@@ -29,6 +29,7 @@ import { loadConfig } from '../infrastructure/config-loader.js';
 import { buildPatterns } from '../domain/sharing.js';
 import { asyncMutex, type AsyncMutex } from '../infrastructure/async-mutex.js';
 import { fileEntityRegistry, type EntityRegistry } from '../infrastructure/entity-registry.js';
+import { readGithubHandle } from '../infrastructure/linked-accounts.js';
 import { extractMentions } from '../domain/entity-extract.js';
 import type { IngestDeps, MentionsExtractorPort } from '../application/ingest.js';
 
@@ -192,6 +193,14 @@ export interface Runtime {
    * the lost-update window across in-process concurrent writers.
    */
   readonly graphMutex: AsyncMutex;
+  /**
+   * Phase 26 — local GitHub author lookup. Returns the verified handle
+   * from `~/.akashik/linked-accounts.json` (set by `akashik login`), or
+   * undefined when no account is linked. Passed into `UseCaseDeps` by
+   * write-side callers so `indexNode` can stamp `github_user` on every
+   * locally-authored node.
+   */
+  readonly githubUser: () => string | undefined;
   /** Release native resources (sqlite) */
   close(): void;
 }
@@ -273,6 +282,7 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
             entityRegistry,
             ingestDeps,
             graphMutex,
+            githubUser: () => readGithubHandle(paths.home),
             close: () => vectors.close(),
           };
         }),

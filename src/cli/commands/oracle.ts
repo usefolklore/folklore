@@ -155,6 +155,7 @@ const ask = async (rest: readonly string[]): Promise<number> => {
       graphs: runtime.graphs,
       vectors: runtime.vectors,
       embedder: runtime.embedder,
+      githubUser: runtime.githubUser,
     })({ node, text });
     if (res.isErr()) {
       console.error(`oracle ask: ${formatError(res.error)}`);
@@ -215,6 +216,7 @@ const answer = async (rest: readonly string[]): Promise<number> => {
       graphs: runtime.graphs,
       vectors: runtime.vectors,
       embedder: runtime.embedder,
+      githubUser: runtime.githubUser,
     })({ node, text });
     if (res.isErr()) {
       console.error(`oracle answer: ${formatError(res.error)}`);

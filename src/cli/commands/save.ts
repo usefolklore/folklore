@@ -117,6 +117,7 @@ export const save = async (rest: readonly string[]): Promise<number> => {
       graphs: runtime.graphs,
       vectors: runtime.vectors,
       embedder: runtime.embedder,
+      githubUser: runtime.githubUser,
     };
 
     const indexed = await indexNode(deps)({ node, text });

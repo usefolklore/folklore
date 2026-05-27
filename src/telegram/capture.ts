@@ -28,6 +28,7 @@ export const handleCapture = async (
     graphs: runtime.graphs,
     vectors: runtime.vectors,
     embedder: runtime.embedder,
+    githubUser: runtime.githubUser,
   });
 
   for (const url of urls.slice(0, 3)) { // max 3 URLs per message

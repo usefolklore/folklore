@@ -108,6 +108,21 @@ export const loadLinkedAccounts = (home: string): LinkedAccountsFile => {
 // ─────────────── save ─────────────────────
 
 /**
+ * Read just the github handle (no email, no profile URL) — the field
+ * stamped onto every locally-authored node. Returns undefined when no
+ * verified handle is present.
+ *
+ * Used by `indexNode` to tag nodes at the write boundary so federation
+ * can map every shared chunk back to its author without trawling DIDs.
+ * The full LinkedAccount is read via loadLinkedAccounts() — this is
+ * just the hot-path convenience.
+ */
+export const readGithubHandle = (home: string): string | undefined => {
+  const f = loadLinkedAccounts(home);
+  return f.accounts.github?.handle;
+};
+
+/**
  * Upsert one provider's verified handle. Atomic write — tmp+rename so
  * a SIGKILL mid-write never leaves a half-written JSON the next boot
  * reads as garbage.

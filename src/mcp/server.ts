@@ -67,6 +67,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     graphs: runtime.graphs,
     vectors: runtime.vectors,
     embedder: runtime.embedder,
+    githubUser: runtime.githubUser,
   };
 
   // ─────────────── search ───────────────
