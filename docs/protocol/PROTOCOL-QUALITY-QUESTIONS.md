@@ -1,7 +1,7 @@
 # Protocol Quality Questions
 
 This document is intentionally unresolved. It is a thinking surface for the
-parts of wellinformed that decide whether peer knowledge is good enough for an
+parts of Akashik that decide whether peer knowledge is good enough for an
 agent to trust, cite, or use instead of doing a live search.
 
 The core product question:
@@ -11,7 +11,7 @@ The core product question:
 
 If this question is weak, the whole P2P story becomes vibes: sometimes helpful,
 sometimes stale, sometimes wrong, and impossible to defend. If it is strong,
-wellinformed becomes a serious agent-memory protocol.
+Akashik becomes a serious agent-memory protocol.
 
 ## The Decision We Actually Need To Make
 
@@ -198,7 +198,7 @@ against live search outcomes.
 Possible evaluation loop:
 
 1. Agent asks query `Q`.
-2. wellinformed retrieves local + peer candidates.
+2. Akashik retrieves local + peer candidates.
 3. Policy decides whether it would skip search.
 4. In shadow mode, still run live search.
 5. Judge whether peer data would have been enough.
@@ -518,7 +518,7 @@ The failure is not only hallucination. It is premature closure. An agent sees a
 plausible chunk, forms a plan, and stops searching before it has the missing
 fact that would change the action.
 
-wellinformed should treat this as a protocol problem:
+Akashik should treat this as a protocol problem:
 
 - Context is not evidence.
 - Relevance is not sufficiency.
@@ -591,7 +591,7 @@ Open questions:
 
 - Can we infer required facts from query type?
 - Should the MCP tool return a "missing facts" list?
-- Can the agent ask wellinformed for "coverage" instead of "search"?
+- Can the agent ask Akashik for "coverage" instead of "search"?
 - Is a coverage map more important than top-k ranking?
 
 ## The Coverage Map
@@ -811,7 +811,7 @@ Open questions:
 
 ## From Search Cache To Knowledge Market
 
-If wellinformed works, peers are not just caches. They become sources of
+If Akashik works, peers are not just caches. They become sources of
 evidence with different specialties.
 
 This creates incentive and abuse questions:

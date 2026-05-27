@@ -1,4 +1,4 @@
-# wellinformed — documentation index
+# Akashik — documentation index
 
 This directory holds the long-form docs. The repo README is the
 front door; everything substantial is here, organised by domain.
@@ -15,14 +15,14 @@ docs/
 
 ## product
 
-What wellinformed is, why it exists, what's shipped, what's planned.
+What Akashik is, why it exists, what's shipped, what's planned.
 
 - [`MANIFESTO.md`](product/MANIFESTO.md) — the why. OSS cooperation vs AI-lab silos.
-- [`VISION.md`](product/VISION.md) — the agent-memory protocol problem and where wellinformed sits in it.
+- [`VISION.md`](product/VISION.md) — the agent-memory protocol problem and where Akashik sits in it.
 - [`ROADMAP.md`](product/ROADMAP.md) — north star, priorities, definition of done, explicit out-of-scope.
 - [`BENCHMARKS.md`](product/BENCHMARKS.md) — full BEIR v1 results, Phase 25 SOTA, 13 documented null attacks, reproduction scripts.
 - [`RELEASE-v4.md`](product/RELEASE-v4.md) — v4 release notes.
-- [`GRAPHRAG-AUDIT.md`](product/GRAPHRAG-AUDIT.md) — wellinformed audited against 2025/2026 GraphRAG state of the art (Microsoft GraphRAG, HippoRAG 2, LightRAG, MultiHop-RAG, LoCoMo).
+- [`GRAPHRAG-AUDIT.md`](product/GRAPHRAG-AUDIT.md) — Akashik audited against 2025/2026 GraphRAG state of the art (Microsoft GraphRAG, HippoRAG 2, LightRAG, MultiHop-RAG, LoCoMo).
 
 ## architecture
 

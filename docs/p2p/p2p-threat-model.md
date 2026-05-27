@@ -1,6 +1,6 @@
 # P2P Threat Model — Remote Code Execution + Data Leakage
 
-Scope: the attack surface exposed once a wellinformed node accepts data from **untrusted peers** via `share sync` (Y.js CRDT) or `touch` (one-shot pull). This document enumerates concrete paths from a hostile peer to code execution or secret exfiltration, and the mitigations that are (a) shipped, (b) planned, or (c) deferred.
+Scope: the attack surface exposed once an Akashik node accepts data from **untrusted peers** via `share sync` (Y.js CRDT) or `touch` (one-shot pull). This document enumerates concrete paths from a hostile peer to code execution or secret exfiltration, and the mitigations that are (a) shipped, (b) planned, or (c) deferred.
 
 **Threat actor.** A peer on the P2P network who has completed the libp2p handshake and can send arbitrary payloads on `/wellinformed/share/1.0.0` and `/wellinformed/touch/1.0.0`. Peers are not authenticated beyond their ed25519 peer identity — there is no external PKI and no "this peer is trusted" claim.
 

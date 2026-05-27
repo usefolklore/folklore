@@ -25,7 +25,7 @@ Every number is reproducible via `scripts/bench-*.mjs` on a commodity CPU (M-ser
 
 **Claim**: A running `wellinformed daemon` with its L1 query cache warm serves repeat `ask` queries in **~100 ms**. A cold CLI (no daemon) takes **~900 ms**.
 
-**Measured** (live wellinformed home, 10,607 nodes, warm ONNX cache on disk):
+**Measured** (live Akashik home, 10,607 nodes, warm ONNX cache on disk):
 | Pipeline | Latency | Speedup vs v3 cold |
 |----------|---------|--------------------|
 | Cold CLI (no daemon) | ~900 ms | 1.0× (baseline) |

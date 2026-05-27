@@ -12,7 +12,7 @@ Source: **AgriciDaniel/claude-obsidian** @ commit 2026-04-16 (1,417 stars). Karp
 | **Autoresearch program.md** (user-configurable research objectives: source prefs, confidence scoring, domain constraints, stop conditions) | `discover-loop` | **Missing the `program.md`.** Our loop is hard-coded in logic; theirs is config-driven per project/room. |
 | **Obsidian-native vault output** (wikilinks `[[Name]]`, frontmatter properties, callouts, dataview dashboards) | `export-obsidian` command | **Partial.** We export plain markdown but not wikilinks, frontmatter properties, or dataview blocks — Obsidian's graph view and Dataview can't query what we emit. |
 | **Visual canvas** (`claude-canvas` companion, mind-map topology) | `dashboard` web view (vis.js) | **Different UX.** Ours is a standalone webpage, theirs integrates with Obsidian Canvas. |
-| **Skill trigger vocabulary** (rich frontmatter trigger phrases: "ingest this url", "what do you know about", "/save", "find orphans", …) | `.claude/skills/wellinformed/SKILL.md` has 7 triggers | **Minor.** Our skill is wired but the vocabulary is narrow; natural-sounding phrases like "save this to wellinformed" don't activate. |
+| **Skill trigger vocabulary** (rich frontmatter trigger phrases: "ingest this url", "what do you know about", "/save", "find orphans", …) | `.claude/skills/wellinformed/SKILL.md` has 7 triggers | **Minor.** Our skill is wired but the vocabulary is narrow; natural-sounding phrases like "save this to Akashik" don't activate. |
 
 ## What we have, they don't
 
@@ -34,7 +34,7 @@ Ranked by leverage / cost ratio:
 
 **Add:** `wellinformed/hot-cache` — a new domain concept. After each tick, generate a ~500-word summary of: (a) newest N nodes, (b) most-queried rooms this session, (c) pending ingests, (d) 3-5 most surprising cross-references. Store at `~/.wellinformed/hot.md` and include in SessionStart hook output.
 
-**Why:** Session continuity is the single biggest daily UX improvement. Today Claude walks into a wellinformed session with no context. With a hot cache, the first thing Claude reads is an actionable recency digest.
+**Why:** Session continuity is the single biggest daily UX improvement. Today Claude walks into an Akashik session with no context. With a hot cache, the first thing Claude reads is an actionable recency digest.
 
 **Files:** `src/domain/hot-cache.ts` (pure summariser), `src/application/hot-cache-tick.ts` (integration with daemon loop). Est. 2h including tests.
 
@@ -84,6 +84,6 @@ Est. 20 min.
 
 claude-obsidian is a **strong thin-client** over Claude's native file-reading + writing abilities. They're ahead on skill vocabulary and knowledge hygiene (hot cache + lint). We're ahead on retrieval quality, source diversity, and multi-user federation.
 
-Porting their hot cache and lint into wellinformed closes the two biggest UX gaps with ~5 hours of work. That gets us parity on session continuity and graph hygiene while keeping all our structural advantages (vectors, P2P, adapters, Rust). No need to fork — we cherry-pick the two patterns that are worth owning.
+Porting their hot cache and lint into Akashik closes the two biggest UX gaps with ~5 hours of work. That gets us parity on session continuity and graph hygiene while keeping all our structural advantages (vectors, P2P, adapters, Rust). No need to fork — we cherry-pick the two patterns that are worth owning.
 
 Do **not** migrate to the vault-as-source-of-truth model. Their strength (plaintext everywhere) is our explicit weakness case — retrieval quality drops by 10+ NDCG when you replace vectors with text file grep.

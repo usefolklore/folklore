@@ -1,6 +1,6 @@
 # Satisfaction scoring
 
-How wellinformed turns a set of retrieval hits into a single number
+How Akashik turns a set of retrieval hits into a single number
 in [0, 1] that drives the agent contract: `use_memory`,
 `verify_one_source`, `search_required`, `ask_user`.
 
@@ -102,7 +102,7 @@ in the full contract block).
 
 - **0.85 use_memory** — the bar above which the agent's outbound tool
   is statistically wasteful. Calibrated against an internal sample of
-  100 queries where Claude was told to use vs. ignore wellinformed
+  100 queries where Claude was told to use vs. ignore Akashik
   context; over 0.85, Claude using-the-context outperformed
   ignoring-it on every question. Under 0.85 the gap closes.
 - **0.65 verify_one_source** — at-or-above is "evidence is strong

@@ -1,10 +1,10 @@
-# P2P Knowledge Graph — wellinformed v2.0 Vision
+# P2P Knowledge Graph — Akashik v2.0 Vision
 
 ## The Idea
 
-Every developer running wellinformed has a local knowledge graph. Right now these graphs are isolated — your homelab research doesn't connect to mine.
+Every developer running Akashik has a local knowledge graph. Right now these graphs are isolated — your homelab research doesn't connect to mine.
 
-**v2.0 makes them connected.** A peer-to-peer network where wellinformed nodes discover each other, share graph fragments, and build a collective knowledge layer that's bigger than any single user's research.
+**v2.0 makes them connected.** A peer-to-peer network where Akashik nodes discover each other, share graph fragments, and build a collective knowledge layer that's bigger than any single user's research.
 
 ```
 Developer A (homelab)          Developer B (ml-papers)
@@ -87,13 +87,13 @@ Use **Automerge** or **Y.js** for the room-level CRDT:
 ## Use Cases
 
 ### Research Teams
-A team of 5 researchers each tracks different domains. P2P wellinformed connects their graphs. When researcher A indexes a paper about "efficient attention", researcher B (tracking "GPU optimization") gets a tunnel notification: "your GPU optimization connects to A's attention paper."
+A team of 5 researchers each tracks different domains. P2P Akashik connects their graphs. When researcher A indexes a paper about "efficient attention", researcher B (tracking "GPU optimization") gets a tunnel notification: "your GPU optimization connects to A's attention paper."
 
 ### Open Source Communities
 A project maintainer shares their `project-x` room publicly. Contributors connect as peers and get the maintainer's research context (relevant papers, HN discussions, competitor analysis) automatically merged into their local graph.
 
 ### Conference Networks
-At a conference, attendees run wellinformed in P2P mode. Their graphs auto-discover via local network. The collective graph of 100 attendees, each with 500 nodes, creates a 50K-node searchable knowledge base spanning every talk, paper, and conversation.
+At a conference, attendees run Akashik in P2P mode. Their graphs auto-discover via local network. The collective graph of 100 attendees, each with 500 nodes, creates a 50K-node searchable knowledge base spanning every talk, paper, and conversation.
 
 ## Implementation Phases
 
@@ -120,6 +120,6 @@ At a conference, attendees run wellinformed in P2P mode. Their graphs auto-disco
 
 ## What This Means
 
-wellinformed goes from "your personal research memory" to "a collective intelligence network for developers." Every peer makes the network smarter. The graph grows faster than any individual could build it.
+Akashik goes from "your personal research memory" to "a collective intelligence network for developers." Every peer makes the network smarter. The graph grows faster than any individual could build it.
 
 This is the end state: **a decentralized knowledge graph where every coding agent in the world shares what it learned.**

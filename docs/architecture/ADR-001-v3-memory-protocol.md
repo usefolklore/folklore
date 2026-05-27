@@ -1,4 +1,4 @@
-# ADR-001 — wellinformed v3 memory protocol design decisions
+# ADR-001 — Akashik v3 memory protocol design decisions
 
 **Status:** accepted
 **Date:** 2026-04-17
@@ -9,7 +9,7 @@
 
 ## Context
 
-wellinformed v2 established measured retrieval quality (Phase 25: 75.22% NDCG@10 on SciFact via Rust-fastembed bge-base + hybrid — within ~1.5pt of GPU reranker ceiling). The v3 milestone moves from "a retrieval engine" to "a protocol" — with the specific goal of unlocking cross-model, cross-device, cross-agent portable memory for the free-LLM world.
+Akashik v2 established measured retrieval quality (Phase 25: 75.22% NDCG@10 on SciFact via Rust-fastembed bge-base + hybrid — within ~1.5pt of GPU reranker ceiling). The v3 milestone moves from "a retrieval engine" to "a protocol" — with the specific goal of unlocking cross-model, cross-device, cross-agent portable memory for the free-LLM world.
 
 Several design decisions along the v3 surface were evaluated against alternatives. This ADR records the chosen path and why.
 
@@ -178,7 +178,7 @@ Several design decisions along the v3 surface were evaluated against alternative
 ## Consequences (measured + expected)
 
 **Immediate (v3.0):**
-- Every memory entry wellinformed emits can be cryptographically attributed to a user DID
+- Every memory entry Akashik emits can be cryptographically attributed to a user DID
 - Peers running different encoders federate via the bridge registry at 91.9% retention (SciFact)
 - Vector databases shrink 48× with −1.79pt worst-case NDCG@10 across 4 BEIR sets
 - Ed25519-signed recovery hex restores identity on a fresh machine; envelope signed on device A verifies on device B (proven in `tests/identity-lifecycle.test.ts`)

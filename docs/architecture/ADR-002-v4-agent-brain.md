@@ -1,4 +1,4 @@
-# ADR-002 — wellinformed v4 Agent Brain design decisions
+# ADR-002 — Akashik v4 Agent Brain design decisions
 
 **Status:** accepted
 **Date:** 2026-04-18

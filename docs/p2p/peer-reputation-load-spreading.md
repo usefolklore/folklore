@@ -25,7 +25,7 @@ is a centralisation failure dressed in P2P clothes.
 
 ## Why this is solvable in our architecture
 
-Two facts about the existing wellinformed code make load-spreading
+Two facts about the existing Akashik code make load-spreading
 **incremental, not architectural**:
 
 1. **Touch already replicates chunks.** When peer A `wellinformed touch`-es a
