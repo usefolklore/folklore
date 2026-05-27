@@ -77,6 +77,17 @@
 - [x] **SESS-07**: The existing wellinformed PreToolUse hook is extended to surface a one-paragraph "previous session summary" on SessionStart, injected into Claude's context automatically. Triggers when the current session has < 3 user messages and a previous session exists within the last N hours (default 24).
 - [x] **SESS-08**: Automatic retention policy — session nodes older than 30 days age out unless they contain "key signals" (commit hashes, external API calls, secret-scanner matches that were blocked). Key-signal sessions retained indefinitely. Configurable via `config.yaml sessions.retention_days`.
 
+### Rooms Deletion (V5 Wire-Protocol Break)
+
+- [ ] **ROOMS-DEL-01**: `wellinformed room` CLI command is removed; no subcommand routes to room CRUD
+- [ ] **ROOMS-DEL-02**: `~/.wellinformed/rooms.json` is no longer read or written by any code path
+- [ ] **ROOMS-DEL-03**: `~/.wellinformed/shared-rooms.json` is removed; sharing gates on `node.private === false`
+- [ ] **ROOMS-DEL-04**: `GraphNode` schema has `room` removed, `workspace?: string` and `private: boolean` added
+- [ ] **ROOMS-DEL-05**: Wire protocol V5: `SearchRequest`, `SearchResponse`, peer-pull telemetry have no `room` field
+- [ ] **ROOMS-DEL-06**: `wellinformed migrate v5` exists, is idempotent, and migrates the user's live graph losslessly (except `room` → `workspace` heuristic)
+- [ ] **ROOMS-DEL-07**: Read-side commands (`ask`, `recall`, `discover`, `report`) auto-apply workspace pre-filter when cwd is in a git repo; `--workspace all` opts out
+- [ ] **ROOMS-DEL-08**: All `.claude/hooks/wellinformed-*` scripts format hits without `room` field and pass the test suite
+
 ## v3 Requirements (deferred)
 
 - **V3-01**: Reputation system — peers that share valuable content rank higher
@@ -104,10 +115,11 @@
 | DISC-01..04 | Phase 17 | ✓ Complete (DISC-04 deferred to v3) |
 | NET-01..04 | Phase 18 | Pending |
 | CODE-01..08 | Phase 19 | Pending |
+| ROOMS-DEL-01..08 | Phase 24 | Pending |
 
 **Coverage:**
-- v2.0 requirements: 38 total (30 P2P + 8 codebase indexing)
-- Mapped to phases: 38
+- v2.0 requirements: 46 total (30 P2P + 8 codebase indexing + 8 rooms deletion)
+- Mapped to phases: 46
 - Unmapped: 0 ✓
 
 ---
