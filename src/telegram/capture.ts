@@ -1,65 +1,28 @@
 /**
- * Inbound capture — URL → classify room → ingest.
+ * Inbound capture — URL → ingest into global graph.
  *
- * When a user forwards a URL to the bot:
- *   1. Classify which room it belongs to (keyword similarity)
- *   2. Fetch + parse via the generic_url adapter
- *   3. Ingest into the graph via indexNode
- *   4. Reply with a summary
+ * V5: no room classification. When a user forwards a URL:
+ *   1. Fetch + parse via the generic HTTP + HTML pipeline
+ *   2. Ingest into the global graph via indexNode (no room tag)
+ *   3. Reply with a summary
+ *
+ * Privacy: captures land with `private: false` by default — Telegram is
+ * a sharing surface (forwarded URLs are de-facto public). The
+ * multi-tier privacy work (per-recipient sharing) is deferred; for
+ * sensitive captures the user should mark the resulting node private
+ * via `wellinformed save --private` after the fact.
  */
 
 import { formatError } from '../domain/errors.js';
-import { findRoom, roomIds } from '../domain/rooms.js';
 import { indexNode } from '../application/use-cases.js';
 import type { Runtime } from '../cli/runtime.js';
-
-/**
- * Classify a URL to the best-matching room by comparing the message
- * text against each room's keywords. Simple term overlap score.
- */
-const classifyRoom = async (
-  runtime: Runtime,
-  text: string,
-): Promise<string | null> => {
-  const reg = await runtime.rooms.load();
-  if (reg.isErr()) return null;
-  const registry = reg.value;
-  const rooms = roomIds(registry);
-  if (rooms.length === 0) return null;
-  if (rooms.length === 1) return rooms[0];
-
-  const words = text.toLowerCase().split(/\s+/);
-  let bestRoom = rooms[0];
-  let bestScore = 0;
-
-  for (const rid of rooms) {
-    const room = findRoom(registry, rid);
-    if (!room) continue;
-    const keywords = room.keywords.map((k) => k.toLowerCase());
-    let score = 0;
-    for (const w of words) {
-      for (const k of keywords) {
-        if (w.includes(k) || k.includes(w)) score++;
-      }
-    }
-    if (score > bestScore) {
-      bestScore = score;
-      bestRoom = rid;
-    }
-  }
-  return bestRoom;
-};
 
 export const handleCapture = async (
   runtime: Runtime,
   urls: string[],
-  messageText: string,
+  _messageText: string,
 ): Promise<string> => {
-  const room = await classifyRoom(runtime, messageText);
-  if (!room) {
-    return 'No rooms configured. Run `wellinformed init` first.';
-  }
-
+  void _messageText;
   const results: string[] = [];
   const useCase = indexNode({
     graphs: runtime.graphs,
@@ -88,17 +51,16 @@ export const handleCapture = async (
       source_file: url,
       source_uri: url,
       fetched_at: new Date().toISOString(),
-      room,
+      private: false,
     };
 
     const indexResult = await useCase({
       node,
       text: article.text,
-      room,
     });
 
     if (indexResult.isOk()) {
-      results.push(`Indexed: *${article.title || url}* → room \`${room}\``);
+      results.push(`Indexed: *${article.title || url}*`);
     } else {
       results.push(`Failed to index: ${url}`);
     }
