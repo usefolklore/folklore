@@ -465,7 +465,7 @@ describe('Phase 18 — Unit: syncNodeIntoYDoc bandwidth gate (NET-02)', async ()
     label: 'hello world',
     file_type: 'document' as const,
     source_file: 'test',
-    room: 'r',
+    private: false,
     embedding_id: 'e1',
     source_uri: 'u',
     fetched_at: new Date().toISOString(),
@@ -483,16 +483,16 @@ describe('Phase 18 — Unit: syncNodeIntoYDoc bandwidth gate (NET-02)', async ()
     peek: () => undefined,
   };
 
-  test('U16 backward compat: no rateLimiter = Phase 16 behaviour preserved', async () => {
+  test('U16 backward compat: no rateLimiter = Phase 16 behaviour preserved (V5: no room)', async () => {
     const doc = new Y.Doc();
     const d = await mkdtemp(join(tmpdir(), 'p18-u16-'));
     const logPath = join(d, 'share-log.jsonl');
-    const result = await syncNodeIntoYDoc(doc, makeNode('n1'), buildPatterns([]), logPath, 'me', 'r');
+    const result = await syncNodeIntoYDoc(doc, makeNode('n1'), buildPatterns([]), logPath, 'me');
     assert.ok(result.isOk(), `must succeed without limiter, got: ${result.isErr() ? JSON.stringify(result.error) : 'ok'}`);
     assert.ok(doc.getMap('nodes').has('n1'), 'node must be written to Y.Doc');
   });
 
-  test('U17 consume-false limiter returns BandwidthExceeded error', async () => {
+  test('U17 consume-false limiter returns BandwidthExceeded error (V5: no room)', async () => {
     const doc = new Y.Doc();
     const d = await mkdtemp(join(tmpdir(), 'p18-u17-'));
     const logPath = join(d, 'share-log.jsonl');
@@ -502,7 +502,6 @@ describe('Phase 18 — Unit: syncNodeIntoYDoc bandwidth gate (NET-02)', async ()
       buildPatterns([]),
       logPath,
       'me',
-      'r',
       denyAllLimiter,
     );
     assert.ok(result.isErr(), 'must be an error when rate-limited');
@@ -510,7 +509,7 @@ describe('Phase 18 — Unit: syncNodeIntoYDoc bandwidth gate (NET-02)', async ()
     assert.equal(doc.getMap('nodes').has('n2'), false, 'node must NOT be written to Y.Doc when rate-limited');
   });
 
-  test('U18 consume-true limiter writes normally to Y.Doc', async () => {
+  test('U18 consume-true limiter writes normally to Y.Doc (V5: no room)', async () => {
     const doc = new Y.Doc();
     const d = await mkdtemp(join(tmpdir(), 'p18-u18-'));
     const logPath = join(d, 'share-log.jsonl');
@@ -520,14 +519,13 @@ describe('Phase 18 — Unit: syncNodeIntoYDoc bandwidth gate (NET-02)', async ()
       buildPatterns([]),
       logPath,
       'me',
-      'r',
       allowAllLimiter,
     );
     assert.ok(result.isOk(), `must succeed with allow-all limiter, got: ${result.isErr() ? JSON.stringify(result.error) : 'ok'}`);
     assert.ok(doc.getMap('nodes').has('n3'), 'node must be written to Y.Doc');
   });
 
-  test("U19 bandwidth-limited writes audit entry with action='bandwidth_limited'", async () => {
+  test("U19 bandwidth-limited writes audit entry with action='bandwidth_limited' (V5: no room)", async () => {
     const doc = new Y.Doc();
     const d = await mkdtemp(join(tmpdir(), 'p18-u19-'));
     const logPath = join(d, 'share-log.jsonl');
@@ -537,7 +535,6 @@ describe('Phase 18 — Unit: syncNodeIntoYDoc bandwidth gate (NET-02)', async ()
       buildPatterns([]),
       logPath,
       'me',
-      'r',
       denyAllLimiter,
     );
     const log = await readFile(logPath, 'utf8');
@@ -545,7 +542,7 @@ describe('Phase 18 — Unit: syncNodeIntoYDoc bandwidth gate (NET-02)', async ()
     assert.ok(log.includes('"peer":"me"'), 'audit log must contain the ownPeerId as peer field');
   });
 
-  test('U20 rate limiter called with composite key ownPeerId::room', async () => {
+  test('U20 V5: rate limiter called with peerId-only key (room dimension dropped)', async () => {
     const doc = new Y.Doc();
     const d = await mkdtemp(join(tmpdir(), 'p18-u20-'));
     const logPath = join(d, 'share-log.jsonl');
@@ -564,13 +561,16 @@ describe('Phase 18 — Unit: syncNodeIntoYDoc bandwidth gate (NET-02)', async ()
       buildPatterns([]),
       logPath,
       'me',
-      'homelab',
       spyLimiter,
     );
-    // Key must be composite ownPeerId::room (makePerPeerRoomKey format)
+    // V5: key is the bare peerId (room dimension dropped per ROOMS-DEL-04)
     assert.ok(
-      seen.includes('me::homelab'),
-      `expected composite key 'me::homelab', got: ${seen.join(', ')}`,
+      seen.includes('me'),
+      `expected peerId key 'me', got: ${seen.join(', ')}`,
+    );
+    assert.ok(
+      !seen.some((k) => k.includes('::')),
+      `V5 keys must NOT contain '::' composite separator, got: ${seen.join(', ')}`,
     );
   });
 });

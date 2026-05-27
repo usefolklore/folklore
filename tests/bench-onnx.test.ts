@@ -19,7 +19,7 @@ import { test } from 'node:test';
 import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
 import { xenovaEmbedder } from '../src/infrastructure/embedders.js';
-import { indexNode, searchByRoom } from '../src/application/use-cases.js';
+import { indexNode, searchGlobal } from '../src/application/use-cases.js';
 
 // ─────────── corpus ───────────
 
@@ -79,7 +79,6 @@ test('onnx-bench: real all-MiniLM-L6-v2 IR metrics', async () => {
       await useCase({
         node: { id: item.id, label: item.label, file_type: 'document', source_file: `corpus/${item.id}` },
         text: `${item.label}. ${item.text}`,
-        room: 'bench',
       });
     }
     const indexTime = performance.now() - indexStart;
@@ -91,7 +90,7 @@ test('onnx-bench: real all-MiniLM-L6-v2 IR metrics', async () => {
 
     for (const q of QUERIES) {
       const start = performance.now();
-      const searchResult = (await searchByRoom(searchDeps)({ room: 'bench', text: q.query, k: 10 }))._unsafeUnwrap();
+      const searchResult = (await searchGlobal(searchDeps)({ text: q.query, k: 10 }))._unsafeUnwrap();
       const latency = performance.now() - start;
       const retrieved = searchResult.map(r => r.node_id);
       const relevant = new Set(q.expected);
