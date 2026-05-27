@@ -1,181 +1,113 @@
 /**
- * Share sync — y-protocols sync messages over a libp2p custom protocol.
+ * Share sync — y-protocols sync over libp2p (V5).
  *
- * Phase 16 core. Registers /wellinformed/share/1.0.0 on a libp2p node,
- * tracks one Y.Doc per shared room, opens one stream per (peer, room) pair,
- * exchanges sync step 1 + 2 messages, and drives a debounced flush of the
- * Y.Doc state into the in-memory graph. Every inbound and outbound update
- * passes through the secrets scanner (SEC-01..04 + SHARE-04 boundary).
+ * Single global Y.Doc at `~/.wellinformed/graph.ydoc`; sharing gate is per-node
+ * `node.private === false`; subscribe envelope carries `{type, protocol_version: 5}`
+ * (pre-V5 envelopes with a `rooms` array are rejected); stream + bandwidth-limiter
+ * keys are peerId only.
  *
- * CRITICAL invariants — every reviewer must check these:
- *   1. REMOTE_ORIGIN is the SAME symbol used both as Y.applyUpdate's
- *      transactionOrigin AND as the early-return check inside the
- *      outbound `doc.on('update', (u, origin) => ...)` handler. Without
- *      this filter, applying a remote update fires the observer which
- *      sends it back to the sender — infinite echo loop (Pitfall 1).
- *
- *   2. V1 encoding only. y-protocols/sync uses V1. NEVER call
- *      encodeStateAsUpdateV2, applyUpdateV2, or doc.on('updateV2').
- *      Mixing V1 and V2 silently corrupts state (Pitfall 2).
- *
- *   3. readSyncMessage only writes to the response encoder for SyncStep1
- *      messages. For SyncStep2 and Update messages the encoder is empty
- *      and we MUST NOT send a zero-length frame back. Always guard with
- *      `if (encoding.length(encoder) > 0)` (Pitfall 5).
- *
- *   4. lp.decode yields Uint8ArrayList values. Call .subarray() to get
- *      the flat Uint8Array that decoding.createDecoder() requires
- *      (Research Pattern 2 — Pitfall 4).
- *
- *   5. Inbound updates are scanned against buildPatterns BEFORE applyUpdate.
- *      Blocked updates are written to share-log.jsonl as
- *      { allowed: false, reason: '...' } and silently dropped — never
- *      back-propagated to the peer (don't leak the scan verdict).
- *
- *   6. The 150ms graph-flush debounce timer must be cleared on
- *      unregisterShareProtocol(), or it fires after the stream is closed
- *      and writes to a dead doc reference (Pitfall — debounce leak).
+ * Preserved invariants: (1) REMOTE_ORIGIN Symbol is both applyUpdate origin and
+ * outbound-observer early-return — echo-loop prevention; (2) V1 encoding only —
+ * never encodeStateAsUpdateV2/applyUpdateV2; (3) only emit y-protocols response
+ * frames when `encoding.length(enc) > 0`; (4) lp.decode yields Uint8ArrayList —
+ * call .subarray() before createDecoder; (5) classifyInboundShare + scanNode
+ * gates run before any graph upsert and blocked values are logged + dropped
+ * (never back-propagated); (6) debounce timers cleared on unregister.
  */
 import * as Y from 'yjs';
 import * as syncProtocol from 'y-protocols/sync';
 import * as encoding from 'lib0/encoding';
 import * as decoding from 'lib0/decoding';
 import * as lp from 'it-length-prefixed';
-
 import { ResultAsync, okAsync, errAsync } from 'neverthrow';
 import { appendFile, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
-
 import type { Libp2p, Stream, Connection } from '@libp2p/interface';
 import { peerIdFromString } from '@libp2p/peer-id';
 import { Uint8ArrayList } from 'uint8arraylist';
-
 import type { ShareError } from '../domain/errors.js';
 import { ShareError as SE, formatError } from '../domain/errors.js';
 import { buildPatterns, scanNode, type ShareableNode } from '../domain/sharing.js';
 import type { GraphNode, Graph } from '../domain/graph.js';
 import { upsertNode } from '../domain/graph.js';
-
 import { loadYDoc, saveYDoc } from './ydoc-store.js';
-import { loadSharedRooms } from './share-store.js';
 import type { GraphRepository } from './graph-repository.js';
-import { createRateLimiter, makePerPeerRoomKey, type RateLimiter } from './bandwidth-limiter.js';
+import { createRateLimiter, type RateLimiter } from './search-sync.js';
 import { metrics } from '../domain/metrics.js';
-import {
-  classifyInboundShare,
-  sharePolicyModeFromEnv,
-  type SharePolicyMode,
-} from '../domain/share-policy.js';
-import {
-  inProcessIdentityResolver,
-  type IdentityResolver,
-} from './identity-resolver.js';
-
-// ─────────────────────── constants ────────────────────────────────────────────
+import { classifyInboundShare, sharePolicyModeFromEnv, type SharePolicyMode } from '../domain/share-policy.js';
+import { inProcessIdentityResolver, type IdentityResolver } from './identity-resolver.js';
 
 export const SHARE_PROTOCOL_ID = '/wellinformed/share/1.0.0' as const;
+export const SHARE_PROTOCOL_VERSION = 5 as const;
 
-/**
- * REMOTE_ORIGIN — module-level Symbol used as transactionOrigin in every
- * Y.applyUpdate call AND as the early-return check inside the outbound
- * 'update' observer. THIS IS THE ECHO-LOOP PREVENTION (Pitfall 1).
- * Do not export a getter — exporting the Symbol ensures any test can
- * import it and assert that the same instance is reused everywhere.
- */
+/** Module-level Symbol for echo-loop prevention. */
 export const REMOTE_ORIGIN: unique symbol = Symbol('wellinformed-share-remote');
 
-const GRAPH_FLUSH_DEBOUNCE_MS = 150;     // within the 200ms ceiling from CONTEXT.md
+const GRAPH_FLUSH_DEBOUNCE_MS = 150;
 const MAX_INBOUND_STREAMS = 32;
-const MAP_NAME = 'nodes' as const;       // single Y.Map per Y.Doc
+const MAP_NAME = 'nodes' as const;
+const GRAPH_YDOC_FILE = 'graph.ydoc' as const;
+const VERDICT_METRIC = {
+  signed_ok: 'signed_ok', signed_invalid: 'signature_invalid',
+  unsigned_allowed: 'unsigned_allowed', unsigned_rejected: 'unsigned_rejected',
+  malformed: 'malformed',
+} as const;
 
-// ─────────────────────── FramedStream abstraction ─────────────────────────────
-
-/**
- * A thin wrapper around a libp2p Stream that encodes/decodes frames with
- * varint length prefixes via it-length-prefixed.
- *
- * write(bytes): length-prefixes and sends via stream.send().
- * The frameIter() generator yields complete decoded frames (as flat
- * Uint8Array) by piping the stream's async iterator through lp.decode().
- */
 interface FramedStream {
-  /** Send a length-prefixed frame. */
   write(data: Uint8Array): Promise<void>;
-  /** Async iterator of decoded frames (Uint8Array, already .subarray()'d). */
   frameIter(): AsyncGenerator<Uint8Array, void, undefined>;
-  /** Close the underlying stream. Best-effort. */
   close(): void;
 }
 
 const makeFramedStream = (stream: Stream): FramedStream => {
   const frameIter = async function* (): AsyncGenerator<Uint8Array, void, undefined> {
-    // lp.decode(source) accepts AsyncIterable<Uint8Array | Uint8ArrayList>
-    // The libp2p Stream IS an AsyncIterable<Uint8Array | Uint8ArrayList>.
-    for await (const msg of lp.decode(stream)) {
-      // Pitfall 4 — lp.decode yields Uint8ArrayList; .subarray() flattens to Uint8Array.
-      yield msg.subarray();
-    }
+    for await (const msg of lp.decode(stream)) yield msg.subarray();
   };
-
   return {
-    write: async (data: Uint8Array): Promise<void> => {
-      // lp.encode([data]) yields one length-prefixed Uint8ArrayList chunk.
-      for await (const chunk of lp.encode([data])) {
-        stream.send(chunk);
-      }
+    write: async (data) => {
+      for await (const chunk of lp.encode([data])) stream.send(chunk);
     },
     frameIter,
-    close: (): void => { try { void stream.close(); } catch { /* benign */ } },
+    close: () => { try { void stream.close(); } catch { /* benign */ } },
   };
 };
 
-// ─────────────────────── SubscribeRequest framing ─────────────────────────────
-
-/**
- * First frame on every new stream: a JSON SubscribeRequest listing the
- * sender's locally-shared rooms. The receiver replies with another
- * SubscribeRequest containing its own list. Both sides then open
- * y-protocols sync sessions for the INTERSECTION of the two lists.
- *
- * Wire format: a single length-prefixed frame containing utf-8 JSON.
- * Discrimination from y-protocols frames is positional — the SubscribeRequest
- * is always the FIRST frame on the stream, every subsequent frame is a
- * y-protocols message.
- */
 interface SubscribeRequest {
   readonly type: 'subscribe';
-  readonly rooms: readonly string[];
+  readonly protocol_version: 5;
 }
 
-const writeSubscribeRequest = async (
-  fs: FramedStream,
-  rooms: readonly string[],
-): Promise<void> => {
-  const payload: SubscribeRequest = { type: 'subscribe', rooms };
-  const bytes = new TextEncoder().encode(JSON.stringify(payload));
-  await fs.write(bytes);
+const writeSubscribeRequest = async (fs: FramedStream): Promise<void> => {
+  const payload: SubscribeRequest = { type: 'subscribe', protocol_version: SHARE_PROTOCOL_VERSION };
+  // Outbound V5 fence: defence-in-depth assert before transmit.
+  if (payload.protocol_version !== SHARE_PROTOCOL_VERSION) {
+    throw new Error(`share-sync: outbound SubscribeRequest must be V${SHARE_PROTOCOL_VERSION}`);
+  }
+  await fs.write(new TextEncoder().encode(JSON.stringify(payload)));
 };
 
+/** V5 inbound guards: reject `rooms` field; require `protocol_version === 5`. */
 const readSubscribeRequest = async (
   iter: AsyncGenerator<Uint8Array, void, undefined>,
-): Promise<readonly string[]> => {
+  peer: string,
+): Promise<void> => {
   const result = await iter.next();
   if (result.done || !result.value) throw new Error('stream ended before SubscribeRequest');
-  // result.value is already a flat Uint8Array from frameIter (Pitfall 4 handled there).
-  const text = new TextDecoder().decode(result.value);
-  const parsed = JSON.parse(text) as SubscribeRequest;
-  if (parsed.type !== 'subscribe' || !Array.isArray(parsed.rooms)) {
+  const p = JSON.parse(new TextDecoder().decode(result.value)) as Record<string, unknown>;
+  if (!p || typeof p !== 'object' || p.type !== 'subscribe') {
     throw new Error('malformed SubscribeRequest');
   }
-  return parsed.rooms;
+  if ('rooms' in p) {
+    throw new Error(`protocol mismatch: peer ${peer} sent pre-V5 SubscribeRequest with 'rooms' field`);
+  }
+  if (p.protocol_version !== SHARE_PROTOCOL_VERSION) {
+    throw new Error(`protocol mismatch: peer ${peer} protocol_version=${String(p.protocol_version)}; expected ${SHARE_PROTOCOL_VERSION}`);
+  }
 };
-
-// ─────────────────────── share-log.jsonl audit trail ──────────────────────────
 
 interface ShareLogEntry {
   readonly timestamp: string;
   readonly peer: string;
-  readonly room: string;
   readonly nodeId: string;
   readonly action: 'inbound' | 'outbound' | 'bandwidth_limited';
   readonly allowed: boolean;
@@ -186,39 +118,15 @@ const appendShareLog = async (logPath: string, entry: ShareLogEntry): Promise<vo
   try {
     await mkdir(dirname(logPath), { recursive: true });
     await appendFile(logPath, JSON.stringify(entry) + '\n');
-  } catch {
-    // best-effort — never fail a sync because the audit log can't be written
-  }
+  } catch { /* best-effort */ }
 };
 
-// ─────────────────────── sync engine helpers ──────────────────────────────────
-
-/**
- * Send sync step 1 (our state vector). Called on stream open by both sides.
- * The peer responds with sync step 2 (the missing updates) which we apply.
- */
 const sendSyncStep1 = async (fs: FramedStream, doc: Y.Doc): Promise<void> => {
   const enc = encoding.createEncoder();
   syncProtocol.writeSyncStep1(enc, doc);
   await fs.write(encoding.toUint8Array(enc));
 };
 
-/**
- * Process one inbound y-protocols frame.
- *
- * readSyncMessage:
- *   - msgType 0 (SyncStep1)  → writes SyncStep2 reply into responseEncoder
- *   - msgType 1 (SyncStep2)  → applies updates to doc, responseEncoder STAYS EMPTY
- *   - msgType 2 (Update)     → applies update to doc, responseEncoder STAYS EMPTY
- *
- * The applyUpdate calls inside readSyncMessage use REMOTE_ORIGIN as
- * transactionOrigin. This prevents echo loops in the outbound observer.
- *
- * CRITICAL: only emit a response frame if encoding.length(encoder) > 0.
- * Without this guard we send zero-length frames after every Update message,
- * which spams the peer with empty bytes and may break their decoder
- * (Pitfall 5, verified from y-protocols issue #15).
- */
 const handleInboundFrame = async (
   bytes: Uint8Array,
   doc: Y.Doc,
@@ -232,22 +140,6 @@ const handleInboundFrame = async (
   }
 };
 
-// ─────────────────────── outbound observer ────────────────────────────────────
-
-/**
- * Attach an outbound update observer to a Y.Doc and return a cleanup fn.
- *
- * The observer fires for EVERY Y.Doc change including updates we just
- * applied from a remote peer. The `if (origin === REMOTE_ORIGIN) return`
- * branch is the echo-loop prevention — without it, every applied remote
- * update would be re-broadcast back to the sender.
- *
- * Outbound updates are NOT scanned here directly because the update bytes
- * are an opaque CRDT delta. Instead, the application-layer code that calls
- * syncNodeIntoYDoc (see below) scans the node before inserting it. By the
- * time we reach this observer, all locally-originated mutations have already
- * passed the secrets scanner.
- */
 const attachOutboundObserver = (
   doc: Y.Doc,
   framedStreams: readonly FramedStream[],
@@ -257,30 +149,17 @@ const attachOutboundObserver = (
     const enc = encoding.createEncoder();
     syncProtocol.writeUpdate(enc, update);
     const bytes = encoding.toUint8Array(enc);
-    // Best-effort fan-out — write failures on a single stream do not
-    // halt other peers. The stream registry will reap dead streams on
-    // the next tick.
-    for (const fs of framedStreams) {
-      fs.write(bytes).catch(() => { /* dead stream — reaped elsewhere */ });
-    }
+    for (const fs of framedStreams) fs.write(bytes).catch(() => { /* dead — reaped */ });
   };
   doc.on('update', handler);
   return () => doc.off('update', handler);
 };
 
 /**
- * Sync a single GraphNode into a Y.Doc after secrets scanning and
- * optional bandwidth gating (NET-02).
- *
- * This is the OUTBOUND security + rate-limit gate. Local nodes that pass
- * the scan are upserted into the Y.Map; flagged nodes are blocked and logged.
- * If a `limiter` is provided and `consume()` returns false the update is
- * dropped with a `bandwidth_limited` audit entry — never propagated to the
- * peer so the remote side cannot infer the rate-limit verdict.
- *
- * Uses `undefined` as transactionOrigin (default) for locally-originated
- * edits so the outbound observer fires AND broadcasts. REMOTE_ORIGIN is
- * reserved for applyUpdate() to prevent echo loops — never use it here.
+ * Project a node to a ShareableNode and write into the global Y.Doc.
+ * Pipeline: bandwidth gate (NET-02) → secrets scan (SEC-01) → Y.Map upsert.
+ * Origin defaults to undefined so the outbound observer fires AND broadcasts.
+ * NEVER pass REMOTE_ORIGIN here — that is reserved for inbound applyUpdate.
  */
 export const syncNodeIntoYDoc = (
   doc: Y.Doc,
@@ -288,140 +167,104 @@ export const syncNodeIntoYDoc = (
   patterns: ReturnType<typeof buildPatterns>,
   logPath: string,
   ownPeerId: string,
-  room: string,
-  /** Optional per-peer-per-room rate limiter. Absent = no gating (backward-compat). */
+  /** Optional per-peer rate limiter (V5: no room dimension). */
   limiter?: RateLimiter,
 ): ResultAsync<void, ShareError> => {
-  // ── Bandwidth gate (NET-02) ──────────────────────────────────────────────────
-  // Check BEFORE secrets scan — if we are rate-limited there is no point
-  // scanning. The limiter key is scoped to the outgoing peer identity + room
-  // so each (peer, room) pair gets its own independent token budget.
-  if (limiter !== undefined) {
-    const key = makePerPeerRoomKey(ownPeerId, room);
-    if (!limiter.consume(key)) {
-      return ResultAsync.fromPromise(
-        appendShareLog(logPath, {
-          timestamp: new Date().toISOString(),
-          peer: ownPeerId,
-          room,
-          nodeId: node.id,
-          action: 'bandwidth_limited',
-          allowed: false,
-          reason: 'rate_limit_exceeded',
-        }),
-        () => SE.shareStoreWriteError(logPath, 'audit log append failed'),
-      ).andThen(() => errAsync<void, ShareError>(SE.bandwidthExceeded(ownPeerId, room)));
-    }
+  const writeErr = (): ShareError => SE.shareStoreWriteError(logPath, 'audit log append failed');
+  const log = (
+    action: ShareLogEntry['action'], allowed: boolean, reason?: string,
+  ): Promise<void> => appendShareLog(logPath, {
+    timestamp: new Date().toISOString(), peer: ownPeerId, nodeId: node.id, action, allowed, reason,
+  });
+
+  if (limiter !== undefined && !limiter.consume(ownPeerId)) {
+    return ResultAsync.fromPromise(log('bandwidth_limited', false, 'rate_limit_exceeded'), writeErr)
+      .andThen(() => errAsync<void, ShareError>(SE.bandwidthExceeded(ownPeerId, '')));
   }
 
-  // ── Secrets scan ────────────────────────────────────────────────────────────
   const scanResult = scanNode(node, patterns);
   if (scanResult.isErr()) {
     const reason = scanResult.error.matches.map((m) => `${m.field}/${m.patternName}`).join(',');
-    return ResultAsync.fromPromise(
-      appendShareLog(logPath, {
-        timestamp: new Date().toISOString(),
-        peer: ownPeerId,
-        room,
-        nodeId: node.id,
-        action: 'outbound',
-        allowed: false,
-        reason,
-      }),
-      () => SE.shareStoreWriteError(logPath, 'audit log append failed'),
-    ).andThen(() => errAsync<void, ShareError>(SE.shareAuditBlocked(room, 1)));
+    return ResultAsync.fromPromise(log('outbound', false, reason), writeErr)
+      .andThen(() => errAsync<void, ShareError>(SE.shareAuditBlocked('', 1)));
   }
-  const shareable: ShareableNode = scanResult.value;
+
+  // Y.Map upsert. ShareableNode.room is omitted from the wire payload (V5).
+  const s: ShareableNode = scanResult.value;
   doc.transact(() => {
     const map = doc.getMap(MAP_NAME) as Y.Map<unknown>;
-    map.set(shareable.id, {
-      id: shareable.id,
-      label: shareable.label,
-      room: shareable.room,
-      embedding_id: shareable.embedding_id,
-      source_uri: shareable.source_uri,
-      fetched_at: shareable.fetched_at,
+    map.set(s.id, {
+      id: s.id, label: s.label,
+      embedding_id: s.embedding_id, source_uri: s.source_uri, fetched_at: s.fetched_at,
     });
   });
-  return ResultAsync.fromPromise(
-    appendShareLog(logPath, {
-      timestamp: new Date().toISOString(),
-      peer: ownPeerId,
-      room,
-      nodeId: node.id,
-      action: 'outbound',
-      allowed: true,
-    }),
-    () => SE.shareStoreWriteError(logPath, 'audit log append failed'),
-  );
+
+  return ResultAsync.fromPromise(log('outbound', true), writeErr);
 };
 
-// ─────────────────────── inbound observer + debounced graph flush ──────────────
+/**
+ * V5 sharing gate: every node with `private === false` is a federation
+ * candidate. Replaces the prior room-authorization pipeline.
+ */
+export const collectShareable = (graph: Graph): readonly GraphNode[] =>
+  graph.json.nodes.filter((n: GraphNode) => n.private === false);
+
+interface Screened { readonly payload: ShareableNode; readonly signedBy?: string }
+
+/** Policy gate (crypto trust). Bumps metric, records signed-DID provenance. */
+const screenInbound = (
+  value: unknown,
+  policyMode: SharePolicyMode,
+  identityResolver: IdentityResolver,
+): Screened | null => {
+  const c = classifyInboundShare(value, policyMode);
+  metrics.counter(`share.inbound.${VERDICT_METRIC[c.verdict]}`).inc();
+  if (c.verdict === 'signed_ok') {
+    identityResolver.record({
+      did: c.verified.verified_user_did,
+      device_id: c.verified.verified_device_id,
+      room: '',  // V5: dim dropped; arg kept for legacy resolver shape
+    });
+    return { payload: c.payload, signedBy: c.verified.verified_user_did };
+  }
+  return c.verdict === 'unsigned_allowed' ? { payload: c.payload } : null;
+};
+
+const buildImportedNode = (peer: string, v: ShareableNode, signedBy?: string): GraphNode => ({
+  id: v.id, label: v.label,
+  file_type: 'document', source_file: `peer:${peer}`, private: false,
+  embedding_id: v.embedding_id, source_uri: v.source_uri, fetched_at: v.fetched_at,
+  _wellinformed_source_peer: peer,
+  ...(signedBy ? { _wellinformed_signed_by: signedBy } : {}),
+} as GraphNode);
+
+const logInbound = (logPath: string, peer: string, nodeId: string, reason: string): void => {
+  void appendShareLog(logPath, {
+    timestamp: new Date().toISOString(),
+    peer, nodeId, action: 'inbound', allowed: false, reason,
+  });
+};
 
 /**
- * Attach a Y.Map observer that writes incoming nodes into the in-memory
- * graph and persists graph.json on a 150ms debounce.
- *
- * Inbound nodes:
- *   1. Are scanned via scanNode (SECRETS GATE — symmetric with outbound)
- *   2. Carry _wellinformed_source_peer: <peerId> as a provenance tag
- *   3. Pass through upsertNode() into the in-memory Graph
- *   4. Trigger a debounced graphRepo.save() after 150ms idle
- *
- * Blocked inbound updates are logged and silently dropped (no back-prop).
+ * Y.Map observer: classifyInboundShare → scanNode → upsertNode, persisted on a
+ * 150 ms debounce. Blocked values are removed from the Y.Map and logged —
+ * never back-propagated to the peer.
  */
 const attachInboundObserver = (
   doc: Y.Doc,
-  room: string,
-  remotePeerId: string,
+  peer: string,
   patterns: ReturnType<typeof buildPatterns>,
   graphRepo: GraphRepository,
   logPath: string,
   policyMode: SharePolicyMode,
   identityResolver: IdentityResolver,
 ): { detach: () => void; cancel: () => void } => {
-  let pendingMerge: Uint8Array[] = [];
+  let dirty = false;
   let timer: NodeJS.Timeout | null = null;
 
-  /**
-   * Run one Y.Map value through the policy gate. Returns the payload
-   * to ingest plus the verified author DID (when signed), or null if
-   * the value should be dropped (signature failed, strict-mode-rejected,
-   * or malformed). Drives both the inbound scan and the flush path so
-   * both see the same trust verdict.
-   */
-  const screen = (
-    value: unknown,
-  ): { payload: ShareableNode; signedBy?: string } | null => {
-    const c = classifyInboundShare(value, policyMode);
-    switch (c.verdict) {
-      case 'signed_ok':
-        metrics.counter('share.inbound.signed_ok').inc();
-        identityResolver.record({
-          did: c.verified.verified_user_did,
-          device_id: c.verified.verified_device_id,
-          room,
-        });
-        return { payload: c.payload, signedBy: c.verified.verified_user_did };
-      case 'signed_invalid':
-        metrics.counter('share.inbound.signature_invalid').inc();
-        return null;
-      case 'unsigned_allowed':
-        metrics.counter('share.inbound.unsigned_allowed').inc();
-        return { payload: c.payload };
-      case 'unsigned_rejected':
-        metrics.counter('share.inbound.unsigned_rejected').inc();
-        return null;
-      case 'malformed':
-        metrics.counter('share.inbound.malformed').inc();
-        return null;
-    }
-  };
-
   const flush = async (): Promise<void> => {
-    if (pendingMerge.length === 0) return;
-    pendingMerge = [];
-    timer = null;
+    if (!dirty) return;
+    dirty = false; timer = null;
     const loaded = await graphRepo.load();
     if (loaded.isErr()) {
       console.error(`share-sync: graph load failed: ${formatError(loaded.error)}`);
@@ -430,113 +273,48 @@ const attachInboundObserver = (
     let graph: Graph = loaded.value;
     const map = doc.getMap(MAP_NAME) as Y.Map<unknown>;
     map.forEach((value) => {
-      const screened = screen(value);
-      if (!screened) return;
-      const v = screened.payload;
-      // Reconstruct a GraphNode from the ShareableNode + provenance.
-      // file_type/source_file are required by GraphNode but excluded from
-      // the wire — fill with sentinel values that mark imported provenance.
-      const imported: GraphNode = {
-        id: v.id,
-        label: v.label,
-        file_type: 'document',
-        source_file: `peer:${remotePeerId}`,
-        room: v.room ?? room,
-        embedding_id: v.embedding_id,
-        source_uri: v.source_uri,
-        fetched_at: v.fetched_at,
-        _wellinformed_source_peer: remotePeerId,
-        ...(screened.signedBy ? { _wellinformed_signed_by: screened.signedBy } : {}),
-      } as GraphNode;
-      const upserted = upsertNode(graph, imported);
-      if (upserted.isOk()) graph = upserted.value;
+      const s = screenInbound(value, policyMode, identityResolver);
+      if (!s) return;
+      const r = upsertNode(graph, buildImportedNode(peer, s.payload, s.signedBy));
+      if (r.isOk()) graph = r.value;
     });
     const saved = await graphRepo.save(graph);
-    if (saved.isErr()) {
-      console.error(`share-sync: graph save failed: ${formatError(saved.error)}`);
-    }
+    if (saved.isErr()) console.error(`share-sync: graph save failed: ${formatError(saved.error)}`);
   };
 
   const handler = (_event: Y.YEvent<Y.Map<unknown>>): void => {
-    // Inbound scan for the SECRET BOUNDARY + policy gate. Both run
-    // before the value is allowed to influence graph.json. Order:
-    // policy first (cryptographic trust) — secrets scan after, against
-    // the unwrapped payload — so a maliciously-signed payload still
-    // gets the secrets gate and a plain payload that strict mode would
-    // reject doesn't waste a regex pass.
+    // Policy first (crypto trust) → secrets scan against unwrapped payload.
     const map = doc.getMap(MAP_NAME) as Y.Map<unknown>;
     map.forEach((value, key) => {
-      const screened = screen(value);
-      if (!screened) {
-        // Policy dropped — remove from the local Y.Map so it doesn't
-        // re-fire on the next observe cycle and so a future flush
-        // doesn't see it.
+      const s = screenInbound(value, policyMode, identityResolver);
+      if (!s) {
         map.delete(key);
-        void appendShareLog(logPath, {
-          timestamp: new Date().toISOString(),
-          peer: remotePeerId,
-          room,
-          nodeId: typeof (value as { id?: unknown })?.id === 'string'
-            ? ((value as { id: string }).id)
-            : '<unknown>',
-          action: 'inbound',
-          allowed: false,
-          reason: 'policy_drop',
-        });
+        const nid = typeof (value as { id?: unknown })?.id === 'string'
+          ? (value as { id: string }).id : '<unknown>';
+        logInbound(logPath, peer, nid, 'policy_drop');
         return;
       }
-      const v = screened.payload;
-      const candidate: GraphNode = {
-        id: v.id,
-        label: v.label,
-        file_type: 'document',
-        source_file: `peer:${remotePeerId}`,
-        room: v.room ?? room,
-        embedding_id: v.embedding_id,
-        source_uri: v.source_uri,
-        fetched_at: v.fetched_at,
-      } as GraphNode;
-      const scan = scanNode(candidate, patterns);
+      const scan = scanNode(buildImportedNode(peer, s.payload), patterns);
       if (scan.isErr()) {
-        const reason = scan.error.matches.map((m) => `${m.field}/${m.patternName}`).join(',');
-        // Remove the offending key from the local Y.Map (don't propagate it
-        // into graph.json) and log it as blocked.
         map.delete(key);
-        void appendShareLog(logPath, {
-          timestamp: new Date().toISOString(),
-          peer: remotePeerId,
-          room,
-          nodeId: v.id,
-          action: 'inbound',
-          allowed: false,
-          reason,
-        });
+        logInbound(logPath, peer, s.payload.id,
+          scan.error.matches.map((m) => `${m.field}/${m.patternName}`).join(','));
       }
     });
-
-    // Schedule a debounced flush of graph.json.
     if (timer) clearTimeout(timer);
-    pendingMerge.push(new Uint8Array());  // sentinel — actual update bytes are
-                                          // already inside the doc; we use the
-                                          // queue length as a "dirty" flag.
+    dirty = true;
     timer = setTimeout(() => { void flush(); }, GRAPH_FLUSH_DEBOUNCE_MS);
   };
 
   const map = doc.getMap(MAP_NAME) as Y.Map<unknown>;
   map.observe(handler);
-
   return {
     detach: () => map.unobserve(handler),
     cancel: () => { if (timer) { clearTimeout(timer); timer = null; } },
   };
 };
 
-// ─────────────────────── stream registry + protocol registration ───────────────
-
-/**
- * Per-(peer, room) stream registry. Key = `${peerId}::${room}`.
- * Holds the FramedStream wrapper plus the cleanup fns for the observers.
- */
+/** Per-peer stream entry. V5: key is peerId only. */
 interface StreamEntry {
   readonly fs: FramedStream;
   readonly stream: Stream;
@@ -550,37 +328,15 @@ export interface ShareSyncRegistry {
   readonly homePath: string;
   readonly graphRepo: GraphRepository;
   readonly patterns: ReturnType<typeof buildPatterns>;
-  readonly docs: Map<string, Y.Doc>;                  // room → Y.Doc
-  readonly streams: Map<string, StreamEntry>;          // `${peer}::${room}` → entry
-  readonly logPath: string;                            // share-log.jsonl
-  readonly ydocsDir: string;                           // ~/.wellinformed/ydocs
-  readonly sharedRoomsPath: string;                    // shared-rooms.json
-  /**
-   * Optional per-peer-per-room outbound rate limiter (NET-02).
-   * When absent, the bandwidth gate is a no-op — existing tests remain
-   * backward-compatible without providing a limiter. Set by the daemon
-   * via createShareSyncRegistry when `config.peer.bandwidth` is present.
-   */
+  /** Single global Y.Doc — lazy-loaded on first stream session. */
+  doc: Y.Doc | null;
+  /** peerId → StreamEntry (V5: no composite key). */
+  readonly streams: Map<string, StreamEntry>;
+  readonly logPath: string;
+  /** Absolute path to the single global graph.ydoc file. */
+  readonly ydocPath: string;
   readonly limiter?: RateLimiter;
-  /**
-   * Inbound share policy mode (round-2 architecture review step A).
-   *
-   *   soft   — accept both signed envelopes and plain ShareableNodes
-   *            (legacy / pre-flag peers); verify when signed, ingest
-   *            either way. Default — keeps existing federation alive
-   *            during the rollout window.
-   *   strict — only signed envelopes survive. Plain payloads are
-   *            dropped with `share.inbound.rejected_unsigned`. Set
-   *            via WELLINFORMED_REQUIRE_SIGNED_NODES=1.
-   */
   readonly policyMode: SharePolicyMode;
-  /**
-   * Identity resolver — records every successful envelope verify so
-   * `wellinformed identity peers` (future) and audit logs can answer
-   * "who signed what, when?" The current MVP is TOFU-style + in-memory;
-   * a follow-on commit drops in did:web HTTP resolution behind the
-   * same port without changing share-sync.
-   */
   readonly identityResolver: IdentityResolver;
 }
 
@@ -589,74 +345,48 @@ export const createShareSyncRegistry = (deps: {
   homePath: string;
   graphRepo: GraphRepository;
   patterns: ReturnType<typeof buildPatterns>;
-  /** Rate limit for outbound share updates. Omit to skip bandwidth gating (backward-compat). */
+  /** Outbound rate cap. Omit to skip bandwidth gating. V5: peer-only key. */
   maxUpdatesPerSecPerPeerPerRoom?: number;
-  /** Override policy mode (defaults to env). Used by tests. */
   policyMode?: SharePolicyMode;
-  /** Override identity resolver (defaults to in-memory TOFU). Used by tests. */
   identityResolver?: IdentityResolver;
-}): ShareSyncRegistry => ({
-  node: deps.node,
-  homePath: deps.homePath,
-  graphRepo: deps.graphRepo,
-  patterns: deps.patterns,
-  docs: new Map(),
-  streams: new Map(),
-  logPath: join(deps.homePath, 'share-log.jsonl'),
-  ydocsDir: join(deps.homePath, 'ydocs'),
-  sharedRoomsPath: join(deps.homePath, 'shared-rooms.json'),
-  limiter:
-    deps.maxUpdatesPerSecPerPeerPerRoom !== undefined
-      ? createRateLimiter(deps.maxUpdatesPerSecPerPeerPerRoom, deps.maxUpdatesPerSecPerPeerPerRoom)
-      : undefined,
-  policyMode: deps.policyMode ?? sharePolicyModeFromEnv(),
-  identityResolver: deps.identityResolver ?? inProcessIdentityResolver(),
-});
+}): ShareSyncRegistry => {
+  const r = deps.maxUpdatesPerSecPerPeerPerRoom;
+  return {
+    node: deps.node, homePath: deps.homePath, graphRepo: deps.graphRepo,
+    patterns: deps.patterns, doc: null, streams: new Map(),
+    logPath: join(deps.homePath, 'share-log.jsonl'),
+    ydocPath: join(deps.homePath, GRAPH_YDOC_FILE),
+    limiter: r !== undefined ? createRateLimiter(r, r) : undefined,
+    policyMode: deps.policyMode ?? sharePolicyModeFromEnv(),
+    identityResolver: deps.identityResolver ?? inProcessIdentityResolver(),
+  };
+};
 
-const ydocPathFor = (registry: ShareSyncRegistry, room: string): string =>
-  join(registry.ydocsDir, `${room}.ydoc`);
-
-/** Load (or fetch from cache) the Y.Doc for a room. Idempotent. */
-const getOrLoadDoc = (
-  registry: ShareSyncRegistry,
-  room: string,
-): ResultAsync<Y.Doc, ShareError> => {
-  const cached = registry.docs.get(room);
-  if (cached) return okAsync(cached);
-  return loadYDoc(ydocPathFor(registry, room)).map((doc) => {
-    registry.docs.set(room, doc);
+const getOrLoadDoc = (registry: ShareSyncRegistry): ResultAsync<Y.Doc, ShareError> => {
+  if (registry.doc) return okAsync(registry.doc);
+  return loadYDoc(registry.ydocPath).map((doc) => {
+    registry.doc = doc;
     return doc;
   });
 };
 
-/**
- * Register the /wellinformed/share/1.0.0 protocol on the libp2p node.
- * Called once at sync engine startup. Idempotent — calling twice unhandles
- * first to avoid duplicate handlers.
- */
 export const registerShareProtocol = (
   registry: ShareSyncRegistry,
 ): ResultAsync<void, ShareError> =>
-  ResultAsync.fromPromise(
-    (async () => {
-      // Best-effort cleanup of any prior registration (idempotent).
-      try { await registry.node.unhandle(SHARE_PROTOCOL_ID); } catch { /* benign */ }
-      await registry.node.handle(
-        SHARE_PROTOCOL_ID,
-        async (stream: Stream, connection: Connection) => {
-          const peerIdStr = connection.remotePeer.toString();
-          await runStreamSession(registry, stream, peerIdStr, /* initiator */ false);
-        },
-        { runOnLimitedConnection: false, maxInboundStreams: MAX_INBOUND_STREAMS },
-      );
-    })(),
-    (e) => SE.syncProtocolError('local', `handle() failed: ${(e as Error).message}`),
-  );
+  ResultAsync.fromPromise((async () => {
+    try { await registry.node.unhandle(SHARE_PROTOCOL_ID); } catch { /* benign */ }
+    await registry.node.handle(SHARE_PROTOCOL_ID,
+      async (stream: Stream, connection: Connection) => {
+        await runStreamSession(registry, stream, connection.remotePeer.toString(), false);
+      },
+      { runOnLimitedConnection: false, maxInboundStreams: MAX_INBOUND_STREAMS },
+    );
+  })(), (e) => SE.syncProtocolError('local', `handle() failed: ${(e as Error).message}`));
 
 export const unregisterShareProtocol = (
   registry: ShareSyncRegistry,
 ): ResultAsync<void, ShareError> => {
-  // Cancel every debounce timer first (Pitfall — debounce leak).
+  // Cancel every debounce timer (Pitfall — debounce leak).
   for (const entry of registry.streams.values()) {
     entry.cancelDebounce();
     entry.detachInbound();
@@ -670,29 +400,19 @@ export const unregisterShareProtocol = (
   );
 };
 
-/**
- * Open an outbound share stream to a specific peer for a specific room.
- * Used when this node calls `share room X` for a peer that is already
- * connected, OR when a new peer connects and we have rooms to push.
- */
+/** Open outbound share stream to a peer (V5: no room argument). */
 export const openShareStream = (
   registry: ShareSyncRegistry,
   peerIdStr: string,
-  _room: string,
 ): ResultAsync<void, ShareError> =>
-  ResultAsync.fromPromise(
-    (async () => {
-      const pid = peerIdFromString(peerIdStr);
-      const stream = await registry.node.dialProtocol(pid, SHARE_PROTOCOL_ID);
-      await runStreamSession(registry, stream, peerIdStr, /* initiator */ true);
-    })(),
-    (e) => SE.syncProtocolError(peerIdStr, `dialProtocol failed: ${(e as Error).message}`),
-  );
+  ResultAsync.fromPromise((async () => {
+    const stream = await registry.node.dialProtocol(peerIdFromString(peerIdStr), SHARE_PROTOCOL_ID);
+    await runStreamSession(registry, stream, peerIdStr, true);
+  })(), (e) => SE.syncProtocolError(peerIdStr, `dialProtocol failed: ${(e as Error).message}`));
 
 /**
- * Run one stream session — exchange SubscribeRequests, open per-room
- * Y.Doc bridges for the intersection, run sync step 1+2, then loop on
- * incoming frames until the stream closes.
+ * Stream session: V5 SubscribeRequest exchange → attach observers to the global
+ * Y.Doc → sync step 1+2 → loop on incoming frames until close.
  */
 const runStreamSession = async (
   registry: ShareSyncRegistry,
@@ -701,169 +421,79 @@ const runStreamSession = async (
   initiator: boolean,
 ): Promise<void> => {
   const fs = makeFramedStream(stream);
-  // Create a single shared iterator so SubscribeRequest frames and
-  // y-protocols frames all consume from the same underlying stream.
   const iter = fs.frameIter();
 
-  // Step A: SubscribeRequest exchange — both sides send their list,
-  // both sides read the peer's list. The intersection is what we sync.
-  const local = await loadSharedRooms(registry.sharedRoomsPath);
-  if (local.isErr()) {
-    fs.close();
-    return;
-  }
-  const localRoomNames = local.value.rooms.map((r) => r.name);
-
-  // Order: initiator writes first then reads, listener reads first then writes
-  // to avoid both sides blocking on read.
-  let remoteRoomNames: readonly string[] = [];
   try {
+    // Initiator writes first; listener inverse — avoid double-read block.
     if (initiator) {
-      await writeSubscribeRequest(fs, localRoomNames);
-      remoteRoomNames = await readSubscribeRequest(iter);
+      await writeSubscribeRequest(fs);
+      await readSubscribeRequest(iter, remotePeerIdStr);
     } else {
-      remoteRoomNames = await readSubscribeRequest(iter);
-      await writeSubscribeRequest(fs, localRoomNames);
+      await readSubscribeRequest(iter, remotePeerIdStr);
+      await writeSubscribeRequest(fs);
     }
-  } catch {
-    fs.close();
-    return;
-  }
-  const intersection = localRoomNames.filter((r) => remoteRoomNames.includes(r));
-
-  // Phase 16 simplification: pick the FIRST intersected room for this stream.
-  // openShareStream is called per-room by the daemon tick, so multi-room
-  // syncing is handled by multiple openShareStream calls, not by multiplexing
-  // inside one stream session.
-  const room = intersection[0];
-  if (!room) {
+  } catch (e) {
+    console.error(`share-sync: ${(e as Error).message}`);
     fs.close();
     return;
   }
 
-  const docResult = await getOrLoadDoc(registry, room);
-  if (docResult.isErr()) {
-    fs.close();
-    return;
-  }
+  const docResult = await getOrLoadDoc(registry);
+  if (docResult.isErr()) { fs.close(); return; }
   const doc = docResult.value;
 
   const inbound = attachInboundObserver(
-    doc,
-    room,
-    remotePeerIdStr,
-    registry.patterns,
-    registry.graphRepo,
-    registry.logPath,
-    registry.policyMode,
-    registry.identityResolver,
+    doc, remotePeerIdStr, registry.patterns, registry.graphRepo,
+    registry.logPath, registry.policyMode, registry.identityResolver,
   );
   const detachOutbound = attachOutboundObserver(doc, [fs]);
 
-  const key = `${remotePeerIdStr}::${room}`;
-  registry.streams.set(key, {
-    fs,
-    stream,
-    detachInbound: inbound.detach,
-    cancelDebounce: inbound.cancel,
-    detachOutbound,
+  registry.streams.set(remotePeerIdStr, {
+    fs, stream,
+    detachInbound: inbound.detach, cancelDebounce: inbound.cancel, detachOutbound,
   });
 
-  // Step C: Initial sync exchange — write step 1, then loop on frames.
   try {
     await sendSyncStep1(fs, doc);
     for await (const flat of iter) {
-      // flat is already a Uint8Array (subarray()'d in frameIter).
       await handleInboundFrame(flat, doc, fs);
-      // Persist the .ydoc snapshot after every applied frame so a crash
-      // does not lose progress.
-      void saveYDoc(ydocPathFor(registry, room), doc);
+      // Persist .ydoc snapshot after every applied frame (V1 encoding only).
+      void saveYDoc(registry.ydocPath, doc);
     }
   } finally {
     inbound.detach();
     inbound.cancel();
     detachOutbound();
-    registry.streams.delete(key);
+    registry.streams.delete(remotePeerIdStr);
   }
 };
 
-// ─────────────────────── closeUnsharedStreams helper ──────────────────────────
-
 /**
- * Close any active streams whose room is no longer in the shared-rooms list.
- * Called FIRST on every runShareSyncTick — enforces the unshare→close path
- * on the daemon's normal cadence (Blocker 3 in the plan checker).
- *
- * Mutates `registry.streams` by removing closed entries.
- */
-export const closeUnsharedStreams = (
-  registry: ShareSyncRegistry,
-  currentSharedRooms: readonly string[],
-): void => {
-  for (const [key, entry] of registry.streams.entries()) {
-    // Key format: `${peerId}::${room}`
-    const room = key.split('::').slice(1).join('::');
-    if (!currentSharedRooms.includes(room)) {
-      entry.cancelDebounce();
-      entry.detachInbound();
-      entry.detachOutbound();
-      entry.fs.close();
-      registry.streams.delete(key);
-    }
-  }
-};
-
-// ─────────────────────── runShareSyncTick ─────────────────────────────────────
-
-/**
- * Single tick of the share sync engine — called by the daemon loop.
- *
- * Protocol:
- *   1. Load shared-rooms.json
- *   2. Close streams for rooms no longer shared (via closeUnsharedStreams)
- *   3. For each (connected peer, shared room) pair without an open stream,
- *      open a new outbound stream
- *
- * Idempotent: skips pairs that already have an open stream.
- * Returns { opened } — the count of newly opened streams.
+ * Single daemon tick. V5: for each connected peer without an open stream,
+ * dial one outbound. The full non-private graph syncs via y-protocols.
+ * Idempotent: skips peers with an existing stream.
  */
 export const runShareSyncTick = (
   registry: ShareSyncRegistry,
-): ResultAsync<{ readonly opened: number }, ShareError> =>
-  loadSharedRooms(registry.sharedRoomsPath).andThen((file) => {
-    const currentRoomNames = file.rooms.map((r) => r.name);
+): ResultAsync<{ readonly opened: number }, ShareError> => {
+  const peers = registry.node.getPeers().map((p) => p.toString());
+  if (peers.length === 0) return okAsync({ opened: 0 });
 
-    // MUST run first — enforce unshare→close before opening new streams
-    closeUnsharedStreams(registry, currentRoomNames);
-
-    if (file.rooms.length === 0) return okAsync({ opened: 0 });
-    const peers = registry.node.getPeers().map((p) => p.toString());
-    if (peers.length === 0) return okAsync({ opened: 0 });
-
-    const tasks: Array<Promise<void>> = [];
-    let opened = 0;
-    for (const peerId of peers) {
-      for (const room of file.rooms) {
-        const key = `${peerId}::${room.name}`;
-        if (registry.streams.has(key)) continue;
-        opened++;
-        tasks.push(
-          openShareStream(registry, peerId, room.name)
-            .match(
-              () => undefined,
-              (e) => { console.error(`share-sync: ${formatError(e)}`); },
-            ),
-        );
-      }
-    }
-    return ResultAsync.fromPromise(
-      Promise.all(tasks).then(() => ({ opened })),
-      (e) => SE.syncProtocolError('local', (e as Error).message),
+  const tasks: Array<Promise<void>> = [];
+  let opened = 0;
+  for (const peerId of peers) {
+    if (registry.streams.has(peerId)) continue;
+    opened++;
+    tasks.push(
+      openShareStream(registry, peerId)
+        .match(() => undefined, (e) => { console.error(`share-sync: ${formatError(e)}`); }),
     );
-  });
+  }
+  return ResultAsync.fromPromise(
+    Promise.all(tasks).then(() => ({ opened })),
+    (e) => SE.syncProtocolError('local', (e as Error).message),
+  );
+};
 
-// ─────────────────────── ensure Uint8ArrayList import used ───────────────────
-
-// Uint8ArrayList is used for type-narrowing in the generic stream handling path.
-// This export-type reference prevents TS from eliding the import in strict mode.
+// Type re-export to prevent strict-mode import elision.
 export type { Uint8ArrayList };
