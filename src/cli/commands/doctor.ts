@@ -18,7 +18,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -185,6 +185,95 @@ function checkSchemaPatch(importCheck: Check): Check {
   };
 }
 
+/**
+ * V5 schema readiness — Phase 24 (ROOMS-DEL-06).
+ *
+ * Samples up to 10 random nodes from graph.json. If ANY carries a legacy
+ * `room` field the user is nudged to run `wellinformed migrate v5`. Also
+ * flags residual rooms.json / shared-rooms.json artifacts from the V4 era.
+ *
+ * Non-blocking: the V5 runtime tolerates orphan fields, this is a hygiene
+ * nag that persists until the user opts into the one-way migration.
+ */
+function checkV5SchemaReadiness(): Check {
+  const home = process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
+  const graphPath = join(home, 'graph.json');
+  const roomsJsonPath = join(home, 'rooms.json');
+  const sharedRoomsJsonPath = join(home, 'shared-rooms.json');
+
+  const artifacts: string[] = [];
+  if (existsSync(roomsJsonPath)) artifacts.push('rooms.json');
+  if (existsSync(sharedRoomsJsonPath)) artifacts.push('shared-rooms.json');
+
+  if (!existsSync(graphPath)) {
+    if (artifacts.length === 0) {
+      return {
+        name: 'V5 schema readiness',
+        ok: true,
+        detail: 'graph not yet populated — V5 ready',
+        blocking: false,
+      };
+    }
+    return {
+      name: 'V5 schema readiness',
+      ok: false,
+      detail: `V4 artifacts present: ${artifacts.join(', ')}`,
+      blocking: false,
+      fix: 'run `wellinformed migrate v5` to remove them',
+    };
+  }
+
+  let v4HitCount = 0;
+  let sampleSize = 0;
+  try {
+    const parsed = JSON.parse(readFileSync(graphPath, 'utf8')) as { nodes?: unknown[] };
+    const nodes = Array.isArray(parsed.nodes) ? parsed.nodes : [];
+    const sampleN = Math.min(10, nodes.length);
+    sampleSize = sampleN;
+    const seen = new Set<number>();
+    while (seen.size < sampleN) seen.add(Math.floor(Math.random() * nodes.length));
+    for (const idx of seen) {
+      const n = nodes[idx] as { room?: unknown };
+      if (n && typeof n.room === 'string' && n.room.length > 0) v4HitCount += 1;
+    }
+  } catch (e) {
+    return {
+      name: 'V5 schema readiness',
+      ok: false,
+      detail: `could not parse graph.json: ${(e as Error).message}`,
+      blocking: false,
+    };
+  }
+
+  if (v4HitCount > 0) {
+    const artifactDetail = artifacts.length > 0 ? ` + ${artifacts.join(', ')}` : '';
+    return {
+      name: 'V5 schema readiness',
+      ok: false,
+      detail: `V4 data detected: ${v4HitCount}/${sampleSize} sampled nodes still have a 'room' field${artifactDetail}`,
+      blocking: false,
+      fix: 'run `wellinformed migrate v5` to upgrade',
+    };
+  }
+
+  if (artifacts.length > 0) {
+    return {
+      name: 'V5 schema readiness',
+      ok: false,
+      detail: `V4 artifacts present: ${artifacts.join(', ')}`,
+      blocking: false,
+      fix: 'run `wellinformed migrate v5` to remove them',
+    };
+  }
+
+  return {
+    name: 'V5 schema readiness',
+    ok: true,
+    detail: `${sampleSize}/${sampleSize} sampled nodes V5-clean`,
+    blocking: false,
+  };
+}
+
 function render(c: Check): string {
   const mark = c.ok ? '[ ok ]' : c.blocking ? '[fail]' : '[skip]';
   const line = `${mark} ${c.name.padEnd(28)} ${c.detail}`;
@@ -222,6 +311,7 @@ export async function doctor(args: string[]): Promise<number> {
     checkVenv(),
     graphImport,
     checkSchemaPatch(graphImport),
+    checkV5SchemaReadiness(),
   ];
 
   console.log('wellinformed doctor\n');
