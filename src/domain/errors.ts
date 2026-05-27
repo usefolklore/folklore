@@ -175,27 +175,32 @@ export const ShareError = {
 // ─────────────────────── SearchError ──────────────────────
 
 /**
- * Errors from the federated search bounded context (Phase 17).
+ * Errors from the federated search bounded context (Phase 17, V5 cutover Phase 24).
  *
- * - SearchDimensionMismatch — inbound embedding length != 384 (local model dim)
- * - SearchUnauthorized      — peer requested a room not in local shared-rooms.json
- * - SearchRateLimited       — peer exceeded token bucket (10 req/s, burst 30)
- * - SearchProtocolError     — libp2p stream/dial/frame decode failure
- * - SearchTimeout           — per-peer 2s deadline exceeded during outbound fan-out
+ * - SearchDimensionMismatch  — inbound embedding length != 384 (local model dim)
+ * - SearchRateLimited        — peer exceeded token bucket (10 req/s, burst 30)
+ * - SearchProtocolError      — libp2p stream/dial/frame decode failure
+ * - SearchTimeout            — per-peer 2s deadline exceeded during outbound fan-out
+ * - SearchProtocolMismatch   — V5: peer sent a pre-V5 envelope (e.g. `room` field or
+ *                              missing `protocol_version: 5`). Hard cutover — see
+ *                              docs/architecture/V5-PROTOCOL.md.
+ *
+ * SearchUnauthorized was removed in V5 — room-level authorization no longer exists;
+ * the per-node `private: boolean` gate replaces it (ROOMS-DEL-03 / ROOMS-DEL-05).
  */
 export type SearchError =
   | { readonly type: 'SearchDimensionMismatch'; readonly expected: number; readonly got: number }
-  | { readonly type: 'SearchUnauthorized';      readonly peer: string; readonly room: string }
   | { readonly type: 'SearchRateLimited';       readonly peer: string }
   | { readonly type: 'SearchProtocolError';     readonly peer: string; readonly message: string }
-  | { readonly type: 'SearchTimeout';           readonly peer: string; readonly elapsedMs: number };
+  | { readonly type: 'SearchTimeout';           readonly peer: string; readonly elapsedMs: number }
+  | { readonly type: 'SearchProtocolMismatch';  readonly message: string };
 
 export const SearchError = {
   dimensionMismatch: (expected: number, got: number): SearchError => ({ type: 'SearchDimensionMismatch', expected, got }),
-  unauthorized:      (peer: string, room: string): SearchError    => ({ type: 'SearchUnauthorized', peer, room }),
   rateLimited:       (peer: string): SearchError                  => ({ type: 'SearchRateLimited', peer }),
   protocolError:     (peer: string, message: string): SearchError => ({ type: 'SearchProtocolError', peer, message }),
   timeout:           (peer: string, elapsedMs: number): SearchError => ({ type: 'SearchTimeout', peer, elapsedMs }),
+  protocolMismatch:  (message: string): SearchError               => ({ type: 'SearchProtocolMismatch', message }),
 } as const;
 
 // ─────────────────────── CodebaseError ───────────────────
@@ -370,7 +375,29 @@ export const ConsolidationError = {
   invalidParameter:  (field: string, message: string): ConsolidationError => ({ type: 'ConsolidationInvalidParameter', field, message }),
 } as const;
 
-export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError | TouchError | IdentityError | ConsolidationError;
+// ─────────────────────── RerankError (Phase 21 — cross-encoder rerank) ─
+
+/**
+ * Errors from the cross-encoder reranker.
+ *
+ * Cross-encoder is the last-mile precision pass on top of the Phase 23
+ * dense+BM25+RRF hybrid. Lazy-loaded ONNX model via @xenova/transformers.
+ * Module is fail-open by design — the call site falls through to the
+ * non-reranked candidate list when this errors. These variants exist for
+ * telemetry and audit, not for caller branching.
+ */
+export type RerankError =
+  | { readonly type: 'RerankModelLoad';   readonly model: string; readonly message: string }
+  | { readonly type: 'RerankInference';   readonly message: string }
+  | { readonly type: 'RerankDisabled' };
+
+export const RerankError = {
+  modelLoad: (model: string, message: string): RerankError => ({ type: 'RerankModelLoad', model, message }),
+  inference: (message: string): RerankError => ({ type: 'RerankInference', message }),
+  disabled:  (): RerankError => ({ type: 'RerankDisabled' }),
+} as const;
+
+export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError | TouchError | IdentityError | ConsolidationError | RerankError;
 
 /** Render a tagged error as a one-line human-readable string. */
 export const formatError = (e: AppError): string => {
@@ -439,14 +466,14 @@ export const formatError = (e: AppError): string => {
       return `share store write error at ${e.path}: ${e.message}`;
     case 'SearchDimensionMismatch':
       return `search dimension mismatch: expected ${e.expected}, got ${e.got}`;
-    case 'SearchUnauthorized':
-      return `search unauthorized: peer ${e.peer} requested unshared room '${e.room}'`;
     case 'SearchRateLimited':
       return `search rate limited for peer ${e.peer}`;
     case 'SearchProtocolError':
       return `search protocol error with peer ${e.peer}: ${e.message}`;
     case 'SearchTimeout':
       return `search timeout for peer ${e.peer} after ${e.elapsedMs}ms`;
+    case 'SearchProtocolMismatch':
+      return `search protocol mismatch: ${e.message}`;
     case 'TouchRoomNotShared':
       return `touch: peer ${e.peer} does not share room '${e.room}'`;
     case 'TouchProtocolError':
@@ -513,6 +540,12 @@ export const formatError = (e: AppError): string => {
       return `consolidation: vector dim mismatch at index ${e.at}: expected ${e.expected}, got ${e.got}`;
     case 'ConsolidationInvalidParameter':
       return `consolidation: invalid parameter '${e.field}' — ${e.message}`;
+    case 'RerankModelLoad':
+      return `rerank model load failed (${e.model}): ${e.message}`;
+    case 'RerankInference':
+      return `rerank inference failed: ${e.message}`;
+    case 'RerankDisabled':
+      return `rerank disabled (WELLINFORMED_RERANK is not set)`;
   }
 };
 
