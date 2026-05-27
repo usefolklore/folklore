@@ -5,7 +5,7 @@
  * Phase 0: doctor, version, help.
  * Phase 1: (runtime checks extended in doctor).
  * Phase 2: trigger, sources.
- * Future phases add: init, room, daemon, discover, telegram, report, ask, mcp.
+ * Future phases add: init, daemon, discover, telegram, report, ask, mcp.
  */
 
 import { doctor } from './commands/doctor.js';
@@ -15,7 +15,6 @@ import { trigger } from './commands/trigger.js';
 import { sources } from './commands/sources.js';
 import { mcp } from './commands/mcp.js';
 import { init } from './commands/init.js';
-import { room } from './commands/room.js';
 import { ask } from './commands/ask.js';
 import { report } from './commands/report.js';
 import { daemon } from './commands/daemon.js';
@@ -69,7 +68,6 @@ const commands: Record<string, CommandFn> = {
   sources,
   mcp,
   init,
-  room,
   ask,
   report,
   daemon,
