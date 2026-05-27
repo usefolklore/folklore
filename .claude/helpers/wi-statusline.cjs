@@ -42,6 +42,60 @@ function getRepoRoom() {
   }
 }
 
+// GitHub identity (Phase 26 prep). Returns `{handle, email, source}`
+// where `source` is one of:
+//   - 'auth'    — verified via `wellinformed login`, read from
+//                 ~/.wellinformed/linked-accounts.json
+//   - 'git'     — fallback from git config user.name + user.email
+//                 (best-effort; not cryptographically verified)
+//   - null      — no identity available; caller falls back to workspace
+// Email may be absent on v1 linked-accounts.json (pre-2026-05-27);
+// in that case we enrich from git config user.email if available so
+// the statusline can still render handle:email without a re-login.
+function getGithubIdentity() {
+  const linkedPath = path.join(HOME, 'linked-accounts.json');
+  if (fs.existsSync(linkedPath)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(linkedPath, 'utf8'));
+      const gh = parsed?.accounts?.github;
+      if (gh && typeof gh.handle === 'string' && gh.handle.length > 0) {
+        let email = typeof gh.email === 'string' && gh.email.length > 0 ? gh.email : null;
+        if (!email) {
+          // v1-record enrich: best-effort fill from git config.
+          try {
+            email = execSync('git config --get user.email', {
+              stdio: ['ignore', 'pipe', 'ignore'],
+              encoding: 'utf8',
+              timeout: 300,
+            }).trim() || null;
+          } catch { email = null; }
+        }
+        return { handle: gh.handle, email, source: 'auth' };
+      }
+    } catch { /* fall through */ }
+  }
+  // git-config fallback — useful before the user runs `wellinformed login`.
+  // Both name + email come from $(git config). We only return when
+  // BOTH are present; partial data is worse than the workspace fallback.
+  let name = null, email = null;
+  try {
+    name = execSync('git config --get user.name', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: 'utf8',
+      timeout: 300,
+    }).trim() || null;
+  } catch { /* ignore */ }
+  try {
+    email = execSync('git config --get user.email', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: 'utf8',
+      timeout: 300,
+    }).trim() || null;
+  } catch { /* ignore */ }
+  if (name && email) return { handle: name, email, source: 'git' };
+  return null;
+}
+
 const c = {
   reset: '\x1b[0m',
   bold: '\x1b[1m',
@@ -226,17 +280,36 @@ function main() {
 
   const parts = [];
 
-  // Project name + room. Prefer the repo-derived room (basename of
-  // `git rev-parse --show-toplevel` for the harness cwd) so the
-  // statusline reflects the codebase you're actually in, not a stale
-  // global default. Falls back to the registry default outside a repo.
-  const repoRoom = getRepoRoom();
-  const registryHasRepoRoom = repoRoom && Array.isArray(graph?.nodes)
-    ? graphStats.rooms.has(repoRoom)
-    : false;
-  const roomLabel = repoRoom || roomInfo.default || 'no room';
-  const roomMarker = repoRoom && !registryHasRepoRoom ? `${c.dim}*${c.reset}` : '';
-  parts.push(`${c.brightPurple}Akashik${c.reset} ${c.dim}•${c.reset} ${c.cyan}${roomLabel}${c.reset}${roomMarker}`);
+  // Project name + identity. The right side of the segment shows
+  // WHO is talking to the graph — the verified GitHub identity if
+  // `wellinformed login` has been run, else best-effort from git
+  // config, else (final fallback) the repo basename so the panel
+  // still says something useful in a fresh checkout.
+  //
+  // Identity format: ` handle:email` (Nerd Font GitHub octocat icon).
+  // The `auth` source is rendered cyan (verified); `git` source is
+  // rendered dim (unverified fallback); workspace fallback retains
+  // the old `*` marker when the workspace isn't yet registered.
+  const identity = getGithubIdentity();
+  let rightLabel;
+  if (identity && identity.email) {
+    const icon = ''; // Nerd Font: GitHub octocat
+    const idColor = identity.source === 'auth' ? c.cyan : c.dim;
+    rightLabel = `${idColor}${icon} ${identity.handle}:${identity.email}${c.reset}`;
+  } else if (identity && !identity.email) {
+    const icon = '';
+    const idColor = identity.source === 'auth' ? c.cyan : c.dim;
+    rightLabel = `${idColor}${icon} ${identity.handle}${c.reset}`;
+  } else {
+    const repoRoom = getRepoRoom();
+    const registryHasRepoRoom = repoRoom && Array.isArray(graph?.nodes)
+      ? graphStats.rooms.has(repoRoom)
+      : false;
+    const roomLabel = repoRoom || roomInfo.default || 'no room';
+    const roomMarker = repoRoom && !registryHasRepoRoom ? `${c.dim}*${c.reset}` : '';
+    rightLabel = `${c.cyan}${roomLabel}${c.reset}${roomMarker}`;
+  }
+  parts.push(`${c.brightPurple}Akashik${c.reset} ${c.dim}•${c.reset} ${rightLabel}`);
 
   // Node stats with kind breakdown
   const nodeStr = `${c.brightGreen}${graphStats.nodes}${c.reset} nodes`;

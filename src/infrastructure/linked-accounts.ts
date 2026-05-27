@@ -10,12 +10,13 @@
  * change semantics):
  *
  *   {
- *     "version": 1,
+ *     "version": 2,
  *     "accounts": {
  *       "github": {
  *         "handle":      "sahar-barak",
  *         "user_id":     "12345",
  *         "profile_url": "https://github.com/sahar-barak",
+ *         "email":       "sahar.h.barak@gmail.com",
  *         "verified_at": "2026-05-06T20:30:00.000Z"
  *       }
  *     }
@@ -23,11 +24,17 @@
  *
  * Tokens never reach this file. Only the public attestation that the
  * verified-at timestamp says "wellinformed proved the user controls
- * github.com/<handle> at this moment."
+ * github.com/<handle> at this moment." Email — when present — is the
+ * primary verified address from the provider's API (for GitHub:
+ * `/user/emails` with primary:true, verified:true). It's the canonical
+ * cross-device identity string the statusline + node tagging key on.
+ *
+ * Version 2 (2026-05-27): added `email`. v1 files are read forward-
+ * compatibly with `email` left absent; the next save() rewrites as v2.
  *
  * Future providers (Google, Anthropic, Twitter, etc.) drop in as new
  * keys under `accounts.<provider>` with the same shape: handle,
- * user_id, profile_url, verified_at.
+ * user_id, profile_url, email, verified_at.
  */
 
 import { Result, err, ok } from 'neverthrow';
@@ -37,7 +44,7 @@ import { atomicWriteSync } from './atomic-write.js';
 
 // ─────────────── shape ────────────────────
 
-const VERSION = 1 as const;
+const VERSION = 2 as const;
 
 export type ProviderName = 'github' | 'google' | 'anthropic' | 'twitter';
 
@@ -45,6 +52,9 @@ export interface LinkedAccount {
   readonly handle: string;
   readonly user_id: string;
   readonly profile_url: string;
+  /** Primary verified email from the provider's API. v2+; absent on v1
+   *  records until the next login round-trip refreshes them. */
+  readonly email?: string;
   readonly verified_at: string; // ISO-8601
 }
 
@@ -74,15 +84,22 @@ export const loadLinkedAccounts = (home: string): LinkedAccountsFile => {
   const path = linkedAccountsPath(home);
   if (!existsSync(path)) return emptyFile();
   try {
-    const parsed = JSON.parse(readFileSync(path, 'utf8')) as LinkedAccountsFile;
+    const parsed = JSON.parse(readFileSync(path, 'utf8')) as { version?: number; accounts?: unknown };
     if (
-      parsed.version !== VERSION ||
+      typeof parsed.version !== 'number' ||
+      parsed.version < 1 ||
+      parsed.version > VERSION ||
       !parsed.accounts ||
       typeof parsed.accounts !== 'object'
     ) {
       return emptyFile();
     }
-    return parsed;
+    // Forward-load v1 files: same field set minus `email`. Cast to v2
+    // shape — the next save() upgrades the file in place.
+    return {
+      version: VERSION,
+      accounts: parsed.accounts as LinkedAccountsFile['accounts'],
+    };
   } catch {
     return emptyFile();
   }
