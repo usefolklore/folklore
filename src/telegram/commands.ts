@@ -1,15 +1,19 @@
 /**
  * Telegram command router — natural language commands from phone.
  *
- * Supported: ask, report, trigger, status, rooms
+ * V5: no rooms vocabulary. The bot writes to the global graph without
+ * a room tag. Workspace pre-filter (a node-level attribute) is not
+ * meaningful here — Telegram has no cwd to derive a workspace from.
+ *
+ * Supported: ask, report, trigger, status, help
  * Syntax: "ask embeddings" or just "embeddings" (inferred as ask)
  */
 
 import { formatError } from '../domain/errors.js';
-import { defaultRoom } from '../domain/rooms.js';
-import { searchByRoom, searchGlobal } from '../application/use-cases.js';
+import { searchGlobal } from '../application/use-cases.js';
 import { generateReport, renderReport } from '../application/report.js';
-import { triggerRoom } from '../application/ingest.js';
+import { ingestSource } from '../application/ingest.js';
+import { isEnabled } from '../domain/sources.js';
 import type { Runtime } from '../cli/runtime.js';
 
 const COMMANDS: Record<string, (runtime: Runtime, args: string) => Promise<string>> = {
@@ -17,7 +21,6 @@ const COMMANDS: Record<string, (runtime: Runtime, args: string) => Promise<strin
   report: handleReport,
   trigger: handleTrigger,
   status: handleStatus,
-  rooms: handleRooms,
   help: handleHelp,
 };
 
@@ -43,49 +46,49 @@ async function handleAsk(runtime: Runtime, query: string): Promise<string> {
   if (!query) return 'What do you want to search for?';
   const deps = { graphs: runtime.graphs, vectors: runtime.vectors, embedder: runtime.embedder };
 
-  const reg = await runtime.rooms.load();
-  const room = reg.isOk() ? defaultRoom(reg.value) : undefined;
-  const results = room
-    ? await searchByRoom(deps)({ room, text: query, k: 5 })
-    : await searchGlobal(deps)({ text: query, k: 5 });
-
+  // V5: global search only — Telegram has no workspace context.
+  const results = await searchGlobal(deps)({ text: query, k: 5 });
   if (results.isErr()) return `Error: ${formatError(results.error)}`;
   if (results.value.length === 0) return 'No results found. Try `trigger` to fetch fresh content.';
 
   const lines = [`*Results for:* ${query}\n`];
   for (const m of results.value.slice(0, 5)) {
     lines.push(`• *${m.node_id.split('/').pop() || m.node_id}*`);
-    lines.push(`  distance: ${m.distance.toFixed(3)} | room: ${m.room}`);
+    lines.push(`  distance: ${m.distance.toFixed(3)}`);
   }
   return lines.join('\n');
 }
 
-async function handleReport(runtime: Runtime, args: string): Promise<string> {
-  const reg = await runtime.rooms.load();
-  const room = args.trim() || (reg.isOk() ? defaultRoom(reg.value) : undefined);
-  if (!room) return 'No room specified and no default room set.';
-
+async function handleReport(runtime: Runtime, _args: string): Promise<string> {
+  // V5: reports are global. The `args` slot is reserved for future
+  // filters (entity, time range) once those land.
+  void _args;
   const deps = { graphs: runtime.graphs, vectors: runtime.vectors, sources: runtime.sources };
-  const data = await generateReport(deps)({ room });
+  const data = await generateReport(deps)({});
   if (data.isErr()) return `Error: ${formatError(data.error)}`;
 
   const md = renderReport(data.value);
   return md.length > 4000 ? md.slice(0, 3997) + '...' : md;
 }
 
-async function handleTrigger(runtime: Runtime, args: string): Promise<string> {
-  const reg = await runtime.rooms.load();
-  const room = args.trim() || (reg.isOk() ? defaultRoom(reg.value) : undefined);
-  if (!room) return 'No room specified and no default room set.';
+async function handleTrigger(runtime: Runtime, _args: string): Promise<string> {
+  // V5: trigger fans out across every enabled source flat. No
+  // per-room scoping.
+  void _args;
+  const listed = await runtime.sources.list();
+  if (listed.isErr()) return `Error: ${formatError(listed.error)}`;
+  const descriptors = listed.value.filter(isEnabled);
+  const built = runtime.registry.buildAll(descriptors);
+  const ingest = ingestSource(runtime.ingestDeps);
 
-  const result = await triggerRoom(runtime.ingestDeps)(room);
-  if (result.isErr()) return `Error: ${formatError(result.error)}`;
-
-  const run = result.value;
-  const lines = [`*Triggered room:* ${room}\n`];
-  for (const r of run.runs) {
-    const icon = r.error ? '✗' : '✓';
-    lines.push(`${icon} ${r.source_id}: ${r.items_new} new, ${r.items_skipped} skipped`);
+  const lines = [`*Triggered ${built.sources.length} source(s)*\n`];
+  for (const source of built.sources) {
+    const r = await ingest(source);
+    if (r.isErr()) {
+      lines.push(`✗ ${source.descriptor.id}: ${formatError(r.error)}`);
+      continue;
+    }
+    lines.push(`✓ ${source.descriptor.id}: ${r.value.items_new} new, ${r.value.items_skipped} skipped`);
   }
   return lines.join('\n');
 }
@@ -97,8 +100,6 @@ async function handleStatus(runtime: Runtime, _args: string): Promise<string> {
   const vectors = runtime.vectors.size();
   const sourcesResult = await runtime.sources.list();
   const sources = sourcesResult.isOk() ? sourcesResult.value.length : 0;
-  const roomsResult = await runtime.rooms.load();
-  const roomCount = roomsResult.isOk() ? roomsResult.value.rooms.length : 0;
 
   return [
     '*wellinformed status*',
@@ -106,31 +107,16 @@ async function handleStatus(runtime: Runtime, _args: string): Promise<string> {
     `Edges: ${edges}`,
     `Vectors: ${vectors}`,
     `Sources: ${sources}`,
-    `Rooms: ${roomCount}`,
   ].join('\n');
-}
-
-async function handleRooms(runtime: Runtime, _args: string): Promise<string> {
-  const reg = await runtime.rooms.load();
-  if (reg.isErr()) return `Error: ${formatError(reg.error)}`;
-  if (reg.value.rooms.length === 0) return 'No rooms configured.';
-
-  const lines = ['*Rooms:*\n'];
-  for (const r of reg.value.rooms) {
-    const marker = r.id === reg.value.default_room ? ' ★' : '';
-    lines.push(`• \`${r.id}\`${marker} — ${r.description}`);
-  }
-  return lines.join('\n');
 }
 
 async function handleHelp(_runtime: Runtime, _args: string): Promise<string> {
   return [
     '*wellinformed commands:*',
     '• `ask <query>` — search the knowledge graph',
-    '• `report [room]` — generate a report',
-    '• `trigger [room]` — fetch + index sources',
+    '• `report` — generate a report',
+    '• `trigger` — fetch + index all sources',
     '• `status` — graph stats',
-    '• `rooms` — list rooms',
     '• Send any URL to auto-ingest it',
     '• Or just type a question to search',
   ].join('\n');
