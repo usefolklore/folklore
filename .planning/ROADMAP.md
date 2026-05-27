@@ -124,6 +124,36 @@ Plans:
 3. New MCP tool `recent_sessions(hours?, project?)` lets Claude query previous session state from any new session
 4. On SessionStart, the PreToolUse hook surfaces a one-paragraph "what the last session was doing" automatically — no explicit ask required
 
+## Phase 24: Delete Rooms — V5 Wire-Protocol Break ✓ COMPLETE 2026-05-27
+
+**Goal:** Delete the `room` abstraction entirely from the codebase. Replace with `workspace?: string` (read-side, local-only) + `private: boolean` (sharing gate). Bump federation wire protocol to V5. The user-facing room concept disappears: no `wellinformed room` CRUD, no `shared-rooms.json`, no `default_room`, no system rooms (`toolshed`, `research`). Sharing is gated by per-node `private === false`. Reputation flattens from `(peer, room)` to `peer` keys.
+
+**Requirements:** ROOMS-DEL-01..08 (new — see REQUIREMENTS.md)
+
+**Plans:** 12/12 complete
+
+Plans:
+- [x] 24-01-PLAN.md — Wave 0: Schema wedge — drop `room?: Room` from GraphNode, add `workspace?` + `private`; add ROOMS-DEL-01..08 to REQUIREMENTS.md
+- [x] 24-02-PLAN.md — Wave 1a: Delete 5 source files + 3 phase tests + share-picker TUI; strip `room` dispatch from cli/index.ts
+- [x] 24-03-PLAN.md — Wave 1b: Wire-protocol surgery — V5 SearchRequest/Response/PeerMatch/TouchRequest/ShareEnvelope; ProtocolMismatchError; rewrite peer-pull-telemetry to peer-only
+- [x] 24-04-PLAN.md — Wave 1c: Runtime + daemon — drop rooms wiring from runtime.ts, add detectWorkspace helper; drop RoomsConfig + per-room triggers from daemon/loop.ts
+- [x] 24-05-PLAN.md — Wave 1d: Update 5 Claude Code hooks (smart-hook, prompt-submit, mcp-pre, session-start, session-capture, post-fetch) — drop room from formatters + save invocations
+- [x] 24-06-PLAN.md — Wave 2a: Rewrite share-sync.ts (869 → ~400 lines) — single global Y.Doc, private-flag gate, peer-only stream keying
+- [x] 24-07-PLAN.md — Wave 2b: Rewrite share.ts + unshare.ts to peer-only; DELETE share-picker.ts (Open Question 1 resolved)
+- [x] 24-08-PLAN.md — Wave 2c: MCP server — drop list_rooms/find_tunnels/trigger_room (16→13 tools); strip room param from search/federated_search/search_recent/entity-first-lookup
+- [x] 24-09-PLAN.md — Wave 3a: Surgical edits to ~32 CLI + application + domain files; HALF_LIFE_BY_ROOM dropped; subjectFromRoom dropped
+- [x] 24-10-PLAN.md — Wave 3b: Surgical edits to ~9 infrastructure + daemon + telegram files; vector-index searchByRoom* deleted; peer-reputation flattened; federation-sim niche-evaporation stubbed
+- [x] 24-11-PLAN.md — Wave 4a: Build `wellinformed migrate v5` command (idempotent, lossless, --rollback); grow doctor to nag on v4 data; write V5-PROTOCOL.md, deprecate V4-PROTOCOL.md, update peer-reputation-design.md
+- [x] 24-12-PLAN.md — Wave 4b: New tests/phase24.rooms-deleted.test.ts (~500 lines, 9 describe groups, 30+ tests); surgical edits to ~12 existing tests; final cutover validation (build + test + tsc)
+
+**Rationale:** Two octopus debates (2026-05-26 + 2026-05-27) converged on deletion. The user opted for "full deletion now" over a staged Phase 1 / Phase 24+ split. The debate synthesis lives at `.planning/debates/rooms-deprecation-2026-05-27/SYNTHESIS.md`. Scope audit ~4,000–4,500 LOC deleted across ~60 files (5 files deleted entirely, 3 major rewrites of share-store.ts + share-sync.ts + mcp/server.ts, ~47 surgical edits, 3 phase tests deleted).
+
+**Success criteria:**
+1. `wellinformed save "x"` from any cwd routes to a workspace-derived graph slice with `private: false` by default; user never sees a room concept.
+2. `wellinformed ask "x"` from a git repo returns nodes filtered by workspace pre-filter; cross-workspace results available with `--workspace all`.
+3. `wellinformed share <peer>` shares all `private === false` nodes; no `--room` flag, no `shared-rooms.json` to maintain. `wellinformed save --private` sets the flag.
+4. Federation wire protocol bumped to V5: `SearchRequest.room` and `SearchResponse.room` fields removed; pre-V5 peers receive a clear protocol-version error. The 5 existing rooms migrate to a flat namespace via `wellinformed migrate v5` (one-shot, idempotent, lossless except the room field is dropped onto an optional `workspace` derived heuristically or null).
+
 ## Phase Summary
 
 | Phase | Name | Requirements | Success Criteria |
@@ -134,7 +164,8 @@ Plans:
 | 18 | Production Networking | NET-01..04 (4) | 4 |
 | 19 | Structured Codebase Indexing | CODE-01..08 (8) | 4 |
 | 20 | Session Persistence | SESS-01..08 (8) | 4 |
-| **Total** | | **38** | **20** |
+| 24 | Delete Rooms (V5 break) | ROOMS-DEL-01..08 (8) | 4 |
+| **Total** | | **46** | **24** |
 
 ---
-*Roadmap created: 2026-04-12 (Phase 19 added 2026-04-12 after Phase 18 kickoff; Phase 20 planned 2026-04-12)*
+*Roadmap created: 2026-04-12 (Phase 19 added 2026-04-12 after Phase 18 kickoff; Phase 20 planned 2026-04-12; Phase 24 planned 2026-05-27)*
