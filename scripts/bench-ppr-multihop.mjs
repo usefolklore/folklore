@@ -60,11 +60,11 @@ const TOP_N = parseInt(getArg('--top-n') ?? '100', 10);
 const KNN_K = parseInt(getArg('--knn-k') ?? '5', 10);
 const ALPHA = parseFloat(getArg('--alpha') ?? '0.85');
 const MAX_ITER = parseInt(getArg('--max-iter') ?? '50', 10);
-const RESULTS_DIR = join(homedir(), '.wellinformed', 'bench', `ppr-multihop-${DATASET}`);
+const RESULTS_DIR = join(homedir(), '.akashik', 'bench', `ppr-multihop-${DATASET}`);
 mkdirSync(RESULTS_DIR, { recursive: true });
 
 console.log('━'.repeat(60));
-console.log(` wellinformed — PPR multi-hop rerank gate (${DATASET})`);
+console.log(` akashik — PPR multi-hop rerank gate (${DATASET})`);
 console.log('━'.repeat(60));
 console.log(`  top_n=${TOP_N}  knn_k=${KNN_K}  alpha=${ALPHA}  max_iter=${MAX_ITER}`);
 

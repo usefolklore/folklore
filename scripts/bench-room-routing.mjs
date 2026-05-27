@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 // Wave 4 gate test — does ROOM ROUTING beat flat retrieval on a multi-topic corpus?
 //
-// Tests whether wellinformed's room architecture gives a measurable retrieval lift
+// Tests whether akashik's room architecture gives a measurable retrieval lift
 // over flat hybrid retrieval. If oracle routing doesn't beat flat by ≥3 points,
 // rooms are cosmetic and we stop engineering. If it does, we proceed to learned
 // routing (RouterRetriever-style) and tunnel-based reranking.
 //
 // Usage:
 //   node scripts/bench-room-routing.mjs \
-//     --datasets-dir ~/.wellinformed/bench/cqadupstack/cqadupstack \
+//     --datasets-dir ~/.akashik/bench/cqadupstack/cqadupstack \
 //     --rooms mathematica,webmasters,android \
 //     --model Xenova/all-MiniLM-L6-v2 --dim 384
 //
@@ -35,7 +35,7 @@ const getArg = (flag, def) => {
   return i >= 0 ? args[i + 1] : def;
 };
 
-const DATASETS_DIR = getArg('--datasets-dir', join(homedir(), '.wellinformed/bench/cqadupstack/cqadupstack'));
+const DATASETS_DIR = getArg('--datasets-dir', join(homedir(), '.akashik/bench/cqadupstack/cqadupstack'));
 const ROOMS_CSV = getArg('--rooms', 'mathematica,webmasters,android');
 const ROOMS = ROOMS_CSV.split(',').map((r) => r.trim()).filter(Boolean);
 const MODEL = getArg('--model', 'Xenova/all-MiniLM-L6-v2');
@@ -48,7 +48,7 @@ const FINAL_K = parseInt(getArg('--final-k', '10'), 10);
 const RRF_K = 60;
 const BATCH_SIZE = parseInt(getArg('--batch', '32'), 10);
 
-const CACHE_ROOT = join(homedir(), '.wellinformed', 'bench');
+const CACHE_ROOT = join(homedir(), '.akashik', 'bench');
 const MODEL_SLUG = MODEL.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
 const ROOMS_SLUG = ROOMS.join('-');
 const CACHE_DIR = join(CACHE_ROOT, `rooms__${ROOMS_SLUG}__${MODEL_SLUG}`);
@@ -56,7 +56,7 @@ const DB_PATH = join(CACHE_DIR, 'rooms.db');
 
 // ─── banner ──────────────────────────────────────────────────────
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log(' wellinformed Wave 4 — Room Routing Gate Test');
+console.log(' akashik Wave 4 — Room Routing Gate Test');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(` Rooms:   ${ROOMS.join(', ')}`);
 console.log(` Model:   ${MODEL} (${DIM} dim)`);
@@ -234,7 +234,7 @@ console.log('[4/5] Running experiments...');
 // sqlite-vec's vec0 virtual table does not support WHERE filtering directly,
 // so per-room dense search uses an overfetch + filter pattern: ask for
 // DENSE_K * N candidates globally and keep the ones whose rowid is in the
-// target room. This is the same pattern wellinformed's production
+// target room. This is the same pattern akashik's production
 // searchByRoom uses (via roomSearchOverfetch).
 const denseStmt = db.prepare(
   `SELECT v.rowid, v.distance FROM vec_nodes v WHERE v.embedding MATCH ? AND k = ? ORDER BY v.distance`

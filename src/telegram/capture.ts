@@ -10,7 +10,7 @@
  * a sharing surface (forwarded URLs are de-facto public). The
  * multi-tier privacy work (per-recipient sharing) is deferred; for
  * sensitive captures the user should mark the resulting node private
- * via `wellinformed save --private` after the fact.
+ * via `akashik save --private` after the fact.
  */
 
 import { formatError } from '../domain/errors.js';

@@ -1,5 +1,5 @@
 /**
- * `wellinformed oracle <sub>` — peer-to-peer Q&A via the oracle system room.
+ * `akashik oracle <sub>` — peer-to-peer Q&A via the oracle system room.
  *
  * Subcommands:
  *   ask "<text>"            post a question to the oracle room; peers see it on next touch
@@ -32,7 +32,7 @@ import { loadOrCreateIdentity, createNode, dialAndTag } from '../../infrastructu
 import { loadPeers } from '../../infrastructure/peer-store.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
 import { publishQuestion, publishAnswer } from '../../infrastructure/oracle-gossip.js';
-import { wellinformedHome } from '../runtime.js';
+import { akashikHome } from '../runtime.js';
 import { join } from 'node:path';
 
 const localPeerId = async (homePath: string): Promise<string> => {
@@ -56,7 +56,7 @@ const liveBroadcast = async (
   kind: 'question' | 'answer',
   node: GraphNode,
 ): Promise<number> => {
-  const homePath = wellinformedHome();
+  const homePath = akashikHome();
   const idRes = await loadOrCreateIdentity(join(homePath, 'peer-identity.json'));
   if (idRes.isErr()) {
     console.error(`oracle --live: identity: ${formatError(idRes.error)}`);
@@ -88,7 +88,7 @@ const liveBroadcast = async (
     const pubsub = (libp2p.services as Record<string, unknown>).pubsub as {
       subscribe: (t: string) => void;
     };
-    pubsub.subscribe('/wellinformed/oracle/1.0.0');
+    pubsub.subscribe('/akashik/oracle/1.0.0');
 
     // Dial known peers + configured relays so the pubsub graph has
     // reach. Failures are non-fatal per peer.
@@ -121,7 +121,7 @@ const liveBroadcast = async (
       console.error(`oracle --live: publish: ${formatError(publishRes.error)}`);
       return 1;
     }
-    console.log(`  live:   published to /wellinformed/oracle/1.0.0 (${dialed} peer(s) dialed)`);
+    console.log(`  live:   published to /akashik/oracle/1.0.0 (${dialed} peer(s) dialed)`);
     return 0;
   } finally {
     try { await libp2p.stop(); } catch { /* ignore */ }
@@ -139,7 +139,7 @@ const ask = async (rest: readonly string[]): Promise<number> => {
   }
   const text = textTokens.join(' ').trim();
   if (!text) {
-    console.error('oracle ask: missing question — usage: wellinformed oracle ask "your question" [--live]');
+    console.error('oracle ask: missing question — usage: akashik oracle ask "your question" [--live]');
     return 1;
   }
   const rt = await defaultRuntime();
@@ -164,7 +164,7 @@ const ask = async (rest: readonly string[]): Promise<number> => {
     console.log(`  id:     ${node.id}`);
     console.log(`  asked:  ${askedBy}`);
     console.log(live
-      ? '  peers subscribed to /wellinformed/oracle/1.0.0 get it now; others on next touch.'
+      ? '  peers subscribed to /akashik/oracle/1.0.0 get it now; others on next touch.'
       : '  peers will see it on their next touch of `oracle`.');
     if (live) {
       const rc = await liveBroadcast('question', node);
@@ -195,7 +195,7 @@ const answer = async (rest: readonly string[]): Promise<number> => {
   }
   const text = textTokens.join(' ').trim();
   if (!qid || !text) {
-    console.error('oracle answer: usage: wellinformed oracle answer <question-id> "your answer" [--confidence 0.7] [--live]');
+    console.error('oracle answer: usage: akashik oracle answer <question-id> "your answer" [--confidence 0.7] [--live]');
     return 1;
   }
   if (!isQuestionId(qid)) {
@@ -284,7 +284,7 @@ const list = async (rest: readonly string[]): Promise<number> => {
 const show = async (rest: readonly string[]): Promise<number> => {
   const [qid] = rest;
   if (!qid) {
-    console.error('oracle show: missing question id — usage: wellinformed oracle show <qid>');
+    console.error('oracle show: missing question id — usage: akashik oracle show <qid>');
     return 1;
   }
   const rt = await defaultRuntime();
@@ -436,7 +436,7 @@ const answerable = async (rest: readonly string[]): Promise<number> => {
 
 // ─────────────────────── entry ────────────────────────────
 
-const USAGE = `usage: wellinformed oracle <ask|answer|list|show|answerable>
+const USAGE = `usage: akashik oracle <ask|answer|list|show|answerable>
 
 subcommands:
   ask "<text>" [--live]      post a new question (--live also publishes
@@ -451,7 +451,7 @@ subcommands:
                              plausibly answer (best-match first)
 
 Oracle questions/answers propagate to peers via the existing \`touch oracle\`
-surface. Run \`wellinformed daemon start\` (or ensure peers are connected)
+surface. Run \`akashik daemon start\` (or ensure peers are connected)
 so the CRDT sync fans your post out in near-real-time.`;
 
 export const oracle = async (args: readonly string[]): Promise<number> => {

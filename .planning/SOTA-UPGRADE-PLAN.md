@@ -1,4 +1,4 @@
-# wellinformed — SOTA Retrieval Quality Upgrade Plan
+# akashik — SOTA Retrieval Quality Upgrade Plan
 
 **Researched:** 2026-04-12
 **Domain:** Dense retrieval, hybrid BM25+dense search, cross-encoder reranking, ONNX CPU inference
@@ -84,7 +84,7 @@ Models that pass all four criteria: (a) ONNX on HuggingFace, (b) < 1.5 GB RAM, (
 
 ### SQLite FTS5 — Zero New Dep Path (RECOMMENDED)
 
-`better-sqlite3` (already in stack at v11.10.0) ships its own SQLite binary compiled with FTS5 enabled. This is confirmed critical because Node's built-in `node:sqlite` is compiled WITHOUT FTS5. Since wellinformed already uses `better-sqlite3`, FTS5 BM25 is available at zero new dependencies.
+`better-sqlite3` (already in stack at v11.10.0) ships its own SQLite binary compiled with FTS5 enabled. This is confirmed critical because Node's built-in `node:sqlite` is compiled WITHOUT FTS5. Since akashik already uses `better-sqlite3`, FTS5 BM25 is available at zero new dependencies.
 
 **FTS5 schema for hybrid search:**
 ```sql
@@ -173,7 +173,7 @@ The standard pipeline: dense retrieval gets top-100, cross-encoder scores each (
 
 ## 5. Late-Interaction Models (ColBERT-style)
 
-**Assessment: OUT OF SCOPE for wellinformed's architecture.**
+**Assessment: OUT OF SCOPE for akashik's architecture.**
 
 ColBERT v2 and PLAID ColBERT require storing every token embedding per document, not a single centroid vector. For a corpus of 10K nodes at 512 tokens each with 128-dim token embeddings, this is ~640M floats (~2.5 GB) vs 10K single vectors at 768-dim (30 MB). The storage model is fundamentally incompatible with `sqlite-vec`'s `vec0` virtual table which assumes one vector per row.
 
@@ -218,7 +218,7 @@ SELECT rowid, vec_distance_cosine(
 
 However this is slower than a native 256-dim table because it truncates at query time. For production: create a new `vec0` table with the target dimension and reindex.
 
-**Wellinformed implication:** Current `vec_nodes` uses `float[384]` (MiniLM). Switching to nomic-embed-text-v1.5 at 768-dim requires:
+**Akashik implication:** Current `vec_nodes` uses `float[384]` (MiniLM). Switching to nomic-embed-text-v1.5 at 768-dim requires:
 1. Drop `vec_nodes` virtual table
 2. Create `vec_nodes USING vec0(embedding float[768])`
 3. Re-embed all existing nodes (one-time migration)
@@ -229,7 +229,7 @@ The migration path is a Wave 0 task — no sqlite-vec schema migration API exist
 
 ## 7. Long-Context Embeddings
 
-Our current MiniLM has a 512-token max. For BEIR (short passages), this doesn't matter. For wellinformed's real use case (ArXiv papers, long research notes, codebases), it does.
+Our current MiniLM has a 512-token max. For BEIR (short passages), this doesn't matter. For akashik's real use case (ArXiv papers, long research notes, codebases), it does.
 
 | Model | Max Tokens | Context Window Impact |
 |-------|-----------|----------------------|
@@ -240,7 +240,7 @@ Our current MiniLM has a 512-token max. For BEIR (short passages), this doesn't 
 | mxbai-embed-large-v1 | 512 | Same limitation as MiniLM |
 | snowflake-arctic-embed-*-v2.0 | 8192 | Good for research notes |
 
-For wellinformed's long-context use case, nomic-embed-text-v1.5 and BGE-M3 are 16x better than MiniLM. The context window upgrade is a significant quality driver beyond just BEIR scores.
+For akashik's long-context use case, nomic-embed-text-v1.5 and BGE-M3 are 16x better than MiniLM. The context window upgrade is a significant quality driver beyond just BEIR scores.
 
 ---
 
@@ -360,7 +360,7 @@ New packages needed: **0 for Wave 1, 0 for Wave 2, 0 for Wave 3** — all use `@
 | `src/infrastructure/embedders.ts` | Change default model from `'Xenova/all-MiniLM-L6-v2'` to `'nomic-ai/nomic-embed-text-v1.5'` in `xenovaEmbedder()`. Add `dim: 768` default. Add `normalize: true` and `pooling: 'mean'` as confirmed options. Add `search_query:` prefix injection for query embeddings. |
 | `src/domain/vectors.ts` | Change `DEFAULT_DIM` from 384 to 768. |
 | `src/infrastructure/vector-index.ts` | Schema migration: existing `vec_nodes USING vec0(embedding float[384])` must be dropped and recreated as `float[768]`. Add migration check on `openSqliteVectorIndex` (compare `dim` from schema vs `opts.dim`). |
-| `~/.wellinformed/vectors.db` | One-time drop + recreate + reindex all nodes (CLI command `wellinformed reindex` or auto-detect on startup). |
+| `~/.akashik/vectors.db` | One-time drop + recreate + reindex all nodes (CLI command `akashik reindex` or auto-detect on startup). |
 
 **nomic-embed-text-v1.5 requires instruction prefix for queries (not documents):**
 ```typescript
@@ -520,7 +520,7 @@ const ranked = candidates
 | 768-dim vec0 table migration corrupts existing graph data | LOW | HIGH | Migration must be transactional: backup db → drop vec_nodes → create vec_nodes → reindex → verify count matches. Wrap in SQLite transaction. |
 | Xenova/bge-reranker-base output format incompatible with pipeline task | LOW — confirmed text-classification pipeline works | MEDIUM | Test with unit fixture before Wave 3 integration |
 | nomic-embed-text-v1.5 CPU inference > 200ms on low-end hardware | MEDIUM — no confirmed benchmark found | MEDIUM | Use `dtype: 'q8'` (int8). Add timeout fallback to MiniLM for < 100ms budget path. |
-| RRF gains smaller than expected on wellinformed's actual query distribution | MEDIUM | LOW | RRF is purely additive / never hurts. If gains are < 1%, disable BM25 path to reduce latency. |
+| RRF gains smaller than expected on akashik's actual query distribution | MEDIUM | LOW | RRF is purely additive / never hurts. If gains are < 1%, disable BM25 path to reduce latency. |
 | Qwen3-Embedding instruction prefix breaks batch embedding | LOW | MEDIUM | nomic-embed-text-v1.5 does NOT require instruction prefix for documents — only for queries. This is the key reason nomic is preferred over Qwen3 for this stack. |
 
 ---

@@ -43,7 +43,7 @@ key-files:
     - "src/cli/tui/share-picker-tty.ts (142)"
     - "tests/phase37.share-picker.test.ts (162)"
 key-decisions:
-  - "Open Question 1 (share-picker fate) RESOLVED at planning time: delete TUI + test, keep domain layer (Wave 2b decides domain fate). Rationale per 24-RESEARCH.md line 885: without rooms there is nothing to pick; sharing becomes `wellinformed share <peer>` direct command."
+  - "Open Question 1 (share-picker fate) RESOLVED at planning time: delete TUI + test, keep domain layer (Wave 2b decides domain fate). Rationale per 24-RESEARCH.md line 885: without rooms there is nothing to pick; sharing becomes `akashik share <peer>` direct command."
   - "Grouped deletions into 3 atomic commits (sources / tests / share-picker pair) — preserves git-blame granularity while staying within plan's `atomic per task` rule."
   - "Pre-existing untracked changes to src/cli/index.ts (gc, bench imports) stashed before Task 2 edit and restored after commit — keeps Task 2 diff pure-deletion with no scope creep."
 patterns-established:
@@ -73,8 +73,8 @@ completed: 2026-05-27
 ## Accomplishments
 
 - Domain vocabulary (`rooms.ts`, `system-rooms.ts`) entirely gone — `Room`, `nodesInRoom`, `roomFilter`, `toolshed/research` system rooms have zero on-disk presence
-- Persistence layer (`rooms-config.ts`, `share-store.ts`) gone — `~/.wellinformed/rooms.json` and `~/.wellinformed/shared-rooms.json` are no longer read or written by any compilable code path
-- CRUD CLI (`commands/room.ts`) gone, with its dispatch entry stripped from `cli/index.ts` — `wellinformed room ...` returns "unknown command"
+- Persistence layer (`rooms-config.ts`, `share-store.ts`) gone — `~/.akashik/rooms.json` and `~/.akashik/shared-rooms.json` are no longer read or written by any compilable code path
+- CRUD CLI (`commands/room.ts`) gone, with its dispatch entry stripped from `cli/index.ts` — `akashik room ...` returns "unknown command"
 - Phase tests (phase1.graph-rooms, phase4.rooms, phase36.system-rooms) — 693 lines of test code whose subject no longer exists are gone
 - share-picker TUI + test deleted per Open Question 1 resolution; share-picker.ts domain layer left for Wave 2b decision
 

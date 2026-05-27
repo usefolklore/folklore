@@ -1,4 +1,4 @@
-# wellinformed — scene 9 — UserPromptSubmit hook in flight
+# akashik — scene 9 — UserPromptSubmit hook in flight
 #
 # Demonstrates the freshly-shipped UserPromptSubmit hook (commit
 # 0749f21). A simulated Claude Code payload is piped into the hook;
@@ -24,18 +24,18 @@ Set WindowBar Colorful
 Set WindowBarSize 30
 
 Hide
-Type "export WELLINFORMED_HOME=$HOME/.wellinformed.demo"
+Type "export AKASHIK_HOME=$HOME/.akashik.demo"
 Enter
 Type "clear"
 Enter
 Sleep 200ms
 Show
 
-Type "# wellinformed UserPromptSubmit hook — fires BEFORE Claude reads the user message."
+Type "# akashik UserPromptSubmit hook — fires BEFORE Claude reads the user message."
 Enter
 Sleep 1800ms
 
-Type "cat /tmp/wi-prompt-demo.json"
+Type "cat /tmp/ak-prompt-demo.json"
 Enter
 Sleep 1800ms
 
@@ -45,7 +45,7 @@ Type "# pipe it into the hook ↓"
 Enter
 Sleep 800ms
 
-Type "cat /tmp/wi-prompt-demo.json | node .claude/hooks/wellinformed-prompt-submit.cjs | jq -r .hookSpecificOutput.additionalContext"
+Type "cat /tmp/ak-prompt-demo.json | node .claude/hooks/akashik-prompt-submit.cjs | jq -r .hookSpecificOutput.additionalContext"
 Enter
 Sleep 8000ms
 

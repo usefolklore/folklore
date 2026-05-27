@@ -28,12 +28,12 @@ import type { Runtime } from '../src/cli/runtime.js';
 const buildFakeRuntime = (): Runtime =>
   ({
     paths: {
-      home: '/tmp/wellinformed-test',
-      graph: '/tmp/wellinformed-test/graph.json',
-      vectors: '/tmp/wellinformed-test/vectors.db',
-      sources: '/tmp/wellinformed-test/sources.json',
-      rooms: '/tmp/wellinformed-test/rooms.json',
-      modelCache: '/tmp/wellinformed-test/models',
+      home: '/tmp/akashik-test',
+      graph: '/tmp/akashik-test/graph.json',
+      vectors: '/tmp/akashik-test/vectors.db',
+      sources: '/tmp/akashik-test/sources.json',
+      rooms: '/tmp/akashik-test/rooms.json',
+      modelCache: '/tmp/akashik-test/models',
     },
     graphs: {
       load: () => okAsync({ json: { nodes: [], links: [] }, index: new Map() } as never),

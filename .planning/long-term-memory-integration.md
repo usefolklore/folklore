@@ -1,6 +1,6 @@
 # Long-Term Memory Integration Plan
 
-Fold three engineering wins from `rohitg00/agentmemory` into wellinformed,
+Fold three engineering wins from `rohitg00/agentmemory` into akashik,
 plus add the long-term memory layer we've been missing. P2P-native, not a
 verbatim port.
 
@@ -27,7 +27,7 @@ What we're explicitly **not** taking:
 ## Long-term memory model — the four tiers, mapped to our world
 
 agentmemory's tier names are misleading for a P2P system. Here's the
-mapping that actually fits wellinformed:
+mapping that actually fits akashik:
 
 | Their tier | Their meaning | Our equivalent | New work |
 |---|---|---|---|
@@ -59,7 +59,7 @@ src/
                                 via daemon/loop.ts, promotes tiers.
     auto-forget-tick.ts   [NEW] TTL + contradiction + low-value purge
   infrastructure/
-    bm25-index.ts         [NEW] sparse index, persisted to ~/.wellinformed/bm25.json
+    bm25-index.ts         [NEW] sparse index, persisted to ~/.akashik/bm25.json
     reranker.ts           [NEW] optional Xenova cross-encoder, env-gated
   daemon/
     loop.ts                [edit] register consolidate-tick + auto-forget-tick
@@ -85,7 +85,7 @@ via existing interfaces. Same shape as the rest of the repo.
   `search-index.ts`. Persist as JSONL. Stemmer + synonym file optional
   per language.
 - `infrastructure/reranker.ts` — `@xenova/transformers` lazy load.
-  Quantised model. Env flag `WELLINFORMED_RERANK=1`. Falls open on
+  Quantised model. Env flag `AKASHIK_RERANK=1`. Falls open on
   load failure (returns input unchanged).
 
 **Application:**
@@ -141,7 +141,7 @@ via existing interfaces. Same shape as the rest of the repo.
   retention = clip(0..1, salience × exp(-λ·Δt) + σ·Σ(1/days_since_access))
   ```
   λ = 0.01, σ = 0.3, tier-thresholds hot=0.7 warm=0.4 cold=0.15. Same
-  defaults as theirs, expose via `~/.wellinformed/config.json`.
+  defaults as theirs, expose via `~/.akashik/config.json`.
 - `domain/contradiction.ts` — Jaccard on shared-concept clusters.
   Threshold 0.9, older loses, audit-logged.
 
@@ -159,9 +159,9 @@ via existing interfaces. Same shape as the rest of the repo.
 **Acceptance:**
 - Retention scores written to a new KV scope `retention.json` (parallel
   to `peer-reputation-store.ts` pattern). Surfaced via statusline.
-- Auto-forget dry-run + apply CLI subcommand under `wellinformed gc`.
+- Auto-forget dry-run + apply CLI subcommand under `akashik gc`.
 - Contradiction detector pages an audit entry to
-  `~/.wellinformed/audit.jsonl`.
+  `~/.akashik/audit.jsonl`.
 
 ## What this replaces / deprecates
 
@@ -309,7 +309,7 @@ Mechanics:
   in an extracted fact), the satisfaction scorer drops a
   `contradiction` flag in the hit envelope.
 - Statusline renders contradiction count.
-- New CLI: `wellinformed contradictions list / resolve <id> --prefer
+- New CLI: `akashik contradictions list / resolve <id> --prefer
   peer|local`. Logged to audit.jsonl with peer DID + signature.
 
 This dovetails with the existing `consensus` component of the

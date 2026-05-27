@@ -435,8 +435,8 @@ test('bench: synthetic LongMemEval-style Recall@5 ≥ 0.60', async () => {
       notes: 'Synthetic 20-session × 20-query LongMemEval-style proxy (no HF download). 5 question types per ICLR 2025 spec.',
     };
 
-    if (process.env.WELLINFORMED_BENCH_OUT) {
-      appendBenchReport(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
+    if (process.env.AKASHIK_BENCH_OUT) {
+      appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
     }
 
     console.log(`bench longmemeval-synth: R@5=${r5avg.toFixed(4)} MRR=${mrrAvg.toFixed(4)} abstain=${abstainAcc.toFixed(2)} in ${elapsedMs.toFixed(1)}ms`);

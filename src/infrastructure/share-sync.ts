@@ -1,7 +1,7 @@
 /**
  * Share sync — y-protocols sync over libp2p (V5).
  *
- * Single global Y.Doc at `~/.wellinformed/graph.ydoc`; sharing gate is per-node
+ * Single global Y.Doc at `~/.akashik/graph.ydoc`; sharing gate is per-node
  * `node.private === false`; subscribe envelope carries `{type, protocol_version: 5}`
  * (pre-V5 envelopes with a `rooms` array are rejected); stream + bandwidth-limiter
  * keys are peerId only.
@@ -37,11 +37,11 @@ import { metrics } from '../domain/metrics.js';
 import { classifyInboundShare, sharePolicyModeFromEnv, type SharePolicyMode } from '../domain/share-policy.js';
 import { inProcessIdentityResolver, type IdentityResolver } from './identity-resolver.js';
 
-export const SHARE_PROTOCOL_ID = '/wellinformed/share/1.0.0' as const;
+export const SHARE_PROTOCOL_ID = '/akashik/share/1.0.0' as const;
 export const SHARE_PROTOCOL_VERSION = 5 as const;
 
 /** Module-level Symbol for echo-loop prevention. */
-export const REMOTE_ORIGIN: unique symbol = Symbol('wellinformed-share-remote');
+export const REMOTE_ORIGIN: unique symbol = Symbol('akashik-share-remote');
 
 const GRAPH_FLUSH_DEBOUNCE_MS = 150;
 const MAX_INBOUND_STREAMS = 32;
@@ -234,8 +234,8 @@ const buildImportedNode = (peer: string, v: ShareableNode, signedBy?: string): G
   id: v.id, label: v.label,
   file_type: 'document', source_file: `peer:${peer}`, private: false,
   embedding_id: v.embedding_id, source_uri: v.source_uri, fetched_at: v.fetched_at,
-  _wellinformed_source_peer: peer,
-  ...(signedBy ? { _wellinformed_signed_by: signedBy } : {}),
+  _akashik_source_peer: peer,
+  ...(signedBy ? { _akashik_signed_by: signedBy } : {}),
 } as GraphNode);
 
 const logInbound = (logPath: string, peer: string, nodeId: string, reason: string): void => {

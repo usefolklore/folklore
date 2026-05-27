@@ -67,7 +67,7 @@ Total surface area: two files modified, one small domain change. Ships in a day.
 - Any UI for managing workspace tags explicitly (not needed — they are automatic).
 - Workspace as a federation axis (the niche-evaporation data argues against smaller rooms, not for them).
 - Any change to the `PEER_HELLO` or `ROOM_SYNC` protocol (zero P2P changes in this first cut).
-- The many-to-many repo→room mapping UI (`wellinformed workspace bind <repo> <room>`) — useful eventually, not needed for v1 value.
+- The many-to-many repo→room mapping UI (`akashik workspace bind <repo> <room>`) — useful eventually, not needed for v1 value.
 
 ### (c) What would change my mind
 

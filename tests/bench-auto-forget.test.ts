@@ -182,8 +182,8 @@ test('bench: auto-forget F1 ≥ 0.85', () => {
     elapsedMs,
   };
 
-  if (process.env.WELLINFORMED_BENCH_OUT) {
-    appendBenchReport(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
+  if (process.env.AKASHIK_BENCH_OUT) {
+    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
   }
 
   console.log(

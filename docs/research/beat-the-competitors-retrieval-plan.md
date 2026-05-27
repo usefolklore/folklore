@@ -39,7 +39,7 @@ Primitives that exist but are NOT in the bench retrieval path:
 
 | Primitive | Where | Bench-path? | Note |
 |---|---|---|---|
-| Cross-encoder rerank (ms-marco-MiniLM-L-6-v2) | `src/application/ask.ts:436-441` + `src/domain/cross-rerank.ts` | **No** | Gated behind `WELLINFORMED_RERANK=1`; benches call `searchByRoom` directly, bypass `ask()` |
+| Cross-encoder rerank (ms-marco-MiniLM-L-6-v2) | `src/application/ask.ts:436-441` + `src/domain/cross-rerank.ts` | **No** | Gated behind `AKASHIK_RERANK=1`; benches call `searchByRoom` directly, bypass `ask()` |
 | Personalized PageRank rerank | `src/application/ask.ts:444` | **No** | Same — only in `ask()` |
 | Mention enrichment (`buildHit`) | `src/application/ask.ts:448` | **No** | Same |
 | Cross-room federated search | `src/application/use-cases.ts` | **No** | Benches scope to one room |
@@ -103,7 +103,7 @@ Concrete diff:
 //   const r = await searchByRoom({ graphs, vectors, embedder })({ room, text, k: K });
 //
 // E1 path — pull rerank into the test:
-//   const reranker = process.env.WELLINFORMED_RERANK === '1'
+//   const reranker = process.env.AKASHIK_RERANK === '1'
 //     ? crossEncoderFromEnv() : null;
 //   const r0 = await searchByRoom({ graphs, vectors, embedder })({ room, text, k: K * 4 });  // 4x candidates
 //   const matches = r0._unsafeUnwrap();
@@ -113,7 +113,7 @@ Concrete diff:
 //     : ok(matches.slice(0, K));
 ```
 
-Run with `WELLINFORMED_RERANK=1` env on the Hetzner box. Compare against today's 0.9202 number. If lift is real, ship.
+Run with `AKASHIK_RERANK=1` env on the Hetzner box. Compare against today's 0.9202 number. If lift is real, ship.
 
 **Risk:** cross-encoder adds ~10ms/match latency. With K=5 reranked from 20 candidates, that's 200ms/query × 500 q = 100s added to LME-S run. Cheap.
 
@@ -184,7 +184,7 @@ These are Phase 25+ but worth recording so they don't get lost:
 
 - **CI/CD checksum pinning** — `model-checksums.json` for the Xenova ONNX weights to prevent supply-chain attacks (the bge-base defective-conversion incident is the precedent).
 - **2-minute regression smoke bench** — small subset of LME-S / SciFact in CI so quality regressions can't ship silently.
-- **Bus factor on `wellinformed-rs`** — Rust ARM cross-compile is specialized knowledge; consider TypeScript-only fallback path.
+- **Bus factor on `akashik-rs`** — Rust ARM cross-compile is specialized knowledge; consider TypeScript-only fallback path.
 - **GDPR derived-data semantics** — contextual enrichment + contradiction chains create *derived* personal data that must map back to source turns for delete-by-user compliance.
 
 Source: `~/.claude-octopus/results/probe-synthesis-1779351019.md` — 6 multi-LLM probes synthesized by Gemini-2.5-Pro, 2026-05-21. Full transcript preserved in claude-octopus state.

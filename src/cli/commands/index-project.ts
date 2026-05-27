@@ -1,5 +1,5 @@
 /**
- * `wellinformed index [--workspace W] [--root DIR]`
+ * `akashik index [--workspace W] [--root DIR]`
  *
  * Index the current project into the knowledge graph: source files,
  * package.json dependencies, git submodules, and recent git history.

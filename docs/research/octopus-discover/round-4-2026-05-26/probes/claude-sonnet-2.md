@@ -8,7 +8,7 @@
 PROJECT IDENTITY (changed since last round)
 ================================================================
 
-The project pivoted from "wellinformed: agent-memory product" to
+The project pivoted from "akashik: agent-memory product" to
 "Akashik: federated knowledge commons for the open-source community as a whole."
 
 The mission is to give the OSS community what it has always lacked:
@@ -19,7 +19,7 @@ attributed, forever.
 
 The brand name borrows from the Akashic Records mythology, reframed
 as concrete contributor-owned infrastructure. The codebase is still
-called "wellinformed" internally.
+called "akashik" internally.
 
 ================================================================
 THE MECHANISM (the architectural insight that makes the mission credible)
@@ -357,7 +357,7 @@ Duration:   500 queries total (simulating ~30 days of a 10-member team)
 
 **Why this is publishable:** No existing benchmark measures P2P semantic compounding. TREC (ad-hoc retrieval), BEIR (cross-domain transfer), LongMemEval (single-session memory) all measure single-system retrieval quality. FCB is the first benchmark that treats the P2P network itself as the retrieval system and measures the compounding property as the primary axis. Target venue: SIGIR 2027 or ACL Findings under "evaluation methodology" track.
 
-**Concrete implementation:** A `wellinformed bench federation` CLI command running a Docker Compose network of 4 peers, injecting queries from the hot/cold corpus, and emitting an FCB report. Est. engineering effort: 2-3 weeks.
+**Concrete implementation:** A `akashik bench federation` CLI command running a Docker Compose network of 4 peers, injecting queries from the hot/cold corpus, and emitting an FCB report. Est. engineering effort: 2-3 weeks.
 
 ---
 
@@ -415,7 +415,7 @@ Target: OSS contributors who already maintain a personal knowledge graph and are
 - HN thread "Ask HN: How do you manage your engineering research/notes?" — comment there, not post
 - Open a GitHub Discussion in 3 high-traffic OSS repos with a note: "If you've spent >4 hours debugging something recently and didn't write it up, I want to show you something"
 
-*What they commit to*: Index one active project (`wellinformed index <repo>`), join `oss-commons` room, run their peer for at least 4 hours/day for 30 days.
+*What they commit to*: Index one active project (`akashik index <repo>`), join `oss-commons` room, run their peer for at least 4 hours/day for 30 days.
 
 *Seed content*: Each curator indexes their active project repo → 500-2000 nodes → 10,000-20,000 nodes in the federated graph by day 7.
 
@@ -433,11 +433,11 @@ This is not serendipitous — you engineer it deliberately:
 The HN post must contain exactly one falsifiable claim: "In the last 30 days, X queries to this network were answered by another contributor's cached research rather than reaching the web. Here is the compounding curve." X must be a real measured number, not an estimate.
 
 Before the post, three features must be working reliably:
-1. `wellinformed peer add` via a lightweight coordinator server (not just mDNS — mDNS doesn't cross routers)
-2. `wellinformed ask` shows "[answered by: @username, 4 days ago]" in the output
-3. A `wellinformed network status` command showing R(T,t) for the top 10 topics in the room
+1. `akashik peer add` via a lightweight coordinator server (not just mDNS — mDNS doesn't cross routers)
+2. `akashik ask` shows "[answered by: @username, 4 days ago]" in the output
+3. A `akashik network status` command showing R(T,t) for the top 10 topics in the room
 
-**What will kill the launch:** If the coordinator server requires Docker or a domain name to self-host, only 10 people will run peers. The "default open" mode must be `wellinformed peer join oss-commons.akashik.dev` — one command, no setup.
+**What will kill the launch:** If the coordinator server requires Docker or a domain name to self-host, only 10 people will run peers. The "default open" mode must be `akashik peer join oss-commons.akashik.dev` — one command, no setup.
 
 ---
 
@@ -452,7 +452,7 @@ Before the post, three features must be working reliably:
 - BitTorrent: "Torrent indexers" (The Pirate Bay, RARBG) serve as a separate discovery layer above the P2P network.
 - Mastodon: "Federated timeline" surfaces content from all connected instances, not just the local timeline.
 
-**Akashik mitigation**: The `find_tunnels` MCP tool already discovers cross-domain connections. A `wellinformed room gaps` command — showing topics that have queries but no cached answers, or topics that haven't been updated in >30 days — would surface the cold-topic coverage map to curators. The peer-reputation system's "topic coverage gaps" output (mentioned in its design doc) is exactly this. Implement it as a visible CLI output, not just an internal metric.
+**Akashik mitigation**: The `find_tunnels` MCP tool already discovers cross-domain connections. A `akashik room gaps` command — showing topics that have queries but no cached answers, or topics that haven't been updated in >30 days — would surface the cold-topic coverage map to curators. The peer-reputation system's "topic coverage gaps" output (mentioned in its design doc) is exactly this. Implement it as a visible CLI output, not just an internal metric.
 
 ### (b) Niche knowledge evaporation
 
@@ -483,7 +483,7 @@ The threat model (p2p-threat-model.md) covers AS-4 (secret exfiltration) and AS-
 
 **The structural gap:** There is no factual verification layer. Akashik compounds *attribution*, not *truth*. The community must evaluate correctness themselves — just like Wikipedia's edit history shows who changed what but not whether the change was accurate.
 
-**What to add:** (a) Community flagging — `wellinformed flag <node_id> --reason misinformation` sends a signed attestation to the room that the node is disputed. (b) Dispute visibility — when a node has flags, display them in search results: "[flagged as disputed by 3 peers]." (c) Reputation decay on flagged nodes — peer-reputation score decays when the peer's nodes accumulate flags. This doesn't verify truth, but it creates a social accountability layer.
+**What to add:** (a) Community flagging — `akashik flag <node_id> --reason misinformation` sends a signed attestation to the room that the node is disputed. (b) Dispute visibility — when a node has flags, display them in search results: "[flagged as disputed by 3 peers]." (c) Reputation decay on flagged nodes — peer-reputation score decays when the peer's nodes accumulate flags. This doesn't verify truth, but it creates a social accountability layer.
 
 ---
 
@@ -539,7 +539,7 @@ The counter-argument is correct about Stack Overflow — as a competitor for *pu
 
 The p2p-threat-model.md covers peer-to-peer authentication (ed25519 libp2p handshakes, AS-9). What it doesn't cover: **workload identity between the daemon and the Rust embed_server sidecar.**
 
-`wellinformed-rs` runs as a separate process communicating over a socket. That IPC channel is currently unprotected — any local process on the same machine that discovers the socket address can submit arbitrary embeddings to the embed_server, inject poisoned vectors into the local graph, or exfiltrate the embedding space.
+`akashik-rs` runs as a separate process communicating over a socket. That IPC channel is currently unprotected — any local process on the same machine that discovers the socket address can submit arbitrary embeddings to the embed_server, inject poisoned vectors into the local graph, or exfiltrate the embedding space.
 
 **Mitigation needed:** Use a Unix domain socket (not TCP port 0.0.0.0) with file permissions 0600 owned by the daemon user. Add HMAC-based message authentication between the daemon and the sidecar using a shared secret generated at daemon startup. This is not in the threat model and should be AS-11.
 

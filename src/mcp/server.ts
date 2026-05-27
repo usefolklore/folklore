@@ -1,7 +1,7 @@
 /**
- * wellinformed MCP server — exposes the knowledge graph to Claude Code.
+ * akashik MCP server — exposes the knowledge graph to Claude Code.
  *
- * Spawned by `wellinformed mcp start` or by Claude Code itself via
+ * Spawned by `akashik mcp start` or by Claude Code itself via
  * the `.claude-plugin/plugin.json` manifest. Speaks the Model Context
  * Protocol over stdio (JSON-RPC).
  *
@@ -49,7 +49,7 @@ import { formatTelemetryBlock } from '../infrastructure/telemetry-formatter.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../infrastructure/peer-transport.js';
 import { loadPeers } from '../infrastructure/peer-store.js';
 import { loadConfig } from '../infrastructure/config-loader.js';
-import { wellinformedHome } from '../cli/runtime.js';
+import { akashikHome } from '../cli/runtime.js';
 import type { Runtime } from '../cli/runtime.js';
 
 /**
@@ -59,7 +59,7 @@ import type { Runtime } from '../cli/runtime.js';
  */
 export const buildMcpServer = (runtime: Runtime): McpServer => {
   const server = new McpServer(
-    { name: 'wellinformed', version: '0.0.1' },
+    { name: 'akashik', version: '0.0.1' },
     { capabilities: { tools: {} } },
   );
 
@@ -75,7 +75,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     'search',
     {
       description:
-        'Semantic search over the wellinformed knowledge graph. Returns the top-k matches ordered by distance.',
+        'Semantic search over the akashik knowledge graph. Returns the top-k matches ordered by distance.',
       inputSchema: {
         query: z.string().describe('The natural-language search query'),
         k: z.number().int().min(1).max(100).default(5).describe('Number of results to return'),
@@ -93,7 +93,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
   // ─────────────── prefetch cache (Phase 2 — one-call hook) ──────
   //
   // The UserPromptSubmit hook writes the assembled federated answer
-  // to ~/.wellinformed/prefetch-cache.jsonl, keyed by exact prompt
+  // to ~/.akashik/prefetch-cache.jsonl, keyed by exact prompt
   // string. When the agent issues a redundant `ask` with the same
   // query inside the same turn (which Claude tends to do as a
   // verification step), we short-circuit by returning the cached
@@ -113,7 +113,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     readonly satisfaction?: number | null;
   }
 
-  const homeFromRuntime = (_rt: Runtime): string => wellinformedHome();
+  const homeFromRuntime = (_rt: Runtime): string => akashikHome();
 
   const readPrefetchCache = (
     home: string,
@@ -149,7 +149,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     async ({ query, k }) => {
       // P2P-scale phase 2 — prefetch-cache short-circuit.
       // The UserPromptSubmit hook writes the assembled federated
-      // answer to ~/.wellinformed/prefetch-cache.jsonl. When the
+      // answer to ~/.akashik/prefetch-cache.jsonl. When the
       // agent issues a verifying `ask` with the same query inside
       // the same turn, return the cached block instead of re-running
       // the local + federated pipeline. The cache is bounded by the
@@ -190,7 +190,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
         content: [
           {
             type: 'text' as const,
-            text: `# wellinformed context for: ${query}\n\n${blocks.join('\n\n---\n\n')}`,
+            text: `# akashik context for: ${query}\n\n${blocks.join('\n\n---\n\n')}`,
           },
         ],
       };
@@ -264,9 +264,9 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
       if (embedRes.isErr()) return errText(embedRes.error);
 
       // 2. Spin a short-lived libp2p node for this query
-      const identityPath = join(wellinformedHome(), 'peer-identity.json');
-      const peersPath = join(wellinformedHome(), 'peers.json');
-      const configPath = join(wellinformedHome(), 'config.yaml');
+      const identityPath = join(akashikHome(), 'peer-identity.json');
+      const peersPath = join(akashikHome(), 'peers.json');
+      const configPath = join(akashikHome(), 'config.yaml');
 
       const cfgRes = await loadConfig(configPath);
       if (cfgRes.isErr()) return errText(cfgRes.error);
@@ -312,7 +312,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
 
         // 5. Build the peer-pull telemetry block. Lands in every agent
         // session that calls federated_search — the visible signal for
-        // "wellinformed actually went to the network and here's what
+        // "akashik actually went to the network and here's what
         // came back."
         const graphRes = await runtime.graphs.load();
         const telemetry = graphRes.isOk()
@@ -368,7 +368,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
         'returns every chunk in your graph that mentions it, ranked by recency × frequency. ' +
         'The complement to vector-similarity search: use this when the agent has a concrete object name in mind. ' +
         'Returns empty hits when no entity is registered AND no heuristic detection has caught the name yet — ' +
-        'in that case the agent should fall back to `ask` or suggest `wellinformed entity add <name>`.',
+        'in that case the agent should fall back to `ask` or suggest `akashik entity add <name>`.',
       inputSchema: {
         name: z.string().describe('The entity name to recall (case-insensitive, matches any registered alias).'),
         limit: z.number().int().min(1).max(100).default(20).describe('Max hits to return.'),
@@ -377,7 +377,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     async ({ name, limit }) => {
       const { fileEntityRegistry } = await import('../infrastructure/entity-registry.js');
       const { recall } = await import('../application/recall.js');
-      const registry = fileEntityRegistry(join(wellinformedHome(), 'entities.json'));
+      const registry = fileEntityRegistry(join(akashikHome(), 'entities.json'));
       const graphRes = await runtime.graphs.load();
       if (graphRes.isErr()) return errText(graphRes.error);
       const result = recall(
@@ -390,7 +390,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
             query: name,
             found: false,
             hits: [],
-            hint: `No entity registered for "${name}". Register one with \`wellinformed entity add "${name}"\`, or run an ingest — heuristic detection picks up CamelCase identifiers and URL hosts automatically.`,
+            hint: `No entity registered for "${name}". Register one with \`akashik entity add "${name}"\`, or run an ingest — heuristic detection picks up CamelCase identifiers and URL hosts automatically.`,
           });
         }
         return errText({ type: 'GraphReadError', path: '<recall>', message: result.error.message });
@@ -415,7 +415,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
   );
 
   // ─────────────── federated_recall ─────
-  // Cross-peer entity recall via the /wellinformed/recall/1.0.0
+  // Cross-peer entity recall via the /akashik/recall/1.0.0
   // libp2p protocol. Sibling to federated_search; recall trades the
   // embedding for an entity_id (deterministic across peers via the
   // slug function). Peers gate by share-store; surface text on
@@ -436,21 +436,21 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
       const { runFederatedRecall } = await import('../application/federated-recall.js');
       const { loadOrCreateIdentity, createNode, dialAndTag } = await import('../infrastructure/peer-transport.js');
       const { loadPeers } = await import('../infrastructure/peer-store.js');
-      const cfgRes = await loadConfig(join(wellinformedHome(), 'config.yaml'));
+      const cfgRes = await loadConfig(join(akashikHome(), 'config.yaml'));
       if (cfgRes.isErr()) return errText(cfgRes.error);
-      const idRes = await loadOrCreateIdentity(join(wellinformedHome(), 'peer-identity.json'));
+      const idRes = await loadOrCreateIdentity(join(akashikHome(), 'peer-identity.json'));
       if (idRes.isErr()) return errText(idRes.error);
       const nodeRes = await createNode(idRes.value, {
         listenPort: 0,
         listenHost: '127.0.0.1',
         mdns: cfgRes.value.peer.mdns,
         dhtEnabled: cfgRes.value.peer.dht.enabled,
-        peersPath: join(wellinformedHome(), 'peers.json'),
+        peersPath: join(akashikHome(), 'peers.json'),
       });
       if (nodeRes.isErr()) return errText(nodeRes.error);
       const node = nodeRes.value;
       try {
-        const peersRes = await loadPeers(join(wellinformedHome(), 'peers.json'));
+        const peersRes = await loadPeers(join(akashikHome(), 'peers.json'));
         if (peersRes.isOk()) {
           await Promise.all(
             peersRes.value.peers.map(async (p) => {
@@ -585,7 +585,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
   );
 
   // ─────────────── code_graph_query ─────────
-  // Phase 19 — 15th MCP tool. Queries ~/.wellinformed/code-graph.db independently
+  // Phase 19 — 15th MCP tool. Queries ~/.akashik/code-graph.db independently
   // of the research graph. Claude calls this when the task is code-structural
   // (find all functions named X, list all classes in codebase Y, etc.).
 
@@ -593,7 +593,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     'code_graph_query',
     {
       description:
-        'Query the structured code graph (Phase 19). Returns code nodes (classes, functions, methods, interfaces, types, imports, exports) from indexed codebases. SEPARATE from `search` / `ask` — those query research content (ArXiv, HN, RSS, etc.). This tool queries the structured code graph stored in ~/.wellinformed/code-graph.db, built by `wellinformed codebase index <path>`. Supports filtering by codebase id, node kind, and name substring.',
+        'Query the structured code graph (Phase 19). Returns code nodes (classes, functions, methods, interfaces, types, imports, exports) from indexed codebases. SEPARATE from `search` / `ask` — those query research content (ArXiv, HN, RSS, etc.). This tool queries the structured code graph stored in ~/.akashik/code-graph.db, built by `akashik codebase index <path>`. Supports filtering by codebase id, node kind, and name substring.',
       inputSchema: {
         codebase_id: z
           .string()
@@ -714,7 +714,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
         'to all connected peers via the existing touch + CRDT sync (no new ' +
         'wire protocol). Peers can answer with oracle_answer. Returns the ' +
         'question id (`oracle-question:<uuid>`). Use this when you want the ' +
-        'broader federation of wellinformed peers to help answer a question ' +
+        'broader federation of akashik peers to help answer a question ' +
         'your local graph cannot.',
       inputSchema: {
         text: z.string().min(1).max(8000).describe('The question body'),
@@ -726,7 +726,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     },
     async ({ text, label }) => {
       const askedByRes = await loadOrCreateIdentity(
-        join(wellinformedHome(), 'peer-identity.json'),
+        join(akashikHome(), 'peer-identity.json'),
       );
       const askedBy = askedByRes.isOk() ? askedByRes.value.peerId : 'local';
       const node = nodeFromQuestion({ text, askedBy, label });
@@ -773,7 +773,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
         );
       }
       const answeredByRes = await loadOrCreateIdentity(
-        join(wellinformedHome(), 'peer-identity.json'),
+        join(akashikHome(), 'peer-identity.json'),
       );
       const answeredBy = answeredByRes.isOk() ? answeredByRes.value.peerId : 'local';
       const node = nodeFromAnswer({
@@ -883,7 +883,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
       },
     },
     async ({ threshold, k, limit }) => {
-      const selfRes = await loadOrCreateIdentity(join(wellinformedHome(), 'peer-identity.json'));
+      const selfRes = await loadOrCreateIdentity(join(akashikHome(), 'peer-identity.json'));
       const selfPeerId = selfRes.isOk() ? selfRes.value.peerId : 'local';
 
       const graphRes = await runtime.graphs.load();

@@ -157,7 +157,7 @@ Several design decisions along the v3 surface were evaluated against alternative
 **Why primitives-first:**
 - Each primitive has a clean gate test that ran and produced a measured number (§2f/§2g/§2h of BENCH-v2.md)
 - Breaking the existing 293-test regression suite to rewire protocols is unnecessary given the primitives work
-- Incremental adoption: `/wellinformed/search/2.0.0` (signed) runs alongside `/wellinformed/search/1.0.0` (unsigned) during migration
+- Incremental adoption: `/akashik/search/2.0.0` (signed) runs alongside `/akashik/search/1.0.0` (unsigned) during migration
 
 **Trade-offs accepted:**
 - No demo of end-to-end envelope flow in this release. Integration tests for the bridge seam exist but don't cross the libp2p boundary.

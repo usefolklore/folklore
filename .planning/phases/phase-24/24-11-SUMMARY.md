@@ -10,8 +10,8 @@ dependency_graph:
     - phase: phase-24-10
       provides: "infrastructure V5-clean; peer-reputation runtime deny-list"
   provides:
-    - "wellinformed migrate v5 — idempotent V4→V5 schema migration with rollback"
-    - "wellinformed doctor — V5 schema readiness check that nags on V4 data + artifacts"
+    - "akashik migrate v5 — idempotent V4→V5 schema migration with rollback"
+    - "akashik doctor — V5 schema readiness check that nags on V4 data + artifacts"
     - "docs/architecture/V5-PROTOCOL.md — canonical wire-protocol spec for V5"
     - "V4-PROTOCOL.md + V3-PROTOCOL.md deprecation banners"
     - "peer-reputation-design.md aligned with V5 (entity-only subjects)"
@@ -23,7 +23,7 @@ tech_stack:
   patterns:
     - "Atomic backup + tmp+rename writes for one-way data transforms"
     - "Idempotency by sentinel detection (no `room` field anywhere + no V4 artifact files)"
-    - "Heuristic workspace inference from disk topology (WELLINFORMED_REPO_ROOTS overridable)"
+    - "Heuristic workspace inference from disk topology (AKASHIK_REPO_ROOTS overridable)"
     - "String-concat legacy-key constants to keep grep audits clean (LEGACY_PREFIX = `${'r'}oom:`)"
     - "Manual migration with persistent doctor nag — explicit opt-in to one-way transforms"
 key_files:
@@ -44,15 +44,15 @@ key_files:
     - path: "docs/p2p/peer-reputation-design.md"
       change: "Removed `room:*` from primary subject schemes; added V5 Update sub-section; aligned phased-implementation row (entity-only)."
 decisions:
-  - "Open Question 6 resolved as MANUAL migration with doctor nag. Auto-triggering a one-way data transform on first V5 boot would surprise users; the persistent yellow warning from `wellinformed doctor` makes the upgrade visible without forcing it. Rollback only restores the graph blob; rooms.json + shared-rooms.json deletions and reputation flattening are irreversible — that single failure mode justifies the explicit opt-in."
+  - "Open Question 6 resolved as MANUAL migration with doctor nag. Auto-triggering a one-way data transform on first V5 boot would surprise users; the persistent yellow warning from `akashik doctor` makes the upgrade visible without forcing it. Rollback only restores the graph blob; rooms.json + shared-rooms.json deletions and reputation flattening are irreversible — that single failure mode justifies the explicit opt-in."
   - "Reputation flattening is done at MIGRATION time (durable on-disk cleanup) on top of the RUNTIME deny-list filter from Plan 24-10. Defence in depth: runtime keeps boots V5-correct even if a user skips migrate; migration permanently aligns the disk."
-  - "Heuristic workspace inference looks for slugified room names under five well-known dev roots (~/personal, ~/code, ~/work, ~/src, ~/projects) with WELLINFORMED_REPO_ROOTS escape hatch. False-negatives leave `workspace: undefined`, which is the safe direction — a stale workspace tag would mis-route the workspace pre-filter."
+  - "Heuristic workspace inference looks for slugified room names under five well-known dev roots (~/personal, ~/code, ~/work, ~/src, ~/projects) with AKASHIK_REPO_ROOTS escape hatch. False-negatives leave `workspace: undefined`, which is the safe direction — a stale workspace tag would mis-route the workspace pre-filter."
   - "Backup is refusing-to-clobber: if graph.v4-backup.json already exists, migrate aborts and asks the user to move it aside. Prevents a second forward-migration from blowing away the only recovery artifact."
   - "Per-room .ydoc files are intentionally NOT deleted by migrate. The V5 boot creates graph.ydoc on first run and never reads the legacy files; a Phase 25+ GC pass can clean them."
   - "V3-PROTOCOL.md gets an ARCHIVED banner (not DEPRECATED) — V3 was retired by V4 already; this is just an additional pointer to V5."
 requirements_delivered:
   - "ROOMS-DEL-02 — rooms.json no longer read/written by any code path AND migrate v5 deletes it on upgrade"
-  - "ROOMS-DEL-06 — wellinformed migrate v5 exists, idempotent, lossless except `room → workspace` heuristic, --rollback restores graph.json"
+  - "ROOMS-DEL-06 — akashik migrate v5 exists, idempotent, lossless except `room → workspace` heuristic, --rollback restores graph.json"
 metrics:
   duration: "~30 min wall-clock"
   completed_date: "2026-05-27"
@@ -65,7 +65,7 @@ metrics:
 
 # Phase 24 Plan 11: Wave 4a — V5 Migration Command + Doctor Nag + Protocol Spec Summary
 
-**One-liner:** Shipped `wellinformed migrate v5` (idempotent V4→V5 with rollback), grew `wellinformed doctor` to nag on V4 data and artifacts, drafted V5-PROTOCOL.md as the canonical wire spec, and marked V4/V3 protocols archived — closing ROOMS-DEL-02 and ROOMS-DEL-06.
+**One-liner:** Shipped `akashik migrate v5` (idempotent V4→V5 with rollback), grew `akashik doctor` to nag on V4 data and artifacts, drafted V5-PROTOCOL.md as the canonical wire spec, and marked V4/V3 protocols archived — closing ROOMS-DEL-02 and ROOMS-DEL-06.
 
 ## Wave 4 Progress
 
@@ -137,7 +137,7 @@ Migrating to V5...
   ✓ Deleted shared-rooms.json
   ✓ Backed up pre-migration graph to graph.v4-backup.json
 
-V5 cutover complete. Run `wellinformed doctor` to verify.
+V5 cutover complete. Run `akashik doctor` to verify.
 ```
 
 Post-migration node shape (note `room` gone, `private: false` stamped,
@@ -160,7 +160,7 @@ The `p2p-llm` room did NOT match a known repo basename, so its node carries
 Idempotency re-run:
 
 ```
-$ wellinformed migrate v5
+$ akashik migrate v5
 Reading /tmp/.../graph.json...
   Already on V5.
 $ echo $?
@@ -173,10 +173,10 @@ V4-dirty home (one node with `room`, residual `rooms.json`):
 
 ```
 [skip] V5 schema readiness          V4 data detected: 1/1 sampled nodes still have a 'room' field + rooms.json
-       fix: run `wellinformed migrate v5` to upgrade
+       fix: run `akashik migrate v5` to upgrade
 ```
 
-After running `wellinformed migrate v5` on the same home:
+After running `akashik migrate v5` on the same home:
 
 ```
 [ ok ] V5 schema readiness          1/1 sampled nodes V5-clean
@@ -205,7 +205,7 @@ Fresh tmp home (no graph at all):
    (share-sync, recall-sync, touch-protocol, share-envelope).
 6. **Reputation subject scheme** — entity-only; how migration flattens
    legacy `room:*` keys.
-7. **Migration** — full UX and contract for `wellinformed migrate v5`,
+7. **Migration** — full UX and contract for `akashik migrate v5`,
    including idempotency, backup, rollback, and the doctor-nag complement.
 8. **Cross-references** — source-of-truth pointers to live code.
 9. **Compatibility notice** — hard break, no shims, V5-only going forward.
@@ -225,7 +225,7 @@ Fresh tmp home (no graph at all):
   the filter doesn't have to run forever.
 
 - **Heuristic workspace inference scoped to five well-known dev roots
-  with WELLINFORMED_REPO_ROOTS escape hatch.** False-negatives leave
+  with AKASHIK_REPO_ROOTS escape hatch.** False-negatives leave
   `workspace: undefined`, which is the safe direction — a stale tag
   would mis-route the workspace pre-filter.
 
@@ -271,7 +271,7 @@ git rev-parse --abbrev-ref HEAD                                      -> feat/del
 
 | Hash      | Message |
 |-----------|---------|
-| `b889252` | `feat(24-11): wellinformed migrate v5 — idempotent V4→V5 schema migration` |
+| `b889252` | `feat(24-11): akashik migrate v5 — idempotent V4→V5 schema migration` |
 | `049ae74` | `feat(24-11): doctor warns on V4 data + artifacts (V5 schema readiness)` |
 | `58818d9` | `docs(24-11): draft V5-PROTOCOL.md; deprecate V4/V3; align reputation docs` |
 
@@ -284,7 +284,7 @@ Branch `feat/delete-rooms`. No co-authored commits (per user's global CLAUDE.md)
   (schema, CLI dispatch, storage absence, wire protocol, sharing gate,
   workspace pre-filter, migration idempotency, hooks, MCP boundary).
 - **Migration command field testing:** the user can now run
-  `wellinformed migrate v5` against their live `~/.wellinformed` to upgrade
+  `akashik migrate v5` against their live `~/.akashik` to upgrade
   their 21k-node graph from V4 to V5. The doctor nag will guide them.
 
 ---

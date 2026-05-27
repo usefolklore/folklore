@@ -6,7 +6,7 @@ engineering month on AkashikBench-F and federation routing; next
 marketing month on a 100-person pilot in the local-AI / agent-tooling
 OSS ecosystem"). The product has pivoted from "agent-memory product"
 to "federated knowledge commons for the open-source community" and
-the brand is now Akashik — the codebase is still `wellinformed` and
+the brand is now Akashik — the codebase is still `akashik` and
 will remain so during the two-name period. The architecture
 ([how-akashik-works.md](./marketing/how-akashik-works.md)) is the
 credibility anchor for the mission; AkashikBench-F is the only
@@ -24,7 +24,7 @@ and produced positive signal on the LoCoMo factual subset:
 simulated horizon. This is in-simulator only — a pure boolean-set
 abstraction over real retrieval — so it validates dynamics, not
 end-to-end retrieval quality. Real-pilot validation is pending.
-Codebase is still named `wellinformed`; brand is Akashik; the
+Codebase is still named `akashik`; brand is Akashik; the
 rename PR is a separate workstream queued behind launch. LongMemEval-S
 R@5 = 0.9268 (with E11 enrichment), LoCoMo R@10 = 0.725 (with E11);
 the local read-path is at its practical ceiling and further per-peer
@@ -97,7 +97,7 @@ core differentiator. Concrete deliverables:
   - **CLI ↔ daemon IPC auth** (Round 4 finding A): the local
     socket has no workload identity today; a compromised process
     can impersonate the CLI. Add a per-session token in
-    `src/daemon/ipc.ts` written to `~/.wellinformed/ipc.token`
+    `src/daemon/ipc.ts` written to `~/.akashik/ipc.token`
     with `0600` perms; CLI reads + sends on every call; daemon
     rejects unauth'd connections. Success: integration test
     confirms unauth'd socket connect is rejected with
@@ -131,7 +131,7 @@ high query overlap so compounding shows up fast." Worth it.
   issues on CUDA OOM (ollama, vllm, llama.cpp), Apple Silicon Metal
   perf threads, vLLM PagedAttention PRs, quantization comparison
   papers (GPTQ, AWQ, GGUF), aider context-window strategies, etc.
-  Each artifact saved via `wellinformed save --type research` from
+  Each artifact saved via `akashik save --type research` from
   a librarian's peer (so provenance lands signed by a real maintainer,
   not the project itself). Deliverable: `docs/marketing/seed-corpus-pilot.md`
   listing every artifact with its URL, librarian, and room.
@@ -155,8 +155,8 @@ high query overlap so compounding shows up fast." Worth it.
   the pilot per Round 5. Recruitment channels: Hacker News (one
   Show HN post), the `r/LocalLLaMA` subreddit, LocalLLM Discords,
   and the maintainers' own audiences. Onboarding artifact is a
-  90-second video walkthrough + `npm install -g wellinformed` +
-  `wellinformed share` to join the pilot rooms. Success criterion:
+  90-second video walkthrough + `npm install -g akashik` +
+  `akashik share` to join the pilot rooms. Success criterion:
   ≥ 80 active peers (defined as: ≥ 1 query in past 7 days) by end
   of week 3.
 
@@ -184,7 +184,7 @@ phase slot, not a hand-wave:
   with an older schema federates with a peer on v2, malformed
   nodes are dropped silently. Add a `quarantine` table in the
   peer's SQLite, persist rejected envelopes with the parser error,
-  and expose `wellinformed quarantine list / replay` so operators
+  and expose `akashik quarantine list / replay` so operators
   can recover post-migration. The right time to ship this is
   immediately after the pilot when we'll have actual cross-version
   traffic.
@@ -246,9 +246,9 @@ Expanded:
   shift metric X by Y%", we don't do it in this 60-day window. The
   bench is the gate.
 
-- **No premature rebrand-PR (`wellinformed → akashik` package
+- **No premature rebrand-PR (`akashik → akashik` package
   rename).** The two-name period is fine during launch — pilot
-  participants install `wellinformed` and read about Akashik;
+  participants install `akashik` and read about Akashik;
   this is normal in rebrand windows. The rename is a single
   coordinated PR queued behind a successful pilot, not in front
   of it.
@@ -329,7 +329,7 @@ Concrete, measurable, falsifiable:
   in-process.
 
 - **Phase 24.4 `web_fallback_rate` telemetry ships.** CLI command
-  `wellinformed metrics fallback --room <room>` returns a per-day
+  `akashik metrics fallback --room <room>` returns a per-day
   series, and the daemon emits zero spurious cardinality.
 
 - **Pilot has ≥ 50 active peers by end of week 3** and the live

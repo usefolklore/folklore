@@ -92,7 +92,7 @@ on [Y] because [why]. Specifically NOT [Z] because [why not].'
 <!-- BEGIN-UNTRUSTED:provider=codex:nonce=67e21c3935195652 -->
 ## Output
 ```
-1. **Q1:** Spend the next engineering month on **federation architecture and measurement**, not on squeezing LME-S `R@5` from `0.9202` toward `agentmemory`’s claimed `0.952`. Your own numbers show the single-peer head is already near-saturated on LongMemEval-S (`R@50 = 1.0000`, `NDCG@5 = 0.8836`, `MRR = 0.9034`) while the product claim lives or dies on Step 5 transfer, not on another 1-3 leaderboard points ([Round 4 brief](/Users/saharbarak/personal/wellinformed/docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:1), [bench plan](/Users/saharbarak/personal/wellinformed/docs/research/beat-the-competitors-retrieval-plan.md:1), [benchmarks](/Users/saharbarak/personal/wellinformed/docs/product/BENCHMARKS.md:287)). The upside is this is the only work that validates the Akashik thesis; the downside is you delay an easy marketing win and accept that per-peer retrieval will remain “good enough” rather than obviously best-in-class for another month.
+1. **Q1:** Spend the next engineering month on **federation architecture and measurement**, not on squeezing LME-S `R@5` from `0.9202` toward `agentmemory`’s claimed `0.952`. Your own numbers show the single-peer head is already near-saturated on LongMemEval-S (`R@50 = 1.0000`, `NDCG@5 = 0.8836`, `MRR = 0.9034`) while the product claim lives or dies on Step 5 transfer, not on another 1-3 leaderboard points ([Round 4 brief](/Users/saharbarak/personal/akashik/docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:1), [bench plan](/Users/saharbarak/personal/akashik/docs/research/beat-the-competitors-retrieval-plan.md:1), [benchmarks](/Users/saharbarak/personal/akashik/docs/product/BENCHMARKS.md:287)). The upside is this is the only work that validates the Akashik thesis; the downside is you delay an easy marketing win and accept that per-peer retrieval will remain “good enough” rather than obviously best-in-class for another month.
 
 2. **Q2:** It is **not wholly novel**; the closest prior art is **Freenet** (“*Freenet: A Distributed Anonymous Information Storage and Retrieval System*,” 2001) with a secondary lineage to **CCNx/NDN** ([Freenet paper PDF](https://www.cs.princeton.edu/courses/archive/fall11/cos518/papers/freenet.pdf), [RFC 8569](https://www.rfc-editor.org/rfc/rfc8569)). The overlap is demand-driven retrieval plus replication/caching as a function of requests; the difference is that Akashik’s units are **signed semantic research objects with human provenance and web-on-miss curation**, not anonymous content blobs or network-layer content objects. Position it as: **“Freenet/CCNx semantics applied to attributed research memory”**; the advantage is a crisp technical lineage, however the tradeoff is you cannot overclaim novelty and should instead claim **novel composition**.
 
@@ -135,7 +135,7 @@ If I were Sahar, the next engineering month I’d spend on **AkashikBench-F plus
 ```
 OpenAI Codex v0.125.0 (research preview)
 --------
-workdir: /Users/saharbarak/personal/wellinformed
+workdir: /Users/saharbarak/personal/akashik
 model: gpt-5.4
 provider: openai
 approval: never
@@ -299,7 +299,7 @@ Recent learnings from this project:
 codex
 I’m treating this as a direct research synthesis task, not a code task. First I’ll pull the project’s existing Round 4 context from the repo if it exists, then I’ll verify the external systems and papers needed to answer Q1-Q8 with specific citations.
 exec
-/bin/zsh -lc 'rg --files . | rg "(akashik|round|locomo|lme|agentmemory|federat|benchmark|retrieval|memory)"' in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc 'rg --files . | rg "(akashik|round|locomo|lme|agentmemory|federat|benchmark|retrieval|memory)"' in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 ./src/domain/long-term-memory.ts
 ./src/domain/consolidated-memory.ts
@@ -331,7 +331,7 @@ exec
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md
 
 exec
-/bin/zsh -lc 'rg -n "Round 4|Akashik|ambitioned-curator|LoCoMo|LME-S|agentmemory|federation-level|compounding" .' in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc 'rg -n "Round 4|Akashik|ambitioned-curator|LoCoMo|LME-S|agentmemory|federation-level|compounding" .' in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 ./findings.md:27:*   **Advantage:** Corrective-RAG dynamically grades retrieved chunks and triggers fallbacks (like web search or query rewriting) if confidence is low, drastically improving the LoCoMo factual harmonic-mean.
 ./findings.md:42:    *   **Expected Lift:** +0.02 to +0.03 on LME-S (directly hitting multi-session and temporal-reasoning).
@@ -354,7 +354,7 @@ exec
 ./tests/bench-locomo-real.test.ts:261:  // Phase 23.13 — LoCoMo recall ladder. Always over-retrieve to KMAX
 ./tests/bench-locomo-real.test.ts:263:  // pass, mirroring the LME-S T1 diagnostic. If R@30 ≈ R@3 the rerank
 ./tests/bench-locomo-real.test.ts:276:  // For LoCoMo we have rich metadata: per-session date_time, the LoCoMo
-./tests/bench-locomo-real.test.ts:536:    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix, scoring on raw text)' : 'off'}. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
+./tests/bench-locomo-real.test.ts:536:    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix, scoring on raw text)' : 'off'}. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
 ./tests/bench-locomo-real.test.ts:560:  // Real LoCoMo is far harder than the synthetic 4-persona corpus
 ./tests/bench-locomo-real.test.ts:563:  // uses an LLM judge over LoCoMo's accuracy split, NOT this
 ./tests/bench-locomo-real.test.ts:571:    `LoCoMo-real dimension regressed below 0.28 floor: ${dimensionScore.toFixed(4)} (evidence-recall=${evidenceRecall.toFixed(3)}, containment=${meanContainment.toFixed(3)})`,
@@ -374,9 +374,9 @@ exec
 ./docs/research/beat-the-competitors-retrieval-plan.md:48:| LLM extractor (Phase 23.8) | wired into `bench-locomo-real` | partial | LoCoMo-only |
 ./docs/research/beat-the-competitors-retrieval-plan.md:61:Ranked by `(expected lift on LME-S R@5)/(implementation hours)`:
 ./docs/research/beat-the-competitors-retrieval-plan.md:85:  LongMemEval-S R@5      0.9202  →  0.96-0.98   (beats agentmemory 0.952)
-./docs/research/beat-the-competitors-retrieval-plan.md:89:If those land, **wellinformed becomes the published-leaderboard leader on LME-S** with a fully open-source, CPU-only, retrieval-only pipeline. No LLM judge, no GPT-4 reasoning loop, no closed-weight model — just a clean hybrid sparse+dense+rerank+graph pipeline that beats the proprietary stacks.
+./docs/research/beat-the-competitors-retrieval-plan.md:89:If those land, **akashik becomes the published-leaderboard leader on LME-S** with a fully open-source, CPU-only, retrieval-only pipeline. No LLM judge, no GPT-4 reasoning loop, no closed-weight model — just a clean hybrid sparse+dense+rerank+graph pipeline that beats the proprietary stacks.
 ./docs/research/beat-the-competitors-retrieval-plan.md:118:**Risk:** cross-encoder adds ~10ms/match latency. With K=5 reranked from 20 candidates, that's 200ms/query × 500 q = 100s added to LME-S run. Cheap.
-./docs/research/beat-the-competitors-retrieval-plan.md:124:Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes wellinformed comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
+./docs/research/beat-the-competitors-retrieval-plan.md:124:Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes akashik comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
 ./docs/research/beat-the-competitors-retrieval-plan.md:148:- **Late-interaction (ColBERTv2 / PLAID)**: **abandon** as a primary retrieval path. The full-corpus late-interaction index doesn't fit the Hetzner CAX11 4GB RAM constraint and isn't a natural fit for `sqlite-vec`. Only viable form is `Jina-ColBERT-v2` as a **second-stage reranker** on top-20 candidates — and even then, projected lift is small on LME-S vs other options.
 ./docs/research/beat-the-competitors-retrieval-plan.md:160:| **2nd** | **E11 (contextual enrichment)** | multi-session, temporal | +3-5pp | 3-4 h | Write-path → compounds with everything. Single-pass re-index of LoCoMo + LME-S sessions to validate. |
 ./docs/research/beat-the-competitors-retrieval-plan.md:165:LongMemEval-S R@5       0.9202  →  0.965-0.975   (clears agentmemory 0.952)
@@ -392,7 +392,7 @@ exec
 ./docs/research/performance-prediction-matrix.md:113:The defensible positioning *isn't* "we beat agentmemory on R@5" — that depends on a tier they probably already use and we're catching up to. The defensible positioning is:
 ./docs/marketing/positioning-v2.1.md:149:compounding to happen.
 ./docs/research/octopus-discover/round-4-2026-05-26/README.md:1:# Octopus discover — Round 4 (2026-05-26)
-./docs/research/octopus-discover/round-4-2026-05-26/README.md:5:- The pivot from `wellinformed` (agent-memory product) to **Akashik**
+./docs/research/octopus-discover/round-4-2026-05-26/README.md:5:- The pivot from `akashik` (agent-memory product) to **Akashik**
 ./docs/research/octopus-discover/round-4-2026-05-26/README.md:7:- The articulation of the **compounding mechanism** (peer-local
 ./docs/research/octopus-discover/round-4-2026-05-26/README.md:11:  E11 lift on LoCoMo and the order-sensitive view of LME-S
 ./docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:10:"Akashik: federated knowledge commons for the open-source community as a whole."
@@ -432,7 +432,7 @@ exec
 ./docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:327:*   **Balanced Trade-off:** The advantage of your current setup is that developers feel safe sharing rooms because API keys are scrubbed. The disadvantage is that enterprise SOC2 Type II auditors will fail the system. An enterprise needs to prove *who asked what, and what specific data left the local machine*. Because Akashik peers autonomously federate queries via `ask --peers`, a SOC2 audit cannot easily prove that a specific piece of proprietary IP wasn't inadvertently synced to an unauthorized peer's local graph.
 ./docs/marketing/storybrand-messaging-draft.md:1:# Akashik — brand messaging, StoryBrand 7-prompt pass
 ./docs/marketing/storybrand-messaging-draft.md:5:`SaharBarak/skills-and-workflows` repo) against Akashik's actual
-./docs/marketing/storybrand-messaging-draft.md:8:**Brand name:** Akashik (formerly project codename `wellinformed`).
+./docs/marketing/storybrand-messaging-draft.md:8:**Brand name:** Akashik (formerly project codename `akashik`).
 ./docs/marketing/storybrand-messaging-draft.md:15:**Mission anchor (the only anchor that's correct):** Akashik is
 ./docs/marketing/storybrand-messaging-draft.md:17:as a whole**. Not a personal-memory product (mem0/agentmemory/
 ./docs/marketing/storybrand-messaging-draft.md:34:> Akashik is a peer-to-peer knowledge graph protocol for the
@@ -486,11 +486,11 @@ exec
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:246:    why Akashik differs
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:247:  - For Q3: a proposed benchmark for measuring federation-level
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:248:    compounding, with the metrics and the experimental design
-./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:266:# FOURTH-ROUND ANALYSIS — Akashik / wellinformed
+./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:266:# FOURTH-ROUND ANALYSIS — Akashik / akashik
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:273:The stack is TypeScript / DDD with clean layer separation (`domain` → `application` → `infrastructure` → `cli`/`mcp`). Domain layer is pure: immutable graph values, `neverthrow` Result monads throughout, no I/O. Key domain types confirm what the prompt describes: `graph.ts` (immutable GraphNode/GraphEdge), `eval-metrics.ts` (pure `recallAtK`/`ndcgAtK`/`reciprocalRank`), `contextual-enrich.ts` (E11, pure, deterministic), `llm-listwise-rerank.ts` (ports-and-adapters for LLM, shuffle already shipped at commit 1f828b7), `sharing.ts` (SEC-03 boundary: no raw embeddings cross the wire), `oracle.ts` (P2P Q&A as pure graph-node data shape), `federated-search.ts` (Promise.all fan-out with 2000ms per-peer timeout, dedup prefers local). The architecture is sound for the Akashik mission. The retrieval plumbing is well-built. The open question is what to measure next.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:279:**The headline claim first:** continuing to push per-peer R@5 is a marketing question for the OLD product frame, not an engineering question for Akashik.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:281:Here is why. LME-S shows R@50 = 1.0 — the gold is always in the candidate pool; the ceiling is real. The remaining ~4pp NDCG@5 headroom is the gap between ranks 1 and 2-5. On LoCoMo the headroom is 60pp, but the only interventions that produced lift were write-path ones (E11), not read-path ones. Small local LLMs actively regression on LoCoMo after shuffle.
-./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:283:More importantly: Akashik's product claim is not "our single-peer R@5 beats mem0." That was wellinformed's frame, and the pivot explicitly abandoned it. Akashik's claim is that the compounding loop produces network-level knowledge availability that grows monotonically. That claim cannot be validated by any per-peer retrieval benchmark. The engineering debt is not "push R@5 from 0.920 to 0.940." The engineering debt is "there is no benchmark for what we claim."
+./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:283:More importantly: Akashik's product claim is not "our single-peer R@5 beats mem0." That was akashik's frame, and the pivot explicitly abandoned it. Akashik's claim is that the compounding loop produces network-level knowledge availability that grows monotonically. That claim cannot be validated by any per-peer retrieval benchmark. The engineering debt is not "push R@5 from 0.920 to 0.940." The engineering debt is "there is no benchmark for what we claim."
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:285:**The tradeoff of stopping retrieval tuning:** You leave 60pp of theoretical LoCoMo headroom on the table. However, that headroom requires a larger model than what runs locally (qwen2.5:7b already regressed). Capturing it requires a cloud API call, which reintroduces network dependency and cost per query — counter to the local-first architecture. The tradeoff is: spend a week definitively answering whether a cloud API call on LoCoMo lifts R@3 above bi-encoder (one 50-question spot-check with GPT-4o-mini would settle this), then either ship the cloud reranker as an opt-in tier or close the listwise chapter entirely.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:291:4. One-week cloud-API listwise ablation on LoCoMo to definitively close or continue the reranker chapter (~10%)
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:295:## Q2 — Is the Akashik mechanism novel or a known pattern?
@@ -506,7 +506,7 @@ exec
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:357:- **Availability confounding.** Your current bench runs with all peers online. In production, the 2000ms timeout means some peers never respond. Your single-peer benchmarks (LME-S, LoCoMo) don't model this. AkashikBench-F should include a "partial availability" condition: what is federation R@k when 20% of peers are offline?
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:365:- **Short-body prefix dominance.** On LoCoMo, some conversation turns are very short (< 30 tokens). A 512-token sentence-transformer with a 40-token E11 prefix and a 20-token body is now embedding 66% metadata + 33% content. The metadata prefix dominates the vector. Test E11 lift stratified by body length. If the lift is concentrated in long-body documents, the metric average is masking a failure on short bodies.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:369:The 0.952 (agentmemory) / 0.925 (mem0) / 0.928 (ByteRover) numbers are NOT defensible baselines for comparison. Here's why:
-./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:379:## Q5 — Smallest-viable launch plan: 100 contributors, 30 days, visible compounding
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:383:Reasons: small and high-trust (≈5,000 serious contributors globally), terminal-native (CLI fits), deep knowledge-sharing culture (This Week in Rust newsletter has 15k+ subscribers), and the community has a known pain — institutional memory evaporates when maintainers rotate. Akashik's compounding property is precisely the fix.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:389:Direct invite to maintainers of top-100 crates by download count. Message: "You already know things that took months to learn. Akashik keeps that knowledge alive for the next person, attributed to you." The attribution model matters here — unlike Confluence/Notion, contributions stay yours.
@@ -678,7 +678,7 @@ exec
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:304:To prove compounding, you need a high-density, high-churn micro-community where users frequently encounter the same obscure errors.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:322:3.  **IPFS / libp2p Ecosystem:** *Strength:* The actual infrastructure of decentralized data. *Weakness:* It is purely a storage primitive. It has no native semantic routing, no LLM integration, and no concept of "curiosity-driven" compounding.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:326:*   **The Response:** "Akashik bypasses the traditional free-rider problem because *contribution requires zero friction*. In standard systems, users must stop working to write a forum post. In Akashik, the act of a user privately solving their own problem via an LLM web-miss automatically creates the signed artifact. The cost of serving that artifact to a peer is a negligible background SQLite vector lookup (~11ms). We don't need tokenomics because the byproduct of selfish utility is collective wealth."
-./docs/README.md:25:- [`GRAPHRAG-AUDIT.md`](product/GRAPHRAG-AUDIT.md) — wellinformed audited against 2025/2026 GraphRAG state of the art (Microsoft GraphRAG, HippoRAG 2, LightRAG, MultiHop-RAG, LoCoMo).
+./docs/README.md:25:- [`GRAPHRAG-AUDIT.md`](product/GRAPHRAG-AUDIT.md) — akashik audited against 2025/2026 GraphRAG state of the art (Microsoft GraphRAG, HippoRAG 2, LightRAG, MultiHop-RAG, LoCoMo).
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/codex-0.md:13:"Akashik: federated knowledge commons for the open-source community as a whole."
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/codex-0.md:29:Each Akashik peer holds only its own information:
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/codex-0.md:38:The compounding loop, in 5 steps:
@@ -887,7 +887,7 @@ exec
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:398:The mem0 comparison is especially wrong. mem0's 0.925 is a LoCoMo *accuracy* score from their ECAI 2025 paper, measured by an LLM judge evaluating whether the final answer is correct. Your 0.3536 is retrieval-only strict evidence-recall. Placing these in the same table implies they measure the same thing. They don't. The correct comparison of your LoCoMo work is against a retrieval-only baseline from the original LoCoMo paper (Maharana et al., EMNLP 2024, arxiv 2402.17753), not against mem0's end-to-end number.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:404:## Q5 — Smallest-viable launch plan for compounding signal in 30 days
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:433:The HN post must contain exactly one falsifiable claim: "In the last 30 days, X queries to this network were answered by another contributor's cached research rather than reaching the web. Here is the compounding curve." X must be a real measured number, not an estimate.
-./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:455:**Akashik mitigation**: The `find_tunnels` MCP tool already discovers cross-domain connections. A `wellinformed room gaps` command — showing topics that have queries but no cached answers, or topics that haven't been updated in >30 days — would surface the cold-topic coverage map to curators. The peer-reputation system's "topic coverage gaps" output (mentioned in its design doc) is exactly this. Implement it as a visible CLI output, not just an internal metric.
+./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:455:**Akashik mitigation**: The `find_tunnels` MCP tool already discovers cross-domain connections. A `akashik room gaps` command — showing topics that have queries but no cached answers, or topics that haven't been updated in >30 days — would surface the cold-topic coverage map to curators. The peer-reputation system's "topic coverage gaps" output (mentioned in its design doc) is exactly this. Implement it as a visible CLI output, not just an internal metric.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:459:**This is the CAP theorem for decentralized knowledge:** You can have consistency (one canonical answer) or availability (always online) but not both without full replication — and Akashik explicitly avoids full replication.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:464:- IPFS pinning services: third parties voluntarily host content. Akashik equivalent: an "Akashik Archive" peer run by the project that caches anything marked `community-critical` by the original curator.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:465:- DHT replication factor: Kademlia stores k=20 copies. Akashik's opt-in "popular-in-room caching" (mentioned in the mechanism doc) is the right analog. Make it opt-in-by-default for rooms tagged `oss-commons`, not just general rooms.
@@ -922,9 +922,9 @@ exec
 ./docs/product/BENCHMARKS.md:231:| agentmemory (rohitg00) | LongMemEval-S R@5 | 95.2% | retrieval-only, public benchmark |
 ./docs/product/BENCHMARKS.md:234:| mem0 | LoCoMo composite | 92.5 | mem0 ECAI 2025 |
 ./docs/product/BENCHMARKS.md:236:| MemMachine | LoCoMo (gpt-4.1-mini) | 0.9169 | |
-./docs/product/BENCHMARKS.md:239:| **wellinformed** (Hetzner, Phase 23.7 real public corpora) | unified composite | **0.8597** | real BEIR SciFact + LongMemEval-S oracle + LoCoMo factual; synthetic in 5 of 9 dimensions |
+./docs/product/BENCHMARKS.md:239:| **akashik** (Hetzner, Phase 23.7 real public corpora) | unified composite | **0.8597** | real BEIR SciFact + LongMemEval-S oracle + LoCoMo factual; synthetic in 5 of 9 dimensions |
 ./docs/product/BENCHMARKS.md:241:Direct apples-to-apples comparisons land in Phase 23.5 when the real LongMemEval-S / LoCoMo / BEIR SciFact / HotpotQA full adapters ship. Until then the composite is comparable across our own commits as a regression ratchet, not against external systems.
-./docs/product/BENCHMARKS.md:287:3. **Real LoCoMo factual F1 = 0.3536 vs synth 0.864** is the brutal one — real LoCoMo has 3+ gold evidence sessions per question often, and strict-recall (`every gold tag in top-3`) is unforgiving. mem0's 92.5 LoCoMo composite uses an **LLM judge over accuracy**, not retrieval-only — directly comparable only via the Phase 23.8 SQuAD-F1 path (`WELLINFORMED_BENCH_LLM_EXTRACTOR=1`).
+./docs/product/BENCHMARKS.md:287:3. **Real LoCoMo factual F1 = 0.3536 vs synth 0.864** is the brutal one — real LoCoMo has 3+ gold evidence sessions per question often, and strict-recall (`every gold tag in top-3`) is unforgiving. mem0's 92.5 LoCoMo composite uses an **LLM judge over accuracy**, not retrieval-only — directly comparable only via the Phase 23.8 SQuAD-F1 path (`AKASHIK_BENCH_LLM_EXTRACTOR=1`).
 ./docs/product/BENCHMARKS.md:309:The 0.9202 lands within a hair of ByteRover's claimed 92.8% on the same public benchmark — *retrieval-only, no LLM judge*. agentmemory claims 95.2%; we're 3pp behind their best path. Hetzner CAX11, ~110 min wall-time.
 ./docs/product/BENCHMARKS.md:311:#### LoCoMo with qwen2.5:1.5b SQuAD-F1 extractor (Mac M-series)
 ./docs/marketing/IMAGEGEN-FRONTEND-WEB.md:376:The three steps form a diagonal flow — visualizing the "compounding"
@@ -932,7 +932,7 @@ exec
 codex
 I found the prior Round 4 materials and the project’s benchmark notes. Next I’m reading the round synthesis plus the retrieval/federation docs so the answer stays aligned with the project’s own empirical state rather than drifting into generic prior-art comparison.
 exec
-/bin/zsh -lc "sed -n '1,240p' docs/research/octopus-discover/round-4-2026-05-26/synthesis.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,240p' docs/research/octopus-discover/round-4-2026-05-26/synthesis.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # PROBE Phase Synthesis
 ## Discovery Summary - יום ג׳ מאי 26 2026 17:11:12 IDT
@@ -942,7 +942,7 @@ exec
 PROJECT IDENTITY (changed since last round)
 ================================================================
 
-The project pivoted from "wellinformed: agent-memory product" to
+The project pivoted from "akashik: agent-memory product" to
 "Akashik: federated knowledge commons for the open-source community as a whole."
 
 The mission is to give the OSS community what it has always lacked:
@@ -953,7 +953,7 @@ attributed, forever.
 
 The brand name borrows from the Akashic Records mythology, reframed
 as concrete contributor-owned infrastructure. The codebase is still
-called "wellinformed" internally.
+called "akashik" internally.
 
 ================================================================
 THE MECHANISM (the architectural insight that makes the mission credible)
@@ -1176,13 +1176,13 @@ Q8. Final philosophical question. The mission is "make the OSS
 OUTPUT EXPECTED:
 
 exec
-/bin/zsh -lc "sed -n '1,240p' docs/research/octopus-discover/round-4-2026-05-26/README.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,240p' docs/research/octopus-discover/round-4-2026-05-26/README.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # Octopus discover — Round 4 (2026-05-26)
 
 Multi-LLM discover round run after:
 - Three prior rounds (2026-05-21, 2026-05-24, 2026-05-26 morning)
-- The pivot from `wellinformed` (agent-memory product) to **Akashik**
+- The pivot from `akashik` (agent-memory product) to **Akashik**
   (federated knowledge commons for the OSS community)
 - The articulation of the **compounding mechanism** (peer-local
   storage, federation-on-query, web-on-miss, save-locally,
@@ -1238,14 +1238,14 @@ from the round 4 brief, since the round 4 synthesizer focused on
 the codebase audit instead of fusing the strategy answers.
 
 exec
-/bin/zsh -lc "sed -n '1,260p' docs/research/beat-the-competitors-retrieval-plan.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,260p' docs/research/beat-the-competitors-retrieval-plan.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
-# How wellinformed beats the retrieval leaderboard (forward plan)
+# How akashik beats the retrieval leaderboard (forward plan)
 
 **Status:** strategic sketch — Phase 24 candidate ratchets
 **Drafted:** 2026-05-21
 **Anchor numbers (Phase 23.7+ measured):**
-| Benchmark | wellinformed | Competitor best | Gap |
+| Benchmark | akashik | Competitor best | Gap |
 |---|---:|---:|---:|
 | LongMemEval-S R@5 (50-distractor, n=500) | **0.9202** | agentmemory 0.952, ByteRover 0.928 | -3pp / -0.6pp |
 | LongMemEval-S R@5 (oracle) | 0.9990 | (at ceiling) | — |
@@ -1281,7 +1281,7 @@ Primitives that exist but are NOT in the bench retrieval path:
 
 | Primitive | Where | Bench-path? | Note |
 |---|---|---|---|
-| Cross-encoder rerank (ms-marco-MiniLM-L-6-v2) | `src/application/ask.ts:436-441` + `src/domain/cross-rerank.ts` | **No** | Gated behind `WELLINFORMED_RERANK=1`; benches call `searchByRoom` directly, bypass `ask()` |
+| Cross-encoder rerank (ms-marco-MiniLM-L-6-v2) | `src/application/ask.ts:436-441` + `src/domain/cross-rerank.ts` | **No** | Gated behind `AKASHIK_RERANK=1`; benches call `searchByRoom` directly, bypass `ask()` |
 | Personalized PageRank rerank | `src/application/ask.ts:444` | **No** | Same — only in `ask()` |
 | Mention enrichment (`buildHit`) | `src/application/ask.ts:448` | **No** | Same |
 | Cross-room federated search | `src/application/use-cases.ts` | **No** | Benches scope to one room |
@@ -1328,7 +1328,7 @@ Combined plausible end-state:
   BEIR SciFact NDCG@10   0.7202  →  0.78-0.82   (beats ColBERTv2 0.7522)
 ```
 
-If those land, **wellinformed becomes the published-leaderboard leader on LME-S** with a fully open-source, CPU-only, retrieval-only pipeline. No LLM judge, no GPT-4 reasoning loop, no closed-weight model — just a clean hybrid sparse+dense+rerank+graph pipeline that beats the proprietary stacks.
+If those land, **akashik becomes the published-leaderboard leader on LME-S** with a fully open-source, CPU-only, retrieval-only pipeline. No LLM judge, no GPT-4 reasoning loop, no closed-weight model — just a clean hybrid sparse+dense+rerank+graph pipeline that beats the proprietary stacks.
 
 **E4 / E5 / E6 / E7** are second-wave once E1–E3 are measured. They target the *remaining* loss after the easy wins — by then we'll know which question types are still bleeding.
 
@@ -1345,7 +1345,7 @@ Concrete diff:
 //   const r = await searchByRoom({ graphs, vectors, embedder })({ room, text, k: K });
 //
 // E1 path — pull rerank into the test:
-//   const reranker = process.env.WELLINFORMED_RERANK === '1'
+//   const reranker = process.env.AKASHIK_RERANK === '1'
 //     ? crossEncoderFromEnv() : null;
 //   const r0 = await searchByRoom({ graphs, vectors, embedder })({ room, text, k: K * 4 });  // 4x candidates
 //   const matches = r0._unsafeUnwrap();
@@ -1355,7 +1355,7 @@ Concrete diff:
 //     : ok(matches.slice(0, K));
 ```
 
-Run with `WELLINFORMED_RERANK=1` env on the Hetzner box. Compare against today's 0.9202 number. If lift is real, ship.
+Run with `AKASHIK_RERANK=1` env on the Hetzner box. Compare against today's 0.9202 number. If lift is real, ship.
 
 **Risk:** cross-encoder adds ~10ms/match latency. With K=5 reranked from 20 candidates, that's 200ms/query × 500 q = 100s added to LME-S run. Cheap.
 
@@ -1363,9 +1363,9 @@ Run with `WELLINFORMED_RERANK=1` env on the Hetzner box. Compare against today's
 
 ## 6. Stretch — Phase 24 candidates
 
-Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes wellinformed comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
+Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes akashik comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
 
-Beyond that: **federated retrieval** (the unique wellinformed bet) — measure how P2P-shared rooms across multiple peers lift recall on out-of-distribution questions, vs single-peer baselines. No public benchmark covers this today; we'd publish one.
+Beyond that: **federated retrieval** (the unique akashik bet) — measure how P2P-shared rooms across multiple peers lift recall on out-of-distribution questions, vs single-peer baselines. No public benchmark covers this today; we'd publish one.
 
 ---
 
@@ -1426,13 +1426,13 @@ These are Phase 25+ but worth recording so they don't get lost:
 
 - **CI/CD checksum pinning** — `model-checksums.json` for the Xenova ONNX weights to prevent supply-chain attacks (the bge-base defective-conversion incident is the precedent).
 - **2-minute regression smoke bench** — small subset of LME-S / SciFact in CI so quality regressions can't ship silently.
-- **Bus factor on `wellinformed-rs`** — Rust ARM cross-compile is specialized knowledge; consider TypeScript-only fallback path.
+- **Bus factor on `akashik-rs`** — Rust ARM cross-compile is specialized knowledge; consider TypeScript-only fallback path.
 - **GDPR derived-data semantics** — contextual enrichment + contradiction chains create *derived* personal data that must map back to source turns for delete-by-user compliance.
 
 Source: `~/.claude-octopus/results/probe-synthesis-1779351019.md` — 6 multi-LLM probes synthesized by Gemini-2.5-Pro, 2026-05-21. Full transcript preserved in claude-octopus state.
 
 exec
-/bin/zsh -lc "sed -n '1,240p' docs/marketing/how-akashik-works.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,240p' docs/marketing/how-akashik-works.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # How Akashik works
 
@@ -1685,7 +1685,7 @@ web search: Wikipedia anti-vandalism revision history paper arxiv ...
 codex
 I have the project’s own Round 4 brief and benchmark notes. I’m now pulling just the most relevant prior probe passages for Q1-Q8 and cross-checking the outside references so the final synthesis names concrete neighbors instead of hand-waving at categories.
 exec
-/bin/zsh -lc "sed -n '620,760p' docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '620,760p' docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 | 2-3 | FCB instrumentation + 2-peer integration test | Only measurement that validates the mission claim; currently zero |
 | 3-4 | Coordinator server for cross-router peer discovery | mDNS doesn't cross routers; launch requires a coordinator for non-LAN peers |
@@ -1708,7 +1708,7 @@ The architecture is sound. The retrieval is measured. The mission is clear. The 
 # Completed: יום ג׳ מאי 26 2026 17:08:58 IDT
 
 exec
-/bin/zsh -lc 'rg -n "Q1|Q2|Q3|Q4|Q5|Q6|Q7|Q8|closest prior art|benchmark|launch plan|competitor|counter-argument|counter argument|novel|federation|compounding" docs/research/octopus-discover/round-4-2026-05-26/probes/*.md' in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc 'rg -n "Q1|Q2|Q3|Q4|Q5|Q6|Q7|Q8|closest prior art|benchmark|launch plan|competitor|counter-argument|counter argument|novel|federation|compounding" docs/research/octopus-discover/round-4-2026-05-26/probes/*.md' in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:32:  - what it researched on the web when the federation couldn't answer
 docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:38:The compounding loop, in 5 steps:
@@ -2165,7 +2165,7 @@ docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:351:
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:354:1. Single-peer only (no federation): WFR never decreases, R(T,t) stays at 1 for all T
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:355:2. Akashik federation: the above metrics
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:358:**Why this is publishable:** No existing benchmark measures P2P semantic compounding. TREC (ad-hoc retrieval), BEIR (cross-domain transfer), LongMemEval (single-session memory) all measure single-system retrieval quality. FCB is the first benchmark that treats the P2P network itself as the retrieval system and measures the compounding property as the primary axis. Target venue: SIGIR 2027 or ACL Findings under "evaluation methodology" track.
-docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:360:**Concrete implementation:** A `wellinformed bench federation` CLI command running a Docker Compose network of 4 peers, injecting queries from the hot/cold corpus, and emitting an FCB report. Est. engineering effort: 2-3 weeks.
+docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:360:**Concrete implementation:** A `akashik bench federation` CLI command running a Docker Compose network of 4 peers, injecting queries from the hot/cold corpus, and emitting an FCB report. Est. engineering effort: 2-3 weeks.
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:364:## Q4 — Known pitfalls you're probably hitting
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:368:**Non-determinism from random shuffling.** The shuffle fix in commit 1f828b7 broke the input-order bias — but random shuffles make the benchmark non-deterministic. The 8-question spot-check that showed "3 same-set + 1 lift + 1 regression" is likely noise from shuffle variance, not signal. Fix: pin a per-question seed derived from the question ID, so results are reproducible across runs. Without this, you can't distinguish real lift from lucky shuffle.
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:374:**You have no federated retrieval evaluation at all.** Every benchmark result is single-peer local retrieval. This is the most important pitfall: the project's differentiating claim (federation compounds knowledge) has zero measurement infrastructure, which means you also have zero evidence that federation *doesn't* hurt single-peer retrieval quality. Federated fan-out introduces latency heterogeneity, vocabulary drift across peers, and duplicate node inflation in RRF merge — any of which could degrade the 0.9202 LME-S number when measured on a real multi-peer run.
@@ -2237,7 +2237,7 @@ docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:251:
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:252:    actual competitors (not categories)
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:253:  - For Q8: the strongest counter-argument + a one-paragraph
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:277:## Q1 — Where should the next engineering month go?
-docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:283:More importantly: Akashik's product claim is not "our single-peer R@5 beats mem0." That was wellinformed's frame, and the pivot explicitly abandoned it. Akashik's claim is that the compounding loop produces network-level knowledge availability that grows monotonically. That claim cannot be validated by any per-peer retrieval benchmark. The engineering debt is not "push R@5 from 0.920 to 0.940." The engineering debt is "there is no benchmark for what we claim."
+docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:283:More importantly: Akashik's product claim is not "our single-peer R@5 beats mem0." That was akashik's frame, and the pivot explicitly abandoned it. Akashik's claim is that the compounding loop produces network-level knowledge availability that grows monotonically. That claim cannot be validated by any per-peer retrieval benchmark. The engineering debt is not "push R@5 from 0.920 to 0.940." The engineering debt is "there is no benchmark for what we claim."
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:288:1. Federation measurement infrastructure (~40%) — see Q3
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:289:2. AT Protocol DID compatibility audit (~30%) — see Q7
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:295:## Q2 — Is the Akashik mechanism novel or a known pattern?
@@ -2256,7 +2256,7 @@ docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:357:
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:359:- **Corpus contamination.** If you run multi-peer simulation with overlapping source corpora (e.g., two peers that both indexed the same web page), the federation looks better than it is — you're measuring deduplication handling, not genuine knowledge transfer. Strict corpus disjointness at setup is non-negotiable for valid results.
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:371:- These numbers come from each product's own benchmarking with their own chunking strategy, embedding model, retrieval head size, and evaluation protocol. They are NOT run on identical setups.
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:373:- The LongMemEval paper's own baseline numbers for "retrieval-only" are lower than all three products' published numbers — suggesting each product tuned for this specific benchmark.
-docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:379:## Q5 — Smallest-viable launch plan: 100 contributors, 30 days, visible compounding
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:383:Reasons: small and high-trust (≈5,000 serious contributors globally), terminal-native (CLI fits), deep knowledge-sharing culture (This Week in Rust newsletter has 15k+ subscribers), and the community has a known pain — institutional memory evaporates when maintainers rotate. Akashik's compounding property is precisely the fix.
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:394:**The compounding signal to show at day 30:**
@@ -2276,11 +2276,11 @@ docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:471:
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:476:1. **AkashikBench-F harness** — build the N-peer simulation bench described in Q3. This is what validates the mission claim. Without it, launch is vibes. With it, launch is a paper and a credible number.
 
 exec
-/bin/zsh -lc "sed -n '1,260p' findings.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,260p' findings.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # SOTA Retrieval Synthesis: CPU-Bound Memory & Temporal Reasoning (2024-2026)
 
-This synthesis evaluates 2024-2026 retrieval techniques against the strict constraints of the `wellinformed` pipeline (CPU-only, ARM Hetzner CAX11 4GB, TypeScript + transformers.js + sqlite-vec), specifically targeting the 10-13pp loss in multi-session and temporal-reasoning questions on LongMemEval-S.
+This synthesis evaluates 2024-2026 retrieval techniques against the strict constraints of the `akashik` pipeline (CPU-only, ARM Hetzner CAX11 4GB, TypeScript + transformers.js + sqlite-vec), specifically targeting the 10-13pp loss in multi-session and temporal-reasoning questions on LongMemEval-S.
 
 ## 1. Late-Interaction CPU Ports
 **Techniques:** ColBERTv2, PLAID, Jina-ColBERT-v2.
@@ -2349,7 +2349,7 @@ This synthesis evaluates 2024-2026 retrieval techniques against the strict const
 web search: 
 web search: Freenet original paper monotonic availability citation ...
 codex
-1. **Q1:** Spend the next engineering month on **federation architecture and measurement**, not on squeezing LME-S `R@5` from `0.9202` toward `agentmemory`’s claimed `0.952`. Your own numbers show the single-peer head is already near-saturated on LongMemEval-S (`R@50 = 1.0000`, `NDCG@5 = 0.8836`, `MRR = 0.9034`) while the product claim lives or dies on Step 5 transfer, not on another 1-3 leaderboard points ([Round 4 brief](/Users/saharbarak/personal/wellinformed/docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:1), [bench plan](/Users/saharbarak/personal/wellinformed/docs/research/beat-the-competitors-retrieval-plan.md:1), [benchmarks](/Users/saharbarak/personal/wellinformed/docs/product/BENCHMARKS.md:287)). The upside is this is the only work that validates the Akashik thesis; the downside is you delay an easy marketing win and accept that per-peer retrieval will remain “good enough” rather than obviously best-in-class for another month.
+1. **Q1:** Spend the next engineering month on **federation architecture and measurement**, not on squeezing LME-S `R@5` from `0.9202` toward `agentmemory`’s claimed `0.952`. Your own numbers show the single-peer head is already near-saturated on LongMemEval-S (`R@50 = 1.0000`, `NDCG@5 = 0.8836`, `MRR = 0.9034`) while the product claim lives or dies on Step 5 transfer, not on another 1-3 leaderboard points ([Round 4 brief](/Users/saharbarak/personal/akashik/docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:1), [bench plan](/Users/saharbarak/personal/akashik/docs/research/beat-the-competitors-retrieval-plan.md:1), [benchmarks](/Users/saharbarak/personal/akashik/docs/product/BENCHMARKS.md:287)). The upside is this is the only work that validates the Akashik thesis; the downside is you delay an easy marketing win and accept that per-peer retrieval will remain “good enough” rather than obviously best-in-class for another month.
 
 2. **Q2:** It is **not wholly novel**; the closest prior art is **Freenet** (“*Freenet: A Distributed Anonymous Information Storage and Retrieval System*,” 2001) with a secondary lineage to **CCNx/NDN** ([Freenet paper PDF](https://www.cs.princeton.edu/courses/archive/fall11/cos518/papers/freenet.pdf), [RFC 8569](https://www.rfc-editor.org/rfc/rfc8569)). The overlap is demand-driven retrieval plus replication/caching as a function of requests; the difference is that Akashik’s units are **signed semantic research objects with human provenance and web-on-miss curation**, not anonymous content blobs or network-layer content objects. Position it as: **“Freenet/CCNx semantics applied to attributed research memory”**; the advantage is a crisp technical lineage, however the tradeoff is you cannot overclaim novelty and should instead claim **novel composition**.
 

@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * wellinformed PreToolUse smart hook.
+ * akashik PreToolUse smart hook.
  *
  * Runs BEFORE Claude calls Grep / Glob / Read / WebSearch / WebFetch.
- * Extracts a query from the tool input, runs `wellinformed ask --json`
+ * Extracts a query from the tool input, runs `akashik ask --json`
  * against the knowledge graph, and injects results into additionalContext.
  *
  * Hit path  : top-3 nodes + ids + workspace + source URIs → Claude answers
  *             from the graph without the outbound tool call.
- * Miss path : append {tool, query, ts} to ~/.wellinformed/miss-log.jsonl
+ * Miss path : append {tool, query, ts} to ~/.akashik/miss-log.jsonl
  *             so the user can later decide whether to ingest.
  *
  * Graceful degradation: if the graph doesn't exist, the binary isn't on
@@ -23,10 +23,10 @@ const { readFileSync, appendFileSync, mkdirSync, existsSync } = require('node:fs
 const { join } = require('node:path');
 const os = require('node:os');
 
-const HOME = process.env.WELLINFORMED_HOME || join(os.homedir(), '.wellinformed');
+const HOME = process.env.AKASHIK_HOME || join(os.homedir(), '.akashik');
 const GRAPH_PATH = join(HOME, 'graph.json');
 const MISS_LOG = join(HOME, 'miss-log.jsonl');
-const PREFETCH_TIMEOUT_MS = Number(process.env.WELLINFORMED_PREFETCH_TIMEOUT_MS ?? 4500);
+const PREFETCH_TIMEOUT_MS = Number(process.env.AKASHIK_PREFETCH_TIMEOUT_MS ?? 4500);
 const MAX_QUERY_LEN = 300;
 const SNIPPET_LEN = 220;
 // Relevance filter — two signals combined:
@@ -45,16 +45,16 @@ const SNIPPET_LEN = 220;
 //
 // Tune both via env vars if the corpus shifts (larger graph = more
 // aggressive noise floor, so raise the cap).
-const HIT_THRESHOLD = Number(process.env.WELLINFORMED_HIT_THRESHOLD ?? 1.05);
-const GAP_MIN = Number(process.env.WELLINFORMED_GAP_MIN ?? 0.02);
+const HIT_THRESHOLD = Number(process.env.AKASHIK_HIT_THRESHOLD ?? 1.05);
+const GAP_MIN = Number(process.env.AKASHIK_GAP_MIN ?? 0.02);
 // Federated-first prefetch — "the network before the web" is the product
 // promise, and the hook has to live up to it. With peers enabled, we run
 // `ask --peers --json` which embeds once locally, fans out to every
 // connected peer with a 2s per-peer deadline, and merges results with
 // local search. If no peers are connected (fresh install, daemon not
 // running), federated gracefully degrades to local-only. Set
-// WELLINFORMED_PREFETCH_PEERS=0 to force local-only.
-const PREFETCH_PEERS = process.env.WELLINFORMED_PREFETCH_PEERS !== '0';
+// AKASHIK_PREFETCH_PEERS=0 to force local-only.
+const PREFETCH_PEERS = process.env.AKASHIK_PREFETCH_PEERS !== '0';
 
 const emit = (text, decision) => {
   const out = {
@@ -73,7 +73,7 @@ const emit = (text, decision) => {
 };
 
 /**
- * Opt-in: when WELLINFORMED_DENY_WEBSEARCH=1 AND the prefetch lands a
+ * Opt-in: when AKASHIK_DENY_WEBSEARCH=1 AND the prefetch lands a
  * confident answer (decision=use_memory, ≥2 hits, satisfaction ≥
  * DENY_THRESHOLD), the PreToolUse hook DENIES the upcoming WebSearch
  * or WebFetch tool call — Claude is forced to use the injected context
@@ -83,9 +83,9 @@ const emit = (text, decision) => {
  * (Read / Glob / Grep) are never denied — they're cheap and there's no
  * value in stopping them.
  */
-const DENY_WEBSEARCH = process.env.WELLINFORMED_DENY_WEBSEARCH === '1';
-const DENY_THRESHOLD = Number(process.env.WELLINFORMED_DENY_THRESHOLD ?? 0.85);
-const DENY_MIN_HITS = Number(process.env.WELLINFORMED_DENY_MIN_HITS ?? 2);
+const DENY_WEBSEARCH = process.env.AKASHIK_DENY_WEBSEARCH === '1';
+const DENY_THRESHOLD = Number(process.env.AKASHIK_DENY_THRESHOLD ?? 0.85);
+const DENY_MIN_HITS = Number(process.env.AKASHIK_DENY_MIN_HITS ?? 2);
 const DENIABLE_TOOLS = new Set(['WebSearch', 'WebFetch']);
 
 const safe = (fn) => { try { return fn(); } catch { return undefined; } };
@@ -106,7 +106,7 @@ const prefetch = (query) => {
     const args = PREFETCH_PEERS
       ? ['ask', '--peers', '--json', '--k', '3', query]
       : ['ask', '--json', '--k', '3', query];
-    const out = execFileSync('wellinformed', args, {
+    const out = execFileSync('akashik', args, {
       timeout: PREFETCH_TIMEOUT_MS,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
@@ -116,7 +116,7 @@ const prefetch = (query) => {
       hits: Array.isArray(parsed.hits) ? parsed.hits : [],
       peers_queried: typeof parsed.peers_queried === 'number' ? parsed.peers_queried : 0,
       peers_responded: typeof parsed.peers_responded === 'number' ? parsed.peers_responded : 0,
-      // Pre-rendered telemetry block from `wellinformed ask --peers --json`.
+      // Pre-rendered telemetry block from `akashik ask --peers --json`.
       // Always emitted by the federated path; absent on local-only --json.
       telemetry_block: typeof parsed._telemetry_block === 'string' ? parsed._telemetry_block : null,
       // Agent contract — satisfaction + decision so the agent knows
@@ -172,17 +172,17 @@ const renderHits = (hits, query, peersMeta) => {
   const peerSummary = peersMeta && peersMeta.peers_queried > 0
     ? ` (queried ${peersMeta.peers_responded}/${peersMeta.peers_queried} peer(s))`
     : '';
-  const head = `wellinformed: ${hits.length} indexed node(s) match "${query.slice(0, 80)}"${peerSummary}`;
+  const head = `akashik: ${hits.length} indexed node(s) match "${query.slice(0, 80)}"${peerSummary}`;
   const body = hits.map((h, i) => {
     const snippet = h.summary ? ` — ${String(h.summary).slice(0, SNIPPET_LEN).replace(/\s+/g, ' ')}` : '';
     return `  ${i + 1}. ${h.label ?? h.id} [${h.workspace ?? '-'}, ${renderAge(h)}, ${renderPeer(h)}] d=${h.distance}${snippet}\n     → ${h.source_uri ?? h.id}`;
   }).join('\n');
-  return `${head}\n${body}\n\nPrefer these over the outbound tool. Load full content via mcp__wellinformed__get_node(id) or mcp__wellinformed__ask(query). If a hit's age is stale for the task, trigger a fresh pull via WebFetch / WebSearch / \`wellinformed trigger\` instead of trusting the cache.`;
+  return `${head}\n${body}\n\nPrefer these over the outbound tool. Load full content via mcp__akashik__get_node(id) or mcp__akashik__ask(query). If a hit's age is stale for the task, trigger a fresh pull via WebFetch / WebSearch / \`akashik trigger\` instead of trusting the cache.`;
 };
 
 // Read the most recent prefetch-cache entry from the UserPromptSubmit
 // hook. If it's fresh (under 90s old), we treat that as the canonical
-// "what wellinformed already knows" — emit its banner as the cleanly-
+// "what akashik already knows" — emit its banner as the cleanly-
 // rendered <system-reminder> block (no UserPromptSubmit-says prefix
 // since this is PreToolUse, not UserPromptSubmit). Subsequent tool
 // calls inside the same turn keep emitting the same banner, so the
@@ -221,7 +221,7 @@ const logBypassAttempt = (toolName, query, cachedEntry) => {
       satisfaction: cachedEntry.satisfaction ?? null,
       peers_responded: cachedEntry.peers_responded ?? 0,
       peers_queried: cachedEntry.peers_queried ?? 0,
-      denied: process.env.WELLINFORMED_DENY_ON_TERMINAL === '1',
+      denied: process.env.AKASHIK_DENY_ON_TERMINAL === '1',
     });
     appendFileSync(BYPASS_LOG, entry + '\n');
   } catch { /* never block the tool over a logging miss */ }
@@ -241,7 +241,7 @@ const main = () => {
   // outbound knowledge-grabber (Glob/Grep/Read/WebSearch/WebFetch),
   // log the call as a potential bypass + optionally DENY it via
   // permissionDecision. The measurement is enabled by default; the
-  // hard deny is gated on WELLINFORMED_DENY_ON_TERMINAL=1 so it
+  // hard deny is gated on AKASHIK_DENY_ON_TERMINAL=1 so it
   // doesn't surprise users who haven't opted in.
   const cached = readFreshCacheEntry();
   if (cached) {
@@ -249,12 +249,12 @@ const main = () => {
     const isOutbound = ['Glob','Grep','Read','WebSearch','WebFetch'].includes(toolName);
     if (isTerminal && isOutbound) {
       logBypassAttempt(toolName, query, cached);
-      if (process.env.WELLINFORMED_DENY_ON_TERMINAL === '1') {
+      if (process.env.AKASHIK_DENY_ON_TERMINAL === '1') {
         emit(
-          cached.system_message ?? 'wellinformed terminal: answer from indexed context above.',
+          cached.system_message ?? 'akashik terminal: answer from indexed context above.',
           {
             permissionDecision: 'deny',
-            permissionDecisionReason: `wellinformed terminal verdict (satisfaction ${(cached.satisfaction ?? 0).toFixed(2)}, ${cached.peers_responded ?? 0}/${cached.peers_queried ?? 0} peers). Answer from the indexed context block. Set WELLINFORMED_DENY_ON_TERMINAL=0 to disable hard-deny.`,
+            permissionDecisionReason: `akashik terminal verdict (satisfaction ${(cached.satisfaction ?? 0).toFixed(2)}, ${cached.peers_responded ?? 0}/${cached.peers_queried ?? 0} peers). Answer from the indexed context block. Set AKASHIK_DENY_ON_TERMINAL=0 to disable hard-deny.`,
           },
         );
         process.exit(0);
@@ -267,13 +267,13 @@ const main = () => {
   }
 
   if (!query || query.length < 3) {
-    emit('wellinformed: knowledge graph is live. Use search / ask / get_node MCP tools before outbound lookups.');
+    emit('akashik: knowledge graph is live. Use search / ask / get_node MCP tools before outbound lookups.');
     process.exit(0);
   }
 
   const prefetchResult = prefetch(query);
   if (prefetchResult === null) {
-    emit(`wellinformed: prefetch skipped for "${query.slice(0, 80)}" (binary unavailable or timed out).`);
+    emit(`akashik: prefetch skipped for "${query.slice(0, 80)}" (binary unavailable or timed out).`);
     process.exit(0);
   }
   // Two-stage relevance filter (see threshold constants above). First
@@ -297,10 +297,10 @@ const main = () => {
   // prefetches produce a `0/0 responded · 0 alive on swarm` block
   // that's noise on every PreToolUse fire (Claude Code fires Read /
   // Glob / Grep hundreds of times per session). The block is meant
-  // for "wellinformed went to the network" moments, not idle ones.
+  // for "akashik went to the network" moments, not idle ones.
   const block = prefetchResult.telemetry_block;
   const queriedPeers = peersMeta.peers_queried > 0;
-  // Agent contract line — always append when wellinformed produced
+  // Agent contract line — always append when akashik produced
   // a satisfaction score, regardless of peer status. This is the
   // *completeness signal* Claude reads to decide whether to fall
   // through to WebSearch.
@@ -328,9 +328,9 @@ const main = () => {
       hits.length >= DENY_MIN_HITS;
     if (shouldDeny) {
       const reason =
-        `wellinformed: indexed context already answers this (satisfaction ${score.toFixed(2)}, ${hits.length} hits). ` +
+        `akashik: indexed context already answers this (satisfaction ${score.toFixed(2)}, ${hits.length} hits). ` +
         `Use the injected context above instead of ${toolName}. ` +
-        `Override with WELLINFORMED_DENY_WEBSEARCH=0 if a fresh source is genuinely needed.`;
+        `Override with AKASHIK_DENY_WEBSEARCH=0 if a fresh source is genuinely needed.`;
       emit(
         appendTelemetry(renderHits(hits, query, peersMeta)),
         { permissionDecision: 'deny', permissionDecisionReason: reason },
@@ -343,7 +343,7 @@ const main = () => {
     const peerNote = peersMeta.peers_queried > 0
       ? ` (network checked: ${peersMeta.peers_responded}/${peersMeta.peers_queried} peer(s) responded, none had a match)`
       : '';
-    emit(appendTelemetry(`wellinformed: no indexed context for "${query.slice(0, 80)}"${peerNote}. Miss logged to ${MISS_LOG}. Proceeding with ${toolName} — consider saving the result back with \`wellinformed save\` or a PostToolUse hook once reasoning is done.`));
+    emit(appendTelemetry(`akashik: no indexed context for "${query.slice(0, 80)}"${peerNote}. Miss logged to ${MISS_LOG}. Proceeding with ${toolName} — consider saving the result back with \`akashik save\` or a PostToolUse hook once reasoning is done.`));
   }
   process.exit(0);
 };

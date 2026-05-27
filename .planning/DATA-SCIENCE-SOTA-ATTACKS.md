@@ -1,8 +1,8 @@
-# SOTA Attack Surface — wellinformed v4 SciFact 75.22% → ?
+# SOTA Attack Surface — akashik v4 SciFact 75.22% → ?
 
 **Date:** 2026-04-19
 **Baseline:** 75.22% NDCG@10, BEIR SciFact, 5,183 × 300, bge-base-en-v1.5 (Rust ONNX) + Anserini-tuned BM25 (k1=0.9, b=0.4) + RRF (k=60)
-**Cached artifacts reused:** `~/.wellinformed/bench/scifact__rust-via-ts__bge-base/vectors.db` (corpus vectors + FTS5 — no re-embed needed for any of the gates below)
+**Cached artifacts reused:** `~/.akashik/bench/scifact__rust-via-ts__bge-base/vectors.db` (corpus vectors + FTS5 — no re-embed needed for any of the gates below)
 
 ---
 
@@ -105,7 +105,7 @@ All five **reuse the cached `vectors.db` corpus embeddings** — no re-indexing.
 - 2.0 h: #2 BM25 grid → measure
 - 3.0 h: #4 calibrated fusion (only if #1+#2 already net ≥ +0.7 pt and trend supports a learned fuse on top)
 
-**Honest aggregate forecast:** stacking #1 + #2 + #4 has diminishing returns (they all touch the fusion stage). Realistic combined ceiling: **76.5–77.0% NDCG@10**, putting wellinformed within 0.5 pt of the bge-base + GPU-rerank line at zero new dependencies.
+**Honest aggregate forecast:** stacking #1 + #2 + #4 has diminishing returns (they all touch the fusion stage). Realistic combined ceiling: **76.5–77.0% NDCG@10**, putting akashik within 0.5 pt of the bge-base + GPU-rerank line at zero new dependencies.
 
 ---
 
@@ -123,4 +123,4 @@ The team has 10+ documented null gates. The proposals above must be ranked hones
 
 **Final honest take:** If forced to ship one intervention, ship **#1 (RRF k sweep)**. It's 90 minutes, can't go below baseline, and the published precedent suggests +0.4 to +0.8 pt lift is highly likely. Everything else is +EV but has tail risk.
 
-*Cached artifact for all gates: `~/.wellinformed/bench/scifact__rust-via-ts__bge-base/vectors.db` (corpus + FTS5 already indexed). Re-run cost per gate: ~30 s of Rust embedder time for 300 queries + 1 s of SQL.*
+*Cached artifact for all gates: `~/.akashik/bench/scifact__rust-via-ts__bge-base/vectors.db` (corpus + FTS5 already indexed). Re-run cost per gate: ~30 s of Rust embedder time for 300 queries + 1 s of SQL.*

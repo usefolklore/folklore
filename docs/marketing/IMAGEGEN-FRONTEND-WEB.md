@@ -365,8 +365,8 @@ canvas. Comp shows Phase B end-state.
 │                                                                           │
 │   ┌──────────────────────────────────────────────────────────────────┐   │
 │   │ # wire it once, globally:                                        │   │
-│   │ claude mcp add --scope user wellinformed -- wellinformed mcp     │   │
-│   │ wellinformed claude install                                      │   │
+│   │ claude mcp add --scope user akashik -- akashik mcp     │   │
+│   │ akashik claude install                                      │   │
 │   └──────────────────────────────────────────────────────────────────┘   │
 │                                                  Full quickstart  →     │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -388,8 +388,8 @@ narrative.
 > Outfit 500 line headline ("Hook fires at prompt time, not
 > tool-call time."), then a 4-line body paragraph in muted gray.
 > Bottom of the section: a single dark elevated mono code block
-> showing "claude mcp add --scope user wellinformed -- wellinformed
-> mcp" followed by "wellinformed claude install"; below that, a
+> showing "claude mcp add --scope user akashik -- akashik
+> mcp" followed by "akashik claude install"; below that, a
 > right-aligned underlined inline link in emerald with arrow:
 > "Full quickstart →". No cards, no boxes, just typography +
 > spacing as the structure. 16:9 aspect, premium docs / explainer
@@ -424,7 +424,7 @@ narrative.
 │         │ [git clone]  [npm]  [Homebrew]                     │           │
 │         │ ┌────────────────────────────────────────────────┐ │           │
 │         │ │ $ git clone https://github.com/twocirclestud…  │ │           │
-│         │ │ $ cd wellinformed && npm install &&            │ │           │
+│         │ │ $ cd akashik && npm install &&            │ │           │
 │         │ │     npm run bootstrap            [⎘ copy]      │ │           │
 │         │ └────────────────────────────────────────────────┘ │           │
 │         └────────────────────────────────────────────────────┘           │
@@ -754,8 +754,8 @@ manifesto per BRAND-KIT §6.5; full thesis lives at
 │   You are the next peer. Every query you answer adds to what              │
 │   the whole network knows.                                                │
 │                                                                           │
-│   $ git clone https://github.com/twocirclestudios/wellinformed.git        │
-│   $ cd wellinformed && npm install && npm run bootstrap                   │
+│   $ git clone https://github.com/twocirclestudios/akashik.git        │
+│   $ cd akashik && npm install && npm run bootstrap                   │
 │                                                                           │
 │         [ ☆ Star on GitHub ]      [ Join Discussions ]                    │
 │                                                                           │

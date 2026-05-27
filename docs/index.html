@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>wellinformed — the network before the web</title>
+  <title>akashik — the network before the web</title>
   <meta name="description" content="The globally accumulating knowledge network. Cooperative, peer-to-peer, in the lineage of Napster, eMule, and BitTorrent. Deep research in 11 ms. Cited. Zero tokens. MIT, CPU-only, libp2p federation, W3C did:key identity. 75.22% NDCG@10 on BEIR SciFact." />
   <meta name="theme-color" content="#0c0c14" />
 
   <!-- Open Graph + Twitter / X social cards (per docs/BRAND-KIT.md §9.1) -->
   <meta property="og:type"           content="website" />
-  <meta property="og:title"          content="wellinformed — the globally accumulating knowledge network" />
+  <meta property="og:title"          content="akashik — the globally accumulating knowledge network" />
   <meta property="og:description"    content="Deep research in 11 ms. Cited. Zero tokens. Cooperative, peer-to-peer, in the lineage of Napster, eMule, and BitTorrent." />
-  <meta property="og:url"            content="https://saharbarak.github.io/wellinformed/" />
-  <meta property="og:image"          content="https://saharbarak.github.io/wellinformed/assets/og-card.png" />
+  <meta property="og:url"            content="https://saharbarak.github.io/akashik/" />
+  <meta property="og:image"          content="https://saharbarak.github.io/akashik/assets/og-card.png" />
   <meta property="og:image:width"    content="1200" />
   <meta property="og:image:height"   content="630" />
   <meta property="og:image:alt"      content="The globally accumulating knowledge network." />
   <meta name="twitter:card"          content="summary_large_image" />
-  <meta name="twitter:title"         content="wellinformed — the globally accumulating knowledge network" />
+  <meta name="twitter:title"         content="akashik — the globally accumulating knowledge network" />
   <meta name="twitter:description"   content="Deep research in 11 ms. Cited. Zero tokens. Cooperative, peer-to-peer, in the lineage of Napster, eMule, and BitTorrent." />
-  <meta name="twitter:image"         content="https://saharbarak.github.io/wellinformed/assets/og-card.png" />
+  <meta name="twitter:image"         content="https://saharbarak.github.io/akashik/assets/og-card.png" />
   <meta name="twitter:image:alt"     content="The globally accumulating knowledge network." />
   <!-- favicon — inline SVG data URI echoing the hero peer-graph mark: emerald core, 6-peer mesh, single file, no extra HTTP request -->
   <link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230c0c14"/><g stroke="%2334d399" stroke-width="1.3" opacity="0.55" fill="none"><line x1="32" y1="12" x2="14" y2="24"/><line x1="32" y1="12" x2="50" y2="24"/><line x1="14" y1="24" x2="14" y2="40"/><line x1="50" y1="24" x2="50" y2="40"/><line x1="14" y1="40" x2="32" y2="52"/><line x1="50" y1="40" x2="32" y2="52"/><line x1="32" y1="12" x2="32" y2="52"/><line x1="14" y1="24" x2="50" y2="40"/><line x1="50" y1="24" x2="14" y2="40"/></g><g fill="%230c0c14" stroke="%2334d399" stroke-width="1.6"><circle cx="32" cy="12" r="3.6"/><circle cx="14" cy="24" r="3.6"/><circle cx="50" cy="24" r="3.6"/><circle cx="14" cy="40" r="3.6"/><circle cx="50" cy="40" r="3.6"/><circle cx="32" cy="52" r="3.6"/></g><circle cx="32" cy="32" r="7.5" fill="%2334d399"/><circle cx="32" cy="32" r="10.5" fill="none" stroke="%2334d399" stroke-width="0.9" opacity="0.55"/></svg>' />
@@ -593,7 +593,7 @@
     }
 
     /* Hero visual — scene-prompt-hook GIF (replaces Three.js peer-graph) */
-    /* ───── hero-compare — side-by-side: vanilla Claude vs Claude+wellinformed ───── */
+    /* ───── hero-compare — side-by-side: vanilla Claude vs Claude+akashik ───── */
     .hero-compare {
       position: relative;
       width: 100%;
@@ -690,7 +690,7 @@
       margin: 0.3rem 0 0.4rem;
     }
     /* phase B only — graph hit was older than the room's stale-after
-       window, so wellinformed falls back to research and writes the
+       window, so akashik falls back to research and writes the
        fresh result back so all peers benefit on the next ask. */
     .cmp-step.cmp-fetch {
       color: var(--accent-warm);
@@ -1968,9 +1968,9 @@
   <nav class="nav" id="site-nav" aria-label="primary">
     <div class="nav-shell">
       <div class="nav-inner">
-        <a href="#" class="brand" aria-label="wellinformed home">
+        <a href="#" class="brand" aria-label="akashik home">
           <img class="brand-mark" src="assets/logo-mark.svg" width="20" height="20" alt="" />
-          wellinformed
+          akashik
         </a>
         <div class="nav-status" aria-hidden="true">
           <span class="dot"></span>
@@ -1980,8 +1980,8 @@
           <span class="sep">·</span>
           <span>research / toolshed</span>
         </div>
-        <a class="nav-cta" href="https://github.com/SaharBarak/wellinformed" rel="noopener">
-          SaharBarak/wellinformed
+        <a class="nav-cta" href="https://github.com/SaharBarak/akashik" rel="noopener">
+          SaharBarak/akashik
         </a>
       </div>
     </div>
@@ -2023,7 +2023,7 @@
               <button type="button" role="tab" aria-selected="false" data-install-tab="homebrew">Homebrew</button>
               <button type="button" role="tab" aria-selected="false" data-install-tab="npx">npx</button>
             </div>
-            <pre class="install-code"><code id="install-code">$ npm install -g wellinformed</code><button id="install-copy" type="button" aria-label="Copy install command">
+            <pre class="install-code"><code id="install-code">$ npm install -g akashik</code><button id="install-copy" type="button" aria-label="Copy install command">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="9" y="9" width="13" height="13" rx="2"/>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
@@ -2038,7 +2038,7 @@
             <a class="counter" id="counter-domains" href="#arch" aria-label="See indexed domains in Architecture section">
               &middot; <span data-counter="domains">&mdash;</span> domains indexed
             </a>
-            <a class="btn btn-primary" href="https://github.com/SaharBarak/wellinformed">
+            <a class="btn btn-primary" href="https://github.com/SaharBarak/akashik">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
               </svg>
@@ -2054,7 +2054,7 @@
           </div>
         </div>
 
-        <figure class="hero-compare" aria-label="Side-by-side: vanilla Claude vs Claude with wellinformed answering the same question">
+        <figure class="hero-compare" aria-label="Side-by-side: vanilla Claude vs Claude with akashik answering the same question">
           <div class="cmp-card cmp-vanilla">
             <div class="cmp-head">
               <span class="cmp-dot" style="background:#d18a8a"></span>
@@ -2077,12 +2077,12 @@
           <div class="cmp-card cmp-wi">
             <div class="cmp-head">
               <span class="cmp-dot" style="background:var(--accent)"></span>
-              <span class="cmp-agent js-agent" aria-live="polite">claude code</span>&nbsp;+ wellinformed
+              <span class="cmp-agent js-agent" aria-live="polite">claude code</span>&nbsp;+ akashik
               <span class="cmp-phase mono" data-phase-tag>fresh &lt; 7d</span>
             </div>
             <div class="cmp-body mono">
               <div class="cmp-step cmp-prompt is-on" data-slot="w-prompt">&rsaquo; What changed in libp2p AutoRelay v2?</div>
-              <div class="cmp-step cmp-hit" data-slot="w-hit">&#9670; wellinformed: 11&nbsp;ms &middot; 3 cited chunks &middot; age 2d &middot; fresh</div>
+              <div class="cmp-step cmp-hit" data-slot="w-hit">&#9670; akashik: 11&nbsp;ms &middot; 3 cited chunks &middot; age 2d &middot; fresh</div>
               <div class="cmp-step cmp-fetch" data-slot="w-fetch"></div>
               <div class="cmp-step cmp-enrich" data-slot="w-enrich"></div>
               <div class="cmp-step cmp-out" data-slot="w-out">&ldquo;AutoRelay v2 (PR&nbsp;#1340) replaces the static-relay heuristic with reservation-based discovery &mdash; landed in go-libp2p 0.34, July 2025.&rdquo;</div>
@@ -2102,7 +2102,7 @@
        ASK THE NETWORK (#try) — fullscreen 3D graph + bottom-center askbar
        ═════════════════════════════════════════════════════════════════ -->
   <section id="try" class="try-section">
-    <div class="try-graph-canvas" id="try-graph-canvas" aria-label="Live wellinformed knowledge-graph view"></div>
+    <div class="try-graph-canvas" id="try-graph-canvas" aria-label="Live akashik knowledge-graph view"></div>
     <div class="try-overlay-top">
       <h2>Ask the network.</h2>
       <p class="try-sub mono">
@@ -2144,7 +2144,7 @@
   <section id="how" class="how-section">
     <div class="shell">
       <header data-reveal>
-        <h2>How wellinformed hooks into your workflow.</h2>
+        <h2>How akashik hooks into your workflow.</h2>
         
       </header>
 
@@ -2153,7 +2153,7 @@
           <div class="how-num mono">01</div>
           <h3>Hook fires at prompt time, not tool-call time.</h3>
           <p>
-            A <code>UserPromptSubmit</code> hook runs <code>wellinformed ask</code> on every message &mdash; top graph matches inject as <code>additionalContext</code> before the LLM reads a token.
+            A <code>UserPromptSubmit</code> hook runs <code>akashik ask</code> on every message &mdash; top graph matches inject as <code>additionalContext</code> before the LLM reads a token.
           </p>
         </li>
         <li class="how-step" data-reveal style="--d: 2">
@@ -2174,8 +2174,8 @@
 
       <div class="how-wireup" data-reveal>
         <pre class="code"><code># wire it once, globally:
-claude mcp add --scope user wellinformed -- wellinformed mcp
-wellinformed claude install
+claude mcp add --scope user akashik -- akashik mcp
+akashik claude install
 # every project gets it. no per-repo config.</code></pre>
         <a class="how-wireup-link" href="#finale-new">Full quickstart &rarr;</a>
       </div>
@@ -2194,7 +2194,7 @@ wellinformed claude install
       </p>
       <div class="bench-bars" data-reveal style="display: grid; gap: 0.6rem; max-width: 720px;">
         <div class="bench-row" style="display: grid; grid-template-columns: 220px 1fr 60px; gap: 1rem; align-items: center; font-family: var(--mono); font-size: 0.9rem;">
-          <span><b>wellinformed</b></span>
+          <span><b>akashik</b></span>
           <span style="height: 14px; background: linear-gradient(90deg, #0f6a46, #34d399); border-radius: 3px; width: 100%;"></span>
           <span style="text-align: right;"><b>0.7522</b></span>
         </div>
@@ -2219,7 +2219,7 @@ wellinformed claude install
           <span style="text-align: right;">0.2680</span>
         </div>
       </div>
-      <pre data-reveal style="margin-top: 2rem; background: var(--ink-900); color: #e8e8ed; padding: 1rem 1.2rem; border-radius: 8px; font-family: var(--mono); font-size: 0.85rem; max-width: 720px; overflow-x: auto;"><code>$ wellinformed bench beir-scifact   # one command, full reproduce</code></pre>
+      <pre data-reveal style="margin-top: 2rem; background: var(--ink-900); color: #e8e8ed; padding: 1rem 1.2rem; border-radius: 8px; font-family: var(--mono); font-size: 0.85rem; max-width: 720px; overflow-x: auto;"><code>$ akashik bench beir-scifact   # one command, full reproduce</code></pre>
     </div>
   </section>
 
@@ -2289,13 +2289,13 @@ wellinformed claude install
         Giant platforms didn't invent the internet. They won a chapter of it.
       </h2>
       <figure data-reveal style="margin: 1.6rem 0 2rem; max-width: 1100px;">
-        <img src="assets/manifesto-illustration.svg" alt="Cooperative-network lineage: Napster, eMule, BitTorrent, IPFS, wellinformed" style="width: 100%; height: auto; display: block;" />
+        <img src="assets/manifesto-illustration.svg" alt="Cooperative-network lineage: Napster, eMule, BitTorrent, IPFS, akashik" style="width: 100%; height: auto; display: block;" />
       </figure>
       <p data-reveal style="max-width: 60ch; color: #c7c7d0; font-size: 1.05rem; line-height: 1.65; margin-bottom: 1.4rem;">
         The chapter before that &mdash; the one that worked without anyone's permission &mdash; ran on peers. Ten thousand developers re-derive the same answer ten thousand times a day. Each shard dies when the session closes. All billable. None accumulating.
       </p>
       <p data-reveal style="max-width: 60ch; color: #c7c7d0; font-size: 1.05rem; line-height: 1.65;">
-        With service bills spiraling out of control and the stack becoming more unsustainable by the quarter, <b>wellinformed enters to help us work together again</b> &mdash; like we did back when the boundaries were technological. Today the boundaries are economic.
+        With service bills spiraling out of control and the stack becoming more unsustainable by the quarter, <b>akashik enters to help us work together again</b> &mdash; like we did back when the boundaries were technological. Today the boundaries are economic.
       </p>
     </div>
   </section>
@@ -2314,16 +2314,16 @@ wellinformed claude install
         <p class="finale-sub">
           Knowledge accumulates. It compounds &mdash; for the rest of us.
         </p>
-        <pre class="code finale-code"><code>$ npm install -g wellinformed
-$ wellinformed init</code></pre>
+        <pre class="code finale-code"><code>$ npm install -g akashik
+$ akashik init</code></pre>
         <div class="finale-ctas">
-          <a class="btn btn-primary" href="https://github.com/SaharBarak/wellinformed">
+          <a class="btn btn-primary" href="https://github.com/SaharBarak/akashik">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
             Star on GitHub
           </a>
-          <a class="btn btn-ghost" href="https://github.com/SaharBarak/wellinformed/discussions">
+          <a class="btn btn-ghost" href="https://github.com/SaharBarak/akashik/discussions">
             Join Discussions
           </a>
         </div>
@@ -2331,11 +2331,11 @@ $ wellinformed init</code></pre>
           MIT &middot; no account &middot; no API key &middot; no cloud &middot; CPU-only
         </div>
         <div class="finale-signals mono">
-          <a href="https://github.com/SaharBarak/wellinformed/stargazers">
-            <img src="https://img.shields.io/github/stars/SaharBarak/wellinformed?style=social" alt="GitHub stars" />
+          <a href="https://github.com/SaharBarak/akashik/stargazers">
+            <img src="https://img.shields.io/github/stars/SaharBarak/akashik?style=social" alt="GitHub stars" />
           </a>
-          <a href="https://github.com/SaharBarak/wellinformed/releases">
-            <img src="https://img.shields.io/github/v/release/SaharBarak/wellinformed?include_prereleases&label=release&color=34d399" alt="release" />
+          <a href="https://github.com/SaharBarak/akashik/releases">
+            <img src="https://img.shields.io/github/v/release/SaharBarak/akashik?include_prereleases&label=release&color=34d399" alt="release" />
           </a>
         </div>
       </div>
@@ -2349,9 +2349,9 @@ $ wellinformed init</code></pre>
     <div class="shell">
       <div class="footer-grid">
         <div class="footer-col footer-brand">
-          <a href="#" class="footer-mark" aria-label="wellinformed home">
+          <a href="#" class="footer-mark" aria-label="akashik home">
             <img src="assets/logo-mark.svg" width="22" height="22" alt="" />
-            <span>wellinformed</span>
+            <span>akashik</span>
           </a>
           <p class="footer-tagline">
             The globally accumulating knowledge network.
@@ -2366,19 +2366,19 @@ $ wellinformed init</code></pre>
         <div class="footer-col">
           <h4 class="footer-h">Project</h4>
           <ul>
-            <li><a href="https://github.com/SaharBarak/wellinformed">GitHub</a></li>
-            <li><a href="https://github.com/SaharBarak/wellinformed/blob/main/README.md">README</a></li>
-            <li><a href="https://github.com/SaharBarak/wellinformed/issues">Issues</a></li>
-            <li><a href="https://github.com/SaharBarak/wellinformed/blob/main/LICENSE">MIT License</a></li>
+            <li><a href="https://github.com/SaharBarak/akashik">GitHub</a></li>
+            <li><a href="https://github.com/SaharBarak/akashik/blob/main/README.md">README</a></li>
+            <li><a href="https://github.com/SaharBarak/akashik/issues">Issues</a></li>
+            <li><a href="https://github.com/SaharBarak/akashik/blob/main/LICENSE">MIT License</a></li>
           </ul>
         </div>
 
         <div class="footer-col">
           <h4 class="footer-h">Install</h4>
           <ul>
-            <li><code>npm install -g wellinformed</code></li>
-            <li><code>brew install saharbarak/wellinformed/wellinformed</code></li>
-            <li><code>npx wellinformed init</code></li>
+            <li><code>npm install -g akashik</code></li>
+            <li><code>brew install saharbarak/akashik/akashik</code></li>
+            <li><code>npx akashik init</code></li>
           </ul>
         </div>
 
@@ -2399,7 +2399,7 @@ $ wellinformed init</code></pre>
         </span>
         <span class="footer-base-right">
           &copy; 2026 &middot; MIT &middot;
-          <a href="https://github.com/SaharBarak/wellinformed">github.com/SaharBarak/wellinformed</a>
+          <a href="https://github.com/SaharBarak/akashik">github.com/SaharBarak/akashik</a>
         </span>
       </div>
     </div>
@@ -2446,9 +2446,9 @@ $ wellinformed init</code></pre>
       if (!segments.length || !block || !copyBtn) return;
 
       const commands = {
-        npm:      '$ npm install -g wellinformed',
-        homebrew: '$ brew install saharbarak/wellinformed/wellinformed',
-        npx:      '$ npx wellinformed init',
+        npm:      '$ npm install -g akashik',
+        homebrew: '$ brew install saharbarak/akashik/akashik',
+        npx:      '$ npx akashik init',
       };
 
       let active = 'npm';
@@ -2510,9 +2510,9 @@ $ wellinformed init</code></pre>
   </script>
 
   <!-- ───────────── hero side-by-side step reveal — two-phase scenarios ─────────────
-       Phase A: graph hit is fresh (<room.stale window). Wellinformed answers
+       Phase A: graph hit is fresh (<room.stale window). Akashik answers
                 instantly from cache. Three-step reveal on the right.
-       Phase B: graph hit is stale (>room.stale). Wellinformed falls back to
+       Phase B: graph hit is stale (>room.stale). Akashik falls back to
                 a single web_fetch, writes the fresh chunks back to the
                 research room (so every peer benefits next time), and answers.
                 Five-step reveal on the right — still <2s, still ~380 tokens.
@@ -2548,7 +2548,7 @@ $ wellinformed init</code></pre>
           },
           w: {
             prompt: '> What changed in libp2p AutoRelay v2?',
-            hit:    '◆ wellinformed: 11 ms · 3 cited chunks · age 2d · fresh',
+            hit:    '◆ akashik: 11 ms · 3 cited chunks · age 2d · fresh',
             fetch:  '',
             enrich: '',
             out:    '"AutoRelay v2 (PR #1340) replaces the static-relay heuristic with reservation-based discovery — landed in go-libp2p 0.34, July 2025."',
@@ -2578,7 +2578,7 @@ $ wellinformed init</code></pre>
           },
           w: {
             prompt: '> etcd watch-progress notification semantics in 3.6?',
-            hit:    '◆ wellinformed: 14 ms · 1 cached chunk · age 31d · STALE (> 7d)',
+            hit:    '◆ akashik: 14 ms · 1 cached chunk · age 31d · STALE (> 7d)',
             fetch:  '↪ falling back to research — web_fetch(github.com/etcd-io/etcd/issues/15220)',
             enrich: '✓ saved → research room · 2 new chunks · 3 peers updated',
             out:    '"3.6 streams progress every 10s by default; opt-in via WatchOptions.ProgressNotify."',
@@ -3046,7 +3046,7 @@ $ wellinformed init</code></pre>
         if (form) form.addEventListener('submit', (e) => e.preventDefault());
 
         // Niche, real-world technical questions a senior engineer fights with.
-        // Each scenario sources its answer from a specific wellinformed room.
+        // Each scenario sources its answer from a specific akashik room.
         const scenarios = [
           {
             q: 'Postgres B-tree index bloat — when does HOT actually save you?',
@@ -3282,7 +3282,7 @@ $ wellinformed init</code></pre>
             '<div class="ans-commit">' +
               '<b>added to your knowledge graph</b>' +
               '<em>' + s.graphNode + '</em> &middot; domain <em>' + s.graphDomain + '</em>' +
-              '<br/>well-informed on <em>' + s.graphDomain + '</em> &middot; ' + counts[s.graphDomain] + ' nodes' +
+              '<br/>akashik on <em>' + s.graphDomain + '</em> &middot; ' + counts[s.graphDomain] + ' nodes' +
             '</div>';
           answer.classList.add('is-on');
         }
@@ -3294,7 +3294,7 @@ $ wellinformed init</code></pre>
             commit.innerHTML =
               '<b>added to your knowledge graph</b>' +
               '<em>' + s.graphNode + '</em> &middot; domain <em>' + s.graphDomain + '</em>' +
-              '<br/>well-informed on <em>' + s.graphDomain + '</em> &middot; ' + counts[s.graphDomain] + ' nodes';
+              '<br/>akashik on <em>' + s.graphDomain + '</em> &middot; ' + counts[s.graphDomain] + ' nodes';
           }
           answer.classList.add('has-commit');
         }
@@ -3427,9 +3427,9 @@ $ wellinformed init</code></pre>
         ].map(([id, label]) => ({ id, label, color: '#d9a255', val: 4 }));
 
         const code = [
-          ['code:wi-recall', 'code · wellinformed/src/recall.rs'],
-          ['code:wi-federated', 'code · wellinformed/src/net/federated.rs'],
-          ['code:wi-hooks', 'code · wellinformed/.claude/hooks/wellinformed-hook.sh'],
+          ['code:wi-recall', 'code · akashik/src/recall.rs'],
+          ['code:wi-federated', 'code · akashik/src/net/federated.rs'],
+          ['code:wi-hooks', 'code · akashik/.claude/hooks/akashik-hook.sh'],
           ['code:libp2p-autorelay', 'code · libp2p/p2p/host/autorelay'],
           ['code:onnx-mini', 'code · all-MiniLM-L6-v2 onnx loader'],
           ['code:sqlite-vec', 'code · sqlite-vec/binding.c'],

@@ -1,10 +1,10 @@
 #!/bin/bash
-# wellinformed v2.0 comprehensive benchmark
+# akashik v2.0 comprehensive benchmark
 # Measures: CLI latency, code graph throughput, retrieval quality, memory.
 
 set -e
 
-WI=wellinformed
+WI=akashik
 OUT=.planning/BENCH-v2.md
 TMP=$(mktemp -d)
 trap "rm -rf $TMP" EXIT
@@ -45,7 +45,7 @@ section() {
 
 mkdir -p $(dirname "$OUT")
 cat > "$OUT" <<EOF
-# wellinformed v2.0 — Benchmark Report
+# akashik v2.0 — Benchmark Report
 
 **Run date:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 **Machine:** $(sw_vers -productName) $(sw_vers -productVersion) ($(uname -m))
@@ -53,7 +53,7 @@ cat > "$OUT" <<EOF
 **Memory:** $(echo "$(sysctl -n hw.memsize) / 1024^3" | bc) GB
 **Node:** $(node --version)
 **SQLite:** $(sqlite3 --version | awk '{print $1}')
-**wellinformed:** $($WI version 2>/dev/null || echo "unknown")
+**akashik:** $($WI version 2>/dev/null || echo "unknown")
 
 ---
 
@@ -111,7 +111,7 @@ bench "ask — no-match query"             $WI ask "qqqwwwzzz nothing here"
 # --- 5. Indexing throughput --------------------------------------------------
 
 section "5. Codebase indexing throughput (re-index all 4 projects)"
-bench_capture "reindex wellinformed (116 files)"       $WI codebase reindex 19a0c7525684eded
+bench_capture "reindex akashik (116 files)"       $WI codebase reindex 19a0c7525684eded
 bench_capture "reindex p2p-llm-network (293 files)"    $WI codebase reindex 3206e8ad97ed6ed2
 bench_capture "reindex forge (225 files)"              $WI codebase reindex bb1906a368e892b9
 bench_capture "reindex auto-tlv (260 files)"           $WI codebase reindex 0d153a2f93307da2
@@ -138,21 +138,21 @@ printf "  %-45s %6s MB\n" "codebase list" "$rss_list"
 # --- 7. DB sizes --------------------------------------------------------------
 
 section "7. On-disk sizes"
-graph_size=$(wc -c < ~/.wellinformed/graph.json 2>/dev/null || echo 0)
-vectors_size=$(wc -c < ~/.wellinformed/vectors.db 2>/dev/null || echo 0)
-code_size=$(wc -c < ~/.wellinformed/code-graph.db 2>/dev/null || echo 0)
+graph_size=$(wc -c < ~/.akashik/graph.json 2>/dev/null || echo 0)
+vectors_size=$(wc -c < ~/.akashik/vectors.db 2>/dev/null || echo 0)
+code_size=$(wc -c < ~/.akashik/code-graph.db 2>/dev/null || echo 0)
 
-printf "  %-45s %12s bytes\n" "~/.wellinformed/graph.json" "$graph_size"
-printf "  %-45s %12s bytes\n" "~/.wellinformed/vectors.db" "$vectors_size"
-printf "  %-45s %12s bytes\n" "~/.wellinformed/code-graph.db" "$code_size"
+printf "  %-45s %12s bytes\n" "~/.akashik/graph.json" "$graph_size"
+printf "  %-45s %12s bytes\n" "~/.akashik/vectors.db" "$vectors_size"
+printf "  %-45s %12s bytes\n" "~/.akashik/code-graph.db" "$code_size"
 
 # --- 8. Graph stats -----------------------------------------------------------
 
 section "8. Graph totals"
-research_nodes=$(sqlite3 ~/.wellinformed/vectors.db "SELECT COUNT(*) FROM vec_meta" 2>/dev/null || echo 0)
-code_nodes=$(sqlite3 ~/.wellinformed/code-graph.db "SELECT COUNT(*) FROM code_nodes")
-code_edges=$(sqlite3 ~/.wellinformed/code-graph.db "SELECT COUNT(*) FROM code_edges")
-codebases=$(sqlite3 ~/.wellinformed/code-graph.db "SELECT COUNT(*) FROM codebases")
+research_nodes=$(sqlite3 ~/.akashik/vectors.db "SELECT COUNT(*) FROM vec_meta" 2>/dev/null || echo 0)
+code_nodes=$(sqlite3 ~/.akashik/code-graph.db "SELECT COUNT(*) FROM code_nodes")
+code_edges=$(sqlite3 ~/.akashik/code-graph.db "SELECT COUNT(*) FROM code_edges")
+codebases=$(sqlite3 ~/.akashik/code-graph.db "SELECT COUNT(*) FROM codebases")
 rooms=$($WI room list 2>/dev/null | grep -cE "^\s+\*?\s+[a-z]")
 
 echo "  Research vectors: $research_nodes"
@@ -209,9 +209,9 @@ $(grep -E '"label"' "$TMP/results.jsonl" | sed -n '18,21p' | sed 's|{"label":"\(
 
 | File | Size |
 |------|------|
-| ~/.wellinformed/graph.json (research graph) | $(echo "scale=2; $graph_size / 1024 / 1024" | bc) MB |
-| ~/.wellinformed/vectors.db (ONNX vectors + meta) | $(echo "scale=2; $vectors_size / 1024 / 1024" | bc) MB |
-| ~/.wellinformed/code-graph.db (Phase 19 code graph) | $(echo "scale=2; $code_size / 1024 / 1024" | bc) MB |
+| ~/.akashik/graph.json (research graph) | $(echo "scale=2; $graph_size / 1024 / 1024" | bc) MB |
+| ~/.akashik/vectors.db (ONNX vectors + meta) | $(echo "scale=2; $vectors_size / 1024 / 1024" | bc) MB |
+| ~/.akashik/code-graph.db (Phase 19 code graph) | $(echo "scale=2; $code_size / 1024 / 1024" | bc) MB |
 
 ## 8. Graph Totals
 

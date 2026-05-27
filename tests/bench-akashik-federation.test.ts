@@ -35,7 +35,7 @@
  *     `bench-locomo-real.test.ts`. Set to a directory that
  *     contains `locomo10.json`.
  *
- *   WELLINFORMED_BENCH_OUT=/path/to/run.jsonl   (optional)
+ *   AKASHIK_BENCH_OUT=/path/to/run.jsonl   (optional)
  *     If set, suite appends one `BenchSuiteReport` JSON line.
  *
  *   AKASHIK_BENCH_PEERS=10           (default 10 — Round 5 spec)
@@ -227,8 +227,8 @@ test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60
     notes: `AkashikBench-F v1 on LoCoMo factual — ${corpus.queries.length} queries × ${corpus.allDocs.length} docs · ${numPeers} peers · ${numSteps} steps · offline=${offlineProbability} · zipf=${zipfAlpha} · shard=${initialShardFraction}. Boolean federation simulator (no per-peer retrieval — see suite header). Compounding = negative slope of web_fallback_rate over the simulation.`,
   };
 
-  if (process.env.WELLINFORMED_BENCH_OUT) {
-    appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
+  if (process.env.AKASHIK_BENCH_OUT) {
+    appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
   }
 
   // Floor: with realistic Zipfian curiosity + < 100% initial coverage,

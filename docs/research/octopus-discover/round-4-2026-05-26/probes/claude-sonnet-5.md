@@ -8,7 +8,7 @@
 PROJECT IDENTITY (changed since last round)
 ================================================================
 
-The project pivoted from "wellinformed: agent-memory product" to
+The project pivoted from "akashik: agent-memory product" to
 "Akashik: federated knowledge commons for the open-source community as a whole."
 
 The mission is to give the OSS community what it has always lacked:
@@ -19,7 +19,7 @@ attributed, forever.
 
 The brand name borrows from the Akashic Records mythology, reframed
 as concrete contributor-owned infrastructure. The codebase is still
-called "wellinformed" internally.
+called "akashik" internally.
 
 ================================================================
 THE MECHANISM (the architectural insight that makes the mission credible)
@@ -263,7 +263,7 @@ Now I have enough to write the full analysis. Here is the fourth-round synthesis
 
 ---
 
-# FOURTH-ROUND ANALYSIS — Akashik / wellinformed
+# FOURTH-ROUND ANALYSIS — Akashik / akashik
 *Codebase-grounded, empirically-anchored. 2026-05-26.*
 
 ---
@@ -280,7 +280,7 @@ The stack is TypeScript / DDD with clean layer separation (`domain` → `applica
 
 Here is why. LME-S shows R@50 = 1.0 — the gold is always in the candidate pool; the ceiling is real. The remaining ~4pp NDCG@5 headroom is the gap between ranks 1 and 2-5. On LoCoMo the headroom is 60pp, but the only interventions that produced lift were write-path ones (E11), not read-path ones. Small local LLMs actively regression on LoCoMo after shuffle.
 
-More importantly: Akashik's product claim is not "our single-peer R@5 beats mem0." That was wellinformed's frame, and the pivot explicitly abandoned it. Akashik's claim is that the compounding loop produces network-level knowledge availability that grows monotonically. That claim cannot be validated by any per-peer retrieval benchmark. The engineering debt is not "push R@5 from 0.920 to 0.940." The engineering debt is "there is no benchmark for what we claim."
+More importantly: Akashik's product claim is not "our single-peer R@5 beats mem0." That was akashik's frame, and the pivot explicitly abandoned it. Akashik's claim is that the compounding loop produces network-level knowledge availability that grows monotonically. That claim cannot be validated by any per-peer retrieval benchmark. The engineering debt is not "push R@5 from 0.920 to 0.940." The engineering debt is "there is no benchmark for what we claim."
 
 **The tradeoff of stopping retrieval tuning:** You leave 60pp of theoretical LoCoMo headroom on the table. However, that headroom requires a larger model than what runs locally (qwen2.5:7b already regressed). Capturing it requires a cloud API call, which reintroduces network dependency and cost per query — counter to the local-first architecture. The tradeoff is: spend a week definitively answering whether a cloud API call on LoCoMo lifts R@3 above bi-encoder (one 50-question spot-check with GPT-4o-mini would settle this), then either ship the cloud reranker as an opt-in tier or close the listwise chapter entirely.
 
@@ -372,7 +372,7 @@ The 0.952 (agentmemory) / 0.925 (mem0) / 0.928 (ByteRover) numbers are NOT defen
 - mem0 uses OpenAI text-embedding-3-small (1536-dim) with a managed extraction pipeline. Your setup uses a sentence-transformer variant. The numbers are not comparable without controlling for embedding model.
 - The LongMemEval paper's own baseline numbers for "retrieval-only" are lower than all three products' published numbers — suggesting each product tuned for this specific benchmark.
 
-**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 
 ---
 

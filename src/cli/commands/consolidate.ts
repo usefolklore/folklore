@@ -1,5 +1,5 @@
 /**
- * `wellinformed consolidate <sub>` — Phase 4c CLI surface for the
+ * `akashik consolidate <sub>` — Phase 4c CLI surface for the
  * episodic→semantic consolidation worker. Wires the Phase 4b
  * orchestrator to concrete infrastructure ports:
  *
@@ -18,7 +18,7 @@
  *   status        — summary of consolidated vs unconsolidated entries per room
  *   help
  *
- * The CLI enforces `wellinformed daemon start` is NOT running with
+ * The CLI enforces `akashik daemon start` is NOT running with
  * concurrent writes — or rather: the daemon holds no write lock, so
  * concurrent writes from this CLI would race with ingestion ticks.
  * For v4.0 we document "run consolidate when daemon is stopped";
@@ -37,7 +37,7 @@ import { runConsolidation, type ConsolidationReport, type ConsolidatorDeps } fro
 import { defaultRuntime, type Runtime } from '../runtime.js';
 import { ollamaClient } from '../../infrastructure/ollama-client.js';
 import { acquireLock } from '../../infrastructure/process-lock.js';
-import { wellinformedHome } from '../runtime.js';
+import { akashikHome } from '../runtime.js';
 import { join } from 'node:path';
 
 // ─── arg parsing ──────────────────────────────────────────────────
@@ -60,12 +60,12 @@ const parseRunArgs = (args: readonly string[]): RunArgs | string => {
   let threshold = 0.8;
   let minSize = 5;
   let maxSize = 100;
-  let model = process.env.WELLINFORMED_OLLAMA_MODEL ?? 'qwen2.5:1.5b';
+  let model = process.env.AKASHIK_OLLAMA_MODEL ?? 'qwen2.5:1.5b';
   let prune = false;
   // Backup-before-prune is ON by default when --prune is used. Explicit
   // --no-backup disables. --backup <path> overrides the auto-generated
   // filename. Makes destructive --prune reversible: the source raw
-  // entries go to an NDJSON file that `wellinformed sessions reingest`
+  // entries go to an NDJSON file that `akashik sessions reingest`
   // OR a manual reimport can restore.
   let backup = true;
   let backupPath: string | null = null;
@@ -83,7 +83,7 @@ const parseRunArgs = (args: readonly string[]): RunArgs | string => {
     else if (a === '--model') model = next();
     else if (!a.startsWith('-')) room = room ?? a;
   }
-  if (!room) return 'missing <workspace>. usage: wellinformed consolidate run <workspace> [--dry-run] [--prune [--backup PATH | --no-backup]]';
+  if (!room) return 'missing <workspace>. usage: akashik consolidate run <workspace> [--dry-run] [--prune [--backup PATH | --no-backup]]';
   if (dryRun && prune) return 'cannot use --dry-run and --prune together';
   return { room, dryRun, threshold, minSize, maxSize, model, prune, backup, backupPath };
 };
@@ -219,7 +219,7 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
   // runtime so the daemon (or another mutator) doesn't race on graph.json
   // mid-consolidate. waitMs=30s gives the daemon time to drain a tick if
   // it's mid-write. Removes the v4.0 "stop the daemon first" caveat.
-  const lockRes = await acquireLock(wellinformedHome(), {
+  const lockRes = await acquireLock(akashikHome(), {
     owner: 'consolidate',
     waitMs: 30_000,
     pollIntervalMs: 250,
@@ -227,7 +227,7 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
   if (lockRes.isErr()) {
     console.error(`consolidate: ${formatError(lockRes.error)}`);
     console.error(`  the daemon (or another mutating command) is currently writing.`);
-    console.error(`  retry, or run 'wellinformed daemon stop' to free the lock.`);
+    console.error(`  retry, or run 'akashik daemon stop' to free the lock.`);
     return 1;
   }
   const lock = lockRes.value;
@@ -247,10 +247,10 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
     const ping = await ollamaClient({ model: parsed.model }).ping();
     if (ping.isErr()) {
       console.error(`consolidate: ollama unreachable — ${formatError(ping.error)}`);
-      console.error(`  start it with: ollama serve  (or configure WELLINFORMED_OLLAMA_URL)`);
+      console.error(`  start it with: ollama serve  (or configure AKASHIK_OLLAMA_URL)`);
       return 1;
     }
-    console.error(`consolidate: ollama ${ping.value} @ ${process.env.WELLINFORMED_OLLAMA_URL ?? 'http://localhost:11434'}, model=${parsed.model}`);
+    console.error(`consolidate: ollama ${ping.value} @ ${process.env.AKASHIK_OLLAMA_URL ?? 'http://localhost:11434'}, model=${parsed.model}`);
 
     console.error(
       `consolidate: workspace=${parsed.room} threshold=${parsed.threshold} ` +
@@ -287,11 +287,11 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
       const ids = res.value.source_ids_marked;
 
       // Phase 4.2 — backup-before-prune. On by default. Writes source
-      // graph nodes to an NDJSON file so `wellinformed sessions reingest`
+      // graph nodes to an NDJSON file so `akashik sessions reingest`
       // (or a manual re-import) can undo the prune.
       if (parsed.backup) {
         const path = parsed.backupPath
-          ?? join(wellinformedHome(), `prune-backup-${parsed.room}-${Date.now()}.ndjson`);
+          ?? join(akashikHome(), `prune-backup-${parsed.room}-${Date.now()}.ndjson`);
         const backupRes = await writeBackup(runtime, ids, path);
         if (backupRes.isErr()) {
           console.error(`consolidate prune: backup failed, ABORTING prune: ${formatError(backupRes.error)}`);
@@ -437,7 +437,7 @@ const status = async (): Promise<number> => {
 };
 
 const help = (): number => {
-  console.log('usage: wellinformed consolidate <sub>');
+  console.log('usage: akashik consolidate <sub>');
   console.log('');
   console.log('  run <workspace> [--dry-run | --prune [--backup PATH | --no-backup]]');
   console.log('             [--threshold 0.8] [--min-size 5] [--max-size 100] [--model M]');
@@ -453,9 +453,9 @@ const help = (): number => {
   console.log('  help              This text.');
   console.log('');
   console.log('Consolidation runs against your local Ollama (default http://localhost:11434).');
-  console.log('Set WELLINFORMED_OLLAMA_URL / WELLINFORMED_OLLAMA_MODEL to override.');
+  console.log('Set AKASHIK_OLLAMA_URL / AKASHIK_OLLAMA_MODEL to override.');
   console.log('');
-  console.log('Run consolidation while `wellinformed daemon` is stopped — v4.0 has no');
+  console.log('Run consolidation while `akashik daemon` is stopped — v4.0 has no');
   console.log('cross-process write lock; concurrent ingestion can corrupt graph.json.');
   return 0;
 };
@@ -485,11 +485,11 @@ const pruneMarkedCmd = async (args: readonly string[]): Promise<number> => {
     else if (!a.startsWith('-')) room = room ?? a;
   }
   if (!room) {
-    console.error('consolidate prune-marked: missing <workspace>. usage: wellinformed consolidate prune-marked <workspace> [--no-backup | --backup PATH] [--force]');
+    console.error('consolidate prune-marked: missing <workspace>. usage: akashik consolidate prune-marked <workspace> [--no-backup | --backup PATH] [--force]');
     return 1;
   }
 
-  const lockRes = await acquireLock(wellinformedHome(), { owner: 'consolidate-prune', waitMs: 30_000, pollIntervalMs: 250 });
+  const lockRes = await acquireLock(akashikHome(), { owner: 'consolidate-prune', waitMs: 30_000, pollIntervalMs: 250 });
   if (lockRes.isErr()) { console.error(`consolidate prune-marked: ${formatError(lockRes.error)}`); return 1; }
   const lock = lockRes.value;
 
@@ -520,7 +520,7 @@ const pruneMarkedCmd = async (args: readonly string[]): Promise<number> => {
 
     const ids = candidates.map((n) => n.id);
     if (backup) {
-      const path = backupPath ?? join(wellinformedHome(), `prune-marked-backup-${room}-${Date.now()}.ndjson`);
+      const path = backupPath ?? join(akashikHome(), `prune-marked-backup-${room}-${Date.now()}.ndjson`);
       const r = await writeBackup(runtime, ids, path);
       if (r.isErr()) {
         console.error(`consolidate prune-marked: backup failed, ABORTING: ${formatError(r.error)}`);

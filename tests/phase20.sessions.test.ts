@@ -521,7 +521,7 @@ describe('Phase 20 — PreToolUse hook SessionStart branch (Pitfall 5, SESS-07)'
     assert.match(src, /SessionStart/, 'SessionStart branch required');
   });
 
-  it('SESS-07 K2: hook script shells out to wellinformed recent-sessions --hours 24 --json', () => {
+  it('SESS-07 K2: hook script shells out to akashik recent-sessions --hours 24 --json', () => {
     const src = readFileSync('src/cli/commands/claude-install.ts', 'utf8');
     assert.match(src, /recent-sessions --hours 24/, 'recent-sessions invocation required');
   });
@@ -544,16 +544,16 @@ describe('Phase 20 — PreToolUse hook SessionStart branch (Pitfall 5, SESS-07)'
     assert.match(src, /hooks\.SessionStart/, 'SessionStart uninstall branch required');
   });
 
-  it('K5: hook script guards wellinformed binary with command -v before shelling out', () => {
+  it('K5: hook script guards akashik binary with command -v before shelling out', () => {
     const src = readFileSync('src/cli/commands/claude-install.ts', 'utf8');
-    assert.match(src, /command -v wellinformed/, 'PATH guard required');
+    assert.match(src, /command -v akashik/, 'PATH guard required');
   });
 
   it('K6: install is idempotent — running twice produces single hook entry per type', () => {
     // Simulate two install calls against a tmp settings.json
     const tmp = mkdtempSync(join(tmpdir(), 'wi-p20-install-'));
     const settingsPath = join(tmp, 'settings.json');
-    const hookScriptName = 'wellinformed-hook.sh';
+    const hookScriptName = 'akashik-hook.sh';
 
     const makeHookConfig = (event: string) => ({
       matcher: event === 'PreToolUse' ? 'Glob|Grep|Read' : undefined,

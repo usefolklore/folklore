@@ -16,23 +16,23 @@ DDD layered stack: pure domain (graph, vectors, errors), infrastructure ports + 
 
 ### Phase 2 — Source Ingest Pipeline (done)
 
-Pluggable Source port with four adapters: generic_rss, arxiv, hn_algolia, generic_url. RSS 2.0 + Atom normaliser. Recursive paragraph chunker. Content-hash (sha256) dedup on re-runs. `wellinformed trigger [--room R]` and `wellinformed sources list|add|remove|enable|disable`.
+Pluggable Source port with four adapters: generic_rss, arxiv, hn_algolia, generic_url. RSS 2.0 + Atom normaliser. Recursive paragraph chunker. Content-hash (sha256) dedup on re-runs. `akashik trigger [--room R]` and `akashik sources list|add|remove|enable|disable`.
 
 Libraries: @mozilla/readability (article extraction), linkedom (DOM), fast-xml-parser (XML).
 
 ### Phase 3 — MCP Server (done)
 
-9 tools exposed over stdio via @modelcontextprotocol/sdk: search, ask, get_node, get_neighbors, list_rooms, find_tunnels, sources_list, trigger_room, graph_stats. `wellinformed mcp start` — auto-spawned by Claude Code via the plugin manifest.
+9 tools exposed over stdio via @modelcontextprotocol/sdk: search, ask, get_node, get_neighbors, list_rooms, find_tunnels, sources_list, trigger_room, graph_stats. `akashik mcp start` — auto-spawned by Claude Code via the plugin manifest.
 
 ### Phase 4 — Room Management + Init
 
-**Commands:** `wellinformed init`, `wellinformed room list|create|switch|current`
+**Commands:** `akashik init`, `akashik room list|create|switch|current`
 
 **Goal:** Make onboarding self-service. `init` is an interactive wizard that asks what the user is researching, creates the room, suggests source adapters (arxiv queries, RSS feeds, HN searches), and registers them. `room` manages rooms programmatically (list, create, set current default, switch).
 
 **Deliverables:**
 - `src/domain/rooms.ts` — Room metadata type (name, description, created_at, keywords, default wing)
-- `src/infrastructure/rooms-config.ts` — Room registry at `~/.wellinformed/rooms.json`
+- `src/infrastructure/rooms-config.ts` — Room registry at `~/.akashik/rooms.json`
 - `src/cli/commands/init.ts` — Interactive room seeding wizard (prompts via readline)
 - `src/cli/commands/room.ts` — list / create / switch / current / describe
 - Update `sources add` to validate that the room exists in the registry
@@ -41,7 +41,7 @@ Libraries: @mozilla/readability (article extraction), linkedom (DOM), fast-xml-p
 
 ### Phase 5 — CLI Search + Reports
 
-**Commands:** `wellinformed ask "<query>"`, `wellinformed report [date] [--room R]`
+**Commands:** `akashik ask "<query>"`, `akashik report [date] [--room R]`
 
 **Goal:** Query the graph from the terminal without Claude Code, and generate human-readable daily/weekly reports.
 
@@ -49,12 +49,12 @@ Libraries: @mozilla/readability (article extraction), linkedom (DOM), fast-xml-p
 - `src/cli/commands/ask.ts` — Semantic search + formatted context output to stdout
 - `src/cli/commands/report.ts` — Generate markdown report: new nodes, tunnel candidates, god nodes, community shifts
 - `src/application/report.ts` — Report generation use case (loads graph, computes delta since last report, formats)
-- Report persistence at `~/.wellinformed/reports/<room>/<date>.md`
+- Report persistence at `~/.akashik/reports/<room>/<date>.md`
 - Test: `tests/phase5.ask.test.ts`, `tests/phase5.report.test.ts`
 
 ### Phase 6 — Daemon + Discovery
 
-**Commands:** `wellinformed daemon start|stop|status`, `wellinformed discover [--room R]`
+**Commands:** `akashik daemon start|stop|status`, `akashik discover [--room R]`
 
 **Goal:** Set-and-forget. The daemon runs `triggerRoom` on a configurable schedule, rotates through rooms, writes reports, and surfaces new content without manual intervention. Discovery mode expands the source list by finding new feeds/queries within a room's topic area.
 
@@ -63,12 +63,12 @@ Libraries: @mozilla/readability (article extraction), linkedom (DOM), fast-xml-p
 - `src/daemon/discovery.ts` — Given a room's keywords and existing sources, suggest new sources (search RSS aggregators, arxiv categories, HN tags)
 - `src/cli/commands/daemon.ts` — start / stop / status
 - `src/cli/commands/discover.ts` — one-shot discovery run
-- Config integration: read daemon settings from `~/.wellinformed/config.yaml` (add `yaml` dep)
+- Config integration: read daemon settings from `~/.akashik/config.yaml` (add `yaml` dep)
 - Test: `tests/phase6.daemon.test.ts`
 
 ### Phase 7 — Telegram Bridge
 
-**Commands:** `wellinformed telegram setup|test|capture-start|digest-test`
+**Commands:** `akashik telegram setup|test|capture-start|digest-test`
 
 **Subphases (from config.yaml):**
 - **7a — Outbound digests:** After each daemon iteration, send a summary to Telegram (one message per room, top-N new items)

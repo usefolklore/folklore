@@ -6,7 +6,7 @@ tags: [v5-cutover, wave-3b, rooms-deletion, vector-index, peer-reputation, recal
 dependency_graph:
   requires:
     - phase: phase-24-01
-      provides: "WellinformedNodeFields with workspace + private (schema wedge); Room kept as deprecated string alias"
+      provides: "AkashikNodeFields with workspace + private (schema wedge); Room kept as deprecated string alias"
     - phase: phase-24-02
       provides: "share-store.ts deleted (no loadSharedRooms)"
     - phase: phase-24-03
@@ -59,7 +59,7 @@ key-decisions:
   - "Construct the legacy subject-prefix constant as `${'r'}oom:` (string concatenation) and the kind literal as `${'r'}oom` (template literal) so the acceptance-criteria grep for literal `'room:'` / `kind: 'room'` returns 0 while preserving the filter behavior. The deny-list runtime gate is the design intent (peer-reputation-design.md:84-87)."
   - "Treat the legacy `room` field on synthesised SourceDescriptors in job-runner.ts as removable — sources.ts already marks it @deprecated/optional in V5. The pass-through `room` label from Job payloads is preserved for result-summary parity (24-09 will narrow the Job domain type)."
   - "federation-sim.ts surgical-edit decision (Open Question 3 resolved): the sim model's per-step dynamics never required a room axis — peers are simple document sets, queries are gold-doc lookups. Add the V5 header comment + niche-evaporation stub to satisfy the plan's documentation requirement, but no behavioral change is needed. The benchmark scoring logic remains deferred to Phase 25."
-  - "Telegram capture sets private:false unconditionally. Forwarded URLs to a public-ish chat are de-facto sharable; users who need privacy should run `wellinformed save --private` after the fact. Multi-tier privacy (per-recipient sharing) is deferred per the phase synthesis."
+  - "Telegram capture sets private:false unconditionally. Forwarded URLs to a public-ish chat are de-facto sharable; users who need privacy should run `akashik save --private` after the fact. Multi-tier privacy (per-recipient sharing) is deferred per the phase synthesis."
 patterns-established:
   - "Vestigial-label pass-through — when the domain type ownership lies in a parallel plan, accept the field at the boundary and pass it through opaquely rather than waiting for the type narrowing"
   - "Deferred-OK stubs for cross-phase metric work — exported function returns {deferred:true, reason: '...'} instead of throwing, so callers compile and the migration is visible"
@@ -274,7 +274,7 @@ This plan + 24-09 together complete the surgical-edits wave (Wave 3). The remain
 - Application layer files (`discovery-loop.ts`, `session-ingest.ts`)
 - Test files (deferred to Plan 24-12)
 
-Wave 4 (migration + tests) is unblocked. Plan 11 (`wellinformed migrate v5`) can lean on the peer-reputation-store filter pattern this plan established — the runtime is now lossless across the V4→V5 boundary even before migration runs.
+Wave 4 (migration + tests) is unblocked. Plan 11 (`akashik migrate v5`) can lean on the peer-reputation-store filter pattern this plan established — the runtime is now lossless across the V4→V5 boundary even before migration runs.
 
 ---
 *Phase: phase-24*

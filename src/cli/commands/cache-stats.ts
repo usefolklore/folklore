@@ -1,5 +1,5 @@
 /**
- * `wellinformed cache-stats` — print L1 query cache observability.
+ * `akashik cache-stats` — print L1 query cache observability.
  *
  * Pure proxy for the daemon-side `cache-stats` IPC command. Only
  * meaningful when the daemon is running (the cache lives in the
@@ -12,14 +12,14 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
-const wellinformedHome = (): string =>
-  process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
+const akashikHome = (): string =>
+  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
 
 export const cacheStats = async (_args: string[]): Promise<number> => {
-  // The actual IPC call is intercepted in bin/wellinformed.js when the
+  // The actual IPC call is intercepted in bin/akashik.js when the
   // socket exists; this function only runs when the shim falls through
   // (no daemon socket). We render the no-daemon case here.
-  const sock = join(wellinformedHome(), 'daemon.sock');
+  const sock = join(akashikHome(), 'daemon.sock');
   if (!existsSync(sock)) {
     console.log(JSON.stringify({
       size: 0,
@@ -28,7 +28,7 @@ export const cacheStats = async (_args: string[]): Promise<number> => {
       evictions: 0,
       hit_rate: 0,
       via: 'no-daemon',
-      note: 'L1 cache lives in the daemon process. Start `wellinformed daemon` to populate.',
+      note: 'L1 cache lives in the daemon process. Start `akashik daemon` to populate.',
     }));
     return 0;
   }

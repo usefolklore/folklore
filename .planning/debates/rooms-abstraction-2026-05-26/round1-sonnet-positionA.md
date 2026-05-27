@@ -29,7 +29,7 @@ Auto-derived rooms are ungated by definition — the user has not made an explic
 
 ## Axis 3 — Keywords and source discovery
 
-`src/cli/commands/room.ts:64` shows that keywords drive cold-start source seeding. The `init` command uses them to suggest RSS feeds and web sources appropriate to the room. A repo-derived room has no keywords until the user adds them — meaning `init` has nothing to suggest. Position B's answer is "lazy enrichment": auto-create the room, let the user add keywords later. But "later" does not happen. The user who won't run `wellinformed room create` will not run `wellinformed room describe --edit` either. You get a proliferation of empty-keyword rooms that produce worse source recommendations than the current state, where the user at least had to state a purpose at creation time.
+`src/cli/commands/room.ts:64` shows that keywords drive cold-start source seeding. The `init` command uses them to suggest RSS feeds and web sources appropriate to the room. A repo-derived room has no keywords until the user adds them — meaning `init` has nothing to suggest. Position B's answer is "lazy enrichment": auto-create the room, let the user add keywords later. But "later" does not happen. The user who won't run `akashik room create` will not run `akashik room describe --edit` either. You get a proliferation of empty-keyword rooms that produce worse source recommendations than the current state, where the user at least had to state a purpose at creation time.
 
 ---
 
@@ -37,13 +37,13 @@ Auto-derived rooms are ungated by definition — the user has not made an explic
 
 The user's intuition is "I'm in repo X, my research should be scoped to X." That intuition is correct about *query scoping* — it is incorrect about *storage partitioning*. A developer researching authentication patterns for `my-saas-backend` today may reuse those same nodes when working on `my-mobile-app` tomorrow. If nodes were stored in a repo-scoped room, they are invisible across contexts. The current model — a topical room like `security-patterns` that is cwd-independent — is portable in exactly the way a developer's knowledge actually works: domain expertise does not restart at git clone.
 
-The fix to "default_room: tlvtech is stale" (`CONTEXT.md:19`) takes three seconds: `wellinformed room switch wellinformed-dev`. That is not a model failure. That is a UX gap in session restore, which is addressable without restructuring the abstraction.
+The fix to "default_room: tlvtech is stale" (`CONTEXT.md:19`) takes three seconds: `akashik room switch akashik-dev`. That is not a model failure. That is a UX gap in session restore, which is addressable without restructuring the abstraction.
 
 ---
 
 ## Axis 5 — Migration
 
-The live registry (`CONTEXT.md:17–20`) has six intentionally named rooms: `wellinformed-dev`, `p2p-llm`, `tlvtech`, `forge`, `auto-tlv`. These rooms have accumulated reputation scores and, once Phase 24 ships, will have CRDT state vectors and peer associations. The reputation system in `docs/p2p/peer-reputation-design.md:86` stores subjects under `room:*` keys alongside `entity:*` keys — the room IS a first-class subject in the reputation map. A migration to repo-derived rooms does not just move metadata; it destroys accumulated `room:*` reputation signals. There is no clean migration path because repo slugs are not topical — a given `room:p2p-llm` reputation score cannot be mechanically translated into `room:wellinformed` or `room:akashik` without semantic loss.
+The live registry (`CONTEXT.md:17–20`) has six intentionally named rooms: `akashik-dev`, `p2p-llm`, `tlvtech`, `forge`, `auto-tlv`. These rooms have accumulated reputation scores and, once Phase 24 ships, will have CRDT state vectors and peer associations. The reputation system in `docs/p2p/peer-reputation-design.md:86` stores subjects under `room:*` keys alongside `entity:*` keys — the room IS a first-class subject in the reputation map. A migration to repo-derived rooms does not just move metadata; it destroys accumulated `room:*` reputation signals. There is no clean migration path because repo slugs are not topical — a given `room:p2p-llm` reputation score cannot be mechanically translated into `room:akashik` or `room:akashik` without semantic loss.
 
 ---
 

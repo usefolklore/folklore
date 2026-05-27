@@ -29,7 +29,7 @@ a research memory. It fetches from ArXiv, HN, RSS, and indexes your
 codebase into a knowledge graph. Claude checks it automatically before
 every file search (PreToolUse hook).
 
-Would love your take: github.com/SaharBarak/wellinformed
+Would love your take: github.com/SaharBarak/akashik
 
 [Specific hook for this person — e.g. "Your blog posts are already
 in the graph" for Simon Willison]

@@ -1,5 +1,5 @@
 /**
- * `wellinformed init` — register external content sources.
+ * `akashik init` — register external content sources.
  *
  * V5 (Phase 24): rooms deleted. The original wizard walked the user
  * through creating a research room + seeding RSS / ArXiv / HN sources
@@ -7,11 +7,11 @@
  * helper for registering external sources globally.
  *
  * Kept as an entry point so legacy docs / scripts that call
- * `wellinformed init` don't 404. New usage may also prefer:
+ * `akashik init` don't 404. New usage may also prefer:
  *
- *   wellinformed onboard     — installer + identity + hooks
- *   wellinformed this me     — index current cwd into the graph
- *   wellinformed sources add — register an RSS / ArXiv / HN source
+ *   akashik onboard     — installer + identity + hooks
+ *   akashik this me     — index current cwd into the graph
+ *   akashik sources add — register an RSS / ArXiv / HN source
  */
 
 import type { Interface } from 'node:readline';
@@ -93,8 +93,8 @@ const parseFlags = (args: readonly string[]): InitFlags => {
 export const init = async (args: readonly string[]): Promise<number> => {
   const flags = parseFlags(args);
 
-  console.log('wellinformed init — register external content sources');
-  console.log('  (V5: rooms deleted. Run `wellinformed onboard` for the full installer wizard.)');
+  console.log('akashik init — register external content sources');
+  console.log('  (V5: rooms deleted. Run `akashik onboard` for the full installer wizard.)');
   console.log('');
 
   const isNonInteractive = Boolean(flags.rss) || Boolean(flags.keywords);
@@ -156,7 +156,7 @@ export const init = async (args: readonly string[]): Promise<number> => {
 
     console.log(`\n${collected.length} source(s) registered.`);
     if (collected.length > 0) {
-      console.log(`run 'wellinformed trigger' to fetch initial content.`);
+      console.log(`run 'akashik trigger' to fetch initial content.`);
     }
     return 0;
   } finally {

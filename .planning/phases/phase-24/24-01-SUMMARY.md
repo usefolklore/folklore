@@ -6,7 +6,7 @@ tags: [v5-cutover, schema-wedge, wave-0, rooms-deletion, breaking-change]
 dependency_graph:
   requires: []
   provides:
-    - "WellinformedNodeFields with workspace + private, no room"
+    - "AkashikNodeFields with workspace + private, no room"
     - "Catalogued tsc --noEmit blast radius for Waves 1-3"
   affects:
     - "31 downstream files (43 compile errors) — every consumer of GraphNode/Room/nodesInRoom/TraversalOptions.room/roomFilter"
@@ -52,10 +52,10 @@ metrics:
 
 ### graph.ts schema change (commit `a182fee`)
 
-**Final shape of `WellinformedNodeFields`:**
+**Final shape of `AkashikNodeFields`:**
 
 ```typescript
-export interface WellinformedNodeFields {
+export interface AkashikNodeFields {
   readonly wing?: Wing;
   readonly source_uri?: string;
   readonly fetched_at?: string;
@@ -168,12 +168,12 @@ Wave 1 (parallel-safe deletions + wire protocol):
 - **1a — File deletions:** `src/domain/rooms.ts`, `src/domain/system-rooms.ts`, `src/infrastructure/rooms-config.ts`, `src/infrastructure/share-store.ts`, `src/cli/commands/room.ts`, plus 3 phase-test files.
 - **1b — Wire-protocol surgery:** `search-sync.ts`, `peer-pull-telemetry.ts`, `touch-protocol.ts`, `share-envelope.ts` (drop `room` field from each envelope).
 - **1c — Runtime + daemon:** `src/cli/runtime.ts` (drop `fileRoomsConfig`, add `detectWorkspace()`), `src/daemon/loop.ts` (drop `RoomsConfig`).
-- **1d — Hook scripts:** 5 `.claude/hooks/wellinformed-*` files (drop `room` from hit formatter; show `workspace` when present).
+- **1d — Hook scripts:** 5 `.claude/hooks/akashik-*` files (drop `room` from hit formatter; show `workspace` when present).
 
 Wave 2 (rewrites): `share-sync.ts` (869 -> ~400 lines), `share.ts` / `unshare.ts`, `mcp/server.ts`.
 
 Wave 3 (~47 surgical edits): Walk the `/tmp/phase24-wave0-blastradius.txt` list. Every TS2322 / TS2352 line is a node-construction site that needs `private: false` (or `true` for sensitive nodes). Every TS2305 line is an import statement that needs `Room` / `nodesInRoom` / `roomFilter` removed.
 
-Wave 4: `wellinformed migrate v5` command + new `tests/phase24.rooms-deleted.test.ts` + edits to ~13 existing tests.
+Wave 4: `akashik migrate v5` command + new `tests/phase24.rooms-deleted.test.ts` + edits to ~13 existing tests.
 
 State updates (STATE.md / ROADMAP.md) intentionally deferred to a later wave per the executor's instructions — gsd-tools indexer bugs make those updates unreliable mid-phase.

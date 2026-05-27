@@ -1,8 +1,8 @@
 /**
- * `wellinformed codebase <sub>` — Phase 19 structured code graph management.
+ * `akashik codebase <sub>` — Phase 19 structured code graph management.
  *
  * Subcommands:
- *   index <path> [--name N]   parse a codebase into ~/.wellinformed/code-graph.db
+ *   index <path> [--name N]   parse a codebase into ~/.akashik/code-graph.db
  *   list [--json]             list all indexed codebases
  *   show <id> [--json]        detail view: node breakdown
  *   reindex <id>              incremental re-index (content-hash diff)
@@ -62,7 +62,7 @@ const parseArgs = (rest: readonly string[]): ArgMap => {
 const indexSub = async (rest: readonly string[]): Promise<number> => {
   const { positional, flags } = parseArgs(rest);
   if (positional.length === 0) {
-    console.error('codebase index: missing <path>. usage: wellinformed codebase index <path> [--name <name>]');
+    console.error('codebase index: missing <path>. usage: akashik codebase index <path> [--name <name>]');
     return 1;
   }
   const absPath = resolve(positional[0]);
@@ -132,7 +132,7 @@ const listSub = async (rest: readonly string[]): Promise<number> => {
       return 0;
     }
     if (codebases.length === 0) {
-      console.log('no indexed codebases. try `wellinformed codebase index <path>`.');
+      console.log('no indexed codebases. try `akashik codebase index <path>`.');
       return 0;
     }
     console.log(`indexed codebases (${codebases.length}):\n`);
@@ -155,7 +155,7 @@ const listSub = async (rest: readonly string[]): Promise<number> => {
 const showSub = async (rest: readonly string[]): Promise<number> => {
   const { positional, flags } = parseArgs(rest);
   if (positional.length === 0) {
-    console.error('codebase show: missing <id>. usage: wellinformed codebase show <id>');
+    console.error('codebase show: missing <id>. usage: akashik codebase show <id>');
     return 1;
   }
   const id = positional[0] as CodebaseId;
@@ -201,7 +201,7 @@ const showSub = async (rest: readonly string[]): Promise<number> => {
 const reindexSub = async (rest: readonly string[]): Promise<number> => {
   const { positional, flags } = parseArgs(rest);
   if (positional.length === 0) {
-    console.error('codebase reindex: missing <id>. usage: wellinformed codebase reindex <id>');
+    console.error('codebase reindex: missing <id>. usage: akashik codebase reindex <id>');
     return 1;
   }
   const id = positional[0] as CodebaseId;
@@ -246,7 +246,7 @@ const reindexSub = async (rest: readonly string[]): Promise<number> => {
 const searchSub = async (rest: readonly string[]): Promise<number> => {
   const { positional, flags } = parseArgs(rest);
   if (positional.length === 0) {
-    console.error('codebase search: missing <query>. usage: wellinformed codebase search <query> [--codebase <id>] [--kind <kind>]');
+    console.error('codebase search: missing <query>. usage: akashik codebase search <query> [--codebase <id>] [--kind <kind>]');
     return 1;
   }
   const query = positional.join(' ');
@@ -300,7 +300,7 @@ const searchSub = async (rest: readonly string[]): Promise<number> => {
 const removeSub = async (rest: readonly string[]): Promise<number> => {
   const { positional } = parseArgs(rest);
   if (positional.length === 0) {
-    console.error('codebase remove: missing <id>. usage: wellinformed codebase remove <id>');
+    console.error('codebase remove: missing <id>. usage: akashik codebase remove <id>');
     return 1;
   }
   const id = positional[0] as CodebaseId;
@@ -326,10 +326,10 @@ const removeSub = async (rest: readonly string[]): Promise<number> => {
 
 // ─────────────────────── usage ────────────────────────
 
-const USAGE = `usage: wellinformed codebase <index|list|show|reindex|search|remove>
+const USAGE = `usage: akashik codebase <index|list|show|reindex|search|remove>
 
 subcommands:
-  index <path> [--name N] [--json]     parse a codebase into ~/.wellinformed/code-graph.db
+  index <path> [--name N] [--json]     parse a codebase into ~/.akashik/code-graph.db
   list [--json]                         list all indexed codebases
   show <id> [--json]                    detail view: breakdown
   reindex <id> [--json]                 incremental re-index (content hash diff)

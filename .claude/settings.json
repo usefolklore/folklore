@@ -6,17 +6,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-smart-hook.sh\"'",
+            "command": "sh -c 'exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/akashik-smart-hook.sh\"'",
             "timeout": 5000
           }
         ]
       },
       {
-        "matcher": "mcp__wellinformed__.*",
+        "matcher": "mcp__akashik__.*",
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-mcp-pre.cjs\"'",
+            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/akashik-mcp-pre.cjs\"'",
             "timeout": 3000
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-post-fetch.sh\"'",
+            "command": "sh -c 'exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/akashik-post-fetch.sh\"'",
             "timeout": 10000
           }
         ]
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-prompt-submit.cjs\"'",
+            "command": "sh -c 'exec node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/akashik-prompt-submit.cjs\"'",
             "timeout": 5000
           }
         ]
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'CLAUDE_HOOK_EVENT=SessionStart exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/wellinformed-hook.sh\"'",
+            "command": "sh -c 'CLAUDE_HOOK_EVENT=SessionStart exec sh \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/akashik-hook.sh\"'",
             "timeout": 5000
           }
         ]

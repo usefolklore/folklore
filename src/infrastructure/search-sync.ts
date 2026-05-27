@@ -2,7 +2,7 @@
  * Search sync — one-shot request/response federated search over a libp2p custom protocol.
  *
  * Phase 17 core; V5 wire-protocol cutover Phase 24-03. Registers
- * /wellinformed/search/1.0.0 on a libp2p node. Read-only: no Y.js docs,
+ * /akashik/search/1.0.0 on a libp2p node. Read-only: no Y.js docs,
  * no CRDT mutations, no REMOTE_ORIGIN needed, no debounce timers.
  *
  * V5 INVARIANTS (Phase 24 — ROOMS-DEL-05):
@@ -11,13 +11,13 @@
  *   - Every inbound envelope MUST carry `protocol_version: 5`. A V4 envelope
  *     (any envelope that still has a `room` field, OR any envelope missing
  *     `protocol_version: 5`) is rejected with SearchProtocolMismatch.
- *   - The libp2p protocol-path string stays at `/wellinformed/search/1.0.0` —
+ *   - The libp2p protocol-path string stays at `/akashik/search/1.0.0` —
  *     V5 is enforced at the envelope layer, not via a new libp2p protocol id.
  *     Pre-V5 peers get envelope-parse rejection, not "protocol not handled."
  *
  * EXISTING INVARIANTS — every reviewer must check these:
- *   1. SEARCH_PROTOCOL_ID is '/wellinformed/search/1.0.0' — separate from
- *      '/wellinformed/share/1.0.0' so sync and search have independent stream
+ *   1. SEARCH_PROTOCOL_ID is '/akashik/search/1.0.0' — separate from
+ *      '/akashik/share/1.0.0' so sync and search have independent stream
  *      lifecycles (CONTEXT.md locked decision).
  *
  *   2. FramedStream is COPIED from share-sync.ts, NOT imported. Search and share
@@ -54,7 +54,7 @@ import { DEFAULT_DIM } from '../domain/vectors.js';
 
 // ─────────────────────── constants ────────────────────────────────────────────
 
-export const SEARCH_PROTOCOL_ID = '/wellinformed/search/1.0.0' as const;
+export const SEARCH_PROTOCOL_ID = '/akashik/search/1.0.0' as const;
 /** V5 protocol-version literal carried on every envelope. */
 export const SEARCH_PROTOCOL_VERSION = 5 as const;
 const MAX_INBOUND_STREAMS = 32;
@@ -341,7 +341,7 @@ const handleSearchRequest = async (
         action: 'search_request',
         outcome: 'protocol_mismatch',
       });
-      process.stderr.write(`wellinformed: ${mismatchMsg}\n`);
+      process.stderr.write(`akashik: ${mismatchMsg}\n`);
       fs.close();
       return;
     }
@@ -361,7 +361,7 @@ const handleSearchRequest = async (
         action: 'search_request',
         outcome: 'protocol_mismatch',
       });
-      process.stderr.write(`wellinformed: ${mismatchMsg}\n`);
+      process.stderr.write(`akashik: ${mismatchMsg}\n`);
       fs.close();
       return;
     }
@@ -465,7 +465,7 @@ export const createSearchRegistry = (
 });
 
 /**
- * Register the /wellinformed/search/1.0.0 protocol on the libp2p node.
+ * Register the /akashik/search/1.0.0 protocol on the libp2p node.
  * Idempotent — unhandles any prior registration before re-registering.
  * Mirrors the registerShareProtocol shape from share-sync.ts.
  */
@@ -489,7 +489,7 @@ export const registerSearchProtocol = (
   );
 
 /**
- * Unregister the /wellinformed/search/1.0.0 protocol.
+ * Unregister the /akashik/search/1.0.0 protocol.
  * Search streams are one-shot (no persistent registry state to clean up).
  */
 export const unregisterSearchProtocol = (
@@ -544,8 +544,8 @@ export const openSearchStream = (
         const resp = JSON.parse(new TextDecoder().decode(frame.value)) as SearchResponse;
         if (resp.error) {
           const prefix = resp.error === 'protocol_mismatch'
-            ? `wellinformed: PROTOCOL MISMATCH — peer ${peerIdStr} did not accept our V5 SearchRequest (got: ${resp.error}). Upgrade the remote peer or check docs/architecture/V5-PROTOCOL.md.`
-            : `wellinformed: peer ${peerIdStr} search error: ${resp.error}`;
+            ? `akashik: PROTOCOL MISMATCH — peer ${peerIdStr} did not accept our V5 SearchRequest (got: ${resp.error}). Upgrade the remote peer or check docs/architecture/V5-PROTOCOL.md.`
+            : `akashik: peer ${peerIdStr} search error: ${resp.error}`;
           process.stderr.write(`${prefix}\n`);
           return [];
         }

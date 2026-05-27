@@ -1,4 +1,4 @@
-//! wellinformed-bench — BEIR benchmark runner (CLI entry).
+//! akashik-bench — BEIR benchmark runner (CLI entry).
 //!
 //! This file is deliberately thin: argument parsing, path composition,
 //! progress bar rendering, and a single call to `application::run_benchmark`.
@@ -25,9 +25,9 @@
 
 use anyhow::{Context, Result};
 use std::{path::PathBuf, time::Instant};
-use wellinformed_bench::application::{run_benchmark, BenchmarkConfig, BenchmarkReport};
-use wellinformed_bench::domain::{beir::load_beir, BeirDataset, EncoderSpec};
-use wellinformed_bench::infrastructure::{
+use akashik_bench::application::{run_benchmark, BenchmarkConfig, BenchmarkReport};
+use akashik_bench::domain::{beir::load_beir, BeirDataset, EncoderSpec};
+use akashik_bench::infrastructure::{
     index_progress, query_progress, write_result, FastembedEncoder, LatencyMs, OutputMetrics,
     ResultRecord,
 };
@@ -61,7 +61,7 @@ fn arg_value(argv: &[String], flag: &str) -> Option<String> {
 fn print_banner(cli: &CliArgs, spec: &EncoderSpec, data_dir: &std::path::Path) {
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!(
-        " wellinformed-bench (Rust/functional/DDD) — BEIR {}",
+        " akashik-bench (Rust/functional/DDD) — BEIR {}",
         cli.dataset.to_uppercase()
     );
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -142,7 +142,7 @@ fn main() -> Result<()> {
     let spec = EncoderSpec::parse(&cli.model)?;
 
     let home = std::env::var("HOME").context("HOME not set")?;
-    let bench_root = PathBuf::from(&home).join(".wellinformed/bench");
+    let bench_root = PathBuf::from(&home).join(".akashik/bench");
     let data_dir = bench_root.join(&cli.dataset).join(&cli.dataset);
     let cache_dir = bench_root.join(format!(
         "{}__rust_ddd__{}",

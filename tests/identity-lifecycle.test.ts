@@ -121,8 +121,8 @@ describe('identity lifecycle', () => {
     // Device A signs a memory entry
     const payload = {
       kind: 'memory_entry' as const,
-      label: 'wellinformed v3 is a P2P memory protocol for the free LLM world',
-      room: 'wellinformed-dev',
+      label: 'akashik v3 is a P2P memory protocol for the free LLM world',
+      room: 'akashik-dev',
       tags: ['release', 'p2p', 'did'],
     };
     const envRes = await signForDevice(a.value, payload, '2026-04-17T00:00:00.000Z');

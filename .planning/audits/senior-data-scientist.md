@@ -1,8 +1,8 @@
-# wellinformed — Senior Data Scientist / MLOps Audit
+# akashik — Senior Data Scientist / MLOps Audit
 
 **Auditor:** Senior DS agent (production ML lens)
 **Date:** 2026-04-13
-**Scope:** bench + retrieval pipeline at `/Users/saharbarak/workspace/wellinformed/`
+**Scope:** bench + retrieval pipeline at `/Users/saharbarak/workspace/akashik/`
 **Out of scope:** IR-research concerns (BM25 sanitizer, BEIR methodology, encoder choice, paired bootstrap) — already covered by the research agent. This audit is purely **MLOps / production ML rigor**.
 
 ---
@@ -13,7 +13,7 @@ Scoring 0-10 (0 = nothing, 10 = industry best). All scores sourced from direct f
 
 | Capability | Score | Evidence present | What's missing |
 |---|---|---|---|
-| **Experiment tracking** | **1 / 10** | `bench-beir-sota.mjs` writes `results.json` to `~/.wellinformed/bench/<dataset>__<model-slug>/results.json` with a `timestamp` field. | No git SHA, no experiment ID, no run grouping, no parent/child runs, no params history, no artifact tracking. Two runs with identical flags at different times overwrite each other. `grep -r "git rev-parse\|COMMIT_SHA" scripts/` returns **zero hits**. |
+| **Experiment tracking** | **1 / 10** | `bench-beir-sota.mjs` writes `results.json` to `~/.akashik/bench/<dataset>__<model-slug>/results.json` with a `timestamp` field. | No git SHA, no experiment ID, no run grouping, no parent/child runs, no params history, no artifact tracking. Two runs with identical flags at different times overwrite each other. `grep -r "git rev-parse\|COMMIT_SHA" scripts/` returns **zero hits**. |
 | **Model versioning / registry** | **0 / 10** | Model ID is a string arg: `--model nomic-ai/nomic-embed-text-v1.5`. Default hardcoded in `embedders.ts:56`. | No registry, no version pinning beyond HuggingFace hub tags (mutable), no approval workflow, no staging/production channels, no rollback path. If HF re-publishes a model under the same tag the production encoder silently changes. |
 | **Drift detection** | **0 / 10** | None. | Phase 20 auto-ingests Claude Code session history into `sessions` room. No mechanism tracks embedding distribution drift, no PSI/KL divergence monitor, no canary query set whose NDCG is tracked week-over-week, no alert on sudden p95 latency shift. |
 | **Feature flags** | **0 / 10** | `use-cases.ts` hardcodes `searchByRoom` / `searchGlobal` call graph. No flag abstraction. | Phase 22 (bge-base swap) is planned as a big-bang default change in `v2.1-CANDIDATES.md` Candidate A — no `encoder_variant=nomic\|bge` runtime switch, no per-query routing, no split-traffic capability. |
@@ -34,7 +34,7 @@ Scoring 0-10 (0 = nothing, 10 = industry best). All scores sourced from direct f
 `bench-beir-sota.mjs` is a good IR script and a **non-reproducible experiment**. Specifically:
 
 1. **No immutable run identity.** The only grouping key is `<dataset>__<model-slug>__hybrid__rerank`. Run it twice with different flag combos at different commits and you cannot tell them apart — the newer one overwrites the older. `results.json:560` has only `timestamp`, no `commit_sha`, no `run_id`, no `parent_run_id`.
-2. **Cache-dependent results.** Line 138: `CACHE_OK = existsSync(DB_PATH)`. The `.wellinformed/bench/` SQLite DBs are not in git. Re-running someone else's published numbers requires (a) the same commit, (b) the same HF model cache, (c) the same DB cache, (d) the same dataset zip. The bench is not reproducible from source alone.
+2. **Cache-dependent results.** Line 138: `CACHE_OK = existsSync(DB_PATH)`. The `.akashik/bench/` SQLite DBs are not in git. Re-running someone else's published numbers requires (a) the same commit, (b) the same HF model cache, (c) the same DB cache, (d) the same dataset zip. The bench is not reproducible from source alone.
 3. **Embedder non-determinism.** `@xenova/transformers` ONNX runtime has no seed pinning in `embedders.ts`. Two consecutive runs on the same machine are bitwise identical (deterministic CPU inference), but across Node.js versions or transformers.js minor versions the vectors shift by O(1e-6), which on SciFact changes per-query ranks and thus NDCG by O(0.1 pts). There is no assertion that this is bounded.
 4. **No hyperparameter history.** RRF `k=60`, `DENSE_K=100`, `BM25_K=100`, `HYBRID_QUERY_MAX_TOKENS=50`, `k1=0.9`, `b=0.4` — all hardcoded or passed via argv. Never persisted into the run record with a diff against the previous run.
 5. **No hardware capture.** CPU model, CPU core count, SIMD flags, RAM, Node version, OS — all missing from `results.json`. The BENCH-v2.md top-of-file block shows this was captured by hand; `bench-beir-sota.mjs` does not emit it programmatically.
@@ -44,7 +44,7 @@ Scoring 0-10 (0 = nothing, 10 = industry best). All scores sourced from direct f
 You don't need MLflow — a 150-line custom JSON tracker is enough for a solo-dev tool. Concretely:
 
 ```jsonc
-// ~/.wellinformed/experiments/<run_id>.json
+// ~/.akashik/experiments/<run_id>.json
 {
   "run_id": "2026-04-13T22:14:03-nomic-scifact-hybrid-a3f8b21",
   "parent_run_id": null,
@@ -83,7 +83,7 @@ You don't need MLflow — a 150-line custom JSON tracker is enough for a solo-de
 }
 ```
 
-**Implementation:** a new `scripts/lib/experiment-tracker.mjs` (~150 LOC) that `bench-beir-sota.mjs` imports. Replace the current `results.json` write with `tracker.end(result)`. Add `scripts/bench-log.mjs` to `cat ~/.wellinformed/experiments/*.json | jq` the experiment log, filter by dataset/model, and diff runs. Total added deps: zero (jq is optional).
+**Implementation:** a new `scripts/lib/experiment-tracker.mjs` (~150 LOC) that `bench-beir-sota.mjs` imports. Replace the current `results.json` write with `tracker.end(result)`. Add `scripts/bench-log.mjs` to `cat ~/.akashik/experiments/*.json | jq` the experiment log, filter by dataset/model, and diff runs. Total added deps: zero (jq is optional).
 
 **Why not MLflow local mode?** Python dep, `mlruns/` directory, UI server. Overkill for a Node.js solo tool. The JSON log above gives 90% of MLflow's value at 10% of the cost, and bench-compare.mjs can already consume it unchanged.
 
@@ -97,7 +97,7 @@ The current plan in `v2.1-CANDIDATES.md` Candidate A is a **big-bang default cha
 
 Even on a single-user local tool, the canary pattern is correct — it gives reversibility and per-query telemetry for free.
 
-**Phase 22a — shadow mode (one day).** Add `EmbedderVariant = "nomic" | "bge" | "canary"` to config. `"canary"` mode embeds the query with *both* encoders in parallel, runs both retrieval pipelines, returns the production (`nomic`) result to the user, and logs the paired result to `~/.wellinformed/canary/<timestamp>.jsonl`:
+**Phase 22a — shadow mode (one day).** Add `EmbedderVariant = "nomic" | "bge" | "canary"` to config. `"canary"` mode embeds the query with *both* encoders in parallel, runs both retrieval pipelines, returns the production (`nomic`) result to the user, and logs the paired result to `~/.akashik/canary/<timestamp>.jsonl`:
 
 ```jsonc
 {"t": "2026-04-14T10:03:22Z", "query_hash": "abc123", "room": "research",
@@ -123,9 +123,9 @@ return deps.embedders[variant].embed(text).andThen(...)
   .map((res) => { logCanaryEvent({ variant, latency: Date.now() - t0, hits: res.length }); return res; });
 ```
 
-**Phase 22d — auto-rollback sentinel.** Background worker reads the canary log every 100 queries. If `bge` p95 > `nomic` p95 × 1.5 OR `bge` error-rate > 1% OR `bge` overlap@10 < 0.4 → emit desktop notification "wellinformed: canary bge-base showing regression, auto-disabling" and flip `canary_fraction = 0`. The `nomic` encoder is never removed from disk so rollback is one config flag.
+**Phase 22d — auto-rollback sentinel.** Background worker reads the canary log every 100 queries. If `bge` p95 > `nomic` p95 × 1.5 OR `bge` error-rate > 1% OR `bge` overlap@10 < 0.4 → emit desktop notification "akashik: canary bge-base showing regression, auto-disabling" and flip `canary_fraction = 0`. The `nomic` encoder is never removed from disk so rollback is one config flag.
 
-**Phase 22e — promotion.** After 7 days of clean canary at 10%, bump to 50%, then 100%. Only after 100% clean for 7 days does `nomic` get deprecated — and even then, keep it downloadable under `wellinformed config set encoder nomic` as a fallback.
+**Phase 22e — promotion.** After 7 days of clean canary at 10%, bump to 50%, then 100%. Only after 100% clean for 7 days does `nomic` get deprecated — and even then, keep it downloadable under `akashik config set encoder nomic` as a fallback.
 
 **Why this matters even for a solo tool:** when the user reports "the ask tool got worse after the update," you can say "canary has been running for 3 days, overlap@10 is 0.78, here's the paired sample where bge lost — let's look at that query." Without canary, the answer is "re-run the whole BEIR bench locally and hope you can tell."
 
@@ -135,7 +135,7 @@ return deps.embedders[variant].embed(text).andThen(...)
 
 ## 4. Active learning surface — minimum viable design
 
-wellinformed captures **zero user signals**. Every query, every answer, every click — vanishes. This is the single biggest missed opportunity for a knowledge graph that lives right in the user's editor.
+akashik captures **zero user signals**. Every query, every answer, every click — vanishes. This is the single biggest missed opportunity for a knowledge graph that lives right in the user's editor.
 
 ### Minimum viable feedback capture
 
@@ -159,7 +159,7 @@ interface FeedbackRecord {
 
 **Storage:** reuse `src/infrastructure/vector-index.ts` — `feedback` is just another room. Zero new infrastructure. The `VectorIndex.upsert()` path already handles per-room writes.
 
-**UX surfacing:** in the MCP tool response for `search` / `ask`, include a hint `{...results, feedback_instructions: "Call feedback_mark({query, node_id, verdict}) to improve future results"}`. Claude agents will see this in their tool output and can proactively feed back. Humans using the CLI get a `--helpful <node-id>` flag on `wellinformed ask`.
+**UX surfacing:** in the MCP tool response for `search` / `ask`, include a hint `{...results, feedback_instructions: "Call feedback_mark({query, node_id, verdict}) to improve future results"}`. Claude agents will see this in their tool output and can proactively feed back. Humans using the CLI get a `--helpful <node-id>` flag on `akashik ask`.
 
 ### Using the signal — per-query-type RRF weighting
 
@@ -173,7 +173,7 @@ for each (query_cluster, encoder_variant):
     optimal_alpha = argmax_alpha(ndcg_on_feedback_subset(alpha * dense + (1-alpha) * bm25))
 ```
 
-Store `optimal_alpha` per query cluster in a small JSON `~/.wellinformed/learned-weights.json`. At query time, `searchHybrid` looks up the nearest query cluster by embedding similarity, reads `alpha`, and uses it in the RRF fusion. This is a **per-query-type learned reranker without any neural network**.
+Store `optimal_alpha` per query cluster in a small JSON `~/.akashik/learned-weights.json`. At query time, `searchHybrid` looks up the nearest query cluster by embedding similarity, reads `alpha`, and uses it in the RRF fusion. This is a **per-query-type learned reranker without any neural network**.
 
 **First version is crude on purpose:** no need for a learned reranker, no LambdaMART, no listwise loss. Just a lookup table of `{query_cluster: alpha}` that adapts over time. The ArguAna backfire case (BM25 hurts counter-argument queries per `BENCH-v2.md:86`) becomes self-healing once users mark a few counter-argument results as wrong.
 
@@ -260,7 +260,7 @@ test('scifact-mini: hybrid retrieval meets production quality gate', async (t) =
 
 ---
 
-## 6. Performance targets for wellinformed
+## 6. Performance targets for akashik
 
 A local-first memory tool still needs SLOs. Proposed table (commit to these in `docs/SLO.md`):
 
@@ -276,7 +276,7 @@ A local-first memory tool still needs SLOs. Proposed table (commit to these in `
 | **Daemon uptime** (7d rolling) | ≥ 99.0 % | 95 % | Local daemon, crash-restart is cheap. 99% = ~1.7 hrs/week downtime budget. |
 | **Model cold-start** (first query after restart) | ≤ 5 s | 15 s | Dominated by ONNX session init. Past 15 s → model redownload. |
 
-**Instrumentation:** a new `src/infrastructure/telemetry.ts` that exposes these as a `/metrics` endpoint (OpenMetrics format) from the daemon, scraped by `wellinformed status`. Zero new deps — plain text response.
+**Instrumentation:** a new `src/infrastructure/telemetry.ts` that exposes these as a `/metrics` endpoint (OpenMetrics format) from the daemon, scraped by `akashik status`. Zero new deps — plain text response.
 
 ---
 
@@ -300,7 +300,7 @@ A local-first memory tool still needs SLOs. Proposed table (commit to these in `
 **Sketch.**
 1. New `scripts/lib/experiment-tracker.mjs` — 150 LOC, no deps.
 2. `tracker.start({dataset, model, config})` → captures git SHA via `child_process.execSync('git rev-parse HEAD')`, hardware info via `os.*`, hashes the corpus file.
-3. `tracker.end({metrics, latencies, per_query})` → writes `~/.wellinformed/experiments/<run_id>.json`.
+3. `tracker.end({metrics, latencies, per_query})` → writes `~/.akashik/experiments/<run_id>.json`.
 4. Port `bench-beir-sota.mjs` to use it (replace the current `writeFileSync(results.json)` at line 562).
 5. Port `bench-compare.mjs` to accept `run_id` as well as path.
 6. Add `scripts/bench-log.mjs` — lists runs, filters by dataset/model/commit, diffs metrics.
@@ -312,8 +312,8 @@ A local-first memory tool still needs SLOs. Proposed table (commit to these in `
 **Sketch.**
 1. New domain type `FeedbackRecord` + `feedback` room + `verdict` enum.
 2. MCP tool `feedback_mark` wired into `src/mcp/server.ts`.
-3. CLI flag `wellinformed ask "..." --helpful <node-id>` for humans.
-4. Background job `scripts/learn-fusion-weights.mjs` clusters feedback by query embedding (k-means on stored `query_embedding`), computes optimal alpha per cluster, writes `~/.wellinformed/learned-weights.json`.
+3. CLI flag `akashik ask "..." --helpful <node-id>` for humans.
+4. Background job `scripts/learn-fusion-weights.mjs` clusters feedback by query embedding (k-means on stored `query_embedding`), computes optimal alpha per cluster, writes `~/.akashik/learned-weights.json`.
 5. `searchHybrid` reads the weights file on startup, nearest-cluster lookup per query, applies cluster-specific alpha in RRF.
 6. Hidden value: the feedback set itself becomes a **second quality gate** — a `tests/bench/user-feedback.test.ts` that re-runs every marked query and asserts the top result is still the one the user marked helpful. Effectively a user-specific regression suite.
 
@@ -327,8 +327,8 @@ A local-first memory tool still needs SLOs. Proposed table (commit to these in `
 
 ## Summary
 
-wellinformed is a **research-quality retrieval bench grafted onto a production MCP tool with zero MLOps substrate**. The bench methodology (thanks to Phase 21) is clean; the research agent's audit already covered that. What's missing is the production ML loop: no experiment tracking, no model versioning, no drift detection, no feedback capture, no quality gate in CI, no SLO, no canary. The 313/313 tests prove the TypeScript compiles; they prove nothing about whether a user-visible query got worse yesterday.
+akashik is a **research-quality retrieval bench grafted onto a production MCP tool with zero MLOps substrate**. The bench methodology (thanks to Phase 21) is clean; the research agent's audit already covered that. What's missing is the production ML loop: no experiment tracking, no model versioning, no drift detection, no feedback capture, no quality gate in CI, no SLO, no canary. The 313/313 tests prove the TypeScript compiles; they prove nothing about whether a user-visible query got worse yesterday.
 
-The three v2.1 adds above turn this from "a bench that ran once" into "a system that knows when it regresses and gets better from usage." Total cost: ~4.5 days. Total leverage: qualitative phase change in what wellinformed *is*.
+The three v2.1 adds above turn this from "a bench that ran once" into "a system that knows when it regresses and gets better from usage." Total cost: ~4.5 days. Total leverage: qualitative phase change in what akashik *is*.
 
 **Word count:** ~2,400 words, MLOps-focused, no duplication with the IR-research audit.

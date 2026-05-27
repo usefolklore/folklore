@@ -15,7 +15,7 @@ Room-scoped reputation (`docs/p2p/peer-reputation-design.md:86`) is not just unn
 The argument that users need granular sharing (e.g., federate `p2p-llm`, hide `tlvtech`) is a classic trap of reinventing OS-level isolation. If a user has strictly private data and public data, they should run two instances or profiles. Building complex, room-scoped access control (`shared-rooms.json`, `src/cli/commands/share.ts`) into a local knowledge graph is a mistake. P2P sharing should be binary: you trust a peer to sync your graph, or you don't.
 
 **3. Migrating the 5 Existing Rooms**
-On landing day, the 5 existing partitions (`wellinformed-dev`, `p2p-llm`, `tlvtech`, `forge`, `auto-tlv`) simply evaporate. All nodes are merged into a single, unified local graph. No data is lost; the records simply drop their `room` attribute. The artificial walls come down, allowing organic, cross-disciplinary connections to surface naturally during queries. 
+On landing day, the 5 existing partitions (`akashik-dev`, `p2p-llm`, `tlvtech`, `forge`, `auto-tlv`) simply evaporate. All nodes are merged into a single, unified local graph. No data is lost; the records simply drop their `room` attribute. The artificial walls come down, allowing organic, cross-disciplinary connections to surface naturally during queries. 
 
 **2. Wire-Protocol Break**
 This is a hard, breaking change. It requires a V5 major version bump. The `room` field is completely excised from the `SearchRequest` envelope (`docs/architecture/V3-PROTOCOL.md:238-250`), `PEER_HELLO`, and `ROOM_SYNC`. This drastically simplifies the protocol specification and peer discovery logic.

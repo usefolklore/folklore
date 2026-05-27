@@ -88,7 +88,7 @@ generator. Don't put the rep math inside the scorer — keep concerns separate.
 > **V5 Update (2026-05-27)** — Pre-V5 this section listed a secondary
 > `room:*` scheme. The Phase 24 rooms-deletion mandate removed the rooms
 > abstraction entirely; `room:*` keys are no longer written by the
-> reputation store, the runtime drops them on load, and `wellinformed
+> reputation store, the runtime drops them on load, and `akashik
 > migrate v5` permanently flattens them on disk. See
 > `docs/architecture/V5-PROTOCOL.md`.
 
@@ -110,7 +110,7 @@ penalises stale/weakly-independent evidence.
 
 ## 4. Data model
 
-`~/.wellinformed/peer-reputation.json` — local, atomic temp-write + rename
+`~/.akashik/peer-reputation.json` — local, atomic temp-write + rename
 (mirrors `peer-store.ts:138`):
 
 ```json
@@ -233,8 +233,8 @@ plausibility, **not truthfulness.**
 | 4 | Subject extraction (entity-only — V5; legacy room scheme dropped) | **ADD-NEXT** | `src/domain/subject-key.ts` (new); reads from `mentioned_entities` already on AskHit |
 | 5 | Use rep for **ordering only**, never filtering, with exploration floor | **ADD-NEXT** | `src/application/federated-search.ts:202` |
 | 6 | Surface in CLI + JSON: "answered by peers with rep≥X on subject Y" | **ADD-NEXT** | `src/application/peer-pull-telemetry.ts:81`, `src/infrastructure/telemetry-formatter.ts` |
-| 7 | `wellinformed peers rep [<peer-id>]` inspect command | **ADD-NEXT** | `src/cli/commands/peers-rep.ts` (new) |
-| 8 | Pull-on-demand wire protocol (signed review summaries) | **ADD-LATER** | New `/wellinformed/reputation/1.0.0` libp2p protocol |
+| 7 | `akashik peers rep [<peer-id>]` inspect command | **ADD-NEXT** | `src/cli/commands/peers-rep.ts` (new) |
+| 8 | Pull-on-demand wire protocol (signed review summaries) | **ADD-LATER** | New `/akashik/reputation/1.0.0` libp2p protocol |
 | 9 | Pubsub gossip | **SKIP** — until reviewer identity, replay handling, and imported-evidence discount exist | n/a |
 
 ---

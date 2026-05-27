@@ -31,7 +31,7 @@ decisions:
   - "oracle namespace filtering switched from `node.room === 'oracle'` to id-prefix check (`oracle-question:` / `oracle-answer:`) — Open Question 2 resolved via source_uri-style filter"
   - "Recent_sessions filter switched from `nodesInRoom(g, 'sessions')` to `id.startsWith('claude-session://')` — same id-prefix pattern"
 requirements_delivered:
-  - "ROOMS-DEL-01 (no room CRUD CLI/tool reachable) — partially: MCP-side tools gone; CLI-side `wellinformed room` is Wave 1/3"
+  - "ROOMS-DEL-01 (no room CRUD CLI/tool reachable) — partially: MCP-side tools gone; CLI-side `akashik room` is Wave 1/3"
   - "ROOMS-DEL-05 (V5 wire — no room param on search/federated_search) — fully on MCP surface"
 metrics:
   duration: "~50 minutes"
@@ -166,7 +166,7 @@ grep -cE "server\\.registerTool\\(" src/mcp/server.ts                          -
 
 **BREAKING MCP API CHANGE — Phase 24, V5 wire-protocol cutover.**
 
-External consumers (Claude Code, Cursor, Cline, Gemini CLI, any other MCP client wired to `wellinformed mcp start`) MUST update tool-call envelopes:
+External consumers (Claude Code, Cursor, Cline, Gemini CLI, any other MCP client wired to `akashik mcp start`) MUST update tool-call envelopes:
 
 - Stop sending `room` on `search`, `federated_search`, `recall`, `federated_recall`, `deep_search`, `ask`, `recent_sessions`.
 - Drop calls to `list_rooms`, `find_tunnels`, `trigger_room`, `room_create`, `room_list`, `discover_loop` — those tools no longer exist.

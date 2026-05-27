@@ -27,7 +27,7 @@ Developer A (homelab)          Developer B (ml-papers)
 ### Discovery
 - Nodes announce themselves on a local network via mDNS/Bonjour
 - Or register with a lightweight coordination server (optional)
-- Or manually add peers: `wellinformed peer add <address>`
+- Or manually add peers: `akashik peer add <address>`
 
 ### Sharing Protocol
 - Each node exposes a subset of its graph as "public rooms"
@@ -38,7 +38,7 @@ Developer A (homelab)          Developer B (ml-papers)
 ### Collective Intelligence
 - Tunnel detection runs ACROSS peers — my homelab connects to your ml-papers
 - Shared discovery loop: if peer B finds a great ArXiv source, peer A gets it suggested
-- Federated search: `wellinformed ask "vector search" --peers` searches across all connected graphs
+- Federated search: `akashik ask "vector search" --peers` searches across all connected graphs
 
 ### Privacy Model
 - **Opt-in only** — nothing shared by default

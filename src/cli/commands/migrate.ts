@@ -1,5 +1,5 @@
 /**
- * `wellinformed migrate v5 [--rollback]` — V4 → V5 schema migration
+ * `akashik migrate v5 [--rollback]` — V4 → V5 schema migration
  * (Phase 24, Plan 11, ROOMS-DEL-06).
  *
  * Reads graph.json as raw JSON (the V5 type lacks `room`), backs it up to
@@ -18,8 +18,8 @@ import {
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 
-const wellinformedHome = (): string =>
-  process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
+const akashikHome = (): string =>
+  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
 
 const slugify = (s: string): string =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 63);
@@ -56,7 +56,7 @@ interface MigrateStats {
 }
 
 const migratePaths = (): MigratePaths => {
-  const home = wellinformedHome();
+  const home = akashikHome();
   return {
     home,
     graph: join(home, 'graph.json'),
@@ -71,10 +71,10 @@ const migratePaths = (): MigratePaths => {
 /**
  * Heuristic: does a slugified room name match a real repo on disk?
  * Scans ~/personal, ~/code, ~/work, ~/src, ~/projects.
- * Override via WELLINFORMED_REPO_ROOTS=path1:path2.
+ * Override via AKASHIK_REPO_ROOTS=path1:path2.
  */
 const repoRoots = (): readonly string[] => {
-  const env = process.env.WELLINFORMED_REPO_ROOTS;
+  const env = process.env.AKASHIK_REPO_ROOTS;
   if (env) return env.split(':').filter(Boolean);
   const h = homedir();
   return [join(h, 'personal'), join(h, 'code'), join(h, 'work'), join(h, 'src'), join(h, 'projects')];
@@ -253,7 +253,7 @@ const runMigrate = (): number => {
 
   console.log(`  ✓ Backed up pre-migration graph to ${basename(paths.backup)}`);
   console.log('');
-  console.log('V5 cutover complete. Run `wellinformed doctor` to verify.');
+  console.log('V5 cutover complete. Run `akashik doctor` to verify.');
   return 0;
 };
 
@@ -286,12 +286,12 @@ const runRollback = (): number => {
   console.log(`  ✗ peer-reputation.json flattening NOT auto-reversible`);
   console.log('');
   console.log('Re-create rooms.json + shared-rooms.json from your own backups if needed,');
-  console.log('or run `wellinformed migrate v5` again to re-apply.');
+  console.log('or run `akashik migrate v5` again to re-apply.');
   return 0;
 };
 
 const printUsage = (): void => {
-  console.error('usage: wellinformed migrate v5 [--rollback]');
+  console.error('usage: akashik migrate v5 [--rollback]');
   console.error('  V4 → V5 schema migration (rooms abstraction removed).');
   console.error('  --rollback restores the pre-migration graph.json from backup.');
 };

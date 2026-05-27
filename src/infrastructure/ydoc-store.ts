@@ -1,5 +1,5 @@
 /**
- * Y.Doc binary persistence — `~/.wellinformed/ydocs/<room>.ydoc` files.
+ * Y.Doc binary persistence — `~/.akashik/ydocs/<room>.ydoc` files.
  *
  * V1 ENCODING ONLY. The y-protocols/sync module Phase 16 uses for the wire
  * protocol expects V1 update bytes. Mixing V1 and V2 silently corrupts state

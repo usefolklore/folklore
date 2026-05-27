@@ -1,6 +1,6 @@
 /**
  * Persistence for peer reputation — atomic load/save against
- * `~/.wellinformed/peer-reputation.json`.
+ * `~/.akashik/peer-reputation.json`.
  *
  * Mirrors the patterns from `peer-store.ts:138`:
  *   - Versioned JSON (forward-compat refusal of unknown future versions).
@@ -120,7 +120,7 @@ const filterReviews = (raw: readonly ReviewEvent[]): readonly ReviewEvent[] =>
 // ─────────────── load ────────────────────
 
 /**
- * Load `peer-reputation.json` from the wellinformed home directory.
+ * Load `peer-reputation.json` from the akashik home directory.
  * Returns an empty file (no observations yet) when the file doesn't
  * exist. Returns an error when the file exists but is malformed.
  *

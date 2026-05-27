@@ -127,9 +127,9 @@ export const enrichText = (text: string, meta: EnrichmentMeta): string => {
 };
 
 /**
- * Env-gate helper. Returns `true` when `WELLINFORMED_BENCH_CONTEXTUAL_ENRICH=1`,
+ * Env-gate helper. Returns `true` when `AKASHIK_BENCH_CONTEXTUAL_ENRICH=1`,
  * matching the project convention for opt-in bench-time interventions.
  * Centralised so bench files don't each parse the env var.
  */
 export const isContextualEnrichEnabled = (): boolean =>
-  process.env.WELLINFORMED_BENCH_CONTEXTUAL_ENRICH === '1';
+  process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH === '1';

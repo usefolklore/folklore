@@ -80,7 +80,7 @@ test_fail: 0
 |----------|-------------|------|
 | `src/infrastructure/sources/codebase.ts` NOT modified | Never touched during Phase 19 | Grep: 0 mentions of `tree-sitter`, 0 mentions of `code-graph.db` |
 | `src/cli/commands/index-project.ts` NOT modified | Never touched during Phase 19 | Grep: 0 mentions of `openCodeGraph` or `tree-sitter-parser` |
-| Existing `wellinformed index` command still works | Regression suite runs existing tests | 163 prior tests pass with zero regressions |
+| Existing `akashik index` command still works | Regression suite runs existing tests | 163 prior tests pass with zero regressions |
 
 ---
 
@@ -110,6 +110,6 @@ test_fail: 0
 
 **PASSED — 14/14 must-haves verified**
 
-Phase 19 delivers a structurally clean, well-tested codebase indexing subsystem. Codebases are first-class DDD aggregates stored in their own SQLite file, attached to research rooms via a join table without polluting the room graph. Tree-sitter powers the parser with a Map-cached instance pattern. The two-pass indexer resolves call graphs with explicit confidence levels. Existing shallow code adapter and `wellinformed index` command remain untouched — backwards compatibility preserved. 199/199 tests pass, all 6 research pitfalls locked by regression tests.
+Phase 19 delivers a structurally clean, well-tested codebase indexing subsystem. Codebases are first-class DDD aggregates stored in their own SQLite file, attached to research rooms via a join table without polluting the room graph. Tree-sitter powers the parser with a Map-cached instance pattern. The two-pass indexer resolves call graphs with explicit confidence levels. Existing shallow code adapter and `akashik index` command remain untouched — backwards compatibility preserved. 199/199 tests pass, all 6 research pitfalls locked by regression tests.
 
 **Ready to return to Phase 18 (Production Networking) — the last remaining phase in the v2.0 milestone.**

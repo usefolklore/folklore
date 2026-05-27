@@ -8,22 +8,22 @@
 ## Phase Boundary
 
 Delete the `room` abstraction entirely. The user-facing room concept disappears:
-- No `wellinformed room` CRUD CLI
-- No `~/.wellinformed/rooms.json` registry
-- No `~/.wellinformed/shared-rooms.json` policy file
+- No `akashik room` CRUD CLI
+- No `~/.akashik/rooms.json` registry
+- No `~/.akashik/shared-rooms.json` policy file
 - No `default_room` concept
 - No system rooms (`toolshed`, `research`) — these vanish
 - No `room` field in any wire-protocol message envelope
 
 Replace with two new primitives:
 1. **`workspace?: string`** — optional node field, populated at index time from `slugify(basename(git rev-parse --show-toplevel))`. Read-side pre-filter only. **Local-only — never enters federation, never enters reputation.**
-2. **`private: boolean`** (default `false`) on every graph node. Sharing becomes filter on `private === false`. `wellinformed save --private` sets it. **Replaces `shared-rooms.json` entirely** for the binary-privacy case.
+2. **`private: boolean`** (default `false`) on every graph node. Sharing becomes filter on `private === false`. `akashik save --private` sets it. **Replaces `shared-rooms.json` entirely** for the binary-privacy case.
 
 Federation wire protocol bumps to **V5**: `SearchRequest.room`, `SearchResponse.room`, and peer-pull telemetry `room` field all removed. Pre-V5 peers receive a clear protocol-version error (hard break — user has no live peers, daemon.pid is stale).
 
 Reputation `(peer, room)` tuples flatten to `peer`-only keys.
 
-Storage migration: drop `~/.wellinformed/rooms.json`, drop `~/.wellinformed/shared-rooms.json`, consolidate per-room Y.Docs into one global graph Y.Doc.
+Storage migration: drop `~/.akashik/rooms.json`, drop `~/.akashik/shared-rooms.json`, consolidate per-room Y.Docs into one global graph Y.Doc.
 
 **Out of scope:** Replacing the deleted topical-grouping function with anything else. The synthesis decided `private: bool` covers the binary case; any future topical/tag primitive is deferred indefinitely until empirical evidence justifies it.
 
@@ -41,13 +41,13 @@ Storage migration: drop `~/.wellinformed/rooms.json`, drop `~/.wellinformed/shar
 ### Replacement primitives (LOCKED)
 
 - `workspace?: string` on graph nodes — populated from `slugify(basename(git rev-parse --show-toplevel))` at index time. Read-side filter only. `--workspace all` flag opts into cross-workspace queries. `--workspace <slug>` overrides cwd detection.
-- `private: boolean` on graph nodes (default `false`). `wellinformed save --private` sets it. Sharing path filters on `node.private === false`. Replaces `shared-rooms.json`.
+- `private: boolean` on graph nodes (default `false`). `akashik save --private` sets it. Sharing path filters on `node.private === false`. Replaces `shared-rooms.json`.
 - **Auto-create rooms is deleted along with rooms.** There is no "auto-create the workspace room" concept — the workspace is a node-level tag, not a registry entry.
 
 ### Data migration (LOCKED)
 
-- One-shot command: `wellinformed migrate v5`. Idempotent. Lossless except the `room` field is dropped onto an optional `workspace` field where possible (heuristic: if the room name slugified matches a known repo basename in the user's filesystem, use it; otherwise drop the field, leave `workspace: null`).
-- Existing 5 rooms (`wellinformed-dev`, `p2p-llm`, `tlvtech`, `forge`, `auto-tlv`) → all nodes merge into a single graph. Room field stripped, workspace field set heuristically where possible, `private: false` set on all (user can mark sensitive nodes private after migration).
+- One-shot command: `akashik migrate v5`. Idempotent. Lossless except the `room` field is dropped onto an optional `workspace` field where possible (heuristic: if the room name slugified matches a known repo basename in the user's filesystem, use it; otherwise drop the field, leave `workspace: null`).
+- Existing 5 rooms (`akashik-dev`, `p2p-llm`, `tlvtech`, `forge`, `auto-tlv`) → all nodes merge into a single graph. Room field stripped, workspace field set heuristically where possible, `private: false` set on all (user can mark sensitive nodes private after migration).
 - Reputation flattening: collapse `(peer, room)` tuples to `peer` by max-score reduction (preserves the strongest signal per peer).
 
 ### What to delete entirely (LOCKED)
@@ -82,7 +82,7 @@ Application: `discover.ts`, `discovery-loop.ts`, `ingest.ts`, `session-ingest.ts
 Infrastructure: `search-gossip.ts`, `peer-pull-telemetry.ts`, `touch-protocol.ts`, `share-envelope.ts`, `peer-reputation-store.ts`
 Domain: `graph.ts` (drop `room?: Room` field from `GraphNode`, drop `nodesInRoom`, drop `roomFilter`)
 Telegram: `telegram/commands.ts`
-Hooks: `.claude/hooks/wellinformed-{session-start,session-capture,prompt-submit,smart-hook,post-fetch}.{sh,cjs}`
+Hooks: `.claude/hooks/akashik-{session-start,session-capture,prompt-submit,smart-hook,post-fetch}.{sh,cjs}`
 
 ### Test strategy (LOCKED)
 
@@ -90,10 +90,10 @@ Hooks: `.claude/hooks/wellinformed-{session-start,session-capture,prompt-submit,
 - Edit ~13 other tests to remove room assertions and add private/workspace assertions where relevant (`phase16.share-crdt`, `phase34.save-note`, `phase37.share-picker`, `consolidator.test`, etc.).
 - Add new test file `tests/phase24.rooms-deleted.test.ts` covering:
   - Wire protocol V5 (no `room` field in any envelope)
-  - `wellinformed save --private` sets the flag
+  - `akashik save --private` sets the flag
   - Sharing filters on `private === false`
   - Workspace pre-filter active in git repos
-  - `wellinformed migrate v5` is idempotent and lossless
+  - `akashik migrate v5` is idempotent and lossless
 
 ### Claude's Discretion
 
@@ -140,12 +140,12 @@ Hooks: `.claude/hooks/wellinformed-{session-start,session-capture,prompt-submit,
 
 ### Migration command UX
 ```
-$ wellinformed migrate v5
-Reading ~/.wellinformed/graph.json...
+$ akashik migrate v5
+Reading ~/.akashik/graph.json...
   21,128 nodes found across 5 rooms + 6 system rooms.
-Reading ~/.wellinformed/rooms.json...
+Reading ~/.akashik/rooms.json...
   5 user rooms, 1 default (tlvtech).
-Reading ~/.wellinformed/shared-rooms.json...
+Reading ~/.akashik/shared-rooms.json...
   0 rooms marked shareable.
 
 Migrating to V5...
@@ -153,11 +153,11 @@ Migrating to V5...
   ✓ Set `private: false` on 21,128 nodes
   ✓ Heuristic workspace assignment: 3,481 nodes tagged (from repo basename match)
   ✓ Flattened 4 reputation entries from (peer, room) to peer keys
-  ✓ Deleted ~/.wellinformed/rooms.json
-  ✓ Deleted ~/.wellinformed/shared-rooms.json
-  ✓ Backed up pre-migration graph to ~/.wellinformed/graph.v4-backup.json
+  ✓ Deleted ~/.akashik/rooms.json
+  ✓ Deleted ~/.akashik/shared-rooms.json
+  ✓ Backed up pre-migration graph to ~/.akashik/graph.v4-backup.json
 
-V5 cutover complete. Run `wellinformed doctor` to verify.
+V5 cutover complete. Run `akashik doctor` to verify.
 ```
 
 Idempotent: if no `room` fields present in graph, exits 0 with "Already on V5" message.
@@ -170,7 +170,7 @@ This peer is on V5; the `room` field is removed. Upgrade the requester or the re
 ```
 
 ### Hook contract break
-The 5 wellinformed hooks (`.claude/hooks/wellinformed-*.{sh,cjs}`) all format graph hits with a `room` field. They break together in this phase. Each hook needs its hit-formatter updated to drop the room and optionally show `workspace` when present.
+The 5 akashik hooks (`.claude/hooks/akashik-*.{sh,cjs}`) all format graph hits with a `room` field. They break together in this phase. Each hook needs its hit-formatter updated to drop the room and optionally show `workspace` when present.
 
 ### Auto-detect cwd workspace
 `src/cli/runtime.ts` gets a helper:
@@ -207,14 +207,14 @@ Used by `save`, `ask`, `recall`, `report` — anywhere a query/write needs works
 
 | ID | Description |
 |----|-------------|
-| ROOMS-DEL-01 | `wellinformed room` CLI command is removed; no subcommand routes to room CRUD |
-| ROOMS-DEL-02 | `~/.wellinformed/rooms.json` is no longer read or written by any code path |
-| ROOMS-DEL-03 | `~/.wellinformed/shared-rooms.json` is removed; sharing gates on `node.private === false` |
+| ROOMS-DEL-01 | `akashik room` CLI command is removed; no subcommand routes to room CRUD |
+| ROOMS-DEL-02 | `~/.akashik/rooms.json` is no longer read or written by any code path |
+| ROOMS-DEL-03 | `~/.akashik/shared-rooms.json` is removed; sharing gates on `node.private === false` |
 | ROOMS-DEL-04 | `GraphNode` schema has `room` removed, `workspace?: string` and `private: boolean` added |
 | ROOMS-DEL-05 | Wire protocol V5: `SearchRequest`, `SearchResponse`, peer-pull telemetry have no `room` field |
-| ROOMS-DEL-06 | `wellinformed migrate v5` exists, is idempotent, and migrates the user's live graph losslessly (except `room` → `workspace` heuristic) |
+| ROOMS-DEL-06 | `akashik migrate v5` exists, is idempotent, and migrates the user's live graph losslessly (except `room` → `workspace` heuristic) |
 | ROOMS-DEL-07 | Read-side commands (`ask`, `recall`, `discover`, `report`) auto-apply workspace pre-filter when cwd is in a git repo; `--workspace all` opts out |
-| ROOMS-DEL-08 | All `.claude/hooks/wellinformed-*` scripts format hits without `room` field and pass the test suite |
+| ROOMS-DEL-08 | All `.claude/hooks/akashik-*` scripts format hits without `room` field and pass the test suite |
 
 ---
 

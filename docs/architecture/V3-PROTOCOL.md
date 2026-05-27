@@ -24,7 +24,7 @@ Free/open LLMs (Llama, Mistral, Qwen, DeepSeek, GPT-OSS) have no portable, crypt
 - Memory **efficiently** syncs over P2P meshes (binary-quantized 64-byte vectors)
 - The whole stack runs **local-first** on CPU with no GPU requirement
 
-This spec defines the wire primitives. The reference implementation is the `wellinformed` TypeScript codebase; the spec is portable to any language (Rust, Go, Python, Swift).
+This spec defines the wire primitives. The reference implementation is the `akashik` TypeScript codebase; the spec is portable to any language (Rust, Go, Python, Swift).
 
 ---
 
@@ -51,7 +51,7 @@ An operational keypair authorized by the user DID.
 **Device authorization message** (canonical string, no JSON):
 
 ```
-wellinformed-auth:v1:<device_id>:<hex(device_public_key)>:<authorized_at_ISO8601>
+akashik-auth:v1:<device_id>:<hex(device_public_key)>:<authorized_at_ISO8601>
 ```
 
 The user signs this message with their private seed → `authorization_sig` (64 bytes Ed25519).
@@ -93,12 +93,12 @@ SignedEnvelope<T> = {
 **Payload signing message** (canonical string):
 
 ```
-wellinformed-sig:v1:<device_id>:<signed_at>:<canonical_json(payload)>
+akashik-sig:v1:<device_id>:<signed_at>:<canonical_json(payload)>
 ```
 
 The device signs this message with its private seed → `signature`.
 
-Domain separation: the `wellinformed-auth:v1:` and `wellinformed-sig:v1:` prefixes prevent cross-protocol replay. A valid authorization signature cannot be re-presented as a payload signature.
+Domain separation: the `akashik-auth:v1:` and `akashik-sig:v1:` prefixes prevent cross-protocol replay. A valid authorization signature cannot be re-presented as a payload signature.
 
 ### 2.4 Verification
 
@@ -106,10 +106,10 @@ A receiver verifies any envelope offline with three steps:
 
 1. **Decode user DID → public key.** did:key is self-describing; no registry lookup.
 2. **Verify device authorization:**
-   recompute `wellinformed-auth:v1:<device_id>:<hex(device_pub)>:<authorized_at>`,
+   recompute `akashik-auth:v1:<device_id>:<hex(device_pub)>:<authorized_at>`,
    `Ed25519.verify(user_public_key, auth_message, device_authorization.authorization_sig)`.
 3. **Verify payload signature:**
-   recompute `wellinformed-sig:v1:<device_id>:<signed_at>:<canonical_json(payload)>`,
+   recompute `akashik-sig:v1:<device_id>:<signed_at>:<canonical_json(payload)>`,
    `Ed25519.verify(device_public_key, payload_message, signature)`.
 
 Full verification cost: 3 Ed25519 ops, < 2 ms typical on modern hardware.
@@ -199,7 +199,7 @@ Binary uses the sign bit of each dimension (popcount Hamming distance for rankin
 At connection setup peers exchange supported encodings via libp2p identify protocol:
 
 ```
-/wellinformed/capabilities/1.0.0 → {
+/akashik/capabilities/1.0.0 → {
   encoders: ["nomic-embed-text-v1.5", "Xenova/bge-base-en-v1.5"],
   bridges:  ["bge-base → nomic", ...],
   encodings: ["fp32-768", "fp32-512", "fp32-128", "binary-768", "binary-512"],
@@ -222,11 +222,11 @@ When peer A sends a query, A specifies the encoding. Peer B responds with match 
 
 ### 5.1 Protocol IDs
 
-- `/wellinformed/search/2.0.0` — one-shot request/response semantic search
-- `/wellinformed/touch/1.0.0` — asymmetric public-room pull
-- `/wellinformed/share/2.0.0` — bidirectional CRDT room sync (Y.js)
-- `/wellinformed/save/1.0.0` — signed note append
-- `/wellinformed/capabilities/1.0.0` — capability exchange
+- `/akashik/search/2.0.0` — one-shot request/response semantic search
+- `/akashik/touch/1.0.0` — asymmetric public-room pull
+- `/akashik/share/2.0.0` — bidirectional CRDT room sync (Y.js)
+- `/akashik/save/1.0.0` — signed note append
+- `/akashik/capabilities/1.0.0` — capability exchange
 
 The `/2.0.0` suffix signals that requests and responses are wrapped in `SignedEnvelope` (§2.3). `/1.0.0` protocols are unsigned legacy shapes retained for backward compatibility during migration.
 
@@ -307,12 +307,12 @@ Users MAY split their user seed via Shamir's Secret Sharing across 3–5 trusted
 A v3 implementation MUST pass:
 
 - `did:key` encode/decode round-trip on a W3C-shape input
-- Ed25519 sign/verify on the two domain-separation tags (`wellinformed-auth:v1:`, `wellinformed-sig:v1:`)
+- Ed25519 sign/verify on the two domain-separation tags (`akashik-auth:v1:`, `akashik-sig:v1:`)
 - Canonical JSON byte identity across key orderings + nested objects
 - Envelope verification: signed on node A, verified on node B with no prior state
 - Bridge matrix loading + dimension consistency check
 
-The reference suite is `tests/identity.test.ts` + `tests/identity-lifecycle.test.ts` + `tests/identity-bridge.test.ts` (38 tests total) in the wellinformed repo.
+The reference suite is `tests/identity.test.ts` + `tests/identity-lifecycle.test.ts` + `tests/identity-bridge.test.ts` (38 tests total) in the akashik repo.
 
 ---
 
@@ -322,7 +322,7 @@ The reference suite is `tests/identity.test.ts` + `tests/identity-lifecycle.test
 - **Infrastructure** (disk + Node crypto): `src/infrastructure/identity-store.ts`
 - **Application** (lifecycle): `src/application/identity-lifecycle.ts`
 - **Process bridge** (sign/verify seam): `src/application/identity-bridge.ts`
-- **CLI**: `wellinformed identity {init|show|rotate|export|import}`
+- **CLI**: `akashik identity {init|show|rotate|export|import}`
 - **Bench**:
   - `scripts/bench-lab.mjs` — Matryoshka × quantization × hybrid sweep
   - `scripts/bench-bridge.mjs` — cross-model bridge gate
@@ -351,7 +351,7 @@ This protocol specification is CC-BY-4.0. The reference implementation is MIT. C
 
 ## Appendix A — measured numbers
 
-All numbers are measured on commodity CPU hardware (Apple Silicon, M-series). Reproduction scripts are in the wellinformed repo at `scripts/bench-*.mjs`.
+All numbers are measured on commodity CPU hardware (Apple Silicon, M-series). Reproduction scripts are in the akashik repo at `scripts/bench-*.mjs`.
 
 | Capability | Measurement | Axis | Reference |
 |------------|-------------|------|-----------|

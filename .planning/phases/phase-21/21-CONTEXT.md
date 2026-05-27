@@ -45,7 +45,7 @@ hybrid-RRF and GSW lives in Phase 22.
 - Lazy-loaded singleton via `@xenova/transformers` (already a dep).
 - Model: `Xenova/ms-marco-MiniLM-L-6-v2`, quantised, CPU-only.
 - Top-20 window — head reranked, tail untouched, concatenated.
-- Env flag: `WELLINFORMED_RERANK=1`. Off by default; falls open
+- Env flag: `AKASHIK_RERANK=1`. Off by default; falls open
   (returns input unchanged) on model-load failure.
 - Module: `infrastructure/cross-encoder.ts`. Pure scoring math in
   `domain/cross-rerank.ts`.
@@ -184,7 +184,7 @@ Phase 21 (Phase 22 will derive risk per procedure).
 
 Federated search hits include a `contradicts?: string[]` field
 listing local node IDs the peer hit disagrees with. Statusline gets
-a contradiction count; new CLI `wellinformed contradictions
+a contradiction count; new CLI `akashik contradictions
 {list,resolve}`.
 
 </decisions>
@@ -202,7 +202,7 @@ In:
   application/auto-forget-tick.ts
 - daemon/loop.ts edits — register new ticks
 - mcp/server.ts edits — expose `consolidate` + `forget` tools
-- CLI: `wellinformed gc`, `wellinformed contradictions`
+- CLI: `akashik gc`, `akashik contradictions`
 
 Out:
 - GSW entity-summary retrieval (Phase 22)
@@ -219,7 +219,7 @@ Shipped this turn:
 
 - `src/domain/cross-rerank.ts` + `src/infrastructure/cross-encoder.ts`
   + RerankError variant + wired into `application/ask.ts` after the
-  hybrid retrieval stage. Env-gated `WELLINFORMED_RERANK=1`.
+  hybrid retrieval stage. Env-gated `AKASHIK_RERANK=1`.
   Fail-open on model-load / inference. 8/8 unit tests.
 - `src/domain/long-term-memory.ts` — MemoryTier vocabulary,
   `tierForUri`, Beta(α,β) counter math, `expectedUtility` (MACLA Eq. 4),

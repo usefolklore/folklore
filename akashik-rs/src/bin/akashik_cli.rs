@@ -1,6 +1,6 @@
-//! wellinformed-cli — native Rust client for the v4.1 IPC fast path.
+//! akashik-cli — native Rust client for the v4.1 IPC fast path.
 //!
-//! v4.0 ships `bin/wellinformed.js` which checks for the daemon socket
+//! v4.0 ships `bin/akashik.js` which checks for the daemon socket
 //! BEFORE importing the dist CLI. That collapses ONNX-load + sqlite-
 //! reopen costs but still pays the ~200 ms Node startup floor on every
 //! invocation. v4.1's native client collapses that floor too: a Rust
@@ -15,7 +15,7 @@
 //!   = ~10–15 ms end-to-end vs ~100 ms via the JS shim
 //!
 //! Fallback: when the daemon socket isn't present (or the requested
-//! command isn't IPC-delegatable), exec `node bin/wellinformed.js`
+//! command isn't IPC-delegatable), exec `node bin/akashik.js`
 //! with the same argv. Operators see no behavioral change either way.
 
 use std::env;
@@ -50,17 +50,17 @@ struct IpcResponse {
     exit: Option<i32>,
 }
 
-fn wellinformed_home() -> PathBuf {
-    env::var_os("WELLINFORMED_HOME")
+fn akashik_home() -> PathBuf {
+    env::var_os("AKASHIK_HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|| {
             let home = env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("/"));
-            home.join(".wellinformed")
+            home.join(".akashik")
         })
 }
 
 fn socket_path() -> PathBuf {
-    wellinformed_home().join("daemon.sock")
+    akashik_home().join("daemon.sock")
 }
 
 fn try_ipc(cmd: &str, args: &[String]) -> Option<IpcResponse> {
@@ -106,12 +106,12 @@ fn try_ipc(cmd: &str, args: &[String]) -> Option<IpcResponse> {
 }
 
 fn fallback_to_node(argv: &[String]) -> ! {
-    // Locate bin/wellinformed.js relative to this binary. The standard
+    // Locate bin/akashik.js relative to this binary. The standard
     // layout is:
-    //   <repo>/wellinformed-rs/target/release/wellinformed-cli
-    //   <repo>/bin/wellinformed.js
-    // ↑ four ancestors: target → release → wellinformed-rs → repo root
-    let exe = env::current_exe().unwrap_or_else(|_| PathBuf::from("./wellinformed-cli"));
+    //   <repo>/akashik-rs/target/release/akashik-cli
+    //   <repo>/bin/akashik.js
+    // ↑ four ancestors: target → release → akashik-rs → repo root
+    let exe = env::current_exe().unwrap_or_else(|_| PathBuf::from("./akashik-cli"));
     let mut node_entry = exe.clone();
     for _ in 0..4 {
         if let Some(parent) = node_entry.parent() {
@@ -119,11 +119,11 @@ fn fallback_to_node(argv: &[String]) -> ! {
         }
     }
     node_entry.push("bin");
-    node_entry.push("wellinformed.js");
+    node_entry.push("akashik.js");
 
     if !node_entry.exists() {
         eprintln!(
-            "wellinformed-cli: fallback path {} does not exist",
+            "akashik-cli: fallback path {} does not exist",
             node_entry.display()
         );
         exit(2);
@@ -136,7 +136,7 @@ fn fallback_to_node(argv: &[String]) -> ! {
     match status {
         Ok(s) => exit(s.code().unwrap_or(1)),
         Err(e) => {
-            eprintln!("wellinformed-cli: failed to exec node: {e}");
+            eprintln!("akashik-cli: failed to exec node: {e}");
             exit(2);
         }
     }

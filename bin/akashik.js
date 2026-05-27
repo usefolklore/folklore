@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * wellinformed CLI entry (thin shim + optional IPC delegation).
+ * akashik CLI entry (thin shim + optional IPC delegation).
  *
- * Fast path — if `$WELLINFORMED_HOME/daemon.sock` exists AND the
+ * Fast path — if `$AKASHIK_HOME/daemon.sock` exists AND the
  * requested command is in the IPC-delegatable set, send the argv over
  * the socket, print the daemon's response, exit. Avoids ~240 ms of
  * sqlite-vec open + ONNX model load that a one-shot CLI would
@@ -39,7 +39,7 @@ const isP2pTeardownNoise = (err) => {
 };
 process.on('uncaughtException', (err) => {
   if (isP2pTeardownNoise(err)) {
-    if (process.env.WELLINFORMED_DEBUG) process.stderr.write(`[wi] libp2p teardown noise: ${err.message}\n`);
+    if (process.env.AKASHIK_DEBUG) process.stderr.write(`[wi] libp2p teardown noise: ${err.message}\n`);
     return;
   }
   console.error(err);
@@ -47,7 +47,7 @@ process.on('uncaughtException', (err) => {
 });
 process.on('unhandledRejection', (reason) => {
   if (isP2pTeardownNoise(reason)) {
-    if (process.env.WELLINFORMED_DEBUG) process.stderr.write(`[wi] libp2p teardown noise: ${reason?.message ?? reason}\n`);
+    if (process.env.AKASHIK_DEBUG) process.stderr.write(`[wi] libp2p teardown noise: ${reason?.message ?? reason}\n`);
     return;
   }
   console.error(reason);
@@ -67,12 +67,12 @@ const IPC_DELEGATABLE = new Set(['ask', 'stats', 'cache-stats', 'metrics']);
 const IPC_FALLBACK_SENTINEL = '__fallback__';
 const IPC_TIMEOUT_MS = 5000;
 
-const wellinformedHome = () =>
-  process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
+const akashikHome = () =>
+  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
 
 const attemptIpcDelegation = (cmd, args) =>
   new Promise((resolve) => {
-    const sockPath = join(wellinformedHome(), 'daemon.sock');
+    const sockPath = join(akashikHome(), 'daemon.sock');
     if (!existsSync(sockPath)) { resolve(null); return; }
 
     const socket = connect(sockPath);
@@ -127,7 +127,7 @@ if (existsSync(distEntry)) {
   });
   process.exit(result.status ?? 1);
 } else {
-  console.error('wellinformed: no build output and no source found.');
+  console.error('akashik: no build output and no source found.');
   console.error('run `npm install && npm run build` from the project root.');
   process.exit(1);
 }

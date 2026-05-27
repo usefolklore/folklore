@@ -20,7 +20,7 @@ exec
 # Debate context — room abstraction
 
 ## Question
-Should the `room` concept in Akashik (codebase still named `wellinformed`) stay as a user-managed, registry-backed namespace, shift to auto-derive from the git repo of the current cwd, or evolve into something else?
+Should the `room` concept in Akashik (codebase still named `akashik`) stay as a user-managed, registry-backed namespace, shift to auto-derive from the git repo of the current cwd, or evolve into something else?
 
 ## What rooms are today
 
@@ -32,8 +32,8 @@ Should the `room` concept in Akashik (codebase still named `wellinformed`) stay 
 
 **User-facing CRUD** (`src/cli/commands/room.ts`): list / create / switch / current / describe. Manual.
 
-**Live registry** (`~/.wellinformed/rooms.json` for this user):
-- wellinformed-dev (knowledge graphs, embeddings, MCP, vector-search — hand-curated keywords for `init` source suggestions)
+**Live registry** (`~/.akashik/rooms.json` for this user):
+- akashik-dev (knowledge graphs, embeddings, MCP, vector-search — hand-curated keywords for `init` source suggestions)
 - p2p-llm (P2P LLM inference, libp2p, kademlia, sel-did)
 - tlvtech (cold-email, lemlist, make.com — totally unrelated to this repo, but is current default)
 - forge (multi-agent deliberation engine)
@@ -48,7 +48,7 @@ Should the `room` concept in Akashik (codebase still named `wellinformed`) stay 
    - `src/cli/commands/trigger.ts:63 resolveRooms` selects multiple rooms
 
 2. **Federation share-unit** (`docs/p2p/P2P-VISION.md`, `docs/p2p/peer-reputation-design.md`):
-   - Peers advertise rooms they participate in via libp2p `/wellinformed/share/1.0.0`
+   - Peers advertise rooms they participate in via libp2p `/akashik/share/1.0.0`
    - Prefetch hook fans out room-scoped queries to peers
    - Reputation accrual is **room-scoped** — a peer with high rep in `p2p-llm` doesn't transfer that to `homelab`
    - `shared-rooms.json` is a separate policy layer: rooms exist locally, become federated only when explicitly shared
@@ -65,10 +65,10 @@ Should the `room` concept in Akashik (codebase still named `wellinformed`) stay 
 ## The three positions to debate
 
 ### Position A — Keep rooms as user-managed topical namespaces
-The federation share-unit needs intentional curation. Rooms are how reputation, sharing policy, and topical coherence accrue. Auto-deriving creates orphan rooms with no peers, no sources, no curated keywords, and dilutes the long tail further. The fix to "default_room: tlvtech is stale" is `wellinformed room switch wellinformed-dev`, not changing the model.
+The federation share-unit needs intentional curation. Rooms are how reputation, sharing policy, and topical coherence accrue. Auto-deriving creates orphan rooms with no peers, no sources, no curated keywords, and dilutes the long tail further. The fix to "default_room: tlvtech is stale" is `akashik room switch akashik-dev`, not changing the model.
 
 ### Position B — Auto-derive rooms from git repo
-Meet the user where they actually work. A developer's mental model is "I'm in repo X" — making them pick a research room is friction that prevents adoption. Lazy enrichment (auto-create the room, let the user later add keywords/sources via `wellinformed room describe --edit`) fixes cold-start. Federation can still happen via opt-in sharing per repo room. This is the "federated commons for OSS community" story expressed at the right granularity.
+Meet the user where they actually work. A developer's mental model is "I'm in repo X" — making them pick a research room is friction that prevents adoption. Lazy enrichment (auto-create the room, let the user later add keywords/sources via `akashik room describe --edit`) fixes cold-start. Federation can still happen via opt-in sharing per repo room. This is the "federated commons for OSS community" story expressed at the right granularity.
 
 ### Position C — Two-axis hybrid
 Rooms stay as user-managed topical units (federation share-unit, reputation scope, source curation). Add an orthogonal `workspace` tag (repo-scoped) on every node. Queries default to `workspace == current_repo` AND `room == user_default` (or `workspace == current_repo` alone if no room set). The repo→room mapping is many-to-many: one repo can write into multiple topical rooms; one room can collect contributions from many repos.
@@ -175,7 +175,7 @@ exec
 ./src/domain/job.ts:44:  readonly room: string;
 ./src/domain/job.ts:49:  readonly room: string;
 ./src/domain/job.ts:66: * git_submodules, git_log) for a (room, root) pair. The descriptors
-./src/domain/job.ts:68: * from the room+root inputs, mirroring `wellinformed index`.
+./src/domain/job.ts:68: * from the room+root inputs, mirroring `akashik index`.
 ./src/domain/job.ts:72:  readonly room: string;
 ./src/domain/job.ts:98:  readonly room: string;
 ./src/domain/graph.ts:45:  readonly room?: Room;
@@ -202,20 +202,20 @@ exec
 ./CLAUDE.md:241:- Use `ToolSearch("keyword")` to discover available MCP tools
 ./CLAUDE.md:252:federation. It is **network-before-web** by design: local tool calls
 ./CLAUDE.md:261:`research` room so the next session (yours or any peer's) hits the
-./CLAUDE.md:277:- `WELLINFORMED_PREFETCH_PEERS=0` — force local-only (skip federated
+./CLAUDE.md:277:- `AKASHIK_PREFETCH_PEERS=0` — force local-only (skip federated
 ./CLAUDE.md:280:## System rooms (always-on, P2P-shared, auto-populated)
-./CLAUDE.md:282:Two canonical rooms every wellinformed peer advertises out of the box:
+./CLAUDE.md:282:Two canonical rooms every akashik peer advertises out of the box:
 ./CLAUDE.md:290:not from its `room` field. You don't need to set the room when you
 ./CLAUDE.md:292:automatically; a codebase save lands in `toolshed`. The system rooms
 ./CLAUDE.md:293:are always present in shared-rooms.json and cannot be unshared.
 ./CLAUDE.md:295:Every other room is user-negotiable — opt-in via the share TUI.
 ./CLAUDE.md:301:`label [room, 3d] d=0.82`. When choosing whether to trust a cache
 ./CLAUDE.md:304:- If the hit is younger than the room's stale-after window, trust the
-./CLAUDE.md:306:- If the hit is older, prefer a fresh pull — `mcp__wellinformed__trigger_room`
+./CLAUDE.md:306:- If the hit is older, prefer a fresh pull — `mcp__akashik__trigger_room`
 ./CLAUDE.md:330:   CLI, etc.). The visibility of federation is handled separately by
 ./CLAUDE.md:334:3. **`search` / `ask`** take a query string and optional room filter.
 ./CLAUDE.md:346:   synthesis --room <room>`** after reasoning through an external
-./CLAUDE.md:356:   a refresh via `mcp__wellinformed__trigger_room` then retry.
+./CLAUDE.md:356:   a refresh via `mcp__akashik__trigger_room` then retry.
 ./src/domain/graph-lint.ts:5: * (node IDs + edges + rooms, not wiki pages + wikilinks). Also adds
 ./src/domain/graph-lint.ts:15: *   L3 missing-room      — node with no room assigned
 ./src/domain/graph-lint.ts:18: *   L6 duplicate-uri     — two or more nodes share source_uri (dedupe opportunity)
@@ -379,7 +379,7 @@ exec
 ./src/domain/peer-telemetry.ts:200:  // one peer (possible re-share / sybil), reward the case where
 ./src/domain/peer-telemetry.ts:293:  // "local" isn't a re-share, it's the user's own corpus.
 ./src/domain/peer-telemetry.ts:304:    penalties.push('single remote origin — possible re-share without independence');
-./src/infrastructure/ydoc-store.ts:2: * Y.Doc binary persistence — `~/.wellinformed/ydocs/<room>.ydoc` files.
+./src/infrastructure/ydoc-store.ts:2: * Y.Doc binary persistence — `~/.akashik/ydocs/<room>.ydoc` files.
 ./src/infrastructure/ydoc-store.ts:13: * because doing so initializes an empty shared type and can produce a clock
 ./src/infrastructure/ydoc-store.ts:20: * Entries persist for the process lifetime: at most one entry per shared room,
 ./src/infrastructure/ydoc-store.ts:21: * and shared rooms are long-lived, so the memory cost is negligible.
@@ -428,11 +428,11 @@ exec
 ./src/domain/share-picker.ts:159:      shareable: false,
 ./src/domain/share-picker.ts:164:    rooms: [...byName.values()].sort((a, b) => a.name.localeCompare(b.name)),
 ./src/domain/rerank-tier.ts:13: *     server, federated dispatcher) all need the same logic.
-./src/domain/system-rooms.ts:2: * System-managed rooms — the out-of-the-box rooms every wellinformed
+./src/domain/system-rooms.ts:2: * System-managed rooms — the out-of-the-box rooms every akashik
 ./src/domain/system-rooms.ts:3: * node carries and shares over P2P without user opt-in.
 ./src/domain/system-rooms.ts:5: * Two rooms:
 ./src/domain/system-rooms.ts:18: *    derived from its `source_uri` scheme, not set by a `room` field.
-./src/domain/system-rooms.ts:19: *    A git commit tagged `room: wellinformed-dev` is STILL in toolshed.
+./src/domain/system-rooms.ts:19: *    A git commit tagged `room: akashik-dev` is STILL in toolshed.
 ./src/domain/system-rooms.ts:21: *    room taxonomy. Users still see the physical room in their graph;
 ./src/domain/system-rooms.ts:22: *    the system room is just a query-time lens over the same nodes.
 ./src/domain/system-rooms.ts:24: * 2. Always shared. Both rooms are pinned into shared-rooms.json at
@@ -440,7 +440,7 @@ exec
 ./src/domain/system-rooms.ts:28: *    other's toolshed + research without negotiating individual rooms.
 ./src/domain/system-rooms.ts:30: * 3. Age-gated. Each system room declares `staleAfterDays`. The touch
 ./src/domain/system-rooms.ts:37: * No other rooms are system-managed. Every user room is negotiable —
-./src/domain/system-rooms.ts:38: * opt-in for P2P sharing via the interactive `wellinformed share` TUI.
+./src/domain/system-rooms.ts:38: * opt-in for P2P sharing via the interactive `akashik share` TUI.
 ./src/domain/system-rooms.ts:53:  /** URI-scheme prefixes whose nodes belong to this virtual room. Matched
 ./src/domain/system-rooms.ts:75:/** Bulletin-board room for peer-to-peer Q&A. Questions and answers live
 ./src/domain/system-rooms.ts:101: * Does this node belong to the given system room? Derived from
@@ -479,7 +479,7 @@ exec
 ./src/infrastructure/touch-protocol.ts:189:    // rooms use the existing room-field filter.
 ./src/infrastructure/touch-protocol.ts:191:    // Bridging rule: if the requested room is a system room AND the
 ./src/infrastructure/touch-protocol.ts:192:    // responder has ALSO explicitly shared a physical room of the same
-./src/infrastructure/touch-protocol.ts:193:    // name (e.g. `wellinformed share room research`), include nodes
+./src/infrastructure/touch-protocol.ts:193:    // name (e.g. `akashik share room research`), include nodes
 ./src/infrastructure/touch-protocol.ts:194:    // from that physical room in the response. This covers the natural
 ./src/infrastructure/touch-protocol.ts:195:    // user case where they save concept-type notes with `--room research`
 ./src/infrastructure/touch-protocol.ts:198:    // share signal is unambiguous intent.
@@ -496,7 +496,7 @@ exec
 ./src/domain/eval-metrics.ts:8: * application/CLI layers and any future test fixture can share it.
 ./tests/phase17.mcp-tool.test.ts:2: * Phase 17: MCP tool — federated_search registration + structural invariants (FED-05).
 ./tests/phase17.mcp-tool.test.ts:9: * We do NOT invoke the federated_search handler here — it spins a real libp2p node
-./tests/phase17.mcp-tool.test.ts:35:      rooms: '/tmp/wellinformed-test/rooms.json',
+./tests/phase17.mcp-tool.test.ts:35:      rooms: '/tmp/akashik-test/rooms.json',
 ./tests/phase17.mcp-tool.test.ts:58:    rooms: {
 ./tests/phase17.mcp-tool.test.ts:59:      load: () => okAsync({ rooms: [] }),
 ./tests/phase17.mcp-tool.test.ts:60:      create: () => okAsync({ rooms: [] }),
@@ -740,8 +740,8 @@ exec
 ./src/domain/errors.ts:495:      return `attach failed for codebase ${e.codebase_id} to room ${e.room_id}: ${e.message}`;
 ./src/domain/errors.ts:505:      return `bandwidth limit exceeded for peer ${e.peer} in room '${e.room}'`;
 ./src/domain/errors.ts:602:    // ─── share / privacy ──────────────────────
-./src/domain/errors.ts:607:      return `fix: the node was BLOCKED before reaching the network — your secret is safe locally. Either remove the credential from the source content, or move it to a non-shared room. Inspect the node with \`wellinformed get-node ${e.nodeId}\`.`;
-./src/domain/errors.ts:610:      return `fix: review flagged nodes with \`wellinformed lint --room ${e.room}\` and either remove the secrets or unshare the room.`;
+./src/domain/errors.ts:607:      return `fix: the node was BLOCKED before reaching the network — your secret is safe locally. Either remove the credential from the source content, or move it to a non-shared room. Inspect the node with \`akashik get-node ${e.nodeId}\`.`;
+./src/domain/errors.ts:610:      return `fix: review flagged nodes with \`akashik lint --room ${e.room}\` and either remove the secrets or unshare the room.`;
 ./src/domain/bloom.ts:3: * federated-search pre-filter (§9.2 of docs/V3-PROTOCOL.md).
 ./src/domain/bloom.ts:171: * filter over multiple rooms without re-inserting each value.
 ./tests/phase29.rust-retrieval-regression.test.ts:126:          room: 'phase29-fixture',
@@ -778,7 +778,7 @@ exec
 ./tests/identity-bridge.test.ts:7: * federated-search-request shape in a SignedEnvelope<SearchRequest>
 ./tests/identity-bridge.test.ts:47:  it('concurrent bootstrap calls share one inflight promise', async () => {
 ./tests/identity-bridge.test.ts:60:  it('signs and verifies a federated search request payload', async () => {
-./tests/identity-bridge.test.ts:65:      room: 'wellinformed-dev',
+./tests/identity-bridge.test.ts:65:      room: 'akashik-dev',
 ./tests/identity-bridge.test.ts:83:    const req = { type: 'search', embedding: [0.1, 0.2], room: 'x', k: 5 };
 ./tests/identity-bridge.test.ts:95:    // Same pattern as the federated-search "pretend to be someone else" attack.
 ./src/infrastructure/config-loader.ts:9: * rooms.tunnels sections are consumed in Phase 6; the rest is read
@@ -1133,7 +1133,7 @@ exec
 ./src/infrastructure/sources/npm-trending.ts:39:    readonly keywords?: readonly string[];
 ./src/infrastructure/sources/npm-trending.ts:92:      keywords: pkg.keywords,
 ./tests/bench-tier-promotion.test.ts:41:    uri: `synthesis://${['hydrogen-detection', 'rag-eval', 'p2p-federation', 'bge-vs-minilm', 'tier-promotion'][i % 5]}-${i}`,
-./tests/phase31.remote-node-validator.test.ts:32:    room: 'wellinformed-dev',
+./tests/phase31.remote-node-validator.test.ts:32:    room: 'akashik-dev',
 ./tests/consolidate-tick.test.ts:23:  rooms: ['sessions'],
 ./tests/consolidate-tick.test.ts:30:  min_room_raw_to_trigger: 50,
 ./tests/consolidate-tick.test.ts:134:      '    rooms: [sessions, research]',
@@ -1296,16 +1296,16 @@ exec
 ./tests/phase16.share-crdt.test.ts:935:        finalResult.value.rooms.length,
 ./tests/phase16.share-crdt.test.ts:940:      const names = new Set(finalResult.value.rooms.map((r) => r.name));
 ./tests/phase16.share-crdt.test.ts:941:      assert.equal(names.size, 10, 'all 10 room names must be distinct');
-./tests/phase16.share-crdt.test.ts:951:  test('SHARE_PROTOCOL_ID is /wellinformed/share/1.0.0', () => {
-./tests/phase16.share-crdt.test.ts:952:    assert.equal(SHARE_PROTOCOL_ID, '/wellinformed/share/1.0.0');
-./tests/phase16.share-crdt.test.ts:955:  test('REMOTE_ORIGIN is a Symbol with description wellinformed-share-remote', () => {
-./tests/phase16.share-crdt.test.ts:959:      'wellinformed-share-remote',
-./tests/phase16.share-crdt.test.ts:967:    assert.notEqual(REMOTE_ORIGIN as unknown, Symbol('wellinformed-share-remote'), 'two Symbol() calls with same desc are not equal');
+./tests/phase16.share-crdt.test.ts:951:  test('SHARE_PROTOCOL_ID is /akashik/share/1.0.0', () => {
+./tests/phase16.share-crdt.test.ts:952:    assert.equal(SHARE_PROTOCOL_ID, '/akashik/share/1.0.0');
+./tests/phase16.share-crdt.test.ts:955:  test('REMOTE_ORIGIN is a Symbol with description akashik-share-remote', () => {
+./tests/phase16.share-crdt.test.ts:959:      'akashik-share-remote',
+./tests/phase16.share-crdt.test.ts:967:    assert.notEqual(REMOTE_ORIGIN as unknown, Symbol('akashik-share-remote'), 'two Symbol() calls with same desc are not equal');
 ./tests/phase2.ingest.test.ts:97:      room: 'homelab',
 ./tests/phase2.ingest.test.ts:119:      assert.equal(node.room, 'homelab', `node ${node.id} should be in homelab`);
 ./tests/phase39.oracle-gossip-e2e.test.ts:101:    // Dial Alice → Bob so they share a live connection before publish.
-./tests/identity.test.ts:258:      room: 'wellinformed-dev',
-./scripts/bench-room-routing.mjs:4:// Tests whether wellinformed's room architecture gives a measurable retrieval lift
+./tests/identity.test.ts:258:      room: 'akashik-dev',
+./scripts/bench-room-routing.mjs:4:// Tests whether akashik's room architecture gives a measurable retrieval lift
 ./scripts/bench-room-routing.mjs:6:// rooms are cosmetic and we stop engineering. If it does, we proceed to learned
 ./scripts/bench-room-routing.mjs:10://   node scripts/bench-room-routing.mjs \
 ./scripts/bench-room-routing.mjs:12://     --rooms mathematica,webmasters,android \
@@ -1344,7 +1344,7 @@ exec
 ./scripts/bench-room-routing.mjs:212:        insertMeta.run(rowidNum, batch[j].globalId, batch[j].room, batch[j].rawText);
 ./scripts/bench-room-routing.mjs:232:// per-room — plus BM25 with optional per-room filter via WHERE on doc_meta.
 ./scripts/bench-room-routing.mjs:235:// so per-room dense search uses an overfetch + filter pattern: ask for
-./scripts/bench-room-routing.mjs:237:// target room. This is the same pattern wellinformed's production
+./scripts/bench-room-routing.mjs:237:// target room. This is the same pattern akashik's production
 ./scripts/bench-room-routing.mjs:238:// searchByRoom uses (via roomSearchOverfetch).
 ./scripts/bench-room-routing.mjs:248:// BM25 room filter using JOIN onto doc_meta
 ./scripts/bench-room-routing.mjs:253:    WHERE fts_docs MATCH ? AND m.room = ?
@@ -1473,7 +1473,7 @@ exec
 ./tests/phase33.graph-lint.test.ts:128:  const r = lintGraph(g, { shared_rooms: new Set(), secret_patterns: buildPatterns() });
 ./tests/phase33.graph-lint.test.ts:134:    mkNode({ id: 'o1', room: 'r', fetched_at: '2026-04-16T00:00:00.000Z' }),
 ./tests/phase33.graph-lint.test.ts:135:    mkNode({ id: 'o2', room: 'r', fetched_at: '2026-04-16T00:00:00.000Z' }),
-./tests/log-store.test.ts:67:      room: 'wellinformed-dev',
+./tests/log-store.test.ts:67:      room: 'akashik-dev',
 ./tests/log-store.test.ts:79:      buildEvent('search.inbound', { peer_id: 'Qm', room: 'r', k: 5 }),
 ./tests/log-store.test.ts:81:      buildEvent('share.update_received', { peer_id: 'Qm', room: 'r', bytes: 128 }),
 ./tests/bench-standard.test.ts:138:        room: 'beir',
@@ -1493,22 +1493,22 @@ exec
 ./scripts/bench-consolidation.mjs:160:  console.log('  no consolidated memories in this room — skipping quality probe');
 ./scripts/bench-consolidation.mjs:173:      'dist/cli/index.js', 'ask', '--json', '--room', ROOM, '--k', '10', summary,
 ./tests/multi-rrf.test.ts:16:  room: 'research',
-./tests/identity-lifecycle.test.ts:125:      room: 'wellinformed-dev',
+./tests/identity-lifecycle.test.ts:125:      room: 'akashik-dev',
 ./tests/graph-rerank.test.ts:76:test('co-mention boosts a chunk via shared entity (HippoRAG-2 core)', () => {
 ./src/infrastructure/sources/generic-url.ts:5: * emits one ContentItem. Useful for manually seeding a room with a
 ./tests/share-policy.test.ts:2: * Unit tests — inbound share-sync policy classifier.
-./tests/share-policy.test.ts:10: *   - sharePolicyModeFromEnv reads WELLINFORMED_REQUIRE_SIGNED_NODES
+./tests/share-policy.test.ts:10: *   - sharePolicyModeFromEnv reads AKASHIK_REQUIRE_SIGNED_NODES
 ./tests/share-policy.test.ts:17:  sharePolicyModeFromEnv,
 ./tests/share-policy.test.ts:18:} from '../src/domain/share-policy.js';
 ./tests/share-policy.test.ts:19:import { signShareableNode } from '../src/domain/share-envelope.js';
 ./tests/share-policy.test.ts:48:  room: 'research',
 ./tests/share-policy.test.ts:67:test('sharePolicyModeFromEnv defaults to soft when var unset', () => {
 ./tests/share-policy.test.ts:68:  assert.equal(sharePolicyModeFromEnv({}), 'soft');
-./tests/share-policy.test.ts:69:  assert.equal(sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: '' }), 'soft');
-./tests/share-policy.test.ts:70:  assert.equal(sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: '0' }), 'soft');
+./tests/share-policy.test.ts:69:  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '' }), 'soft');
+./tests/share-policy.test.ts:70:  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '0' }), 'soft');
 ./tests/share-policy.test.ts:73:test('sharePolicyModeFromEnv flips to strict for "1" or "true"', () => {
-./tests/share-policy.test.ts:74:  assert.equal(sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: '1' }), 'strict');
-./tests/share-policy.test.ts:76:    sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: 'true' }),
+./tests/share-policy.test.ts:74:  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '1' }), 'strict');
+./tests/share-policy.test.ts:76:    sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: 'true' }),
 ./tests/share-policy.test.ts:136:  assert.equal(classifyInboundShare({ label: 'x', room: 'r' }, 'soft').verdict, 'malformed');
 ./tests/share-policy.test.ts:138:  assert.equal(classifyInboundShare({ id: 'a', room: 'r' }, 'soft').verdict, 'malformed');
 ./tests/share-policy.test.ts:139:  // No room.
@@ -1532,7 +1532,7 @@ exec
 ./tests/auto-forget.test.ts:118:  const sharedBody =
 ./tests/auto-forget.test.ts:123:      summary: sharedBody,
 ./tests/auto-forget.test.ts:130:      summary: sharedBody + ' updated',
-./demo/scene-federated.tape:1:# wellinformed — natural Claude Code session, federated retrieval live.
+./demo/scene-federated.tape:1:# akashik — natural Claude Code session, federated retrieval live.
 ./demo/scene-federated.tape:2:# Driven by demo/scene-federated.sh. Output: demo/scene-federated.gif
 ./demo/scene-federated.tape:4:Output demo/scene-federated.gif
 ./tests/phase19.codebase-indexing.test.ts:87:  it('has 8 constructor helpers on the CodebaseError namespace', () => {
@@ -1592,7 +1592,7 @@ exec
 ./tests/phase35.p2p-touch-e2e.test.ts:77:      room: 'research',
 ./tests/phase35.p2p-touch-e2e.test.ts:83:      // in a user-chosen `room` (not 'toolshed') to prove virtual
 ./tests/phase35.p2p-touch-e2e.test.ts:84:      // membership wins over the physical room field.
-./tests/phase35.p2p-touch-e2e.test.ts:89:      room: 'wellinformed-dev',
+./tests/phase35.p2p-touch-e2e.test.ts:89:      room: 'akashik-dev',
 ./tests/phase35.p2p-touch-e2e.test.ts:98:      room: 'private',
 ./tests/phase35.p2p-touch-e2e.test.ts:117:    // Alice seeds graph + shared-rooms manifest
 ./tests/phase35.p2p-touch-e2e.test.ts:120:      join(aliceHome, 'shared-rooms.json'),
@@ -1607,7 +1607,7 @@ exec
 ./tests/phase35.p2p-touch-e2e.test.ts:194:  test('E4 system room `toolshed`: Bob pulls toolshed and gets the git-scheme node regardless of its physical room', async () => {
 ./tests/phase35.p2p-touch-e2e.test.ts:196:    // Toolshed is never listed in Alice's shared-rooms.json — the
 ./tests/phase35.p2p-touch-e2e.test.ts:197:    // touch handler auto-allows system rooms. The git:// node's
-./tests/phase35.p2p-touch-e2e.test.ts:198:    // physical room is `wellinformed-dev`, NOT 'toolshed' — virtual
+./tests/phase35.p2p-touch-e2e.test.ts:198:    // physical room is `akashik-dev`, NOT 'toolshed' — virtual
 ./tests/phase35.p2p-touch-e2e.test.ts:210:  test('E2 gate: Bob cannot touch `private` — responder returns room-not-shared', async () => {
 ./tests/phase35.p2p-touch-e2e.test.ts:214:    // code on room-not-shared — the dial itself succeeds, the responder
 ./tests/phase35.p2p-touch-e2e.test.ts:218:      assert.strictEqual(r.value.nodes.length, 0, 'private room must yield zero nodes');
@@ -1642,8 +1642,8 @@ exec
 ./tests/phase6.daemon.test.ts:182:    (await rooms.create({
 ./tests/phase6.daemon.test.ts:186:      keywords: ['ai', 'ml', 'llm', 'embeddings'],
 ./tests/phase6.daemon.test.ts:190:    const suggestions = (await discover({ rooms, sources })('ml-research'))._unsafeUnwrap();
-./demo/scene-touch.tape:62:Type 'wellinformed touch --peer "$WELLINFORMED_DEMO_PEER_B_ID" --room research'
-./demo/scene-touch.tape:71:Type 'wellinformed touch --peer "$WELLINFORMED_DEMO_PEER_D_ID" --room research'
+./demo/scene-touch.tape:62:Type 'akashik touch --peer "$AKASHIK_DEMO_PEER_B_ID" --room research'
+./demo/scene-touch.tape:71:Type 'akashik touch --peer "$AKASHIK_DEMO_PEER_D_ID" --room research'
 ./tests/query-cache.test.ts:22:    const a = c.keyFor('ask', ['--room', 'r1', 'hello world']);
 ./tests/query-cache.test.ts:23:    const b = c.keyFor('ask', ['--room', 'r1', 'hello world']);
 ./tests/query-cache.test.ts:36:    const a = c.keyFor('ask', ['--room', 'r1', 'foo']);
@@ -1668,7 +1668,7 @@ exec
 ./package-lock.json:2670:        "is-shared-array-buffer": "^1.0.4",
 ./package-lock.json:3933:    "node_modules/is-shared-array-buffer": {
 ./package-lock.json:3935:      "resolved": "https://registry.npmjs.org/is-shared-array-buffer/-/is-shared-array-buffer-1.0.4.tgz",
-./scripts/bench-bridge.mjs:7:// against the same corpus. If true, wellinformed peers can federate
+./scripts/bench-bridge.mjs:7:// against the same corpus. If true, akashik peers can federate
 ./scripts/bench-bridge.mjs:102:const sharedIds = [];
 ./scripts/bench-bridge.mjs:103:for (const id of nomic.order) if (bge.byDoc.has(id)) sharedIds.push(id);
 ./scripts/bench-bridge.mjs:104:console.log(`  shared: ${sharedIds.length} paired doc_ids`);
@@ -1689,8 +1689,8 @@ exec
 ./README.md:45:The Round 5 octopus-discover synthesis identified one benchmark capable of falsifying the federated-commons thesis: a federation-level simulator measuring `web_fallback_rate(t)` over a realistic peer network with offline churn. We built it. First run, on the LoCoMo factual subset:
 ./README.md:64:| Web fallback | 4.5% | Outbound only when federation couldn't answer |
 ./README.md:68:Bench source: [`tests/bench-akashik-federation.test.ts`](tests/bench-akashik-federation.test.ts).
-./README.md:93:wellinformed save https://arxiv.org/abs/2406.16678 --room research
-./README.md:94:wellinformed save ./notes/cuda-oom-debug.md --room toolshed
+./README.md:93:akashik save https://arxiv.org/abs/2406.16678 --room research
+./README.md:94:akashik save ./notes/cuda-oom-debug.md --room toolshed
 ./README.md:103:The query checks your local graph, then federates to peers you share rooms with, then falls back to web research only if neither can answer. The web result lands in your local graph signed by you — the next contributor who asks something similar pulls it from your peer with full attribution.
 ./README.md:111:- **P2P federation over libp2p.** No central server, no vendor data lock-in. Each peer advertises the rooms it participates in; queries fan out via gossip with bounded timeouts. Lineage per the Round 5 synthesis: *Freenet-style demand-shaped lazy replication with cache-fill on miss*, applied to attributed semantic memory.
 ./README.md:112:- **Ed25519-signed contributions with DIDs.** Every record carries the curator's decentralized identifier, room, source URLs, and timestamp. Trust is graph-traversable: follow the chain, see who curated, when, and why. Lineage: AT Protocol's signed-attribution layer applied to research memory rather than social posts.
@@ -1862,7 +1862,7 @@ exec
 ./src/application/session-ingest.ts:88:          shareable: false,
 ./src/infrastructure/search-sync.ts:2: * Search sync — one-shot request/response federated search over a libp2p custom protocol.
 ./src/infrastructure/search-sync.ts:5: * Unlike share-sync.ts this is read-only: no Y.js docs, no CRDT mutations,
-./src/infrastructure/search-sync.ts:10: *      '/wellinformed/share/1.0.0' so sync and search have independent stream
+./src/infrastructure/search-sync.ts:10: *      '/akashik/share/1.0.0' so sync and search have independent stream
 ./src/infrastructure/search-sync.ts:13: *   2. FramedStream is COPIED from share-sync.ts, NOT imported. Search and share
 ./src/infrastructure/search-sync.ts:30: *   6. Inbound authorization: only rooms listed in local shared-rooms.json respond.
 ./src/infrastructure/search-sync.ts:31: *      Non-shared rooms return an empty match set with error:'unauthorized'.
@@ -1909,12 +1909,12 @@ exec
 ./src/cli/tui/share-picker-tty.ts:18:} from '../../domain/share-picker.js';
 ./src/cli/tui/share-picker-tty.ts:19:import { computeDiff, step } from '../../domain/share-picker.js';
 ./src/cli/tui/share-picker-tty.ts:20:import { SYSTEM_ROOM_NAMES } from '../../domain/system-rooms.js';
-./src/cli/tui/share-picker-tty.ts:66:  const header = `${BOLD}wellinformed share${RESET} — toggle which physical rooms are open to peers`;
+./src/cli/tui/share-picker-tty.ts:66:  const header = `${BOLD}akashik share${RESET} — toggle which physical rooms are open to peers`;
 ./src/cli/tui/share-picker-tty.ts:67:  const pinned = `${DIM}pinned system rooms: ${sys} (always shared, not shown)${RESET}`;
 ./src/cli/tui/share-picker-tty.ts:71:    diff.toUnshare.length > 0 ? `${YELLOW}-${diff.toUnshare.length}${RESET}` : '',
-./src/cli/tui/share-picker-tty.ts:76:    : `${DIM}  (no physical rooms yet — run \`wellinformed trigger\` first)${RESET}`;
-./src/cli/tui/share-picker-tty.ts:100: * `wellinformed share room <name>` command instead.
-./src/cli/tui/share-picker-tty.ts:106:    throw new Error('share ui: requires a TTY. Use `wellinformed share room <name>` in scripts.');
+./src/cli/tui/share-picker-tty.ts:76:    : `${DIM}  (no physical rooms yet — run \`akashik trigger\` first)${RESET}`;
+./src/cli/tui/share-picker-tty.ts:100: * `akashik share room <name>` command instead.
+./src/cli/tui/share-picker-tty.ts:106:    throw new Error('share ui: requires a TTY. Use `akashik share room <name>` in scripts.');
 ./src/infrastructure/identity-resolver.ts:9: * verifiable — `share-envelope.verifyShareableNode` already does the
 ./src/infrastructure/identity-resolver.ts:12: *   - Track which DIDs we've seen sign envelopes for which rooms.
 ./src/infrastructure/identity-resolver.ts:15: *     drops in WITHOUT touching share-sync.ts again.
@@ -1943,14 +1943,14 @@ exec
 ./src/cli/index.ts:74:  room,
 ./src/cli/index.ts:88:  share,
 ./src/cli/index.ts:89:  unshare,
-./src/infrastructure/share-sync.ts:4: * Phase 16 core. Registers /wellinformed/share/1.0.0 on a libp2p node,
+./src/infrastructure/share-sync.ts:4: * Phase 16 core. Registers /akashik/share/1.0.0 on a libp2p node,
 ./src/infrastructure/share-sync.ts:5: * tracks one Y.Doc per shared room, opens one stream per (peer, room) pair,
 ./src/infrastructure/share-sync.ts:31: *      Blocked updates are written to share-log.jsonl as
 ./src/infrastructure/share-sync.ts:60:import { loadSharedRooms } from './share-store.js';
 ./src/infrastructure/share-sync.ts:66:  sharePolicyModeFromEnv,
 ./src/infrastructure/share-sync.ts:68:} from '../domain/share-policy.js';
-./src/infrastructure/share-sync.ts:76:export const SHARE_PROTOCOL_ID = '/wellinformed/share/1.0.0' as const;
-./src/infrastructure/share-sync.ts:85:export const REMOTE_ORIGIN: unique symbol = Symbol('wellinformed-share-remote');
+./src/infrastructure/share-sync.ts:76:export const SHARE_PROTOCOL_ID = '/akashik/share/1.0.0' as const;
+./src/infrastructure/share-sync.ts:85:export const REMOTE_ORIGIN: unique symbol = Symbol('akashik-share-remote');
 ./src/infrastructure/share-sync.ts:136: * sender's locally-shared rooms. The receiver replies with another
 ./src/infrastructure/share-sync.ts:147:  readonly rooms: readonly string[];
 ./src/infrastructure/share-sync.ts:152:  rooms: readonly string[],
@@ -2014,7 +2014,7 @@ exec
 ./src/infrastructure/share-sync.ts:624:  const cached = registry.docs.get(room);
 ./src/infrastructure/share-sync.ts:626:  return loadYDoc(ydocPathFor(registry, room)).map((doc) => {
 ./src/infrastructure/share-sync.ts:627:    registry.docs.set(room, doc);
-./src/infrastructure/share-sync.ts:633: * Register the /wellinformed/share/1.0.0 protocol on the libp2p node.
+./src/infrastructure/share-sync.ts:633: * Register the /akashik/share/1.0.0 protocol on the libp2p node.
 ./src/infrastructure/share-sync.ts:674: * Open an outbound share stream to a specific peer for a specific room.
 ./src/infrastructure/share-sync.ts:675: * Used when this node calls `share room X` for a peer that is already
 ./src/infrastructure/share-sync.ts:676: * connected, OR when a new peer connects and we have rooms to push.
@@ -2057,7 +2057,7 @@ exec
 ./src/mcp/server.ts:15: *   find_tunnels   Cross-room similarity pairs
 ./src/mcp/server.ts:17: *   trigger_room   Run one ingest iteration for a room
 ./src/mcp/server.ts:56:import { runFederatedSearch } from '../application/federated-search.js';
-./src/mcp/server.ts:88:        'Semantic search over the wellinformed knowledge graph. Returns the top-k matches ordered by distance. Optionally filter by room.',
+./src/mcp/server.ts:88:        'Semantic search over the akashik knowledge graph. Returns the top-k matches ordered by distance. Optionally filter by room.',
 ./src/mcp/server.ts:91:        room: z.string().optional().describe('Restrict results to this room (e.g. "homelab")'),
 ./src/mcp/server.ts:95:    async ({ query, room, k }) => {
 ./src/mcp/server.ts:96:      const result = room
@@ -2150,7 +2150,7 @@ exec
 ./src/mcp/server.ts:808:        'The `sessions` room is NEVER shared over libp2p — session data stays local.',
 ./src/mcp/server.ts:844:  // system room. Every connected peer picks it up via their next
 ./src/mcp/server.ts:852:        'Post a new question to the oracle system room. The question propagates ' +
-./src/mcp/server.ts:856:        'broader federation of wellinformed peers to help answer a question ' +
+./src/mcp/server.ts:856:        'broader federation of akashik peers to help answer a question ' +
 ./src/mcp/server.ts:872:      const res = await indexNode(deps)({ node, text, room: 'oracle' });
 ./src/mcp/server.ts:924:      const res = await indexNode(deps)({ node, text, room: 'oracle' });
 ./src/mcp/server.ts:937:  // Surface the oracle room so an agent can see what's waiting for an
@@ -2214,7 +2214,7 @@ exec
 ./src/infrastructure/async-mutex.ts:3: * point for load-modify-save sequences against shared file state
 ./src/infrastructure/async-mutex.ts:10: * shared via Runtime.graphMutex is exactly what's needed to close
 ./src/infrastructure/rooms-config.ts:2: * RoomsConfig — port + JSON file adapter for the room registry.
-./src/infrastructure/rooms-config.ts:4: * Stores the room registry at `~/.wellinformed/rooms.json`. Same
+./src/infrastructure/rooms-config.ts:4: * Stores the room registry at `~/.akashik/rooms.json`. Same
 ./src/infrastructure/rooms-config.ts:15:import type { RoomMeta, RoomRegistry, RoomId } from '../domain/rooms.js';
 ./src/infrastructure/rooms-config.ts:16:import { addRoom, emptyRegistry, setDefault } from '../domain/rooms.js';
 ./src/infrastructure/rooms-config.ts:22:  create(room: RoomMeta): ResultAsync<RoomRegistry, GraphError>;
@@ -2231,10 +2231,10 @@ exec
 ./demo/MANUSCRIPT.md:133:relevance: 0.871 (cosine_distance 0.129) | room: research
 ./demo/MANUSCRIPT.md:269:**Goal:** show federation. A second peer (a colleague) has different research nodes —
 ./demo/MANUSCRIPT.md:278:  --room research --type concept --label "open-source LH2 spectrometers" \
-./demo/MANUSCRIPT.md:280:WELLINFORMED_HOME=~/.wellinformed-peerB wellinformed share room research
-./demo/MANUSCRIPT.md:284:wellinformed share room research
+./demo/MANUSCRIPT.md:280:AKASHIK_HOME=~/.akashik-peerB akashik share room research
+./demo/MANUSCRIPT.md:284:akashik share room research
 ./demo/MANUSCRIPT.md:292:shared rooms: research, toolshed
-./demo/MANUSCRIPT.md:294:$ wellinformed touch --peer peer-B --room research --label "open-source LH2 spectrometers"
+./demo/MANUSCRIPT.md:294:$ akashik touch --peer peer-B --room research --label "open-source LH2 spectrometers"
 ./demo/MANUSCRIPT.md:360:  ✓ P2P federation, signed envelopes, no server
 ./demo/MANUSCRIPT.md:371:> the hook fires before Claude can web-search. And it federates without
 ./demo/MANUSCRIPT.md:372:> a server, so two laptops on the same network share what they know
@@ -2290,11 +2290,11 @@ exec
 ./demo/validate-reputation.sh:55:# spawn path that actually runs the federated logic.
 ./demo/validate-reputation.sh:62:# 2. Issue three federated asks of different shapes so the rep data
 ./demo/validate-reputation.sh:65:echo "── three federated asks from peer A ────────────────────"
-./demo/validate-reputation.sh:88:echo "── \`wellinformed peers rep --subject room:research\` ──"
-./demo/validate-reputation.sh:89:WELLINFORMED_HOME="$A_HOME" wellinformed peers rep --subject room:research || true
-./src/cli/commands/save.ts:2: * `wellinformed save --room R [--type T] --label X [--text Y]`
-./src/cli/commands/save.ts:11: *   wellinformed save --room project --type concept --label "Touch primitive" \
-./src/cli/commands/save.ts:14: *   echo "long body..." | wellinformed save --room project --type synthesis --label "..."
+./demo/validate-reputation.sh:88:echo "── \`akashik peers rep --subject room:research\` ──"
+./demo/validate-reputation.sh:89:AKASHIK_HOME="$A_HOME" akashik peers rep --subject room:research || true
+./src/cli/commands/save.ts:2: * `akashik save --room R [--type T] --label X [--text Y]`
+./src/cli/commands/save.ts:11: *   akashik save --room project --type concept --label "Touch primitive" \
+./src/cli/commands/save.ts:14: *   echo "long body..." | akashik save --room project --type synthesis --label "..."
 ./src/cli/commands/save.ts:32:  readonly room: string;
 ./src/cli/commands/save.ts:40:  let room: string | undefined;
 ./src/cli/commands/save.ts:47:    if (f === '--room')       { room = rest[++i]; continue; }
@@ -2343,7 +2343,7 @@ exec
 ./src/cli/commands/sources.ts:8: *   add <id> --kind <kind> --room <room> [--wing <wing>] --config <json>
 ./src/cli/commands/sources.ts:15: *     --kind hn_algolia --room fundraise \
 ./src/cli/commands/sources.ts:31:  readonly room: string;
-./src/cli/commands/sources.ts:37:  if (args.length === 0) return 'missing <id> — usage: wellinformed sources add <id> --kind K --room R --config {json}';
+./src/cli/commands/sources.ts:37:  if (args.length === 0) return 'missing <id> — usage: akashik sources add <id> --kind K --room R --config {json}';
 ./src/cli/commands/sources.ts:40:  let room: string | undefined;
 ./src/cli/commands/sources.ts:48:    else if (a === '--room') room = next();
 ./src/cli/commands/sources.ts:49:    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
@@ -2361,10 +2361,10 @@ exec
 ./src/application/batch-ingest.ts:344:                      room: descriptor.room,
 ./src/infrastructure/cross-encoder.ts:84: * first-callers share the same load operation.
 ./src/infrastructure/cross-encoder.ts:139: * 2000 chars ≈ 500 tokens for English; leaves headroom for the
-./src/infrastructure/watch-targets.ts:5: * Each entry: { room, root, registered_at }. `wellinformed this`
+./src/infrastructure/watch-targets.ts:5: * Each entry: { room, root, registered_at }. `akashik this`
 ./src/infrastructure/watch-targets.ts:10: * the same (room, root) twice updates the timestamp instead of
 ./src/infrastructure/watch-targets.ts:18:  readonly room: string;
-./src/infrastructure/watch-targets.ts:60: * (room, root) pair so re-running `wellinformed this` refreshes the
+./src/infrastructure/watch-targets.ts:60: * (room, root) pair so re-running `akashik this` refreshes the
 ./src/infrastructure/watch-targets.ts:70:    (t) => !(t.room === target.room && t.root === target.root),
 ./src/infrastructure/watch-targets.ts:82:  target: { readonly room: string; readonly root: string },
 ./src/infrastructure/watch-targets.ts:86:    (t) => !(t.room === target.room && t.root === target.root),
@@ -2378,11 +2378,11 @@ exec
 ./src/cli/commands/onboard.ts:254:  sp.stop('system rooms ready: toolshed (code/deps/git), research (arxiv/hn/rss/web)');
 ./src/cli/commands/onboard.ts:294:    'Each becomes a searchable node in the local-only "sessions" room.',
 ./src/cli/commands/onboard.ts:296:    "The 'sessions' room is hard-blocked from P2P sharing — stays local.",
-./src/cli/commands/onboard.ts:299:    "Skip if unsure; you can always run 'wellinformed trigger --room sessions' later.",
-./src/cli/commands/onboard.ts:312:    log.message('skipped — run `wellinformed trigger --room sessions` when convenient');
+./src/cli/commands/onboard.ts:299:    "Skip if unsure; you can always run 'akashik trigger --room sessions' later.",
+./src/cli/commands/onboard.ts:312:    log.message('skipped — run `akashik trigger --room sessions` when convenient');
 ./src/cli/commands/onboard.ts:319:    [process.argv[1], 'trigger', '--room', 'sessions'],
 ./src/cli/commands/onboard.ts:363:      sp.stop('ingest finished quickly — sessions room is up to date');
-./src/cli/commands/onboard.ts:367:        `The 'wellinformed trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - WELLINFORMED_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  wellinformed trigger --room sessions`,
+./src/cli/commands/onboard.ts:367:        `The 'akashik trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - AKASHIK_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  akashik trigger --room sessions`,
 ./src/cli/commands/onboard.ts:441:  const shared = await loadSharedRooms(join(home, 'shared-rooms.json'));
 ./src/cli/commands/onboard.ts:442:  const sharedCount = shared.isOk() ? shared.value.rooms.length : 0;
 ./src/cli/commands/onboard.ts:447:    `shared rooms: ${sharedCount} (toolshed + research always-on)`,
@@ -2394,8 +2394,8 @@ exec
 ./src/cli/commands/onboard.ts:504:  log.step('5/9 · system rooms');
 ./src/cli/commands/onboard.ts:524:      '  · PostToolUse    saves WebSearch / WebFetch results into research room',
 ./src/cli/commands/onboard.ts:525:      '  · daemon         fetches sources, consolidates memory, syncs P2P rooms',
-./src/cli/commands/onboard.ts:529:      '  wellinformed this everyone     index + share with the P2P network',
-./src/cli/commands/onboard.ts:531:      '  wellinformed trigger           refresh all rooms',
+./src/cli/commands/onboard.ts:529:      '  akashik this everyone     index + share with the P2P network',
+./src/cli/commands/onboard.ts:531:      '  akashik trigger           refresh all rooms',
 ./src/cli/commands/onboard.ts:538:      "  · 'this everyone' enters the secrets-audit gate before federation",
 ./src/application/recall.ts:8: * room: research, sessions, toolshed, user-defined.
 ./src/application/recall.ts:32:  readonly room?: string;
@@ -2403,9 +2403,9 @@ exec
 ./src/application/recall.ts:116:    room: node.room,
 ./src/application/recall.ts:131:  readonly room?: string;           // optional room filter
 ./src/application/recall.ts:159:    if (params.room && hit.room !== params.room) continue;
-./src/infrastructure/llm-listwise-rerank.ts:16: * `WELLINFORMED_BENCH_LLM_EXTRACTOR_*` env namespace (extended here
+./src/infrastructure/llm-listwise-rerank.ts:16: * `AKASHIK_BENCH_LLM_EXTRACTOR_*` env namespace (extended here
 ./src/infrastructure/llm-listwise-rerank.ts:120:  /** Reusable client — share with other Ollama users in-process. */
-./src/cli/commands/share.ts:2: * `wellinformed share <sub>` — sharing boundary commands.
+./src/cli/commands/share.ts:2: * `akashik share <sub>` — sharing boundary commands.
 ./src/cli/commands/share.ts:5: *   audit --room <name> [--json]   show what would be shared (allowed + blocked nodes)
 ./src/cli/commands/share.ts:6: *   room <name>                    mark a room as shared (runs audit; blocks on flagged nodes)
 ./src/cli/commands/share.ts:8: *                                  rooms are shared. System rooms (toolshed,
@@ -2414,12 +2414,12 @@ exec
 ./src/cli/commands/share.ts:21:import { syncNodeIntoYDoc } from '../../infrastructure/share-sync.js';
 ./src/cli/commands/share.ts:22:import { buildPickerState, computeDiff, applyDiff } from '../../domain/share-picker.js';
 ./src/cli/commands/share.ts:23:import { runPicker } from '../tui/share-picker-tty.js';
-./src/cli/commands/share.ts:26:const sharedRoomsPath = (): string => join(wellinformedHome(), 'shared-rooms.json');
+./src/cli/commands/share.ts:26:const sharedRoomsPath = (): string => join(akashikHome(), 'shared-rooms.json');
 ./src/cli/commands/share.ts:31:  let roomId: string | undefined;
 ./src/cli/commands/share.ts:34:    if (rest[i] === '--room' && i + 1 < rest.length) {
 ./src/cli/commands/share.ts:35:      roomId = rest[++i];
 ./src/cli/commands/share.ts:41:  if (!roomId) {
-./src/cli/commands/share.ts:43:      'share audit: missing --room <name>. usage: wellinformed share audit --room <name> [--json]',
+./src/cli/commands/share.ts:43:      'share audit: missing --room <name>. usage: akashik share audit --room <name> [--json]',
 ./src/cli/commands/share.ts:50:    console.error(`share audit: ${formatErrorWithHint(configResult.error)}`);
 ./src/cli/commands/share.ts:59:    console.error(`share audit: ${formatErrorWithHint(graphResult.error)}`);
 ./src/cli/commands/share.ts:64:  const roomNodes = nodesInRoom(graph, roomId);
@@ -2435,7 +2435,7 @@ exec
 ./src/cli/commands/share.ts:117:const roomCmd = async (rest: readonly string[]): Promise<number> => {
 ./src/cli/commands/share.ts:118:  const roomId = rest[0];
 ./src/cli/commands/share.ts:119:  if (!roomId) {
-./src/cli/commands/share.ts:120:    console.error('share room: missing <name>. usage: wellinformed share room <name>');
+./src/cli/commands/share.ts:120:    console.error('share room: missing <name>. usage: akashik share room <name>');
 ./src/cli/commands/share.ts:124:  // Phase 20 — Defence-in-depth: hard-refuse the `sessions` room.
 ./src/cli/commands/share.ts:125:  // Check 1: hardcoded literal — catches the case where shared-rooms.json
 ./src/cli/commands/share.ts:127:  if (roomId === 'sessions') {
@@ -2453,7 +2453,7 @@ exec
 ./src/cli/commands/share.ts:165:  const roomNodes = nodesInRoom(graph, roomId);
 ./src/cli/commands/share.ts:167:  const auditRes = auditRoom(roomNodes, patterns);
 ./src/cli/commands/share.ts:170:    console.error(`share room: BLOCKED — ${auditRes.blocked.length} node(s) in room '${roomId}' contain secrets`);
-./src/cli/commands/share.ts:175:    console.error(`\nrun 'wellinformed share audit --room ${roomId}' for full details.`);
+./src/cli/commands/share.ts:175:    console.error(`\nrun 'akashik share audit --room ${roomId}' for full details.`);
 ./src/cli/commands/share.ts:179:  // Persist to shared-rooms.json under cross-process lock.
 ./src/cli/commands/share.ts:180:  const record: import('../../infrastructure/share-store.js').SharedRoomRecord = {
 ./src/cli/commands/share.ts:181:    name: roomId,
@@ -2464,21 +2464,21 @@ exec
 ./src/cli/commands/share.ts:193:  // SHARE-04 — populate the Y.Doc with existing room nodes so peers see content
 ./src/cli/commands/share.ts:194:  // on the FIRST sync, not just future ingests. Loads the room's Y.Doc (or creates
 ./src/cli/commands/share.ts:201:  const allowedNodes = roomNodes.filter((n) => allowedIds.has(n.id));
-./src/cli/commands/share.ts:202:  const ydocPath = join(wellinformedHome(), 'ydocs', `${roomId}.ydoc`);
-./src/cli/commands/share.ts:203:  const logPath = join(wellinformedHome(), 'share-log.jsonl');
+./src/cli/commands/share.ts:202:  const ydocPath = join(akashikHome(), 'ydocs', `${roomId}.ydoc`);
+./src/cli/commands/share.ts:203:  const logPath = join(akashikHome(), 'share-log.jsonl');
 ./src/cli/commands/share.ts:206:    console.error(`share room: ${formatErrorWithHint(ydocLoad.error)}`);
 ./src/cli/commands/share.ts:211:    const populated = await syncNodeIntoYDoc(ydoc, node, patterns, logPath, 'local', roomId);
 ./src/cli/commands/share.ts:213:      console.error(`share room: failed to seed Y.Doc for node ${node.id}: ${formatError(populated.error)}`);
 ./src/cli/commands/share.ts:219:    console.error(`share room: ${formatErrorWithHint(ydocSave.error)}`);
 ./src/cli/commands/share.ts:225:    console.log(`share room '${roomId}': now public (0 nodes — empty room recorded for future sync)`);
 ./src/cli/commands/share.ts:227:    console.log(`share room '${roomId}': now public (${auditRes.allowed.length} ${noun} shareable)`);
-./src/cli/commands/share.ts:229:  console.log("  run 'wellinformed daemon start' (or restart it) so peers can sync this room");
+./src/cli/commands/share.ts:229:  console.log("  run 'akashik daemon start' (or restart it) so peers can sync this room");
 ./src/cli/commands/share.ts:240:    console.error(`share ui: ${formatError(graphRes.error)}`);
 ./src/cli/commands/share.ts:243:  const sharedRes = await loadSharedRooms(sharedRoomsPath());
 ./src/cli/commands/share.ts:244:  if (sharedRes.isErr()) {
 ./src/cli/commands/share.ts:245:    console.error(`share ui: ${formatError(sharedRes.error)}`);
 ./src/cli/commands/share.ts:249:  const initial = buildPickerState(graphRes.value.json.nodes, sharedRes.value);
-./src/cli/commands/share.ts:251:    console.log('share ui: no physical rooms yet. Run `wellinformed trigger` to index some content first.');
+./src/cli/commands/share.ts:251:    console.log('share ui: no physical rooms yet. Run `akashik trigger` to index some content first.');
 ./src/cli/commands/share.ts:252:    console.log('         System rooms (toolshed, research) are always shared.');
 ./src/cli/commands/share.ts:260:    console.error(`share ui: ${(e as Error).message}`);
 ./src/cli/commands/share.ts:264:    console.log('share ui: cancelled — no changes.');
@@ -2492,11 +2492,11 @@ exec
 ./src/cli/commands/share.ts:286:    const audit = auditRoom(roomNodes, patterns);
 ./src/cli/commands/share.ts:287:    if (audit.blocked.length > 0) blocked.push({ room: name, count: audit.blocked.length });
 ./src/cli/commands/share.ts:290:    console.error('share ui: refusing — the following rooms contain flagged nodes:');
-./src/cli/commands/share.ts:292:      console.error(`  ${b.room}: ${b.count} flagged node(s). Run \`wellinformed share audit --room ${b.room}\` to inspect.`);
+./src/cli/commands/share.ts:292:      console.error(`  ${b.room}: ${b.count} flagged node(s). Run \`akashik share audit --room ${b.room}\` to inspect.`);
 ./src/cli/commands/share.ts:297:  const mutRes = await mutateSharedRooms(sharedRoomsPath(), (cur) => applyDiff(cur, diff));
 ./src/cli/commands/share.ts:299:    console.error(`share ui: ${formatError(mutRes.error)}`);
 ./src/cli/commands/share.ts:303:  if (diff.toUnshare.length > 0) console.log(`  stopped sharing: ${diff.toUnshare.join(', ')}`);
-./src/cli/commands/share.ts:309:const USAGE = `usage: wellinformed share <audit|room|ui>
+./src/cli/commands/share.ts:309:const USAGE = `usage: akashik share <audit|room|ui>
 ./src/cli/commands/share.ts:312:  audit --room <name> [--json]   show what would be shared before enabling
 ./src/cli/commands/share.ts:313:  room <name>                    mark a room as shared (runs audit; blocks on flagged nodes)
 ./src/cli/commands/share.ts:314:  ui                             interactive picker for non-system rooms`;
@@ -2504,7 +2504,7 @@ exec
 ./src/cli/commands/share.ts:322:    case 'room':  return roomCmd(rest);
 ./src/cli/commands/share.ts:325:      console.error(sub ? `share: unknown subcommand '${sub}'` : 'share: missing subcommand');
 ./src/cli/commands/share.ts:329:  // rest is consumed via audit/roomCmd — kept for the type-level
-./demo/teardown-p2p.sh:51:# main wellinformed daemon if it shares the parent terminal session.
+./demo/teardown-p2p.sh:51:# main akashik daemon if it shares the parent terminal session.
 ./src/infrastructure/search-gossip.ts:2: * search-gossip — federated search over libp2p pubsub.
 ./src/infrastructure/search-gossip.ts:4: * Replaces the per-peer dialProtocol fan-out in federated-search.ts
 ./src/infrastructure/search-gossip.ts:27: *     "room": "research" | null,
@@ -2553,13 +2553,13 @@ exec
 ./src/application/ask.ts:526:            { query: resolvedEntity.id, limit: params.k, room: params.room },
 ./src/application/ask.ts:532:              room: params.room,
 ./src/application/ask.ts:544:            room: params.room,
-./src/infrastructure/share-store.ts:2: * Share store — persists the shared-rooms registry to ~/.wellinformed/shared-rooms.json.
+./src/infrastructure/share-store.ts:2: * Share store — persists the shared-rooms registry to ~/.akashik/shared-rooms.json.
 ./src/infrastructure/share-store.ts:6: * (peers.json owns connections, shared-rooms.json owns the public rooms list)
 ./src/infrastructure/share-store.ts:9: * Error types: SE.shareStoreReadError / SE.shareStoreWriteError for all I/O.
 ./src/infrastructure/share-store.ts:18:import { SYSTEM_ROOMS, isSystemRoomName } from '../domain/system-rooms.js';
 ./src/infrastructure/share-store.ts:20:/** Current shared-rooms.json schema version. Bump when making breaking changes. */
 ./src/infrastructure/share-store.ts:24: * Cross-process lock for shared-rooms.json mutations.
-./src/infrastructure/share-store.ts:29: * concurrent wellinformed processes (e.g., daemon + CLI `share room foo`)
+./src/infrastructure/share-store.ts:29: * concurrent akashik processes (e.g., daemon + CLI `share room foo`)
 ./src/infrastructure/share-store.ts:80:        throw new Error(`timed out waiting for shared-rooms.json lock after ${LOCK_MAX_WAIT_MS}ms`);
 ./src/infrastructure/share-store.ts:98:  /** Room name as used by the local graph (room field on GraphNode). */
 ./src/infrastructure/share-store.ts:100:  /** ISO-8601 timestamp when this room was first shared. */
@@ -2608,11 +2608,11 @@ exec
 ./src/infrastructure/share-store.ts:302:    (e) => SE.shareStoreWriteError(path, `lock acquire failed: ${(e as Error).message}`),
 ./src/infrastructure/share-store.ts:312:        (e) => SE.shareStoreWriteError(path, `lock release failed: ${(e as Error).message}`),
 ./src/application/identity-bridge.ts:9: * Integration pattern for downstream modules (search-sync, share-sync,
-./src/cli/commands/touch.ts:2: * `wellinformed touch <peer-id-or-multiaddr> --room <name> [--max N] [--dry-run]`
+./src/cli/commands/touch.ts:2: * `akashik touch <peer-id-or-multiaddr> --room <name> [--max N] [--dry-run]`
 ./src/cli/commands/touch.ts:8: * Unlike `share room`, no local publishing is required — this is a
 ./src/cli/commands/touch.ts:9: * one-direction read. The peer may still refuse if the room isn't shared
 ./src/cli/commands/touch.ts:39:  readonly room: string;
-./src/cli/commands/touch.ts:46:    return 'touch: missing <peer-id-or-multiaddr>. usage: wellinformed touch <peer> --room <name> [--max N] [--dry-run]';
+./src/cli/commands/touch.ts:46:    return 'touch: missing <peer-id-or-multiaddr>. usage: akashik touch <peer> --room <name> [--max N] [--dry-run]';
 ./src/cli/commands/touch.ts:50:  let room: string | undefined;
 ./src/cli/commands/touch.ts:55:    if (f === '--room') { room = flags[++i]; continue; }
 ./src/cli/commands/touch.ts:60:  if (!room) return 'touch: --room <name> is required';
@@ -2620,9 +2620,9 @@ exec
 ./src/cli/commands/touch.ts:145:    const streamRes = await openTouchStream(node, resolved.peerId, parsed.room, parsed.maxNodes);
 ./src/cli/commands/touch.ts:153:      `touch: peer ${resolved.peerId} returned ${nodes.length} node(s) from room '${parsed.room}'${redactions_applied > 0 ? ` (${redactions_applied} redaction${redactions_applied === 1 ? '' : 's'} applied server-side)` : ''}`,
 ./src/cli/commands/sessions.ts:15: *   3. Print next-step guidance (`trigger --room sessions` re-walks from
-./src/cli/commands/sessions.ts:37:    console.log('  next run of `wellinformed trigger --room sessions` will re-ingest from offset 0.');
-./src/cli/commands/sessions.ts:45:    console.error(`  'wellinformed trigger --room sessions' (can re-create thousands of nodes).`);
-./src/cli/commands/sessions.ts:72:    console.log('  wellinformed trigger --room sessions');
+./src/cli/commands/sessions.ts:37:    console.log('  next run of `akashik trigger --room sessions` will re-ingest from offset 0.');
+./src/cli/commands/sessions.ts:45:    console.error(`  'akashik trigger --room sessions' (can re-create thousands of nodes).`);
+./src/cli/commands/sessions.ts:72:    console.log('  akashik trigger --room sessions');
 ./src/cli/commands/sessions.ts:75:    console.log('Existing consolidated_memory nodes in the sessions room are preserved;');
 ./src/application/discover.ts:2: * Discovery use case — suggest new sources for a room.
 ./src/application/discover.ts:4: * Given a room's keywords and existing sources, this generates
@@ -2693,7 +2693,7 @@ exec
 ./src/application/discover.ts:216:    id: `${roomId}-hn`,
 ./src/application/discover.ts:218:    room: roomId,
 ./src/application/discover.ts:222:  reason: `Hacker News search for: ${keywords.join(', ')}`,
-./src/cli/commands/index-project.ts:2: * `wellinformed index [--room R] [--root DIR]`
+./src/cli/commands/index-project.ts:2: * `akashik index [--room R] [--root DIR]`
 ./src/cli/commands/index-project.ts:13: * By default it uses the default room from the room registry. If no
 ./src/cli/commands/index-project.ts:14: * room exists, it creates one named after the project directory.
 ./src/cli/commands/index-project.ts:20:import { slugifyRoomName, defaultRoom } from '../../domain/rooms.js';
@@ -2725,16 +2725,16 @@ exec
 ./src/cli/commands/index-project.ts:114:    console.log(`indexing project at ${parsed.root} → room=${room}\n`);
 ./demo/setup-p2p.sh:41:# Demo-only github handles per peer (so federation surfaces a
 ./demo/setup-p2p.sh:108:  round_robin_rooms: false
-./demo/setup-p2p.sh:124:WELLINFORMED_HOME="$A_HOME" wellinformed share room research >/dev/null
+./demo/setup-p2p.sh:124:AKASHIK_HOME="$A_HOME" akashik share room research >/dev/null
 ./demo/setup-p2p.sh:128:# federated response. CRDT replays will populate fresh ones from
 ./demo/setup-p2p.sh:169:  echo "→ peer $p: identity + 2 notes + share room"
 ./demo/setup-p2p.sh:176:    --room research \
 ./demo/setup-p2p.sh:182:    --room research \
-./demo/setup-p2p.sh:187:  WELLINFORMED_HOME="$h" wellinformed share room research >/dev/null
+./demo/setup-p2p.sh:187:  AKASHIK_HOME="$h" akashik share room research >/dev/null
 ./demo/setup-p2p.sh:237:    # federated ask sees peers_queried: 0.
 ./demo/setup.sh:42:#    one canonical "concept" node in the local-only research room.
 ./demo/setup.sh:54:       --room research \
-./demo/scene-codebase.tape:3:# The wellinformed repo is indexed into ~/.wellinformed.demo (room
+./demo/scene-codebase.tape:3:# The akashik repo is indexed into ~/.akashik.demo (room
 ./src/application/use-cases.ts:44:  readonly room: Room;
 ./src/application/use-cases.ts:48:/** A room-scoped semantic search. */
 ./src/application/use-cases.ts:50:  readonly room: Room;
@@ -2754,7 +2754,7 @@ exec
 ./src/application/use-cases.ts:228:/** Convenience: every node in a room, no search required. */
 ./src/application/use-cases.ts:231:  (room: Room): ResultAsync<readonly GraphNode[], AppError> =>
 ./src/application/use-cases.ts:232:    deps.graphs.load().mapErr((e): AppError => e).map((graph) => nodesInRoom(graph, room));
-./src/cli/commands/discover-loop.ts:2: * `wellinformed discover-loop [--room R] [--max-iterations N]`
+./src/cli/commands/discover-loop.ts:2: * `akashik discover-loop [--room R] [--max-iterations N]`
 ./src/cli/commands/discover-loop.ts:4: * Recursive source expansion: discover → index → extract keywords →
 ./src/cli/commands/discover-loop.ts:9:import { defaultRoom } from '../../domain/rooms.js';
 ./src/cli/commands/discover-loop.ts:14:  let room: string | undefined;
@@ -2785,7 +2785,7 @@ exec
 ./src/application/report.ts:96:                const tunnels = computeTunnels(records, opts.maxTunnels ?? 10, room);
 ./src/application/report.ts:99:                  room: roomLabel,
 ./src/application/report.ts:105:                    room_nodes: nodes.length,
-./src/application/report.ts:120:  lines.push(`# wellinformed report — ${data.room}`);
+./src/application/report.ts:120:  lines.push(`# akashik report — ${data.room}`);
 ./src/application/report.ts:128:  lines.push(`- room nodes: ${data.stats.room_nodes}`);
 ./src/application/report.ts:144:      lines.push(`- **${g.label}** (${g.degree} edges)${g.room ? ` [${g.room}]` : ''}`);
 ./src/application/report.ts:150:    lines.push(`## Tunnel candidates (cross-room)`);
@@ -2794,14 +2794,14 @@ exec
 ./src/application/report.ts:186:    degrees.push({ id: n.id, label: n.label, degree, room: n.room });
 ./src/application/report.ts:194:  room?: Room,
 ./src/application/report.ts:195:): readonly Tunnel[] => findTunnelsPure(records, 0.8, room).slice(0, max);
-./src/cli/commands/eval.ts:2: * `wellinformed eval <queries.jsonl> [--room R] [--k 10] [--json]`
+./src/cli/commands/eval.ts:2: * `akashik eval <queries.jsonl> [--room R] [--k 10] [--json]`
 ./src/cli/commands/eval.ts:19: *   {"query": "lemlist", "expected_node_ids": ["chunk-a", "chunk-b"], "room": "research"}
 ./src/cli/commands/eval.ts:24: *   - `room`               optional — passes through to ask({ room })
 ./src/cli/commands/eval.ts:41:  readonly room?: string;
 ./src/cli/commands/eval.ts:49:  let room: string | undefined;
 ./src/cli/commands/eval.ts:56:    if (a === '--room') room = next();
 ./src/cli/commands/eval.ts:57:    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
-./src/cli/commands/eval.ts:66:    return 'missing queries file — usage: wellinformed eval <queries.jsonl> [--room R] [--k 10] [--limit N] [--json]';
+./src/cli/commands/eval.ts:66:    return 'missing queries file — usage: akashik eval <queries.jsonl> [--room R] [--k 10] [--limit N] [--json]';
 ./src/cli/commands/eval.ts:70:  return { file, room, k, json, limit };
 ./src/cli/commands/eval.ts:78:  readonly room?: string;
 ./src/cli/commands/eval.ts:105:  const room =
@@ -2813,7 +2813,7 @@ exec
 ./demo/screencast.tape:50:Type '# entity recall — every chunk that mentions stanford-cryo-lab, across rooms'
 ./demo/screencast.tape:72:Type '# peer reputation — the system tracks who knows what, learned from real federated asks'
 ./demo/screencast.tape:91:Type 'echo "  ✓ P2P federation, signed envelopes, no server"'
-./src/cli/commands/recent-sessions.ts:4: * Queries ~/.wellinformed/graph.json for nodes in the `sessions` room,
+./src/cli/commands/recent-sessions.ts:4: * Queries ~/.akashik/graph.json for nodes in the `sessions` room,
 ./src/cli/commands/recent-sessions.ts:76: * and MCP share a single aggregation implementation.
 ./src/cli/commands/recent-sessions.ts:78: * @param nodes       All GraphNode objects from the `sessions` room
 ./src/application/peer-order-builder.ts:14: * the returned closure is synchronous and used by the federated layer
@@ -2828,17 +2828,17 @@ exec
 ./src/application/peer-order-builder.ts:105: * identity function so federated search degrades gracefully.
 ./src/application/peer-order-builder.ts:125:  const subjects = deriveQuerySubjects(input.query, input.room, input.registry);
 ./src/application/peer-order-builder.ts:137:    // ranks if the query only matched on `room:research`.
-./src/cli/commands/oracle.ts:2: * `wellinformed oracle <sub>` — peer-to-peer Q&A via the oracle system room.
+./src/cli/commands/oracle.ts:2: * `akashik oracle <sub>` — peer-to-peer Q&A via the oracle system room.
 ./src/cli/commands/oracle.ts:5: *   ask "<text>"            post a question to the oracle room; peers see it on next touch
 ./src/cli/commands/oracle.ts:160:    })({ node, text, room: ORACLE_ROOM });
 ./src/cli/commands/oracle.ts:220:    })({ node, text, room: ORACLE_ROOM });
 ./src/cli/commands/oracle.ts:397:        .filter((h) => h.node?.room !== 'oracle')
 ./src/cli/commands/oracle.ts:429:        console.log(`    ↳ d=${h.distance.toFixed(3)} ${node?.label ?? h.nodeId} [${node?.room ?? '?'}]`);
-./demo/scene-federated.sh:3:# wellinformed demo — scene "federated" end-to-end orchestrator.
+./demo/scene-federated.sh:3:# akashik demo — scene "federated" end-to-end orchestrator.
 ./demo/scene-federated.sh:8:# 3. vhs scene-federated.tape: records peer-list + federated ask
 ./demo/scene-federated.sh:11:# Result: demo/scene-federated.gif, no daemons left running.
 ./demo/scene-federated.sh:14:#   bash demo/scene-federated.sh
-./demo/scene-federated.sh:23:    echo "[scene-federated] WELLINFORMED_DEMO_KEEP_DAEMONS=1 — leaving 5 daemons up."
+./demo/scene-federated.sh:23:    echo "[scene-federated] AKASHIK_DEMO_KEEP_DAEMONS=1 — leaving 5 daemons up."
 ./demo/scene-federated.sh:28:  echo "[scene-federated] tearing down 5-daemon mesh"
 ./demo/scene-federated.sh:36:echo "[scene-federated] recording demo/scene-federated.tape → demo/scene-federated.gif"
 ./demo/scene-federated.sh:37:vhs demo/scene-federated.tape
@@ -2850,7 +2850,7 @@ exec
 ./src/cli/commands/consolidate.ts:46:  readonly room: Room;
 ./src/cli/commands/consolidate.ts:58:  let room: string | null = null;
 ./src/cli/commands/consolidate.ts:84:    else if (!a.startsWith('-')) room = room ?? a;
-./src/cli/commands/consolidate.ts:86:  if (!room) return 'missing <room>. usage: wellinformed consolidate run <room> [--dry-run] [--prune [--backup PATH | --no-backup]]';
+./src/cli/commands/consolidate.ts:86:  if (!room) return 'missing <room>. usage: akashik consolidate run <room> [--dry-run] [--prune [--backup PATH | --no-backup]]';
 ./src/cli/commands/consolidate.ts:88:  return { room, dryRun, threshold, minSize, maxSize, model, prune, backup, backupPath };
 ./src/cli/commands/consolidate.ts:96:  const loadEntries = (room: Room): ResultAsync<readonly EpisodicEntry[], AppError> =>
 ./src/cli/commands/consolidate.ts:101:        const roomNodes = nodesInRoom(graph, room).filter((n) => {
@@ -2863,7 +2863,7 @@ exec
 ./src/cli/commands/consolidate.ts:163:        room: memory.room,
 ./src/cli/commands/consolidate.ts:249:      `consolidate: room=${parsed.room} threshold=${parsed.threshold} ` +
 ./src/cli/commands/consolidate.ts:254:      room: parsed.room,
-./src/cli/commands/consolidate.ts:287:          ?? join(wellinformedHome(), `prune-backup-${parsed.room}-${Date.now()}.ndjson`);
+./src/cli/commands/consolidate.ts:287:          ?? join(akashikHome(), `prune-backup-${parsed.room}-${Date.now()}.ndjson`);
 ./src/cli/commands/consolidate.ts:378:  console.log(`# consolidate ${r.room}`);
 ./src/cli/commands/consolidate.ts:412:      const r = (n as { room?: string }).room ?? '(no room)';
 ./src/cli/commands/consolidate.ts:420:    console.log('  room                               raw  consolidated_raw  consolidated_memories');
@@ -2878,13 +2878,13 @@ exec
 ./src/cli/commands/consolidate.ts:468:  let room: string | null = null;
 ./src/cli/commands/consolidate.ts:478:    else if (!a.startsWith('-')) room = room ?? a;
 ./src/cli/commands/consolidate.ts:480:  if (!room) {
-./src/cli/commands/consolidate.ts:481:    console.error('consolidate prune-marked: missing <room>. usage: wellinformed consolidate prune-marked <room> [--no-backup | --backup PATH] [--force]');
+./src/cli/commands/consolidate.ts:481:    console.error('consolidate prune-marked: missing <room>. usage: akashik consolidate prune-marked <room> [--no-backup | --backup PATH] [--force]');
 ./src/cli/commands/consolidate.ts:498:      (n as { room?: string }).room === room
 ./src/cli/commands/consolidate.ts:504:      console.log(`no consolidated_at-marked raw entries in room '${room}'. nothing to prune.`);
 ./src/cli/commands/consolidate.ts:508:    console.error(`consolidate prune-marked: ${candidates.length} candidates in room '${room}'`);
-./src/cli/commands/consolidate.ts:516:      const path = backupPath ?? join(wellinformedHome(), `prune-marked-backup-${room}-${Date.now()}.ndjson`);
+./src/cli/commands/consolidate.ts:516:      const path = backupPath ?? join(akashikHome(), `prune-marked-backup-${room}-${Date.now()}.ndjson`);
 ./src/cli/commands/login.ts:162:  Required for strict-mode P2P federation when peers enforce signed
-./docs/architecture/ADR-002-v4-agent-brain.md:92:**Chosen:** `wellinformed consolidate run <room>` is an explicit CLI command, run by an operator (or a cron job, or the daemon's tick loop in v4.1). Not auto-run on a timer in v4.0.
+./docs/architecture/ADR-002-v4-agent-brain.md:92:**Chosen:** `akashik consolidate run <room>` is an explicit CLI command, run by an operator (or a cron job, or the daemon's tick loop in v4.1). Not auto-run on a timer in v4.0.
 ./docs/architecture/ADR-002-v4-agent-brain.md:218:- Sessions room consolidation: 6.29× shrinkage measured live (7,002 → 1,113 nodes in 178.5s)
 ./docs/research/energy-based-contradiction-detection.md:19:∧  they share ≥ 1 concept tag
 ./docs/research/energy-based-contradiction-detection.md:38:   disagreement check requires disjoint tags — both candidates share
@@ -2911,11 +2911,11 @@ exec
 ./docs/research/beat-the-competitors-retrieval-plan.md:108://   const r0 = await searchByRoom({ graphs, vectors, embedder })({ room, text, k: K * 4 });  // 4x candidates
 ./docs/research/beat-the-competitors-retrieval-plan.md:126:Beyond that: **federated retrieval** (the unique Akashik bet) — measure how P2P-shared rooms across multiple peers lift recall on out-of-distribution questions, vs single-peer baselines. No public benchmark covers this today; we'd publish one.
 ./docs/research/beat-the-competitors-retrieval-plan.md:139:| **E11** | **Rule-based contextual enrichment (write-path)** | Prepend structured metadata (date, room/persona, participants, top-K extracted entities) to each session's text *before* embedding. Like Anthropic's Contextual Retrieval but rule-based — no LLM call, zero ingest cost beyond regex/NER. | multi-session **10pp**, temporal **13pp** | +3–5pp aggregate | 3-4 h |
-./src/cli/commands/init.ts:2: * `wellinformed init` — interactive room seeding wizard.
+./src/cli/commands/init.ts:2: * `akashik init` — interactive room seeding wizard.
 ./src/cli/commands/init.ts:5: *   1. What are you researching? → room name + description
 ./src/cli/commands/init.ts:6: *   2. Key topics / keywords → used to suggest sources
 ./src/cli/commands/init.ts:13: * The wizard talks to the room and source registries. It is
-./src/cli/commands/init.ts:17: * Non-interactive mode: `wellinformed init --name X --desc Y --keywords a,b`
+./src/cli/commands/init.ts:17: * Non-interactive mode: `akashik init --name X --desc Y --keywords a,b`
 ./src/cli/commands/init.ts:18: * skips all prompts and creates the room + default sources from flags.
 ./src/cli/commands/init.ts:24:import type { RoomMeta } from '../../domain/rooms.js';
 ./src/cli/commands/init.ts:25:import { slugifyRoomName } from '../../domain/rooms.js';
@@ -2925,7 +2925,7 @@ exec
 ./src/cli/commands/init.ts:96:    else if (a === '--keywords') flags.keywords = next();
 ./src/cli/commands/init.ts:97:    else if (a.startsWith('--keywords=')) flags.keywords = a.slice('--keywords='.length);
 ./src/cli/commands/init.ts:114:  room: RoomMeta;
-./src/cli/commands/init.ts:117:  console.log('\nwellinformed init — set up a new research room\n');
+./src/cli/commands/init.ts:117:  console.log('\nakashik init — set up a new research room\n');
 ./src/cli/commands/init.ts:122:    console.log('no room name provided. aborting.');
 ./src/cli/commands/init.ts:128:  const desc = flags.desc ?? (await prompter.ask('Short description', `Research room for ${name}`));
 ./src/cli/commands/init.ts:131:  const keywordsStr =
@@ -2950,8 +2950,8 @@ exec
 ./src/cli/commands/init.ts:216:    if (roomResult.isErr()) {
 ./src/cli/commands/init.ts:217:      console.error(`init: ${formatError(roomResult.error)}`);
 ./src/cli/commands/init.ts:229:    console.log(`\nroom '${result.room.id}' created with ${result.sources.length} source(s).`);
-./src/cli/commands/init.ts:230:    console.log(`run 'wellinformed trigger --room ${result.room.id}' to fetch initial content.`);
-./docs/architecture/V4-PROTOCOL.md:28:client → daemon:  {"id": <number>, "cmd": "ask", "args": ["--room", "wellinformed-dev", "p2p memory"]}
+./src/cli/commands/init.ts:230:    console.log(`run 'akashik trigger --room ${result.room.id}' to fetch initial content.`);
+./docs/architecture/V4-PROTOCOL.md:28:client → daemon:  {"id": <number>, "cmd": "ask", "args": ["--room", "akashik-dev", "p2p memory"]}
 ./docs/architecture/V4-PROTOCOL.md:39:| `stats` | JSON snapshot: `{nodes, edges, vectors, rooms, via:"daemon-ipc"}` |
 ./docs/architecture/V4-PROTOCOL.md:106:- **Clusters NEVER span rooms** — caller partitions per-room via `partitionByRoom`
 ./docs/architecture/V4-PROTOCOL.md:125:  room: Room,
@@ -2960,8 +2960,8 @@ exec
 ./docs/architecture/V4-PROTOCOL.md:198:- (future) `index`, `trigger`, `share` writes
 ./docs/architecture/V4-PROTOCOL.md:210:V3 specified the negotiation handshake for federated peers to choose an encoding (fp32-768, fp32-512, binary-768, binary-512, ...). V4 ships this as a runtime toggle:
 ./docs/architecture/V4-PROTOCOL.md:234:- **Consolidated memory** — content-addressed ID is reproducible byte-for-byte from (room, sorted provenance_ids, summary)
-./docs/architecture/V4-PROTOCOL.md:281:- **SignedShareableNode envelope primitive** — `src/domain/share-envelope.ts` builds on the identity primitive to wrap each ShareableNode in a verifiable Ed25519 envelope chain. Sign/verify roundtrip + 9 tamper-detection tests pass; wiring into the share-sync inbound observer ships behind `WELLINFORMED_REQUIRE_SIGNED_NODES` in a follow-up commit.
-./docs/architecture/V4-PROTOCOL.md:290:- **v4.2 — Wire `WELLINFORMED_REQUIRE_SIGNED_NODES` into share-sync inbound observer** — the receive-side complement to §5.6, using the now-shipped envelope primitive.
+./docs/architecture/V4-PROTOCOL.md:281:- **SignedShareableNode envelope primitive** — `src/domain/share-envelope.ts` builds on the identity primitive to wrap each ShareableNode in a verifiable Ed25519 envelope chain. Sign/verify roundtrip + 9 tamper-detection tests pass; wiring into the share-sync inbound observer ships behind `AKASHIK_REQUIRE_SIGNED_NODES` in a follow-up commit.
+./docs/architecture/V4-PROTOCOL.md:290:- **v4.2 — Wire `AKASHIK_REQUIRE_SIGNED_NODES` into share-sync inbound observer** — the receive-side complement to §5.6, using the now-shipped envelope primitive.
 ./docs/index.html:7:  <meta name="description" content="The globally accumulating knowledge network. Cooperative, peer-to-peer, in the lineage of Napster, eMule, and BitTorrent. Deep research in 11 ms. Cited. Zero tokens. MIT, CPU-only, libp2p federation, W3C did:key identity. 75.22% NDCG@10 on BEIR SciFact." />
 ./docs/index.html:82:    /* ───── shared type ───── */
 ./docs/index.html:193:       prove subsecond p50, and the room slugs name the always-on
@@ -2980,13 +2980,13 @@ exec
 ./docs/index.html:1639:    .room-name {
 ./docs/index.html:1645:    .room-desc {
 ./docs/index.html:1651:    .room-stale {
-./docs/index.html:2513:       Phase A: graph hit is fresh (<room.stale window). Wellinformed answers
-./docs/index.html:2515:       Phase B: graph hit is stale (>room.stale). Wellinformed falls back to
+./docs/index.html:2513:       Phase A: graph hit is fresh (<room.stale window). Akashik answers
+./docs/index.html:2515:       Phase B: graph hit is stale (>room.stale). Akashik falls back to
 ./docs/index.html:2517:                research room (so every peer benefits next time), and answers.
 ./docs/index.html:2583:            enrich: '✓ saved → research room · 2 new chunks · 3 peers updated',
 ./docs/index.html:2775:          // (geometry is shared across all meshes of the same val, so cost
 ./docs/index.html:2935:          // SphereGeometry once per unique val/radius and shares it across
-./docs/index.html:3049:        // Each scenario sources its answer from a specific wellinformed room.
+./docs/index.html:3049:        // Each scenario sources its answer from a specific akashik room.
 ./docs/index.html:3058:            room: 'research',
 ./docs/index.html:3074:            room: 'git-repo:vercel/next.js',
 ./docs/index.html:3090:            room: 'git-repo:tokio-rs/tokio',
@@ -2994,7 +2994,7 @@ exec
 ./docs/index.html:3122:            room: 'research',
 ./docs/index.html:3280:              '<span class="ans-room">room: <em>' + s.room + '</em></span>' +
 ./docs/index.html:3412:          'federated-learning','HNSW','DiskANN','autorelay','DHT-routing',
-./docs/index.html:3431:          ['code:wi-federated', 'code · wellinformed/src/net/federated.rs'],
+./docs/index.html:3431:          ['code:wi-federated', 'code · akashik/src/net/federated.rs'],
 ./docs/index.html:3450:          'peer:zM2p': ['paper:libp2p-pr-1340','code:libp2p-autorelay','code:wi-federated'],
 ./docs/index.html:3477:          'code:wi-federated': ['libp2p','DHT-routing'],
 ./src/telegram/capture.ts:2: * Inbound capture — URL → classify room → ingest.
@@ -3014,16 +3014,16 @@ exec
 ./src/telegram/capture.ts:41:      for (const k of keywords) {
 ./src/telegram/capture.ts:58:  const room = await classifyRoom(runtime, messageText);
 ./src/telegram/capture.ts:59:  if (!room) {
-./src/telegram/capture.ts:60:    return 'No rooms configured. Run `wellinformed init` first.';
+./src/telegram/capture.ts:60:    return 'No rooms configured. Run `akashik init` first.';
 ./src/telegram/capture.ts:91:      room,
 ./src/telegram/capture.ts:97:      room,
 ./src/telegram/capture.ts:101:      results.push(`Indexed: *${article.title || url}* → room \`${room}\``);
 ./docs/research/performance-prediction-matrix.md:85:LongMemEval-S specifically has +5 pp of headroom (R@5 0.92 vs R@20 0.99) that the cross-encoder demonstrably failed to capture with bge-reranker-base. The LLM listwise has a structural reason to succeed where bge failed: it can use the temporal-reasoning capability the cross-encoder lacks, and that's exactly the question type sitting in the gold-tail.
 ./docs/research/performance-prediction-matrix.md:119:> Across all tiers, we share results federally between peers so the same data isn't fetched twice.
-./docs/demo.tape:1:# wellinformed CLI demo — accumulate · share · stream
+./docs/demo.tape:1:# akashik CLI demo — accumulate · share · stream
 ./docs/demo.tape:13:#   3. Ask the graph       — one query, three rooms, cross-source
-./docs/demo.tape:44:Type `echo "▸ wellinformed — accumulate · share · stream knowledge into every LLM session"`
-./docs/demo.tape:80:Type "# federate — every wellinformed peer, anywhere, contributes a shard"
+./docs/demo.tape:44:Type `echo "▸ akashik — accumulate · share · stream knowledge into every LLM session"`
+./docs/demo.tape:80:Type "# federate — every akashik peer, anywhere, contributes a shard"
 ./docs/product/GRAPHRAG-AUDIT.md:15:- Freshness as a first-class retrieval signal with per-room stale-after windows (`research` 7d, `toolshed` 30d), exposed inline as `age_days` on every hit (README §System rooms). Most GraphRAG implementations ignore freshness entirely.
 ./docs/product/GRAPHRAG-AUDIT.md:22:- **P2P federation over centralized index.** No comparable GraphRAG ships a libp2p gossip layer; we want the network effect of compounding research across peers, not a single corpus owner.
 ./docs/product/GRAPHRAG-AUDIT.md:23:- **Virtual room membership derived from `source_uri` scheme**, not a per-node `room` field. Keeps `toolshed` and `research` self-healing without manual curation and avoids the rigid taxonomy GraphRAG community trees impose.
@@ -3031,8 +3031,8 @@ exec
 ./docs/architecture/V3-PROTOCOL.md:18:- Memory **portably** federates across encoder choices (nomic, bge, e5, all-MiniLM, future)
 ./docs/architecture/V3-PROTOCOL.md:207:### 4.3 Why binary-512 is the federated-sync default
 ./docs/architecture/V3-PROTOCOL.md:209:- **64 bytes/vec** — a 10,000-entry vector namespace is 640 KB, fits in a single mesh message
-./docs/architecture/V3-PROTOCOL.md:221:- `/wellinformed/touch/1.0.0` — asymmetric public-room pull
-./docs/architecture/V3-PROTOCOL.md:222:- `/wellinformed/share/2.0.0` — bidirectional CRDT room sync (Y.js)
+./docs/architecture/V3-PROTOCOL.md:221:- `/akashik/touch/1.0.0` — asymmetric public-room pull
+./docs/architecture/V3-PROTOCOL.md:222:- `/akashik/share/2.0.0` — bidirectional CRDT room sync (Y.js)
 ./docs/architecture/V3-PROTOCOL.md:237:  room:      string | null,
 ./docs/architecture/V3-PROTOCOL.md:247:2. Check the local `shared-rooms.json` — refuse if the requested room is not shared with this peer (or globally)
 ./docs/architecture/V3-PROTOCOL.md:257:  room:          string,
@@ -3054,19 +3054,19 @@ exec
 ./docs/product/BENCHMARKS.md:115:6. Phase 20 — Session capture + 16th MCP tool (recent_sessions rollup, always-local room)
 ./docs/product/BENCHMARKS.md:121:10. Phase 36 — **System rooms** (toolshed + research + oracle, always-on, age-aware, virtual membership)
 ./docs/product/BENCHMARKS.md:122:11. Phase 37 — Interactive share picker (zero-dep ANSI TUI)
-./docs/product/BENCHMARKS.md:245:Three real-corpus suites are now wired into the bench CLI. They share the env contract `WELLINFORMED_BENCH_PUBLIC_REAL=1` (master gate; off by default to keep CI fast) and each takes a dataset-directory env var. Without the gate or the dataset they `t.skip()` cleanly and the composite falls back to the synth/proxy value (registration order in `src/cli/commands/bench.ts` is `synth → real` so real overwrites synth iff real ran).
+./docs/product/BENCHMARKS.md:245:Three real-corpus suites are now wired into the bench CLI. They share the env contract `AKASHIK_BENCH_PUBLIC_REAL=1` (master gate; off by default to keep CI fast) and each takes a dataset-directory env var. Without the gate or the dataset they `t.skip()` cleanly and the composite falls back to the synth/proxy value (registration order in `src/cli/commands/bench.ts` is `synth → real` so real overwrites synth iff real ran).
 ./src/telegram/bot.ts:5: *   - Inbound URLs → auto-ingest into best-matching room
 ./src/telegram/bot.ts:8: *   - Commands → ask, report, trigger, status, rooms
-./src/cli/commands/recall.ts:2: * `wellinformed recall <name> [--room R] [--k N] [--json]`
+./src/cli/commands/recall.ts:2: * `akashik recall <name> [--room R] [--k N] [--json]`
 ./src/cli/commands/recall.ts:6: * across every room.
 ./src/cli/commands/recall.ts:18:import { runFederatedRecall } from '../../application/federated-recall.js';
 ./src/cli/commands/recall.ts:27:  readonly room?: string;
 ./src/cli/commands/recall.ts:35:  let room: string | undefined;
 ./src/cli/commands/recall.ts:42:    if (a === '--room') room = next();
 ./src/cli/commands/recall.ts:43:    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
-./src/cli/commands/recall.ts:50:  if (!query) return 'missing name — usage: wellinformed recall <name> [--room R] [--k N] [--peers] [--json]';
+./src/cli/commands/recall.ts:50:  if (!query) return 'missing name — usage: akashik recall <name> [--room R] [--k N] [--peers] [--json]';
 ./src/cli/commands/recall.ts:51:  return { query, room, k, json, peers };
-./src/cli/commands/recall.ts:56:    console.log(`usage: wellinformed recall <name> [--room R] [--k N] [--peers] [--json]
+./src/cli/commands/recall.ts:56:    console.log(`usage: akashik recall <name> [--room R] [--k N] [--peers] [--json]
 ./src/cli/commands/recall.ts:61:return chunks that reference it across every room.
 ./src/cli/commands/recall.ts:64:  --room R    restrict to a single room
 ./src/cli/commands/recall.ts:69:              gated by their share-store
@@ -3078,7 +3078,7 @@ exec
 ./src/cli/commands/recall.ts:212:    { query: parsed.query, limit: parsed.k, room: parsed.room },
 ./src/cli/commands/recall.ts:256:  if (parsed.room) console.log(`room:    ${parsed.room}`);
 ./src/cli/commands/recall.ts:275:    console.log(`room: ${h.room ?? '-'} | ${renderAge(h.age_days)} | surface: "${h.surface}"`);
-./src/cli/commands/viz.ts:2: * `wellinformed viz [--room R] [--output FILE]`
+./src/cli/commands/viz.ts:2: * `akashik viz [--room R] [--output FILE]`
 ./src/cli/commands/viz.ts:15:import { defaultRoom } from '../../domain/rooms.js';
 ./src/cli/commands/viz.ts:30:  color: n.room === raw.nodes[0]?.room ? '#34d399' : '#38bdf8',
 ./src/cli/commands/viz.ts:31:  title: [n.source_uri, n.room, n.file_type].filter(Boolean).join('\\n')
@@ -3095,20 +3095,20 @@ exec
 ./src/cli/commands/viz.ts:119:      html = fallbackHtml(JSON.stringify(filteredJson), room ?? 'all rooms');
 ./demo/research-corpus/07-ortho-para-ratio-ml.md:3:Hydrogen has two nuclear-spin isomers — ortho-H2 (75 % at room temperature) and para-H2
 ./docs/product/ROADMAP.md:15:DDD layered stack: pure domain (graph, vectors, errors), infrastructure ports + adapters (JSON graph repo, sqlite-vec vector index, xenova/fixture embedders), application use cases (indexNode, searchByRoom, searchGlobal, findTunnels, exploreRoom). Graphify vendored as submodule with schema patch for room/wing/source_uri/fetched_at/embedding_id. Python venv bootstrapping for graphify sidecar.
-./docs/product/ROADMAP.md:19:Pluggable Source port with four adapters: generic_rss, arxiv, hn_algolia, generic_url. RSS 2.0 + Atom normaliser. Recursive paragraph chunker. Content-hash (sha256) dedup on re-runs. `wellinformed trigger [--room R]` and `wellinformed sources list|add|remove|enable|disable`.
-./docs/product/ROADMAP.md:25:9 tools exposed over stdio via @modelcontextprotocol/sdk: search, ask, get_node, get_neighbors, list_rooms, find_tunnels, sources_list, trigger_room, graph_stats. `wellinformed mcp start` — auto-spawned by Claude Code via the plugin manifest.
-./docs/product/ROADMAP.md:29:**Commands:** `wellinformed init`, `wellinformed room list|create|switch|current`
+./docs/product/ROADMAP.md:19:Pluggable Source port with four adapters: generic_rss, arxiv, hn_algolia, generic_url. RSS 2.0 + Atom normaliser. Recursive paragraph chunker. Content-hash (sha256) dedup on re-runs. `akashik trigger [--room R]` and `akashik sources list|add|remove|enable|disable`.
+./docs/product/ROADMAP.md:25:9 tools exposed over stdio via @modelcontextprotocol/sdk: search, ask, get_node, get_neighbors, list_rooms, find_tunnels, sources_list, trigger_room, graph_stats. `akashik mcp start` — auto-spawned by Claude Code via the plugin manifest.
+./docs/product/ROADMAP.md:29:**Commands:** `akashik init`, `akashik room list|create|switch|current`
 ./docs/product/ROADMAP.md:31:**Goal:** Make onboarding self-service. `init` is an interactive wizard that asks what the user is researching, creates the room, suggests source adapters (arxiv queries, RSS feeds, HN searches), and registers them. `room` manages rooms programmatically (list, create, set current default, switch).
 ./docs/product/ROADMAP.md:34:- `src/domain/rooms.ts` — Room metadata type (name, description, created_at, keywords, default wing)
-./docs/product/ROADMAP.md:35:- `src/infrastructure/rooms-config.ts` — Room registry at `~/.wellinformed/rooms.json`
+./docs/product/ROADMAP.md:35:- `src/infrastructure/rooms-config.ts` — Room registry at `~/.akashik/rooms.json`
 ./docs/product/ROADMAP.md:36:- `src/cli/commands/init.ts` — Interactive room seeding wizard (prompts via readline)
 ./docs/product/ROADMAP.md:37:- `src/cli/commands/room.ts` — list / create / switch / current / describe
 ./docs/product/ROADMAP.md:38:- Update `sources add` to validate that the room exists in the registry
 ./docs/product/ROADMAP.md:39:- Update MCP tools: add `room_create`, `room_list` tools
 ./docs/product/ROADMAP.md:40:- Test: `tests/phase4.rooms.test.ts`
-./docs/product/ROADMAP.md:44:**Commands:** `wellinformed ask "<query>"`, `wellinformed report [date] [--room R]`
-./docs/product/ROADMAP.md:52:- Report persistence at `~/.wellinformed/reports/<room>/<date>.md`
-./docs/product/ROADMAP.md:57:**Commands:** `wellinformed daemon start|stop|status`, `wellinformed discover [--room R]`
+./docs/product/ROADMAP.md:44:**Commands:** `akashik ask "<query>"`, `akashik report [date] [--room R]`
+./docs/product/ROADMAP.md:52:- Report persistence at `~/.akashik/reports/<room>/<date>.md`
+./docs/product/ROADMAP.md:57:**Commands:** `akashik daemon start|stop|status`, `akashik discover [--room R]`
 ./docs/product/ROADMAP.md:59:**Goal:** Set-and-forget. The daemon runs `triggerRoom` on a configurable schedule, rotates through rooms, writes reports, and surfaces new content without manual intervention. Discovery mode expands the source list by finding new feeds/queries within a room's topic area.
 ./docs/product/ROADMAP.md:62:- `src/daemon/loop.ts` — setInterval-based loop with PID file, round-robin rooms, configurable interval
 ./docs/product/ROADMAP.md:63:- `src/daemon/discovery.ts` — Given a room's keywords and existing sources, suggest new sources (search RSS aggregators, arxiv categories, HN tags)
@@ -3120,10 +3120,10 @@ exec
 ./docs/architecture/claude-obsidian-parity.md:10:| **Wiki-lint** (orphans / dead links / stale claims / missing pages / missing xrefs / frontmatter gaps / empty sections / stale index) | none | **Full gap.** We have no graph-health tool. Orphan nodes in shared rooms is a real hygiene bug we can't currently surface. |
 ./docs/architecture/claude-obsidian-parity.md:12:| **Autoresearch program.md** (user-configurable research objectives: source prefs, confidence scoring, domain constraints, stop conditions) | `discover-loop` | **Missing the `program.md`.** Our loop is hard-coded in logic; theirs is config-driven per project/room. |
 ./docs/architecture/claude-obsidian-parity.md:21:| **P2P federation** (libp2p + Y.js CRDT + `touch` asymmetric pull, 16 MCP tools) | none | They're single-vault. We federate. |
-./docs/architecture/claude-obsidian-parity.md:35:**Add:** `wellinformed/hot-cache` — a new domain concept. After each tick, generate a ~500-word summary of: (a) newest N nodes, (b) most-queried rooms this session, (c) pending ingests, (d) 3-5 most surprising cross-references. Store at `~/.wellinformed/hot.md` and include in SessionStart hook output.
-./docs/architecture/claude-obsidian-parity.md:43:**Add:** `wellinformed lint [--room R] [--fix]` — graph-health checker with the 8 categories from claude-obsidian's wiki-lint, plus P2P-specific ones (orphaned remote nodes, stale shared-room manifest, secret-pattern drift since last audit).
+./docs/architecture/claude-obsidian-parity.md:35:**Add:** `akashik/hot-cache` — a new domain concept. After each tick, generate a ~500-word summary of: (a) newest N nodes, (b) most-queried rooms this session, (c) pending ingests, (d) 3-5 most surprising cross-references. Store at `~/.akashik/hot.md` and include in SessionStart hook output.
+./docs/architecture/claude-obsidian-parity.md:43:**Add:** `akashik lint [--room R] [--fix]` — graph-health checker with the 8 categories from claude-obsidian's wiki-lint, plus P2P-specific ones (orphaned remote nodes, stale shared-room manifest, secret-pattern drift since last audit).
 ./docs/architecture/claude-obsidian-parity.md:45:**Why:** We ship shared rooms with zero hygiene checks. A user's public room could have dangling node references, stale source URIs, or drifted frontmatter and nobody would know. Lint catches it before other peers touch it.
-./docs/architecture/claude-obsidian-parity.md:51:**Add:** `wellinformed save --room R` — called from a Claude session, takes the last N assistant messages + the user question, produces a typed node (synthesis/concept/decision), writes into the chosen room. Complements auto-ingest by capturing *distillations*, not transcripts.
+./docs/architecture/claude-obsidian-parity.md:51:**Add:** `akashik save --room R` — called from a Claude session, takes the last N assistant messages + the user question, produces a typed node (synthesis/concept/decision), writes into the chosen room. Complements auto-ingest by capturing *distillations*, not transcripts.
 ./docs/architecture/claude-obsidian-parity.md:85:claude-obsidian is a **strong thin-client** over Claude's native file-reading + writing abilities. They're ahead on skill vocabulary and knowledge hygiene (hot cache + lint). We're ahead on retrieval quality, source diversity, and multi-user federation.
 ./docs/research/octopus-discover/round-5-2026-05-26/README.md:11:> **AkashikBench-F + federation routing.** Stop chasing the final
 ./docs/research/octopus-discover/round-5-2026-05-26/README.md:24:### Q3 — AkashikBench-F (proposed federation benchmark)
@@ -3155,7 +3155,7 @@ exec
 ./docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md:137:  derivation: "raw" | "summary" | "consolidated" | "peer_reshare" | "manual_note";
 ./docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md:153:- How do we avoid leaking sensitive repo names through `room`?
 ./docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md:189:- Can peers share benchmark artifacts without leaking local paths?
-./docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md:241:  "room": "wellinformed-dev",
+./docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md:241:  "room": "akashik-dev",
 ./docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md:270:- Should we benchmark per room, per source type, per peer, or globally?
 ./docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md:277:- Room trust: is this room shared intentionally?
 ./docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md:297:the same original source or from one re-shared memory.
@@ -3197,7 +3197,7 @@ exec
 ./docs/README.md:39:Everything federation-layer.
 ./docs/README.md:41:- [`P2P-VISION.md`](p2p/P2P-VISION.md) — federation, identity, room sharing.
 ./demo/research-corpus/01-fiber-optic-h2-sensor.md:11:hydride formation kinetics are 30–40× slower than at room temperature. The Stanford
-./src/cli/commands/export-obsidian.ts:2: * `wellinformed export obsidian [--room R] [--output DIR]`
+./src/cli/commands/export-obsidian.ts:2: * `akashik export obsidian [--room R] [--output DIR]`
 ./src/cli/commands/export-obsidian.ts:11:import { defaultRoom } from '../../domain/rooms.js';
 ./src/cli/commands/export-obsidian.ts:28:  lines.push(`room: "${node.room ?? 'unassigned'}"`);
 ./src/cli/commands/export-obsidian.ts:66:  let room: string | undefined;
@@ -3209,7 +3209,7 @@ exec
 ./src/cli/commands/export-obsidian.ts:92:    const nodes = room
 ./src/cli/commands/export-obsidian.ts:93:      ? graph.json.nodes.filter((n) => n.room === room)
 ./src/cli/commands/export-obsidian.ts:98:    const vaultDir = output ?? join(runtimePaths().home, 'obsidian-vault', room ?? 'all');
-./src/cli/commands/export-obsidian.ts:102:    const indexLines = [`# wellinformed vault — ${room ?? 'all rooms'}`, '', `${nodes.length} nodes, ${edges.length} edges`, ''];
+./src/cli/commands/export-obsidian.ts:102:    const indexLines = [`# akashik vault — ${room ?? 'all rooms'}`, '', `${nodes.length} nodes, ${edges.length} edges`, ''];
 ./src/cli/commands/export-obsidian.ts:105:      const r = (n.room as string) ?? 'unassigned';
 ./docs/research/octopus-discover/round-5-2026-05-26/synthesis.md:9:Akashik = federated knowledge commons for the OSS community.
 ./docs/research/octopus-discover/round-5-2026-05-26/synthesis.md:11:  local-first → federation-fan-out → web-on-miss → save-locally
@@ -3262,7 +3262,7 @@ exec
 ./src/telegram/commands.ts:133:    '• `rooms` — list rooms',
 ./src/cli/commands/doctor.ts:38:  'room',
 ./src/cli/commands/doctor.ts:182:    detail: got === expected ? 'room/wing/source_uri/fetched_at/embedding_id' : `got ${got}, expected ${expected}`,
-./docs/assets/og-portrait.svg:2:  <title>wellinformed — vertical share card (Stories / TikTok / IG portrait)</title>
+./docs/assets/og-portrait.svg:2:  <title>akashik — vertical share card (Stories / TikTok / IG portrait)</title>
 ./docs/research/octopus-discover/round-6-2026-05-26/README.md:12:era and the live "federated knowledge commons" era, actively
 ./docs/research/octopus-discover/round-6-2026-05-26/README.md:39:| Setup shadow traffic validation for federated search | High | High | **Medium** |
 ./docs/research/octopus-discover/round-6-2026-05-26/README.md:60:  `federated-search.ts` gossip fan-out, unit tests aren't enough.
@@ -3280,7 +3280,7 @@ exec
 ./docs/PROJECT-PLAN-AKASHIK.md:85:  bomb; we emit room-level aggregates only). Counter increments
 ./docs/PROJECT-PLAN-AKASHIK.md:89:  criterion: per-room daily snapshot, queryable from CLI, integrates
 ./docs/PROJECT-PLAN-AKASHIK.md:137:  listing every artifact with its URL, librarian, and room.
-./docs/PROJECT-PLAN-AKASHIK.md:159:  `wellinformed share` to join the pilot rooms. Success criterion:
+./docs/PROJECT-PLAN-AKASHIK.md:159:  `akashik share` to join the pilot rooms. Success criterion:
 ./docs/PROJECT-PLAN-AKASHIK.md:166:  that validates or falsifies the federated thesis under real
 ./docs/PROJECT-PLAN-AKASHIK.md:171:  `local / federation / web` fraction breakdown, and an explicit
 ./docs/PROJECT-PLAN-AKASHIK.md:184:  with an older schema federates with a peer on v2, malformed
@@ -3298,7 +3298,7 @@ exec
 ./docs/PROJECT-PLAN-AKASHIK.md:300:  Do we need weighted federation (a peer's contributions count
 ./docs/PROJECT-PLAN-AKASHIK.md:325:- **Phase 24.3 federation routing is integration-tested at 10 peers.**
 ./docs/PROJECT-PLAN-AKASHIK.md:326:  A query satisfied by federation produces a signed-by-source local
-./docs/PROJECT-PLAN-AKASHIK.md:332:  `wellinformed metrics fallback --room <room>` returns a per-day
+./docs/PROJECT-PLAN-AKASHIK.md:332:  `akashik metrics fallback --room <room>` returns a per-day
 ./docs/PROJECT-PLAN-AKASHIK.md:342:  federation dynamics; v2 plugs in real per-peer retrieval (each
 ./docs/PROJECT-PLAN-AKASHIK.md:358:- [tests/bench-akashik-federation.test.ts](../tests/bench-akashik-federation.test.ts)
 ./docs/PROJECT-PLAN-AKASHIK.md:361:- [src/domain/federation-sim.ts](../src/domain/federation-sim.ts)
@@ -3324,11 +3324,11 @@ exec
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-5.md:201:The `peer-reputation-store.ts` and `remote-node-validator.ts` are the current defense. But a Sybil attack — many fake peers publishing high-confidence oracle answers — can flood the `oracle` room with plausible-sounding disinformation that passes the trust boundary because each peer looks legitimate in isolation.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-5.md:210:Single-agent memory extraction — automatically distills facts from LLM conversations into a vector store. Same retrieval problem space, completely different architecture: single-user, centralized, no federation, no curiosity-driven propagation.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-5.md:228:> "Your compounding mechanism requires a Goldilocks condition: peers who research overlapping but distinct topics, who are online when each other's agents ask, and whose knowledge is specific enough to be retrievable but common enough to be useful. That triple condition is rare outside tightly-coordinated teams — and those teams already have Confluence, Notion, or shared vector databases managed by their engineering infrastructure. For individual developers, the cold-start problem is fatal: a single peer gets no federation benefit until they find others using the same tool in the same domain. But individual value (local-only retrieval) is already achievable with a single SQLite file and a 10-line embedding script. You've built a social network for knowledge graphs and you're asking users to adopt it before there's a network. What makes you believe the social-coordination overhead is lower than Slack or GitHub Discussions, which already exist and already surface the knowledge your peers have?"
-./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-5.md:232:The cold-start problem is real and the argument is correct that federation provides zero benefit to a single isolated peer. Our answer is that *local value is already sufficient on day zero* — `wellinformed save` + `wellinformed ask` already beats a bare LLM context window for a single user on the LME-S benchmark (R@5=0.9202), and that value is why someone installs it. Federation is a multiplier on existing value, not a prerequisite for it. The coordination burden is also lower than Slack or GitHub Discussions because it's *implicit*: when two developers in the same OSS project both install wellinformed, they automatically share knowledge through the `toolshed` system room (which is always-on and P2P-shared) without any explicit "join this workspace" action. The social coordination is replaced by ambient proximity in the codebase — the same mechanism that makes pull request visibility work without users needing to subscribe to each other. The honest concession: this argument becomes false if the `toolshed` room and oracle gossip are not reliably working on first install. The current state (federation silently downgrades to dense-only, oracle gossip end-to-end test is in `phase39.oracle-gossip-e2e.test.ts` but not shipped) means the argument *is* currently true. Fixing that is the same work as Q1's answer.
+./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-5.md:232:The cold-start problem is real and the argument is correct that federation provides zero benefit to a single isolated peer. Our answer is that *local value is already sufficient on day zero* — `akashik save` + `akashik ask` already beats a bare LLM context window for a single user on the LME-S benchmark (R@5=0.9202), and that value is why someone installs it. Federation is a multiplier on existing value, not a prerequisite for it. The coordination burden is also lower than Slack or GitHub Discussions because it's *implicit*: when two developers in the same OSS project both install akashik, they automatically share knowledge through the `toolshed` system room (which is always-on and P2P-shared) without any explicit "join this workspace" action. The social coordination is replaced by ambient proximity in the codebase — the same mechanism that makes pull request visibility work without users needing to subscribe to each other. The honest concession: this argument becomes false if the `toolshed` room and oracle gossip are not reliably working on first install. The current state (federation silently downgrades to dense-only, oracle gossip end-to-end test is in `phase39.oracle-gossip-e2e.test.ts` but not shipped) means the argument *is* currently true. Fixing that is the same work as Q1's answer.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-5.md:238:If I were Sahar, the next engineering month I'd spend on **fixing federation quality** — specifically the hybrid remote search bug (NEXT_STEPS.md Priority 1), room-restricted dense retrieval (Priority 2), and wiring the semantic L2 cache into the daemon (Priority 4) — because the product claim is federation-first retrieval and right now the federation silently degrades to a worse retrieval mode than local-only, which means the core demo is broken. The next marketing/launch month I'd spend on **a single recorded terminal demo of two connected peers + a Show HN post** seeded to Hugging Face Discord and the Rust Discord with the FedComp-LoCoMo compounding chart, because the one moment that converts is "peer B's Claude Code agent retrieved peer A's research before making a web call" and that screenshot does not exist publicly yet. Specifically NOT on chasing the 3.2pp LME-S gap toward agentmemory's 0.952, because a leaderboard position on a single-peer benchmark is irrelevant to the federation product claim, and closing it would require model infrastructure work (ColBERT MaxSim, Contextual Retrieval) that makes the codebase harder to maintain without moving the product north star.
-./docs/research/octopus-discover/round-6-2026-05-26/synthesis.md:9:3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+./docs/research/octopus-discover/round-6-2026-05-26/synthesis.md:9:3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 ./docs/research/octopus-discover/round-6-2026-05-26/synthesis.md:10:4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
-./docs/research/octopus-discover/round-6-2026-05-26/synthesis.md:49:- **Two-Story Debt:** The repository is heavily fractured between the dead "single-player retrieval leaderboard" era (`wellinformed`) and the live "federated knowledge commons" era (`Akashik`). This actively misleads new OSS contributors.
+./docs/research/octopus-discover/round-6-2026-05-26/synthesis.md:49:- **Two-Story Debt:** The repository is heavily fractured between the dead "single-player retrieval leaderboard" era (`akashik`) and the live "federated knowledge commons" era (`Akashik`). This actively misleads new OSS contributors.
 ./docs/research/octopus-discover/round-6-2026-05-26/synthesis.md:51:- **Missing API Boundaries:** The pivot to Ed25519 DIDs introduces a hard authentication boundary that clashes with existing local IPC tokens. This migration lacks a strict protocol version bump (e.g., to `/akashik/share/2.0.0`), creating a split-brain security surface.
 ./docs/research/octopus-discover/round-6-2026-05-26/synthesis.md:57:- **Supersede Synthetic Tests:** Real-corpus benchmarks (`bench-locomo-real.test.ts`, `bench-akashik-federation.test.ts`) are the new gold standard. Synthetic tests (`bench-standard.test.ts`, `bench-real.test.ts`, `*synth*`) should be archived or skipped to reduce CI noise and focus engineering on federation dynamics.
 ./docs/research/octopus-discover/round-6-2026-05-26/synthesis.md:69:  - *Resolution & Trade-off:* Quarantine into a `src/legacy/` namespace and explicitly deprecate it. Maintaining it drains P2P daemon engineering time, but outright deletion abruptly breaks workflows that will never voluntarily migrate to v2 auth.
@@ -3336,7 +3336,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/synthesis.md:86:| Setup shadow traffic validation for federated search | High | High | **Medium** |
 ./docs/research/octopus-discover/round-6-2026-05-26/synthesis.md:93:2. **Bulk archive `.planning/phases/` and pre-pivot retrieval docs to `archive/` folders**: Because they actively mislead new OSS contributors by presenting the dead "single-player leaderboard" positioning as the current strategy, diluting the focus on AkashikBench-F and federation.
 ./docs/p2p/p2p-threat-model.md:3:Scope: the attack surface exposed once an Akashik node accepts data from **untrusted peers** via `share sync` (Y.js CRDT) or `touch` (one-shot pull). This document enumerates concrete paths from a hostile peer to code execution or secret exfiltration, and the mitigations that are (a) shipped, (b) planned, or (c) deferred.
-./docs/p2p/p2p-threat-model.md:5:**Threat actor.** A peer on the P2P network who has completed the libp2p handshake and can send arbitrary payloads on `/wellinformed/share/1.0.0` and `/wellinformed/touch/1.0.0`. Peers are not authenticated beyond their ed25519 peer identity — there is no external PKI and no "this peer is trusted" claim.
+./docs/p2p/p2p-threat-model.md:5:**Threat actor.** A peer on the P2P network who has completed the libp2p handshake and can send arbitrary payloads on `/akashik/share/1.0.0` and `/akashik/touch/1.0.0`. Peers are not authenticated beyond their ed25519 peer identity — there is no external PKI and no "this peer is trusted" claim.
 ./docs/p2p/p2p-threat-model.md:25:- Same for `share-sync.ts` SubscribeRequest parsing (line 613 area).
 ./docs/p2p/p2p-threat-model.md:50:**Vector.** A researcher pastes an OpenAI key into a note, marks their room public, a peer touches the room, the peer now has the key.
 ./docs/p2p/p2p-threat-model.md:54:**Residual risk.** Patterns are heuristic. Novel key formats (Anthropic `sk-ant-...` is not built-in — add it), API secrets embedded in URLs, or secrets encoded as base64 will not match. The gate is a defence in depth, not a guarantee. Users should still run `share audit` before publishing and treat every shared room as already-leaked.
@@ -3349,7 +3349,7 @@ exec
 ./docs/product/RELEASE-v4.md:125:**What actually shipped**: the consolidation primitive works end-to-end, hits the 5× shrinkage gate on a real 7K-entry corpus, runs in 3 minutes per 7K-entry room. The quality story needs either (a) a stronger production retention pass that actively prunes consolidated_raw entries (so they stop competing with the summary), or (b) a per-cluster query rewriter that uses entity extraction instead of raw summary slice. Both are v4.1 work.
 ./docs/product/RELEASE-v4.md:128:- **Deterministic**: `sha256(room + sorted(provenance_ids) + summary)` content-addressed IDs → federated dedup for free
 ./docs/product/RELEASE-v4.md:131:- **Per-room**: clusters never span rooms; `partitionByRoom` enforces the invariant
-./docs/product/RELEASE-v4.md:137:wellinformed consolidate run <room> --dry-run --threshold 0.8 --min-size 5
+./docs/product/RELEASE-v4.md:137:akashik consolidate run <room> --dry-run --threshold 0.8 --min-size 5
 ./docs/product/RELEASE-v4.md:139:node scripts/bench-consolidation.mjs <room>       # storage + quality gate
 ./docs/product/RELEASE-v4.md:200:- Domain primitives: `binary-quantize`, `consolidated-memory`, `query-cache`, `semantic-cache`, `share-envelope`, `pagerank`, `shamir`, `bloom`, `log-event`, `release`, `identity` (190+ tests)
 ./docs/product/RELEASE-v4.md:255:To consolidate an existing sessions room:
@@ -3376,8 +3376,8 @@ exec
 ./docs/p2p/P2P-VISION.md:106:- Public/private room marking (`share room/unshare room`)
 ./docs/p2p/P2P-VISION.md:107:- CRDT-based room sync (Automerge)
 ./docs/p2p/P2P-VISION.md:125:This is the end state: **a decentralized knowledge graph where every coding agent in the world shares what it learned.**
-./src/cli/commands/report.ts:2: * `wellinformed report [--room R] [--since DATE] [--no-save]`
-./src/cli/commands/report.ts:5: * optionally persists it to ~/.wellinformed/reports/<room>/<date>.md.
+./src/cli/commands/report.ts:2: * `akashik report [--room R] [--since DATE] [--no-save]`
+./src/cli/commands/report.ts:5: * optionally persists it to ~/.akashik/reports/<room>/<date>.md.
 ./src/cli/commands/report.ts:17:import { defaultRoom } from '../../domain/rooms.js';
 ./src/cli/commands/report.ts:22:  readonly room?: string;
 ./src/cli/commands/report.ts:28:  let room: string | undefined;
@@ -3428,14 +3428,14 @@ exec
 ./docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:322:*   **Balanced Trade-off:** The advantage is that your errors are domain-perfect (e.g., `PeerIdentityParseError`). The disadvantage is poor interoperability for downstream clients. When an agent's MCP call fails, it doesn't know if it should back off and retry (429 equivalent) or if it was explicitly denied access to a room (403 equivalent). There is no token introspection endpoint for debugging P2P handshakes.
 ./docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:325:*   **Observation:** You built a robust `share audit` command (Phase 15 SEC-04) that blocks 14 patterns of secrets (OpenAI keys, AWS keys) from federating.
 ./docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:327:*   **Balanced Trade-off:** The advantage of your current setup is that developers feel safe sharing rooms because API keys are scrubbed. The disadvantage is that enterprise SOC2 Type II auditors will fail the system. An enterprise needs to prove *who asked what, and what specific data left the local machine*. Because Akashik peers autonomously federate queries via `ask --peers`, a SOC2 audit cannot easily prove that a specific piece of proprietary IP wasn't inadvertently synced to an unauthorized peer's local graph.
-./src/cli/commands/ask.ts:2: * `wellinformed ask "<query>" [--room R] [--k N] [--peers]`
+./src/cli/commands/ask.ts:2: * `akashik ask "<query>" [--room R] [--k N] [--peers]`
 ./src/cli/commands/ask.ts:9: * merges results with _source_peer annotation, and surfaces cross-room tunnels.
 ./src/cli/commands/ask.ts:18:import { runFederatedSearch } from '../../application/federated-search.js';
 ./src/cli/commands/ask.ts:30:  readonly room?: string;
 ./src/cli/commands/ask.ts:38:  let room: string | undefined;
 ./src/cli/commands/ask.ts:45:    if (a === '--room') room = next();
 ./src/cli/commands/ask.ts:46:    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
-./src/cli/commands/ask.ts:53:  if (!query) return 'missing query — usage: wellinformed ask "your question" [--room R] [--k N] [--peers] [--json]';
+./src/cli/commands/ask.ts:53:  if (!query) return 'missing query — usage: akashik ask "your question" [--room R] [--k N] [--peers] [--json]';
 ./src/cli/commands/ask.ts:54:  return { query, room, k, peers, json };
 ./src/cli/commands/ask.ts:76:      // every federated-local search. Caught while wiring the v2.1 smart-
 ./src/cli/commands/ask.ts:89:    })({ query: parsed.query, room: parsed.room, k: parsed.k });
@@ -3456,7 +3456,7 @@ exec
 ./src/cli/commands/ask.ts:424:          room: graphNode?.room ?? m.room ?? null,
 ./src/cli/commands/ask.ts:436:        room: parsed.room ?? null,
 ./src/cli/commands/ask.ts:443:          a: t.a, b: t.b, room_a: t.room_a, room_b: t.room_b,
-./src/cli/commands/ask.ts:452:    console.log(`# wellinformed federated results for: ${parsed.query}`);
+./src/cli/commands/ask.ts:452:    console.log(`# akashik federated results for: ${parsed.query}`);
 ./src/cli/commands/ask.ts:453:    if (parsed.room) console.log(`room: ${parsed.room}`);
 ./src/cli/commands/ask.ts:473:        console.log(`distance: ${m.distance.toFixed(3)} | room: ${m.room ?? '-'} | wing: ${m.wing ?? '-'}`);
 ./src/cli/commands/ask.ts:479:    // 6. Cross-room tunnels section (FED-04 rendering)
@@ -3481,7 +3481,7 @@ exec
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:22:  LoCoMo R@3 = 0.392, R@30 = 0.993 — 60pp rerank headroom unmined
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:34:     federation rather than per-peer retrieval?
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:44:Q3 — There is no public benchmark for federation-level
-./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:95:1. **Q1:** Spend the next engineering month on **federation architecture and measurement**, not on squeezing LME-S `R@5` from `0.9202` toward `agentmemory`’s claimed `0.952`. Your own numbers show the single-peer head is already near-saturated on LongMemEval-S (`R@50 = 1.0000`, `NDCG@5 = 0.8836`, `MRR = 0.9034`) while the product claim lives or dies on Step 5 transfer, not on another 1-3 leaderboard points ([Round 4 brief](/Users/saharbarak/personal/wellinformed/docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:1), [bench plan](/Users/saharbarak/personal/wellinformed/docs/research/beat-the-competitors-retrieval-plan.md:1), [benchmarks](/Users/saharbarak/personal/wellinformed/docs/product/BENCHMARKS.md:287)). The upside is this is the only work that validates the Akashik thesis; the downside is you delay an easy marketing win and accept that per-peer retrieval will remain “good enough” rather than obviously best-in-class for another month.
+./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:95:1. **Q1:** Spend the next engineering month on **federation architecture and measurement**, not on squeezing LME-S `R@5` from `0.9202` toward `agentmemory`’s claimed `0.952`. Your own numbers show the single-peer head is already near-saturated on LongMemEval-S (`R@50 = 1.0000`, `NDCG@5 = 0.8836`, `MRR = 0.9034`) while the product claim lives or dies on Step 5 transfer, not on another 1-3 leaderboard points ([Round 4 brief](/Users/saharbarak/personal/akashik/docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:1), [bench plan](/Users/saharbarak/personal/akashik/docs/research/beat-the-competitors-retrieval-plan.md:1), [benchmarks](/Users/saharbarak/personal/akashik/docs/product/BENCHMARKS.md:287)). The upside is this is the only work that validates the Akashik thesis; the downside is you delay an easy marketing win and accept that per-peer retrieval will remain “good enough” rather than obviously best-in-class for another month.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:99:3. **Q3:** Proposed benchmark: **AkashikBench-F**. Use `snap-research/locomo` ([repo](https://github.com/snap-research/locomo), arXiv `2402.17753`) plus LongMemEval-S (arXiv `2410.10813`) as source conversations, partition them across `N=32` simulated peers and `4-6` rooms with controlled topical overlap, replay `1,000-2,000` timestamped queries sequentially, and on miss let the querying peer obtain the gold evidence from a fixed “web oracle” corpus and cache it locally. Measure `federation_hit_rate`, `web_fallback_rate`, `coverage_growth(T,t)`, `T_half(T)` (time until half the peers can answer topic `T`), median/p95 answer latency, and quality deltas versus local-only; define **compounding** quantitatively as the negative slope of `web_fallback_rate` and positive slope of `coverage_growth` over repeated asks. This is runnable on commodity hardware in a week because it is a simulator over existing corpora, not a live distributed deployment; on the other hand, if you do not model peer churn and fact staleness, you will overstate the compounding effect.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:103:   2. **Availability confounding in federation eval:** all-peers-online tests make Step 5 look stronger than it will be; fix by reporting every federation metric under churn conditions such as `50%/80%/95%` peer availability and bounded timeouts.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:107:5. **Q5:** Smallest viable 30-day launch: seed **three named OSS rooms** with about 100 people total, not a broad public beta. Room A: `ggml-org/llama.cpp` + `ollama/ollama` contributors and power users (`40` people), seeded with `ggml-org/llama.cpp`, `ollama/ollama`, `abetlen/llama-cpp-python`, `microsoft/onnxruntime`; Room B: `vllm-project/vllm` + `sgl-project/sglang` (`30` people), seeded with `vllm-project/vllm`, `sgl-project/sglang`, `flashinfer-ai/flashinfer`, `BerriAI/litellm`; Room C: `open-telemetry/opentelemetry-collector` (`30` people), seeded with `opentelemetry-collector`, `opentelemetry-js`, `opentelemetry-python`, and the OTel spec. Week 1 recruit 10-15 “librarian” contributors and preload repo/paper/debug artifacts; Week 2 onboard the remaining 85-90 users; Week 3 run shared debugging/research prompts; Week 4 publish day-1 vs day-30 `web_fallback_rate` and attributed peer-transfer examples. The upside is visible density and repeated question overlap; however the tradeoff is this is a deliberately narrow launch and may look unimpressive if you judge it by signups instead of transfer rate.
@@ -3495,7 +3495,7 @@ exec
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:199:  LoCoMo R@3 = 0.392, R@30 = 0.993 — 60pp rerank headroom unmined
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:211:     federation rather than per-peer retrieval?
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:221:Q3 — There is no public benchmark for federation-level
-./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:302:/bin/zsh -lc 'rg --files . | rg "(akashik|round|locomo|lme|agentmemory|federat|benchmark|retrieval|memory)"' in /Users/saharbarak/personal/wellinformed
+./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:302:/bin/zsh -lc 'rg --files . | rg "(akashik|round|locomo|lme|agentmemory|federat|benchmark|retrieval|memory)"' in /Users/saharbarak/personal/akashik
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:307:./src/application/federated-recall.ts
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:308:./src/application/federated-search.ts
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:311:./demo/scene-federated.tape
@@ -3503,7 +3503,7 @@ exec
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:313:./demo/scene-federated.gif
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:316:./tests/federated-search-cap-tiers.test.ts
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:319:./tests/phase17.federated-search.test.ts
-./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:334:/bin/zsh -lc 'rg -n "Round 4|Akashik|ambitioned-curator|LoCoMo|LME-S|agentmemory|federation-level|compounding" .' in /Users/saharbarak/personal/wellinformed
+./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:334:/bin/zsh -lc 'rg -n "Round 4|Akashik|ambitioned-curator|LoCoMo|LME-S|agentmemory|federation-level|compounding" .' in /Users/saharbarak/personal/akashik
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:398:./docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:10:"Akashik: federated knowledge commons for the open-source community as a whole."
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:415:./docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:165:Q1. Given the empirical ceiling on LME-S R@5 (NDCG@5 headroom ~4pp,
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:417:./docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:172:Q2. The Akashik mechanism (peer-local + federation-on-query + web-
@@ -3522,7 +3522,7 @@ exec
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:498:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:305:| **W3C SPARQL 1.1 Federated Queries** (2013 spec) | Semantic federation: one query fans out to multiple SPARQL endpoints, results merged. | Requires central service-description registry for peer discovery. No P2P pull. No attribution. No caching compounding. |
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:501:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:317:No existing public benchmark measures federated knowledge compounding. This is a real gap and a publishable contribution.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:506:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:357:- **Availability confounding.** Your current bench runs with all peers online. In production, the 2000ms timeout means some peers never respond. Your single-peer benchmarks (LME-S, LoCoMo) don't model this. AkashikBench-F should include a "partial availability" condition: what is federation R@k when 20% of peers are offline?
-./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:509:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:509:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:515:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:395:Instrument and publish `web_fallback_rate` for the `rust` room. The expected curve: day 1 ≈ 80-90% web fallback (sparse graph), day 30 < 40% (librarian + early-adopter knowledge covers the common queries). This is the compounding claim made visible.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:516:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:407:The known solution is **topic diversity indexing**, analogous to Mastodon's local vs. federated timeline split. Akashik's room structure partially mitigates this (niche rooms exist independently), but within a room, hot nodes will crowd out cold ones in search rankings.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:518:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:433:This is the most important one. AT Protocol solved federated identity (DIDs), signed content, Personal Data Servers (each user owns their data), and protocol-level federation at scale (millions of users). Their architecture maps almost directly: PDS = Akashik peer, DID = Akashik contributor identity, lexicon record type = Akashik graph node type.
@@ -3587,7 +3587,7 @@ exec
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:874:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:322:## Q3 — What benchmark would measure federation-level compounding?
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:877:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:355:2. Akashik federation: the above metrics
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:880:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:374:**You have no federated retrieval evaluation at all.** Every benchmark result is single-peer local retrieval. This is the most important pitfall: the project's differentiating claim (federation compounds knowledge) has zero measurement infrastructure, which means you also have zero evidence that federation *doesn't* hurt single-peer retrieval quality. Federated fan-out introduces latency heterogeneity, vocabulary drift across peers, and duplicate node inflation in RRF merge — any of which could degrade the 0.9202 LME-S number when measured on a real multi-peer run.
-./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:890:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:455:**Akashik mitigation**: The `find_tunnels` MCP tool already discovers cross-domain connections. A `wellinformed room gaps` command — showing topics that have queries but no cached answers, or topics that haven't been updated in >30 days — would surface the cold-topic coverage map to curators. The peer-reputation system's "topic coverage gaps" output (mentioned in its design doc) is exactly this. Implement it as a visible CLI output, not just an internal metric.
+./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:890:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:455:**Akashik mitigation**: The `find_tunnels` MCP tool already discovers cross-domain connections. A `akashik room gaps` command — showing topics that have queries but no cached answers, or topics that haven't been updated in >30 days — would surface the cold-topic coverage map to curators. The peer-reputation system's "topic coverage gaps" output (mentioned in its design doc) is exactly this. Implement it as a visible CLI output, not just an internal metric.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:893:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:465:- DHT replication factor: Kademlia stores k=20 copies. Akashik's opt-in "popular-in-room caching" (mentioned in the mechanism doc) is the right analog. Make it opt-in-by-default for rooms tagged `oss-commons`, not just general rooms.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:894:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:472:The threat model (p2p-threat-model.md) covers AS-4 (secret exfiltration) and AS-6 (SSRF). It does not cover the *semantic adversarial* attack: a peer that joins a room, indexes plausible-sounding but wrong answers to common questions, and lets the compounding mechanism propagate those wrong answers through the network.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:902:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:506:**What Akashik does better:** Federation across organizations (Logseq sync is same-user multi-device or explicit sharing; Akashik federates across organizational boundaries), semantic retrieval quality (measured BEIR numbers), compounding by curiosity (not deliberate sync), DID-signed attribution.
@@ -3627,7 +3627,7 @@ exec
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1312:| **E6** | Time-aware reranking when query contains temporal keywords | +3 to +6pp on temporal subset | 2-3 h | Targeted at `temporal-reasoning` (0.871). Detect "earliest / latest / before / after / first / last" → boost by date. |
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1345://   const r = await searchByRoom({ graphs, vectors, embedder })({ room, text, k: K });
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1350://   const r0 = await searchByRoom({ graphs, vectors, embedder })({ room, text, k: K * 4 });  // 4x candidates
-./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1368:Beyond that: **federated retrieval** (the unique wellinformed bet) — measure how P2P-shared rooms across multiple peers lift recall on out-of-distribution questions, vs single-peer baselines. No public benchmark covers this today; we'd publish one.
+./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1368:Beyond that: **federated retrieval** (the unique akashik bet) — measure how P2P-shared rooms across multiple peers lift recall on out-of-distribution questions, vs single-peer baselines. No public benchmark covers this today; we'd publish one.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1381:| **E11** | **Rule-based contextual enrichment (write-path)** | Prepend structured metadata (date, room/persona, participants, top-K extracted entities) to each session's text *before* embedding. Like Anthropic's Contextual Retrieval but rule-based — no LLM call, zero ingest cost beyond regex/NER. | multi-session **10pp**, temporal **13pp** | +3–5pp aggregate | 3-4 h |
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1440:Akashik possible. Written for the reader who has heard "federated
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1453:federation couldn't satisfy a query. When you ask Akashik
@@ -3648,7 +3648,7 @@ exec
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1653:| Your queries | Local to you; the federation sees only what you choose to fan out |
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1654:| Web research you did to satisfy your own query | Saved locally; shared via your peer ID with the room you queried from |
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1666:for newcomers who want to see what's already in the federation
-./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1711:/bin/zsh -lc 'rg -n "Q1|Q2|Q3|Q4|Q5|Q6|Q7|Q8|closest prior art|benchmark|launch plan|competitor|counter-argument|counter argument|novel|federation|compounding" docs/research/octopus-discover/round-4-2026-05-26/probes/*.md' in /Users/saharbarak/personal/wellinformed
+./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1711:/bin/zsh -lc 'rg -n "Q1|Q2|Q3|Q4|Q5|Q6|Q7|Q8|closest prior art|benchmark|launch plan|competitor|counter-argument|counter argument|novel|federation|compounding" docs/research/octopus-discover/round-4-2026-05-26/probes/*.md' in /Users/saharbarak/personal/akashik
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1713:docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:32:  - what it researched on the web when the federation couldn't answer
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1715:docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:43:  STEP 3: If federation can't satisfy → harness reaches the web on
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1716:docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:47:  STEP 5: Next user B asks similar question → federation fan-out
@@ -3785,7 +3785,7 @@ exec
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2162:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:322:## Q3 — What benchmark would measure federation-level compounding?
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2165:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:354:1. Single-peer only (no federation): WFR never decreases, R(T,t) stays at 1 for all T
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2166:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:355:2. Akashik federation: the above metrics
-./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2168:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:360:**Concrete implementation:** A `wellinformed bench federation` CLI command running a Docker Compose network of 4 peers, injecting queries from the hot/cold corpus, and emitting an FCB report. Est. engineering effort: 2-3 weeks.
+./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2168:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:360:**Concrete implementation:** A `akashik bench federation` CLI command running a Docker Compose network of 4 peers, injecting queries from the hot/cold corpus, and emitting an FCB report. Est. engineering effort: 2-3 weeks.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2171:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:374:**You have no federated retrieval evaluation at all.** Every benchmark result is single-peer local retrieval. This is the most important pitfall: the project's differentiating claim (federation compounds knowledge) has zero measurement infrastructure, which means you also have zero evidence that federation *doesn't* hurt single-peer retrieval quality. Federated fan-out introduces latency heterogeneity, vocabulary drift across peers, and duplicate node inflation in RRF merge — any of which could degrade the 0.9202 LME-S number when measured on a real multi-peer run.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2180:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:472:The threat model (p2p-threat-model.md) covers AS-4 (secret exfiltration) and AS-6 (SSRF). It does not cover the *semantic adversarial* attack: a peer that joins a room, indexes plausible-sounding but wrong answers to common questions, and lets the compounding mechanism propagate those wrong answers through the network.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2181:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:480:- Fediverse defederation: Domain-level block when an instance becomes a spam/abuse vector.
@@ -3814,13 +3814,13 @@ exec
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2252:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:339:**Baseline condition:** all queries evaluated local-only (federation disabled). The delta is the federation value.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2255:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:357:- **Availability confounding.** Your current bench runs with all peers online. In production, the 2000ms timeout means some peers never respond. Your single-peer benchmarks (LME-S, LoCoMo) don't model this. AkashikBench-F should include a "partial availability" condition: what is federation R@k when 20% of peers are offline?
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2256:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:359:- **Corpus contamination.** If you run multi-peer simulation with overlapping source corpora (e.g., two peers that both indexed the same web page), the federation looks better than it is — you're measuring deduplication handling, not genuine knowledge transfer. Strict corpus disjointness at setup is non-negotiable for valid results.
-./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2259:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2259:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2263:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:395:Instrument and publish `web_fallback_rate` for the `rust` room. The expected curve: day 1 ≈ 80-90% web fallback (sparse graph), day 30 < 40% (librarian + early-adopter knowledge covers the common queries). This is the compounding claim made visible.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2265:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:409:Specific mitigation: weight the federation fan-out ordering by inverse document frequency across rooms. Nodes that exist on only one peer get a boost in ranking — scarcity is a signal for uniqueness, not irrelevance. The `peer-reputation-store.ts` infrastructure already exists; extend it to track per-topic peer coverage as a first-class signal.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2268:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:433:This is the most important one. AT Protocol solved federated identity (DIDs), signed content, Personal Data Servers (each user owns their data), and protocol-level federation at scale (millions of users). Their architecture maps almost directly: PDS = Akashik peer, DID = Akashik contributor identity, lexicon record type = Akashik graph node type.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2274:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2275:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:471:- **Read-path reranking with local LLMs does not beat bi-encoder** on either benchmark, even after fixing the shuffle bias. This is not a bug in the implementation — the implementation is correct. The small-model listwise chapter is empirically closed unless a cloud-API ablation shows the headroom is capturable at all.
-./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2352:1. **Q1:** Spend the next engineering month on **federation architecture and measurement**, not on squeezing LME-S `R@5` from `0.9202` toward `agentmemory`’s claimed `0.952`. Your own numbers show the single-peer head is already near-saturated on LongMemEval-S (`R@50 = 1.0000`, `NDCG@5 = 0.8836`, `MRR = 0.9034`) while the product claim lives or dies on Step 5 transfer, not on another 1-3 leaderboard points ([Round 4 brief](/Users/saharbarak/personal/wellinformed/docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:1), [bench plan](/Users/saharbarak/personal/wellinformed/docs/research/beat-the-competitors-retrieval-plan.md:1), [benchmarks](/Users/saharbarak/personal/wellinformed/docs/product/BENCHMARKS.md:287)). The upside is this is the only work that validates the Akashik thesis; the downside is you delay an easy marketing win and accept that per-peer retrieval will remain “good enough” rather than obviously best-in-class for another month.
+./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2352:1. **Q1:** Spend the next engineering month on **federation architecture and measurement**, not on squeezing LME-S `R@5` from `0.9202` toward `agentmemory`’s claimed `0.952`. Your own numbers show the single-peer head is already near-saturated on LongMemEval-S (`R@50 = 1.0000`, `NDCG@5 = 0.8836`, `MRR = 0.9034`) while the product claim lives or dies on Step 5 transfer, not on another 1-3 leaderboard points ([Round 4 brief](/Users/saharbarak/personal/akashik/docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:1), [bench plan](/Users/saharbarak/personal/akashik/docs/research/beat-the-competitors-retrieval-plan.md:1), [benchmarks](/Users/saharbarak/personal/akashik/docs/product/BENCHMARKS.md:287)). The upside is this is the only work that validates the Akashik thesis; the downside is you delay an easy marketing win and accept that per-peer retrieval will remain “good enough” rather than obviously best-in-class for another month.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2356:3. **Q3:** Proposed benchmark: **AkashikBench-F**. Use `snap-research/locomo` ([repo](https://github.com/snap-research/locomo), arXiv `2402.17753`) plus LongMemEval-S (arXiv `2410.10813`) as source conversations, partition them across `N=32` simulated peers and `4-6` rooms with controlled topical overlap, replay `1,000-2,000` timestamped queries sequentially, and on miss let the querying peer obtain the gold evidence from a fixed “web oracle” corpus and cache it locally. Measure `federation_hit_rate`, `web_fallback_rate`, `coverage_growth(T,t)`, `T_half(T)` (time until half the peers can answer topic `T`), median/p95 answer latency, and quality deltas versus local-only; define **compounding** quantitatively as the negative slope of `web_fallback_rate` and positive slope of `coverage_growth` over repeated asks. This is runnable on commodity hardware in a week because it is a simulator over existing corpora, not a live distributed deployment; on the other hand, if you do not model peer churn and fact staleness, you will overstate the compounding effect.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2360:   2. **Availability confounding in federation eval:** all-peers-online tests make Step 5 look stronger than it will be; fix by reporting every federation metric under churn conditions such as `50%/80%/95%` peer availability and bounded timeouts.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2364:5. **Q5:** Smallest viable 30-day launch: seed **three named OSS rooms** with about 100 people total, not a broad public beta. Room A: `ggml-org/llama.cpp` + `ollama/ollama` contributors and power users (`40` people), seeded with `ggml-org/llama.cpp`, `ollama/ollama`, `abetlen/llama-cpp-python`, `microsoft/onnxruntime`; Room B: `vllm-project/vllm` + `sgl-project/sglang` (`30` people), seeded with `vllm-project/vllm`, `sgl-project/sglang`, `flashinfer-ai/flashinfer`, `BerriAI/litellm`; Room C: `open-telemetry/opentelemetry-collector` (`30` people), seeded with `opentelemetry-collector`, `opentelemetry-js`, `opentelemetry-python`, and the OTel spec. Week 1 recruit 10-15 “librarian” contributors and preload repo/paper/debug artifacts; Week 2 onboard the remaining 85-90 users; Week 3 run shared debugging/research prompts; Week 4 publish day-1 vs day-30 `web_fallback_rate` and attributed peer-transfer examples. The upside is visible density and repeated question overlap; however the tradeoff is this is a deliberately narrow launch and may look unimpressive if you judge it by signups instead of transfer rate.
@@ -3860,7 +3860,7 @@ exec
 ./src/daemon/ipc-handlers.ts:82:  let room: string | undefined;
 ./src/daemon/ipc-handlers.ts:88:    if (a === '--room') room = next();
 ./src/daemon/ipc-handlers.ts:89:    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
-./src/daemon/ipc-handlers.ts:96:  if (!query) return 'missing query — usage: wellinformed ask "your question" [--room R] [--k N] [--json]';
+./src/daemon/ipc-handlers.ts:96:  if (!query) return 'missing query — usage: akashik ask "your question" [--room R] [--k N] [--json]';
 ./src/daemon/ipc-handlers.ts:97:  return { query, room, k, json };
 ./src/daemon/ipc-handlers.ts:119:  // Only meaningful when not filtering by room: room-scoped cached
 ./src/daemon/ipc-handlers.ts:120:  // stdout from a different room would be misleading. Room queries
@@ -3889,14 +3889,14 @@ exec
 ./src/daemon/ipc-handlers.ts:366:      else payload = { kind: 'ingest:project', room: rest[0], root: rest[1] };
 ./src/daemon/ipc-handlers.ts:368:      if (!rest[0] || rest.length < 2) payload = 'usage: submit ingest:batch <room> <path1> [path2 ...]';
 ./src/daemon/ipc-handlers.ts:369:      else payload = { kind: 'ingest:batch', room: rest[0], paths: rest.slice(1) };
-./src/cli/commands/room.ts:2: * `wellinformed room <sub>` — manage the room registry.
+./src/cli/commands/room.ts:2: * `akashik room <sub>` — manage the room registry.
 ./src/cli/commands/room.ts:5: *   list            show all rooms + which is default
 ./src/cli/commands/room.ts:6: *   create <name>   create a room (prompts or flags for details)
 ./src/cli/commands/room.ts:7: *   switch <id>     set the default room
 ./src/cli/commands/room.ts:8: *   current         print the current default room
 ./src/cli/commands/room.ts:9: *   describe <id>   show full metadata for a room
-./src/cli/commands/room.ts:12: *   wellinformed room create homelab --desc "Home lab infra" --keywords "proxmox,mikrotik,10gbe"
-./src/cli/commands/room.ts:13: *   wellinformed room switch homelab
+./src/cli/commands/room.ts:12: *   akashik room create homelab --desc "Home lab infra" --keywords "proxmox,mikrotik,10gbe"
+./src/cli/commands/room.ts:13: *   akashik room switch homelab
 ./src/cli/commands/room.ts:17:import type { RoomMeta } from '../../domain/rooms.js';
 ./src/cli/commands/room.ts:18:import { slugifyRoomName } from '../../domain/rooms.js';
 ./src/cli/commands/room.ts:19:import { fileRoomsConfig } from '../../infrastructure/rooms-config.js';
@@ -3904,13 +3904,13 @@ exec
 ./src/cli/commands/room.ts:28:  const cfg = fileRoomsConfig(roomsPath());
 ./src/cli/commands/room.ts:31:    console.error(`room list: ${formatError(result.error)}`);
 ./src/cli/commands/room.ts:35:  if (registry.rooms.length === 0) {
-./src/cli/commands/room.ts:36:    console.log('no rooms configured. try `wellinformed init` or `wellinformed room create <name>`.');
+./src/cli/commands/room.ts:36:    console.log('no rooms configured. try `akashik init` or `akashik room create <name>`.');
 ./src/cli/commands/room.ts:39:  for (const r of registry.rooms) {
 ./src/cli/commands/room.ts:40:    const marker = r.id === registry.default_room ? ' *' : '  ';
 ./src/cli/commands/room.ts:41:    const keywords = r.keywords.length > 0 ? ` [${r.keywords.join(', ')}]` : '';
 ./src/cli/commands/room.ts:42:    console.log(`${marker} ${r.id.padEnd(20)} ${r.description}${keywords}`);
 ./src/cli/commands/room.ts:44:  console.log(`\n  * = default room`);
-./src/cli/commands/room.ts:50:    console.error('room create: missing <name>. usage: wellinformed room create <name> [--desc "..."] [--keywords "a,b,c"] [--wing "default"]');
+./src/cli/commands/room.ts:50:    console.error('room create: missing <name>. usage: akashik room create <name> [--desc "..."] [--keywords "a,b,c"] [--wing "default"]');
 ./src/cli/commands/room.ts:56:  let keywords: string[] = [];
 ./src/cli/commands/room.ts:64:    else if (a === '--keywords') keywords = (next() ?? '').split(',').map((k) => k.trim()).filter(Boolean);
 ./src/cli/commands/room.ts:65:    else if (a.startsWith('--keywords=')) keywords = a.slice('--keywords='.length).split(',').map((k) => k.trim()).filter(Boolean);
@@ -3929,7 +3929,7 @@ exec
 ./src/cli/commands/room.ts:104:  console.log(`default room is now '${id}'`);
 ./src/cli/commands/room.ts:109:  const cfg = fileRoomsConfig(roomsPath());
 ./src/cli/commands/room.ts:115:  const def = result.value.default_room;
-./src/cli/commands/room.ts:117:    console.log('no default room set. run `wellinformed init` to create one.');
+./src/cli/commands/room.ts:117:    console.log('no default room set. run `akashik init` to create one.');
 ./src/cli/commands/room.ts:127:    console.error('room describe: missing <id>');
 ./src/cli/commands/room.ts:130:  const cfg = fileRoomsConfig(roomsPath());
 ./src/cli/commands/room.ts:136:  const room = result.value.rooms.find((r) => r.id === id);
@@ -3991,17 +3991,17 @@ exec
 ./src/cli/commands/claude-install.ts:146:federation. A PreToolUse hook prefetches the graph before
 ./src/cli/commands/claude-install.ts:149:the system-managed \`research\` room so the graph absorbs everything
 ./src/cli/commands/claude-install.ts:152:## System rooms (always-on, P2P-shared, auto-populated)
-./src/cli/commands/claude-install.ts:154:Two canonical rooms every wellinformed peer advertises out of the box:
+./src/cli/commands/claude-install.ts:154:Two canonical rooms every akashik peer advertises out of the box:
 ./src/cli/commands/claude-install.ts:162:not from its \`room\` field. You don't need to set the room when you
 ./src/cli/commands/claude-install.ts:164:automatically; a codebase save lands in \`toolshed\`. The system rooms
 ./src/cli/commands/claude-install.ts:165:are always present in shared-rooms.json and cannot be unshared.
 ./src/cli/commands/claude-install.ts:167:Every other room is user-negotiable — opt-in via the share TUI.
 ./src/cli/commands/claude-install.ts:173:\`label [room, 3d] d=0.82\`. When choosing whether to trust a cache
 ./src/cli/commands/claude-install.ts:176:- If the hit is younger than the room's stale-after window, trust the
-./src/cli/commands/claude-install.ts:178:- If the hit is older, prefer a fresh pull — \`mcp__wellinformed__trigger_room\`
+./src/cli/commands/claude-install.ts:178:- If the hit is older, prefer a fresh pull — \`mcp__akashik__trigger_room\`
 ./src/cli/commands/claude-install.ts:192:   federation is handled separately by the statusline panel and the
 ./src/cli/commands/claude-install.ts:194:2. \`search\` / \`ask\` take a query string and optional room filter.
-./src/cli/commands/claude-install.ts:197:   \`wellinformed save --type synthesis --room <room>\` to file the
+./src/cli/commands/claude-install.ts:197:   \`akashik save --type synthesis --room <room>\` to file the
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:12:"Akashik: federated knowledge commons for the open-source community as a whole."
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:15:a shared, contributor-owned memory substrate where every piece of
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:31:  - what it researched on the web when the federation couldn't answer
@@ -4036,7 +4036,7 @@ exec
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:339:**Baseline condition:** all queries evaluated local-only (federation disabled). The delta is the federation value.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:357:- **Availability confounding.** Your current bench runs with all peers online. In production, the 2000ms timeout means some peers never respond. Your single-peer benchmarks (LME-S, LoCoMo) don't model this. AkashikBench-F should include a "partial availability" condition: what is federation R@k when 20% of peers are offline?
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:359:- **Corpus contamination.** If you run multi-peer simulation with overlapping source corpora (e.g., two peers that both indexed the same web page), the federation looks better than it is — you're measuring deduplication handling, not genuine knowledge transfer. Strict corpus disjointness at setup is non-negotiable for valid results.
-./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:395:Instrument and publish `web_fallback_rate` for the `rust` room. The expected curve: day 1 ≈ 80-90% web fallback (sparse graph), day 30 < 40% (librarian + early-adopter knowledge covers the common queries). This is the compounding claim made visible.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:407:The known solution is **topic diversity indexing**, analogous to Mastodon's local vs. federated timeline split. Akashik's room structure partially mitigates this (niche rooms exist independently), but within a room, hot nodes will crowd out cold ones in search rankings.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:409:Specific mitigation: weight the federation fan-out ordering by inverse document frequency across rooms. Nodes that exist on only one peer get a boost in ranking — scarcity is a signal for uniqueness, not irrelevance. The `peer-reputation-store.ts` infrastructure already exists; extend it to track per-topic peer coverage as a first-class signal.
@@ -4056,7 +4056,7 @@ exec
 ./docs/p2p/satisfaction-scoring.md:126:- The `freshness` window per room is hand-set
 ./docs/p2p/satisfaction-scoring.md:127:  (`docs/architecture/V4-PROTOCOL.md` §rooms). A learning loop that
 ./docs/p2p/satisfaction-scoring.md:128:  tunes the window per-room from observed retrieval quality is on
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:12:3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:12:3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:13:4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:52:The stale surface is mostly “leaderboard-era retrieval product” material, plus process debris from the phase-based buildout. The live core now is: federation, provenance, community compounding, AkashikBench-F, and the Akashik story.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:69:| `demo/README.md` | `NEEDS-REWRITE` | Demos should sell federation/community compounding, not old single-user memory behavior. |
@@ -4072,7 +4072,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:152:| `src/domain/federation-sim.ts` | `KEEP` | Core to AkashikBench-F and the compounding thesis. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:154:| `src/application/ask.ts` | `NEEDS-REWRITE` | Keep the functionality, but align the flow/docs with local→federation→web→save. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:161:| `src/domain/oracle.ts` | `KEEP` | The oracle room still fits community knowledge exchange, though it should be presented as secondary to federation-on-query. |
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:228:3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:228:3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:229:4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:560:./scripts/bench-room-routing.mjs
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:581:./src/application/federated-recall.ts
@@ -4112,8 +4112,8 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:951:The Round 5 octopus-discover synthesis identified one benchmark capable of falsifying the federated-commons thesis: a federation-level simulator measuring `web_fallback_rate(t)` over a realistic peer network with offline churn. We built it. First run, on the LoCoMo factual subset:
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:970:| Web fallback | 4.5% | Outbound only when federation couldn't answer |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:974:Bench source: [`tests/bench-akashik-federation.test.ts`](tests/bench-akashik-federation.test.ts).
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:999:wellinformed save https://arxiv.org/abs/2406.16678 --room research
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1000:wellinformed save ./notes/cuda-oom-debug.md --room toolshed
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:999:akashik save https://arxiv.org/abs/2406.16678 --room research
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1000:akashik save ./notes/cuda-oom-debug.md --room toolshed
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1009:The query checks your local graph, then federates to peers you share rooms with, then falls back to web research only if neither can answer. The web result lands in your local graph signed by you — the next contributor who asks something similar pulls it from your peer with full attribution.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1017:- **P2P federation over libp2p.** No central server, no vendor data lock-in. Each peer advertises the rooms it participates in; queries fan out via gossip with bounded timeouts. Lineage per the Round 5 synthesis: *Freenet-style demand-shaped lazy replication with cache-fill on miss*, applied to attributed semantic memory.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1018:- **Ed25519-signed contributions with DIDs.** Every record carries the curator's decentralized identifier, room, source URLs, and timestamp. Trust is graph-traversable: follow the chain, see who curated, when, and why. Lineage: AT Protocol's signed-attribution layer applied to research memory rather than social posts.
@@ -4133,7 +4133,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1278:  bomb; we emit room-level aggregates only). Counter increments
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1282:  criterion: per-room daily snapshot, queryable from CLI, integrates
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1330:  listing every artifact with its URL, librarian, and room.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1352:  `wellinformed share` to join the pilot rooms. Success criterion:
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1352:  `akashik share` to join the pilot rooms. Success criterion:
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1359:  that validates or falsifies the federated thesis under real
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1364:  `local / federation / web` fraction breakdown, and an explicit
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:1377:  with an older schema federates with a peer on v2, malformed
@@ -4194,7 +4194,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2374:- ≥ 100 federated peers active with `toolshed` shared
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2380:  (could be built before federation hits scale — see "open
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2409:The research docs confirm the pattern: a lot of material is valuable as historical evidence, but much of it is optimized for “beat mem0 on retrieval” rather than “prove a federated commons compounds.” I’m checking the tests and source paths that embody that old thesis so the cleanup recommendations hit code, not just prose.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2411:/bin/zsh -lc "sed -n '1,220p' tests/bench-akashik-federation.test.ts" in /Users/saharbarak/personal/wellinformed
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2411:/bin/zsh -lc "sed -n '1,220p' tests/bench-akashik-federation.test.ts" in /Users/saharbarak/personal/akashik
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2414: * Bench — AkashikBench-F (federation-level compounding).
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2417: * as the only one that can falsify or validate the federated-
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2425: * pure-domain federation simulator
@@ -4210,22 +4210,22 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2627:      federationFraction: counts.total > 0 ? counts.federation / counts.total : 0,
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2783:      room: 'bench',
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2802:        room: 'bench',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2861:tests/phase4.rooms.test.ts:143:    // Set WELLINFORMED_HOME so init writes to our tmp dir
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2862:tests/phase4.rooms.test.ts:144:    const origHome = process.env.WELLINFORMED_HOME;
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2863:tests/phase4.rooms.test.ts:145:    process.env.WELLINFORMED_HOME = tmp;
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2864:tests/phase4.rooms.test.ts:172:    process.env.WELLINFORMED_HOME = origHome;
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2865:src/domain/share-policy.ts:37: *   WELLINFORMED_REQUIRE_SIGNED_NODES=1
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2861:tests/phase4.rooms.test.ts:143:    // Set AKASHIK_HOME so init writes to our tmp dir
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2862:tests/phase4.rooms.test.ts:144:    const origHome = process.env.AKASHIK_HOME;
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2863:tests/phase4.rooms.test.ts:145:    process.env.AKASHIK_HOME = tmp;
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2864:tests/phase4.rooms.test.ts:172:    process.env.AKASHIK_HOME = origHome;
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2865:src/domain/share-policy.ts:37: *   AKASHIK_REQUIRE_SIGNED_NODES=1
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2866:src/domain/share-policy.ts:42:  env: NodeJS.ProcessEnv = process.env,
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2867:src/domain/share-policy.ts:44:  const v = env.WELLINFORMED_REQUIRE_SIGNED_NODES;
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2869:src/domain/share-envelope.ts:22: * separate commit behind WELLINFORMED_REQUIRE_SIGNED_NODES so the
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2922:src/cli/commands/onboard.ts:367:        `The 'wellinformed trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - WELLINFORMED_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  wellinformed trigger --room sessions`,
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2930:tests/share-policy.test.ts:10: *   - sharePolicyModeFromEnv reads WELLINFORMED_REQUIRE_SIGNED_NODES
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2931:tests/share-policy.test.ts:69:  assert.equal(sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: '' }), 'soft');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2932:tests/share-policy.test.ts:70:  assert.equal(sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: '0' }), 'soft');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2933:tests/share-policy.test.ts:74:  assert.equal(sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: '1' }), 'strict');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2934:tests/share-policy.test.ts:76:    sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: 'true' }),
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3007:src/application/federated-search.ts:328:    || process.env.WELLINFORMED_SEARCH_GOSSIP === '0';
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3010:tests/bench-akashik-federation.test.ts:38: *   WELLINFORMED_BENCH_OUT=/path/to/run.jsonl   (optional)
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2867:src/domain/share-policy.ts:44:  const v = env.AKASHIK_REQUIRE_SIGNED_NODES;
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2869:src/domain/share-envelope.ts:22: * separate commit behind AKASHIK_REQUIRE_SIGNED_NODES so the
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2922:src/cli/commands/onboard.ts:367:        `The 'akashik trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - AKASHIK_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  akashik trigger --room sessions`,
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2930:tests/share-policy.test.ts:10: *   - sharePolicyModeFromEnv reads AKASHIK_REQUIRE_SIGNED_NODES
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2931:tests/share-policy.test.ts:69:  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '' }), 'soft');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2932:tests/share-policy.test.ts:70:  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '0' }), 'soft');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2933:tests/share-policy.test.ts:74:  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '1' }), 'strict');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:2934:tests/share-policy.test.ts:76:    sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: 'true' }),
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3007:src/application/federated-search.ts:328:    || process.env.AKASHIK_SEARCH_GOSSIP === '0';
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3010:tests/bench-akashik-federation.test.ts:38: *   AKASHIK_BENCH_OUT=/path/to/run.jsonl   (optional)
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3011:tests/bench-akashik-federation.test.ts:136:  if (process.env.AKASHIK_BENCH_F !== '1') {
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3012:tests/bench-akashik-federation.test.ts:140:  const dir = process.env.LOCOMO_DIR;
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3013:tests/bench-akashik-federation.test.ts:155:  const numPeers = Number(process.env.AKASHIK_BENCH_PEERS ?? 10);
@@ -4235,11 +4235,11 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3017:tests/bench-akashik-federation.test.ts:159:  const seed = Number(process.env.AKASHIK_BENCH_SEED ?? 42);
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3018:tests/bench-akashik-federation.test.ts:160:  const initialShardFraction = Number(process.env.AKASHIK_BENCH_SHARD ?? 0.05);
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3019:tests/bench-akashik-federation.test.ts:161:  const windowSize = Number(process.env.AKASHIK_BENCH_WINDOW ?? 100);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3020:tests/bench-akashik-federation.test.ts:230:  if (process.env.WELLINFORMED_BENCH_OUT) {
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3021:tests/bench-akashik-federation.test.ts:231:    appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3023:tests/phase16.share-crdt.test.ts:68:/** Create a hermetic tmp dir. Caller must set/restore WELLINFORMED_HOME and rmSync on teardown. */
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3020:tests/bench-akashik-federation.test.ts:230:  if (process.env.AKASHIK_BENCH_OUT) {
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3021:tests/bench-akashik-federation.test.ts:231:    appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3023:tests/phase16.share-crdt.test.ts:68:/** Create a hermetic tmp dir. Caller must set/restore AKASHIK_HOME and rmSync on teardown. */
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3202:        room: 'beir',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3511:/bin/zsh -lc "sed -n '1,220p' tests/federated-search-cap-tiers.test.ts" in /Users/saharbarak/personal/wellinformed
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3511:/bin/zsh -lc "sed -n '1,220p' tests/federated-search-cap-tiers.test.ts" in /Users/saharbarak/personal/akashik
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3514: * Unit tests — federated-search top-N cap + rank-weighted timeout
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3529:import { runFederatedSearch } from '../src/application/federated-search.js';
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3686:  readonly room: Room;
@@ -4257,14 +4257,14 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3848: * node for the given text and BFSes outward using the room filter on
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3852:  readonly room: Room;
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3862:    const traversalOpts: TraversalOptions = { depth: query.depth ?? 3, room: query.room };
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3865:/bin/zsh -lc "sed -n '1,220p' src/application/federated-search.ts" in /Users/saharbarak/personal/wellinformed
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3865:/bin/zsh -lc "sed -n '1,220p' src/application/federated-search.ts" in /Users/saharbarak/personal/akashik
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3874: *   4. Cross-room tunnel detection via findTunnels over the merged synthetic record set (FED-04)
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3916:  readonly room: string;
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3960:  readonly room?: string;
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3969:  /** Cross-room tunnel threshold. Default 0.6 matches MCP find_tunnels default. */
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:3972:   * Skip the cross-room tunnel pass at the end of the merge.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:4012:   * `maxPeers`. Lets the federated layer give your top-N peers the
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:4089:/bin/zsh -lc "sed -n '1,220p' src/domain/federation-sim.ts" in /Users/saharbarak/personal/wellinformed
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:4089:/bin/zsh -lc "sed -n '1,220p' src/domain/federation-sim.ts" in /Users/saharbarak/personal/akashik
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:4092: * Phase 24 (Akashik) — federation simulator (pure domain).
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:4097: * validate the federated-commons thesis. The current public-corpus
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:4114: * benches). What this measures is *federation dynamics* under
@@ -4303,7 +4303,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:5782:This makes claim extraction first-class — peers can share `claim` records
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:5798:source · no exact version · no source URI · single-origin re-share · peer
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:5808:- All evidence traces to one origin through re-shares.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:5823:**v2.0 makes them connected.** A peer-to-peer network where wellinformed nodes discover each other, share graph fragments, and build a collective knowledge layer that's bigger than any single user's research.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:5823:**v2.0 makes them connected.** A peer-to-peer network where akashik nodes discover each other, share graph fragments, and build a collective knowledge layer that's bigger than any single user's research.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:5829:     │ 3 rooms  │                  │ 2 rooms  │
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:5849:- Each node exposes a subset of its graph as "public rooms"
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:5850:- Private rooms stay local (homelab stays mine)
@@ -4373,7 +4373,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:6975:src/mcp/server.ts:1050:          .filter((h) => h.room !== 'oracle')
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:6982:src/cli/index.ts:8: * Future phases add: init, room, daemon, discover, telegram, report, ask, mcp.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:7010:docs/marketing/positioning-v2.1.md:158:entries, oracle answers, room shares — can be wrapped in a signed
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:7019:src/cli/commands/oracle.ts:2: * `wellinformed oracle <sub>` — peer-to-peer Q&A via the oracle system room.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:7019:src/cli/commands/oracle.ts:2: * `akashik oracle <sub>` — peer-to-peer Q&A via the oracle system room.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:7020:src/cli/commands/oracle.ts:5: *   ask "<text>"            post a question to the oracle room; peers see it on next touch
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:7054:The stale surface is mostly “leaderboard-era retrieval product” material, plus process debris from the phase-based buildout. The live core now is: federation, provenance, community compounding, AkashikBench-F, and the Akashik story.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:7071:| `demo/README.md` | `NEEDS-REWRITE` | Demos should sell federation/community compounding, not old single-user memory behavior. |
@@ -4390,11 +4390,11 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:7156:| `src/application/ask.ts` | `NEEDS-REWRITE` | Keep the functionality, but align the flow/docs with local→federation→web→save. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-0.md:7163:| `src/domain/oracle.ts` | `KEEP` | The oracle room still fits community knowledge exchange, though it should be presented as secondary to federation-on-query. |
 ./docs/marketing/x-launch-posts.md:58:Akashik is different: it partitions by research domain (rooms), detects cross-domain connections (tunnels), and actively fetches from ArXiv + HN + RSS on a schedule.
-./docs/marketing/x-launch-posts.md:89:wellinformed trigger --room homelab
-./docs/marketing/x-launch-posts.md:99:I typed `wellinformed discover --room wellinformed-dev --auto` and it found:
+./docs/marketing/x-launch-posts.md:89:akashik trigger --room homelab
+./docs/marketing/x-launch-posts.md:99:I typed `akashik discover --room akashik-dev --auto` and it found:
 ./docs/marketing/x-launch-posts.md:101:- Simon Willison's blog (matched "claude" keyword)
 ./docs/marketing/x-launch-posts.md:120:Akashik is a knowledge graph with rooms, tunnels, 8 source adapters, and a daemon that keeps it current.
-./src/cli/commands/lint.ts:2: * `wellinformed lint [--room R] [--json]`
+./src/cli/commands/lint.ts:2: * `akashik lint [--room R] [--json]`
 ./src/cli/commands/lint.ts:15:import { loadSharedRooms } from '../../infrastructure/share-store.js';
 ./src/cli/commands/lint.ts:22:  readonly room?: string;
 ./src/cli/commands/lint.ts:27:  let room: string | undefined;
@@ -4408,7 +4408,7 @@ exec
 ./src/cli/commands/lint.ts:88:    room: parsed.room,
 ./src/cli/commands/lint.ts:89:    shared_rooms: sharedRooms,
 ./src/cli/commands/lint.ts:103:    console.log(renderText(report, parsed.room));
-./docs/p2p/peer-reputation-load-spreading.md:73:  flag to `wellinformed ask --peers` that, on a high-confidence federated
+./docs/p2p/peer-reputation-load-spreading.md:73:  flag to `akashik ask --peers` that, on a high-confidence federated
 ./docs/p2p/peer-reputation-load-spreading.md:76:- Bandwidth: an over-aggressive auto-pull means every federated ask doubles
 ./docs/p2p/peer-reputation-load-spreading.md:107:  subjects — including ones X actually wants to share. That's correct overall
 ./docs/p2p/peer-reputation-load-spreading.md:110:**Files:** `src/application/federated-search.ts` (asker-side fallback logic on
@@ -4462,9 +4462,9 @@ exec
 ./docs/marketing/IMAGEGEN-FRONTEND-WEB.md:632:> "Akashik adds: federation, peer reputation, signed
 ./docs/marketing/IMAGEGEN-FRONTEND-WEB.md:662:│  Local-first. Peer-federated. Signed-by-default. Stale-aware.            │
 ./docs/marketing/IMAGEGEN-FRONTEND-WEB.md:678:> "Local-first. Peer-federated. Signed-by-default. Stale-aware.",
-./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-5.md:11:3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-5.md:11:3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-5.md:12:4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
-./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-5.md:58:- **Active product:** Akashik (OSS federated knowledge commons). Codebase still named `wellinformed` — intentional two-name period per `docs/PROJECT-PLAN-AKASHIK.md`.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-5.md:58:- **Active product:** Akashik (OSS federated knowledge commons). Codebase still named `akashik` — intentional two-name period per `docs/PROJECT-PLAN-AKASHIK.md`.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-5.md:59:- **Current state:** Phase 23.7 (Hetzner real-corpus benches + AkashikBench-F validated). Phase 24 is next (federation sweep, niche-evaporation mitigation, IPC auth hardening).
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-5.md:100:| `.planning/p2p-scale-plan.md` | KEEP | P2P scaling design doc. Still relevant to Phase 24 federation routing. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-5.md:131:| `docs/p2p/P2P-VISION.md` | KEEP | Still aligns with federated commons mission. |
@@ -4473,7 +4473,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-5.md:184:| `tests/phase1.graph-rooms.test.ts` through `tests/phase6.daemon.test.ts` | KEEP | Core functionality. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-5.md:198:| `src/domain/federation-sim.ts` | KEEP | AkashikBench-F core. The `compoundingSlope`, `webFallbackRateOverTime`, `propagationHalfLife` functions are the primary validation instruments for Phase 24. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-5.md:200:| `src/application/federated-search.ts` | KEEP | Phase 17 federation fan-out. Phase 24.3 hardening target. |
-./src/cli/commands/trigger.ts:2: * `wellinformed trigger [--room <room>] [--sync]` — run an ingest pass.
+./src/cli/commands/trigger.ts:2: * `akashik trigger [--room <room>] [--sync]` — run an ingest pass.
 ./src/cli/commands/trigger.ts:4: * Default: when the daemon is running, submit an `ingest:room` job
 ./src/cli/commands/trigger.ts:5: * per matching room and return immediately (the worker drains the
 ./src/cli/commands/trigger.ts:23:  readonly room?: string;
@@ -4498,7 +4498,7 @@ exec
 ./src/cli/commands/trigger.ts:80:    const out = await ipcCallLines('submit-job', ['ingest:room', room]);
 ./src/cli/commands/trigger.ts:82:      console.error(`trigger: failed to submit ingest:room ${room}`);
 ./src/cli/commands/trigger.ts:87:    console.log(`  queued  ${id}  ingest:room ${room}`);
-./src/cli/commands/trigger.ts:89:  console.log(`\n${rooms.length - failed} job(s) queued — track with: wellinformed jobs watch`);
+./src/cli/commands/trigger.ts:89:  console.log(`\n${rooms.length - failed} job(s) queued — track with: akashik jobs watch`);
 ./src/cli/commands/trigger.ts:100:    const rooms = await resolveRooms(parsed);
 ./src/cli/commands/trigger.ts:101:    if (typeof rooms === 'string') {
 ./src/cli/commands/trigger.ts:102:      console.error(`trigger: ${rooms}`);
@@ -4515,27 +4515,27 @@ exec
 ./src/cli/commands/this.ts:5: * under a room slug derived from its basename. The visibility token
 ./src/cli/commands/this.ts:6: * decides whether the resulting room is kept private (`me`, default)
 ./src/cli/commands/this.ts:7: * or marked shareable on the P2P federation (`everyone`).
-./src/cli/commands/this.ts:9: *   wellinformed this              → index cwd, room private
-./src/cli/commands/this.ts:11: *   wellinformed this everyone     → index cwd + share room with peers
+./src/cli/commands/this.ts:9: *   akashik this              → index cwd, room private
+./src/cli/commands/this.ts:11: *   akashik this everyone     → index cwd + share room with peers
 ./src/cli/commands/this.ts:13: * Sharing routes through the existing share-room flow, which audits
-./src/cli/commands/this.ts:15: * boundary identical to `wellinformed share room <name>`.
+./src/cli/commands/this.ts:15: * boundary identical to `akashik share room <name>`.
 ./src/cli/commands/this.ts:19:import { slugifyRoomName } from '../../domain/rooms.js';
 ./src/cli/commands/this.ts:21:import { share } from './share.js';
 ./src/cli/commands/this.ts:55:  me           keep room private (default; nothing leaves the host)
 ./src/cli/commands/this.ts:56:  everyone     index + mark room shareable on the P2P network
 ./src/cli/commands/this.ts:61:  --name NAME  override the room slug (default: basename of root)`;
-./src/cli/commands/this.ts:71:  console.log(`wellinformed this ${visibility} — room '${slug}' (${root})\n`);
+./src/cli/commands/this.ts:71:  console.log(`akashik this ${visibility} — room '${slug}' (${root})\n`);
 ./src/cli/commands/this.ts:79:    room: slug,
 ./src/cli/commands/this.ts:86:  // rename. Submit an ingest:room job to the daemon instead so the
 ./src/cli/commands/this.ts:103:      const shareCode = await share(['room', slug]);
 ./src/cli/commands/this.ts:104:      if (shareCode !== 0) return shareCode;
 ./src/cli/commands/this.ts:106:      console.log(`\n  room '${slug}' is private. nothing leaves this machine.`);
-./src/cli/commands/this.ts:107:      console.log(`  to share later: wellinformed share room ${slug}`);
+./src/cli/commands/this.ts:107:      console.log(`  to share later: akashik share room ${slug}`);
 ./src/cli/commands/this.ts:113:  const indexCode = await indexProject(['--room', slug, '--root', root]);
 ./src/cli/commands/this.ts:121:    const shareCode = await share(['room', slug]);
 ./src/cli/commands/this.ts:122:    if (shareCode !== 0) return shareCode;
 ./src/cli/commands/this.ts:124:    console.log(`\nroom '${slug}' indexed privately. nothing leaves this machine.`);
-./src/cli/commands/this.ts:125:    console.log(`  to share later: wellinformed share room ${slug}`);
+./src/cli/commands/this.ts:125:    console.log(`  to share later: akashik share room ${slug}`);
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/codex-3.md:13:"Akashik: federated knowledge commons for the open-source community as a whole."
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/codex-3.md:16:a shared, contributor-owned memory substrate where every piece of
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/codex-3.md:32:  - what it researched on the web when the federation couldn't answer
@@ -4688,7 +4688,7 @@ exec
 ./src/daemon/loop.ts:461:                      room: note.room,
 ./src/daemon/loop.ts:543:                cfgRes.value.peer.bandwidth.max_updates_per_sec_per_peer_per_room,
 ./src/daemon/loop.ts:547:              daemonLog(deps.homePath, `share sync register failed: ${formatError(reg.error)}`);
-./src/daemon/loop.ts:550:              daemonLog(deps.homePath, `share sync registered: /wellinformed/share/1.0.0`);
+./src/daemon/loop.ts:550:              daemonLog(deps.homePath, `share sync registered: /akashik/share/1.0.0`);
 ./src/daemon/loop.ts:552:              // P2P-sync bug fix: the daemon's main-tick share sync cadence is
 ./src/daemon/loop.ts:565:                    `share sync tick (startup): opened=${sync.opened}`,
 ./src/daemon/loop.ts:572:                    `share sync tick (startup) error: ${formatError(e)}`,
@@ -4723,7 +4723,7 @@ exec
 ./docs/marketing/growth-sources-plan.md:73:     (top TF-IDF terms not already in room keywords)
 ./docs/marketing/growth-sources-plan.md:74:  5. add new keywords to room
 ./docs/marketing/growth-sources-plan.md:83:                 index them, extract new keywords, discover more."
-./docs/marketing/growth-sources-plan.md:89:wellinformed discover-loop --room homelab --max-iterations 3
+./docs/marketing/growth-sources-plan.md:89:akashik discover-loop --room homelab --max-iterations 3
 ./docs/marketing/growth-sources-plan.md:90:# iteration 1: found 4 sources from room keywords
 ./docs/marketing/growth-sources-plan.md:91:# iteration 2: found 2 more from extracted keywords ("VFIO", "iommu")
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/gemini-1.md:12:Akashik = federated knowledge commons for the OSS community.
@@ -4747,10 +4747,10 @@ exec
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/gemini-1.md:190:- **Argument**: "Akashik assumes that making knowledge portable and signed will naturally yield high-quality community memory. In reality, compounding requires network effects you haven't earned, and without density, the federated mechanism is slower and worse than a centralized web search. You have a coordination problem in an infrastructure costume."
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/gemini-1.md:191:- **Response**: "We grant that federation provides value only with density, but Akashik is designed to provide immediate single-player value before density is reached. Because the system gracefully falls back to a web search—and saves that result locally for the user's future sessions—a contributor with zero peers still gets a functional, accelerating local memory tool on day 1. Federation is strictly additive to this baseline, solving the cold-start problem by making the single-user experience worthwhile while the network effect builds."
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/gemini-1.md:194:If I were Sahar, the next engineering month I'd spend on building the AkashikBench-F simulation harness and instrumenting `web_fallback_rate` because these are the only metrics that actually measure the federated compounding claim. The next marketing/launch month I'd spend on onboarding 5-20 Rust infrastructure maintainers to seed a single, high-pain debugging room because deep coverage in one niche proves the mechanism better than thin coverage everywhere. Specifically NOT chasing the last 3% of R@5 on LongMemEval-S because that optimizes for the old, single-user product frame and distracts from the core peer-to-peer value proposition.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-1.md:12:3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-1.md:12:3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-1.md:13:4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-1.md:52:Here is the cleanup audit synthesizing the codebase context and the recent pivot to the **Akashik** (OSS federated knowledge commons) positioning.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-1.md:56:- *Advantage:* A codebase-wide rename is a massive, highly-disruptive git operation that will break the `wellinformed-rs` IPC integration, invalidate existing user installations, and clutter commit history just as you are stabilizing the federation layer. 
+./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-1.md:56:- *Advantage:* A codebase-wide rename is a massive, highly-disruptive git operation that will break the `akashik-rs` IPC integration, invalidate existing user installations, and clutter commit history just as you are stabilizing the federation layer. 
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-1.md:75:| `docs/research/energy-based-contradiction-detection.md` | ARCHIVE | Obsolete ML research irrelevant to the new federated baseline. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-1.md:86:| `docs/p2p/P2P-VISION.md` | KEEP | Foundational to the new Akashik federated mission. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-1.md:96:| `tests/bench-akashik-federation.test.ts` | KEEP | Crucial test validating the compounding federated thesis. |
@@ -4795,7 +4795,7 @@ exec
 ./docs/marketing/SOCIAL-LAUNCH.md:93:> federation. The "vector DB" is a sqlite file on your machine.
 ./docs/marketing/SOCIAL-LAUNCH.md:112:> federation that hooks into Claude Code, Codex, Gemini, and any MCP
 ./docs/marketing/SOCIAL-LAUNCH.md:115:> local + federated graph's answer is already in context.
-./docs/marketing/SOCIAL-LAUNCH.md:121:> - P2P: libp2p protocols `/wellinformed/{search,recall,touch,share}/1.0.0`
+./docs/marketing/SOCIAL-LAUNCH.md:121:> - P2P: libp2p protocols `/akashik/{search,recall,touch,share}/1.0.0`
 ./docs/marketing/SOCIAL-LAUNCH.md:166:> Yjs CRDTs over libp2p pubsub. Per-room shared docs; freshness rules
 ./docs/marketing/SOCIAL-LAUNCH.md:168:> room's stale-after window (research: 7 d, toolshed: 30 d).
 ./docs/marketing/SOCIAL-LAUNCH.md:194:> message, the local + federated graph's answer is already in context.
@@ -4811,7 +4811,7 @@ exec
 ./src/cli/commands/codebase.ts:7: *   show <id> [--json]        detail view: node breakdown + attached rooms
 ./src/cli/commands/codebase.ts:9: *   attach <id> --room <r>    attach codebase to a research room (M:N)
 ./src/cli/commands/codebase.ts:10: *   detach <id> --room <r>    detach (non-destructive — codebase + rooms both remain)
-./src/cli/commands/codebase.ts:14: * Separate from `wellinformed index` (shallow research-room indexing — NOT modified
+./src/cli/commands/codebase.ts:14: * Separate from `akashik index` (shallow research-room indexing — NOT modified
 ./src/cli/commands/codebase.ts:132:        const rooms = await repo.getRoomsForCodebase(cb.id);
 ./src/cli/commands/codebase.ts:133:        enriched.push({ ...cb, rooms: rooms.isOk() ? rooms.value : [] });
 ./src/cli/commands/codebase.ts:144:      const rooms = await repo.getRoomsForCodebase(cb.id);
@@ -4822,12 +4822,12 @@ exec
 ./src/cli/commands/codebase.ts:193:      console.log(JSON.stringify({ codebase: cb, rooms: roomList }, null, 2));
 ./src/cli/commands/codebase.ts:202:    console.log(`  rooms:      ${roomList.join(', ') || '—'}`);
 ./src/cli/commands/codebase.ts:258:  if (positional.length === 0 || typeof flags.room !== 'string') {
-./src/cli/commands/codebase.ts:259:    console.error('codebase attach: usage: wellinformed codebase attach <id> --room <room-id>');
+./src/cli/commands/codebase.ts:259:    console.error('codebase attach: usage: akashik codebase attach <id> --room <room-id>');
 ./src/cli/commands/codebase.ts:263:  const roomId = flags.room;
 ./src/cli/commands/codebase.ts:281:    const res = await repo.attachToRoom(id, roomId);
 ./src/cli/commands/codebase.ts:286:    console.log(`attached codebase ${id} to room ${roomId}`);
 ./src/cli/commands/codebase.ts:295:  if (positional.length === 0 || typeof flags.room !== 'string') {
-./src/cli/commands/codebase.ts:296:    console.error('codebase detach: usage: wellinformed codebase detach <id> --room <room-id>');
+./src/cli/commands/codebase.ts:296:    console.error('codebase detach: usage: akashik codebase detach <id> --room <room-id>');
 ./src/cli/commands/codebase.ts:300:  const roomId = flags.room;
 ./src/cli/commands/codebase.ts:309:    const res = await repo.detachFromRoom(id, roomId);
 ./src/cli/commands/codebase.ts:314:    console.log(`detached codebase ${id} from room ${roomId}`);
@@ -4949,7 +4949,7 @@ exec
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/codex-0.md:856:**Counter-argument:** “The whole project assumes people will contribute enough high-quality, legally shareable, evidence-backed knowledge for the commons to improve over time. In practice, most saved notes are noisy, duplicative, stale, or private. Without a central editor, the network compounds junk faster than truth, and the result is a decentralized landfill rather than a collective memory.”
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/codex-0.md:858:**Response:** Akashik should not claim that every saved note becomes durable truth. The system works only if it compounds **attributed, evidence-backed, query-reused** knowledge. That is why the product must privilege provenance, room-scoped trust, replayable evidence, soft moderation labels, and visible transfer events over raw note volume. The point is not “everything anyone saves becomes the record”; it is “the subset of community work that repeatedly proves useful becomes easier to find, reuse, and attribute without requiring a central owner.”
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/codex-0.md:861:The next engineering month should be spent proving the **federation thesis**, not polishing the single-peer benchmark headline. Concretely: build the compounding benchmark and simulator; instrument `web-miss`, `transfer`, `churn`, `attribution`, and `diversity`; ship room-level caching/pinning and provenance primitives; and run a narrow 100-user launch in high-overlap OSS rooms. Keep a smaller retrieval lane for `E10`, segmentation, and better reranker eval on `LoCoMo`, because local ranking still matters. However, the core risk is no longer “can we beat `0.925` on `R@5`?” It is “can we show that knowledge acquired by one contributor becomes faster to retrieve for another contributor over time, without centralization and without the commons collapsing into noise?” That is the month’s real work.
-./src/cli/commands/discover.ts:2: * `wellinformed discover [--room R] [--auto]`
+./src/cli/commands/discover.ts:2: * `akashik discover [--room R] [--auto]`
 ./src/cli/commands/discover.ts:4: * Suggest new sources for a room based on its keywords. Prints the
 ./src/cli/commands/discover.ts:11:import { defaultRoom } from '../../domain/rooms.js';
 ./src/cli/commands/discover.ts:13:import { fileRoomsConfig } from '../../infrastructure/rooms-config.js';
@@ -4965,21 +4965,21 @@ exec
 ./src/cli/commands/discover.ts:44:    const reg = await rooms.load();
 ./src/cli/commands/discover.ts:45:    if (reg.isOk()) room = defaultRoom(reg.value);
 ./src/cli/commands/discover.ts:47:  if (!room) {
-./src/cli/commands/discover.ts:48:    console.error('discover: no room specified and no default room set. use --room or run `wellinformed init`.');
+./src/cli/commands/discover.ts:48:    console.error('discover: no room specified and no default room set. use --room or run `akashik init`.');
 ./src/cli/commands/discover.ts:52:  const deps = { rooms, sources };
 ./src/cli/commands/discover.ts:53:  const result = await discover(deps)(room);
 ./src/cli/commands/discover.ts:61:    console.log(`no new source suggestions for room '${room}'. all known feeds already registered.`);
 ./src/cli/commands/discover.ts:65:  console.log(`${suggestions.length} suggestion(s) for room '${room}':\n`);
-./src/cli/commands/discover.ts:82:    console.log(`\n${suggestions.length} source(s) added. run 'wellinformed trigger --room ${room}' to fetch.`);
-./src/cli/commands/discover.ts:84:    console.log(`add them with: wellinformed discover --room ${room} --auto`);
-./src/cli/commands/peers-rep.ts:132:    console.log('no peer reputation data yet — needs at least one federated ask with `wellinformed ask --peers`.');
+./src/cli/commands/discover.ts:82:    console.log(`\n${suggestions.length} source(s) added. run 'akashik trigger --room ${room}' to fetch.`);
+./src/cli/commands/discover.ts:84:    console.log(`add them with: akashik discover --room ${room} --auto`);
+./src/cli/commands/peers-rep.ts:132:    console.log('no peer reputation data yet — needs at least one federated ask with `akashik ask --peers`.');
 ./src/cli/commands/peers-rep.ts:205:  --subject <entity:foo|room:r>  rank peers by score on this subject
-./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-4.md:12:3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-4.md:12:3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-4.md:13:4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
-./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-4.md:59:Based on the codebase audit, the pivot from a single-user memory product (`wellinformed`) to a federated knowledge commons (`Akashik`) renders a significant portion of the repository's planning, benchmarking, and single-agent optimization code obsolete. The new priority is network compounding and cross-peer routing, not chasing personal-agent retrieval leaderboards.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-4.md:59:Based on the codebase audit, the pivot from a single-user memory product (`akashik`) to a federated knowledge commons (`Akashik`) renders a significant portion of the repository's planning, benchmarking, and single-agent optimization code obsolete. The new priority is network compounding and cross-peer routing, not chasing personal-agent retrieval leaderboards.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-4.md:66:- **Zombie Integrations (`src/telegram/bot.ts`):** The Telegram integration is a relic of the "personal memory" era. The maintainers of such scripts will never voluntarily migrate to a federated DID model. **Tradeoff:** Maintaining it drains engineering time from the core P2P daemon. *On the other hand*, immediately deleting it breaks existing workflows for early adopters. **Strategy:** Quarantine it into a `src/legacy/` namespace and explicitly deprecate it for v2.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-4.md:67:- **Shadow Traffic Validation:** As the primary `ask()` pipeline shifts from a local SQLite query to a `federated-search.ts` gossip fan-out, unit tests are insufficient. **Tradeoff:** Shadow routing doubles the query latency for the test cohort. *However*, failing to do so risks silent quality degradation (like the currently documented "remote peers get embeddings only" bug). **Strategy:** Implement a shadow traffic pass in the daemon that runs local queries against *both* the local store and the network, diffing the results to define what 'parity' means in a federated context.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-4.md:68:- **Backups and True RTO:** In a federated model, the concept of a "backup" shifts. If a peer loses their local `.wellinformed` SQLite database, what is the actual Recovery Time Objective (RTO) to rebuild their graph from the P2P network using their DID? **Tradeoff:** Relying purely on the network for restores saves disk space and complexity. *Conversely*, if a niche topic was only held locally and the peer dies, that knowledge evaporates (the "niche knowledge evaporation" failure mode). The restore process must be empirically timed and documented.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-4.md:68:- **Backups and True RTO:** In a federated model, the concept of a "backup" shifts. If a peer loses their local `.akashik` SQLite database, what is the actual Recovery Time Objective (RTO) to rebuild their graph from the P2P network using their DID? **Tradeoff:** Relying purely on the network for restores saves disk space and complexity. *Conversely*, if a niche topic was only held locally and the peer dies, that knowledge evaporates (the "niche knowledge evaporation" failure mode). The restore process must be empirically timed and documented.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-4.md:76:| `docs/research/energy-based-contradiction-detection.md` | ARCHIVE | Over-optimizes local Jaccard vs NLI contradiction; irrelevant when federation transfers are the priority. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-4.md:85:| `tests/bench-akashik-federation.test.ts` | KEEP | The new gold standard for the compounding thesis (FedComp-LoCoMo). |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/gemini-probe-4.md:88:| `tests/bench-standard.test.ts` | DELETE | Synthetic benchmark entirely superseded by real-corpus suites and federation simulation. |
@@ -5087,7 +5087,7 @@ exec
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:228:mem0 is conversation memory — it remembers what you *said* to an LLM across sessions. It has MCP, a graph variant (mem0ᵍ), and LOCOMO 68.4% (contested by Zep). No P2P, no codebase indexing, no research graph, no federation.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:249:The cold-start critique is real, and the launch plan is designed specifically to sidestep it: we don't need global network effects, we need local network effects within a single OSS community where 10–20 people sharing a room is already valuable to each of them. The LLM-native-memory counter is the existential one — but it dissolves on three specific dimensions: (1) did:key memory is cryptographically yours and portable across Claude, GPT-4, and Ollama without any provider's consent; (2) local-first means your private repo, your research notes, and your internal papers never leave your machine, which no provider memory can offer; (3) the cross-model bridge (91.9% retention) means you can switch providers and keep your knowledge base intact — a claim no API memory layer makes. The "sophisticated users don't need it" dismissal undersells the retrieval quality gap viscerally: 75% NDCG@10 means the right passage surfaces in the first five results; keyword search on Obsidian notes does not. We need a 30-second demo that makes that gap felt, not cited.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:264:The curiosity-driven cache currently has no TTL — nodes persist indefinitely. A retracted paper or a deleted repo would remain in every peer's graph forever. There is no staggered invalidation mechanism. Fix: add a `expires_at: Date | null` field per node, derived from `source_uri` domain (arxiv: 365d, HN: 7d, web: 1d). On next read, expired nodes trigger a lazy re-fetch. Circuit breaker: if re-fetch fails, serve stale with a `stale_since` annotation rather than evicting (matches the graceful-degradation model of the Phase 17 federated search timeout).
-./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:267:The Phase 4 consolidation left 6,013 raw entries flagged `consolidated_at != null` but not pruned. These compete with consolidated_memory nodes in BM25 (confirmed cause of the 55% quality proxy failure in §2j). The quarantine pattern: after consolidation, raw entries move to a `consolidated_raw` partition that is excluded from BM25 but retained for vector search. Add a `wellinformed prune --room <room>` command that performs this partition split and verify with the entity-extraction probe (§2j path forward).
+./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:267:The Phase 4 consolidation left 6,013 raw entries flagged `consolidated_at != null` but not pruned. These compete with consolidated_memory nodes in BM25 (confirmed cause of the 55% quality proxy failure in §2j). The quarantine pattern: after consolidation, raw entries move to a `consolidated_raw` partition that is excluded from BM25 but retained for vector search. Add a `akashik prune --room <room>` command that performs this partition split and verify with the entity-extraction probe (§2j path forward).
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:270:Current errors: `PeerError` has 10 variants, `ScanError.SecretDetected` is a hard block, `BandwidthExceeded` is a ResultAsync error. None are structured as a taxonomy visible to the remote peer. Fix: define a `PeerResponseError` with three top-level codes: `UNAUTHORIZED` (invalid/missing signature on signed envelope), `FORBIDDEN` (peer DID not authorized to access room), `RATE_LIMITED` (BandwidthExceeded with `retry_after_ms`). These map to HTTP 401/403/429 semantics. The `FramedStream` in `search-sync.ts` (Phase 17) should encode these in the length-prefixed response frame so the requester can distinguish and retry appropriately.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:273:Not currently designed for. The did:key signed envelope provides cryptographic provenance per node — each node can be attributed to a specific device and user DID offline. This is the audit trail primitive. What's missing: a structured per-room access log (`room_id + peer_did + timestamp + op_type`), configurable retention policies (`retain_for_days` per room), and GDPR erasure support (tombstone propagation: when a user deletes a node, the tombstone must propagate to all peers that pulled it). None of this is in scope for v4.0; it is the v4.1 enterprise track.
 ./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:279:**If I were Sahar, the next engineering month I'd spend on federation architecture** — specifically the graph.json → SQLite migration (existential, weeks away from breaking) and the P2P routing layer that converts the binary-512 quantization result into an actual working sync primitive — **because the retrieval ceiling is a measurement-floor problem that 12 attacks confirmed is pipeline-closed at 75.22%, and the product moat is federation, not another 2pp on SciFact.** The next marketing/launch month I'd spend on **seeding the llama.cpp/Ollama community with a "Show HN" anchored to the cross-model bridge claim (91.9% retention when you switch providers), measured live with the BEIR-FedSplit benchmark showing CR(N=4) > 1.0**, because that is the single most technically surprising claim in the codebase and the one no competitor can match. **Specifically NOT more SOTA retrieval attacks** — every algorithmic lever (RRF tuning, Rocchio PRF, LLM contextualization at 3B, PPR graph rerank, diagonal Jacobi) was measured and nulled; the qrel audit explains why; continuing down that path is fighting a measurement instrument with engineering effort.
@@ -5121,12 +5121,12 @@ exec
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:321:2.  **Anytype / Logseq (P2P modes):** Local-first knowledge graphs using CRDTs. *Strength:* Excellent local UX, strong privacy, mature sync. *Weakness:* They are designed for *personal/team* knowledge, lacking the federated Web-on-miss LLM discovery loop. 
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:342:You must stop tuning embeddings and start **engineering the federation routing and trust mechanisms**. Your entire brand pivot rests on the claim: *"expected_time_to_answer(T) ~ 1 / R(T, t)"*. 
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:347:3.  **Latency Budgets:** Optimize the 2-second peer timeout. If federated search breaks the "flow state" of an agent because libp2p dcutr is too slow, users will turn it off.
-./src/cli/commands/unshare.ts:2: * `wellinformed unshare <name>` — make a room private again.
+./src/cli/commands/unshare.ts:2: * `akashik unshare <name>` — make a room private again.
 ./src/cli/commands/unshare.ts:4: * Phase 16 (SHARE-02). Removes the room from shared-rooms.json so the
 ./src/cli/commands/unshare.ts:9: * future `share room <name>` resumes from current CRDT state instead of
 ./src/cli/commands/unshare.ts:14:import { mutateSharedRooms, removeSharedRoom } from '../../infrastructure/share-store.js';
-./src/cli/commands/unshare.ts:17:const sharedRoomsPath = (): string => join(wellinformedHome(), 'shared-rooms.json');
-./src/cli/commands/unshare.ts:19:const USAGE = `usage: wellinformed unshare <name>
+./src/cli/commands/unshare.ts:17:const sharedRoomsPath = (): string => join(akashikHome(), 'shared-rooms.json');
+./src/cli/commands/unshare.ts:19:const USAGE = `usage: akashik unshare <name>
 ./src/cli/commands/unshare.ts:21:Removes a room from the public registry. Existing imported nodes are
 ./src/cli/commands/unshare.ts:24:export const unshare = async (args: readonly string[]): Promise<number> => {
 ./src/cli/commands/unshare.ts:27:    console.error('unshare: missing <name>');
@@ -5140,7 +5140,7 @@ exec
 ./src/cli/commands/unshare.ts:53:    console.error(`unshare: ${formatError(writeResult.error)}`);
 ./src/cli/commands/unshare.ts:57:  console.log(`unshare '${name}': now private`);
 ./src/cli/commands/unshare.ts:58:  console.log(`  .ydoc snapshot retained — future \`share room ${name}\` resumes from current state`);
-./src/cli/commands/unshare.ts:59:  console.log('  restart the daemon (wellinformed daemon stop && start) to close active sync streams for this room');
+./src/cli/commands/unshare.ts:59:  console.log('  restart the daemon (akashik daemon stop && start) to close active sync streams for this room');
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:12:"Akashik: federated knowledge commons for the open-source community as a whole."
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:15:a shared, contributor-owned memory substrate where every piece of
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:31:  - what it researched on the web when the federation couldn't answer
@@ -5179,20 +5179,20 @@ exec
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:354:1. Single-peer only (no federation): WFR never decreases, R(T,t) stays at 1 for all T
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:355:2. Akashik federation: the above metrics
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:356:3. Central server (all nodes query a shared index): WFR=0 after first query on each topic, but provenance is lost
-./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:360:**Concrete implementation:** A `wellinformed bench federation` CLI command running a Docker Compose network of 4 peers, injecting queries from the hot/cold corpus, and emitting an FCB report. Est. engineering effort: 2-3 weeks.
+./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:360:**Concrete implementation:** A `akashik bench federation` CLI command running a Docker Compose network of 4 peers, injecting queries from the hot/cold corpus, and emitting an FCB report. Est. engineering effort: 2-3 weeks.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:374:**You have no federated retrieval evaluation at all.** Every benchmark result is single-peer local retrieval. This is the most important pitfall: the project's differentiating claim (federation compounds knowledge) has zero measurement infrastructure, which means you also have zero evidence that federation *doesn't* hurt single-peer retrieval quality. Federated fan-out introduces latency heterogeneity, vocabulary drift across peers, and duplicate node inflation in RRF merge — any of which could degrade the 0.9202 LME-S number when measured on a real multi-peer run.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:376:**Vocabulary drift**: BM25 FTS5 search works on lexical overlap. If peer A indexed "vector quantization" and peer B indexed "VQ compression," a query for "quantize embeddings" may hit A's nodes but miss B's — not because B doesn't have relevant knowledge, but because BM25 can't bridge the vocabulary gap in a federated query. The hybrid (dense + sparse) architecture mitigates this for dense retrieval but not for the BM25 component.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:406:**The constraint:** You need ≥8 active peers simultaneously sharing at least one common room for R(T,t) to grow visibly enough to screenshot. Below that threshold, Step 5 (B's query answered by A's research) is a rare event.
-./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:418:*What they commit to*: Index one active project (`wellinformed index <repo>`), join `oss-commons` room, run their peer for at least 4 hours/day for 30 days.
+./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:418:*What they commit to*: Index one active project (`akashik index <repo>`), join `oss-commons` room, run their peer for at least 4 hours/day for 30 days.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:420:*Seed content*: Each curator indexes their active project repo → 500-2000 nodes → 10,000-20,000 nodes in the federated graph by day 7.
-./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:438:3. A `wellinformed network status` command showing R(T,t) for the top 10 topics in the room
+./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:438:3. A `akashik network status` command showing R(T,t) for the top 10 topics in the room
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:448:**The problem is real and has a name:** "rich get richer" — Barabási-Albert preferential attachment. Hot topics get cached by more peers → appear in more search results → get queried by more new users → get cached by more peers. After 6 months, the network's federated index will be dominated by whatever the early curators happened to care about.
-./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:455:**Akashik mitigation**: The `find_tunnels` MCP tool already discovers cross-domain connections. A `wellinformed room gaps` command — showing topics that have queries but no cached answers, or topics that haven't been updated in >30 days — would surface the cold-topic coverage map to curators. The peer-reputation system's "topic coverage gaps" output (mentioned in its design doc) is exactly this. Implement it as a visible CLI output, not just an internal metric.
+./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:455:**Akashik mitigation**: The `find_tunnels` MCP tool already discovers cross-domain connections. A `akashik room gaps` command — showing topics that have queries but no cached answers, or topics that haven't been updated in >30 days — would surface the cold-topic coverage map to curators. The peer-reputation system's "topic coverage gaps" output (mentioned in its design doc) is exactly this. Implement it as a visible CLI output, not just an internal metric.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:465:- DHT replication factor: Kademlia stores k=20 copies. Akashik's opt-in "popular-in-room caching" (mentioned in the mechanism doc) is the right analog. Make it opt-in-by-default for rooms tagged `oss-commons`, not just general rooms.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:472:The threat model (p2p-threat-model.md) covers AS-4 (secret exfiltration) and AS-6 (SSRF). It does not cover the *semantic adversarial* attack: a peer that joins a room, indexes plausible-sounding but wrong answers to common questions, and lets the compounding mechanism propagate those wrong answers through the network.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:479:- PGP web of trust: Explicit trust signatures. Works in small communities; doesn't scale to public rooms.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:480:- Fediverse defederation: Domain-level block when an instance becomes a spam/abuse vector.
-./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:486:**What to add:** (a) Community flagging — `wellinformed flag <node_id> --reason misinformation` sends a signed attestation to the room that the node is disputed. (b) Dispute visibility — when a node has flags, display them in search results: "[flagged as disputed by 3 peers]." (c) Reputation decay on flagged nodes — peer-reputation score decays when the peer's nodes accumulate flags. This doesn't verify truth, but it creates a social accountability layer.
+./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:486:**What to add:** (a) Community flagging — `akashik flag <node_id> --reason misinformation` sends a signed attestation to the room that the node is disputed. (b) Dispute visibility — when a node has flags, display them in search results: "[flagged as disputed by 3 peers]." (c) Reputation decay on flagged nodes — peer-reputation score decays when the peer's nodes accumulate flags. This doesn't verify truth, but it creates a social accountability layer.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:506:**What Akashik does better:** Federation across organizations (Logseq sync is same-user multi-device or explicit sharing; Akashik federates across organizational boundaries), semantic retrieval quality (measured BEIR numbers), compounding by curiosity (not deliberate sync), DID-signed attribution.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:508:**The key difference:** Logseq is "your notes, synced with you across devices." Akashik is "your research, shared with the community when queried." These sound similar but are fundamentally different trust models. Logseq's sync is a replication protocol; Akashik's federation is a query protocol.
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:514:**Why it's the real competitor:** The AT Protocol is the most mature open-source implementation of the three things Akashik's architecture depends on: DIDs (they use `did:plc` and `did:web`), federated content (Personal Data Servers + relay aggregation), and semantic labeling systems. The AT Protocol is already deployed at scale (6M+ accounts), has an active developer ecosystem, and is building "labelers" (essentially federated reputation) and "starter packs" (essentially curated rooms).
@@ -5250,18 +5250,18 @@ exec
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-4.md:339:**The Response:** Akashik mitigates this through strict cryptographic provenance, explicit data aging, and conflict surfacing. Every node carries a `did:key` signature and a `fetched_at` timestamp, and system rooms automatically age out (7-30 days). More importantly, the protocol is designed to surface *conflicting evidence* rather than smoothing it over. If Peer A has a stale fix and Peer B has the new one, the agent receives an explicit "contract" highlighting the contradiction, forcing a live verification search rather than a blind skip. 
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-4.md:342:Given the three-round empirical arc and the pivot to a federated commons, **the next engineering month must focus on the Trust, Eviction, and Consolidation Layer.** 
 ./docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-4.md:346:*   **The Long Tail of Data:** As we transition schemas (e.g., v1 to v2 shared rooms), we must handle orphaned records and historically inconsistent data without crashing the daemon.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:11:3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:11:3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:12:4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:71:| `NEXT_STEPS.md` | **ARCHIVE → `docs/archive/`** | North star ("make federated search match local search") is the old agent-memory framing; superseded by PROJECT-PLAN-AKASHIK.md and the compounding thesis |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:137:| `docs/p2p/peer-reputation-design.md` | KEEP | Reputation math feeds federation routing |
-./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:157:| `docs/memory-stack.png/svg` | NEEDS-REWRITE | Architecture diagram references wellinformed stack; update to show Akashik federation layer |
+./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:157:| `docs/memory-stack.png/svg` | NEEDS-REWRITE | Architecture diagram references akashik stack; update to show Akashik federation layer |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:167:| `tests/bench-akashik-federation.test.ts` | **KEEP** | AkashikBench-F — the key Phase 24 instrument; validates the compounding thesis |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:188:| `src/application/federated-search.ts` | KEEP | Core of Phase 17+; directly in Phase 24 scope |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:192:| `src/domain/federation-sim.ts` | KEEP | AkashikBench-F simulator; Phase 24's key instrument |
-./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:218:The project uses ed25519 peer identity (Phase 15, `~/.wellinformed/peer-identity.json`). The identity strategy memory entry says GitHub OAuth is the planned social DID anchor. **This is a hard API version break.** Existing peers authenticating via raw ed25519 multiaddrs will silently fail to establish sessions if the OAuth requirement lands as a patch. The correct treatment: gate GitHub OAuth behind a new handshake version in the `/wellinformed/share/1.0.0` libp2p protocol (bump to `/akashik/share/2.0.0`), keep the v1 handler alive for at least one major version, and add a deprecation notice to the `wellinformed peer add` CLI response. The identity bridge code (`src/application/identity-bridge.ts`) should contain the migration path. This is **not currently documented** in any phase plan — it's an implicit assumption that auth and API versioning are decoupled. They are not.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:218:The project uses ed25519 peer identity (Phase 15, `~/.akashik/peer-identity.json`). The identity strategy memory entry says GitHub OAuth is the planned social DID anchor. **This is a hard API version break.** Existing peers authenticating via raw ed25519 multiaddrs will silently fail to establish sessions if the OAuth requirement lands as a patch. The correct treatment: gate GitHub OAuth behind a new handshake version in the `/akashik/share/1.0.0` libp2p protocol (bump to `/akashik/share/2.0.0`), keep the v1 handler alive for at least one major version, and add a deprecation notice to the `akashik peer add` CLI response. The identity bridge code (`src/application/identity-bridge.ts`) should contain the migration path. This is **not currently documented** in any phase plan — it's an implicit assumption that auth and API versioning are decoupled. They are not.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:228:AkashikBench-F is an in-simulator boolean-set abstraction — it validates dynamics (compounding slope = -4.74e-5), not real network retrieval quality. The Phase 24 federation routing changes (room-affinity routing, query-type detection) will touch `src/application/federated-search.ts` and `src/infrastructure/search-sync.ts`. These changes have no shadow-traffic harness yet.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:230:**What parity means here is specific:** the composite bench score from Phase 23 (0.9012 / 1.0000) must not drop >1 point absolute when the new routing lands. That's the stated gate. What's missing is a test that replays a set of federated queries against both the old direct-fan-out path and the new routed path and diffs the top-5 result sets. Acceptable divergence: same hit in top-5 (order may change), zero cases where the routed path returns empty where direct-fan-out returns results. This harness does not exist and should be a Phase 24.1 deliverable before any routing change lands.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:262:These three files are the most dangerous clutter in the repo because they actively contradict the current mission. A new contributor reading the docs/ folder will hit "wellinformed competes with mem0/ByteRover on R@5" before they hit "Akashik is the federated knowledge commons for the OSS community." That's a positioning inversion that takes time to undo mentally. The storybrand-messaging-draft.md (written today) is the canonical voice; every pre-pivot positioning document left in the active tree is a hole in that narrative.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:262:These three files are the most dangerous clutter in the repo because they actively contradict the current mission. A new contributor reading the docs/ folder will hit "akashik competes with mem0/ByteRover on R@5" before they hit "Akashik is the federated knowledge commons for the OSS community." That's a positioning inversion that takes time to undo mentally. The storybrand-messaging-draft.md (written today) is the canonical voice; every pre-pivot positioning document left in the active tree is a hole in that narrative.
 ./docs/marketing/how-akashik-works.md:4:Akashik possible. Written for the reader who has heard "federated
 ./docs/marketing/how-akashik-works.md:17:federation couldn't satisfy a query. When you ask Akashik
 ./docs/marketing/how-akashik-works.md:19:you're federated with for *their two cents*. If the federation
@@ -5282,11 +5282,11 @@ exec
 ./docs/marketing/how-akashik-works.md:218:| Web research you did to satisfy your own query | Saved locally; shared via your peer ID with the room you queried from |
 ./docs/marketing/how-akashik-works.md:230:for newcomers who want to see what's already in the federation
 ./docs/research/github-star-growth.md:20:4. **Competitor keywords for discoverability**: "Open-source alternative to Obsidian knowledge graphs + Feedly + Readwise" — SEO + category positioning.
-./wellinformed-rs/Cargo.toml:12:# (shared with the TypeScript bench so both run on the exact same data).
-./wellinformed-rs/Cargo.toml:18:# by 3-10x on throughput, we know the TS pipeline has headroom to reclaim.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:12:3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+./akashik-rs/Cargo.toml:12:# (shared with the TypeScript bench so both run on the exact same data).
+./akashik-rs/Cargo.toml:18:# by 3-10x on throughput, we know the TS pipeline has headroom to reclaim.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:12:3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:13:4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:52:The repo is carrying three different stories at once: old `wellinformed` personal/team memory, mid-phase retrieval leaderboard work, and current `Akashik` OSS commons. The cleanup should optimize for one thing: make the federation-compounding thesis look like the product, and demote everything else to history.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:52:The repo is carrying three different stories at once: old `akashik` personal/team memory, mid-phase retrieval leaderboard work, and current `Akashik` OSS commons. The cleanup should optimize for one thing: make the federation-compounding thesis look like the product, and demote everything else to history.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:100:| `docs/research/performance-prediction-matrix.md` | ARCHIVE | Over-optimizes old leaderboard logic and hardware-tier positioning instead of federation value. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:108:| `tests/bench-akashik-federation.test.ts` | KEEP | This is the pivot-validating benchmark and should become the flagship suite. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:109:| `tests/bench-locomo-real.test.ts` | KEEP | Still useful as a single-peer retrieval floor; complements, not replaces, federation tests. |
@@ -5296,7 +5296,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:124:| `src/application/federated-search.ts` | KEEP | Central to the live product story. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:127:| `src/infrastructure/peer-transport.ts` | KEEP | Foundational to the federation thesis. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:159:On tests: the real-corpus benches still matter because they prove the local node is not weak. However, the product claim is no longer “best R@5.” The tradeoff is regression coverage versus attention dilution. My call: keep `bench-akashik-federation` as flagship, keep the real retrieval benches as regression guards, archive the synthetic proxy benches that were only useful while public-corpus adapters were missing.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:229:3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:229:3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:230:4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:376:src/application/federated-recall.ts
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:377:src/application/federated-search.ts
@@ -5337,8 +5337,8 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:865:The Round 5 octopus-discover synthesis identified one benchmark capable of falsifying the federated-commons thesis: a federation-level simulator measuring `web_fallback_rate(t)` over a realistic peer network with offline churn. We built it. First run, on the LoCoMo factual subset:
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:884:| Web fallback | 4.5% | Outbound only when federation couldn't answer |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:888:Bench source: [`tests/bench-akashik-federation.test.ts`](tests/bench-akashik-federation.test.ts).
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:913:wellinformed save https://arxiv.org/abs/2406.16678 --room research
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:914:wellinformed save ./notes/cuda-oom-debug.md --room toolshed
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:913:akashik save https://arxiv.org/abs/2406.16678 --room research
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:914:akashik save ./notes/cuda-oom-debug.md --room toolshed
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:923:The query checks your local graph, then federates to peers you share rooms with, then falls back to web research only if neither can answer. The web result lands in your local graph signed by you — the next contributor who asks something similar pulls it from your peer with full attribution.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:931:- **P2P federation over libp2p.** No central server, no vendor data lock-in. Each peer advertises the rooms it participates in; queries fan out via gossip with bounded timeouts. Lineage per the Round 5 synthesis: *Freenet-style demand-shaped lazy replication with cache-fill on miss*, applied to attributed semantic memory.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:932:- **Ed25519-signed contributions with DIDs.** Every record carries the curator's decentralized identifier, room, source URLs, and timestamp. Trust is graph-traversable: follow the chain, see who curated, when, and why. Lineage: AT Protocol's signed-attribution layer applied to research memory rather than social posts.
@@ -5358,7 +5358,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1142:  bomb; we emit room-level aggregates only). Counter increments
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1146:  criterion: per-room daily snapshot, queryable from CLI, integrates
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1194:  listing every artifact with its URL, librarian, and room.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1216:  `wellinformed share` to join the pilot rooms. Success criterion:
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1216:  `akashik share` to join the pilot rooms. Success criterion:
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1223:  that validates or falsifies the federated thesis under real
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1228:  `local / federation / web` fraction breakdown, and an explicit
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1241:  with an older schema federates with a peer on v2, malformed
@@ -5375,20 +5375,20 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1487:source · no exact version · no source URI · single-origin re-share · peer
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1497:- All evidence traces to one origin through re-shares.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1520:DDD layered stack: pure domain (graph, vectors, errors), infrastructure ports + adapters (JSON graph repo, sqlite-vec vector index, xenova/fixture embedders), application use cases (indexNode, searchByRoom, searchGlobal, findTunnels, exploreRoom). Graphify vendored as submodule with schema patch for room/wing/source_uri/fetched_at/embedding_id. Python venv bootstrapping for graphify sidecar.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1524:Pluggable Source port with four adapters: generic_rss, arxiv, hn_algolia, generic_url. RSS 2.0 + Atom normaliser. Recursive paragraph chunker. Content-hash (sha256) dedup on re-runs. `wellinformed trigger [--room R]` and `wellinformed sources list|add|remove|enable|disable`.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1530:9 tools exposed over stdio via @modelcontextprotocol/sdk: search, ask, get_node, get_neighbors, list_rooms, find_tunnels, sources_list, trigger_room, graph_stats. `wellinformed mcp start` — auto-spawned by Claude Code via the plugin manifest.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1534:**Commands:** `wellinformed init`, `wellinformed room list|create|switch|current`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1524:Pluggable Source port with four adapters: generic_rss, arxiv, hn_algolia, generic_url. RSS 2.0 + Atom normaliser. Recursive paragraph chunker. Content-hash (sha256) dedup on re-runs. `akashik trigger [--room R]` and `akashik sources list|add|remove|enable|disable`.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1530:9 tools exposed over stdio via @modelcontextprotocol/sdk: search, ask, get_node, get_neighbors, list_rooms, find_tunnels, sources_list, trigger_room, graph_stats. `akashik mcp start` — auto-spawned by Claude Code via the plugin manifest.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1534:**Commands:** `akashik init`, `akashik room list|create|switch|current`
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1536:**Goal:** Make onboarding self-service. `init` is an interactive wizard that asks what the user is researching, creates the room, suggests source adapters (arxiv queries, RSS feeds, HN searches), and registers them. `room` manages rooms programmatically (list, create, set current default, switch).
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1539:- `src/domain/rooms.ts` — Room metadata type (name, description, created_at, keywords, default wing)
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1540:- `src/infrastructure/rooms-config.ts` — Room registry at `~/.wellinformed/rooms.json`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1540:- `src/infrastructure/rooms-config.ts` — Room registry at `~/.akashik/rooms.json`
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1541:- `src/cli/commands/init.ts` — Interactive room seeding wizard (prompts via readline)
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1542:- `src/cli/commands/room.ts` — list / create / switch / current / describe
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1543:- Update `sources add` to validate that the room exists in the registry
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1544:- Update MCP tools: add `room_create`, `room_list` tools
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1545:- Test: `tests/phase4.rooms.test.ts`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1549:**Commands:** `wellinformed ask "<query>"`, `wellinformed report [date] [--room R]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1557:- Report persistence at `~/.wellinformed/reports/<room>/<date>.md`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1562:**Commands:** `wellinformed daemon start|stop|status`, `wellinformed discover [--room R]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1549:**Commands:** `akashik ask "<query>"`, `akashik report [date] [--room R]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1557:- Report persistence at `~/.akashik/reports/<room>/<date>.md`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1562:**Commands:** `akashik daemon start|stop|status`, `akashik discover [--room R]`
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1564:**Goal:** Set-and-forget. The daemon runs `triggerRoom` on a configurable schedule, rotates through rooms, writes reports, and surfaces new content without manual intervention. Discovery mode expands the source list by finding new feeds/queries within a room's topic area.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1567:- `src/daemon/loop.ts` — setInterval-based loop with PID file, round-robin rooms, configurable interval
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:1568:- `src/daemon/discovery.ts` — Given a room's keywords and existing sources, suggest new sources (search RSS aggregators, arxiv categories, HN tags)
@@ -5422,7 +5422,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:2292:search. Two concerns, one phase because they share infrastructure
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:2459:- Contradiction: Jaccard ≥ 0.9 on shared-concept clusters. Older
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:2566:deterministic, and shared into the repo so anyone can run it.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:2710:/bin/zsh -lc "sed -n '1,200p' tests/bench-akashik-federation.test.ts" in /Users/saharbarak/personal/wellinformed
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:2710:/bin/zsh -lc "sed -n '1,200p' tests/bench-akashik-federation.test.ts" in /Users/saharbarak/personal/akashik
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:2713: * Bench — AkashikBench-F (federation-level compounding).
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:2716: * as the only one that can falsify or validate the federated-
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:2724: * pure-domain federation simulator
@@ -5435,7 +5435,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:2846:test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60 * 60 * 1000 }, async (t) => {
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3062:      room: 'bench',
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3081:        room: 'bench',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3118:/bin/zsh -lc "sed -n '1,220p' src/application/federated-search.ts" in /Users/saharbarak/personal/wellinformed
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3118:/bin/zsh -lc "sed -n '1,220p' src/application/federated-search.ts" in /Users/saharbarak/personal/akashik
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3129: *   4. Cross-room tunnel detection via findTunnels over the merged synthetic record set (FED-04)
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3171:  readonly room: string;
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3215:  readonly room?: string;
@@ -5445,7 +5445,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3481:        room: 'beir',
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3609: *     into the `toolshed` room when the user opts in.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3621: * `synthesis://` even though they don't share a prefix here, to keep
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3790:/bin/zsh -lc "sed -n '1,220p' src/domain/federation-sim.ts" in /Users/saharbarak/personal/wellinformed
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3790:/bin/zsh -lc "sed -n '1,220p' src/domain/federation-sim.ts" in /Users/saharbarak/personal/akashik
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3793: * Phase 24 (Akashik) — federation simulator (pure domain).
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3798: * validate the federated-commons thesis. The current public-corpus
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:3815: * benches). What this measures is *federation dynamics* under
@@ -5455,218 +5455,218 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4055:./src/domain/federation-sim.ts:2: * Phase 24 (Akashik) — federation simulator (pure domain).
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4056:./src/domain/federation-sim.ts:6: * **AkashikBench-F** is the only benchmark that can falsify or
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4057:./src/domain/federation-sim.ts:360: * core operational claim of the Akashik mechanism.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4068:./src/domain/job.ts:68: * from the room+root inputs, mirroring `wellinformed index`.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4074:./src/domain/system-rooms.ts:2: * System-managed rooms — the out-of-the-box rooms every wellinformed
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4075:./src/domain/system-rooms.ts:19: *    A git commit tagged `room: wellinformed-dev` is STILL in toolshed.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4076:./src/domain/system-rooms.ts:38: * opt-in for P2P sharing via the interactive `wellinformed share` TUI.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4104:./src/domain/errors.ts:607:      return `fix: the node was BLOCKED before reaching the network — your secret is safe locally. Either remove the credential from the source content, or move it to a non-shared room. Inspect the node with \`wellinformed get-node ${e.nodeId}\`.`;
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4105:./src/domain/errors.ts:610:      return `fix: review flagged nodes with \`wellinformed lint --room ${e.room}\` and either remove the secrets or unshare the room.`;
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4119:./src/cli/tui/share-picker-tty.ts:66:  const header = `${BOLD}wellinformed share${RESET} — toggle which physical rooms are open to peers`;
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4120:./src/cli/tui/share-picker-tty.ts:76:    : `${DIM}  (no physical rooms yet — run \`wellinformed trigger\` first)${RESET}`;
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4121:./src/cli/tui/share-picker-tty.ts:100: * `wellinformed share room <name>` command instead.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4122:./src/cli/tui/share-picker-tty.ts:106:    throw new Error('share ui: requires a TTY. Use `wellinformed share room <name>` in scripts.');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4128:./src/infrastructure/ydoc-store.ts:2: * Y.Doc binary persistence — `~/.wellinformed/ydocs/<room>.ydoc` files.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4138:./src/mcp/server.ts:88:        'Semantic search over the wellinformed knowledge graph. Returns the top-k matches ordered by distance. Optionally filter by room.',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4157:./src/mcp/server.ts:856:        'broader federation of wellinformed peers to help answer a question ' +
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4162:./src/infrastructure/touch-protocol.ts:193:    // name (e.g. `wellinformed share room research`), include nodes
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4163:./src/cli/commands/save.ts:2: * `wellinformed save --room R [--type T] --label X [--text Y]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4164:./src/cli/commands/save.ts:11: *   wellinformed save --room project --type concept --label "Touch primitive" \
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4165:./src/cli/commands/save.ts:14: *   echo "long body..." | wellinformed save --room project --type synthesis --label "..."
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4222:./CLAUDE.md:282:Two canonical rooms every wellinformed peer advertises out of the box:
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4224:./CLAUDE.md:306:- If the hit is older, prefer a fresh pull — `mcp__wellinformed__trigger_room`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4229:./CLAUDE.md:356:   a refresh via `mcp__wellinformed__trigger_room` then retry.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4242:./src/cli/commands/onboard.ts:299:    "Skip if unsure; you can always run 'wellinformed trigger --room sessions' later.",
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4243:./src/cli/commands/onboard.ts:312:    log.message('skipped — run `wellinformed trigger --room sessions` when convenient');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4244:./src/cli/commands/onboard.ts:367:        `The 'wellinformed trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - WELLINFORMED_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  wellinformed trigger --room sessions`,
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4252:./src/cli/commands/onboard.ts:529:      '  wellinformed this everyone     index + share with the P2P network',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4254:./src/cli/commands/onboard.ts:531:      '  wellinformed trigger           refresh all rooms',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4267:./src/cli/commands/sources.ts:37:  if (args.length === 0) return 'missing <id> — usage: wellinformed sources add <id> --kind K --room R --config {json}';
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4273:./src/cli/commands/sessions.ts:37:    console.log('  next run of `wellinformed trigger --room sessions` will re-ingest from offset 0.');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4274:./src/cli/commands/sessions.ts:45:    console.error(`  'wellinformed trigger --room sessions' (can re-create thousands of nodes).`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4276:./src/cli/commands/sessions.ts:72:    console.log('  wellinformed trigger --room sessions');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4316:./src/cli/commands/discover-loop.ts:2: * `wellinformed discover-loop [--room R] [--max-iterations N]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4317:./src/cli/commands/share.ts:2: * `wellinformed share <sub>` — sharing boundary commands.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4318:./src/cli/commands/share.ts:18:import { runtimePaths, wellinformedHome } from '../runtime.js';
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4319:./src/cli/commands/share.ts:25:const configPath = (): string => join(wellinformedHome(), 'config.yaml');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4320:./src/cli/commands/share.ts:26:const sharedRoomsPath = (): string => join(wellinformedHome(), 'shared-rooms.json');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4321:./src/cli/commands/share.ts:43:      'share audit: missing --room <name>. usage: wellinformed share audit --room <name> [--json]',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4322:./src/cli/commands/share.ts:120:    console.error('share room: missing <name>. usage: wellinformed share room <name>');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4323:./src/cli/commands/share.ts:175:    console.error(`\nrun 'wellinformed share audit --room ${roomId}' for full details.`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4324:./src/cli/commands/share.ts:202:  const ydocPath = join(wellinformedHome(), 'ydocs', `${roomId}.ydoc`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4325:./src/cli/commands/share.ts:203:  const logPath = join(wellinformedHome(), 'share-log.jsonl');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4326:./src/cli/commands/share.ts:229:  console.log("  run 'wellinformed daemon start' (or restart it) so peers can sync this room");
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4327:./src/cli/commands/share.ts:251:    console.log('share ui: no physical rooms yet. Run `wellinformed trigger` to index some content first.');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4328:./src/cli/commands/share.ts:292:      console.error(`  ${b.room}: ${b.count} flagged node(s). Run \`wellinformed share audit --room ${b.room}\` to inspect.`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4329:./src/cli/commands/share.ts:309:const USAGE = `usage: wellinformed share <audit|room|ui>
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4343:./wellinformed-rs/src/lib.rs:1://! wellinformed-bench library — shared modules for the `bench_beir`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4346:./src/cli/commands/touch.ts:2: * `wellinformed touch <peer-id-or-multiaddr> --room <name> [--max N] [--dry-run]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4352:./src/cli/commands/touch.ts:46:    return 'touch: missing <peer-id-or-multiaddr>. usage: wellinformed touch <peer> --room <name> [--max N] [--dry-run]';
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4355:./src/cli/commands/recent-sessions.ts:4: * Queries ~/.wellinformed/graph.json for nodes in the `sessions` room,
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4357:./src/cli/commands/index-project.ts:2: * `wellinformed index [--room R] [--root DIR]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4362:./src/cli/commands/consolidate.ts:86:  if (!room) return 'missing <room>. usage: wellinformed consolidate run <room> [--dry-run] [--prune [--backup PATH | --no-backup]]';
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4366:./src/cli/commands/consolidate.ts:287:          ?? join(wellinformedHome(), `prune-backup-${parsed.room}-${Date.now()}.ndjson`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4369:./src/cli/commands/consolidate.ts:481:    console.error('consolidate prune-marked: missing <room>. usage: wellinformed consolidate prune-marked <room> [--no-backup | --backup PATH] [--force]');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4371:./src/cli/commands/consolidate.ts:516:      const path = backupPath ?? join(wellinformedHome(), `prune-marked-backup-${room}-${Date.now()}.ndjson`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4383:./src/cli/commands/eval.ts:2: * `wellinformed eval <queries.jsonl> [--room R] [--k 10] [--json]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4384:./src/cli/commands/eval.ts:66:    return 'missing queries file — usage: wellinformed eval <queries.jsonl> [--room R] [--k 10] [--limit N] [--json]';
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4387:./src/cli/commands/oracle.ts:2: * `wellinformed oracle <sub>` — peer-to-peer Q&A via the oracle system room.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4416:./src/cli/commands/recall.ts:2: * `wellinformed recall <name> [--room R] [--k N] [--json]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4418:./src/cli/commands/recall.ts:50:  if (!query) return 'missing name — usage: wellinformed recall <name> [--room R] [--k N] [--peers] [--json]';
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4419:./src/cli/commands/recall.ts:56:    console.log(`usage: wellinformed recall <name> [--room R] [--k N] [--peers] [--json]
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4430:./src/cli/commands/init.ts:2: * `wellinformed init` — interactive room seeding wizard.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4431:./src/cli/commands/init.ts:17: * Non-interactive mode: `wellinformed init --name X --desc Y --keywords a,b`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4432:./src/cli/commands/init.ts:117:  console.log('\nwellinformed init — set up a new research room\n');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4433:./src/cli/commands/init.ts:230:    console.log(`run 'wellinformed trigger --room ${result.room.id}' to fetch initial content.`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4459:./src/cli/commands/viz.ts:2: * `wellinformed viz [--room R] [--output FILE]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4465:./demo/scene-federated.tape:1:# wellinformed — natural Claude Code session, federated retrieval live.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4466:./demo/scene-federated.tape:20:Type "cd /Users/saharbarak/personal/wellinformed"
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4467:./demo/scene-federated.tape:22:Type "export WELLINFORMED_HOME=$HOME/.wellinformed.demo"
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4468:./src/cli/commands/export-obsidian.ts:2: * `wellinformed export obsidian [--room R] [--output DIR]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4469:./src/cli/commands/export-obsidian.ts:102:    const indexLines = [`# wellinformed vault — ${room ?? 'all rooms'}`, '', `${nodes.length} nodes, ${edges.length} edges`, ''];
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4487:./src/cli/commands/ask.ts:2: * `wellinformed ask "<query>" [--room R] [--k N] [--peers]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4490:./src/cli/commands/ask.ts:53:  if (!query) return 'missing query — usage: wellinformed ask "your question" [--room R] [--k N] [--peers] [--json]';
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4501:./src/cli/commands/ask.ts:452:    console.log(`# wellinformed federated results for: ${parsed.query}`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4511:./demo/scene-touch.tape:62:Type 'wellinformed touch --peer "$WELLINFORMED_DEMO_PEER_B_ID" --room research'
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4512:./demo/scene-touch.tape:71:Type 'wellinformed touch --peer "$WELLINFORMED_DEMO_PEER_D_ID" --room research'
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4546:./src/cli/commands/claude-install.ts:154:Two canonical rooms every wellinformed peer advertises out of the box:
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4548:./src/cli/commands/claude-install.ts:178:- If the hit is older, prefer a fresh pull — \`mcp__wellinformed__trigger_room\`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4552:./src/cli/commands/claude-install.ts:197:   \`wellinformed save --type synthesis --room <room>\` to file the
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4561:./scripts/bench-room-routing.mjs:4:// Tests whether wellinformed's room architecture gives a measurable retrieval lift
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4562:./scripts/bench-room-routing.mjs:11://     --datasets-dir ~/.wellinformed/bench/cqadupstack/cqadupstack \
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4563:./scripts/bench-room-routing.mjs:38:const DATASETS_DIR = getArg('--datasets-dir', join(homedir(), '.wellinformed/bench/cqadupstack/cqadupstack'));
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4564:./scripts/bench-room-routing.mjs:51:const CACHE_ROOT = join(homedir(), '.wellinformed', 'bench');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4565:./scripts/bench-room-routing.mjs:59:console.log(' wellinformed Wave 4 — Room Routing Gate Test');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4566:./scripts/bench-room-routing.mjs:237:// target room. This is the same pattern wellinformed's production
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4581:./src/cli/commands/this.ts:9: *   wellinformed this              → index cwd, room private
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4583:./src/cli/commands/this.ts:11: *   wellinformed this everyone     → index cwd + share room with peers
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4584:./src/cli/commands/this.ts:15: * boundary identical to `wellinformed share room <name>`.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4587:./src/cli/commands/this.ts:71:  console.log(`wellinformed this ${visibility} — room '${slug}' (${root})\n`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4591:./src/cli/commands/this.ts:107:      console.log(`  to share later: wellinformed share room ${slug}`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4593:./src/cli/commands/this.ts:125:    console.log(`  to share later: wellinformed share room ${slug}`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4594:./src/cli/commands/report.ts:2: * `wellinformed report [--room R] [--since DATE] [--no-save]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4595:./src/cli/commands/report.ts:5: * optionally persists it to ~/.wellinformed/reports/<room>/<date>.md.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4596:./scripts/bench-bridge.mjs:7:// against the same corpus. If true, wellinformed peers can federate
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4601:./src/cli/commands/discover.ts:2: * `wellinformed discover [--room R] [--auto]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4602:./src/cli/commands/discover.ts:48:    console.error('discover: no room specified and no default room set. use --room or run `wellinformed init`.');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4603:./src/cli/commands/discover.ts:82:    console.log(`\n${suggestions.length} source(s) added. run 'wellinformed trigger --room ${room}' to fetch.`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4604:./src/cli/commands/discover.ts:84:    console.log(`add them with: wellinformed discover --room ${room} --auto`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4620:./src/cli/commands/room.ts:2: * `wellinformed room <sub>` — manage the room registry.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4621:./src/cli/commands/room.ts:12: *   wellinformed room create homelab --desc "Home lab infra" --keywords "proxmox,mikrotik,10gbe"
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4622:./src/cli/commands/room.ts:13: *   wellinformed room switch homelab
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4623:./src/cli/commands/room.ts:36:    console.log('no rooms configured. try `wellinformed init` or `wellinformed room create <name>`.');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4624:./src/cli/commands/room.ts:50:    console.error('room create: missing <name>. usage: wellinformed room create <name> [--desc "..."] [--keywords "a,b,c"] [--wing "default"]');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4625:./src/cli/commands/room.ts:117:    console.log('no default room set. run `wellinformed init` to create one.');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4626:./src/cli/commands/trigger.ts:2: * `wellinformed trigger [--room <room>] [--sync]` — run an ingest pass.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4628:./src/cli/commands/trigger.ts:89:  console.log(`\n${rooms.length - failed} job(s) queued — track with: wellinformed jobs watch`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4630:./src/cli/commands/unshare.ts:2: * `wellinformed unshare <name>` — make a room private again.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4631:./src/cli/commands/unshare.ts:8: * KEEPS the .ydoc binary file at ~/.wellinformed/ydocs/<name>.ydoc so a
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4632:./src/cli/commands/unshare.ts:15:import { wellinformedHome } from '../runtime.js';
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4633:./src/cli/commands/unshare.ts:17:const sharedRoomsPath = (): string => join(wellinformedHome(), 'shared-rooms.json');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4634:./src/cli/commands/unshare.ts:19:const USAGE = `usage: wellinformed unshare <name>
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4635:./src/cli/commands/unshare.ts:59:  console.log('  restart the daemon (wellinformed daemon stop && start) to close active sync streams for this room');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4647:./src/cli/commands/lint.ts:2: * `wellinformed lint [--room R] [--json]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4660:./src/cli/commands/peers-rep.ts:132:    console.log('no peer reputation data yet — needs at least one federated ask with `wellinformed ask --peers`.');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4665:./src/cli/commands/codebase.ts:14: * Separate from `wellinformed index` (shallow research-room indexing — NOT modified
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4670:./src/cli/commands/codebase.ts:259:    console.error('codebase attach: usage: wellinformed codebase attach <id> --room <room-id>');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4671:./src/cli/commands/codebase.ts:296:    console.error('codebase detach: usage: wellinformed codebase detach <id> --room <room-id>');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4715:./src/infrastructure/watch-targets.ts:5: * Each entry: { room, root, registered_at }. `wellinformed this`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4717:./src/infrastructure/watch-targets.ts:60: * (room, root) pair so re-running `wellinformed this` refreshes the
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4719:./src/infrastructure/share-store.ts:2: * Share store — persists the shared-rooms registry to ~/.wellinformed/shared-rooms.json.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4720:./src/infrastructure/share-store.ts:29: * concurrent wellinformed processes (e.g., daemon + CLI `share room foo`)
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4721:./src/infrastructure/share-store.ts:284: * and releases the lock. Prevents two wellinformed processes (e.g., daemon +
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4730:./README.md.bak.830lines:27:   distance: 0.961 | room: wellinformed-dev
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4734:./README.md.bak.830lines:61:**wellinformed is how that ecosystem shares its knowledge.**
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4736:./README.md.bak.830lines:71:**1. Each peer carries a shard of what's current — together, the live index.** Every wellinformed instance is a libp2p peer. Rooms sync across peers via Y.js CRDT. A federated `ask --peers` fans a query across the network in parallel, 2-second per-peer timeout, results merged by cosine distance with per-peer attribution. The stranger who read that paper last Thursday, the peer who benchmarked that library two weeks ago, the dev who debugged that exact bug last night — their embeddings flow into your session. Nobody knows the whole graph; together the community does — the live state of the field, something no frozen-weight model can touch.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4739:./README.md.bak.830lines:87:With wellinformed, the `PreToolUse` hook fires before Claude reaches for the web. Your graph — already holding every arXiv paper you've pulled, every repo you've starred, every past session you've had, plus every shard shared by every other peer running wellinformed — answers in **11 ms**. Three hits across three rooms: a GitHub repo someone starred yesterday, a piece of community code you hadn't seen, an arXiv paper from two hours ago. Claude replies instantly from the community's latest state. When the session ends, your transcript is vector-indexed back into the graph so tomorrow's session starts richer than today's. And every peer on the network is doing the same — the ten-thousand-stranger loop runs **once**, not ten thousand times.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4741:./README.md.bak.830lines:103:wellinformed init                      # create a room, pick your sources
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4742:./README.md.bak.830lines:104:wellinformed trigger --room homelab    # fetch from ArXiv, HN, RSS, blogs, any URL
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4748:./README.md.bak.830lines:151:wellinformed discover --room homelab --auto
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4751:./README.md.bak.830lines:165:The v2.1 hook layer goes further: before every Grep/Glob/Read/WebSearch/WebFetch, a PreToolUse hook runs `wellinformed ask --json` on the extracted query and injects the top-3 hits into Claude's context. On a miss, the query is logged for later ingest. After every WebSearch/WebFetch, a PostToolUse hook auto-saves the result as a `source` node in the always-on `research` system room so the next session finds it via the graph instead of the network.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4752:./README.md.bak.830lines:174:- **One room per repo** — when you `wellinformed index` a codebase (or Claude Code opens one), wellinformed provisions a dedicated room for it. The repo name becomes the room id — `my-app`, `auto-tlv`, `wellinformed-dev` — and its embeddings, commits, and docs stay scoped to that room. Switching projects switches rooms automatically; queries stay relevant to the repo you're in without cross-contamination.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4753:./README.md.bak.830lines:177:**Tunnels** are the exception — when nodes in different rooms are semantically close, wellinformed flags them. A paper about embedding quantization in `ml-papers` connects to a memory issue in `homelab`. That connection is what rooms exist to produce.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4754:./README.md.bak.830lines:181:Every wellinformed instance is a libp2p peer with a cryptographic identity. Rooms can be shared across peers via Y.js CRDT. Search runs federated across the network. mDNS auto-discovers peers on your LAN; NAT traversal via circuit-relay-v2 + dcutr + UPnP handles the public internet. All traffic is encrypted by libp2p Noise; peers authenticate via ed25519 during the handshake.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4758:./README.md.bak.830lines:190:wellinformed share audit --room homelab           # see exactly what would be shared
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4759:./README.md.bak.830lines:191:wellinformed share room homelab                   # mark room as shared (audit-gated)
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4760:./README.md.bak.830lines:192:wellinformed unshare homelab                      # stop sharing (keeps local .ydoc)
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4762:./README.md.bak.830lines:212:Every wellinformed peer advertises **three always-on system rooms** out of the box. No opt-in, no manual sharing — every peer can touch them immediately:
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4763:./README.md.bak.830lines:220:Membership is **virtual** — derived from each node's `source_uri` scheme, not from its physical `room` field. A git commit tagged `room: wellinformed-dev` still shows up in `toolshed` for peers. User-chosen rooms stay intact; system rooms are an additional query-time lens.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4764:./README.md.bak.830lines:227:wellinformed share ui                             # interactive toggle list
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4774:./README.md.bak.830lines:263:wellinformed save --room project --type synthesis --label "Touch primitive" \
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4775:./README.md.bak.830lines:265:echo "body..." | wellinformed save --room project --type concept --label "RNG tunnels"
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4781:./README.md.bak.830lines:281:**Signed envelopes at the wire** — any outbound node (memory entry, oracle answer, room share) can be wrapped with a device signature + the device-authorization chain. Receivers verify the whole chain **offline, in under 2 ms, three Ed25519 checks**. No DID resolver, no registry lookup, no network call. Domain-separation tags (`wellinformed-auth:v1:` vs `wellinformed-sig:v1:`) prevent replay of authorization signatures as payload signatures.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4783:./README.md.bak.830lines:296:Separate from the research graph, wellinformed parses codebases into a rich structured code graph via tree-sitter. Codebases are first-class aggregates attachable to rooms via a join table. Nothing mixes the research nodes and the code nodes — two distinct graphs, two distinct query surfaces.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4785:./README.md.bak.830lines:300:wellinformed codebase attach <id> --room homelab  # attach to a research room (M:N)
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4789:./README.md.bak.830lines:312:wellinformed discover-loop --room homelab --max-iterations 3
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4796:./README.md.bak.830lines:336:wellinformed report --room homelab     # see what's new
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4845:./demo/MANUSCRIPT.md:280:WELLINFORMED_HOME=~/.wellinformed-peerB wellinformed share room research
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4847:./demo/MANUSCRIPT.md:284:wellinformed share room research
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4849:./demo/MANUSCRIPT.md:294:$ wellinformed touch --peer peer-B --room research --label "open-source LH2 spectrometers"
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4868:./tests/phase17.mcp-tool.test.ts:35:      rooms: '/tmp/wellinformed-test/rooms.json',
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4068:./src/domain/job.ts:68: * from the room+root inputs, mirroring `akashik index`.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4074:./src/domain/system-rooms.ts:2: * System-managed rooms — the out-of-the-box rooms every akashik
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4075:./src/domain/system-rooms.ts:19: *    A git commit tagged `room: akashik-dev` is STILL in toolshed.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4076:./src/domain/system-rooms.ts:38: * opt-in for P2P sharing via the interactive `akashik share` TUI.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4104:./src/domain/errors.ts:607:      return `fix: the node was BLOCKED before reaching the network — your secret is safe locally. Either remove the credential from the source content, or move it to a non-shared room. Inspect the node with \`akashik get-node ${e.nodeId}\`.`;
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4105:./src/domain/errors.ts:610:      return `fix: review flagged nodes with \`akashik lint --room ${e.room}\` and either remove the secrets or unshare the room.`;
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4119:./src/cli/tui/share-picker-tty.ts:66:  const header = `${BOLD}akashik share${RESET} — toggle which physical rooms are open to peers`;
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4120:./src/cli/tui/share-picker-tty.ts:76:    : `${DIM}  (no physical rooms yet — run \`akashik trigger\` first)${RESET}`;
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4121:./src/cli/tui/share-picker-tty.ts:100: * `akashik share room <name>` command instead.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4122:./src/cli/tui/share-picker-tty.ts:106:    throw new Error('share ui: requires a TTY. Use `akashik share room <name>` in scripts.');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4128:./src/infrastructure/ydoc-store.ts:2: * Y.Doc binary persistence — `~/.akashik/ydocs/<room>.ydoc` files.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4138:./src/mcp/server.ts:88:        'Semantic search over the akashik knowledge graph. Returns the top-k matches ordered by distance. Optionally filter by room.',
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4157:./src/mcp/server.ts:856:        'broader federation of akashik peers to help answer a question ' +
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4162:./src/infrastructure/touch-protocol.ts:193:    // name (e.g. `akashik share room research`), include nodes
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4163:./src/cli/commands/save.ts:2: * `akashik save --room R [--type T] --label X [--text Y]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4164:./src/cli/commands/save.ts:11: *   akashik save --room project --type concept --label "Touch primitive" \
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4165:./src/cli/commands/save.ts:14: *   echo "long body..." | akashik save --room project --type synthesis --label "..."
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4222:./CLAUDE.md:282:Two canonical rooms every akashik peer advertises out of the box:
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4224:./CLAUDE.md:306:- If the hit is older, prefer a fresh pull — `mcp__akashik__trigger_room`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4229:./CLAUDE.md:356:   a refresh via `mcp__akashik__trigger_room` then retry.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4242:./src/cli/commands/onboard.ts:299:    "Skip if unsure; you can always run 'akashik trigger --room sessions' later.",
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4243:./src/cli/commands/onboard.ts:312:    log.message('skipped — run `akashik trigger --room sessions` when convenient');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4244:./src/cli/commands/onboard.ts:367:        `The 'akashik trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - AKASHIK_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  akashik trigger --room sessions`,
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4252:./src/cli/commands/onboard.ts:529:      '  akashik this everyone     index + share with the P2P network',
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4254:./src/cli/commands/onboard.ts:531:      '  akashik trigger           refresh all rooms',
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4267:./src/cli/commands/sources.ts:37:  if (args.length === 0) return 'missing <id> — usage: akashik sources add <id> --kind K --room R --config {json}';
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4273:./src/cli/commands/sessions.ts:37:    console.log('  next run of `akashik trigger --room sessions` will re-ingest from offset 0.');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4274:./src/cli/commands/sessions.ts:45:    console.error(`  'akashik trigger --room sessions' (can re-create thousands of nodes).`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4276:./src/cli/commands/sessions.ts:72:    console.log('  akashik trigger --room sessions');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4316:./src/cli/commands/discover-loop.ts:2: * `akashik discover-loop [--room R] [--max-iterations N]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4317:./src/cli/commands/share.ts:2: * `akashik share <sub>` — sharing boundary commands.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4318:./src/cli/commands/share.ts:18:import { runtimePaths, akashikHome } from '../runtime.js';
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4319:./src/cli/commands/share.ts:25:const configPath = (): string => join(akashikHome(), 'config.yaml');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4320:./src/cli/commands/share.ts:26:const sharedRoomsPath = (): string => join(akashikHome(), 'shared-rooms.json');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4321:./src/cli/commands/share.ts:43:      'share audit: missing --room <name>. usage: akashik share audit --room <name> [--json]',
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4322:./src/cli/commands/share.ts:120:    console.error('share room: missing <name>. usage: akashik share room <name>');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4323:./src/cli/commands/share.ts:175:    console.error(`\nrun 'akashik share audit --room ${roomId}' for full details.`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4324:./src/cli/commands/share.ts:202:  const ydocPath = join(akashikHome(), 'ydocs', `${roomId}.ydoc`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4325:./src/cli/commands/share.ts:203:  const logPath = join(akashikHome(), 'share-log.jsonl');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4326:./src/cli/commands/share.ts:229:  console.log("  run 'akashik daemon start' (or restart it) so peers can sync this room");
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4327:./src/cli/commands/share.ts:251:    console.log('share ui: no physical rooms yet. Run `akashik trigger` to index some content first.');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4328:./src/cli/commands/share.ts:292:      console.error(`  ${b.room}: ${b.count} flagged node(s). Run \`akashik share audit --room ${b.room}\` to inspect.`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4329:./src/cli/commands/share.ts:309:const USAGE = `usage: akashik share <audit|room|ui>
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4343:./akashik-rs/src/lib.rs:1://! akashik-bench library — shared modules for the `bench_beir`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4346:./src/cli/commands/touch.ts:2: * `akashik touch <peer-id-or-multiaddr> --room <name> [--max N] [--dry-run]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4352:./src/cli/commands/touch.ts:46:    return 'touch: missing <peer-id-or-multiaddr>. usage: akashik touch <peer> --room <name> [--max N] [--dry-run]';
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4355:./src/cli/commands/recent-sessions.ts:4: * Queries ~/.akashik/graph.json for nodes in the `sessions` room,
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4357:./src/cli/commands/index-project.ts:2: * `akashik index [--room R] [--root DIR]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4362:./src/cli/commands/consolidate.ts:86:  if (!room) return 'missing <room>. usage: akashik consolidate run <room> [--dry-run] [--prune [--backup PATH | --no-backup]]';
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4366:./src/cli/commands/consolidate.ts:287:          ?? join(akashikHome(), `prune-backup-${parsed.room}-${Date.now()}.ndjson`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4369:./src/cli/commands/consolidate.ts:481:    console.error('consolidate prune-marked: missing <room>. usage: akashik consolidate prune-marked <room> [--no-backup | --backup PATH] [--force]');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4371:./src/cli/commands/consolidate.ts:516:      const path = backupPath ?? join(akashikHome(), `prune-marked-backup-${room}-${Date.now()}.ndjson`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4383:./src/cli/commands/eval.ts:2: * `akashik eval <queries.jsonl> [--room R] [--k 10] [--json]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4384:./src/cli/commands/eval.ts:66:    return 'missing queries file — usage: akashik eval <queries.jsonl> [--room R] [--k 10] [--limit N] [--json]';
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4387:./src/cli/commands/oracle.ts:2: * `akashik oracle <sub>` — peer-to-peer Q&A via the oracle system room.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4416:./src/cli/commands/recall.ts:2: * `akashik recall <name> [--room R] [--k N] [--json]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4418:./src/cli/commands/recall.ts:50:  if (!query) return 'missing name — usage: akashik recall <name> [--room R] [--k N] [--peers] [--json]';
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4419:./src/cli/commands/recall.ts:56:    console.log(`usage: akashik recall <name> [--room R] [--k N] [--peers] [--json]
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4430:./src/cli/commands/init.ts:2: * `akashik init` — interactive room seeding wizard.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4431:./src/cli/commands/init.ts:17: * Non-interactive mode: `akashik init --name X --desc Y --keywords a,b`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4432:./src/cli/commands/init.ts:117:  console.log('\nakashik init — set up a new research room\n');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4433:./src/cli/commands/init.ts:230:    console.log(`run 'akashik trigger --room ${result.room.id}' to fetch initial content.`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4459:./src/cli/commands/viz.ts:2: * `akashik viz [--room R] [--output FILE]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4465:./demo/scene-federated.tape:1:# akashik — natural Claude Code session, federated retrieval live.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4466:./demo/scene-federated.tape:20:Type "cd /Users/saharbarak/personal/akashik"
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4467:./demo/scene-federated.tape:22:Type "export AKASHIK_HOME=$HOME/.akashik.demo"
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4468:./src/cli/commands/export-obsidian.ts:2: * `akashik export obsidian [--room R] [--output DIR]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4469:./src/cli/commands/export-obsidian.ts:102:    const indexLines = [`# akashik vault — ${room ?? 'all rooms'}`, '', `${nodes.length} nodes, ${edges.length} edges`, ''];
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4487:./src/cli/commands/ask.ts:2: * `akashik ask "<query>" [--room R] [--k N] [--peers]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4490:./src/cli/commands/ask.ts:53:  if (!query) return 'missing query — usage: akashik ask "your question" [--room R] [--k N] [--peers] [--json]';
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4501:./src/cli/commands/ask.ts:452:    console.log(`# akashik federated results for: ${parsed.query}`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4511:./demo/scene-touch.tape:62:Type 'akashik touch --peer "$AKASHIK_DEMO_PEER_B_ID" --room research'
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4512:./demo/scene-touch.tape:71:Type 'akashik touch --peer "$AKASHIK_DEMO_PEER_D_ID" --room research'
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4546:./src/cli/commands/claude-install.ts:154:Two canonical rooms every akashik peer advertises out of the box:
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4548:./src/cli/commands/claude-install.ts:178:- If the hit is older, prefer a fresh pull — \`mcp__akashik__trigger_room\`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4552:./src/cli/commands/claude-install.ts:197:   \`akashik save --type synthesis --room <room>\` to file the
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4561:./scripts/bench-room-routing.mjs:4:// Tests whether akashik's room architecture gives a measurable retrieval lift
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4562:./scripts/bench-room-routing.mjs:11://     --datasets-dir ~/.akashik/bench/cqadupstack/cqadupstack \
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4563:./scripts/bench-room-routing.mjs:38:const DATASETS_DIR = getArg('--datasets-dir', join(homedir(), '.akashik/bench/cqadupstack/cqadupstack'));
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4564:./scripts/bench-room-routing.mjs:51:const CACHE_ROOT = join(homedir(), '.akashik', 'bench');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4565:./scripts/bench-room-routing.mjs:59:console.log(' akashik Wave 4 — Room Routing Gate Test');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4566:./scripts/bench-room-routing.mjs:237:// target room. This is the same pattern akashik's production
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4581:./src/cli/commands/this.ts:9: *   akashik this              → index cwd, room private
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4583:./src/cli/commands/this.ts:11: *   akashik this everyone     → index cwd + share room with peers
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4584:./src/cli/commands/this.ts:15: * boundary identical to `akashik share room <name>`.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4587:./src/cli/commands/this.ts:71:  console.log(`akashik this ${visibility} — room '${slug}' (${root})\n`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4591:./src/cli/commands/this.ts:107:      console.log(`  to share later: akashik share room ${slug}`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4593:./src/cli/commands/this.ts:125:    console.log(`  to share later: akashik share room ${slug}`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4594:./src/cli/commands/report.ts:2: * `akashik report [--room R] [--since DATE] [--no-save]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4595:./src/cli/commands/report.ts:5: * optionally persists it to ~/.akashik/reports/<room>/<date>.md.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4596:./scripts/bench-bridge.mjs:7:// against the same corpus. If true, akashik peers can federate
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4601:./src/cli/commands/discover.ts:2: * `akashik discover [--room R] [--auto]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4602:./src/cli/commands/discover.ts:48:    console.error('discover: no room specified and no default room set. use --room or run `akashik init`.');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4603:./src/cli/commands/discover.ts:82:    console.log(`\n${suggestions.length} source(s) added. run 'akashik trigger --room ${room}' to fetch.`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4604:./src/cli/commands/discover.ts:84:    console.log(`add them with: akashik discover --room ${room} --auto`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4620:./src/cli/commands/room.ts:2: * `akashik room <sub>` — manage the room registry.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4621:./src/cli/commands/room.ts:12: *   akashik room create homelab --desc "Home lab infra" --keywords "proxmox,mikrotik,10gbe"
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4622:./src/cli/commands/room.ts:13: *   akashik room switch homelab
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4623:./src/cli/commands/room.ts:36:    console.log('no rooms configured. try `akashik init` or `akashik room create <name>`.');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4624:./src/cli/commands/room.ts:50:    console.error('room create: missing <name>. usage: akashik room create <name> [--desc "..."] [--keywords "a,b,c"] [--wing "default"]');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4625:./src/cli/commands/room.ts:117:    console.log('no default room set. run `akashik init` to create one.');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4626:./src/cli/commands/trigger.ts:2: * `akashik trigger [--room <room>] [--sync]` — run an ingest pass.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4628:./src/cli/commands/trigger.ts:89:  console.log(`\n${rooms.length - failed} job(s) queued — track with: akashik jobs watch`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4630:./src/cli/commands/unshare.ts:2: * `akashik unshare <name>` — make a room private again.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4631:./src/cli/commands/unshare.ts:8: * KEEPS the .ydoc binary file at ~/.akashik/ydocs/<name>.ydoc so a
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4632:./src/cli/commands/unshare.ts:15:import { akashikHome } from '../runtime.js';
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4633:./src/cli/commands/unshare.ts:17:const sharedRoomsPath = (): string => join(akashikHome(), 'shared-rooms.json');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4634:./src/cli/commands/unshare.ts:19:const USAGE = `usage: akashik unshare <name>
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4635:./src/cli/commands/unshare.ts:59:  console.log('  restart the daemon (akashik daemon stop && start) to close active sync streams for this room');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4647:./src/cli/commands/lint.ts:2: * `akashik lint [--room R] [--json]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4660:./src/cli/commands/peers-rep.ts:132:    console.log('no peer reputation data yet — needs at least one federated ask with `akashik ask --peers`.');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4665:./src/cli/commands/codebase.ts:14: * Separate from `akashik index` (shallow research-room indexing — NOT modified
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4670:./src/cli/commands/codebase.ts:259:    console.error('codebase attach: usage: akashik codebase attach <id> --room <room-id>');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4671:./src/cli/commands/codebase.ts:296:    console.error('codebase detach: usage: akashik codebase detach <id> --room <room-id>');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4715:./src/infrastructure/watch-targets.ts:5: * Each entry: { room, root, registered_at }. `akashik this`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4717:./src/infrastructure/watch-targets.ts:60: * (room, root) pair so re-running `akashik this` refreshes the
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4719:./src/infrastructure/share-store.ts:2: * Share store — persists the shared-rooms registry to ~/.akashik/shared-rooms.json.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4720:./src/infrastructure/share-store.ts:29: * concurrent akashik processes (e.g., daemon + CLI `share room foo`)
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4721:./src/infrastructure/share-store.ts:284: * and releases the lock. Prevents two akashik processes (e.g., daemon +
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4730:./README.md.bak.830lines:27:   distance: 0.961 | room: akashik-dev
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4734:./README.md.bak.830lines:61:**akashik is how that ecosystem shares its knowledge.**
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4736:./README.md.bak.830lines:71:**1. Each peer carries a shard of what's current — together, the live index.** Every akashik instance is a libp2p peer. Rooms sync across peers via Y.js CRDT. A federated `ask --peers` fans a query across the network in parallel, 2-second per-peer timeout, results merged by cosine distance with per-peer attribution. The stranger who read that paper last Thursday, the peer who benchmarked that library two weeks ago, the dev who debugged that exact bug last night — their embeddings flow into your session. Nobody knows the whole graph; together the community does — the live state of the field, something no frozen-weight model can touch.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4739:./README.md.bak.830lines:87:With akashik, the `PreToolUse` hook fires before Claude reaches for the web. Your graph — already holding every arXiv paper you've pulled, every repo you've starred, every past session you've had, plus every shard shared by every other peer running akashik — answers in **11 ms**. Three hits across three rooms: a GitHub repo someone starred yesterday, a piece of community code you hadn't seen, an arXiv paper from two hours ago. Claude replies instantly from the community's latest state. When the session ends, your transcript is vector-indexed back into the graph so tomorrow's session starts richer than today's. And every peer on the network is doing the same — the ten-thousand-stranger loop runs **once**, not ten thousand times.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4741:./README.md.bak.830lines:103:akashik init                      # create a room, pick your sources
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4742:./README.md.bak.830lines:104:akashik trigger --room homelab    # fetch from ArXiv, HN, RSS, blogs, any URL
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4748:./README.md.bak.830lines:151:akashik discover --room homelab --auto
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4751:./README.md.bak.830lines:165:The v2.1 hook layer goes further: before every Grep/Glob/Read/WebSearch/WebFetch, a PreToolUse hook runs `akashik ask --json` on the extracted query and injects the top-3 hits into Claude's context. On a miss, the query is logged for later ingest. After every WebSearch/WebFetch, a PostToolUse hook auto-saves the result as a `source` node in the always-on `research` system room so the next session finds it via the graph instead of the network.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4752:./README.md.bak.830lines:174:- **One room per repo** — when you `akashik index` a codebase (or Claude Code opens one), akashik provisions a dedicated room for it. The repo name becomes the room id — `my-app`, `auto-tlv`, `akashik-dev` — and its embeddings, commits, and docs stay scoped to that room. Switching projects switches rooms automatically; queries stay relevant to the repo you're in without cross-contamination.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4753:./README.md.bak.830lines:177:**Tunnels** are the exception — when nodes in different rooms are semantically close, akashik flags them. A paper about embedding quantization in `ml-papers` connects to a memory issue in `homelab`. That connection is what rooms exist to produce.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4754:./README.md.bak.830lines:181:Every akashik instance is a libp2p peer with a cryptographic identity. Rooms can be shared across peers via Y.js CRDT. Search runs federated across the network. mDNS auto-discovers peers on your LAN; NAT traversal via circuit-relay-v2 + dcutr + UPnP handles the public internet. All traffic is encrypted by libp2p Noise; peers authenticate via ed25519 during the handshake.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4758:./README.md.bak.830lines:190:akashik share audit --room homelab           # see exactly what would be shared
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4759:./README.md.bak.830lines:191:akashik share room homelab                   # mark room as shared (audit-gated)
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4760:./README.md.bak.830lines:192:akashik unshare homelab                      # stop sharing (keeps local .ydoc)
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4762:./README.md.bak.830lines:212:Every akashik peer advertises **three always-on system rooms** out of the box. No opt-in, no manual sharing — every peer can touch them immediately:
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4763:./README.md.bak.830lines:220:Membership is **virtual** — derived from each node's `source_uri` scheme, not from its physical `room` field. A git commit tagged `room: akashik-dev` still shows up in `toolshed` for peers. User-chosen rooms stay intact; system rooms are an additional query-time lens.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4764:./README.md.bak.830lines:227:akashik share ui                             # interactive toggle list
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4774:./README.md.bak.830lines:263:akashik save --room project --type synthesis --label "Touch primitive" \
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4775:./README.md.bak.830lines:265:echo "body..." | akashik save --room project --type concept --label "RNG tunnels"
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4781:./README.md.bak.830lines:281:**Signed envelopes at the wire** — any outbound node (memory entry, oracle answer, room share) can be wrapped with a device signature + the device-authorization chain. Receivers verify the whole chain **offline, in under 2 ms, three Ed25519 checks**. No DID resolver, no registry lookup, no network call. Domain-separation tags (`akashik-auth:v1:` vs `akashik-sig:v1:`) prevent replay of authorization signatures as payload signatures.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4783:./README.md.bak.830lines:296:Separate from the research graph, akashik parses codebases into a rich structured code graph via tree-sitter. Codebases are first-class aggregates attachable to rooms via a join table. Nothing mixes the research nodes and the code nodes — two distinct graphs, two distinct query surfaces.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4785:./README.md.bak.830lines:300:akashik codebase attach <id> --room homelab  # attach to a research room (M:N)
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4789:./README.md.bak.830lines:312:akashik discover-loop --room homelab --max-iterations 3
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4796:./README.md.bak.830lines:336:akashik report --room homelab     # see what's new
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4845:./demo/MANUSCRIPT.md:280:AKASHIK_HOME=~/.akashik-peerB akashik share room research
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4847:./demo/MANUSCRIPT.md:284:akashik share room research
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4849:./demo/MANUSCRIPT.md:294:$ akashik touch --peer peer-B --room research --label "open-source LH2 spectrometers"
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4868:./tests/phase17.mcp-tool.test.ts:35:      rooms: '/tmp/akashik-test/rooms.json',
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4872:./README.md:5:Akashik is a peer-to-peer knowledge graph protocol where every researcher, maintainer, and engineer adds their reading and reasoning, and where every newcomer can query what the community has already learned before re-treading the same path. Each contribution is Ed25519-signed, locally owned, and federated only on demand — so the network's working set grows by what its contributors are actually curious about, not by what a central planner decided to ingest.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4873:./README.md:13:**Akashik is what** that missing substrate looks like: a federated, cryptographically-attested record the community writes for itself. Not a personal-memory product. Not a team wiki. A shared protocol where contributor reading-hours compound into community progress, signed and attributed, forever.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4874:./README.md:15:**The differentiator is federation, not retrieval.** Single-user memory products already solve personal retrieval; Akashik is not trying to beat them on per-user R@5. The bet is that *cross-peer transfer* of researched-once knowledge is the missing primitive in the OSS knowledge stack, and that a demand-shaped P2P graph is the right way to build it.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4881:./README.md:93:wellinformed save https://arxiv.org/abs/2406.16678 --room research
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4882:./README.md:94:wellinformed save ./notes/cuda-oom-debug.md --room toolshed
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4881:./README.md:93:akashik save https://arxiv.org/abs/2406.16678 --room research
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4882:./README.md:94:akashik save ./notes/cuda-oom-debug.md --room toolshed
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4887:./README.md:134:Akashik is pre-launch — the federation simulator validates the thesis, the retrieval stack benchmarks at parity with public single-user baselines, and the real pilot is the next milestone. We need:
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4906:./demo/teardown-p2p.sh:51:# main wellinformed daemon if it shares the parent terminal session.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4925:./demo/validate-reputation.sh:88:echo "── \`wellinformed peers rep --subject room:research\` ──"
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4926:./demo/validate-reputation.sh:89:WELLINFORMED_HOME="$A_HOME" wellinformed peers rep --subject room:research || true
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4983:./demo/setup-p2p.sh:124:WELLINFORMED_HOME="$A_HOME" wellinformed share room research >/dev/null
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4987:./demo/setup-p2p.sh:187:  WELLINFORMED_HOME="$h" wellinformed share room research >/dev/null
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5009:./src/infrastructure/search-sync.ts:10: *      '/wellinformed/share/1.0.0' so sync and search have independent stream
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5017:./tests/identity.test.ts:258:      room: 'wellinformed-dev',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5018:./src/infrastructure/share-sync.ts:4: * Phase 16 core. Registers /wellinformed/share/1.0.0 on a libp2p node,
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5019:./src/infrastructure/share-sync.ts:76:export const SHARE_PROTOCOL_ID = '/wellinformed/share/1.0.0' as const;
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5020:./src/infrastructure/share-sync.ts:85:export const REMOTE_ORIGIN: unique symbol = Symbol('wellinformed-share-remote');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5021:./src/infrastructure/share-sync.ts:367: *   2. Carry _wellinformed_source_peer: <peerId> as a provenance tag
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5022:./src/infrastructure/share-sync.ts:448:        _wellinformed_source_peer: remotePeerId,
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5023:./src/infrastructure/share-sync.ts:449:        ...(screened.signedBy ? { _wellinformed_signed_by: screened.signedBy } : {}),
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5024:./src/infrastructure/share-sync.ts:556:  readonly ydocsDir: string;                           // ~/.wellinformed/ydocs
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5025:./src/infrastructure/share-sync.ts:579:   * `wellinformed identity peers` (future) and audit logs can answer
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5026:./src/infrastructure/share-sync.ts:633: * Register the /wellinformed/share/1.0.0 protocol on the libp2p node.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5028:./demo/scene-codebase.tape:3:# The wellinformed repo is indexed into ~/.wellinformed.demo (room
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5039:./src/infrastructure/rooms-config.ts:4: * Stores the room registry at `~/.wellinformed/rooms.json`. Same
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5040:./demo/scene-federated.sh:3:# wellinformed demo — scene "federated" end-to-end orchestrator.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5041:./tests/phase1.graph-rooms.test.ts:76:  const tmp = mkdtempSync(join(tmpdir(), 'wellinformed-phase1-'));
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5057:./tests/phase31.remote-node-validator.test.ts:32:    room: 'wellinformed-dev',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5058:./tests/phase35.p2p-touch-e2e.test.ts:89:      room: 'wellinformed-dev',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5059:./tests/phase35.p2p-touch-e2e.test.ts:198:    // physical room is `wellinformed-dev`, NOT 'toolshed' — virtual
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4906:./demo/teardown-p2p.sh:51:# main akashik daemon if it shares the parent terminal session.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4925:./demo/validate-reputation.sh:88:echo "── \`akashik peers rep --subject room:research\` ──"
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4926:./demo/validate-reputation.sh:89:AKASHIK_HOME="$A_HOME" akashik peers rep --subject room:research || true
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4983:./demo/setup-p2p.sh:124:AKASHIK_HOME="$A_HOME" akashik share room research >/dev/null
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:4987:./demo/setup-p2p.sh:187:  AKASHIK_HOME="$h" akashik share room research >/dev/null
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5009:./src/infrastructure/search-sync.ts:10: *      '/akashik/share/1.0.0' so sync and search have independent stream
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5017:./tests/identity.test.ts:258:      room: 'akashik-dev',
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5018:./src/infrastructure/share-sync.ts:4: * Phase 16 core. Registers /akashik/share/1.0.0 on a libp2p node,
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5019:./src/infrastructure/share-sync.ts:76:export const SHARE_PROTOCOL_ID = '/akashik/share/1.0.0' as const;
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5020:./src/infrastructure/share-sync.ts:85:export const REMOTE_ORIGIN: unique symbol = Symbol('akashik-share-remote');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5021:./src/infrastructure/share-sync.ts:367: *   2. Carry _akashik_source_peer: <peerId> as a provenance tag
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5022:./src/infrastructure/share-sync.ts:448:        _akashik_source_peer: remotePeerId,
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5023:./src/infrastructure/share-sync.ts:449:        ...(screened.signedBy ? { _akashik_signed_by: screened.signedBy } : {}),
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5024:./src/infrastructure/share-sync.ts:556:  readonly ydocsDir: string;                           // ~/.akashik/ydocs
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5025:./src/infrastructure/share-sync.ts:579:   * `akashik identity peers` (future) and audit logs can answer
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5026:./src/infrastructure/share-sync.ts:633: * Register the /akashik/share/1.0.0 protocol on the libp2p node.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5028:./demo/scene-codebase.tape:3:# The akashik repo is indexed into ~/.akashik.demo (room
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5039:./src/infrastructure/rooms-config.ts:4: * Stores the room registry at `~/.akashik/rooms.json`. Same
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5040:./demo/scene-federated.sh:3:# akashik demo — scene "federated" end-to-end orchestrator.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5041:./tests/phase1.graph-rooms.test.ts:76:  const tmp = mkdtempSync(join(tmpdir(), 'akashik-phase1-'));
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5057:./tests/phase31.remote-node-validator.test.ts:32:    room: 'akashik-dev',
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5058:./tests/phase35.p2p-touch-e2e.test.ts:89:      room: 'akashik-dev',
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5059:./tests/phase35.p2p-touch-e2e.test.ts:198:    // physical room is `akashik-dev`, NOT 'toolshed' — virtual
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5084:./tests/bench-akashik-federation.test.ts:2: * Bench — AkashikBench-F (federation-level compounding).
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5085:./tests/bench-akashik-federation.test.ts:135:test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60 * 60 * 1000 }, async (t) => {
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5086:./tests/bench-akashik-federation.test.ts:137:    t.skip('AKASHIK_BENCH_F not set — skipping AkashikBench-F');
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5087:./tests/bench-akashik-federation.test.ts:172:  console.log(`AkashikBench-F: ${numPeers} peers × ${numSteps} steps · offline=${offlineProbability} · zipf=${zipfAlpha} · shard=${initialShardFraction} (coverage ${(totalCoverage * 100).toFixed(0)}%) · corpus=${corpus.queries.length} queries, ${corpus.allDocs.length} docs`);
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5088:./tests/bench-akashik-federation.test.ts:227:    notes: `AkashikBench-F v1 on LoCoMo factual — ${corpus.queries.length} queries × ${corpus.allDocs.length} docs · ${numPeers} peers · ${numSteps} steps · offline=${offlineProbability} · zipf=${zipfAlpha} · shard=${initialShardFraction}. Boolean federation simulator (no per-peer retrieval — see suite header). Compounding = negative slope of web_fallback_rate over the simulation.`,
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5090:./tests/identity-lifecycle.test.ts:125:      room: 'wellinformed-dev',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5094:./tests/phase16.share-crdt.test.ts:69:const makeHome = (): string => mkdtempSync(join(tmpdir(), 'wellinformed-phase16-'));
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5095:./tests/phase16.share-crdt.test.ts:951:  test('SHARE_PROTOCOL_ID is /wellinformed/share/1.0.0', () => {
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5096:./tests/phase16.share-crdt.test.ts:952:    assert.equal(SHARE_PROTOCOL_ID, '/wellinformed/share/1.0.0');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5097:./tests/phase16.share-crdt.test.ts:955:  test('REMOTE_ORIGIN is a Symbol with description wellinformed-share-remote', () => {
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5098:./tests/phase16.share-crdt.test.ts:959:      'wellinformed-share-remote',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5099:./tests/phase16.share-crdt.test.ts:967:    assert.notEqual(REMOTE_ORIGIN as unknown, Symbol('wellinformed-share-remote'), 'two Symbol() calls with same desc are not equal');
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5100:./tests/log-store.test.ts:67:      room: 'wellinformed-dev',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5101:./tests/identity-bridge.test.ts:65:      room: 'wellinformed-dev',
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5126:./src/application/report.ts:120:  lines.push(`# wellinformed report — ${data.room}`);
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5130:./docs/assets/og-portrait.svg:2:  <title>wellinformed — vertical share card (Stories / TikTok / IG portrait)</title>
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5090:./tests/identity-lifecycle.test.ts:125:      room: 'akashik-dev',
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5094:./tests/phase16.share-crdt.test.ts:69:const makeHome = (): string => mkdtempSync(join(tmpdir(), 'akashik-phase16-'));
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5095:./tests/phase16.share-crdt.test.ts:951:  test('SHARE_PROTOCOL_ID is /akashik/share/1.0.0', () => {
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5096:./tests/phase16.share-crdt.test.ts:952:    assert.equal(SHARE_PROTOCOL_ID, '/akashik/share/1.0.0');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5097:./tests/phase16.share-crdt.test.ts:955:  test('REMOTE_ORIGIN is a Symbol with description akashik-share-remote', () => {
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5098:./tests/phase16.share-crdt.test.ts:959:      'akashik-share-remote',
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5099:./tests/phase16.share-crdt.test.ts:967:    assert.notEqual(REMOTE_ORIGIN as unknown, Symbol('akashik-share-remote'), 'two Symbol() calls with same desc are not equal');
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5100:./tests/log-store.test.ts:67:      room: 'akashik-dev',
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5101:./tests/identity-bridge.test.ts:65:      room: 'akashik-dev',
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5126:./src/application/report.ts:120:  lines.push(`# akashik report — ${data.room}`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5130:./docs/assets/og-portrait.svg:2:  <title>akashik — vertical share card (Stories / TikTok / IG portrait)</title>
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5137:./docs/PROJECT-PLAN-AKASHIK.md:5:engineering month on AkashikBench-F and federation routing; next
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5142:./docs/PROJECT-PLAN-AKASHIK.md:36:AkashikBench-F + federation routing because validating the
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5148:./docs/PROJECT-PLAN-AKASHIK.md:159:  `wellinformed share` to join the pilot rooms. Success criterion:
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5152:./docs/PROJECT-PLAN-AKASHIK.md:332:  `wellinformed metrics fallback --room <room>` returns a per-day
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5163:./docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md:241:  "room": "wellinformed-dev",
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5169:./docs/architecture/claude-obsidian-parity.md:35:**Add:** `wellinformed/hot-cache` — a new domain concept. After each tick, generate a ~500-word summary of: (a) newest N nodes, (b) most-queried rooms this session, (c) pending ingests, (d) 3-5 most surprising cross-references. Store at `~/.wellinformed/hot.md` and include in SessionStart hook output.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5171:./docs/architecture/claude-obsidian-parity.md:43:**Add:** `wellinformed lint [--room R] [--fix]` — graph-health checker with the 8 categories from claude-obsidian's wiki-lint, plus P2P-specific ones (orphaned remote nodes, stale shared-room manifest, secret-pattern drift since last audit).
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5172:./docs/architecture/claude-obsidian-parity.md:51:**Add:** `wellinformed save --room R` — called from a Claude session, takes the last N assistant messages + the user question, produces a typed node (synthesis/concept/decision), writes into the chosen room. Complements auto-ingest by capturing *distillations*, not transcripts.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5176:./src/telegram/capture.ts:60:    return 'No rooms configured. Run `wellinformed init` first.';
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5185:./docs/architecture/ADR-002-v4-agent-brain.md:92:**Chosen:** `wellinformed consolidate run <room>` is an explicit CLI command, run by an operator (or a cron job, or the daemon's tick loop in v4.1). Not auto-run on a timer in v4.0.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5190:./docs/demo.tape:1:# wellinformed CLI demo — accumulate · share · stream
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5193:./docs/demo.tape:44:Type `echo "▸ wellinformed — accumulate · share · stream knowledge into every LLM session"`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5196:./docs/demo.tape:80:Type "# federate — every wellinformed peer, anywhere, contributes a shard"
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5148:./docs/PROJECT-PLAN-AKASHIK.md:159:  `akashik share` to join the pilot rooms. Success criterion:
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5152:./docs/PROJECT-PLAN-AKASHIK.md:332:  `akashik metrics fallback --room <room>` returns a per-day
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5163:./docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md:241:  "room": "akashik-dev",
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5169:./docs/architecture/claude-obsidian-parity.md:35:**Add:** `akashik/hot-cache` — a new domain concept. After each tick, generate a ~500-word summary of: (a) newest N nodes, (b) most-queried rooms this session, (c) pending ingests, (d) 3-5 most surprising cross-references. Store at `~/.akashik/hot.md` and include in SessionStart hook output.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5171:./docs/architecture/claude-obsidian-parity.md:43:**Add:** `akashik lint [--room R] [--fix]` — graph-health checker with the 8 categories from claude-obsidian's wiki-lint, plus P2P-specific ones (orphaned remote nodes, stale shared-room manifest, secret-pattern drift since last audit).
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5172:./docs/architecture/claude-obsidian-parity.md:51:**Add:** `akashik save --room R` — called from a Claude session, takes the last N assistant messages + the user question, produces a typed node (synthesis/concept/decision), writes into the chosen room. Complements auto-ingest by capturing *distillations*, not transcripts.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5176:./src/telegram/capture.ts:60:    return 'No rooms configured. Run `akashik init` first.';
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5185:./docs/architecture/ADR-002-v4-agent-brain.md:92:**Chosen:** `akashik consolidate run <room>` is an explicit CLI command, run by an operator (or a cron job, or the daemon's tick loop in v4.1). Not auto-run on a timer in v4.0.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5190:./docs/demo.tape:1:# akashik CLI demo — accumulate · share · stream
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5193:./docs/demo.tape:44:Type `echo "▸ akashik — accumulate · share · stream knowledge into every LLM session"`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5196:./docs/demo.tape:80:Type "# federate — every akashik peer, anywhere, contributes a shard"
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5208:./docs/research/beat-the-competitors-retrieval-plan.md:126:Beyond that: **federated retrieval** (the unique Akashik bet) — measure how P2P-shared rooms across multiple peers lift recall on out-of-distribution questions, vs single-peer baselines. No public benchmark covers this today; we'd publish one.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5213:./docs/architecture/V4-PROTOCOL.md:28:client → daemon:  {"id": <number>, "cmd": "ask", "args": ["--room", "wellinformed-dev", "p2p memory"]}
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5281:./docs/index.html:3049:        // Each scenario sources its answer from a specific wellinformed room.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5283:./docs/index.html:3431:          ['code:wi-federated', 'code · wellinformed/src/net/federated.rs'],
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5298:./docs/architecture/V3-PROTOCOL.md:221:- `/wellinformed/touch/1.0.0` — asymmetric public-room pull
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5299:./docs/architecture/V3-PROTOCOL.md:222:- `/wellinformed/share/2.0.0` — bidirectional CRDT room sync (Y.js)
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5316:./docs/p2p/P2P-VISION.md:7:**v2.0 makes them connected.** A peer-to-peer network where wellinformed nodes discover each other, share graph fragments, and build a collective knowledge layer that's bigger than any single user's research.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5213:./docs/architecture/V4-PROTOCOL.md:28:client → daemon:  {"id": <number>, "cmd": "ask", "args": ["--room", "akashik-dev", "p2p memory"]}
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5281:./docs/index.html:3049:        // Each scenario sources its answer from a specific akashik room.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5283:./docs/index.html:3431:          ['code:wi-federated', 'code · akashik/src/net/federated.rs'],
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5298:./docs/architecture/V3-PROTOCOL.md:221:- `/akashik/touch/1.0.0` — asymmetric public-room pull
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5299:./docs/architecture/V3-PROTOCOL.md:222:- `/akashik/share/2.0.0` — bidirectional CRDT room sync (Y.js)
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5316:./docs/p2p/P2P-VISION.md:7:**v2.0 makes them connected.** A peer-to-peer network where akashik nodes discover each other, share graph fragments, and build a collective knowledge layer that's bigger than any single user's research.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5322:./docs/research/octopus-discover/round-5-2026-05-26/README.md:11:> **AkashikBench-F + federation routing.** Stop chasing the final
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5324:./docs/research/octopus-discover/round-5-2026-05-26/README.md:24:### Q3 — AkashikBench-F (proposed federation benchmark)
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5331:./docs/research/octopus-discover/round-5-2026-05-26/README.md:105:> **AkashikBench-F and federation routing** because validating
@@ -5675,23 +5675,23 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5346:./docs/marketing/positioning-v2.1.md:221:federate. They're each their own fragmentation. Akashik is the
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5360:./docs/marketing/positioning-v2.1.md:421:**Description:** The federated knowledge graph for AI agents. Your peers already did this research — Akashik asks their graphs before your Claude Code session hits the web. Your identity is a W3C did:key you own. MIT-licensed, CPU-local, 75.22% NDCG@10 on BEIR SciFact. No cloud, no subscription.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5361:./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-5.md:11:Akashik = federated knowledge commons for the OSS community.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5377:./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-5.md:232:The cold-start problem is real and the argument is correct that federation provides zero benefit to a single isolated peer. Our answer is that *local value is already sufficient on day zero* — `wellinformed save` + `wellinformed ask` already beats a bare LLM context window for a single user on the LME-S benchmark (R@5=0.9202), and that value is why someone installs it. Federation is a multiplier on existing value, not a prerequisite for it. The coordination burden is also lower than Slack or GitHub Discussions because it's *implicit*: when two developers in the same OSS project both install wellinformed, they automatically share knowledge through the `toolshed` system room (which is always-on and P2P-shared) without any explicit "join this workspace" action. The social coordination is replaced by ambient proximity in the codebase — the same mechanism that makes pull request visibility work without users needing to subscribe to each other. The honest concession: this argument becomes false if the `toolshed` room and oracle gossip are not reliably working on first install. The current state (federation silently downgrades to dense-only, oracle gossip end-to-end test is in `phase39.oracle-gossip-e2e.test.ts` but not shipped) means the argument *is* currently true. Fixing that is the same work as Q1's answer.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5378:./src/daemon/ipc-handlers.ts:96:  if (!query) return 'missing query — usage: wellinformed ask "your question" [--room R] [--k N] [--json]';
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5377:./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-5.md:232:The cold-start problem is real and the argument is correct that federation provides zero benefit to a single isolated peer. Our answer is that *local value is already sufficient on day zero* — `akashik save` + `akashik ask` already beats a bare LLM context window for a single user on the LME-S benchmark (R@5=0.9202), and that value is why someone installs it. Federation is a multiplier on existing value, not a prerequisite for it. The coordination burden is also lower than Slack or GitHub Discussions because it's *implicit*: when two developers in the same OSS project both install akashik, they automatically share knowledge through the `toolshed` system room (which is always-on and P2P-shared) without any explicit "join this workspace" action. The social coordination is replaced by ambient proximity in the codebase — the same mechanism that makes pull request visibility work without users needing to subscribe to each other. The honest concession: this argument becomes false if the `toolshed` room and oracle gossip are not reliably working on first install. The current state (federation silently downgrades to dense-only, oracle gossip end-to-end test is in `phase39.oracle-gossip-e2e.test.ts` but not shipped) means the argument *is* currently true. Fixing that is the same work as Q1's answer.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5378:./src/daemon/ipc-handlers.ts:96:  if (!query) return 'missing query — usage: akashik ask "your question" [--room R] [--k N] [--json]';
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5393:./docs/marketing/x-launch-posts.md:58:Akashik is different: it partitions by research domain (rooms), detects cross-domain connections (tunnels), and actively fetches from ArXiv + HN + RSS on a schedule.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5398:./docs/marketing/x-launch-posts.md:89:wellinformed trigger --room homelab
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5401:./docs/marketing/x-launch-posts.md:99:I typed `wellinformed discover --room wellinformed-dev --auto` and it found:
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5398:./docs/marketing/x-launch-posts.md:89:akashik trigger --room homelab
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5401:./docs/marketing/x-launch-posts.md:99:I typed `akashik discover --room akashik-dev --auto` and it found:
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5404:./docs/marketing/x-launch-posts.md:120:Akashik is a knowledge graph with rooms, tunnels, 8 source adapters, and a daemon that keeps it current.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5406:./docs/marketing/growth-sources-plan.md:89:wellinformed discover-loop --room homelab --max-iterations 3
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5411:./src/daemon/loop.ts:550:              daemonLog(deps.homePath, `share sync registered: /wellinformed/share/1.0.0`);
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5406:./docs/marketing/growth-sources-plan.md:89:akashik discover-loop --room homelab --max-iterations 3
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5411:./src/daemon/loop.ts:550:              daemonLog(deps.homePath, `share sync registered: /akashik/share/1.0.0`);
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5435:./docs/marketing/storybrand-messaging-draft.md:351:- **The Akashik. A federated record for the open-source community.**
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5452:./docs/p2p/peer-reputation-load-spreading.md:73:  flag to `wellinformed ask --peers` that, on a high-confidence federated
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5458:./docs/product/ROADMAP.md:19:Pluggable Source port with four adapters: generic_rss, arxiv, hn_algolia, generic_url. RSS 2.0 + Atom normaliser. Recursive paragraph chunker. Content-hash (sha256) dedup on re-runs. `wellinformed trigger [--room R]` and `wellinformed sources list|add|remove|enable|disable`.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5459:./docs/product/ROADMAP.md:25:9 tools exposed over stdio via @modelcontextprotocol/sdk: search, ask, get_node, get_neighbors, list_rooms, find_tunnels, sources_list, trigger_room, graph_stats. `wellinformed mcp start` — auto-spawned by Claude Code via the plugin manifest.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5460:./docs/product/ROADMAP.md:29:**Commands:** `wellinformed init`, `wellinformed room list|create|switch|current`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5461:./docs/product/ROADMAP.md:35:- `src/infrastructure/rooms-config.ts` — Room registry at `~/.wellinformed/rooms.json`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5462:./docs/product/ROADMAP.md:44:**Commands:** `wellinformed ask "<query>"`, `wellinformed report [date] [--room R]`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5463:./docs/product/ROADMAP.md:52:- Report persistence at `~/.wellinformed/reports/<room>/<date>.md`
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5464:./docs/product/ROADMAP.md:57:**Commands:** `wellinformed daemon start|stop|status`, `wellinformed discover [--room R]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5452:./docs/p2p/peer-reputation-load-spreading.md:73:  flag to `akashik ask --peers` that, on a high-confidence federated
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5458:./docs/product/ROADMAP.md:19:Pluggable Source port with four adapters: generic_rss, arxiv, hn_algolia, generic_url. RSS 2.0 + Atom normaliser. Recursive paragraph chunker. Content-hash (sha256) dedup on re-runs. `akashik trigger [--room R]` and `akashik sources list|add|remove|enable|disable`.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5459:./docs/product/ROADMAP.md:25:9 tools exposed over stdio via @modelcontextprotocol/sdk: search, ask, get_node, get_neighbors, list_rooms, find_tunnels, sources_list, trigger_room, graph_stats. `akashik mcp start` — auto-spawned by Claude Code via the plugin manifest.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5460:./docs/product/ROADMAP.md:29:**Commands:** `akashik init`, `akashik room list|create|switch|current`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5461:./docs/product/ROADMAP.md:35:- `src/infrastructure/rooms-config.ts` — Room registry at `~/.akashik/rooms.json`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5462:./docs/product/ROADMAP.md:44:**Commands:** `akashik ask "<query>"`, `akashik report [date] [--room R]`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5463:./docs/product/ROADMAP.md:52:- Report persistence at `~/.akashik/reports/<room>/<date>.md`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5464:./docs/product/ROADMAP.md:57:**Commands:** `akashik daemon start|stop|status`, `akashik discover [--room R]`
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5532:./docs/research/octopus-discover/round-5-2026-05-26/synthesis.md:9:Akashik = federated knowledge commons for the OSS community.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5535:./docs/research/octopus-discover/round-5-2026-05-26/synthesis.md:94:The next engineering month must be spent on **architecting the federation and its measurement infrastructure (AkashikBench-F)**. The empirical data confirms the LME-S head is saturated (R@50=1.000, ~4pp NDCG headroom). Chasing the final 2-3pp to match `agentmemory`'s 0.952 is a vanity metric for a single-user memory product, which Akashik is no longer. The core differentiator is network compounding. Conversely, the tradeoff of abandoning single-peer tuning is leaving 60pp of factual headroom on LoCoMo unmined, meaning local retrieval may remain noisy. However, building the federation layer (CRDT sync, query fan-out) and measuring the `web_fallback_rate` is the only way to empirically validate the actual "knowledge commons" thesis.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5541:./docs/research/octopus-discover/round-5-2026-05-26/synthesis.md:123:2.  **AT Protocol (Bluesky)**: Closest *protocol* analogue. *Positioning:* AT Protocol solved federated identity for social posts; Akashik is AT Protocol for semantic research memory with demand-shaped retrieval.
@@ -5715,7 +5715,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5632:./docs/research/octopus-discover/round-5-2026-05-26/probes/gemini-1.md:190:- **Argument**: "Akashik assumes that making knowledge portable and signed will naturally yield high-quality community memory. In reality, compounding requires network effects you haven't earned, and without density, the federated mechanism is slower and worse than a centralized web search. You have a coordination problem in an infrastructure costume."
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5633:./docs/research/octopus-discover/round-5-2026-05-26/probes/gemini-1.md:191:- **Response**: "We grant that federation provides value only with density, but Akashik is designed to provide immediate single-player value before density is reached. Because the system gracefully falls back to a web search—and saves that result locally for the user's future sessions—a contributor with zero peers still gets a functional, accelerating local memory tool on day 1. Federation is strictly additive to this baseline, solving the cold-start problem by making the single-user experience worthwhile while the network effect builds."
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5634:./docs/research/octopus-discover/round-5-2026-05-26/probes/gemini-1.md:194:If I were Sahar, the next engineering month I'd spend on building the AkashikBench-F simulation harness and instrumenting `web_fallback_rate` because these are the only metrics that actually measure the federated compounding claim. The next marketing/launch month I'd spend on onboarding 5-20 Rust infrastructure maintainers to seed a single, high-pain debugging room because deep coverage in one niche proves the mechanism better than thin coverage everywhere. Specifically NOT chasing the last 3% of R@5 on LongMemEval-S because that optimizes for the old, single-user product frame and distracts from the core peer-to-peer value proposition.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5651:./docs/marketing/SOCIAL-LAUNCH.md:121:> - P2P: libp2p protocols `/wellinformed/{search,recall,touch,share}/1.0.0`
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5651:./docs/marketing/SOCIAL-LAUNCH.md:121:> - P2P: libp2p protocols `/akashik/{search,recall,touch,share}/1.0.0`
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5659:./docs/marketing/SOCIAL-LAUNCH.md:217:> [Show] Akashik — local-first knowledge graph + P2P federation that hooks into Claude Code's prompt path
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5663:./docs/marketing/SOCIAL-LAUNCH.md:247:> [P] Akashik — peer-federated knowledge retrieval with
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5675:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-0.md:12:Akashik = federated knowledge commons for the OSS community.
@@ -5729,14 +5729,14 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5694:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-0.md:339:- **Bluesky / AT Protocol**: strongest comparison on federation architecture; Akashik position is “ATProto for knowledge artifacts and demand-shaped retrieval, not social posting.” Sources: https://github.com/bluesky-social/atproto and https://atproto.com/guides/overview
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5695:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-0.md:341:8. **Q8**: The devastating argument is: **“This is an overengineered federation story searching for a workload. Retrieval is already near-solved locally, cross-user query overlap is probably too low to create real compounding, and the moment you add federation you inherit abuse, provenance, privacy, deletion, and trust problems that centralized copilots or per-user memory systems avoid.”** The honest response is that this critique is valid unless Akashik proves a narrow, high-overlap use case quickly. So the burden of proof is not philosophical decentralization; it is a measurable federation lift in one community, with signed provenance, moderation/audit logs, and deletion/tombstone semantics good enough that the knowledge graph does not become an ungovernable exfiltration or misinformation cache. If the 30-day pilot cannot show repeated miss-to-hit conversion across different users, the project should be narrowed to local-first memory sync rather than a federated commons.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5716:./docs/product/RELEASE-v4.md:105:**Claim**: Akashik v4 is the first OSS agent memory framework that ships **episodic→semantic background consolidation as a reusable primitive**. A `sessions` room of 7,002 raw Claude Code transcript entries gets clustered by cosine similarity, each cluster LLM-summarized, and persisted as a `consolidated_memory` graph node with cryptographic provenance chain.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5717:./docs/product/RELEASE-v4.md:137:wellinformed consolidate run <room> --dry-run --threshold 0.8 --min-size 5
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5743:./docs/product/BENCHMARKS.md:245:Three real-corpus suites are now wired into the bench CLI. They share the env contract `WELLINFORMED_BENCH_PUBLIC_REAL=1` (master gate; off by default to keep CI fast) and each takes a dataset-directory env var. Without the gate or the dataset they `t.skip()` cleanly and the composite falls back to the synth/proxy value (registration order in `src/cli/commands/bench.ts` is `synth → real` so real overwrites synth iff real ran).
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5717:./docs/product/RELEASE-v4.md:137:akashik consolidate run <room> --dry-run --threshold 0.8 --min-size 5
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5743:./docs/product/BENCHMARKS.md:245:Three real-corpus suites are now wired into the bench CLI. They share the env contract `AKASHIK_BENCH_PUBLIC_REAL=1` (master gate; off by default to keep CI fast) and each takes a dataset-directory env var. Without the gate or the dataset they `t.skip()` cleanly and the composite falls back to the synth/proxy value (registration order in `src/cli/commands/bench.ts` is `synth → real` so real overwrites synth iff real ran).
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5746:./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:11:Akashik = federated knowledge commons for the OSS community.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5753:./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:197:**The hook that gets ~100 contributors:** "Your Claude remembers conversations; Akashik lets your Claude remember what your entire team has read — across companies, without a server." The federation event makes this visceral.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5755:./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:213:**System that solved it:** **Wikipedia's Vital Articles + Good Article editorial system.** A designated cadre explicitly maintains coverage of tail knowledge regardless of traffic. **Mechanism applied to Akashik:** room-level `protected: true` flag. Protected rooms are exempt from any future eviction / compaction logic. The existing `shareStore` already has a `shareable` flag (Phase 16); extend it with `protected`. Rooms explicitly flagged by the room owner survive curiosity-driven decay. Curators self-identify.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5760:./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:267:The Phase 4 consolidation left 6,013 raw entries flagged `consolidated_at != null` but not pruned. These compete with consolidated_memory nodes in BM25 (confirmed cause of the 55% quality proxy failure in §2j). The quarantine pattern: after consolidation, raw entries move to a `consolidated_raw` partition that is excluded from BM25 but retained for vector search. Add a `wellinformed prune --room <room>` command that performs this partition split and verify with the entity-extraction probe (§2j path forward).
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5761:./docs/p2p/p2p-threat-model.md:3:Scope: the attack surface exposed once a wellinformed node accepts data from **untrusted peers** via `share sync` (Y.js CRDT) or `touch` (one-shot pull). This document enumerates concrete paths from a hostile peer to code execution or secret exfiltration, and the mitigations that are (a) shipped, (b) planned, or (c) deferred.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5762:./docs/p2p/p2p-threat-model.md:5:**Threat actor.** A peer on the P2P network who has completed the libp2p handshake and can send arbitrary payloads on `/wellinformed/share/1.0.0` and `/wellinformed/touch/1.0.0`. Peers are not authenticated beyond their ed25519 peer identity — there is no external PKI and no "this peer is trusted" claim.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5760:./docs/research/octopus-discover/round-5-2026-05-26/probes/claude-sonnet-2.md:267:The Phase 4 consolidation left 6,013 raw entries flagged `consolidated_at != null` but not pruned. These compete with consolidated_memory nodes in BM25 (confirmed cause of the 55% quality proxy failure in §2j). The quarantine pattern: after consolidation, raw entries move to a `consolidated_raw` partition that is excluded from BM25 but retained for vector search. Add a `akashik prune --room <room>` command that performs this partition split and verify with the entity-extraction probe (§2j path forward).
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5761:./docs/p2p/p2p-threat-model.md:3:Scope: the attack surface exposed once a akashik node accepts data from **untrusted peers** via `share sync` (Y.js CRDT) or `touch` (one-shot pull). This document enumerates concrete paths from a hostile peer to code execution or secret exfiltration, and the mitigations that are (a) shipped, (b) planned, or (c) deferred.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5762:./docs/p2p/p2p-threat-model.md:5:**Threat actor.** A peer on the P2P network who has completed the libp2p handshake and can send arbitrary payloads on `/akashik/share/1.0.0` and `/akashik/touch/1.0.0`. Peers are not authenticated beyond their ed25519 peer identity — there is no external PKI and no "this peer is trusted" claim.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5765:./docs/marketing/how-akashik-works.md:4:Akashik possible. Written for the reader who has heard "federated
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5768:./docs/marketing/how-akashik-works.md:17:federation couldn't satisfy a query. When you ask Akashik
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5774:./docs/marketing/positioning-draft.md:5:> Akashik is the only way to accumulate, share, and stream knowledge seamlessly into your LLM work sessions.
@@ -5761,7 +5761,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5827:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:273:The stack is TypeScript / DDD with clean layer separation (`domain` → `application` → `infrastructure` → `cli`/`mcp`). Domain layer is pure: immutable graph values, `neverthrow` Result monads throughout, no I/O. Key domain types confirm what the prompt describes: `graph.ts` (immutable GraphNode/GraphEdge), `eval-metrics.ts` (pure `recallAtK`/`ndcgAtK`/`reciprocalRank`), `contextual-enrich.ts` (E11, pure, deterministic), `llm-listwise-rerank.ts` (ports-and-adapters for LLM, shuffle already shipped at commit 1f828b7), `sharing.ts` (SEC-03 boundary: no raw embeddings cross the wire), `oracle.ts` (P2P Q&A as pure graph-node data shape), `federated-search.ts` (Promise.all fan-out with 2000ms per-peer timeout, dedup prefers local). The architecture is sound for the Akashik mission. The retrieval plumbing is well-built. The open question is what to measure next.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5831:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:301:| System | What it shares with Akashik | What's missing |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5835:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:357:- **Availability confounding.** Your current bench runs with all peers online. In production, the 2000ms timeout means some peers never respond. Your single-peer benchmarks (LME-S, LoCoMo) don't model this. AkashikBench-F should include a "partial availability" condition: what is federation R@k when 20% of peers are offline?
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5836:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5836:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5840:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:407:The known solution is **topic diversity indexing**, analogous to Mastodon's local vs. federated timeline split. Akashik's room structure partially mitigates this (niche rooms exist independently), but within a room, hot nodes will crowd out cold ones in search rankings.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5842:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:433:This is the most important one. AT Protocol solved federated identity (DIDs), signed content, Personal Data Servers (each user owns their data), and protocol-level federation at scale (millions of users). Their architecture maps almost directly: PDS = Akashik peer, DID = Akashik contributor identity, lexicon record type = Akashik graph node type.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5847:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:457:> "This is a coordination problem in an infrastructure costume. Compounding is a property of participation density, not architecture. The mechanism only works when enough peers are online and have already pulled the relevant knowledge — which requires network effects you haven't earned yet. Every federated network (Mastodon, Matrix, Diaspora) has built technically correct architecture and then struggled for years to reach the critical mass where the federated property is actually better than the centralized alternative. Akashik's architectural insight about R(T,t) is correct but irrelevant until you have R(T, t) >> 0 for enough T, which is a community-building problem, not an engineering problem. The next engineering month could be zero effort and the project would succeed faster by spending that month on community seeding and distribution."
@@ -5776,14 +5776,14 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5889:./docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-4.md:334:3.  **Collaborator / Fork Target: Bluesky / AT Protocol.** The AT Protocol solved federated cryptographic identity (DIDs) and decentralized data repositories (PDS). Akashik is architecturally adjacent; it could theoretically run *on top of* the AT Protocol's data layer, swapping social microblogging for semantic vector storage.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5890:./docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-4.md:339:**The Response:** Akashik mitigates this through strict cryptographic provenance, explicit data aging, and conflict surfacing. Every node carries a `did:key` signature and a `fetched_at` timestamp, and system rooms automatically age out (7-30 days). More importantly, the protocol is designed to surface *conflicting evidence* rather than smoothing it over. If Peer A has a stale fix and Peer B has the new one, the agent receives an explicit "contract" highlighting the contradiction, forcing a live verification search rather than a blind skip. 
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5892:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:12:Akashik = federated knowledge commons for the OSS community.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5895:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:95:1. **Q1:** Spend the next engineering month on **federation architecture and measurement**, not on squeezing LME-S `R@5` from `0.9202` toward `agentmemory`’s claimed `0.952`. Your own numbers show the single-peer head is already near-saturated on LongMemEval-S (`R@50 = 1.0000`, `NDCG@5 = 0.8836`, `MRR = 0.9034`) while the product claim lives or dies on Step 5 transfer, not on another 1-3 leaderboard points ([Round 4 brief](/Users/saharbarak/personal/wellinformed/docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:1), [bench plan](/Users/saharbarak/personal/wellinformed/docs/research/beat-the-competitors-retrieval-plan.md:1), [benchmarks](/Users/saharbarak/personal/wellinformed/docs/product/BENCHMARKS.md:287)). The upside is this is the only work that validates the Akashik thesis; the downside is you delay an easy marketing win and accept that per-peer retrieval will remain “good enough” rather than obviously best-in-class for another month.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5895:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:95:1. **Q1:** Spend the next engineering month on **federation architecture and measurement**, not on squeezing LME-S `R@5` from `0.9202` toward `agentmemory`’s claimed `0.952`. Your own numbers show the single-peer head is already near-saturated on LongMemEval-S (`R@50 = 1.0000`, `NDCG@5 = 0.8836`, `MRR = 0.9034`) while the product claim lives or dies on Step 5 transfer, not on another 1-3 leaderboard points ([Round 4 brief](/Users/saharbarak/personal/akashik/docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:1), [bench plan](/Users/saharbarak/personal/akashik/docs/research/beat-the-competitors-retrieval-plan.md:1), [benchmarks](/Users/saharbarak/personal/akashik/docs/product/BENCHMARKS.md:287)). The upside is this is the only work that validates the Akashik thesis; the downside is you delay an easy marketing win and accept that per-peer retrieval will remain “good enough” rather than obviously best-in-class for another month.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5897:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:99:3. **Q3:** Proposed benchmark: **AkashikBench-F**. Use `snap-research/locomo` ([repo](https://github.com/snap-research/locomo), arXiv `2402.17753`) plus LongMemEval-S (arXiv `2410.10813`) as source conversations, partition them across `N=32` simulated peers and `4-6` rooms with controlled topical overlap, replay `1,000-2,000` timestamped queries sequentially, and on miss let the querying peer obtain the gold evidence from a fixed “web oracle” corpus and cache it locally. Measure `federation_hit_rate`, `web_fallback_rate`, `coverage_growth(T,t)`, `T_half(T)` (time until half the peers can answer topic `T`), median/p95 answer latency, and quality deltas versus local-only; define **compounding** quantitatively as the negative slope of `web_fallback_rate` and positive slope of `coverage_growth` over repeated asks. This is runnable on commodity hardware in a week because it is a simulator over existing corpora, not a live distributed deployment; on the other hand, if you do not model peer churn and fact staleness, you will overstate the compounding effect.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5899:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:111:   **(b) Niche knowledge evaporation:** closest solved-by example is **LOCKSS**; low-demand content survives because preservation is policy-driven replication, not demand-only caching ([LOCKSS](https://www.lockss.org/)). Akashik analogue: add room-level pinning/replication quotas for rare high-value records; the tradeoff is storage overhead and moderation burden.  
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5900:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:112:   **(c) Adversarial misinformation flood:** closest solved-by example is **Wikipedia**; the mechanism is revision history, revertability, watchlists, protection levels, and citation norms. Akashik analogue: quarantine untrusted imports, signed provenance, per-room trust policies, and reversible moderation logs; however this raises governance cost and future SOC2-style audit requirements if you ever sell to teams.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5902:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:120:8. **Q8:** Strongest counter-argument: **“You are adding a flaky, mostly-offline federation hop in front of systems that already solve knowledge sharing better: Google, Stack Overflow, GitHub Discussions, Discord, Are.na, and repo docs. In practice, users will miss locally, peers will be offline, and Akashik will collapse into ‘web search plus personal cache,’ which is not a new network.”** The honest response is: that argument is strong unless you can show a dense room where `web_fallback_rate` materially drops over 30 days and Step 5 transfers happen with attribution faster than fresh web research. Local-first plus web-on-miss means the product is still useful on day 1; however the tradeoff is brutal: if the first room does not show measurable transfer under real churn, the federated-commons thesis is not yet proven and should not be pitched as proven.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5906:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:189:Akashik = federated knowledge commons for the OSS community.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5909:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:302:/bin/zsh -lc 'rg --files . | rg "(akashik|round|locomo|lme|agentmemory|federat|benchmark|retrieval|memory)"' in /Users/saharbarak/personal/wellinformed
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5910:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:334:/bin/zsh -lc 'rg -n "Round 4|Akashik|ambitioned-curator|LoCoMo|LME-S|agentmemory|federation-level|compounding" .' in /Users/saharbarak/personal/wellinformed
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5909:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:302:/bin/zsh -lc 'rg --files . | rg "(akashik|round|locomo|lme|agentmemory|federat|benchmark|retrieval|memory)"' in /Users/saharbarak/personal/akashik
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5910:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:334:/bin/zsh -lc 'rg -n "Round 4|Akashik|ambitioned-curator|LoCoMo|LME-S|agentmemory|federation-level|compounding" .' in /Users/saharbarak/personal/akashik
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5914:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:398:./docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:10:"Akashik: federated knowledge commons for the open-source community as a whole."
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5919:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:417:./docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:172:Q2. The Akashik mechanism (peer-local + federation-on-query + web-
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5925:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:430:./docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:258:This synthesis combines a direct analysis of the local codebase with the mandatory systemic perspectives. The findings below are grounded strictly in the actual file contents, repository structure, and CI/CD configurations found in your workspace, directly applying them to your recent pivot to the **Akashik** federated knowledge commons.
@@ -5794,7 +5794,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5964:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:490:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:273:The stack is TypeScript / DDD with clean layer separation (`domain` → `application` → `infrastructure` → `cli`/`mcp`). Domain layer is pure: immutable graph values, `neverthrow` Result monads throughout, no I/O. Key domain types confirm what the prompt describes: `graph.ts` (immutable GraphNode/GraphEdge), `eval-metrics.ts` (pure `recallAtK`/`ndcgAtK`/`reciprocalRank`), `contextual-enrich.ts` (E11, pure, deterministic), `llm-listwise-rerank.ts` (ports-and-adapters for LLM, shuffle already shipped at commit 1f828b7), `sharing.ts` (SEC-03 boundary: no raw embeddings cross the wire), `oracle.ts` (P2P Q&A as pure graph-node data shape), `federated-search.ts` (Promise.all fan-out with 2000ms per-peer timeout, dedup prefers local). The architecture is sound for the Akashik mission. The retrieval plumbing is well-built. The open question is what to measure next.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5968:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:497:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:301:| System | What it shares with Akashik | What's missing |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5972:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:506:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:357:- **Availability confounding.** Your current bench runs with all peers online. In production, the 2000ms timeout means some peers never respond. Your single-peer benchmarks (LME-S, LoCoMo) don't model this. AkashikBench-F should include a "partial availability" condition: what is federation R@k when 20% of peers are offline?
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5973:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:509:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5973:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:509:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5977:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:516:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:407:The known solution is **topic diversity indexing**, analogous to Mastodon's local vs. federated timeline split. Akashik's room structure partially mitigates this (niche rooms exist independently), but within a room, hot nodes will crowd out cold ones in search rankings.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5979:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:518:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:433:This is the most important one. AT Protocol solved federated identity (DIDs), signed content, Personal Data Servers (each user owns their data), and protocol-level federation at scale (millions of users). Their architecture maps almost directly: PDS = Akashik peer, DID = Akashik contributor identity, lexicon record type = Akashik graph node type.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5984:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:524:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:457:> "This is a coordination problem in an infrastructure costume. Compounding is a property of participation density, not architecture. The mechanism only works when enough peers are online and have already pulled the relevant knowledge — which requires network effects you haven't earned yet. Every federated network (Mastodon, Matrix, Diaspora) has built technically correct architecture and then struggled for years to reach the critical mass where the federated property is actually better than the centralized alternative. Akashik's architectural insight about R(T,t) is correct but irrelevant until you have R(T, t) >> 0 for enough T, which is a community-building problem, not an engineering problem. The next engineering month could be zero effort and the project would succeed faster by spending that month on community seeding and distribution."
@@ -5830,7 +5830,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6120:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:867:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:306:**3. Semantic Overlay Networks (Löser et al., CIDR 2003; Crespo & Garcia-Molina, VLDB 2002)** — early research systems for P2P semantic search. Demonstrated that routing by semantic similarity (instead of hash-based DHT) enables topic-aware peer selection. Akashik's federation fan-out + RRF merge is implementing this pattern. What the 2003 systems lacked: DID-signed attribution, graph-traversable provenance, satisfaction scoring, local-first storage.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6122:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:871:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:314:- **Semantic retrieval as the federation primitive**: All prior P2P knowledge systems route by topic declaration (EDUTELLA), content hash (IPFS, Freenet), or social graph (Nostr/Fediverse). Akashik routes by semantic similarity of the query to each peer's local graph.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6125:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:877:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:355:2. Akashik federation: the above metrics
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6126:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:890:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:455:**Akashik mitigation**: The `find_tunnels` MCP tool already discovers cross-domain connections. A `wellinformed room gaps` command — showing topics that have queries but no cached answers, or topics that haven't been updated in >30 days — would surface the cold-topic coverage map to curators. The peer-reputation system's "topic coverage gaps" output (mentioned in its design doc) is exactly this. Implement it as a visible CLI output, not just an internal metric.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6126:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:890:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:455:**Akashik mitigation**: The `find_tunnels` MCP tool already discovers cross-domain connections. A `akashik room gaps` command — showing topics that have queries but no cached answers, or topics that haven't been updated in >30 days — would surface the cold-topic coverage map to curators. The peer-reputation system's "topic coverage gaps" output (mentioned in its design doc) is exactly this. Implement it as a visible CLI output, not just an internal metric.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6129:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:893:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:465:- DHT replication factor: Kademlia stores k=20 copies. Akashik's opt-in "popular-in-room caching" (mentioned in the mechanism doc) is the right analog. Make it opt-in-by-default for rooms tagged `oss-commons`, not just general rooms.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6136:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:902:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:506:**What Akashik does better:** Federation across organizations (Logseq sync is same-user multi-device or explicit sharing; Akashik federates across organizational boundaries), semantic retrieval quality (measured BEIR numbers), compounding by curiosity (not deliberate sync), DID-signed attribution.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6137:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:903:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:508:**The key difference:** Logseq is "your notes, synced with you across devices." Akashik is "your research, shared with the community when queried." These sound similar but are fundamentally different trust models. Logseq's sync is a replication protocol; Akashik's federation is a query protocol.
@@ -5840,10 +5840,10 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6144:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:910:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:532:The counter-argument is correct about Stack Overflow — as a competitor for *published* knowledge. Where it misidentifies the use case: Akashik is designed for the 80% of engineering knowledge that *never gets published*. The debugging session you spent 4 hours on that you couldn't write up. The architectural decision you made in 2023 and would like to remember in 2024. The library evaluation you ran before choosing your ORM. The PR review comment that explained why the abstraction was wrong. None of that compounded into Stack Overflow's index — it evaporated when the Slack message disappeared or the terminal session closed. When a new contributor joins a project and asks "why did we use SQLite instead of Postgres?", that answer is in someone's head or in a Slack message from 2 years ago — not on Stack Overflow. Akashik is designed for that knowledge: private, in-progress, context-rich, never published — and the availability concern (offline peers) is real and documented honestly, but for a tool that runs as a daemon on a developer's machine and stores only what *that developer has asked about*, the latency added by federation fan-out is 50-200ms to peers, which is faster than a Google search and cheaper than a Stack Overflow question that gets ignored.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6150:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:946:"Akashik: federated knowledge commons for the open-source community as a whole."
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6156:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1108:Q2. The Akashik mechanism (peer-local + federation-on-query + web-
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6168:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1368:Beyond that: **federated retrieval** (the unique wellinformed bet) — measure how P2P-shared rooms across multiple peers lift recall on out-of-distribution questions, vs single-peer baselines. No public benchmark covers this today; we'd publish one.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6168:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1368:Beyond that: **federated retrieval** (the unique akashik bet) — measure how P2P-shared rooms across multiple peers lift recall on out-of-distribution questions, vs single-peer baselines. No public benchmark covers this today; we'd publish one.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6173:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1440:Akashik possible. Written for the reader who has heard "federated
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6176:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1453:federation couldn't satisfy a query. When you ask Akashik
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6184:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1711:/bin/zsh -lc 'rg -n "Q1|Q2|Q3|Q4|Q5|Q6|Q7|Q8|closest prior art|benchmark|launch plan|competitor|counter-argument|counter argument|novel|federation|compounding" docs/research/octopus-discover/round-4-2026-05-26/probes/*.md' in /Users/saharbarak/personal/wellinformed
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6184:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1711:/bin/zsh -lc 'rg -n "Q1|Q2|Q3|Q4|Q5|Q6|Q7|Q8|closest prior art|benchmark|launch plan|competitor|counter-argument|counter argument|novel|federation|compounding" docs/research/octopus-discover/round-4-2026-05-26/probes/*.md' in /Users/saharbarak/personal/akashik
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6186:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1722:docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:175:Q2. The Akashik mechanism (peer-local + federation-on-query + web-
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6189:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1753:docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-1.md:271:*   **The Tradeoff/Disadvantage:** Every engineering hour spent squeezing 1pp out of LME-S is an hour stolen from the core Akashik mechanism. Furthermore, optimizing for LME-S ignores the actual engineering fire: the LoCoMo benchmark’s 60pp recall headroom where current rerankers are fundamentally failing.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6193:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1780:docs/research/octopus-discover/round-4-2026-05-26/probes/gemini-4.md:175:Q2. The Akashik mechanism (peer-local + federation-on-query + web-
@@ -5860,7 +5860,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6238:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2156:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:306:**3. Semantic Overlay Networks (Löser et al., CIDR 2003; Crespo & Garcia-Molina, VLDB 2002)** — early research systems for P2P semantic search. Demonstrated that routing by semantic similarity (instead of hash-based DHT) enables topic-aware peer selection. Akashik's federation fan-out + RRF merge is implementing this pattern. What the 2003 systems lacked: DID-signed attribution, graph-traversable provenance, satisfaction scoring, local-first storage.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6239:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2159:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:314:- **Semantic retrieval as the federation primitive**: All prior P2P knowledge systems route by topic declaration (EDUTELLA), content hash (IPFS, Freenet), or social graph (Nostr/Fediverse). Akashik routes by semantic similarity of the query to each peer's local graph.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6242:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2166:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:355:2. Akashik federation: the above metrics
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6243:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2168:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:360:**Concrete implementation:** A `wellinformed bench federation` CLI command running a Docker Compose network of 4 peers, injecting queries from the hot/cold corpus, and emitting an FCB report. Est. engineering effort: 2-3 weeks.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6243:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2168:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:360:**Concrete implementation:** A `akashik bench federation` CLI command running a Docker Compose network of 4 peers, injecting queries from the hot/cold corpus, and emitting an FCB report. Est. engineering effort: 2-3 weeks.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6246:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2186:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:506:**What Akashik does better:** Federation across organizations (Logseq sync is same-user multi-device or explicit sharing; Akashik federates across organizational boundaries), semantic retrieval quality (measured BEIR numbers), compounding by curiosity (not deliberate sync), DID-signed attribution.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6247:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2187:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:508:**The key difference:** Logseq is "your notes, synced with you across devices." Akashik is "your research, shared with the community when queried." These sound similar but are fundamentally different trust models. Logseq's sync is a replication protocol; Akashik's federation is a query protocol.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6248:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2188:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:514:**Why it's the real competitor:** The AT Protocol is the most mature open-source implementation of the three things Akashik's architecture depends on: DIDs (they use `did:plc` and `did:web`), federated content (Personal Data Servers + relay aggregation), and semantic labeling systems. The AT Protocol is already deployed at scale (6M+ accounts), has an active developer ecosystem, and is building "labelers" (essentially federated reputation) and "starter packs" (essentially curated rooms).
@@ -5869,10 +5869,10 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6252:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2194:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:532:The counter-argument is correct about Stack Overflow — as a competitor for *published* knowledge. Where it misidentifies the use case: Akashik is designed for the 80% of engineering knowledge that *never gets published*. The debugging session you spent 4 hours on that you couldn't write up. The architectural decision you made in 2023 and would like to remember in 2024. The library evaluation you ran before choosing your ORM. The PR review comment that explained why the abstraction was wrong. None of that compounded into Stack Overflow's index — it evaporated when the Slack message disappeared or the terminal session closed. When a new contributor joins a project and asks "why did we use SQLite instead of Postgres?", that answer is in someone's head or in a Slack message from 2 years ago — not on Stack Overflow. Akashik is designed for that knowledge: private, in-progress, context-rich, never published — and the availability concern (offline peers) is real and documented honestly, but for a tool that runs as a daemon on a developer's machine and stores only what *that developer has asked about*, the latency added by federation fan-out is 50-200ms to peers, which is faster than a Google search and cheaper than a Stack Overflow question that gets ignored.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6254:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2212:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:174:Q2. The Akashik mechanism (peer-local + federation-on-query + web-
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6260:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2255:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:357:- **Availability confounding.** Your current bench runs with all peers online. In production, the 2000ms timeout means some peers never respond. Your single-peer benchmarks (LME-S, LoCoMo) don't model this. AkashikBench-F should include a "partial availability" condition: what is federation R@k when 20% of peers are offline?
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6261:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2259:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6261:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2259:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6263:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2268:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:433:This is the most important one. AT Protocol solved federated identity (DIDs), signed content, Personal Data Servers (each user owns their data), and protocol-level federation at scale (millions of users). Their architecture maps almost directly: PDS = Akashik peer, DID = Akashik contributor identity, lexicon record type = Akashik graph node type.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6265:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2274:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6269:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2352:1. **Q1:** Spend the next engineering month on **federation architecture and measurement**, not on squeezing LME-S `R@5` from `0.9202` toward `agentmemory`’s claimed `0.952`. Your own numbers show the single-peer head is already near-saturated on LongMemEval-S (`R@50 = 1.0000`, `NDCG@5 = 0.8836`, `MRR = 0.9034`) while the product claim lives or dies on Step 5 transfer, not on another 1-3 leaderboard points ([Round 4 brief](/Users/saharbarak/personal/wellinformed/docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:1), [bench plan](/Users/saharbarak/personal/wellinformed/docs/research/beat-the-competitors-retrieval-plan.md:1), [benchmarks](/Users/saharbarak/personal/wellinformed/docs/product/BENCHMARKS.md:287)). The upside is this is the only work that validates the Akashik thesis; the downside is you delay an easy marketing win and accept that per-peer retrieval will remain “good enough” rather than obviously best-in-class for another month.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6269:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2352:1. **Q1:** Spend the next engineering month on **federation architecture and measurement**, not on squeezing LME-S `R@5` from `0.9202` toward `agentmemory`’s claimed `0.952`. Your own numbers show the single-peer head is already near-saturated on LongMemEval-S (`R@50 = 1.0000`, `NDCG@5 = 0.8836`, `MRR = 0.9034`) while the product claim lives or dies on Step 5 transfer, not on another 1-3 leaderboard points ([Round 4 brief](/Users/saharbarak/personal/akashik/docs/research/octopus-discover/round-4-2026-05-26/synthesis.md:1), [bench plan](/Users/saharbarak/personal/akashik/docs/research/beat-the-competitors-retrieval-plan.md:1), [benchmarks](/Users/saharbarak/personal/akashik/docs/product/BENCHMARKS.md:287)). The upside is this is the only work that validates the Akashik thesis; the downside is you delay an easy marketing win and accept that per-peer retrieval will remain “good enough” rather than obviously best-in-class for another month.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6271:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2356:3. **Q3:** Proposed benchmark: **AkashikBench-F**. Use `snap-research/locomo` ([repo](https://github.com/snap-research/locomo), arXiv `2402.17753`) plus LongMemEval-S (arXiv `2410.10813`) as source conversations, partition them across `N=32` simulated peers and `4-6` rooms with controlled topical overlap, replay `1,000-2,000` timestamped queries sequentially, and on miss let the querying peer obtain the gold evidence from a fixed “web oracle” corpus and cache it locally. Measure `federation_hit_rate`, `web_fallback_rate`, `coverage_growth(T,t)`, `T_half(T)` (time until half the peers can answer topic `T`), median/p95 answer latency, and quality deltas versus local-only; define **compounding** quantitatively as the negative slope of `web_fallback_rate` and positive slope of `coverage_growth` over repeated asks. This is runnable on commodity hardware in a week because it is a simulator over existing corpora, not a live distributed deployment; on the other hand, if you do not model peer churn and fact staleness, you will overstate the compounding effect.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6273:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2368:   **(b) Niche knowledge evaporation:** closest solved-by example is **LOCKSS**; low-demand content survives because preservation is policy-driven replication, not demand-only caching ([LOCKSS](https://www.lockss.org/)). Akashik analogue: add room-level pinning/replication quotas for rare high-value records; the tradeoff is storage overhead and moderation burden.  
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6274:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2369:   **(c) Adversarial misinformation flood:** closest solved-by example is **Wikipedia**; the mechanism is revision history, revertability, watchlists, protection levels, and citation norms. Akashik analogue: quarantine untrusted imports, signed provenance, per-room trust policies, and reversible moderation logs; however this raises governance cost and future SOC2-style audit requirements if you ever sell to teams.
@@ -5897,12 +5897,12 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6377:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:306:**3. Semantic Overlay Networks (Löser et al., CIDR 2003; Crespo & Garcia-Molina, VLDB 2002)** — early research systems for P2P semantic search. Demonstrated that routing by semantic similarity (instead of hash-based DHT) enables topic-aware peer selection. Akashik's federation fan-out + RRF merge is implementing this pattern. What the 2003 systems lacked: DID-signed attribution, graph-traversable provenance, satisfaction scoring, local-first storage.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6379:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:314:- **Semantic retrieval as the federation primitive**: All prior P2P knowledge systems route by topic declaration (EDUTELLA), content hash (IPFS, Freenet), or social graph (Nostr/Fediverse). Akashik routes by semantic similarity of the query to each peer's local graph.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6382:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:355:2. Akashik federation: the above metrics
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6383:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:360:**Concrete implementation:** A `wellinformed bench federation` CLI command running a Docker Compose network of 4 peers, injecting queries from the hot/cold corpus, and emitting an FCB report. Est. engineering effort: 2-3 weeks.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6384:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:418:*What they commit to*: Index one active project (`wellinformed index <repo>`), join `oss-commons` room, run their peer for at least 4 hours/day for 30 days.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6387:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:438:3. A `wellinformed network status` command showing R(T,t) for the top 10 topics in the room
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6389:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:455:**Akashik mitigation**: The `find_tunnels` MCP tool already discovers cross-domain connections. A `wellinformed room gaps` command — showing topics that have queries but no cached answers, or topics that haven't been updated in >30 days — would surface the cold-topic coverage map to curators. The peer-reputation system's "topic coverage gaps" output (mentioned in its design doc) is exactly this. Implement it as a visible CLI output, not just an internal metric.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6383:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:360:**Concrete implementation:** A `akashik bench federation` CLI command running a Docker Compose network of 4 peers, injecting queries from the hot/cold corpus, and emitting an FCB report. Est. engineering effort: 2-3 weeks.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6384:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:418:*What they commit to*: Index one active project (`akashik index <repo>`), join `oss-commons` room, run their peer for at least 4 hours/day for 30 days.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6387:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:438:3. A `akashik network status` command showing R(T,t) for the top 10 topics in the room
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6389:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:455:**Akashik mitigation**: The `find_tunnels` MCP tool already discovers cross-domain connections. A `akashik room gaps` command — showing topics that have queries but no cached answers, or topics that haven't been updated in >30 days — would surface the cold-topic coverage map to curators. The peer-reputation system's "topic coverage gaps" output (mentioned in its design doc) is exactly this. Implement it as a visible CLI output, not just an internal metric.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6392:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:465:- DHT replication factor: Kademlia stores k=20 copies. Akashik's opt-in "popular-in-room caching" (mentioned in the mechanism doc) is the right analog. Make it opt-in-by-default for rooms tagged `oss-commons`, not just general rooms.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6395:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:486:**What to add:** (a) Community flagging — `wellinformed flag <node_id> --reason misinformation` sends a signed attestation to the room that the node is disputed. (b) Dispute visibility — when a node has flags, display them in search results: "[flagged as disputed by 3 peers]." (c) Reputation decay on flagged nodes — peer-reputation score decays when the peer's nodes accumulate flags. This doesn't verify truth, but it creates a social accountability layer.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6395:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:486:**What to add:** (a) Community flagging — `akashik flag <node_id> --reason misinformation` sends a signed attestation to the room that the node is disputed. (b) Dispute visibility — when a node has flags, display them in search results: "[flagged as disputed by 3 peers]." (c) Reputation decay on flagged nodes — peer-reputation score decays when the peer's nodes accumulate flags. This doesn't verify truth, but it creates a social accountability layer.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6400:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:506:**What Akashik does better:** Federation across organizations (Logseq sync is same-user multi-device or explicit sharing; Akashik federates across organizational boundaries), semantic retrieval quality (measured BEIR numbers), compounding by curiosity (not deliberate sync), DID-signed attribution.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6401:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:508:**The key difference:** Logseq is "your notes, synced with you across devices." Akashik is "your research, shared with the community when queried." These sound similar but are fundamentally different trust models. Logseq's sync is a replication protocol; Akashik's federation is a query protocol.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6403:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:514:**Why it's the real competitor:** The AT Protocol is the most mature open-source implementation of the three things Akashik's architecture depends on: DIDs (they use `did:plc` and `did:web`), federated content (Personal Data Servers + relay aggregation), and semantic labeling systems. The AT Protocol is already deployed at scale (6M+ accounts), has an active developer ecosystem, and is building "labelers" (essentially federated reputation) and "starter packs" (essentially curated rooms).
@@ -5964,18 +5964,18 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7333:- Run a pre/post retrieval-quality gate for consolidated rooms.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7335:- Record consolidation outcome per room, not only per tick.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7340:- Users can enable auto-consolidation without hand-listing rooms and without
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7377:   distance: 0.961 | room: wellinformed-dev
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7377:   distance: 0.961 | room: akashik-dev
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7380:   distance: 1.090 | room: auto-tlv
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7383:   distance: 1.173 | room: auto-tlv
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7386:One query. Three rooms. A starred GitHub repo, your Go source, and your own Claude-session notes — all retrieved in 970 ms, CPU-only, no network call.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7390:  <b>13 documented null attacks</b> &nbsp;·&nbsp; W3C did:key identity &nbsp;·&nbsp; libp2p federation &nbsp;·&nbsp; MIT
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7411:**wellinformed is how that ecosystem shares its knowledge.**
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7421:**1. Each peer carries a shard of what's current — together, the live index.** Every wellinformed instance is a libp2p peer. Rooms sync across peers via Y.js CRDT. A federated `ask --peers` fans a query across the network in parallel, 2-second per-peer timeout, results merged by cosine distance with per-peer attribution. The stranger who read that paper last Thursday, the peer who benchmarked that library two weeks ago, the dev who debugged that exact bug last night — their embeddings flow into your session. Nobody knows the whole graph; together the community does — the live state of the field, something no frozen-weight model can touch.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7411:**akashik is how that ecosystem shares its knowledge.**
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7421:**1. Each peer carries a shard of what's current — together, the live index.** Every akashik instance is a libp2p peer. Rooms sync across peers via Y.js CRDT. A federated `ask --peers` fans a query across the network in parallel, 2-second per-peer timeout, results merged by cosine distance with per-peer attribution. The stranger who read that paper last Thursday, the peer who benchmarked that library two weeks ago, the dev who debugged that exact bug last night — their embeddings flow into your session. Nobody knows the whole graph; together the community does — the live state of the field, something no frozen-weight model can touch.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7423:**2. Your identity is math you own.** W3C `did:key` over Ed25519 on first boot, BIP39 24-word recovery, hardware-authorized device keys. Every shared memory carries a signed envelope verifiable offline in under 2 ms. No registry, no resolver, no customer record to revoke. When the VC-funded memory category changes pricing, yours stays.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7437:With wellinformed, the `PreToolUse` hook fires before Claude reaches for the web. Your graph — already holding every arXiv paper you've pulled, every repo you've starred, every past session you've had, plus every shard shared by every other peer running wellinformed — answers in **11 ms**. Three hits across three rooms: a GitHub repo someone starred yesterday, a piece of community code you hadn't seen, an arXiv paper from two hours ago. Claude replies instantly from the community's latest state. When the session ends, your transcript is vector-indexed back into the graph so tomorrow's session starts richer than today's. And every peer on the network is doing the same — the ten-thousand-stranger loop runs **once**, not ten thousand times.
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7453:wellinformed init                      # create a room, pick your sources
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7454:wellinformed trigger --room homelab    # fetch from ArXiv, HN, RSS, blogs, any URL
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7506:wellinformed-rs/src/domain/room_routing.rs
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7437:With akashik, the `PreToolUse` hook fires before Claude reaches for the web. Your graph — already holding every arXiv paper you've pulled, every repo you've starred, every past session you've had, plus every shard shared by every other peer running akashik — answers in **11 ms**. Three hits across three rooms: a GitHub repo someone starred yesterday, a piece of community code you hadn't seen, an arXiv paper from two hours ago. Claude replies instantly from the community's latest state. When the session ends, your transcript is vector-indexed back into the graph so tomorrow's session starts richer than today's. And every peer on the network is doing the same — the ten-thousand-stranger loop runs **once**, not ten thousand times.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7453:akashik init                      # create a room, pick your sources
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7454:akashik trigger --room homelab    # fetch from ArXiv, HN, RSS, blogs, any URL
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7506:akashik-rs/src/domain/room_routing.rs
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7528: *   4. Ensure system rooms (toolshed + research) are shareable
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7564:import { ensureSystemRoomsShared, loadSharedRooms } from '../../infrastructure/share-store.js';
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7728: *   - Inbound URLs → auto-ingest into best-matching room
@@ -5993,7 +5993,7 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7904:  readonly room: Room;
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7918:      readonly room: Room;
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:7927:      readonly room: Room;
-./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:8024:The repo is carrying three different stories at once: old `wellinformed` personal/team memory, mid-phase retrieval leaderboard work, and current `Akashik` OSS commons. The cleanup should optimize for one thing: make the federation-compounding thesis look like the product, and demote everything else to history.
+./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:8024:The repo is carrying three different stories at once: old `akashik` personal/team memory, mid-phase retrieval leaderboard work, and current `Akashik` OSS commons. The cleanup should optimize for one thing: make the federation-compounding thesis look like the product, and demote everything else to history.
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:8072:| `docs/research/performance-prediction-matrix.md` | ARCHIVE | Over-optimizes old leaderboard logic and hardware-tier positioning instead of federation value. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:8080:| `tests/bench-akashik-federation.test.ts` | KEEP | This is the pivot-validating benchmark and should become the flagship suite. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:8081:| `tests/bench-locomo-real.test.ts` | KEEP | Still useful as a single-peer retrieval floor; complements, not replaces, federation tests. |
@@ -6003,93 +6003,93 @@ exec
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:8096:| `src/application/federated-search.ts` | KEEP | Central to the live product story. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:8099:| `src/infrastructure/peer-transport.ts` | KEEP | Foundational to the federation thesis. |
 ./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:8131:On tests: the real-corpus benches still matter because they prove the local node is not weak. However, the product claim is no longer “best R@5.” The tradeoff is regression coverage versus attention dilution. My call: keep `bench-akashik-federation` as flagship, keep the real retrieval benches as regression guards, archive the synthetic proxy benches that were only useful while public-corpus adapters were missing.
-./wellinformed-rs/src/domain/mod.rs:12:pub mod room_routing;
-./wellinformed-rs/src/domain/mod.rs:19:pub use room_routing::{compute_centroids, route_to_rooms, RoomCentroid};
-./wellinformed-rs/src/domain/tunnel_graph.rs:1://! Cross-room tunnel detection via Relative Neighborhood Graph (RNG).
-./wellinformed-rs/src/domain/tunnel_graph.rs:9://! iterate every pair of vectors, keep those from different rooms
-./wellinformed-rs/src/domain/tunnel_graph.rs:16://! A "tunnel" is a semantic bridge between two rooms. The *right*
-./wellinformed-rs/src/domain/tunnel_graph.rs:18://! nodes that are **geometric neighbors** across the room boundary.
-./wellinformed-rs/src/domain/tunnel_graph.rs:20://! of generators whose cells share a facet AND whose rooms differ.
-./wellinformed-rs/src/domain/tunnel_graph.rs:22://! points of different colors (room labels).
-./wellinformed-rs/src/domain/tunnel_graph.rs:37://! Tunnels are then simply `{(i,j) ∈ RNG : room(i) ≠ room(j)}`.
-./wellinformed-rs/src/domain/tunnel_graph.rs:53:/// A single node keyed to its room (color in the graph).
-./wellinformed-rs/src/domain/tunnel_graph.rs:57:    pub room: String,
-./wellinformed-rs/src/domain/tunnel_graph.rs:61:/// A tunnel = an RNG edge between two differently-roomed nodes.
-./wellinformed-rs/src/domain/tunnel_graph.rs:66:    pub room_a: String,
-./wellinformed-rs/src/domain/tunnel_graph.rs:67:    pub room_b: String,
-./wellinformed-rs/src/domain/tunnel_graph.rs:113:/// but for embedding-space RNG the approximate check via shared
-./wellinformed-rs/src/domain/tunnel_graph.rs:156:    // emit cross-room matches. Parallel over source nodes.
-./wellinformed-rs/src/domain/tunnel_graph.rs:168:                // Same-room pairs are not tunnels
-./wellinformed-rs/src/domain/tunnel_graph.rs:169:                if vectors[i].room == vectors[j].room {
-./wellinformed-rs/src/domain/tunnel_graph.rs:183:                        room_a: vectors[i].room.clone(),
-./wellinformed-rs/src/domain/tunnel_graph.rs:184:                        room_b: vectors[j].room.clone(),
-./wellinformed-rs/src/domain/tunnel_graph.rs:203:    fn v(id: &str, room: &str, data: Vec<f32>) -> LabeledVector {
-./wellinformed-rs/src/domain/tunnel_graph.rs:206:            room: room.to_string(),
-./wellinformed-rs/src/domain/tunnel_graph.rs:217:    fn same_room_no_tunnels() {
-./wellinformed-rs/src/domain/tunnel_graph.rs:219:            v("a", "room1", vec![1.0, 0.0]),
-./wellinformed-rs/src/domain/tunnel_graph.rs:220:            v("b", "room1", vec![0.9, 0.1]),
-./wellinformed-rs/src/domain/tunnel_graph.rs:221:            v("c", "room1", vec![0.0, 1.0]),
-./wellinformed-rs/src/domain/tunnel_graph.rs:227:    fn cross_room_edge_is_tunnel() {
-./wellinformed-rs/src/domain/tunnel_graph.rs:228:        // Two nearby points in different rooms — should be a tunnel
-./wellinformed-rs/src/domain/tunnel_graph.rs:230:            v("a", "room1", vec![0.0, 0.0]),
-./wellinformed-rs/src/domain/tunnel_graph.rs:231:            v("b", "room2", vec![0.1, 0.0]),
-./wellinformed-rs/src/domain/tunnel_graph.rs:232:            v("c", "room1", vec![10.0, 10.0]),
-./wellinformed-rs/src/domain/tunnel_graph.rs:233:            v("d", "room2", vec![10.1, 10.0]),
-./wellinformed-rs/src/domain/tunnel_graph.rs:247:            v("a", "room1", vec![0.0, 0.0]),
-./wellinformed-rs/src/domain/tunnel_graph.rs:248:            v("mid", "room3", vec![1.0, 0.0]),
-./wellinformed-rs/src/domain/tunnel_graph.rs:249:            v("b", "room2", vec![2.0, 0.0]),
-./wellinformed-rs/src/domain/tunnel_graph.rs:269:            v("a", "room1", vec![0.0, 0.0]),
-./wellinformed-rs/src/domain/tunnel_graph.rs:270:            v("b", "room2", vec![5.0, 0.0]),
-./wellinformed-rs/src/domain/tunnel_graph.rs:271:            v("c", "room2", vec![0.1, 0.0]),
-./wellinformed-rs/Cargo.lock:630: "foreign-types-shared",
-./wellinformed-rs/Cargo.lock:634:name = "foreign-types-shared"
-./wellinformed-rs/Cargo.lock:2800: "wasm-bindgen-shared",
-./wellinformed-rs/Cargo.lock:2833: "wasm-bindgen-shared",
-./wellinformed-rs/Cargo.lock:2837:name = "wasm-bindgen-shared"
-./wellinformed-rs/src/lib.rs:1://! wellinformed-bench library — shared modules for the `bench_beir`
-./wellinformed-rs/src/domain/room_routing.rs:6://! embedding per room (the "pilot" vector), then route each query to
-./wellinformed-rs/src/domain/room_routing.rs:7://! the room whose centroid is nearest. Cheap, zero extra training,
-./wellinformed-rs/src/domain/room_routing.rs:10://! Refutes my Wave 4 "rooms are cosmetic" conclusion — which the
-./wellinformed-rs/src/domain/room_routing.rs:24:/// Pilot centroid for a single room — the mean of all document vectors
-./wellinformed-rs/src/domain/room_routing.rs:25:/// belonging to that room, L2-normalized so cosine similarity equals
-./wellinformed-rs/src/domain/room_routing.rs:29:    pub room: String,
-./wellinformed-rs/src/domain/room_routing.rs:34:/// Compute L2-normalized pilot centroids for every room present in
-./wellinformed-rs/src/domain/room_routing.rs:37:/// Pure function. Folds over the input, accumulates sums per room,
-./wellinformed-rs/src/domain/room_routing.rs:43:    // Accumulator: room → (running_sum, count)
-./wellinformed-rs/src/domain/room_routing.rs:46:    for (room, vec) in labeled {
-./wellinformed-rs/src/domain/room_routing.rs:47:        let entry = sums.entry(room.to_string()).or_insert_with(|| (vec![0.0; vec.len()], 0));
-./wellinformed-rs/src/domain/room_routing.rs:61:        .map(|(room, (running, count))| {
-./wellinformed-rs/src/domain/room_routing.rs:66:                room.clone(),
-./wellinformed-rs/src/domain/room_routing.rs:68:                    room,
-./wellinformed-rs/src/domain/room_routing.rs:77:/// Route a query vector to the top-N rooms by cosine similarity to
-./wellinformed-rs/src/domain/room_routing.rs:78:/// their centroids. Returns `Vec<(room, similarity)>` sorted
-./wellinformed-rs/src/domain/room_routing.rs:83:pub fn route_to_rooms(
-./wellinformed-rs/src/domain/room_routing.rs:90:        .map(|c| (c.room.clone(), cosine(query_vec, &c.vector)))
-./wellinformed-rs/src/domain/room_routing.rs:101:    fn labeled<'a>(room: &'a str, v: &'a [f32]) -> (&'a str, &'a [f32]) {
-./wellinformed-rs/src/domain/room_routing.rs:102:        (room, v)
-./wellinformed-rs/src/domain/room_routing.rs:112:    fn single_room_centroid_is_mean_normalized() {
-./wellinformed-rs/src/domain/room_routing.rs:127:    fn multiple_rooms_are_independent() {
-./wellinformed-rs/src/domain/room_routing.rs:130:        let centroids = compute_centroids(vec![labeled("room_a", &a1), labeled("room_b", &b1)]);
-./wellinformed-rs/src/domain/room_routing.rs:132:        assert!((centroids["room_a"].vector[0] - 1.0).abs() < 1e-3);
-./wellinformed-rs/src/domain/room_routing.rs:133:        assert!((centroids["room_b"].vector[1] - 1.0).abs() < 1e-3);
-./wellinformed-rs/src/domain/room_routing.rs:137:    fn route_picks_closest_room() {
-./wellinformed-rs/src/domain/room_routing.rs:140:        let centroids = compute_centroids(vec![labeled("room_a", &a1), labeled("room_b", &b1)]);
-./wellinformed-rs/src/domain/room_routing.rs:141:        // Query closer to room_a
-./wellinformed-rs/src/domain/room_routing.rs:143:        let routed = route_to_rooms(&q, &centroids, 2);
-./wellinformed-rs/src/domain/room_routing.rs:144:        assert_eq!(routed[0].0, "room_a");
-./wellinformed-rs/src/domain/room_routing.rs:158:        let routed = route_to_rooms(&[1.0, 0.0], &centroids, 2);
-./wellinformed-rs/src/bin/embed_server.rs:57:    room: String,
-./wellinformed-rs/src/bin/embed_server.rs:76:    /// Compute cross-room tunnels via the Relative Neighborhood Graph
-./wellinformed-rs/src/bin/embed_server.rs:84:    /// Compute L2-normalized pilot centroids per room for the
-./wellinformed-rs/src/bin/embed_server.rs:85:    /// RouterRetriever-style room routing (Phase 28). Pure domain call;
-./wellinformed-rs/src/bin/embed_server.rs:102:    room_a: String,
-./wellinformed-rs/src/bin/embed_server.rs:103:    room_b: String,
-./wellinformed-rs/src/bin/embed_server.rs:112:            room_a: t.room_a,
-./wellinformed-rs/src/bin/embed_server.rs:113:            room_b: t.room_b,
-./wellinformed-rs/src/bin/embed_server.rs:121:    room: String,
-./wellinformed-rs/src/bin/embed_server.rs:247:            room: v.room,
-./wellinformed-rs/src/bin/embed_server.rs:263:            .map(|v| (v.room.as_str(), v.vector.as_slice())),
-./wellinformed-rs/src/bin/embed_server.rs:270:                room: c.room,
+./akashik-rs/src/domain/mod.rs:12:pub mod room_routing;
+./akashik-rs/src/domain/mod.rs:19:pub use room_routing::{compute_centroids, route_to_rooms, RoomCentroid};
+./akashik-rs/src/domain/tunnel_graph.rs:1://! Cross-room tunnel detection via Relative Neighborhood Graph (RNG).
+./akashik-rs/src/domain/tunnel_graph.rs:9://! iterate every pair of vectors, keep those from different rooms
+./akashik-rs/src/domain/tunnel_graph.rs:16://! A "tunnel" is a semantic bridge between two rooms. The *right*
+./akashik-rs/src/domain/tunnel_graph.rs:18://! nodes that are **geometric neighbors** across the room boundary.
+./akashik-rs/src/domain/tunnel_graph.rs:20://! of generators whose cells share a facet AND whose rooms differ.
+./akashik-rs/src/domain/tunnel_graph.rs:22://! points of different colors (room labels).
+./akashik-rs/src/domain/tunnel_graph.rs:37://! Tunnels are then simply `{(i,j) ∈ RNG : room(i) ≠ room(j)}`.
+./akashik-rs/src/domain/tunnel_graph.rs:53:/// A single node keyed to its room (color in the graph).
+./akashik-rs/src/domain/tunnel_graph.rs:57:    pub room: String,
+./akashik-rs/src/domain/tunnel_graph.rs:61:/// A tunnel = an RNG edge between two differently-roomed nodes.
+./akashik-rs/src/domain/tunnel_graph.rs:66:    pub room_a: String,
+./akashik-rs/src/domain/tunnel_graph.rs:67:    pub room_b: String,
+./akashik-rs/src/domain/tunnel_graph.rs:113:/// but for embedding-space RNG the approximate check via shared
+./akashik-rs/src/domain/tunnel_graph.rs:156:    // emit cross-room matches. Parallel over source nodes.
+./akashik-rs/src/domain/tunnel_graph.rs:168:                // Same-room pairs are not tunnels
+./akashik-rs/src/domain/tunnel_graph.rs:169:                if vectors[i].room == vectors[j].room {
+./akashik-rs/src/domain/tunnel_graph.rs:183:                        room_a: vectors[i].room.clone(),
+./akashik-rs/src/domain/tunnel_graph.rs:184:                        room_b: vectors[j].room.clone(),
+./akashik-rs/src/domain/tunnel_graph.rs:203:    fn v(id: &str, room: &str, data: Vec<f32>) -> LabeledVector {
+./akashik-rs/src/domain/tunnel_graph.rs:206:            room: room.to_string(),
+./akashik-rs/src/domain/tunnel_graph.rs:217:    fn same_room_no_tunnels() {
+./akashik-rs/src/domain/tunnel_graph.rs:219:            v("a", "room1", vec![1.0, 0.0]),
+./akashik-rs/src/domain/tunnel_graph.rs:220:            v("b", "room1", vec![0.9, 0.1]),
+./akashik-rs/src/domain/tunnel_graph.rs:221:            v("c", "room1", vec![0.0, 1.0]),
+./akashik-rs/src/domain/tunnel_graph.rs:227:    fn cross_room_edge_is_tunnel() {
+./akashik-rs/src/domain/tunnel_graph.rs:228:        // Two nearby points in different rooms — should be a tunnel
+./akashik-rs/src/domain/tunnel_graph.rs:230:            v("a", "room1", vec![0.0, 0.0]),
+./akashik-rs/src/domain/tunnel_graph.rs:231:            v("b", "room2", vec![0.1, 0.0]),
+./akashik-rs/src/domain/tunnel_graph.rs:232:            v("c", "room1", vec![10.0, 10.0]),
+./akashik-rs/src/domain/tunnel_graph.rs:233:            v("d", "room2", vec![10.1, 10.0]),
+./akashik-rs/src/domain/tunnel_graph.rs:247:            v("a", "room1", vec![0.0, 0.0]),
+./akashik-rs/src/domain/tunnel_graph.rs:248:            v("mid", "room3", vec![1.0, 0.0]),
+./akashik-rs/src/domain/tunnel_graph.rs:249:            v("b", "room2", vec![2.0, 0.0]),
+./akashik-rs/src/domain/tunnel_graph.rs:269:            v("a", "room1", vec![0.0, 0.0]),
+./akashik-rs/src/domain/tunnel_graph.rs:270:            v("b", "room2", vec![5.0, 0.0]),
+./akashik-rs/src/domain/tunnel_graph.rs:271:            v("c", "room2", vec![0.1, 0.0]),
+./akashik-rs/Cargo.lock:630: "foreign-types-shared",
+./akashik-rs/Cargo.lock:634:name = "foreign-types-shared"
+./akashik-rs/Cargo.lock:2800: "wasm-bindgen-shared",
+./akashik-rs/Cargo.lock:2833: "wasm-bindgen-shared",
+./akashik-rs/Cargo.lock:2837:name = "wasm-bindgen-shared"
+./akashik-rs/src/lib.rs:1://! akashik-bench library — shared modules for the `bench_beir`
+./akashik-rs/src/domain/room_routing.rs:6://! embedding per room (the "pilot" vector), then route each query to
+./akashik-rs/src/domain/room_routing.rs:7://! the room whose centroid is nearest. Cheap, zero extra training,
+./akashik-rs/src/domain/room_routing.rs:10://! Refutes my Wave 4 "rooms are cosmetic" conclusion — which the
+./akashik-rs/src/domain/room_routing.rs:24:/// Pilot centroid for a single room — the mean of all document vectors
+./akashik-rs/src/domain/room_routing.rs:25:/// belonging to that room, L2-normalized so cosine similarity equals
+./akashik-rs/src/domain/room_routing.rs:29:    pub room: String,
+./akashik-rs/src/domain/room_routing.rs:34:/// Compute L2-normalized pilot centroids for every room present in
+./akashik-rs/src/domain/room_routing.rs:37:/// Pure function. Folds over the input, accumulates sums per room,
+./akashik-rs/src/domain/room_routing.rs:43:    // Accumulator: room → (running_sum, count)
+./akashik-rs/src/domain/room_routing.rs:46:    for (room, vec) in labeled {
+./akashik-rs/src/domain/room_routing.rs:47:        let entry = sums.entry(room.to_string()).or_insert_with(|| (vec![0.0; vec.len()], 0));
+./akashik-rs/src/domain/room_routing.rs:61:        .map(|(room, (running, count))| {
+./akashik-rs/src/domain/room_routing.rs:66:                room.clone(),
+./akashik-rs/src/domain/room_routing.rs:68:                    room,
+./akashik-rs/src/domain/room_routing.rs:77:/// Route a query vector to the top-N rooms by cosine similarity to
+./akashik-rs/src/domain/room_routing.rs:78:/// their centroids. Returns `Vec<(room, similarity)>` sorted
+./akashik-rs/src/domain/room_routing.rs:83:pub fn route_to_rooms(
+./akashik-rs/src/domain/room_routing.rs:90:        .map(|c| (c.room.clone(), cosine(query_vec, &c.vector)))
+./akashik-rs/src/domain/room_routing.rs:101:    fn labeled<'a>(room: &'a str, v: &'a [f32]) -> (&'a str, &'a [f32]) {
+./akashik-rs/src/domain/room_routing.rs:102:        (room, v)
+./akashik-rs/src/domain/room_routing.rs:112:    fn single_room_centroid_is_mean_normalized() {
+./akashik-rs/src/domain/room_routing.rs:127:    fn multiple_rooms_are_independent() {
+./akashik-rs/src/domain/room_routing.rs:130:        let centroids = compute_centroids(vec![labeled("room_a", &a1), labeled("room_b", &b1)]);
+./akashik-rs/src/domain/room_routing.rs:132:        assert!((centroids["room_a"].vector[0] - 1.0).abs() < 1e-3);
+./akashik-rs/src/domain/room_routing.rs:133:        assert!((centroids["room_b"].vector[1] - 1.0).abs() < 1e-3);
+./akashik-rs/src/domain/room_routing.rs:137:    fn route_picks_closest_room() {
+./akashik-rs/src/domain/room_routing.rs:140:        let centroids = compute_centroids(vec![labeled("room_a", &a1), labeled("room_b", &b1)]);
+./akashik-rs/src/domain/room_routing.rs:141:        // Query closer to room_a
+./akashik-rs/src/domain/room_routing.rs:143:        let routed = route_to_rooms(&q, &centroids, 2);
+./akashik-rs/src/domain/room_routing.rs:144:        assert_eq!(routed[0].0, "room_a");
+./akashik-rs/src/domain/room_routing.rs:158:        let routed = route_to_rooms(&[1.0, 0.0], &centroids, 2);
+./akashik-rs/src/bin/embed_server.rs:57:    room: String,
+./akashik-rs/src/bin/embed_server.rs:76:    /// Compute cross-room tunnels via the Relative Neighborhood Graph
+./akashik-rs/src/bin/embed_server.rs:84:    /// Compute L2-normalized pilot centroids per room for the
+./akashik-rs/src/bin/embed_server.rs:85:    /// RouterRetriever-style room routing (Phase 28). Pure domain call;
+./akashik-rs/src/bin/embed_server.rs:102:    room_a: String,
+./akashik-rs/src/bin/embed_server.rs:103:    room_b: String,
+./akashik-rs/src/bin/embed_server.rs:112:            room_a: t.room_a,
+./akashik-rs/src/bin/embed_server.rs:113:            room_b: t.room_b,
+./akashik-rs/src/bin/embed_server.rs:121:    room: String,
+./akashik-rs/src/bin/embed_server.rs:247:            room: v.room,
+./akashik-rs/src/bin/embed_server.rs:263:            .map(|v| (v.room.as_str(), v.vector.as_slice())),
+./akashik-rs/src/bin/embed_server.rs:270:                room: c.room,
 
 codex
 The context frames rooms as more than a UI default: they are already embedded in graph partitioning, sharing, linting, and routing. I’m pulling those files with line numbers now so the opening can argue from implementation facts.
@@ -6217,7 +6217,7 @@ exec
 /bin/zsh -lc "nl -ba src/cli/commands/room.ts | sed -n '1,260p'" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
      1	/**
-     2	 * `wellinformed room <sub>` — manage the room registry.
+     2	 * `akashik room <sub>` — manage the room registry.
      3	 *
      4	 * Subcommands:
      5	 *   list            show all rooms + which is default
@@ -6227,8 +6227,8 @@ exec
      9	 *   describe <id>   show full metadata for a room
     10	 *
     11	 * Example:
-    12	 *   wellinformed room create homelab --desc "Home lab infra" --keywords "proxmox,mikrotik,10gbe"
-    13	 *   wellinformed room switch homelab
+    12	 *   akashik room create homelab --desc "Home lab infra" --keywords "proxmox,mikrotik,10gbe"
+    13	 *   akashik room switch homelab
     14	 */
     15	
     16	import { formatError } from '../../domain/errors.js';
@@ -6251,7 +6251,7 @@ exec
     33	  }
     34	  const registry = result.value;
     35	  if (registry.rooms.length === 0) {
-    36	    console.log('no rooms configured. try `wellinformed init` or `wellinformed room create <name>`.');
+    36	    console.log('no rooms configured. try `akashik init` or `akashik room create <name>`.');
     37	    return 0;
     38	  }
     39	  for (const r of registry.rooms) {
@@ -6265,7 +6265,7 @@ exec
     47	
     48	const create = async (rest: readonly string[]): Promise<number> => {
     49	  if (rest.length === 0) {
-    50	    console.error('room create: missing <name>. usage: wellinformed room create <name> [--desc "..."] [--keywords "a,b,c"] [--wing "default"]');
+    50	    console.error('room create: missing <name>. usage: akashik room create <name> [--desc "..."] [--keywords "a,b,c"] [--wing "default"]');
     51	    return 1;
     52	  }
     53	  const name = rest[0];
@@ -6332,7 +6332,7 @@ exec
    114	  }
    115	  const def = result.value.default_room;
    116	  if (!def) {
-   117	    console.log('no default room set. run `wellinformed init` to create one.');
+   117	    console.log('no default room set. run `akashik init` to create one.');
    118	    return 0;
    119	  }
    120	  console.log(def);
@@ -7389,7 +7389,7 @@ exec
 /bin/zsh -lc "nl -ba src/infrastructure/share-store.ts | sed -n '1,230p'" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
      1	/**
-     2	 * Share store — persists the shared-rooms registry to ~/.wellinformed/shared-rooms.json.
+     2	 * Share store — persists the shared-rooms registry to ~/.akashik/shared-rooms.json.
      3	 * Mirrors peer-store.ts: cross-process lock + atomic tmp+rename writes + pure transforms.
      4	 *
      5	 * Phase 16 introduces this file alongside peers.json. Two separate registries
@@ -7416,7 +7416,7 @@ exec
     26	 * Uses exclusive-create (`wx` flag) on a sibling `.lock` file — POSIX
     27	 * atomic exclusive file creation with no external dependency. Holds the
     28	 * lock for the duration of a read-modify-write transaction so two
-    29	 * concurrent wellinformed processes (e.g., daemon + CLI `share room foo`)
+    29	 * concurrent akashik processes (e.g., daemon + CLI `share room foo`)
     30	 * cannot clobber each other's registry writes.
     31	 *
     32	 * Staleness guard: lock file contains the locker's PID and timestamp.
@@ -7676,7 +7676,7 @@ exec
    281	 *
    282	 * Acquires a cross-process lock (sibling `.lock` file via exclusive-create),
    283	 * loads the current state, applies the pure transform, saves atomically,
-   284	 * and releases the lock. Prevents two wellinformed processes (e.g., daemon +
+   284	 * and releases the lock. Prevents two akashik processes (e.g., daemon +
    285	 * CLI `share room foo`) from racing and clobbering each other's writes.
    286	 *
    287	 * The `transform` function receives the current SharedRoomsFile and must
@@ -7720,7 +7720,7 @@ exec
 /bin/zsh -lc "nl -ba src/domain/system-rooms.ts | sed -n '1,180p'" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
      1	/**
-     2	 * System-managed rooms — the out-of-the-box rooms every wellinformed
+     2	 * System-managed rooms — the out-of-the-box rooms every akashik
      3	 * node carries and shares over P2P without user opt-in.
      4	 *
      5	 * Two rooms:
@@ -7737,7 +7737,7 @@ exec
     16	 *
     17	 * 1. Virtual, not physical. A node's membership in toolshed/research is
     18	 *    derived from its `source_uri` scheme, not set by a `room` field.
-    19	 *    A git commit tagged `room: wellinformed-dev` is STILL in toolshed.
+    19	 *    A git commit tagged `room: akashik-dev` is STILL in toolshed.
     20	 *    This avoids a schema migration and preserves the user's existing
     21	 *    room taxonomy. Users still see the physical room in their graph;
     22	 *    the system room is just a query-time lens over the same nodes.
@@ -7756,7 +7756,7 @@ exec
     35	 *    the rule documented in CLAUDE.md.
     36	 *
     37	 * No other rooms are system-managed. Every user room is negotiable —
-    38	 * opt-in for P2P sharing via the interactive `wellinformed share` TUI.
+    38	 * opt-in for P2P sharing via the interactive `akashik share` TUI.
     39	 */
     40	
     41	import type { GraphNode } from './graph.js';
@@ -7881,7 +7881,7 @@ exec
 /bin/zsh -lc "nl -ba src/cli/commands/init.ts | sed -n '1,260p'" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
      1	/**
-     2	 * `wellinformed init` — interactive room seeding wizard.
+     2	 * `akashik init` — interactive room seeding wizard.
      3	 *
      4	 * Walks the user through:
      5	 *   1. What are you researching? → room name + description
@@ -7896,7 +7896,7 @@ exec
     14	 * testable via the `Prompter` interface — tests inject answers
     15	 * instead of using readline.
     16	 *
-    17	 * Non-interactive mode: `wellinformed init --name X --desc Y --keywords a,b`
+    17	 * Non-interactive mode: `akashik init --name X --desc Y --keywords a,b`
     18	 * skips all prompts and creates the room + default sources from flags.
     19	 */
     20	
@@ -7996,7 +7996,7 @@ exec
    114	  room: RoomMeta;
    115	  sources: readonly SourceDescriptor[];
    116	} | null> => {
-   117	  console.log('\nwellinformed init — set up a new research room\n');
+   117	  console.log('\nakashik init — set up a new research room\n');
    118	
    119	  // 1. Name
    120	  const name = flags.name ?? (await prompter.ask('What are you researching?', 'homelab'));
@@ -8109,7 +8109,7 @@ exec
    227	    }
    228	
    229	    console.log(`\nroom '${result.room.id}' created with ${result.sources.length} source(s).`);
-   230	    console.log(`run 'wellinformed trigger --room ${result.room.id}' to fetch initial content.`);
+   230	    console.log(`run 'akashik trigger --room ${result.room.id}' to fetch initial content.`);
    231	    return 0;
    232	  } finally {
    233	    prompter.close();
@@ -8120,7 +8120,7 @@ exec
 /bin/zsh -lc "nl -ba src/cli/commands/index-project.ts | sed -n '1,150p'" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
      1	/**
-     2	 * `wellinformed index [--room R] [--root DIR]`
+     2	 * `akashik index [--room R] [--root DIR]`
      3	 *
      4	 * Index the current project into the knowledge graph: source files,
      5	 * package.json dependencies, git submodules, and recent git history.
@@ -8338,7 +8338,7 @@ exec
    325	  // returning a stack of near-duplicates. Audit fold-in from
    326	  // .planning/p2p-scale-plan.md Phase 1 mod.
    327	  const gossipDisabled = params.useGossip === false
-   328	    || process.env.WELLINFORMED_SEARCH_GOSSIP === '0';
+   328	    || process.env.AKASHIK_SEARCH_GOSSIP === '0';
    329	  let gossipPeerOutcomes: PeerOutcome[] | null = null;
    330	
    331	  if (!gossipDisabled) {
@@ -8532,13 +8532,13 @@ exec
      1	/**
      2	 * Search sync — one-shot request/response federated search over a libp2p custom protocol.
      3	 *
-     4	 * Phase 17 core. Registers /wellinformed/search/1.0.0 on a libp2p node.
+     4	 * Phase 17 core. Registers /akashik/search/1.0.0 on a libp2p node.
      5	 * Unlike share-sync.ts this is read-only: no Y.js docs, no CRDT mutations,
      6	 * no REMOTE_ORIGIN needed, no debounce timers.
      7	 *
      8	 * CRITICAL invariants — every reviewer must check these:
-     9	 *   1. SEARCH_PROTOCOL_ID is '/wellinformed/search/1.0.0' — separate from
-    10	 *      '/wellinformed/share/1.0.0' so sync and search have independent stream
+     9	 *   1. SEARCH_PROTOCOL_ID is '/akashik/search/1.0.0' — separate from
+    10	 *      '/akashik/share/1.0.0' so sync and search have independent stream
     11	 *      lifecycles (CONTEXT.md locked decision).
     12	 *
     13	 *   2. FramedStream is COPIED from share-sync.ts, NOT imported. Search and share
@@ -8581,7 +8581,7 @@ exec
     50	
     51	// ─────────────────────── constants ────────────────────────────────────────────
     52	
-    53	export const SEARCH_PROTOCOL_ID = '/wellinformed/search/1.0.0' as const;
+    53	export const SEARCH_PROTOCOL_ID = '/akashik/search/1.0.0' as const;
     54	const MAX_INBOUND_STREAMS = 32;
     55	/** Per-peer outbound timeout — locked from CONTEXT.md (2s). */
     56	const PER_PEER_TIMEOUT_MS = 2000;
@@ -8987,7 +8987,7 @@ exec
     95	
     96	/**
     97	 * Diagnostic — emit the per-match score breakdown. Used by tests and
-    98	 * (eventually) by `wellinformed ask --explain`.
+    98	 * (eventually) by `akashik ask --explain`.
     99	 */
    100	export interface ScoreBreakdown {
    101	  readonly node_id: string;
@@ -9172,7 +9172,7 @@ exec
    410	});
    411	
    412	/**
-   413	 * Register the /wellinformed/search/1.0.0 protocol on the libp2p node.
+   413	 * Register the /akashik/search/1.0.0 protocol on the libp2p node.
    414	 * Idempotent — unhandles any prior registration before re-registering.
    415	 * Mirrors the registerShareProtocol shape from share-sync.ts.
    416	 */
@@ -9223,7 +9223,7 @@ exec
     27	### Discovery
     28	- Nodes announce themselves on a local network via mDNS/Bonjour
     29	- Or register with a lightweight coordination server (optional)
-    30	- Or manually add peers: `wellinformed peer add <address>`
+    30	- Or manually add peers: `akashik peer add <address>`
     31	
     32	### Sharing Protocol
     33	- Each node exposes a subset of its graph as "public rooms"
@@ -9234,7 +9234,7 @@ exec
     38	### Collective Intelligence
     39	- Tunnel detection runs ACROSS peers — my homelab connects to your ml-papers
     40	- Shared discovery loop: if peer B finds a great ArXiv source, peer A gets it suggested
-    41	- Federated search: `wellinformed ask "vector search" --peers` searches across all connected graphs
+    41	- Federated search: `akashik ask "vector search" --peers` searches across all connected graphs
     42	
     43	### Privacy Model
     44	- **Opt-in only** — nothing shared by default
@@ -9429,7 +9429,7 @@ exec
    104	
    105	## 4. Data model
    106	
-   107	`~/.wellinformed/peer-reputation.json` — local, atomic temp-write + rename
+   107	`~/.akashik/peer-reputation.json` — local, atomic temp-write + rename
    108	(mirrors `peer-store.ts:138`):
    109	
    110	```json
@@ -9636,16 +9636,16 @@ docs/research/octopus-discover/round-5-2026-05-26/synthesis.md:149:| **`web_fall
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3485:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:99:3. **Q3:** Proposed benchmark: **AkashikBench-F**. Use `snap-research/locomo` ([repo](https://github.com/snap-research/locomo), arXiv `2402.17753`) plus LongMemEval-S (arXiv `2410.10813`) as source conversations, partition them across `N=32` simulated peers and `4-6` rooms with controlled topical overlap, replay `1,000-2,000` timestamped queries sequentially, and on miss let the querying peer obtain the gold evidence from a fixed “web oracle” corpus and cache it locally. Measure `federation_hit_rate`, `web_fallback_rate`, `coverage_growth(T,t)`, `T_half(T)` (time until half the peers can answer topic `T`), median/p95 answer latency, and quality deltas versus local-only; define **compounding** quantitatively as the negative slope of `web_fallback_rate` and positive slope of `coverage_growth` over repeated asks. This is runnable on commodity hardware in a week because it is a simulator over existing corpora, not a live distributed deployment; on the other hand, if you do not model peer churn and fact staleness, you will overstate the compounding effect.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3487:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:107:5. **Q5:** Smallest viable 30-day launch: seed **three named OSS rooms** with about 100 people total, not a broad public beta. Room A: `ggml-org/llama.cpp` + `ollama/ollama` contributors and power users (`40` people), seeded with `ggml-org/llama.cpp`, `ollama/ollama`, `abetlen/llama-cpp-python`, `microsoft/onnxruntime`; Room B: `vllm-project/vllm` + `sgl-project/sglang` (`30` people), seeded with `vllm-project/vllm`, `sgl-project/sglang`, `flashinfer-ai/flashinfer`, `BerriAI/litellm`; Room C: `open-telemetry/opentelemetry-collector` (`30` people), seeded with `opentelemetry-collector`, `opentelemetry-js`, `opentelemetry-python`, and the OTel spec. Week 1 recruit 10-15 “librarian” contributors and preload repo/paper/debug artifacts; Week 2 onboard the remaining 85-90 users; Week 3 run shared debugging/research prompts; Week 4 publish day-1 vs day-30 `web_fallback_rate` and attributed peer-transfer examples. The upside is visible density and repeated question overlap; however the tradeoff is this is a deliberately narrow launch and may look unimpressive if you judge it by signups instead of transfer rate.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3492:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:120:8. **Q8:** Strongest counter-argument: **“You are adding a flaky, mostly-offline federation hop in front of systems that already solve knowledge sharing better: Google, Stack Overflow, GitHub Discussions, Discord, Are.na, and repo docs. In practice, users will miss locally, peers will be offline, and Akashik will collapse into ‘web search plus personal cache,’ which is not a new network.”** The honest response is: that argument is strong unless you can show a dense room where `web_fallback_rate` materially drops over 30 days and Step 5 transfers happen with attribution faster than fresh web research. Local-first plus web-on-miss means the product is still useful on day 1; however the tradeoff is brutal: if the first room does not show measurable transfer under real churn, the federated-commons thesis is not yet proven and should not be pitched as proven.
-.planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3525:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:509:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+.planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3525:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:509:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3526:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:515:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:395:Instrument and publish `web_fallback_rate` for the `rust` room. The expected curve: day 1 ≈ 80-90% web fallback (sparse graph), day 30 < 40% (librarian + early-adopter knowledge covers the common queries). This is the compounding claim made visible.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3530:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:525:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
-.planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3817:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2259:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+.planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3817:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2259:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3818:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2263:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:395:Instrument and publish `web_fallback_rate` for the `rust` room. The expected curve: day 1 ≈ 80-90% web fallback (sparse graph), day 30 < 40% (librarian + early-adopter knowledge covers the common queries). This is the compounding claim made visible.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3821:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2274:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3824:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2356:3. **Q3:** Proposed benchmark: **AkashikBench-F**. Use `snap-research/locomo` ([repo](https://github.com/snap-research/locomo), arXiv `2402.17753`) plus LongMemEval-S (arXiv `2410.10813`) as source conversations, partition them across `N=32` simulated peers and `4-6` rooms with controlled topical overlap, replay `1,000-2,000` timestamped queries sequentially, and on miss let the querying peer obtain the gold evidence from a fixed “web oracle” corpus and cache it locally. Measure `federation_hit_rate`, `web_fallback_rate`, `coverage_growth(T,t)`, `T_half(T)` (time until half the peers can answer topic `T`), median/p95 answer latency, and quality deltas versus local-only; define **compounding** quantitatively as the negative slope of `web_fallback_rate` and positive slope of `coverage_growth` over repeated asks. This is runnable on commodity hardware in a week because it is a simulator over existing corpora, not a live distributed deployment; on the other hand, if you do not model peer churn and fact staleness, you will overstate the compounding effect.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3826:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2364:5. **Q5:** Smallest viable 30-day launch: seed **three named OSS rooms** with about 100 people total, not a broad public beta. Room A: `ggml-org/llama.cpp` + `ollama/ollama` contributors and power users (`40` people), seeded with `ggml-org/llama.cpp`, `ollama/ollama`, `abetlen/llama-cpp-python`, `microsoft/onnxruntime`; Room B: `vllm-project/vllm` + `sgl-project/sglang` (`30` people), seeded with `vllm-project/vllm`, `sgl-project/sglang`, `flashinfer-ai/flashinfer`, `BerriAI/litellm`; Room C: `open-telemetry/opentelemetry-collector` (`30` people), seeded with `opentelemetry-collector`, `opentelemetry-js`, `opentelemetry-python`, and the OTel spec. Week 1 recruit 10-15 “librarian” contributors and preload repo/paper/debug artifacts; Week 2 onboard the remaining 85-90 users; Week 3 run shared debugging/research prompts; Week 4 publish day-1 vs day-30 `web_fallback_rate` and attributed peer-transfer examples. The upside is visible density and repeated question overlap; however the tradeoff is this is a deliberately narrow launch and may look unimpressive if you judge it by signups instead of transfer rate.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:3831:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2377:8. **Q8:** Strongest counter-argument: **“You are adding a flaky, mostly-offline federation hop in front of systems that already solve knowledge sharing better: Google, Stack Overflow, GitHub Discussions, Discord, Are.na, and repo docs. In practice, users will miss locally, peers will be offline, and Akashik will collapse into ‘web search plus personal cache,’ which is not a new network.”** The honest response is: that argument is strong unless you can show a dense room where `web_fallback_rate` materially drops over 30 days and Step 5 transfers happen with attribution faster than fresh web research. Local-first plus web-on-miss means the product is still useful on day 1; however the tradeoff is brutal: if the first room does not show measurable transfer under real churn, the federated-commons thesis is not yet proven and should not be pitched as proven.
-.planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:4039:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+.planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:4039:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:4040:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:395:Instrument and publish `web_fallback_rate` for the `rust` room. The expected curve: day 1 ≈ 80-90% web fallback (sparse graph), day 30 < 40% (librarian + early-adopter knowledge covers the common queries). This is the compounding claim made visible.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:4047:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:4050:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:478:2. **`web_fallback_rate` as a first-class production metric** — instrument it per room in the telemetry pipeline (`telemetry-formatter.ts` already exists). This is the launch number.
@@ -9671,13 +9671,13 @@ docs/research/octopus-discover/round-5-2026-05-26/synthesis.md:149:| **`web_fall
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5696:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5535:./docs/research/octopus-discover/round-5-2026-05-26/synthesis.md:94:The next engineering month must be spent on **architecting the federation and its measurement infrastructure (AkashikBench-F)**. The empirical data confirms the LME-S head is saturated (R@50=1.000, ~4pp NDCG headroom). Chasing the final 2-3pp to match `agentmemory`'s 0.952 is a vanity metric for a single-user memory product, which Akashik is no longer. The core differentiator is network compounding. Conversely, the tradeoff of abandoning single-peer tuning is leaving 60pp of factual headroom on LoCoMo unmined, meaning local retrieval may remain noisy. However, building the federation layer (CRDT sync, query fan-out) and measuring the `web_fallback_rate` is the only way to empirically validate the actual "knowledge commons" thesis.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5710:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5617:./docs/research/octopus-discover/round-5-2026-05-26/probes/gemini-4.md:148:If I were Sahar, the next engineering month I'd spend on building the AkashikBench-F federation measurement harness and assessing AT Protocol DID compatibility because the project's core claim of monotonic compounding currently lacks empirical proof. The next marketing/launch month I'd spend on seeding the Rust OSS community with 5 'librarians' and 95 early adopters because demonstrating a sharp drop in the `web_fallback_rate` within a single, high-density domain is the only way to prove the architecture works in practice. Specifically NOT tuning the LongMemEval-S R@5 metric because competing on single-peer memory benchmarks completely abandons Akashik's federated differentiator and chases a mathematical ceiling we've already hit.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5717:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5634:./docs/research/octopus-discover/round-5-2026-05-26/probes/gemini-1.md:194:If I were Sahar, the next engineering month I'd spend on building the AkashikBench-F simulation harness and instrumenting `web_fallback_rate` because these are the only metrics that actually measure the federated compounding claim. The next marketing/launch month I'd spend on onboarding 5-20 Rust infrastructure maintainers to seed a single, high-pain debugging room because deep coverage in one niche proves the mechanism better than thin coverage everywhere. Specifically NOT chasing the last 3% of R@5 on LongMemEval-S because that optimizes for the old, single-user product frame and distracts from the core peer-to-peer value proposition.
-.planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5764:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5836:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+.planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5764:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5836:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5768:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5848:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5780:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5897:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:99:3. **Q3:** Proposed benchmark: **AkashikBench-F**. Use `snap-research/locomo` ([repo](https://github.com/snap-research/locomo), arXiv `2402.17753`) plus LongMemEval-S (arXiv `2410.10813`) as source conversations, partition them across `N=32` simulated peers and `4-6` rooms with controlled topical overlap, replay `1,000-2,000` timestamped queries sequentially, and on miss let the querying peer obtain the gold evidence from a fixed “web oracle” corpus and cache it locally. Measure `federation_hit_rate`, `web_fallback_rate`, `coverage_growth(T,t)`, `T_half(T)` (time until half the peers can answer topic `T`), median/p95 answer latency, and quality deltas versus local-only; define **compounding** quantitatively as the negative slope of `web_fallback_rate` and positive slope of `coverage_growth` over repeated asks. This is runnable on commodity hardware in a week because it is a simulator over existing corpora, not a live distributed deployment; on the other hand, if you do not model peer churn and fact staleness, you will overstate the compounding effect.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5783:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5902:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:120:8. **Q8:** Strongest counter-argument: **“You are adding a flaky, mostly-offline federation hop in front of systems that already solve knowledge sharing better: Google, Stack Overflow, GitHub Discussions, Discord, Are.na, and repo docs. In practice, users will miss locally, peers will be offline, and Akashik will collapse into ‘web search plus personal cache,’ which is not a new network.”** The honest response is: that argument is strong unless you can show a dense room where `web_fallback_rate` materially drops over 30 days and Step 5 transfers happen with attribution faster than fresh web research. Local-first plus web-on-miss means the product is still useful on day 1; however the tradeoff is brutal: if the first room does not show measurable transfer under real churn, the federated-commons thesis is not yet proven and should not be pitched as proven.
-.planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5797:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5973:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:509:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+.planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5797:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5973:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:509:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5801:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5985:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:525:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
-.planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5872:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6261:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2259:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+.planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5872:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6261:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2259:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5874:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6265:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2274:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5876:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6271:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2356:3. **Q3:** Proposed benchmark: **AkashikBench-F**. Use `snap-research/locomo` ([repo](https://github.com/snap-research/locomo), arXiv `2402.17753`) plus LongMemEval-S (arXiv `2410.10813`) as source conversations, partition them across `N=32` simulated peers and `4-6` rooms with controlled topical overlap, replay `1,000-2,000` timestamped queries sequentially, and on miss let the querying peer obtain the gold evidence from a fixed “web oracle” corpus and cache it locally. Measure `federation_hit_rate`, `web_fallback_rate`, `coverage_growth(T,t)`, `T_half(T)` (time until half the peers can answer topic `T`), median/p95 answer latency, and quality deltas versus local-only; define **compounding** quantitatively as the negative slope of `web_fallback_rate` and positive slope of `coverage_growth` over repeated asks. This is runnable on commodity hardware in a week because it is a simulator over existing corpora, not a live distributed deployment; on the other hand, if you do not model peer churn and fact staleness, you will overstate the compounding effect.
 .planning/debates/rooms-abstraction-2026-05-26/round1-codex-positionA.md:5879:./docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6276:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2377:8. **Q8:** Strongest counter-argument: **“You are adding a flaky, mostly-offline federation hop in front of systems that already solve knowledge sharing better: Google, Stack Overflow, GitHub Discussions, Discord, Are.na, and repo docs. In practice, users will miss locally, peers will be offline, and Akashik will collapse into ‘web search plus personal cache,’ which is not a new network.”** The honest response is: that argument is strong unless you can show a dense room where `web_fallback_rate` materially drops over 30 days and Step 5 transfers happen with attribution faster than fresh web research. Local-first plus web-on-miss means the product is still useful on day 1; however the tradeoff is brutal: if the first room does not show measurable transfer under real churn, the federated-commons thesis is not yet proven and should not be pitched as proven.
@@ -9686,15 +9686,15 @@ docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:99:3. **Q3:*
 docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:107:5. **Q5:** Smallest viable 30-day launch: seed **three named OSS rooms** with about 100 people total, not a broad public beta. Room A: `ggml-org/llama.cpp` + `ollama/ollama` contributors and power users (`40` people), seeded with `ggml-org/llama.cpp`, `ollama/ollama`, `abetlen/llama-cpp-python`, `microsoft/onnxruntime`; Room B: `vllm-project/vllm` + `sgl-project/sglang` (`30` people), seeded with `vllm-project/vllm`, `sgl-project/sglang`, `flashinfer-ai/flashinfer`, `BerriAI/litellm`; Room C: `open-telemetry/opentelemetry-collector` (`30` people), seeded with `opentelemetry-collector`, `opentelemetry-js`, `opentelemetry-python`, and the OTel spec. Week 1 recruit 10-15 “librarian” contributors and preload repo/paper/debug artifacts; Week 2 onboard the remaining 85-90 users; Week 3 run shared debugging/research prompts; Week 4 publish day-1 vs day-30 `web_fallback_rate` and attributed peer-transfer examples. The upside is visible density and repeated question overlap; however the tradeoff is this is a deliberately narrow launch and may look unimpressive if you judge it by signups instead of transfer rate.
 docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:120:8. **Q8:** Strongest counter-argument: **“You are adding a flaky, mostly-offline federation hop in front of systems that already solve knowledge sharing better: Google, Stack Overflow, GitHub Discussions, Discord, Are.na, and repo docs. In practice, users will miss locally, peers will be offline, and Akashik will collapse into ‘web search plus personal cache,’ which is not a new network.”** The honest response is: that argument is strong unless you can show a dense room where `web_fallback_rate` materially drops over 30 days and Step 5 transfers happen with attribution faster than fresh web research. Local-first plus web-on-miss means the product is still useful on day 1; however the tradeoff is brutal: if the first room does not show measurable transfer under real churn, the federated-commons thesis is not yet proven and should not be pitched as proven.
 docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:123:- An instrumented **2-peer and 10-32-peer demo** with attribution, latency, and `web_fallback_rate`.
-docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:379:./docs/research/beat-the-competitors-retrieval-plan.md:124:Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes wellinformed comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
-docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:509:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:379:./docs/research/beat-the-competitors-retrieval-plan.md:124:Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes akashik comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
+docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:509:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:515:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:395:Instrument and publish `web_fallback_rate` for the `rust` room. The expected curve: day 1 ≈ 80-90% web fallback (sparse graph), day 30 < 40% (librarian + early-adopter knowledge covers the common queries). This is the compounding claim made visible.
 docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:525:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
 docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1245:**Status:** strategic sketch — Phase 24 candidate ratchets
 docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1364:## 6. Stretch — Phase 24 candidates
-docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1366:Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes wellinformed comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
+docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1366:Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes akashik comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
 docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2179:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-2.md:444:## Q6 — Network health: popularity cascades, niche evaporation, adversarial attacks
-docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2259:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2259:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2263:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:395:Instrument and publish `web_fallback_rate` for the `rust` room. The expected curve: day 1 ≈ 80-90% web fallback (sparse graph), day 30 < 40% (librarian + early-adopter knowledge covers the common queries). This is the compounding claim made visible.
 docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2274:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
 docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2356:3. **Q3:** Proposed benchmark: **AkashikBench-F**. Use `snap-research/locomo` ([repo](https://github.com/snap-research/locomo), arXiv `2402.17753`) plus LongMemEval-S (arXiv `2410.10813`) as source conversations, partition them across `N=32` simulated peers and `4-6` rooms with controlled topical overlap, replay `1,000-2,000` timestamped queries sequentially, and on miss let the querying peer obtain the gold evidence from a fixed “web oracle” corpus and cache it locally. Measure `federation_hit_rate`, `web_fallback_rate`, `coverage_growth(T,t)`, `T_half(T)` (time until half the peers can answer topic `T`), median/p95 answer latency, and quality deltas versus local-only; define **compounding** quantitatively as the negative slope of `web_fallback_rate` and positive slope of `coverage_growth` over repeated asks. This is runnable on commodity hardware in a week because it is a simulator over existing corpora, not a live distributed deployment; on the other hand, if you do not model peer churn and fact staleness, you will overstate the compounding effect.
@@ -9746,7 +9746,7 @@ src/infrastructure/embedders.ts:147: * Options for the Rust subprocess embedder 
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:290:3. `web_fallback_rate` production instrumentation (~20%)
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:332:| `web_fallback_rate(t)` | Fraction of queries reaching web at day t | The number to show at launch |
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:334:| `cold_start_ratio` | web_fallback_rate at day 1 vs day 30 | The before/after story |
-docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:395:Instrument and publish `web_fallback_rate` for the `rust` room. The expected curve: day 1 ≈ 80-90% web fallback (sparse graph), day 30 < 40% (librarian + early-adopter knowledge covers the common queries). This is the compounding claim made visible.
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
 docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:478:2. **`web_fallback_rate` as a first-class production metric** — instrument it per room in the telemetry pipeline (`telemetry-formatter.ts` already exists). This is the launch number.
@@ -9779,15 +9779,15 @@ docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5207:.
 docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5535:./docs/research/octopus-discover/round-5-2026-05-26/synthesis.md:94:The next engineering month must be spent on **architecting the federation and its measurement infrastructure (AkashikBench-F)**. The empirical data confirms the LME-S head is saturated (R@50=1.000, ~4pp NDCG headroom). Chasing the final 2-3pp to match `agentmemory`'s 0.952 is a vanity metric for a single-user memory product, which Akashik is no longer. The core differentiator is network compounding. Conversely, the tradeoff of abandoning single-peer tuning is leaving 60pp of factual headroom on LoCoMo unmined, meaning local retrieval may remain noisy. However, building the federation layer (CRDT sync, query fan-out) and measuring the `web_fallback_rate` is the only way to empirically validate the actual "knowledge commons" thesis.
 docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5617:./docs/research/octopus-discover/round-5-2026-05-26/probes/gemini-4.md:148:If I were Sahar, the next engineering month I'd spend on building the AkashikBench-F federation measurement harness and assessing AT Protocol DID compatibility because the project's core claim of monotonic compounding currently lacks empirical proof. The next marketing/launch month I'd spend on seeding the Rust OSS community with 5 'librarians' and 95 early adopters because demonstrating a sharp drop in the `web_fallback_rate` within a single, high-density domain is the only way to prove the architecture works in practice. Specifically NOT tuning the LongMemEval-S R@5 metric because competing on single-peer memory benchmarks completely abandons Akashik's federated differentiator and chases a mathematical ceiling we've already hit.
 docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5634:./docs/research/octopus-discover/round-5-2026-05-26/probes/gemini-1.md:194:If I were Sahar, the next engineering month I'd spend on building the AkashikBench-F simulation harness and instrumenting `web_fallback_rate` because these are the only metrics that actually measure the federated compounding claim. The next marketing/launch month I'd spend on onboarding 5-20 Rust infrastructure maintainers to seed a single, high-pain debugging room because deep coverage in one niche proves the mechanism better than thin coverage everywhere. Specifically NOT chasing the last 3% of R@5 on LongMemEval-S because that optimizes for the old, single-user product frame and distracts from the core peer-to-peer value proposition.
-docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5836:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5836:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5848:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
 docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5897:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:99:3. **Q3:** Proposed benchmark: **AkashikBench-F**. Use `snap-research/locomo` ([repo](https://github.com/snap-research/locomo), arXiv `2402.17753`) plus LongMemEval-S (arXiv `2410.10813`) as source conversations, partition them across `N=32` simulated peers and `4-6` rooms with controlled topical overlap, replay `1,000-2,000` timestamped queries sequentially, and on miss let the querying peer obtain the gold evidence from a fixed “web oracle” corpus and cache it locally. Measure `federation_hit_rate`, `web_fallback_rate`, `coverage_growth(T,t)`, `T_half(T)` (time until half the peers can answer topic `T`), median/p95 answer latency, and quality deltas versus local-only; define **compounding** quantitatively as the negative slope of `web_fallback_rate` and positive slope of `coverage_growth` over repeated asks. This is runnable on commodity hardware in a week because it is a simulator over existing corpora, not a live distributed deployment; on the other hand, if you do not model peer churn and fact staleness, you will overstate the compounding effect.
 docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5902:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:120:8. **Q8:** Strongest counter-argument: **“You are adding a flaky, mostly-offline federation hop in front of systems that already solve knowledge sharing better: Google, Stack Overflow, GitHub Discussions, Discord, Are.na, and repo docs. In practice, users will miss locally, peers will be offline, and Akashik will collapse into ‘web search plus personal cache,’ which is not a new network.”** The honest response is: that argument is strong unless you can show a dense room where `web_fallback_rate` materially drops over 30 days and Step 5 transfers happen with attribution faster than fresh web research. Local-first plus web-on-miss means the product is still useful on day 1; however the tradeoff is brutal: if the first room does not show measurable transfer under real churn, the federated-commons thesis is not yet proven and should not be pitched as proven.
-docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5912:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:379:./docs/research/beat-the-competitors-retrieval-plan.md:124:Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes wellinformed comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
-docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5973:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:509:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5912:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:379:./docs/research/beat-the-competitors-retrieval-plan.md:124:Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes akashik comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
+docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5973:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:509:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:5985:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:525:./docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
-docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6167:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1366:Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes wellinformed comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
-docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6261:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2259:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "wellinformed 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6167:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:1366:Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes akashik comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
+docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6261:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2259:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:375:**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
 docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6265:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2274:docs/research/octopus-discover/round-4-2026-05-26/probes/claude-sonnet-5.md:463:The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
 docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6271:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2356:3. **Q3:** Proposed benchmark: **AkashikBench-F**. Use `snap-research/locomo` ([repo](https://github.com/snap-research/locomo), arXiv `2402.17753`) plus LongMemEval-S (arXiv `2410.10813`) as source conversations, partition them across `N=32` simulated peers and `4-6` rooms with controlled topical overlap, replay `1,000-2,000` timestamped queries sequentially, and on miss let the querying peer obtain the gold evidence from a fixed “web oracle” corpus and cache it locally. Measure `federation_hit_rate`, `web_fallback_rate`, `coverage_growth(T,t)`, `T_half(T)` (time until half the peers can answer topic `T`), median/p95 answer latency, and quality deltas versus local-only; define **compounding** quantitatively as the negative slope of `web_fallback_rate` and positive slope of `coverage_growth` over repeated asks. This is runnable on commodity hardware in a week because it is a simulator over existing corpora, not a live distributed deployment; on the other hand, if you do not model peer churn and fact staleness, you will overstate the compounding effect.
 docs/research/octopus-discover/round-6-2026-05-26/probes/codex-probe-3.md:6276:./docs/research/octopus-discover/round-5-2026-05-26/probes/codex-3.md:2377:8. **Q8:** Strongest counter-argument: **“You are adding a flaky, mostly-offline federation hop in front of systems that already solve knowledge sharing better: Google, Stack Overflow, GitHub Discussions, Discord, Are.na, and repo docs. In practice, users will miss locally, peers will be offline, and Akashik will collapse into ‘web search plus personal cache,’ which is not a new network.”** The honest response is: that argument is strong unless you can show a dense room where `web_fallback_rate` materially drops over 30 days and Step 5 transfers happen with attribution faster than fresh web research. Local-first plus web-on-miss means the product is still useful on day 1; however the tradeoff is brutal: if the first room does not show measurable transfer under real churn, the federated-commons thesis is not yet proven and should not be pitched as proven.
@@ -9804,7 +9804,7 @@ docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.m
 docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:141:| `docs/architecture/ADR-002-v4-agent-brain.md` | KEEP | Contains the explicit decision NOT to chase BEIR leaderboard SOTA — critical context for Phase 24 |
 docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:147:| `docs/research/beat-the-competitors-retrieval-plan.md` | **ARCHIVE with annotation** | The per-question-type loss breakdown and LME-S per-type R@5 numbers are genuinely valuable (0.905 multi-session, 0.871 temporal) and will guide Phase 24 routing decisions. But the framing "beat the competitors" and the anchor benchmarks against mem0/ByteRover are the old positioning. Move to `docs/archive/retrieval-research-pre-pivot.md` and add a 3-line header: "Framing superseded by Akashik commons pivot. Retrieval quality analysis and per-question-type loss breakdown remain accurate as of Phase 23.7." |
 docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:167:| `tests/bench-akashik-federation.test.ts` | **KEEP** | AkashikBench-F — the key Phase 24 instrument; validates the compounding thesis |
-docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:176:| `tests/phase29.rust-retrieval-regression.test.ts` | NEEDS-REVIEW | Phase 29 isn't in the ROADMAP — it was added in the 21-23 era. Verify that wellinformed-rs is still active and the test still passes; if the Rust sidecar is not on the Phase 24 roadmap, this becomes a maintenance liability |
+docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:176:| `tests/phase29.rust-retrieval-regression.test.ts` | NEEDS-REVIEW | Phase 29 isn't in the ROADMAP — it was added in the 21-23 era. Verify that akashik-rs is still active and the test still passes; if the Rust sidecar is not on the Phase 24 roadmap, this becomes a maintenance liability |
 docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:185:| `src/cli/commands/telegram.ts` | **DELETE** | Telegram integration has no mention in Phase 24 roadmap, no test coverage referenced in the planning docs, and is not part of the OSS commons protocol surface. Dead code. |
 docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:187:| `src/cli/commands/swarm.ts` | NEEDS-REVIEW | Ambiguous: is this the multi-agent orchestration swarm (dev tooling) or the P2P mesh topology? If it's the ruflo agent swarm, it belongs in `.agents/` not in the shipped CLI. If it's the P2P network swarm concept, it may be forward-relevant for Phase 24. |
 docs/research/octopus-discover/round-6-2026-05-26/probes/claude-sonnet-probe-2.md:188:| `src/application/federated-search.ts` | KEEP | Core of Phase 17+; directly in Phase 24 scope |
@@ -10036,7 +10036,7 @@ exec
     45	    if (reg.isOk()) room = defaultRoom(reg.value);
     46	  }
     47	  if (!room) {
-    48	    console.error('discover: no room specified and no default room set. use --room or run `wellinformed init`.');
+    48	    console.error('discover: no room specified and no default room set. use --room or run `akashik init`.');
     49	    return 1;
     50	  }
     51	

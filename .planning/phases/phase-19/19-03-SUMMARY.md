@@ -55,7 +55,7 @@ metrics:
 
 # Phase 19 Plan 03: CLI Command Group + 15th MCP Tool Summary
 
-**One-liner:** `wellinformed codebase` 8-subcommand CLI group (index/list/show/reindex/attach/detach/search/remove) wired to openCodeGraph + indexCodebase/reindexCodebase, plus `code_graph_query` registered as the 15th MCP tool querying code-graph.db independently of the research graph.
+**One-liner:** `akashik codebase` 8-subcommand CLI group (index/list/show/reindex/attach/detach/search/remove) wired to openCodeGraph + indexCodebase/reindexCodebase, plus `code_graph_query` registered as the 15th MCP tool querying code-graph.db independently of the research graph.
 
 ## Tasks Completed
 
@@ -82,7 +82,7 @@ A local `parseArgs` helper handles `--flag <value>` / `--bool` parsing without a
 
 ### Task 2 — src/cli/index.ts + src/mcp/server.ts
 
-`src/cli/index.ts` imports `codebase` from `./commands/codebase.js` and adds it to the `commands` Record — the existing key-lookup dispatcher routes `wellinformed codebase <sub>` with zero other changes.
+`src/cli/index.ts` imports `codebase` from `./commands/codebase.js` and adds it to the `commands` Record — the existing key-lookup dispatcher routes `akashik codebase <sub>` with zero other changes.
 
 `src/mcp/server.ts` registers `code_graph_query` as the 15th tool after `discover_loop`. Handler: opens code-graph.db via `runtime.paths.codeGraph`, calls `repo.searchNodes` with the caller-provided filters, closes the repo in finally, returns `okJson({ count, nodes })`. Input schema: `codebase_id?` (string), `kind?` (enum of 9 CodeNodeKind values), `name_pattern?` (substring, auto-wrapped in `%...%`), `limit` (1-200, default 20). Description explicitly states it is SEPARATE from `search`/`ask` — operates on code-graph.db, not research content.
 

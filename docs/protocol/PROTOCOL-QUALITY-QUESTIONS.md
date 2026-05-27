@@ -238,7 +238,7 @@ Dataset rows:
 {
   "query": "how do I wire sqlite-vec with FTS5 hybrid search?",
   "task_type": "coding",
-  "room": "wellinformed-dev",
+  "room": "akashik-dev",
   "local_hits": [],
   "peer_hits": [],
   "live_search_hits": [],
@@ -1182,7 +1182,7 @@ Candidate metrics:
 
 Open questions:
 
-- Which metrics should be visible in `wellinformed stats`?
+- Which metrics should be visible in `akashik stats`?
 - Which should be local-only because they reveal peer behavior?
 - Can treatment metrics predict answer quality?
 - What is the healthy duplicate-collapse rate in a real network?

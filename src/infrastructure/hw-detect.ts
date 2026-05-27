@@ -1,6 +1,6 @@
 /**
  * Hardware capability detection — runtime probe for the host's
- * compute resources. Drives the rerank-tier picker so wellinformed
+ * compute resources. Drives the rerank-tier picker so akashik
  * runs the best quality each user's actual hardware can deliver
  * rather than the lowest-common-denominator pure-CPU path.
  *
@@ -16,7 +16,7 @@
  * Cached for the lifetime of the process — capabilities don't change.
  *
  * Failure modes: every probe is fail-closed (returns `false` /
- * `undefined`). A misconfigured `WELLINFORMED_OLLAMA_URL` doesn't
+ * `undefined`). A misconfigured `AKASHIK_OLLAMA_URL` doesn't
  * crash the picker; it just downgrades the tier.
  */
 
@@ -98,10 +98,10 @@ const detectCuda = (): { hasCuda: boolean; gpus: string[] } => {
 /**
  * Probe a running Ollama instance. Returns the list of locally
  * available models; an empty list means Ollama isn't reachable.
- * Endpoint comes from WELLINFORMED_OLLAMA_URL or the default localhost.
+ * Endpoint comes from AKASHIK_OLLAMA_URL or the default localhost.
  */
 const detectOllama = async (): Promise<{ hasOllama: boolean; models: string[] }> => {
-  const baseUrl = (process.env.WELLINFORMED_OLLAMA_URL ?? 'http://localhost:11434').replace(/\/$/, '');
+  const baseUrl = (process.env.AKASHIK_OLLAMA_URL ?? 'http://localhost:11434').replace(/\/$/, '');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), OLLAMA_PROBE_TIMEOUT_MS);
   try {

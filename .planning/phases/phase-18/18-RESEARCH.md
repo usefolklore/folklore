@@ -33,7 +33,7 @@
 
 **Multi-Peer Testing (NET-04)**
 - In-process 10-peer integration test — spin up 10 short-lived libp2p nodes on OS-assigned ports
-- Runtime budget: 30-45 seconds. Tagged as "slow"; skippable via `WELLINFORMED_SKIP_SLOW=1`
+- Runtime budget: 30-45 seconds. Tagged as "slow"; skippable via `AKASHIK_SKIP_SLOW=1`
 - Shared `afterAll` cleanup stops every node, individual failures cannot cascade
 - Pass bar: hard = all 10 nodes connected to at least 3 others
 
@@ -164,7 +164,7 @@ const node = await createLibp2p({
   streamMuxers: [yamux()],
   peerDiscovery,
   services: {
-    ...(dhtOn ? { dht: kadDHT({ clientMode: true, protocol: '/wellinformed/kad/1.0.0' }) } : {}),
+    ...(dhtOn ? { dht: kadDHT({ clientMode: true, protocol: '/akashik/kad/1.0.0' }) } : {}),
     dcutr: dcutr(),       // auto-activates on relay connections; no extra config
     upnpNAT: uPnPNAT(),   // silent failure if router unavailable (verified in source)
   },
@@ -191,7 +191,7 @@ const node = await createLibp2p({
 if (cfg.relays) {
   for (const relayAddr of cfg.relays) {
     await node.dial(multiaddr(relayAddr)).catch((e) => {
-      process.stderr.write(`wellinformed: relay dial failed for ${relayAddr}: ${(e as Error).message}\n`);
+      process.stderr.write(`akashik: relay dial failed for ${relayAddr}: ${(e as Error).message}\n`);
     });
   }
 }
@@ -281,7 +281,7 @@ export const createSemaphore = (maxConcurrent: number): Semaphore => {
 // tests/phase18.production-net.test.ts
 import { describe, it, before, after } from 'node:test';
 
-const SKIP = process.env.WELLINFORMED_SKIP_SLOW === '1';
+const SKIP = process.env.AKASHIK_SKIP_SLOW === '1';
 
 describe('Phase 18: NET-04 — 10-peer mesh', { skip: SKIP, timeout: 50_000 }, () => {
   const nodes: Libp2p[] = [];
@@ -380,7 +380,7 @@ describe('Phase 18: NET-04 — 10-peer mesh', { skip: SKIP, timeout: 50_000 }, (
 
 **Why it happens:** The `Connection` interface has no `error` or `reason` field. The `status` is `'closed'` in both cases by the time the event fires.
 
-**How to avoid:** Use a two-step heuristic: (1) check if `node.getPeers()` still contains the peer ID immediately after the event (within the same microtask); if NOT present, the peer fully disconnected. (2) Only count as "unexpected" if the peer had previously been `keep-alive`-tagged. Peers tagged via `dialAndTag` have the `keep-alive-wellinformed` tag — their disconnects are unexpected. Peers without the tag are ephemeral connections that can close normally.
+**How to avoid:** Use a two-step heuristic: (1) check if `node.getPeers()` still contains the peer ID immediately after the event (within the same microtask); if NOT present, the peer fully disconnected. (2) Only count as "unexpected" if the peer had previously been `keep-alive`-tagged. Peers tagged via `dialAndTag` have the `keep-alive-akashik` tag — their disconnects are unexpected. Peers without the tag are ephemeral connections that can close normally.
 
 **Warning signs:** `peer list` shows all peers as `degraded` after any daemon restart.
 
@@ -440,7 +440,7 @@ import { uPnPNAT } from '@libp2p/upnp-nat';
 
 // In createNode, services block:
 const services: Record<string, unknown> = {
-  ...(dhtOn ? { dht: kadDHT({ clientMode: true, protocol: '/wellinformed/kad/1.0.0' }) } : {}),
+  ...(dhtOn ? { dht: kadDHT({ clientMode: true, protocol: '/akashik/kad/1.0.0' }) } : {}),
   dcutr: dcutr(),
   ...(cfg.upnp !== false ? { upnpNAT: uPnPNAT() } : {}),
 };
@@ -581,13 +581,13 @@ export type AppError = GraphError | VectorError | EmbeddingError | PeerError | S
 | NET-04 | connection:close listener registered in daemon | structural | same | ❌ Wave 0 |
 | NET-04 | health tracker records disconnects and marks degraded | unit (HealthTracker pure logic) | same | ❌ Wave 0 |
 | NET-04 | peer list shows health column | structural (peer.ts source) | same | ❌ Wave 0 |
-| NET-04 | 10-peer mesh: all connected to 3+ peers | integration (slow, real libp2p nodes) | `WELLINFORMED_SKIP_SLOW=0 node --import tsx --test tests/phase18.production-net.test.ts` | ❌ Wave 0 |
+| NET-04 | 10-peer mesh: all connected to 3+ peers | integration (slow, real libp2p nodes) | `AKASHIK_SKIP_SLOW=0 node --import tsx --test tests/phase18.production-net.test.ts` | ❌ Wave 0 |
 
 ### Sampling Rate
 
 - **Per task commit:** `node --import tsx --test tests/phase18.production-net.test.ts` (skip slow via env)
 - **Per wave merge:** `npm test` (full suite, all 163+ prior tests must still pass)
-- **Phase gate:** Full suite green before `/gsd:verify-work`. Slow test must pass with `WELLINFORMED_SKIP_SLOW=0`.
+- **Phase gate:** Full suite green before `/gsd:verify-work`. Slow test must pass with `AKASHIK_SKIP_SLOW=0`.
 
 ### Wave 0 Gaps
 
@@ -613,7 +613,7 @@ export type AppError = GraphError | VectorError | EmbeddingError | PeerError | S
 - `npm view @libp2p/upnp-nat version` → `4.0.15` (latest, confirmed)
 - `@libp2p/dcutr/package.json` — no peerDependencies; no `@libp2p/identify` required
 - `@libp2p/circuit-relay-v2/package.json` — no peerDependencies
-- All existing project source files read directly from `/Users/saharbarak/workspace/wellinformed/src/`
+- All existing project source files read directly from `/Users/saharbarak/workspace/akashik/src/`
 
 ### Secondary (MEDIUM confidence)
 

@@ -14,7 +14,7 @@ Peer identity, manual peer management, secrets scanning, and share audit. Establ
 ## Implementation Decisions
 
 ### Peer Identity & Key Management
-- ed25519 keypair stored at ~/.wellinformed/peer-identity.json as raw base64 JSON (research confirms `.raw` property gives the correct 64 bytes directly — protobuf framing is unnecessary at the storage layer; libp2p's `unmarshalEd25519PrivateKey()` accepts the raw Uint8Array)
+- ed25519 keypair stored at ~/.akashik/peer-identity.json as raw base64 JSON (research confirms `.raw` property gives the correct 64 bytes directly — protobuf framing is unnecessary at the storage layer; libp2p's `unmarshalEd25519PrivateKey()` accepts the raw Uint8Array)
 - PeerId derived via libp2p standard (multihash of public key) for interoperability
 - Keypair auto-generated on first `peer` command (lazy, no explicit init step)
 - New `src/domain/peer.ts` for PeerId/PeerInfo/PeerRegistry types + pure validation; `src/infrastructure/peer-transport.ts` for libp2p I/O
@@ -23,7 +23,7 @@ Peer identity, manual peer management, secrets scanning, and share audit. Establ
 - Listening port configurable via config.yaml, default 0 (OS-assigned) to avoid conflicts
 - Persistent connections with auto-reconnect (matches NET-04 requirement)
 - Minimal libp2p module set: @libp2p/tcp + @libp2p/noise (SEC-05) + @libp2p/yamux
-- Known peers stored in `~/.wellinformed/peers.json` (separate from identity, survives restarts)
+- Known peers stored in `~/.akashik/peers.json` (separate from identity, survives restarts)
 
 ### Secrets Scanner Design
 - Scan all shareable fields: label, source_uri, fetched_at (content/raw text already excluded by SEC-03)
@@ -56,14 +56,14 @@ Peer identity, manual peer management, secrets scanning, and share audit. Establ
 - Functional DDD: pure domain types + functions in src/domain, I/O in src/infrastructure
 - neverthrow Result/ResultAsync for all fallible operations — no throws
 - sequenceLazy thunks for sequential async chains (prevents eager race conditions)
-- Config at ~/.wellinformed/config.yaml with defaults baked into loader
+- Config at ~/.akashik/config.yaml with defaults baked into loader
 - Immutable data: all domain types use readonly fields, transformations return new values
 
 ### Integration Points
 - `src/cli/index.ts` command router — add `peer` and `share` commands
 - `src/infrastructure/config-loader.ts` — extend AppConfig with peer section
 - `src/domain/graph.ts` GraphNode — ShareableNode is a projection of existing fields
-- `~/.wellinformed/` runtime directory — add peer-identity.json and peers.json
+- `~/.akashik/` runtime directory — add peer-identity.json and peers.json
 
 </code_context>
 

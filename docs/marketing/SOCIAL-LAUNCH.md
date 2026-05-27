@@ -23,7 +23,7 @@ contradicts them, the variant is wrong.
 
 > The globally accumulating knowledge network. For AI agents — and
 > humans. Cooperative · P2P · sub-second. MIT.
-> github.com/SaharBarak/wellinformed
+> github.com/SaharBarak/akashik
 
 ### 1.2 — Launch tweet (single, 280 chars)
 
@@ -34,7 +34,7 @@ contradicts them, the variant is wrong.
 > Every peer's research compounds for the whole network. Sub-second
 > retrieval. No central server.
 >
-> github.com/SaharBarak/wellinformed
+> github.com/SaharBarak/akashik
 
 ### 1.3 — Launch thread (5 tweets, ordered)
 
@@ -81,7 +81,7 @@ contradicts them, the variant is wrong.
 > 75% NDCG@10 on BEIR SciFact. 11 ms p50 retrieval. libp2p federation.
 > W3C did:key identity.
 >
-> Run a node: github.com/SaharBarak/wellinformed
+> Run a node: github.com/SaharBarak/akashik
 
 ### 1.4 — Reply hooks (use when someone asks "isn't this just RAG?")
 
@@ -118,7 +118,7 @@ with the category claim.
 >
 > - Local: sqlite-vec + FTS5 + RRF hybrid retrieval (75% NDCG@10 on
 >   BEIR SciFact, 11 ms p50)
-> - P2P: libp2p protocols `/wellinformed/{search,recall,touch,share}/1.0.0`
+> - P2P: libp2p protocols `/akashik/{search,recall,touch,share}/1.0.0`
 >   over Yjs CRDTs
 > - Identity: W3C did:key, Ed25519 signed envelopes, no central server
 > - Reputation: subject-scoped Bayesian-mean ranking, load-aware
@@ -129,7 +129,7 @@ with the category claim.
 >
 > Demo: `bash demo/setup.sh && vhs demo/scene-claude.tape` (~25 s gif)
 >
-> github.com/SaharBarak/wellinformed
+> github.com/SaharBarak/akashik
 >
 > Happy to answer reputation-system, libp2p, or hook-architecture
 > questions in this thread.
@@ -184,7 +184,7 @@ with the category claim.
 >
 > The same primitive serves both: when Claude Code (or Codex, Gemini)
 > reads your prompt, the graph answer is already in context. When
-> *you* run `wellinformed ask` in your terminal, you read the same
+> *you* run `akashik ask` in your terminal, you read the same
 > graph your agents do — your code, your dependencies, your past
 > sessions, every peer's contribution.
 >
@@ -199,7 +199,7 @@ with the category claim.
 >
 > MIT-licensed. CPU-only. No GPU, no telemetry, no API key.
 >
-> github.com/SaharBarak/wellinformed
+> github.com/SaharBarak/akashik
 
 ### 3.2 — Re-share blurb (when others post about it)
 
@@ -224,7 +224,7 @@ with the category claim.
 >
 > Akashik wires retrieval into the prompt itself. The hook fires
 > on UserPromptSubmit (a Claude Code lifecycle event), runs
-> `wellinformed ask` against a local knowledge graph + connected
+> `akashik ask` against a local knowledge graph + connected
 > peers, and injects the result as `additionalContext` before the LLM
 > reads anything.
 >
@@ -240,7 +240,7 @@ with the category claim.
 >
 > MIT-licensed. CPU-only. Cultural lineage: Napster, eMule, BitTorrent.
 >
-> github.com/SaharBarak/wellinformed
+> github.com/SaharBarak/akashik
 
 ### 4.3 — r/MachineLearning angle
 
@@ -263,7 +263,7 @@ with the category claim.
 > Code + design doc in repo. Curious if anyone has hit a similar
 > peer-ranking problem in federated learning settings.
 >
-> github.com/SaharBarak/wellinformed
+> github.com/SaharBarak/akashik
 
 ---
 
@@ -309,12 +309,12 @@ For talks, decks, podcast intros, conference badges:
 
 > Building Akashik — the globally accumulating knowledge network
 > for AI agents and humans. Cooperative, P2P, MIT.
-> github.com/SaharBarak/wellinformed
+> github.com/SaharBarak/akashik
 
 **Medium (120 chars)**
 
 > Akashik — knowledge before the prompt. Cooperative, P2P, MIT.
-> github.com/SaharBarak/wellinformed
+> github.com/SaharBarak/akashik
 
 **Short (60 chars)**
 

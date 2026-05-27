@@ -23,7 +23,7 @@
  *
  * Environment contract:
  *
- *   WELLINFORMED_BENCH_PUBLIC_REAL=1
+ *   AKASHIK_BENCH_PUBLIC_REAL=1
  *     Master gate; off by default.
  *
  *   LONGMEMEVAL_DIR=/path/to/longmemeval
@@ -32,7 +32,7 @@
  *     Get it via HuggingFace: `huggingface-cli download
  *     xiaowu0162/longmemeval longmemeval_oracle.json --local-dir $LONGMEMEVAL_DIR`.
  *
- *   WELLINFORMED_BENCH_OUT=/path/to/report.jsonl   (optional)
+ *   AKASHIK_BENCH_OUT=/path/to/report.jsonl   (optional)
  *     Composite-runner sink — emits one BenchSuiteReport JSON line.
  *
  * Embedder: real Xenova all-MiniLM-L6-v2 (no fixture). Each question
@@ -100,8 +100,8 @@ const sessionToText = (turns: readonly LmeTurn[]): string => {
 };
 
 test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000 }, async (t) => {
-  if (process.env.WELLINFORMED_BENCH_PUBLIC_REAL !== '1') {
-    t.skip('WELLINFORMED_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
+  if (process.env.AKASHIK_BENCH_PUBLIC_REAL !== '1') {
+    t.skip('AKASHIK_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
     return;
   }
   // Two ways to point at a split:
@@ -137,7 +137,7 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
   );
 
   // E1' (Phase 23.9): opt-in cross-encoder rerank in the bench path.
-  // Set `WELLINFORMED_RERANK=1` to activate; `WELLINFORMED_RERANK_MODEL`
+  // Set `AKASHIK_RERANK=1` to activate; `AKASHIK_RERANK_MODEL`
   // chooses the reranker (default `Xenova/ms-marco-MiniLM-L-6-v2`; swap
   // to `Xenova/bge-reranker-base` for NLI-trained domain match).
   // When active, we over-retrieve K*4 candidates from the hybrid stage
@@ -146,11 +146,11 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
   // E1' cross-encoder reranker (Xenova ms-marco / bge / etc.).
   const reranker = crossEncoderFromEnv();
   // Phase 23.12 LLM listwise reranker (Ollama-backed) — opt-in via
-  // `WELLINFORMED_LLM_RERANK=1`. When both are set, LISTWISE WINS
+  // `AKASHIK_LLM_RERANK=1`. When both are set, LISTWISE WINS
   // (the cross-encoder path is bypassed). This lets E1' and listwise
   // be A/B'd cleanly without code changes.
   const listwiseScorer = listwiseScorerFromEnv();
-  const RERANK_HEAD = Number(process.env.WELLINFORMED_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
+  const RERANK_HEAD = Number(process.env.AKASHIK_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
   // T1 diagnostic (Phase 23.10): always fetch deep enough to compute
   // R@5 / R@10 / R@20 / R@50 from a single retrieval pass. Lets us
   // diagnose head saturation — if R@20 ≈ R@5 ≈ baseline 0.92, the
@@ -160,16 +160,16 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
   // surface it. Pure observability — adds ~30 ms per query of
   // additional sqlite-vec depth, no model cost.
   const RECALL_KS = [5, 10, 20, 50] as const;
-  const KMAX = Number(process.env.WELLINFORMED_BENCH_LME_KMAX ?? 50);
+  const KMAX = Number(process.env.AKASHIK_BENCH_LME_KMAX ?? 50);
   const overRetrieveK = Math.max(KMAX, (reranker || listwiseScorer) ? RERANK_HEAD : 5);
   if (listwiseScorer) {
     console.log(`  LLM-listwise rerank ON · model=${listwiseScorer.model} · over-retrieve k=${overRetrieveK} → listwise head=${RERANK_HEAD} → final K=${K}`);
   } else if (reranker) {
-    console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
+    console.log(`  cross-encoder rerank ON · model=${process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
   }
 
   // E11 (Phase 23.9): rule-based contextual enrichment — write-path.
-  // When `WELLINFORMED_BENCH_CONTEXTUAL_ENRICH=1`, prepend
+  // When `AKASHIK_BENCH_CONTEXTUAL_ENRICH=1`, prepend
   // `[date: ...] [session: ...]` to every session's text BEFORE
   // embedding so the bi-encoder vector latches onto date / session-id
   // signal — targets multi-session and temporal-reasoning headroom.
@@ -309,12 +309,12 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
     }
 
     // Phase 23.16 — fine-grained progress log. Tunable via
-    // `WELLINFORMED_BENCH_PROGRESS_EVERY_N` (default 25). Live tails
+    // `AKASHIK_BENCH_PROGRESS_EVERY_N` (default 25). Live tails
     // see R@5 alongside NDCG@5 and MRR so order-sensitive lift shows
     // up before the bench finishes (catches the case where R@5 is
     // flat but NDCG@5 is rising — exactly what set-based metrics
     // were hiding).
-    const PROGRESS_EVERY_N = Number(process.env.WELLINFORMED_BENCH_PROGRESS_EVERY_N ?? 25);
+    const PROGRESS_EVERY_N = Number(process.env.AKASHIK_BENCH_PROGRESS_EVERY_N ?? 25);
     if ((i + 1) % PROGRESS_EVERY_N === 0) {
       const n = i + 1;
       const r5avg = sumR5 / n;
@@ -373,11 +373,11 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
     },
     perQuery,
     elapsedMs,
-    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix)' : 'off'}. T1 diagnostic: R@5/10/20/50 from a single KMAX=${KMAX} retrieval pass. Replaces the 20-session synthetic proxy.`,
+    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix)' : 'off'}. T1 diagnostic: R@5/10/20/50 from a single KMAX=${KMAX} retrieval pass. Replaces the 20-session synthetic proxy.`,
   };
 
-  if (process.env.WELLINFORMED_BENCH_OUT) {
-    appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
+  if (process.env.AKASHIK_BENCH_OUT) {
+    appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
   }
 
   console.log(`bench longmemeval-real: R@5=${r5.toFixed(4)} R@10=${rkAvg[10].toFixed(4)} R@20=${rkAvg[20].toFixed(4)} R@50=${rkAvg[50].toFixed(4)} MRR=${mrr.toFixed(4)} (n=${dataset.length}) in ${(elapsedMs / 1000).toFixed(1)}s`);
@@ -391,7 +391,7 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
   }
 
   // agentmemory claims ~95% Recall@5 on the public benchmark with
-  // their full pipeline + reranker. wellinformed retrieves with
+  // their full pipeline + reranker. akashik retrieves with
   // hybrid lex+vec + PPR but no LLM reranker on this path, so we
   // expect 0.55-0.75 here. Floor set conservatively; tighten in 23.8.
   assert.ok(r5 >= 0.40, `LongMemEval-real R@5 regressed below 0.40 floor: ${r5.toFixed(4)}`);

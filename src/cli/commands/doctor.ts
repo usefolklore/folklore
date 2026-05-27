@@ -1,12 +1,12 @@
 /**
- * doctor — checks runtime prerequisites for wellinformed.
+ * doctor — checks runtime prerequisites for akashik.
  *
  * Phase 1 scope:
  *   - Node >= 20
  *   - a Python >= 3.10 reachable on PATH (probed python3.13→python3.10→python3)
  *   - plugin manifest present (.claude-plugin/plugin.json)
  *   - vendor/graphify submodule present (pyproject.toml + graphify/ package)
- *   - ~/.wellinformed/venv exists and can `import graphify`
+ *   - ~/.akashik/venv exists and can `import graphify`
  *   - schema patch landed (graphify.validate.OPTIONAL_NODE_FIELDS matches spec)
  *
  * `doctor --fix` runs scripts/bootstrap.sh to create the venv and install
@@ -47,12 +47,12 @@ function repoRoot(): string {
   return resolve(here, '..', '..', '..');
 }
 
-function wellinformedHome(): string {
-  return process.env.WELLINFORMED_HOME || join(homedir(), '.wellinformed');
+function akashikHome(): string {
+  return process.env.AKASHIK_HOME || join(homedir(), '.akashik');
 }
 
 function venvPython(): string {
-  return join(wellinformedHome(), 'venv', 'bin', 'python');
+  return join(akashikHome(), 'venv', 'bin', 'python');
 }
 
 function checkNode(): Check {
@@ -123,11 +123,11 @@ function checkVenv(): Check {
   const py = venvPython();
   const ok = existsSync(py);
   return {
-    name: 'wellinformed venv',
+    name: 'akashik venv',
     ok,
     detail: ok ? py : `missing ${py}`,
     blocking: true,
-    fix: 'run `wellinformed doctor --fix` (or `scripts/bootstrap.sh`)',
+    fix: 'run `akashik doctor --fix` (or `scripts/bootstrap.sh`)',
   };
 }
 
@@ -139,7 +139,7 @@ function checkGraphifyImport(): Check {
       ok: false,
       detail: 'skipped — venv missing',
       blocking: true,
-      fix: 'run `wellinformed doctor --fix`',
+      fix: 'run `akashik doctor --fix`',
     };
   }
   const r = spawnSync(
@@ -153,7 +153,7 @@ function checkGraphifyImport(): Check {
       ok: false,
       detail: (r.stderr || 'import failed').trim().split('\n').slice(-1)[0],
       blocking: true,
-      fix: 'run `wellinformed doctor --fix` to reinstall graphify into the venv',
+      fix: 'run `akashik doctor --fix` to reinstall graphify into the venv',
     };
   }
   const got = (r.stdout || '').trim();
@@ -168,7 +168,7 @@ function checkGraphifyImport(): Check {
 function checkSchemaPatch(importCheck: Check): Check {
   if (!importCheck.ok) {
     return {
-      name: 'wellinformed schema patch',
+      name: 'akashik schema patch',
       ok: false,
       detail: 'skipped — graphify not importable',
       blocking: true,
@@ -177,7 +177,7 @@ function checkSchemaPatch(importCheck: Check): Check {
   const expected = EXPECTED_OPTIONAL_NODE_FIELDS.join(',');
   const got = importCheck.detail.replace('OPTIONAL_NODE_FIELDS = ', '');
   return {
-    name: 'wellinformed schema patch',
+    name: 'akashik schema patch',
     ok: got === expected,
     detail: got === expected ? 'room/wing/source_uri/fetched_at/embedding_id' : `got ${got}, expected ${expected}`,
     blocking: true,
@@ -189,14 +189,14 @@ function checkSchemaPatch(importCheck: Check): Check {
  * V5 schema readiness — Phase 24 (ROOMS-DEL-06).
  *
  * Samples up to 10 random nodes from graph.json. If ANY carries a legacy
- * `room` field the user is nudged to run `wellinformed migrate v5`. Also
+ * `room` field the user is nudged to run `akashik migrate v5`. Also
  * flags residual rooms.json / shared-rooms.json artifacts from the V4 era.
  *
  * Non-blocking: the V5 runtime tolerates orphan fields, this is a hygiene
  * nag that persists until the user opts into the one-way migration.
  */
 function checkV5SchemaReadiness(): Check {
-  const home = process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
+  const home = process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
   const graphPath = join(home, 'graph.json');
   const roomsJsonPath = join(home, 'rooms.json');
   const sharedRoomsJsonPath = join(home, 'shared-rooms.json');
@@ -219,7 +219,7 @@ function checkV5SchemaReadiness(): Check {
       ok: false,
       detail: `V4 artifacts present: ${artifacts.join(', ')}`,
       blocking: false,
-      fix: 'run `wellinformed migrate v5` to remove them',
+      fix: 'run `akashik migrate v5` to remove them',
     };
   }
 
@@ -252,7 +252,7 @@ function checkV5SchemaReadiness(): Check {
       ok: false,
       detail: `V4 data detected: ${v4HitCount}/${sampleSize} sampled nodes still have a 'room' field${artifactDetail}`,
       blocking: false,
-      fix: 'run `wellinformed migrate v5` to upgrade',
+      fix: 'run `akashik migrate v5` to upgrade',
     };
   }
 
@@ -262,7 +262,7 @@ function checkV5SchemaReadiness(): Check {
       ok: false,
       detail: `V4 artifacts present: ${artifacts.join(', ')}`,
       blocking: false,
-      fix: 'run `wellinformed migrate v5` to remove them',
+      fix: 'run `akashik migrate v5` to remove them',
     };
   }
 
@@ -314,7 +314,7 @@ export async function doctor(args: string[]): Promise<number> {
     checkV5SchemaReadiness(),
   ];
 
-  console.log('wellinformed doctor\n');
+  console.log('akashik doctor\n');
   for (const c of checks) console.log(render(c));
   console.log('');
 
@@ -325,7 +325,7 @@ export async function doctor(args: string[]): Promise<number> {
   }
   console.log(`${blocking.length} blocking issue(s).`);
   if (!args.includes('--fix')) {
-    console.log("run 'wellinformed doctor --fix' to bootstrap the venv + graphify install.");
+    console.log("run 'akashik doctor --fix' to bootstrap the venv + graphify install.");
   }
   return 1;
 }

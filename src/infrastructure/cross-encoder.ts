@@ -43,7 +43,7 @@ export interface XenovaCrossEncoderOptions {
   /**
    * Cache directory for the downloaded model. Defaults to whatever
    * `@xenova/transformers` uses (`~/.cache/huggingface/...`). Override
-   * to keep wellinformed self-contained.
+   * to keep akashik self-contained.
    */
   readonly cacheDir?: string;
   /**
@@ -176,14 +176,14 @@ const coerceScores = (
  *
  * Returns `null` when the reranker is disabled — the application
  * layer treats null as "skip rerank, pass through". Enabling requires
- * `WELLINFORMED_RERANK=1` explicitly; the rerank pass is opt-in
+ * `AKASHIK_RERANK=1` explicitly; the rerank pass is opt-in
  * because it adds 30-80 ms of latency for a 20-pair head.
  */
 export const crossEncoderFromEnv = (): CrossEncoderScorer | null => {
-  if (process.env.WELLINFORMED_RERANK !== '1') return null;
+  if (process.env.AKASHIK_RERANK !== '1') return null;
   return xenovaCrossEncoder({
-    model: process.env.WELLINFORMED_RERANK_MODEL,
-    cacheDir: process.env.WELLINFORMED_RERANK_CACHE,
-    quantized: process.env.WELLINFORMED_RERANK_FP32 !== '1',
+    model: process.env.AKASHIK_RERANK_MODEL,
+    cacheDir: process.env.AKASHIK_RERANK_CACHE,
+    quantized: process.env.AKASHIK_RERANK_FP32 !== '1',
   });
 };

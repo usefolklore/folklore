@@ -19,7 +19,7 @@ tech-stack:
     - "grep exit-code-1 = no-matches normalization in test harness"
     - "Delete dead-contract tests outright rather than translate them — preserves the test suite's signal-to-noise ratio"
 requirements-completed:
-  - "ROOMS-DEL-01 (CLI dispatch): assertion that `wellinformed room` is unknown + save --room rejected"
+  - "ROOMS-DEL-01 (CLI dispatch): assertion that `akashik room` is unknown + save --room rejected"
   - "ROOMS-DEL-02 (rooms.json): assertion that no live code path reads/writes it"
   - "ROOMS-DEL-03 (shared-rooms.json + sharing gate): assertion that share-store.ts is deleted + collectShareable filters private===false"
   - "ROOMS-DEL-04 (GraphNode schema): assertion that nodeFromSave stamps private:false + workspace conditionally"
@@ -70,13 +70,13 @@ key-files:
 key-decisions:
   - "Delete dead-contract tests outright rather than translate them. The V5 contract is materially different — most of the deleted tests would have devolved into trivial existence assertions if translated, while genuinely exercising the V5 surface lives in the new phase24.rooms-deleted.test.ts plus existing post-cutover suites."
   - "MCP tool count is 17 post-V5 (not 13 as the plan estimated). The plan's 16→13 transition assumed the pre-Phase-38 baseline; Phase 38 added 5 oracle tools after 16, so the actual post-V5 count is (16 - 3 room tools) + 5 oracle tools = 17. The plan's directional invariant ('drop 3 room-dimensioned tools') is satisfied; the absolute count is updated in tests/phase17.mcp-tool.test.ts C2 and tests/phase20.sessions.test.ts SESS-06 L1/L4."
-  - "Rewrote claude-install.ts CLAUDE_MD_SECTION to V5 vocabulary (Rule 2 auto-fix). This template is written into user projects' CLAUDE.md on `wellinformed claude install`. Leaving stale system-rooms/shared-rooms vocabulary in user-facing docs would have broken the V5 cutover at the documentation surface."
+  - "Rewrote claude-install.ts CLAUDE_MD_SECTION to V5 vocabulary (Rule 2 auto-fix). This template is written into user projects' CLAUDE.md on `akashik claude install`. Leaving stale system-rooms/shared-rooms vocabulary in user-facing docs would have broken the V5 cutover at the documentation surface."
   - "Bench tests survived as surgical edits (searchByRoom → searchGlobal). Their corpus + IR-metric scaffolding is the most-tested benchmark machinery in the project; deletion would have meant losing ~3000 lines of validated benchmark code. The room dimension was a partition filter that the bench tests don't semantically need (every bench creates an isolated tmp graph)."
   - "Phase 35 P2P touch E2E was deleted, not translated. Its premise (Bob pulls toolshed and gets git-scheme nodes regardless of physical room) tests the room-as-virtual-membership-by-source-uri-scheme model that V5 explicitly killed. A V5 successor — testing touch protocol on private-flagged nodes across two real libp2p nodes — is worth doing but is Phase 25+ scope."
 patterns-established:
   - "Phase-N acceptance test as regression lock — one canonical test file per phase, named `phaseN.<phase-tag>.test.ts`, with one describe group per requirement ID and at least one passing assertion per requirement. Future phases adopt this contract."
   - "Comment-stripping for structural greps — block comments and line comments are stripped before regex assertions to prevent JSDoc mentions of forbidden APIs from causing false failures (pattern preserved from Phase 16 share-crdt structural tests)."
-  - "Hermetic tmp-dir fixture pattern with t.after cleanup — every test creates its own ~/.wellinformed via mkdtempSync + WELLINFORMED_HOME env override + rmSync teardown."
+  - "Hermetic tmp-dir fixture pattern with t.after cleanup — every test creates its own ~/.akashik via mkdtempSync + AKASHIK_HOME env override + rmSync teardown."
 
 # Metrics
 duration: ~40 min
@@ -104,12 +104,12 @@ commits:
 
 | Requirement   | Description | Acceptance Evidence |
 | ------------- | ----------- | ------------------- |
-| ROOMS-DEL-01  | `wellinformed room` CLI removed | `runCli(['room'])` non-zero exit + 'unknown' in stderr; `'room' :` not present in src/cli/index.ts |
+| ROOMS-DEL-01  | `akashik room` CLI removed | `runCli(['room'])` non-zero exit + 'unknown' in stderr; `'room' :` not present in src/cli/index.ts |
 | ROOMS-DEL-02  | rooms.json no longer read/written | grep across src/ returns only migrate.ts (deletes it) and doctor.ts (V4-warning) |
 | ROOMS-DEL-03  | shared-rooms.json removed; sharing on node.private===false | share-store.ts absent; collectShareable filters private===false (unit test with mixed graph) |
 | ROOMS-DEL-04  | GraphNode `room` removed; `workspace?` + `private` added | nodeFromSave stamps private:false default + workspace conditionally; nodesInRoom is deprecated-only-shim |
 | ROOMS-DEL-05  | V5 wire envelopes have no `room` field | SearchRequest/Response/PeerMatch interfaces lack `readonly room`; SHARE_PROTOCOL_VERSION === 5; protocol-mismatch error handling present |
-| ROOMS-DEL-06  | `wellinformed migrate v5` exists, idempotent, lossless | Synthesized v4 graph: strips room, defaults private:false, deletes registries, idempotent second run, flattens reputation, rollback restores backup |
+| ROOMS-DEL-06  | `akashik migrate v5` exists, idempotent, lossless | Synthesized v4 graph: strips room, defaults private:false, deletes registries, idempotent second run, flattens reputation, rollback restores backup |
 | ROOMS-DEL-07  | Read-side workspace pre-filter; `--workspace all` opts out | detectWorkspace returns slug in git / undefined outside; ask.ts + save.ts wire --workspace + 'all' opt-out |
 | ROOMS-DEL-08  | Hooks pass without `room` field | Smart-hook doesn't interpolate h.room; post-fetch drops --room; statusline omits ROOM_COUNT |
 
@@ -135,7 +135,7 @@ The plan's 16→13 transition was anchored on the pre-Phase-38 baseline (16 tool
 
 From 24-RESEARCH.md:
 
-1. **share-picker.ts: keep or delete?** — RESOLVED (Plan 07): deleted with its tests; sharing is now `wellinformed share <peer>` with no picker.
+1. **share-picker.ts: keep or delete?** — RESOLVED (Plan 07): deleted with its tests; sharing is now `akashik share <peer>` with no picker.
 2. **Oracle substrate.** — RESOLVED (Plans 08, 09): vanishes with system rooms; oracle nodes identified by `oracle-question:` / `oracle-answer:` id prefixes via source-URI filter at query time.
 3. **federation-sim.ts: surgical or stub?** — RESOLVED (Plan 10): surgical-edit + deferred-OK `simulateNicheEvaporation()` stub; benchmark scoring deferred to Phase 25.
 4. **HALF_LIFE_BY_ROOM: drop or keep?** — RESOLVED (Plan 09): dropped; uniform `DEFAULT_HALF_LIFE_DAYS = 14`. Per-source-uri-scheme tuning is Phase 25+.
@@ -171,7 +171,7 @@ ALL CHECKS PASSED.
 
 **1. [Rule 2 — Critical hygiene] claude-install.ts CLAUDE_MD_SECTION rewrite**
 - **Found during:** Task 1 (acceptance test "No live code path opens shared-rooms.json")
-- **Issue:** The install command writes a CLAUDE.md section into user projects describing the wellinformed system. The pre-V5 template referenced toolshed/research system rooms, shared-rooms.json, `--room` flags, `find_tunnels` and `trigger_room` MCP tools, and `[room, 3d]` smart-hook rendering — all V4-only concepts that would mislead users post-cutover and would have failed the structural grep tests anyway.
+- **Issue:** The install command writes a CLAUDE.md section into user projects describing the akashik system. The pre-V5 template referenced toolshed/research system rooms, shared-rooms.json, `--room` flags, `find_tunnels` and `trigger_room` MCP tools, and `[room, 3d]` smart-hook rendering — all V4-only concepts that would mislead users post-cutover and would have failed the structural grep tests anyway.
 - **Fix:** Rewrote the entire `CLAUDE_MD_SECTION` template constant to V5 vocabulary: privacy + workspace primitives, source-URI scheme as the new provenance signal, `--workspace all` opt-out, `--private` flag. No mention of system rooms or shared-rooms.json.
 - **Files modified:** src/cli/commands/claude-install.ts
 - **Committed in:** 37677b5 (the test commit that depends on this rewrite to pass)

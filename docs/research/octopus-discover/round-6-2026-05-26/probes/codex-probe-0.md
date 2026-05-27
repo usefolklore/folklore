@@ -9,12 +9,12 @@ CONTEXT:
 The project has gone through:
 1. Multiple ML retrieval optimization attempts (E1' rerank, E11 enrichment, listwise rerank, NDCG/MRR augmentation)
 2. Three octopus-discover synthesis rounds with empirical pushback
-3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
 5. The scaffolding of AkashikBench-F which validated the compounding thesis (slope -4.74e-5 on LoCoMo)
 6. Now: rebrand sweep in progress (Akashik), and need to clean up the codebase + docs of stale artifacts.
 
-WORKING DIR: /Users/saharbarak/personal/wellinformed
+WORKING DIR: /Users/saharbarak/personal/akashik
 
 QUESTIONS:
 
@@ -23,10 +23,10 @@ Q1. Looking at the project layout (src/, tests/, docs/, .planning/, scripts/, ex
 Q2. Specific things to investigate:
    - .planning/ directory — there are phase-21, phase-23 dirs, HANDOFF.md, long-term-memory-integration.md. The phase-based GSD planning workflow may be useful or may be cruft.
    - docs/research/ — multiple research docs (energy-based-contradiction-detection, beat-the-competitors-retrieval-plan, performance-prediction-matrix). Some of these may have been superseded by the pivot.
-   - src/ — there's wellinformed-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
+   - src/ — there's akashik-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
    - tests/ — many tests reflect the old framing. Tests for bench-real.test.ts (30-doc proxy), bench-standard.test.ts (synth HotpotQA). Are these still useful or superseded?
    - Markdown clutter — README.md.bak.830lines is in the working tree (a backup of an old README). docs has potential duplication.
-   - Codebase identifiers (wellinformed* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
+   - Codebase identifiers (akashik* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
 
 Q3. What docs/research artifacts should be ARCHIVED (moved to a docs/archive/ subfolder with a note) vs DELETED outright? Archive = useful historical record; delete = noise.
 
@@ -65,7 +65,7 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | `NEXT_STEPS.md` | `ARCHIVE` | Duplicates planning intent now better expressed in `docs/PROJECT-PLAN-AKASHIK.md`. |
 | `findings.md` | `ARCHIVE` | Likely useful as a historical scratchpad, not as a live source of truth. |
 | `dist/` | `DELETE` | Generated output; if tracked, remove from git and regenerate in CI/builds only. |
-| `wellinformed-rs/` | `KEEP` | Still valid infrastructure for local retrieval speed, even though it no longer carries the product narrative. |
+| `akashik-rs/` | `KEEP` | Still valid infrastructure for local retrieval speed, even though it no longer carries the product narrative. |
 | `demo/README.md` | `NEEDS-REWRITE` | Demos should sell federation/community compounding, not old single-user memory behavior. |
 
 **.planning**
@@ -98,7 +98,7 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | `docs/README.md` | `NEEDS-REWRITE` | Make it a clean docs index around Akashik, not accumulated legacy categories. |
 | `docs/marketing/how-akashik-works.md` | `KEEP` | Best explanation of the compounding mechanism and should remain first-class. |
 | `docs/marketing/storybrand-messaging-draft.md` | `ARCHIVE` | Preserve the evolution internally, but collapse public-facing messaging to a final version. |
-| `docs/marketing/positioning-v2.1.md` | `NEEDS-REWRITE` | Likely close to the new thesis, but still carries transitional wellinformed/oracle-era framing. |
+| `docs/marketing/positioning-v2.1.md` | `NEEDS-REWRITE` | Likely close to the new thesis, but still carries transitional akashik/oracle-era framing. |
 | `docs/marketing/positioning-draft.md` | `ARCHIVE` | Draft-stage messaging should not compete with the current story. |
 | `docs/marketing/SOCIAL-LAUNCH.md` | `KEEP` | Launch execution is still relevant post-pivot. |
 | `docs/marketing/how-akashik-works.md` | `KEEP` | Core architecture/message bridge; not stale. |
@@ -162,7 +162,7 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | `src/cli/commands/onboard.ts` | `NEEDS-REWRITE` | Keep if you want adoption, but the onboarding story should be “join the commons,” not “set up your personal memory.” |
 | `src/cli/index.ts` | `NEEDS-REWRITE` | Command surface has grown into product sprawl; prune or regroup around Akashik’s current core use cases. |
 
-A few clear calls. On the two-name issue: stay two-name only as a short transitional tactic, because the upside is package/install continuity, but the downside is constant cognitive tax across docs, tests, CLI, and benchmarks. I would not do an immediate repo/package rename before the pilot if it risks breaking the working distribution path; on the other hand, I would aggressively remove “wellinformed” from narrative docs now and schedule one coordinated technical rename once the pilot-facing docs stabilize. On `storybrand-messaging-draft.md`, keep the revision history only in archive form; the public or active doc should be the final message only. On `beat-the-competitors-retrieval-plan.md`, archive and annotate it rather than delete it; its strengths are real technical research and benchmark archaeology, however its competitive frame is now wrong for the product.
+A few clear calls. On the two-name issue: stay two-name only as a short transitional tactic, because the upside is package/install continuity, but the downside is constant cognitive tax across docs, tests, CLI, and benchmarks. I would not do an immediate repo/package rename before the pilot if it risks breaking the working distribution path; on the other hand, I would aggressively remove “akashik” from narrative docs now and schedule one coordinated technical rename once the pilot-facing docs stabilize. On `storybrand-messaging-draft.md`, keep the revision history only in archive form; the public or active doc should be the final message only. On `beat-the-competitors-retrieval-plan.md`, archive and annotate it rather than delete it; its strengths are real technical research and benchmark archaeology, however its competitive frame is now wrong for the product.
 
 If I were Sahar cleaning up right now, the 3 changes I’d make first are: delete repo junk and local state (`README.md.bak.830lines`, `.claude-octopus/*`, tracked `dist/`) because that is pure signal-to-noise drag; archive most of `.planning/` plus the retrieval-era research docs because they preserve history without continuing to steer the present; rewrite `docs/product/BENCHMARKS.md`, `docs/product/VISION.md`, and onboarding/command-facing docs around Akashik’s actual thesis because the biggest current risk is not dead code, it is a codebase and doc surface still telling two different stories.
 ```
@@ -174,7 +174,7 @@ If I were Sahar cleaning up right now, the 3 changes I’d make first are: delet
 ```
 OpenAI Codex v0.125.0 (research preview)
 --------
-workdir: /Users/saharbarak/personal/wellinformed
+workdir: /Users/saharbarak/personal/akashik
 model: gpt-5.4
 provider: openai
 approval: never
@@ -225,12 +225,12 @@ CONTEXT:
 The project has gone through:
 1. Multiple ML retrieval optimization attempts (E1' rerank, E11 enrichment, listwise rerank, NDCG/MRR augmentation)
 2. Three octopus-discover synthesis rounds with empirical pushback
-3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
 5. The scaffolding of AkashikBench-F which validated the compounding thesis (slope -4.74e-5 on LoCoMo)
 6. Now: rebrand sweep in progress (Akashik), and need to clean up the codebase + docs of stale artifacts.
 
-WORKING DIR: /Users/saharbarak/personal/wellinformed
+WORKING DIR: /Users/saharbarak/personal/akashik
 
 QUESTIONS:
 
@@ -239,10 +239,10 @@ Q1. Looking at the project layout (src/, tests/, docs/, .planning/, scripts/, ex
 Q2. Specific things to investigate:
    - .planning/ directory — there are phase-21, phase-23 dirs, HANDOFF.md, long-term-memory-integration.md. The phase-based GSD planning workflow may be useful or may be cruft.
    - docs/research/ — multiple research docs (energy-based-contradiction-detection, beat-the-competitors-retrieval-plan, performance-prediction-matrix). Some of these may have been superseded by the pivot.
-   - src/ — there's wellinformed-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
+   - src/ — there's akashik-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
    - tests/ — many tests reflect the old framing. Tests for bench-real.test.ts (30-doc proxy), bench-standard.test.ts (synth HotpotQA). Are these still useful or superseded?
    - Markdown clutter — README.md.bak.830lines is in the working tree (a backup of an old README). docs has potential duplication.
-   - Codebase identifiers (wellinformed* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
+   - Codebase identifiers (akashik* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
 
 Q3. What docs/research artifacts should be ARCHIVED (moved to a docs/archive/ subfolder with a note) vs DELETED outright? Archive = useful historical record; delete = noise.
 
@@ -295,7 +295,7 @@ Recent learnings from this project:
 codex
 Inspecting the repository structure first, then I’ll sample the highest-signal docs, tests, and source files to classify what still fits the Akashik pivot versus what has become historical baggage.
 exec
-/bin/zsh -lc 'find docs -maxdepth 2 -type f | sort | head -n 200' in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc 'find docs -maxdepth 2 -type f | sort | head -n 200' in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 docs/PROJECT-PLAN-AKASHIK.md
 docs/README.md
@@ -356,7 +356,7 @@ docs/research/performance-prediction-matrix.md
 docs/welly-idle.png
 
 exec
-/bin/zsh -lc 'find .planning -maxdepth 3 -type f | sort | head -n 200' in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc 'find .planning -maxdepth 3 -type f | sort | head -n 200' in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 .planning/BENCH-COMPETITORS.md
 .planning/BENCH-v2.md
@@ -457,9 +457,9 @@ exec
 .planning/v2.1-CANDIDATES.md
 
 exec
-/bin/zsh -lc "pwd && rg --files -g 'README*' -g 'docs/**' -g 'tests/**' -g 'src/**' -g '.planning/**' -g 'scripts/**' -g 'examples/**' -g '.claude-octopus/**' -g '.agents/**' | sed 's#"'^#./#'"' | sort | head -n 400" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "pwd && rg --files -g 'README*' -g 'docs/**' -g 'tests/**' -g 'src/**' -g '.planning/**' -g 'scripts/**' -g 'examples/**' -g '.claude-octopus/**' -g '.agents/**' | sed 's#"'^#./#'"' | sort | head -n 400" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
-/Users/saharbarak/personal/wellinformed
+/Users/saharbarak/personal/akashik
 ./README.md
 ./README.md.bak.830lines
 ./demo/README.md
@@ -862,7 +862,7 @@ exec
 ./tests/phase4.rooms.test.ts
 
 exec
-/bin/zsh -lc 'ls -la' in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc 'ls -la' in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 total 744
 drwxr-xr-x@  33 saharbarak  staff    1056 May 26 20:13 .
@@ -897,12 +897,12 @@ drwxr-xr-x@   9 saharbarak  staff     288 Apr 29 17:36 src
 drwxr-xr-x@  90 saharbarak  staff    2880 May 26 19:53 tests
 -rw-r--r--@   1 saharbarak  staff     648 Apr 29 17:36 tsconfig.json
 drwxr-xr-x@   3 saharbarak  staff      96 Apr 29 17:36 vendor
-drwxr-xr-x@   6 saharbarak  staff     192 Apr 29 19:55 wellinformed-rs
+drwxr-xr-x@   6 saharbarak  staff     192 Apr 29 19:55 akashik-rs
 
 codex
 The file map is clear now: there’s a live Akashik/P2P/federation track sitting beside a large amount of legacy retrieval-optimization and phase-era planning material. I’m reading representative files next so the keep/archive/delete calls are based on actual content, not just filenames.
 exec
-/bin/zsh -lc "sed -n '1,220p' README.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' README.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # Akashik
 
@@ -977,33 +977,33 @@ Bench source: [`tests/bench-akashik-federation.test.ts`](tests/bench-akashik-fed
 
 ## Quickstart
 
-> The npm package and CLI binary are still named `wellinformed` during the two-name period. The brand-marketing name is **Akashik**; a coordinated rename of package + repo + DNS is queued behind the public launch. Examples below show both forms.
+> The npm package and CLI binary are still named `akashik` during the two-name period. The brand-marketing name is **Akashik**; a coordinated rename of package + repo + DNS is queued behind the public launch. Examples below show both forms.
 
 Install:
 
 ```bash
-npm install -g wellinformed
+npm install -g akashik
 # (will become: npm install -g akashik)
 ```
 
 Run your first peer:
 
 ```bash
-wellinformed init
-wellinformed daemon start
+akashik init
+akashik daemon start
 ```
 
 Save what teaches you:
 
 ```bash
-wellinformed save https://arxiv.org/abs/2406.16678 --room research
-wellinformed save ./notes/cuda-oom-debug.md --room toolshed
+akashik save https://arxiv.org/abs/2406.16678 --room research
+akashik save ./notes/cuda-oom-debug.md --room toolshed
 ```
 
 Query the record:
 
 ```bash
-wellinformed ask "how does mxbai-rerank compare to cross-encoder on long contexts?"
+akashik ask "how does mxbai-rerank compare to cross-encoder on long contexts?"
 ```
 
 The query checks your local graph, then federates to peers you share rooms with, then falls back to web research only if neither can answer. The web result lands in your local graph signed by you — the next contributor who asks something similar pulls it from your peer with full attribution.
@@ -1028,7 +1028,7 @@ Active workstreams (planning doc forthcoming at [`docs/PROJECT-PLAN-AKASHIK.md`]
 
 - **AkashikBench-F v2** — real per-peer retrieval (not boolean), measure compounding under genuine retrieval-quality variance.
 - **100-peer pilot in the local-AI / agent-tooling ecosystem** — seed contributors to `llama.cpp + ollama`, `vllm-project/vllm`, and `aider` with 50-80 canonical artifacts. Publish the real `web_fallback_rate` curve after 30 days.
-- **Codebase rename** — coordinated `wellinformed → akashik` migration across npm, GitHub, DNS.
+- **Codebase rename** — coordinated `akashik → akashik` migration across npm, GitHub, DNS.
 - **Read-only public peer endpoint** — "Browse the record" entry point for newcomers, no login required.
 - **GDPR Article 17 tombstones** — reconciling immutable provenance with right-to-erasure via signed deletion records.
 - **Rarity-aware replication quotas** — LOCKSS-style protection against niche-content evaporation; BitTorrent rarest-first weighting on federation fan-out.
@@ -1047,29 +1047,29 @@ Open an issue, fork the repo, or DM the maintainer. The project is in flux and t
 
 ## Status
 
-Pre-launch. Simulator-validated, retrieval-benchmarked, pilot pending. Two-name period in effect (`wellinformed` in code, `Akashik` in marketing). Public protocol spec lands with the rename.
+Pre-launch. Simulator-validated, retrieval-benchmarked, pilot pending. Two-name period in effect (`akashik` in code, `Akashik` in marketing). Public protocol spec lands with the rename.
 
 ## License
 
 MIT. Always open protocol. Your contributions, signed by you. No central server. Ever. Provenance preserved forever.
 
 exec
-/bin/zsh -lc "sed -n '1,220p' package.json" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' package.json" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 {
-  "name": "wellinformed",
+  "name": "akashik",
   "version": "4.0.0-rc1",
   "description": "OSS P2P agent memory — DID-authored cryptographic envelopes, 48× compressed vectors, 33× faster cached queries via daemon IPC + native Rust client, episodic→semantic consolidation worker, cross-model embedding bridge. CPU-local, zero GPU, zero SaaS. v4 Agent Brain.",
   "type": "module",
   "bin": {
-    "wellinformed": "./bin/wellinformed.js"
+    "akashik": "./bin/akashik.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "bootstrap": "bash scripts/bootstrap.sh",
-    "doctor": "node bin/wellinformed.js doctor",
-    "start": "node bin/wellinformed.js",
+    "doctor": "node bin/akashik.js doctor",
+    "start": "node bin/akashik.js",
     "test": "node --import tsx --test tests/*.test.ts"
   },
   "files": [
@@ -1141,7 +1141,7 @@ exec
 }
 
 exec
-/bin/zsh -lc "sed -n '1,220p' .gitignore" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' .gitignore" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # dependencies
 node_modules/
@@ -1160,8 +1160,8 @@ npm-debug.log*
 .env.*
 !.env.example
 
-# wellinformed runtime state — per-user, never commit
-.wellinformed/
+# akashik runtime state — per-user, never commit
+.akashik/
 
 # vector store
 vectors.db
@@ -1180,16 +1180,16 @@ __pycache__/
 Thumbs.db
 
 exec
-/bin/zsh -lc 'find wellinformed-rs -maxdepth 2 -type f | sort | head -n 80' in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc 'find akashik-rs -maxdepth 2 -type f | sort | head -n 80' in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
-wellinformed-rs/.gitignore
-wellinformed-rs/Cargo.lock
-wellinformed-rs/Cargo.toml
-wellinformed-rs/src/lib.rs
-wellinformed-rs/src/main.rs
+akashik-rs/.gitignore
+akashik-rs/Cargo.lock
+akashik-rs/Cargo.toml
+akashik-rs/src/lib.rs
+akashik-rs/src/main.rs
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/PROJECT-PLAN-AKASHIK.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' docs/PROJECT-PLAN-AKASHIK.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # Akashik — project plan
 
@@ -1199,7 +1199,7 @@ engineering month on AkashikBench-F and federation routing; next
 marketing month on a 100-person pilot in the local-AI / agent-tooling
 OSS ecosystem"). The product has pivoted from "agent-memory product"
 to "federated knowledge commons for the open-source community" and
-the brand is now Akashik — the codebase is still `wellinformed` and
+the brand is now Akashik — the codebase is still `akashik` and
 will remain so during the two-name period. The architecture
 ([how-akashik-works.md](./marketing/how-akashik-works.md)) is the
 credibility anchor for the mission; AkashikBench-F is the only
@@ -1217,7 +1217,7 @@ and produced positive signal on the LoCoMo factual subset:
 simulated horizon. This is in-simulator only — a pure boolean-set
 abstraction over real retrieval — so it validates dynamics, not
 end-to-end retrieval quality. Real-pilot validation is pending.
-Codebase is still named `wellinformed`; brand is Akashik; the
+Codebase is still named `akashik`; brand is Akashik; the
 rename PR is a separate workstream queued behind launch. LongMemEval-S
 R@5 = 0.9268 (with E11 enrichment), LoCoMo R@10 = 0.725 (with E11);
 the local read-path is at its practical ceiling and further per-peer
@@ -1290,7 +1290,7 @@ core differentiator. Concrete deliverables:
   - **CLI ↔ daemon IPC auth** (Round 4 finding A): the local
     socket has no workload identity today; a compromised process
     can impersonate the CLI. Add a per-session token in
-    `src/daemon/ipc.ts` written to `~/.wellinformed/ipc.token`
+    `src/daemon/ipc.ts` written to `~/.akashik/ipc.token`
     with `0600` perms; CLI reads + sends on every call; daemon
     rejects unauth'd connections. Success: integration test
     confirms unauth'd socket connect is rejected with
@@ -1324,7 +1324,7 @@ high query overlap so compounding shows up fast." Worth it.
   issues on CUDA OOM (ollama, vllm, llama.cpp), Apple Silicon Metal
   perf threads, vLLM PagedAttention PRs, quantization comparison
   papers (GPTQ, AWQ, GGUF), aider context-window strategies, etc.
-  Each artifact saved via `wellinformed save --type research` from
+  Each artifact saved via `akashik save --type research` from
   a librarian's peer (so provenance lands signed by a real maintainer,
   not the project itself). Deliverable: `docs/marketing/seed-corpus-pilot.md`
   listing every artifact with its URL, librarian, and room.
@@ -1348,8 +1348,8 @@ high query overlap so compounding shows up fast." Worth it.
   the pilot per Round 5. Recruitment channels: Hacker News (one
   Show HN post), the `r/LocalLLaMA` subreddit, LocalLLM Discords,
   and the maintainers' own audiences. Onboarding artifact is a
-  90-second video walkthrough + `npm install -g wellinformed` +
-  `wellinformed share` to join the pilot rooms. Success criterion:
+  90-second video walkthrough + `npm install -g akashik` +
+  `akashik share` to join the pilot rooms. Success criterion:
   ≥ 80 active peers (defined as: ≥ 1 query in past 7 days) by end
   of week 3.
 
@@ -1377,7 +1377,7 @@ phase slot, not a hand-wave:
   with an older schema federates with a peer on v2, malformed
   nodes are dropped silently. Add a `quarantine` table in the
   peer's SQLite, persist rejected envelopes with the parser error,
-  and expose `wellinformed quarantine list / replay` so operators
+  and expose `akashik quarantine list / replay` so operators
   can recover post-migration. The right time to ship this is
   immediately after the pilot when we'll have actual cross-version
   traffic.
@@ -1413,7 +1413,7 @@ phase slot, not a hand-wave:
   gating.
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/marketing/how-akashik-works.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' docs/marketing/how-akashik-works.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # How Akashik works
 
@@ -1637,7 +1637,7 @@ property of the architecture.
 
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/marketing/storybrand-messaging-draft.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' docs/marketing/storybrand-messaging-draft.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # Akashik — brand messaging, StoryBrand 7-prompt pass
 
@@ -1646,7 +1646,7 @@ workflow (`marketing/storybrand-messaging-engine.md` in the
 `SaharBarak/skills-and-workflows` repo) against Akashik's actual
 mission. Captured 2026-05-26.
 
-**Brand name:** Akashik (formerly project codename `wellinformed`).
+**Brand name:** Akashik (formerly project codename `akashik`).
 The name borrows from the **Akashic Records** — the mythological
 compendium of all knowledge ever held by the human collective —
 and reframes the idea as concrete, contributor-owned infrastructure:
@@ -1861,7 +1861,7 @@ The Akashic Records reference is an undertone, not a costume.
 
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/research/beat-the-competitors-retrieval-plan.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' docs/research/beat-the-competitors-retrieval-plan.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # How Akashik beats the retrieval leaderboard (forward plan)
 
@@ -1904,7 +1904,7 @@ Primitives that exist but are NOT in the bench retrieval path:
 
 | Primitive | Where | Bench-path? | Note |
 |---|---|---|---|
-| Cross-encoder rerank (ms-marco-MiniLM-L-6-v2) | `src/application/ask.ts:436-441` + `src/domain/cross-rerank.ts` | **No** | Gated behind `WELLINFORMED_RERANK=1`; benches call `searchByRoom` directly, bypass `ask()` |
+| Cross-encoder rerank (ms-marco-MiniLM-L-6-v2) | `src/application/ask.ts:436-441` + `src/domain/cross-rerank.ts` | **No** | Gated behind `AKASHIK_RERANK=1`; benches call `searchByRoom` directly, bypass `ask()` |
 | Personalized PageRank rerank | `src/application/ask.ts:444` | **No** | Same — only in `ask()` |
 | Mention enrichment (`buildHit`) | `src/application/ask.ts:448` | **No** | Same |
 | Cross-room federated search | `src/application/use-cases.ts` | **No** | Benches scope to one room |
@@ -1968,7 +1968,7 @@ Concrete diff:
 //   const r = await searchByRoom({ graphs, vectors, embedder })({ room, text, k: K });
 //
 // E1 path — pull rerank into the test:
-//   const reranker = process.env.WELLINFORMED_RERANK === '1'
+//   const reranker = process.env.AKASHIK_RERANK === '1'
 //     ? crossEncoderFromEnv() : null;
 //   const r0 = await searchByRoom({ graphs, vectors, embedder })({ room, text, k: K * 4 });  // 4x candidates
 //   const matches = r0._unsafeUnwrap();
@@ -1978,7 +1978,7 @@ Concrete diff:
 //     : ok(matches.slice(0, K));
 ```
 
-Run with `WELLINFORMED_RERANK=1` env on the Hetzner box. Compare against today's 0.9202 number. If lift is real, ship.
+Run with `AKASHIK_RERANK=1` env on the Hetzner box. Compare against today's 0.9202 number. If lift is real, ship.
 
 **Risk:** cross-encoder adds ~10ms/match latency. With K=5 reranked from 20 candidates, that's 200ms/query × 500 q = 100s added to LME-S run. Cheap.
 
@@ -2049,13 +2049,13 @@ These are Phase 25+ but worth recording so they don't get lost:
 
 - **CI/CD checksum pinning** — `model-checksums.json` for the Xenova ONNX weights to prevent supply-chain attacks (the bge-base defective-conversion incident is the precedent).
 - **2-minute regression smoke bench** — small subset of LME-S / SciFact in CI so quality regressions can't ship silently.
-- **Bus factor on `wellinformed-rs`** — Rust ARM cross-compile is specialized knowledge; consider TypeScript-only fallback path.
+- **Bus factor on `akashik-rs`** — Rust ARM cross-compile is specialized knowledge; consider TypeScript-only fallback path.
 - **GDPR derived-data semantics** — contextual enrichment + contradiction chains create *derived* personal data that must map back to source turns for delete-by-user compliance.
 
 Source: `~/.claude-octopus/results/probe-synthesis-1779351019.md` — 6 multi-LLM probes synthesized by Gemini-2.5-Pro, 2026-05-21. Full transcript preserved in claude-octopus state.
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/research/performance-prediction-matrix.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' docs/research/performance-prediction-matrix.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # Performance prediction matrix — hardware × rerank tier
 
@@ -2182,7 +2182,7 @@ The defensible positioning *isn't* "we beat agentmemory on R@5" — that depends
 That's the story the matrix tells, and it's much stronger than "0.96 vs 0.952" leaderboard chasing.
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/research/energy-based-contradiction-detection.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' docs/research/energy-based-contradiction-detection.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # Energy-Based Contradiction Detection
 
@@ -2293,7 +2293,7 @@ if (verdict.label === 'contradiction' && verdict.confidence >= opts.contradictio
 ```
 
 The fall-back path (Jaccard) stays available behind an env flag:
-`WELLINFORMED_CONTRADICTION_BACKEND=jaccard|nli`. NLI is the default
+`AKASHIK_CONTRADICTION_BACKEND=jaccard|nli`. NLI is the default
 once the model is downloaded; Jaccard is the offline-or-degraded
 fallback.
 
@@ -2310,7 +2310,7 @@ for months):
    surfaces two nodes from different peers with the same source URI
    but different content, that's a labelled contradiction pair (with
    the right resolution = whichever the user kept).
-2. **User feedback on `wellinformed contradictions resolve --prefer
+2. **User feedback on `akashik contradictions resolve --prefer
    peer|local`.** Each resolution is a labelled (A, B, winner) triple
    we can use for adapter fine-tuning via LoRA.
 3. **Synthetic adversarial pairs.** Generate paraphrase pairs +
@@ -2408,7 +2408,7 @@ When the phase opens:
 codex
 The research docs confirm the pattern: a lot of material is valuable as historical evidence, but much of it is optimized for “beat mem0 on retrieval” rather than “prove a federated commons compounds.” I’m checking the tests and source paths that embody that old thesis so the cleanup recommendations hit code, not just prose.
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/bench-akashik-federation.test.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' tests/bench-akashik-federation.test.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Bench — AkashikBench-F (federation-level compounding).
@@ -2447,7 +2447,7 @@ exec
  *     `bench-locomo-real.test.ts`. Set to a directory that
  *     contains `locomo10.json`.
  *
- *   WELLINFORMED_BENCH_OUT=/path/to/run.jsonl   (optional)
+ *   AKASHIK_BENCH_OUT=/path/to/run.jsonl   (optional)
  *     If set, suite appends one `BenchSuiteReport` JSON line.
  *
  *   AKASHIK_BENCH_PEERS=10           (default 10 — Round 5 spec)
@@ -2632,7 +2632,7 @@ test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60
     },
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/bench-real.test.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' tests/bench-real.test.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Real benchmarks — no synthetic fluff.
@@ -2856,158 +2856,158 @@ test('real-bench: IR metrics on labeled corpus (P@5, R@5, MRR, NDCG@5)', async (
     assert.ok(
 
 exec
-/bin/zsh -lc "rg -n \"process\\.env|WELLINFORMED_|skipIf|describe\\.skip|test\\.skip\" tests src | head -n 200" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "rg -n \"process\\.env|AKASHIK_|skipIf|describe\\.skip|test\\.skip\" tests src | head -n 200" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
-tests/phase4.rooms.test.ts:143:    // Set WELLINFORMED_HOME so init writes to our tmp dir
-tests/phase4.rooms.test.ts:144:    const origHome = process.env.WELLINFORMED_HOME;
-tests/phase4.rooms.test.ts:145:    process.env.WELLINFORMED_HOME = tmp;
-tests/phase4.rooms.test.ts:172:    process.env.WELLINFORMED_HOME = origHome;
-src/domain/share-policy.ts:37: *   WELLINFORMED_REQUIRE_SIGNED_NODES=1
+tests/phase4.rooms.test.ts:143:    // Set AKASHIK_HOME so init writes to our tmp dir
+tests/phase4.rooms.test.ts:144:    const origHome = process.env.AKASHIK_HOME;
+tests/phase4.rooms.test.ts:145:    process.env.AKASHIK_HOME = tmp;
+tests/phase4.rooms.test.ts:172:    process.env.AKASHIK_HOME = origHome;
+src/domain/share-policy.ts:37: *   AKASHIK_REQUIRE_SIGNED_NODES=1
 src/domain/share-policy.ts:42:  env: NodeJS.ProcessEnv = process.env,
-src/domain/share-policy.ts:44:  const v = env.WELLINFORMED_REQUIRE_SIGNED_NODES;
-src/daemon/ipc.ts:18: * Socket lives at `${WELLINFORMED_HOME}/daemon.sock` — Unix-only.
-src/domain/share-envelope.ts:22: * separate commit behind WELLINFORMED_REQUIRE_SIGNED_NODES so the
-tests/bench-tier-promotion.test.ts:121:  if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-tier-promotion.test.ts:122:    appendBenchReport(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-src/daemon/consolidate-tick.ts:82: * Children inherit WELLINFORMED_HOME so they hit the same graph.
-src/daemon/consolidate-tick.ts:121:        env: { ...process.env, WELLINFORMED_HOME: homeDir },
-tests/bench-longmemeval-synth.test.ts:441:    if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-longmemeval-synth.test.ts:442:      appendBenchReport(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-src/domain/errors.ts:543:      return `rerank disabled (WELLINFORMED_RERANK is not set)`;
-src/domain/errors.ts:582:      return 'fix: check network access; the embedder downloads ~90 MB on first use. Re-run `wellinformed doctor` to retry, or set `WELLINFORMED_MODEL_CACHE` to a writable directory.';
-tests/contextual-enrich.test.ts:10: * Xenova model when WELLINFORMED_BENCH_PUBLIC_REAL is unset, so the
-tests/contextual-enrich.test.ts:132:test('isContextualEnrichEnabled: gated by WELLINFORMED_BENCH_CONTEXTUAL_ENRICH=1', () => {
-tests/contextual-enrich.test.ts:133:  const prior = process.env.WELLINFORMED_BENCH_CONTEXTUAL_ENRICH;
-tests/contextual-enrich.test.ts:135:    delete process.env.WELLINFORMED_BENCH_CONTEXTUAL_ENRICH;
-tests/contextual-enrich.test.ts:137:    process.env.WELLINFORMED_BENCH_CONTEXTUAL_ENRICH = '0';
-tests/contextual-enrich.test.ts:139:    process.env.WELLINFORMED_BENCH_CONTEXTUAL_ENRICH = '1';
-tests/contextual-enrich.test.ts:143:      delete process.env.WELLINFORMED_BENCH_CONTEXTUAL_ENRICH;
-tests/contextual-enrich.test.ts:145:      process.env.WELLINFORMED_BENCH_CONTEXTUAL_ENRICH = prior;
+src/domain/share-policy.ts:44:  const v = env.AKASHIK_REQUIRE_SIGNED_NODES;
+src/daemon/ipc.ts:18: * Socket lives at `${AKASHIK_HOME}/daemon.sock` — Unix-only.
+src/domain/share-envelope.ts:22: * separate commit behind AKASHIK_REQUIRE_SIGNED_NODES so the
+tests/bench-tier-promotion.test.ts:121:  if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-tier-promotion.test.ts:122:    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+src/daemon/consolidate-tick.ts:82: * Children inherit AKASHIK_HOME so they hit the same graph.
+src/daemon/consolidate-tick.ts:121:        env: { ...process.env, AKASHIK_HOME: homeDir },
+tests/bench-longmemeval-synth.test.ts:441:    if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-longmemeval-synth.test.ts:442:      appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+src/domain/errors.ts:543:      return `rerank disabled (AKASHIK_RERANK is not set)`;
+src/domain/errors.ts:582:      return 'fix: check network access; the embedder downloads ~90 MB on first use. Re-run `akashik doctor` to retry, or set `AKASHIK_MODEL_CACHE` to a writable directory.';
+tests/contextual-enrich.test.ts:10: * Xenova model when AKASHIK_BENCH_PUBLIC_REAL is unset, so the
+tests/contextual-enrich.test.ts:132:test('isContextualEnrichEnabled: gated by AKASHIK_BENCH_CONTEXTUAL_ENRICH=1', () => {
+tests/contextual-enrich.test.ts:133:  const prior = process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH;
+tests/contextual-enrich.test.ts:135:    delete process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH;
+tests/contextual-enrich.test.ts:137:    process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH = '0';
+tests/contextual-enrich.test.ts:139:    process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH = '1';
+tests/contextual-enrich.test.ts:143:      delete process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH;
+tests/contextual-enrich.test.ts:145:      process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH = prior;
 src/domain/rerank-tier.ts:6: * and the env-shape from process.env (via a thin reader port to keep
 src/domain/rerank-tier.ts:50: * Subset of `process.env` the picker needs. Pulled through a
-src/domain/rerank-tier.ts:63:   * Master kill-switch — `WELLINFORMED_RERANK=0` forces `none` tier
+src/domain/rerank-tier.ts:63:   * Master kill-switch — `AKASHIK_RERANK=0` forces `none` tier
 src/domain/rerank-tier.ts:70:export const rerankEnvFromProcess = (env: NodeJS.ProcessEnv = process.env): RerankEnv => {
-src/domain/rerank-tier.ts:71:  const override = env.WELLINFORMED_RERANK_TIER as RerankTier | undefined;
-src/domain/rerank-tier.ts:77:    modelOverride: env.WELLINFORMED_RERANK_MODEL || undefined,
-src/domain/rerank-tier.ts:78:    latencyBudgetMs: env.WELLINFORMED_RERANK_LATENCY_MS
-src/domain/rerank-tier.ts:79:      ? Number(env.WELLINFORMED_RERANK_LATENCY_MS)
-src/domain/rerank-tier.ts:81:    headSizeOverride: env.WELLINFORMED_RERANK_HEAD
-src/domain/rerank-tier.ts:82:      ? Number(env.WELLINFORMED_RERANK_HEAD)
-src/domain/rerank-tier.ts:84:    disabled: env.WELLINFORMED_RERANK === '0',
-src/domain/rerank-tier.ts:127: *   1. Explicit env override (`WELLINFORMED_RERANK_TIER`)
-src/domain/rerank-tier.ts:128: *   2. Master kill-switch (`WELLINFORMED_RERANK=0`)
-src/domain/rerank-tier.ts:140:      reason: 'WELLINFORMED_RERANK=0 (master kill-switch)',
-tests/phase29.rust-retrieval-regression.test.ts:12: * This test is opt-in via `WELLINFORMED_RUST_BIN` env var or a
-tests/phase29.rust-retrieval-regression.test.ts:91:  const candidate = process.env.WELLINFORMED_RUST_BIN ?? repoBinaryPath();
-tests/phase29.rust-retrieval-regression.test.ts:99:      'wellinformed-rs embed_server binary not built — build with `cargo build --release --manifest-path wellinformed-rs/Cargo.toml` or set WELLINFORMED_RUST_BIN',
-src/infrastructure/summariser.ts:65: * via `WELLINFORMED_OLLAMA_MODEL` or the OllamaClientOptions.model.
-src/infrastructure/summariser.ts:127: *   1. `WELLINFORMED_SUMMARISER=fixture` → fixtureSummariser (tests)
-src/infrastructure/summariser.ts:128: *   2. `WELLINFORMED_SUMMARISER=ollama` OR ollama unset OR default →
-src/infrastructure/summariser.ts:142:  const choice = (process.env.WELLINFORMED_SUMMARISER ?? '').toLowerCase();
-src/infrastructure/summariser.ts:145:      fallback: process.env.WELLINFORMED_SUMMARISER_FIXTURE ?? 'fixture-summary',
-tests/bench-real.test.ts:235:    if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-real.test.ts:249:      appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-src/infrastructure/ollama-client.ts:67: * override via WELLINFORMED_OLLAMA_URL at the runtime layer.
-src/infrastructure/ollama-client.ts:70:  const baseUrl = (opts.baseUrl ?? process.env.WELLINFORMED_OLLAMA_URL ?? DEFAULTS.baseUrl).replace(/\/$/, '');
-src/infrastructure/ollama-client.ts:71:  const defaultModel = opts.model ?? process.env.WELLINFORMED_OLLAMA_MODEL ?? DEFAULTS.model;
-src/domain/contextual-enrich.ts:130: * Env-gate helper. Returns `true` when `WELLINFORMED_BENCH_CONTEXTUAL_ENRICH=1`,
-src/domain/contextual-enrich.ts:135:  process.env.WELLINFORMED_BENCH_CONTEXTUAL_ENRICH === '1';
-src/cli/commands/onboard.ts:147:  const def = flags.home ?? process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
-src/cli/commands/onboard.ts:158:  process.env.WELLINFORMED_HOME = chosen;
-src/cli/commands/onboard.ts:162:      `Add to your shell profile so future sessions agree:\n  export WELLINFORMED_HOME="${chosen}"`,
-src/cli/commands/onboard.ts:197: * `WELLINFORMED_GITHUB_CLIENT_ID` configured see a clear "skip + how
-src/cli/commands/onboard.ts:204:  const clientId = process.env.WELLINFORMED_GITHUB_CLIENT_ID;
-src/cli/commands/onboard.ts:214:        '  2. export WELLINFORMED_GITHUB_CLIENT_ID="Iv1.<your_id>"',
-src/cli/commands/onboard.ts:323:      env: { ...process.env, WELLINFORMED_HOME: home },
-src/cli/commands/onboard.ts:367:        `The 'wellinformed trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - WELLINFORMED_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  wellinformed trigger --room sessions`,
+src/domain/rerank-tier.ts:71:  const override = env.AKASHIK_RERANK_TIER as RerankTier | undefined;
+src/domain/rerank-tier.ts:77:    modelOverride: env.AKASHIK_RERANK_MODEL || undefined,
+src/domain/rerank-tier.ts:78:    latencyBudgetMs: env.AKASHIK_RERANK_LATENCY_MS
+src/domain/rerank-tier.ts:79:      ? Number(env.AKASHIK_RERANK_LATENCY_MS)
+src/domain/rerank-tier.ts:81:    headSizeOverride: env.AKASHIK_RERANK_HEAD
+src/domain/rerank-tier.ts:82:      ? Number(env.AKASHIK_RERANK_HEAD)
+src/domain/rerank-tier.ts:84:    disabled: env.AKASHIK_RERANK === '0',
+src/domain/rerank-tier.ts:127: *   1. Explicit env override (`AKASHIK_RERANK_TIER`)
+src/domain/rerank-tier.ts:128: *   2. Master kill-switch (`AKASHIK_RERANK=0`)
+src/domain/rerank-tier.ts:140:      reason: 'AKASHIK_RERANK=0 (master kill-switch)',
+tests/phase29.rust-retrieval-regression.test.ts:12: * This test is opt-in via `AKASHIK_RUST_BIN` env var or a
+tests/phase29.rust-retrieval-regression.test.ts:91:  const candidate = process.env.AKASHIK_RUST_BIN ?? repoBinaryPath();
+tests/phase29.rust-retrieval-regression.test.ts:99:      'akashik-rs embed_server binary not built — build with `cargo build --release --manifest-path akashik-rs/Cargo.toml` or set AKASHIK_RUST_BIN',
+src/infrastructure/summariser.ts:65: * via `AKASHIK_OLLAMA_MODEL` or the OllamaClientOptions.model.
+src/infrastructure/summariser.ts:127: *   1. `AKASHIK_SUMMARISER=fixture` → fixtureSummariser (tests)
+src/infrastructure/summariser.ts:128: *   2. `AKASHIK_SUMMARISER=ollama` OR ollama unset OR default →
+src/infrastructure/summariser.ts:142:  const choice = (process.env.AKASHIK_SUMMARISER ?? '').toLowerCase();
+src/infrastructure/summariser.ts:145:      fallback: process.env.AKASHIK_SUMMARISER_FIXTURE ?? 'fixture-summary',
+tests/bench-real.test.ts:235:    if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-real.test.ts:249:      appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+src/infrastructure/ollama-client.ts:67: * override via AKASHIK_OLLAMA_URL at the runtime layer.
+src/infrastructure/ollama-client.ts:70:  const baseUrl = (opts.baseUrl ?? process.env.AKASHIK_OLLAMA_URL ?? DEFAULTS.baseUrl).replace(/\/$/, '');
+src/infrastructure/ollama-client.ts:71:  const defaultModel = opts.model ?? process.env.AKASHIK_OLLAMA_MODEL ?? DEFAULTS.model;
+src/domain/contextual-enrich.ts:130: * Env-gate helper. Returns `true` when `AKASHIK_BENCH_CONTEXTUAL_ENRICH=1`,
+src/domain/contextual-enrich.ts:135:  process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH === '1';
+src/cli/commands/onboard.ts:147:  const def = flags.home ?? process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
+src/cli/commands/onboard.ts:158:  process.env.AKASHIK_HOME = chosen;
+src/cli/commands/onboard.ts:162:      `Add to your shell profile so future sessions agree:\n  export AKASHIK_HOME="${chosen}"`,
+src/cli/commands/onboard.ts:197: * `AKASHIK_GITHUB_CLIENT_ID` configured see a clear "skip + how
+src/cli/commands/onboard.ts:204:  const clientId = process.env.AKASHIK_GITHUB_CLIENT_ID;
+src/cli/commands/onboard.ts:214:        '  2. export AKASHIK_GITHUB_CLIENT_ID="Iv1.<your_id>"',
+src/cli/commands/onboard.ts:323:      env: { ...process.env, AKASHIK_HOME: home },
+src/cli/commands/onboard.ts:367:        `The 'akashik trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - AKASHIK_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  akashik trigger --room sessions`,
 src/cli/commands/onboard.ts:390:    { detached: true, stdio: 'ignore', env: { ...process.env } },
-src/cli/commands/onboard.ts:463:  --home DIR      data home (graph + vectors + model cache); also via $WELLINFORMED_HOME
-src/cli/commands/onboard.ts:536:      `  · Everything stays under ${process.env.WELLINFORMED_HOME}`,
-tests/bench-standard.test.ts:225:    if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-standard.test.ts:242:      appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/bench-write-gate.test.ts:161:  if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-write-gate.test.ts:162:    appendBenchReport(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/share-policy.test.ts:10: *   - sharePolicyModeFromEnv reads WELLINFORMED_REQUIRE_SIGNED_NODES
-tests/share-policy.test.ts:69:  assert.equal(sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: '' }), 'soft');
-tests/share-policy.test.ts:70:  assert.equal(sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: '0' }), 'soft');
-tests/share-policy.test.ts:74:  assert.equal(sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: '1' }), 'strict');
-tests/share-policy.test.ts:76:    sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: 'true' }),
-tests/bench-longmemeval-real.test.ts:26: *   WELLINFORMED_BENCH_PUBLIC_REAL=1
-tests/bench-longmemeval-real.test.ts:35: *   WELLINFORMED_BENCH_OUT=/path/to/report.jsonl   (optional)
-tests/bench-longmemeval-real.test.ts:103:  if (process.env.WELLINFORMED_BENCH_PUBLIC_REAL !== '1') {
-tests/bench-longmemeval-real.test.ts:104:    t.skip('WELLINFORMED_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
+src/cli/commands/onboard.ts:463:  --home DIR      data home (graph + vectors + model cache); also via $AKASHIK_HOME
+src/cli/commands/onboard.ts:536:      `  · Everything stays under ${process.env.AKASHIK_HOME}`,
+tests/bench-standard.test.ts:225:    if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-standard.test.ts:242:      appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/bench-write-gate.test.ts:161:  if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-write-gate.test.ts:162:    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/share-policy.test.ts:10: *   - sharePolicyModeFromEnv reads AKASHIK_REQUIRE_SIGNED_NODES
+tests/share-policy.test.ts:69:  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '' }), 'soft');
+tests/share-policy.test.ts:70:  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '0' }), 'soft');
+tests/share-policy.test.ts:74:  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '1' }), 'strict');
+tests/share-policy.test.ts:76:    sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: 'true' }),
+tests/bench-longmemeval-real.test.ts:26: *   AKASHIK_BENCH_PUBLIC_REAL=1
+tests/bench-longmemeval-real.test.ts:35: *   AKASHIK_BENCH_OUT=/path/to/report.jsonl   (optional)
+tests/bench-longmemeval-real.test.ts:103:  if (process.env.AKASHIK_BENCH_PUBLIC_REAL !== '1') {
+tests/bench-longmemeval-real.test.ts:104:    t.skip('AKASHIK_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
 tests/bench-longmemeval-real.test.ts:114:  const explicitFile = process.env.LONGMEMEVAL_FILE;
 tests/bench-longmemeval-real.test.ts:115:  const dir = process.env.LONGMEMEVAL_DIR;
-tests/bench-longmemeval-real.test.ts:140:  // Set `WELLINFORMED_RERANK=1` to activate; `WELLINFORMED_RERANK_MODEL`
-tests/bench-longmemeval-real.test.ts:149:  // `WELLINFORMED_LLM_RERANK=1`. When both are set, LISTWISE WINS
-tests/bench-longmemeval-real.test.ts:153:  const RERANK_HEAD = Number(process.env.WELLINFORMED_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
-tests/bench-longmemeval-real.test.ts:163:  const KMAX = Number(process.env.WELLINFORMED_BENCH_LME_KMAX ?? 50);
-tests/bench-longmemeval-real.test.ts:168:    console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
-tests/bench-longmemeval-real.test.ts:172:  // When `WELLINFORMED_BENCH_CONTEXTUAL_ENRICH=1`, prepend
-tests/bench-longmemeval-real.test.ts:315:    // `WELLINFORMED_BENCH_PROGRESS_EVERY_N` (default 25). Live tails
-tests/bench-longmemeval-real.test.ts:320:    const PROGRESS_EVERY_N = Number(process.env.WELLINFORMED_BENCH_PROGRESS_EVERY_N ?? 25);
-tests/bench-longmemeval-real.test.ts:379:    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix)' : 'off'}. T1 diagnostic: R@5/10/20/50 from a single KMAX=${KMAX} retrieval pass. Replaces the 20-session synthetic proxy.`,
-tests/bench-longmemeval-real.test.ts:382:  if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-longmemeval-real.test.ts:383:    appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/rerank-tier.test.ts:61:test('pickRerankTier: WELLINFORMED_RERANK=0 forces none on any hardware', () => {
-tests/rerank-tier.test.ts:78:  const env = rerankEnvFromProcess({ WELLINFORMED_RERANK_TIER: 'bogus' });
-tests/rerank-tier.test.ts:152:    WELLINFORMED_RERANK_TIER: 'llm-listwise-small',
-tests/rerank-tier.test.ts:153:    WELLINFORMED_RERANK_MODEL: 'qwen2.5:3b',
-tests/rerank-tier.test.ts:154:    WELLINFORMED_RERANK_LATENCY_MS: '2500',
-tests/rerank-tier.test.ts:155:    WELLINFORMED_RERANK_HEAD: '40',
-tests/rerank-tier.test.ts:156:    WELLINFORMED_RERANK: '1',
-tests/bench-locomo-real.test.ts:23: *   WELLINFORMED_BENCH_LLM_EXTRACTOR=1 swaps the containment metric
-tests/bench-locomo-real.test.ts:31: *   WELLINFORMED_BENCH_PUBLIC_REAL=1
-tests/bench-locomo-real.test.ts:41: *   WELLINFORMED_BENCH_OUT=/path/to/report.jsonl   (optional)
-tests/bench-locomo-real.test.ts:222:  if (process.env.WELLINFORMED_BENCH_PUBLIC_REAL !== '1') {
-tests/bench-locomo-real.test.ts:223:    t.skip('WELLINFORMED_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
+tests/bench-longmemeval-real.test.ts:140:  // Set `AKASHIK_RERANK=1` to activate; `AKASHIK_RERANK_MODEL`
+tests/bench-longmemeval-real.test.ts:149:  // `AKASHIK_LLM_RERANK=1`. When both are set, LISTWISE WINS
+tests/bench-longmemeval-real.test.ts:153:  const RERANK_HEAD = Number(process.env.AKASHIK_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
+tests/bench-longmemeval-real.test.ts:163:  const KMAX = Number(process.env.AKASHIK_BENCH_LME_KMAX ?? 50);
+tests/bench-longmemeval-real.test.ts:168:    console.log(`  cross-encoder rerank ON · model=${process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
+tests/bench-longmemeval-real.test.ts:172:  // When `AKASHIK_BENCH_CONTEXTUAL_ENRICH=1`, prepend
+tests/bench-longmemeval-real.test.ts:315:    // `AKASHIK_BENCH_PROGRESS_EVERY_N` (default 25). Live tails
+tests/bench-longmemeval-real.test.ts:320:    const PROGRESS_EVERY_N = Number(process.env.AKASHIK_BENCH_PROGRESS_EVERY_N ?? 25);
+tests/bench-longmemeval-real.test.ts:379:    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix)' : 'off'}. T1 diagnostic: R@5/10/20/50 from a single KMAX=${KMAX} retrieval pass. Replaces the 20-session synthetic proxy.`,
+tests/bench-longmemeval-real.test.ts:382:  if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-longmemeval-real.test.ts:383:    appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/rerank-tier.test.ts:61:test('pickRerankTier: AKASHIK_RERANK=0 forces none on any hardware', () => {
+tests/rerank-tier.test.ts:78:  const env = rerankEnvFromProcess({ AKASHIK_RERANK_TIER: 'bogus' });
+tests/rerank-tier.test.ts:152:    AKASHIK_RERANK_TIER: 'llm-listwise-small',
+tests/rerank-tier.test.ts:153:    AKASHIK_RERANK_MODEL: 'qwen2.5:3b',
+tests/rerank-tier.test.ts:154:    AKASHIK_RERANK_LATENCY_MS: '2500',
+tests/rerank-tier.test.ts:155:    AKASHIK_RERANK_HEAD: '40',
+tests/rerank-tier.test.ts:156:    AKASHIK_RERANK: '1',
+tests/bench-locomo-real.test.ts:23: *   AKASHIK_BENCH_LLM_EXTRACTOR=1 swaps the containment metric
+tests/bench-locomo-real.test.ts:31: *   AKASHIK_BENCH_PUBLIC_REAL=1
+tests/bench-locomo-real.test.ts:41: *   AKASHIK_BENCH_OUT=/path/to/report.jsonl   (optional)
+tests/bench-locomo-real.test.ts:222:  if (process.env.AKASHIK_BENCH_PUBLIC_REAL !== '1') {
+tests/bench-locomo-real.test.ts:223:    t.skip('AKASHIK_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
 tests/bench-locomo-real.test.ts:226:  const dir = process.env.LOCOMO_DIR;
-tests/bench-locomo-real.test.ts:236:  const useLlmExtractor = process.env.WELLINFORMED_BENCH_LLM_EXTRACTOR === '1';
-tests/bench-locomo-real.test.ts:239:    t.skip('WELLINFORMED_BENCH_LLM_EXTRACTOR=1 but no extractor resolvable from env (set WELLINFORMED_OLLAMA_URL or WELLINFORMED_BENCH_LLM_EXTRACTOR_FIXTURE=1)');
-tests/bench-locomo-real.test.ts:260:  const RERANK_HEAD = Number(process.env.WELLINFORMED_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
-tests/bench-locomo-real.test.ts:267:  const KMAX = Number(process.env.WELLINFORMED_BENCH_LOCOMO_KMAX ?? 50);
-tests/bench-locomo-real.test.ts:272:    console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
-tests/bench-locomo-real.test.ts:415:        // Tunable via `WELLINFORMED_BENCH_PROGRESS_EVERY_N` (default 25).
-tests/bench-locomo-real.test.ts:416:        const PROGRESS_EVERY_N = Number(process.env.WELLINFORMED_BENCH_PROGRESS_EVERY_N ?? 25);
-tests/bench-locomo-real.test.ts:474:  // when the extractor was wired in (`WELLINFORMED_BENCH_LLM_EXTRACTOR=1`).
-tests/bench-locomo-real.test.ts:536:    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix, scoring on raw text)' : 'off'}. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
-tests/bench-locomo-real.test.ts:539:  if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-locomo-real.test.ts:540:    appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/bench-locomo-real.test.ts:565:  // WELLINFORMED_BENCH_LLM_EXTRACTOR=1 path (squadF1 metric, reported
-tests/error-hints.test.ts:56:  assert.match(h!, /WELLINFORMED_MODEL_CACHE/);
-tests/bench-locomo-synth.test.ts:44: *   set `WELLINFORMED_BENCH_LLM_EXTRACTOR=1` to swap the
-tests/bench-locomo-synth.test.ts:479:    if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-locomo-synth.test.ts:480:      appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/bench-scifact-real.test.ts:17: *   WELLINFORMED_BENCH_PUBLIC_REAL=1
-tests/bench-scifact-real.test.ts:27: *   WELLINFORMED_BENCH_OUT=/path/to/report.jsonl   (optional)
-tests/bench-scifact-real.test.ts:107:  if (process.env.WELLINFORMED_BENCH_PUBLIC_REAL !== '1') {
-tests/bench-scifact-real.test.ts:108:    t.skip('WELLINFORMED_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
+tests/bench-locomo-real.test.ts:236:  const useLlmExtractor = process.env.AKASHIK_BENCH_LLM_EXTRACTOR === '1';
+tests/bench-locomo-real.test.ts:239:    t.skip('AKASHIK_BENCH_LLM_EXTRACTOR=1 but no extractor resolvable from env (set AKASHIK_OLLAMA_URL or AKASHIK_BENCH_LLM_EXTRACTOR_FIXTURE=1)');
+tests/bench-locomo-real.test.ts:260:  const RERANK_HEAD = Number(process.env.AKASHIK_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
+tests/bench-locomo-real.test.ts:267:  const KMAX = Number(process.env.AKASHIK_BENCH_LOCOMO_KMAX ?? 50);
+tests/bench-locomo-real.test.ts:272:    console.log(`  cross-encoder rerank ON · model=${process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
+tests/bench-locomo-real.test.ts:415:        // Tunable via `AKASHIK_BENCH_PROGRESS_EVERY_N` (default 25).
+tests/bench-locomo-real.test.ts:416:        const PROGRESS_EVERY_N = Number(process.env.AKASHIK_BENCH_PROGRESS_EVERY_N ?? 25);
+tests/bench-locomo-real.test.ts:474:  // when the extractor was wired in (`AKASHIK_BENCH_LLM_EXTRACTOR=1`).
+tests/bench-locomo-real.test.ts:536:    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix, scoring on raw text)' : 'off'}. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
+tests/bench-locomo-real.test.ts:539:  if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-locomo-real.test.ts:540:    appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/bench-locomo-real.test.ts:565:  // AKASHIK_BENCH_LLM_EXTRACTOR=1 path (squadF1 metric, reported
+tests/error-hints.test.ts:56:  assert.match(h!, /AKASHIK_MODEL_CACHE/);
+tests/bench-locomo-synth.test.ts:44: *   set `AKASHIK_BENCH_LLM_EXTRACTOR=1` to swap the
+tests/bench-locomo-synth.test.ts:479:    if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-locomo-synth.test.ts:480:      appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/bench-scifact-real.test.ts:17: *   AKASHIK_BENCH_PUBLIC_REAL=1
+tests/bench-scifact-real.test.ts:27: *   AKASHIK_BENCH_OUT=/path/to/report.jsonl   (optional)
+tests/bench-scifact-real.test.ts:107:  if (process.env.AKASHIK_BENCH_PUBLIC_REAL !== '1') {
+tests/bench-scifact-real.test.ts:108:    t.skip('AKASHIK_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
 tests/bench-scifact-real.test.ts:111:  const dir = process.env.BEIR_SCIFACT_DIR;
-tests/bench-scifact-real.test.ts:152:    // Activated via WELLINFORMED_RERANK=1; model selectable via
-tests/bench-scifact-real.test.ts:153:    // WELLINFORMED_RERANK_MODEL (default Xenova/ms-marco-MiniLM-L-6-v2,
-tests/bench-scifact-real.test.ts:160:      console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → NDCG@${K}`);
-tests/bench-scifact-real.test.ts:247:      notes: `Real BEIR SciFact — ${corpus.length} docs × ${queries.length} test queries via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}). Replaces the 30-doc labeled proxy.`,
-tests/bench-scifact-real.test.ts:250:    if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-scifact-real.test.ts:251:      appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/summariser.test.ts:9: *   - summariserFromEnv() respects WELLINFORMED_SUMMARISER=fixture
+tests/bench-scifact-real.test.ts:152:    // Activated via AKASHIK_RERANK=1; model selectable via
+tests/bench-scifact-real.test.ts:153:    // AKASHIK_RERANK_MODEL (default Xenova/ms-marco-MiniLM-L-6-v2,
+tests/bench-scifact-real.test.ts:160:      console.log(`  cross-encoder rerank ON · model=${process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → NDCG@${K}`);
+tests/bench-scifact-real.test.ts:247:      notes: `Real BEIR SciFact — ${corpus.length} docs × ${queries.length} test queries via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Rerank=${reranker ? (process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}). Replaces the 30-doc labeled proxy.`,
+tests/bench-scifact-real.test.ts:250:    if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-scifact-real.test.ts:251:      appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/summariser.test.ts:9: *   - summariserFromEnv() respects AKASHIK_SUMMARISER=fixture
 tests/summariser.test.ts:108:    saved[k] = process.env[k];
 tests/summariser.test.ts:109:    if (env[k] === undefined) delete process.env[k];
 tests/summariser.test.ts:110:    else process.env[k] = env[k];
 tests/summariser.test.ts:116:      if (saved[k] === undefined) delete process.env[k];
 tests/summariser.test.ts:117:      else process.env[k] = saved[k];
-tests/summariser.test.ts:122:test('summariserFromEnv: WELLINFORMED_SUMMARISER=fixture → fixture adapter', async () => {
-tests/summariser.test.ts:124:    { WELLINFORMED_SUMMARISER: 'fixture', WELLINFORMED_SUMMARISER_FIXTURE: 'env-default' },
-tests/summariser.test.ts:135:  await withEnv({ WELLINFORMED_SUMMARISER: undefined }, () => {
-tests/summariser.test.ts:149:  await withEnv({ WELLINFORMED_SUMMARISER: undefined }, () => {
-tests/phase18.production-net.test.ts:12: * `WELLINFORMED_SKIP_SLOW=1`. Unit + structural tiers run always.
-tests/phase18.production-net.test.ts:580:// Slow: opt-out via WELLINFORMED_SKIP_SLOW=1
-tests/phase18.production-net.test.ts:596:const SKIP_SLOW = process.env['WELLINFORMED_SKIP_SLOW'] === '1';
-tests/bench-auto-forget.test.ts:185:  if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-auto-forget.test.ts:186:    appendBenchReport(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-src/application/federated-search.ts:328:    || process.env.WELLINFORMED_SEARCH_GOSSIP === '0';
-tests/bench-retention-band.test.ts:130:  if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-retention-band.test.ts:131:    appendBenchReport(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/bench-akashik-federation.test.ts:38: *   WELLINFORMED_BENCH_OUT=/path/to/run.jsonl   (optional)
+tests/summariser.test.ts:122:test('summariserFromEnv: AKASHIK_SUMMARISER=fixture → fixture adapter', async () => {
+tests/summariser.test.ts:124:    { AKASHIK_SUMMARISER: 'fixture', AKASHIK_SUMMARISER_FIXTURE: 'env-default' },
+tests/summariser.test.ts:135:  await withEnv({ AKASHIK_SUMMARISER: undefined }, () => {
+tests/summariser.test.ts:149:  await withEnv({ AKASHIK_SUMMARISER: undefined }, () => {
+tests/phase18.production-net.test.ts:12: * `AKASHIK_SKIP_SLOW=1`. Unit + structural tiers run always.
+tests/phase18.production-net.test.ts:580:// Slow: opt-out via AKASHIK_SKIP_SLOW=1
+tests/phase18.production-net.test.ts:596:const SKIP_SLOW = process.env['AKASHIK_SKIP_SLOW'] === '1';
+tests/bench-auto-forget.test.ts:185:  if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-auto-forget.test.ts:186:    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+src/application/federated-search.ts:328:    || process.env.AKASHIK_SEARCH_GOSSIP === '0';
+tests/bench-retention-band.test.ts:130:  if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-retention-band.test.ts:131:    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/bench-akashik-federation.test.ts:38: *   AKASHIK_BENCH_OUT=/path/to/run.jsonl   (optional)
 tests/bench-akashik-federation.test.ts:136:  if (process.env.AKASHIK_BENCH_F !== '1') {
 tests/bench-akashik-federation.test.ts:140:  const dir = process.env.LOCOMO_DIR;
 tests/bench-akashik-federation.test.ts:155:  const numPeers = Number(process.env.AKASHIK_BENCH_PEERS ?? 10);
@@ -3017,50 +3017,50 @@ tests/bench-akashik-federation.test.ts:158:  const zipfAlpha = Number(process.en
 tests/bench-akashik-federation.test.ts:159:  const seed = Number(process.env.AKASHIK_BENCH_SEED ?? 42);
 tests/bench-akashik-federation.test.ts:160:  const initialShardFraction = Number(process.env.AKASHIK_BENCH_SHARD ?? 0.05);
 tests/bench-akashik-federation.test.ts:161:  const windowSize = Number(process.env.AKASHIK_BENCH_WINDOW ?? 100);
-tests/bench-akashik-federation.test.ts:230:  if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-akashik-federation.test.ts:231:    appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/llm-extractor.test.ts:11: * when `WELLINFORMED_BENCH_LLM_EXTRACTOR=1` and a reachable Ollama is
-tests/phase16.share-crdt.test.ts:68:/** Create a hermetic tmp dir. Caller must set/restore WELLINFORMED_HOME and rmSync on teardown. */
-tests/bench-beta-calibration.test.ts:99:  if (process.env.WELLINFORMED_BENCH_OUT) {
-tests/bench-beta-calibration.test.ts:100:    appendBenchReport(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/bench-akashik-federation.test.ts:230:  if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-akashik-federation.test.ts:231:    appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/llm-extractor.test.ts:11: * when `AKASHIK_BENCH_LLM_EXTRACTOR=1` and a reachable Ollama is
+tests/phase16.share-crdt.test.ts:68:/** Create a hermetic tmp dir. Caller must set/restore AKASHIK_HOME and rmSync on teardown. */
+tests/bench-beta-calibration.test.ts:99:  if (process.env.AKASHIK_BENCH_OUT) {
+tests/bench-beta-calibration.test.ts:100:    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
 src/cli/commands/daemon.ts:38:      env: { ...process.env },
-src/cli/commands/daemon.ts:183:  // $WELLINFORMED_HOME/daemon.sock, 0600.
-src/cli/commands/metrics.ts:24:  process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
-src/cli/commands/metrics.ts:68: *   - WELLINFORMED_DENY_ON_TERMINAL=0 (soft persuasion only): some
-src/cli/commands/metrics.ts:71: *   - WELLINFORMED_DENY_ON_TERMINAL=1 (hard deny): bypass should
-src/cli/commands/metrics.ts:129:    console.log(`  off (WELLINFORMED_DENY_ON_TERMINAL=0 is the default) or the harness`);
-src/cli/commands/doctor.ts:51:  return process.env.WELLINFORMED_HOME || join(homedir(), '.wellinformed');
-src/infrastructure/rust-retrieval.ts:120:   * `$WELLINFORMED_RUST_BIN` env var or this option.
-src/infrastructure/rust-retrieval.ts:128:  const envBin = process.env.WELLINFORMED_RUST_BIN;
-src/cli/commands/bench.ts:5: * `WELLINFORMED_BENCH_OUT` set so each suite appends a
-src/cli/commands/bench.ts:56: * the Hetzner box (with `WELLINFORMED_BENCH_PUBLIC_REAL=1` and the
-src/cli/commands/bench.ts:101:          env: { ...process.env, WELLINFORMED_BENCH_OUT: outFile },
-src/cli/commands/peers-rep.ts:34:  process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
-src/cli/commands/entity.ts:8: * The registry lives at $WELLINFORMED_HOME/entities.json. It's the
+src/cli/commands/daemon.ts:183:  // $AKASHIK_HOME/daemon.sock, 0600.
+src/cli/commands/metrics.ts:24:  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
+src/cli/commands/metrics.ts:68: *   - AKASHIK_DENY_ON_TERMINAL=0 (soft persuasion only): some
+src/cli/commands/metrics.ts:71: *   - AKASHIK_DENY_ON_TERMINAL=1 (hard deny): bypass should
+src/cli/commands/metrics.ts:129:    console.log(`  off (AKASHIK_DENY_ON_TERMINAL=0 is the default) or the harness`);
+src/cli/commands/doctor.ts:51:  return process.env.AKASHIK_HOME || join(homedir(), '.akashik');
+src/infrastructure/rust-retrieval.ts:120:   * `$AKASHIK_RUST_BIN` env var or this option.
+src/infrastructure/rust-retrieval.ts:128:  const envBin = process.env.AKASHIK_RUST_BIN;
+src/cli/commands/bench.ts:5: * `AKASHIK_BENCH_OUT` set so each suite appends a
+src/cli/commands/bench.ts:56: * the Hetzner box (with `AKASHIK_BENCH_PUBLIC_REAL=1` and the
+src/cli/commands/bench.ts:101:          env: { ...process.env, AKASHIK_BENCH_OUT: outFile },
+src/cli/commands/peers-rep.ts:34:  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
+src/cli/commands/entity.ts:8: * The registry lives at $AKASHIK_HOME/entities.json. It's the
 src/cli/commands/publish.ts:19:  const clientId = process.env.X_CLIENT_ID;
 src/cli/commands/publish.ts:23:    clientSecret: process.env.X_CLIENT_SECRET,
-src/cli/runtime.ts:37:  process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
-src/cli/runtime.ts:41: *   WELLINFORMED_VECTOR_QUANTIZATION=binary-512   → returns 512
-src/cli/runtime.ts:42: *   WELLINFORMED_VECTOR_QUANTIZATION=binary-256   → returns 256
-src/cli/runtime.ts:53:  const raw = process.env.WELLINFORMED_VECTOR_QUANTIZATION;
-src/cli/runtime.ts:65: * Backends (selected by `WELLINFORMED_EMBEDDER_BACKEND`):
-src/cli/runtime.ts:75: *   WELLINFORMED_EMBEDDER_MODEL   — 'minilm' | 'nomic' | 'bge-base'
-src/cli/runtime.ts:76: *   WELLINFORMED_RUST_BIN         — path to embed_server binary
-src/cli/runtime.ts:82:  const backend = (process.env.WELLINFORMED_EMBEDDER_BACKEND ?? 'xenova').toLowerCase();
-src/cli/runtime.ts:91:  // Opt-out via WELLINFORMED_EMBEDDER_BATCH=off for the serial path
-src/cli/runtime.ts:94:  const batchingEnabled = (process.env.WELLINFORMED_EMBEDDER_BATCH ?? 'on').toLowerCase() !== 'off';
-src/cli/runtime.ts:95:  const batchSize = parseInt(process.env.WELLINFORMED_EMBEDDER_BATCH_SIZE ?? '32', 10) || 32;
-src/cli/runtime.ts:96:  const batchWaitMs = parseInt(process.env.WELLINFORMED_EMBEDDER_BATCH_MS ?? '20', 10) || 20;
-src/cli/runtime.ts:100:      const model = (process.env.WELLINFORMED_EMBEDDER_MODEL ?? 'minilm').toLowerCase();
-src/cli/runtime.ts:105:          `WELLINFORMED_EMBEDDER_MODEL='${model}' — supported: minilm, nomic, bge-base`,
-src/cli/runtime.ts:201:        binaryOnly: (process.env.WELLINFORMED_VECTOR_FP32_DROP ?? '').toLowerCase() === 'true',
-src/cli/commands/consolidate.ts:63:  let model = process.env.WELLINFORMED_OLLAMA_MODEL ?? 'qwen2.5:1.5b';
-src/cli/commands/consolidate.ts:243:      console.error(`  start it with: ollama serve  (or configure WELLINFORMED_OLLAMA_URL)`);
-src/cli/commands/consolidate.ts:246:    console.error(`consolidate: ollama ${ping.value} @ ${process.env.WELLINFORMED_OLLAMA_URL ?? 'http://localhost:11434'}, model=${parsed.model}`);
-src/cli/commands/consolidate.ts:449:  console.log('Set WELLINFORMED_OLLAMA_URL / WELLINFORMED_OLLAMA_MODEL to override.');
+src/cli/runtime.ts:37:  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
+src/cli/runtime.ts:41: *   AKASHIK_VECTOR_QUANTIZATION=binary-512   → returns 512
+src/cli/runtime.ts:42: *   AKASHIK_VECTOR_QUANTIZATION=binary-256   → returns 256
+src/cli/runtime.ts:53:  const raw = process.env.AKASHIK_VECTOR_QUANTIZATION;
+src/cli/runtime.ts:65: * Backends (selected by `AKASHIK_EMBEDDER_BACKEND`):
+src/cli/runtime.ts:75: *   AKASHIK_EMBEDDER_MODEL   — 'minilm' | 'nomic' | 'bge-base'
+src/cli/runtime.ts:76: *   AKASHIK_RUST_BIN         — path to embed_server binary
+src/cli/runtime.ts:82:  const backend = (process.env.AKASHIK_EMBEDDER_BACKEND ?? 'xenova').toLowerCase();
+src/cli/runtime.ts:91:  // Opt-out via AKASHIK_EMBEDDER_BATCH=off for the serial path
+src/cli/runtime.ts:94:  const batchingEnabled = (process.env.AKASHIK_EMBEDDER_BATCH ?? 'on').toLowerCase() !== 'off';
+src/cli/runtime.ts:95:  const batchSize = parseInt(process.env.AKASHIK_EMBEDDER_BATCH_SIZE ?? '32', 10) || 32;
+src/cli/runtime.ts:96:  const batchWaitMs = parseInt(process.env.AKASHIK_EMBEDDER_BATCH_MS ?? '20', 10) || 20;
+src/cli/runtime.ts:100:      const model = (process.env.AKASHIK_EMBEDDER_MODEL ?? 'minilm').toLowerCase();
+src/cli/runtime.ts:105:          `AKASHIK_EMBEDDER_MODEL='${model}' — supported: minilm, nomic, bge-base`,
+src/cli/runtime.ts:201:        binaryOnly: (process.env.AKASHIK_VECTOR_FP32_DROP ?? '').toLowerCase() === 'true',
+src/cli/commands/consolidate.ts:63:  let model = process.env.AKASHIK_OLLAMA_MODEL ?? 'qwen2.5:1.5b';
+src/cli/commands/consolidate.ts:243:      console.error(`  start it with: ollama serve  (or configure AKASHIK_OLLAMA_URL)`);
+src/cli/commands/consolidate.ts:246:    console.error(`consolidate: ollama ${ping.value} @ ${process.env.AKASHIK_OLLAMA_URL ?? 'http://localhost:11434'}, model=${parsed.model}`);
+src/cli/commands/consolidate.ts:449:  console.log('Set AKASHIK_OLLAMA_URL / AKASHIK_OLLAMA_MODEL to override.');
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/bench-standard.test.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' tests/bench-standard.test.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Standardized benchmarks — BEIR/HotPotQA + LOCOMO-style evaluation.
@@ -3252,7 +3252,7 @@ test('BEIR/HotPotQA-style: multi-hop retrieval with real ONNX embeddings', async
     };
 
     console.log(`\n  ╔═══════════════════════════════════════════════════════════╗`);
-    console.log(`  ║  BEIR/HotPotQA-style Benchmark (wellinformed v1.1)       ║`);
+    console.log(`  ║  BEIR/HotPotQA-style Benchmark (akashik v1.1)       ║`);
     console.log(`  ║  ${Object.keys(CORPUS).length} passages, ${QUERIES.length} queries, real all-MiniLM-L6-v2          ║`);
     console.log(`  ╠═══════════════════════════════════════════════════════════╣`);
     console.log(`  ║  NDCG@10:   ${(overall.ndcg10 * 100).toFixed(1).padStart(6)}%                                   ║`);
@@ -3277,14 +3277,14 @@ test('BEIR/HotPotQA-style: multi-hop retrieval with real ONNX embeddings', async
     console.log(`  ║    Cognee HotPotQA:           NDCG not published         ║`);
     console.log(`  ║    mem0 LOCOMO:               67.1% LLM-as-Judge         ║`);
     console.log(`  ║    mcp-memory-service:        86.0% R@5 (custom)         ║`);
-    console.log(`  ║    wellinformed (this run):   ${(overall.r5 * 100).toFixed(1)}% R@5, ${(overall.ndcg10 * 100).toFixed(1)}% NDCG@10  ║`);
+    console.log(`  ║    akashik (this run):   ${(overall.r5 * 100).toFixed(1)}% R@5, ${(overall.ndcg10 * 100).toFixed(1)}% NDCG@10  ║`);
     console.log(`  ╚═══════════════════════════════════════════════════════════╝`);
 
     console.log(`\n  Per-query:`);
     for (const r of results) {
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/bench-locomo-real.test.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' tests/bench-locomo-real.test.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Benchmark — real LoCoMo factual subset, harmonic-mean F1 (Phase 23.7).
@@ -3303,12 +3303,12 @@ exec
  * retrieval-only dimension.
  *
  * Per LoCoMo convention, `evidence` is a list of `"D<session>:<turn>"`
- * strings. We collapse to the set of source SESSIONS — wellinformed
+ * strings. We collapse to the set of source SESSIONS — akashik
  * indexes one node per session, not per turn, so session-level
  * evidence is the right granularity.
  *
  * Optional LLM extractor (env-gated, off by default):
- *   WELLINFORMED_BENCH_LLM_EXTRACTOR=1 swaps the containment metric
+ *   AKASHIK_BENCH_LLM_EXTRACTOR=1 swaps the containment metric
  *   for a real Ollama Phi-4-mini extracted answer scored via
  *   SQuAD-style F1. Wired here as a stub — the extractor itself is a
  *   Phase 23.8 follow-up. With the flag off (default) we report the
@@ -3316,7 +3316,7 @@ exec
  *
  * Environment contract:
  *
- *   WELLINFORMED_BENCH_PUBLIC_REAL=1
+ *   AKASHIK_BENCH_PUBLIC_REAL=1
  *     Master gate; off by default.
  *
  *   LOCOMO_DIR=/path/to/locomo
@@ -3326,7 +3326,7 @@ exec
  *         git clone https://github.com/snap-research/locomo $LOCOMO_DIR/repo
  *         cp $LOCOMO_DIR/repo/data/locomo10.json $LOCOMO_DIR/
  *
- *   WELLINFORMED_BENCH_OUT=/path/to/report.jsonl   (optional)
+ *   AKASHIK_BENCH_OUT=/path/to/report.jsonl   (optional)
  *     Composite-runner sink.
  *
  * Embedder: real Xenova all-MiniLM-L6-v2 (no fixture).
@@ -3508,7 +3508,7 @@ const harmonicMean = (a: number, b: number): number => {
 
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/federated-search-cap-tiers.test.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' tests/federated-search-cap-tiers.test.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Unit tests — federated-search top-N cap + rank-weighted timeout
@@ -3638,7 +3638,7 @@ test('lowRankTimeoutMs applies only to peers beyond topTierCount', async () => {
 });
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/application/use-cases.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' src/application/use-cases.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Application use cases — thin orchestration between domain and infra.
@@ -3862,7 +3862,7 @@ export const exploreRoom =
     const traversalOpts: TraversalOptions = { depth: query.depth ?? 3, room: query.room };
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/application/federated-search.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' src/application/federated-search.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Federated search — fan-out orchestrator for cross-peer semantic search.
@@ -4086,7 +4086,7 @@ const withTimeout = (
 
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/domain/federation-sim.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' src/domain/federation-sim.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Phase 24 (Akashik) — federation simulator (pure domain).
@@ -4310,7 +4310,7 @@ export const runFederationSim = (corpus: SimCorpus, config: SimConfig): SimResul
       if (rng() >= config.offlineProbability) online.push(p);
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/domain/long-term-memory.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' src/domain/long-term-memory.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Long-term memory — tier vocabulary, retention math, and Bayesian
@@ -4534,7 +4534,7 @@ const ACCESS_BONUS = (count: number): number => Math.min(0.2, Math.max(0, count)
 /**
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/domain/cross-rerank.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' src/domain/cross-rerank.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Cross-encoder rerank — pure scoring composition.
@@ -4698,7 +4698,7 @@ const sigmoid = (x: number): number => 1 / (1 + Math.exp(-x));
 const clamp = (lo: number, hi: number, x: number): number => Math.max(lo, Math.min(hi, x));
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/domain/llm-listwise-rerank.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' src/domain/llm-listwise-rerank.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Phase 23.12 — LLM-listwise reranker, domain layer.
@@ -4922,7 +4922,7 @@ const hashString = (s: string): number => {
  * same shape — caps the model's freedom to drift across implementations.
 
 exec
-/bin/zsh -lc "sed -n '1,220p' .planning/HANDOFF.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' .planning/HANDOFF.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # Session Handoff — Phase 23.7 / Hetzner OpenClaw
 
@@ -4960,8 +4960,8 @@ essential, git, jq, tmux). OpenClaw `2026.5.18` installed via
 `npm install -g openclaw`; gateway running as a systemd service
 (`openclaw-gateway.service`) on `127.0.0.1:37777` with token auth
 (token in `/etc/openclaw-gateway.env` mode 600). Loopback bind, no
-external exposure. wellinformed working tree rsynced to
-`/opt/wellinformed/` (`npm install` complete — 503 packages). All
+external exposure. akashik working tree rsynced to
+`/opt/akashik/` (`npm install` complete — 503 packages). All
 three datasets staged: `/data/scifact` (8 MB), `/data/longmemeval`
 (15 MB `longmemeval_oracle.json`), `/data/locomo` (2.7 MB
 `locomo10.json`). Composite bench currently running in tmux session
@@ -5021,7 +5021,7 @@ Order of operations once `ssh hetzner-root` starts responding (usually 30-60 s a
    - `bench-scifact-real.test.ts` — full BEIR SciFact (5,183 docs × 300 queries), NDCG@10. Replaces the 30-doc proxy currently feeding `beirSciFactNdcg10`.
    - `bench-longmemeval-real.test.ts` — LongMemEval-S oracle split (500 questions, ~3 GB HF download). Recall@5 against gold evidence sessions.
    - `bench-locomo-real.test.ts` — LoCoMo factual subset from `snap-research/locomo` GitHub. F1 via the same harmonic-mean scorer the synthetic suite uses.
-   All three are env-gated (`WELLINFORMED_BENCH_PUBLIC_REAL=1`) so CI stays fast — they only run on the Hetzner box.
+   All three are env-gated (`AKASHIK_BENCH_PUBLIC_REAL=1`) so CI stays fast — they only run on the Hetzner box.
 6. **Run + report.** Expected composite jump: 0.9012 → ~0.95 depending on real-corpus reality (BEIR SOTA is 0.7522 not 1.0 so composite can't hit 1.0 on real data).
 
 ## 5. Secrets discipline
@@ -5045,8 +5045,8 @@ Order of operations once `ssh hetzner-root` starts responding (usually 30-60 s a
 | infra | `src/infrastructure/summariser.ts` | NEW — Summariser port + ollama/fixture adapters |
 | application | `src/application/ask.ts` | EDIT — wired cross-encoder rerank between hybrid + PPR |
 | application | `src/application/auto-forget-tick.ts` | NEW — auto-forget orchestrator |
-| cli | `src/cli/commands/gc.ts` | NEW — `wellinformed gc {list,apply}` |
-| cli | `src/cli/commands/bench.ts` | NEW — `wellinformed bench memory` |
+| cli | `src/cli/commands/gc.ts` | NEW — `akashik gc {list,apply}` |
+| cli | `src/cli/commands/bench.ts` | NEW — `akashik bench memory` |
 | cli | `src/cli/index.ts` | EDIT — registered `gc` + `bench` |
 | tests | `tests/bench-tier-promotion.test.ts` | NEW — F1 = 1.0 |
 | tests | `tests/bench-beta-calibration.test.ts` | NEW — worst err 0.011 |
@@ -5088,7 +5088,7 @@ Carry these as TodoWrite items on resume:
 6. Verify MCP call works from this Mac
 7. ~~Write 3 real-corpus bench adapters~~ — **DONE 2026-05-20**, files
    landed flat under `tests/` (project test glob is `tests/*.test.ts`, not
-   nested) and all env-gated behind `WELLINFORMED_BENCH_PUBLIC_REAL=1`:
+   nested) and all env-gated behind `AKASHIK_BENCH_PUBLIC_REAL=1`:
    - `tests/bench-scifact-real.test.ts` — BEIR SciFact NDCG@10. Needs
      `BEIR_SCIFACT_DIR` pointing at `corpus.jsonl + queries.jsonl +
      qrels/test.tsv`. Floor: NDCG@10 ≥ 0.30.
@@ -5113,9 +5113,9 @@ Carry these as TodoWrite items on resume:
 - The user pinned Codex specifically (not Claude/Gemini) for the remote provider — relevant if `octo:claw` asks which provider to wire.
 - Tailscale is NOT installed — don't suggest it. Reverse-SSH is the agreed transport.
 - All public-corpus adapters MUST be env-gated. CI stays fast; only the Hetzner box runs them.
-- `WELLINFORMED_BENCH_OUT` is the JSONL append target for any bench file — the composite runner spawns each suite with it set. Document this in any new bench file.
+- `AKASHIK_BENCH_OUT` is the JSONL append target for any bench file — the composite runner spawns each suite with it set. Document this in any new bench file.
 - The pre-existing 4 test failures (Phase 17 tool-count, Phase 20 deps, Phase 35 P2P E2E, peer-order-builder flake) are NOT in scope to fix — they're project drift, document only.
-- Synthetic LoCoMo scorer: dropped full-summary token-F1 because it was mathematically pinned tiny; replaced with harmonic mean of evidence-recall + answer-token-containment. Documented in suite header. Real-LoCoMo Phase 23.7 adapter should use the same metric — OR opt-in to LLM extractor via `WELLINFORMED_BENCH_LLM_EXTRACTOR=1`.
+- Synthetic LoCoMo scorer: dropped full-summary token-F1 because it was mathematically pinned tiny; replaced with harmonic mean of evidence-recall + answer-token-containment. Documented in suite header. Real-LoCoMo Phase 23.7 adapter should use the same metric — OR opt-in to LLM extractor via `AKASHIK_BENCH_LLM_EXTRACTOR=1`.
 
 ## 9. Composite numbers worth quoting
 
@@ -5140,11 +5140,11 @@ writeGateF1               1.0000
 End of handoff.
 
 exec
-/bin/zsh -lc "sed -n '1,220p' .planning/long-term-memory-integration.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' .planning/long-term-memory-integration.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # Long-Term Memory Integration Plan
 
-Fold three engineering wins from `rohitg00/agentmemory` into wellinformed,
+Fold three engineering wins from `rohitg00/agentmemory` into akashik,
 plus add the long-term memory layer we've been missing. P2P-native, not a
 verbatim port.
 
@@ -5171,7 +5171,7 @@ What we're explicitly **not** taking:
 ## Long-term memory model — the four tiers, mapped to our world
 
 agentmemory's tier names are misleading for a P2P system. Here's the
-mapping that actually fits wellinformed:
+mapping that actually fits akashik:
 
 | Their tier | Their meaning | Our equivalent | New work |
 |---|---|---|---|
@@ -5203,7 +5203,7 @@ src/
                                 via daemon/loop.ts, promotes tiers.
     auto-forget-tick.ts   [NEW] TTL + contradiction + low-value purge
   infrastructure/
-    bm25-index.ts         [NEW] sparse index, persisted to ~/.wellinformed/bm25.json
+    bm25-index.ts         [NEW] sparse index, persisted to ~/.akashik/bm25.json
     reranker.ts           [NEW] optional Xenova cross-encoder, env-gated
   daemon/
     loop.ts                [edit] register consolidate-tick + auto-forget-tick
@@ -5229,7 +5229,7 @@ via existing interfaces. Same shape as the rest of the repo.
   `search-index.ts`. Persist as JSONL. Stemmer + synonym file optional
   per language.
 - `infrastructure/reranker.ts` — `@xenova/transformers` lazy load.
-  Quantised model. Env flag `WELLINFORMED_RERANK=1`. Falls open on
+  Quantised model. Env flag `AKASHIK_RERANK=1`. Falls open on
   load failure (returns input unchanged).
 
 **Application:**
@@ -5285,7 +5285,7 @@ via existing interfaces. Same shape as the rest of the repo.
   retention = clip(0..1, salience × exp(-λ·Δt) + σ·Σ(1/days_since_access))
   ```
   λ = 0.01, σ = 0.3, tier-thresholds hot=0.7 warm=0.4 cold=0.15. Same
-  defaults as theirs, expose via `~/.wellinformed/config.json`.
+  defaults as theirs, expose via `~/.akashik/config.json`.
 - `domain/contradiction.ts` — Jaccard on shared-concept clusters.
   Threshold 0.9, older loses, audit-logged.
 
@@ -5303,9 +5303,9 @@ via existing interfaces. Same shape as the rest of the repo.
 **Acceptance:**
 - Retention scores written to a new KV scope `retention.json` (parallel
   to `peer-reputation-store.ts` pattern). Surfaced via statusline.
-- Auto-forget dry-run + apply CLI subcommand under `wellinformed gc`.
+- Auto-forget dry-run + apply CLI subcommand under `akashik gc`.
 - Contradiction detector pages an audit entry to
-  `~/.wellinformed/audit.jsonl`.
+  `~/.akashik/audit.jsonl`.
 
 ## What this replaces / deprecates
 
@@ -5364,7 +5364,7 @@ addition to the existing path.
 **Decision: BYO with a local default, exactly like `embedders.ts`.**
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/product/BENCHMARKS.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' docs/product/BENCHMARKS.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # Benchmarks — full BEIR v1, Phase 25 SOTA + 13 documented null attacks
 
@@ -5424,8 +5424,8 @@ Every null is accompanied by a reproduction script in [`scripts/`](scripts/) and
 
 ```bash
 # Phase 25 headline — requires Rust sidecar built
-cd wellinformed-rs && cargo build --release && cd ..
-WELLINFORMED_RUST_BIN=$(pwd)/wellinformed-rs/target/release/embed_server \
+cd akashik-rs && cargo build --release && cd ..
+AKASHIK_RUST_BIN=$(pwd)/akashik-rs/target/release/embed_server \
   node scripts/bench-beir-rust.mjs scifact --model bge-base
 
 # Wave 2 (pure Node, no Rust)
@@ -5436,7 +5436,7 @@ node scripts/bench-beir-sota.mjs scifact --hybrid --rerank
 
 # Wave 4 / room routing null — requires CQADupStack
 node scripts/bench-room-routing.mjs \
-  --datasets-dir ~/.wellinformed/bench/cqadupstack/cqadupstack \
+  --datasets-dir ~/.akashik/bench/cqadupstack/cqadupstack \
   --rooms mathematica,webmasters,gaming
 
 # Calibrated qrel rejudge — requires Ollama + gpt-oss:20b
@@ -5491,7 +5491,7 @@ Functional DDD. Every fallible op returns `Result<T, E>`. No classes in domain/a
 12. Phase 38 — **Oracle bulletin board** (Layer A: questions + answers via touch + CRDT, 5 MCP tools)
 13. Phase 39 — **Oracle gossip** (Layer B: real-time pubsub via @libp2p/floodsub, daemon subscribes on boot)
 14. Phase 21–22 — Long-term memory tiers (episodic/semantic/procedural), Bayesian reliability, write-time gate, auto-forget
-15. Phase 23 — **Unified memory bench** (`wellinformed bench memory`): 8 suites scoring 9 dimensions, composite **0.8597** on real public corpora (Phase 23.7 — Hetzner, 2026-05-20). Synthetic-fallback composite is 0.9107.
+15. Phase 23 — **Unified memory bench** (`akashik bench memory`): 8 suites scoring 9 dimensions, composite **0.8597** on real public corpora (Phase 23.7 — Hetzner, 2026-05-20). Synthetic-fallback composite is 0.9107.
 
 </details>
 
@@ -5501,13 +5501,13 @@ Functional DDD. Every fallible op returns `Result<T, E>`. No classes in domain/a
 
 The long-term memory work shipped in Phase 21/22 (tier vocabulary, Beta(α,β)
 reliability counters, write-time gating, auto-forget) needed a benchmark
-that's stricter than any single public suite. Phase 23 ships `wellinformed
+that's stricter than any single public suite. Phase 23 ships `akashik
 bench memory` — a runner that scores 9 dimensions across 8 suites and
 emits a single composite score.
 
 Run it:
 ```bash
-wellinformed bench memory --json
+akashik bench memory --json
 ```
 
 ### Composite — measured 2026-05-20 (Phase 23.6.1 — scorer fix)
@@ -5549,7 +5549,7 @@ This is honest retrieval-only scoring. Per-persona breakdown of the current run 
 | Cara | 0.881 | 0.857 |
 | Dan | 0.948 | 0.875 |
 
-LLM-extractor mode (`WELLINFORMED_BENCH_LLM_EXTRACTOR=1`) — opt-in upgrade that swaps containment for a real Ollama Phi-4-mini extracted-answer scored via SQuAD F1 against gold — is the next ratchet (Phase 23.7).
+LLM-extractor mode (`AKASHIK_BENCH_LLM_EXTRACTOR=1`) — opt-in upgrade that swaps containment for a real Ollama Phi-4-mini extracted-answer scored via SQuAD F1 against gold — is the next ratchet (Phase 23.7).
 
 ### Why each suite exists
 
@@ -5588,7 +5588,7 @@ Each suite asserts its own floor. A regressing dimension fails the suite, which 
 | `hotpotqa-style` | NDCG@10 ≥ 0.30, MRR ≥ 0.50, R@10 ≥ 0.50 | NDCG@10 high, MRR high, R@10 high |
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/product/VISION.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' docs/product/VISION.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 # Vision — the agent-memory protocol problem
 
@@ -5812,15 +5812,15 @@ peer · query is high-risk or time-sensitive.
 ### Minimum bright protocol — v1 milestone
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/p2p/P2P-VISION.md" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' docs/p2p/P2P-VISION.md" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
-# P2P Knowledge Graph — wellinformed v2.0 Vision
+# P2P Knowledge Graph — akashik v2.0 Vision
 
 ## The Idea
 
-Every developer running wellinformed has a local knowledge graph. Right now these graphs are isolated — your homelab research doesn't connect to mine.
+Every developer running akashik has a local knowledge graph. Right now these graphs are isolated — your homelab research doesn't connect to mine.
 
-**v2.0 makes them connected.** A peer-to-peer network where wellinformed nodes discover each other, share graph fragments, and build a collective knowledge layer that's bigger than any single user's research.
+**v2.0 makes them connected.** A peer-to-peer network where akashik nodes discover each other, share graph fragments, and build a collective knowledge layer that's bigger than any single user's research.
 
 ```
 Developer A (homelab)          Developer B (ml-papers)
@@ -5843,7 +5843,7 @@ Developer A (homelab)          Developer B (ml-papers)
 ### Discovery
 - Nodes announce themselves on a local network via mDNS/Bonjour
 - Or register with a lightweight coordination server (optional)
-- Or manually add peers: `wellinformed peer add <address>`
+- Or manually add peers: `akashik peer add <address>`
 
 ### Sharing Protocol
 - Each node exposes a subset of its graph as "public rooms"
@@ -5854,7 +5854,7 @@ Developer A (homelab)          Developer B (ml-papers)
 ### Collective Intelligence
 - Tunnel detection runs ACROSS peers — my homelab connects to your ml-papers
 - Shared discovery loop: if peer B finds a great ArXiv source, peer A gets it suggested
-- Federated search: `wellinformed ask "vector search" --peers` searches across all connected graphs
+- Federated search: `akashik ask "vector search" --peers` searches across all connected graphs
 
 ### Privacy Model
 - **Opt-in only** — nothing shared by default
@@ -5903,13 +5903,13 @@ Use **Automerge** or **Y.js** for the room-level CRDT:
 ## Use Cases
 
 ### Research Teams
-A team of 5 researchers each tracks different domains. P2P wellinformed connects their graphs. When researcher A indexes a paper about "efficient attention", researcher B (tracking "GPU optimization") gets a tunnel notification: "your GPU optimization connects to A's attention paper."
+A team of 5 researchers each tracks different domains. P2P akashik connects their graphs. When researcher A indexes a paper about "efficient attention", researcher B (tracking "GPU optimization") gets a tunnel notification: "your GPU optimization connects to A's attention paper."
 
 ### Open Source Communities
 A project maintainer shares their `project-x` room publicly. Contributors connect as peers and get the maintainer's research context (relevant papers, HN discussions, competitor analysis) automatically merged into their local graph.
 
 ### Conference Networks
-At a conference, attendees run wellinformed in P2P mode. Their graphs auto-discover via local network. The collective graph of 100 attendees, each with 500 nodes, creates a 50K-node searchable knowledge base spanning every talk, paper, and conversation.
+At a conference, attendees run akashik in P2P mode. Their graphs auto-discover via local network. The collective graph of 100 attendees, each with 500 nodes, creates a 50K-node searchable knowledge base spanning every talk, paper, and conversation.
 
 ## Implementation Phases
 
@@ -5936,12 +5936,12 @@ At a conference, attendees run wellinformed in P2P mode. Their graphs auto-disco
 
 ## What This Means
 
-wellinformed goes from "your personal research memory" to "a collective intelligence network for developers." Every peer makes the network smarter. The graph grows faster than any individual could build it.
+akashik goes from "your personal research memory" to "a collective intelligence network for developers." Every peer makes the network smarter. The graph grows faster than any individual could build it.
 
 This is the end state: **a decentralized knowledge graph where every coding agent in the world shares what it learned.**
 
 exec
-/bin/zsh -lc "find .claude-octopus -maxdepth 2 -type f | sort | head -n 100 && printf '\\n---\\n' && find .agents -maxdepth 3 -type f | sort | head -n 100" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "find .claude-octopus -maxdepth 2 -type f | sort | head -n 100 && printf '\\n---\\n' && find .agents -maxdepth 3 -type f | sort | head -n 100" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 .claude-octopus/state.json
 .claude-octopus/state.json.backup
@@ -5961,11 +5961,11 @@ exec
 codex
 The planning tree is strongly historical: it documents how the project got here, but it is not a good live operating surface anymore. I’m doing one more pass over CLI/features and representative older tests so I can separate “still a platform capability” from “artifact of the old personal-memory product thesis.”
 exec
-/bin/zsh -lc "sed -n '1,260p' src/cli/index.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,260p' src/cli/index.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 #!/usr/bin/env node
 /**
- * wellinformed CLI — subcommand router.
+ * akashik CLI — subcommand router.
  *
  * Phase 0: doctor, version, help.
  * Phase 1: (runtime checks extended in doctor).
@@ -6076,13 +6076,13 @@ const commands: Record<string, CommandFn> = {
   swarm,
   gc,
   bench,
-  // Plural-form alias: `wellinformed peers rep …` works as well as
-  // `wellinformed peer rep …`. The subcommand dispatcher handles both.
+  // Plural-form alias: `akashik peers rep …` works as well as
+  // `akashik peer rep …`. The subcommand dispatcher handles both.
   peers: async (args: string[]): Promise<number> => {
     const [sub, ...rest] = args;
     if (sub === 'rep') return peersRep(rest);
     console.error('peers: only `rep` is implemented today (more coming).');
-    console.error('  usage: wellinformed peers rep [<peer-id>] [--subject <key>] [--json]');
+    console.error('  usage: akashik peers rep [<peer-id>] [--subject <key>] [--json]');
     return sub ? 1 : 1;
   },
 };
@@ -6100,27 +6100,27 @@ async function main(): Promise<number> {
     return (await handler(rest)) ?? 0;
   }
   if (futureCommands.has(cmd)) {
-    console.error(`wellinformed: '${cmd}' is recognized but not yet implemented (Phase 0 scaffold).`);
+    console.error(`akashik: '${cmd}' is recognized but not yet implemented (Phase 0 scaffold).`);
     console.error(`               see the roadmap — it lands in a later phase.`);
     return 2;
   }
-  console.error(`wellinformed: unknown command '${cmd}'. run 'wellinformed help'.`);
+  console.error(`akashik: unknown command '${cmd}'. run 'akashik help'.`);
   return 1;
 }
 
 main()
   .then((code) => process.exit(code))
   .catch((err) => {
-    console.error('wellinformed: fatal error');
+    console.error('akashik: fatal error');
     console.error(err);
     process.exit(1);
   });
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/telegram/bot.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' src/telegram/bot.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
- * Telegram bot — long-polling client for wellinformed.
+ * Telegram bot — long-polling client for akashik.
  *
  * Single-user, runs inside the daemon process. Handles:
  *   - Inbound URLs → auto-ingest into best-matching room
@@ -6152,7 +6152,7 @@ export const loadTelegramConfig = (raw: Record<string, unknown>): TelegramConfig
   return { bot_token: token, chat_id: chatId, enabled };
 };
 
-export interface WellinformedBot {
+export interface AkashikBot {
   readonly sendMessage: (text: string) => ResultAsync<void, GraphError>;
   readonly sendDigest: (markdown: string) => ResultAsync<void, GraphError>;
   readonly stop: () => void;
@@ -6163,9 +6163,9 @@ const URL_RE = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gi;
 export const startBot = (
   config: TelegramConfig,
   runtime: Runtime,
-): ResultAsync<WellinformedBot, GraphError> => {
+): ResultAsync<AkashikBot, GraphError> => {
   if (!config.enabled || !config.bot_token) {
-    return errAsync(GE.readError('telegram', 'bot not configured — run wellinformed telegram setup'));
+    return errAsync(GE.readError('telegram', 'bot not configured — run akashik telegram setup'));
   }
 
   try {
@@ -6215,7 +6215,7 @@ export const startBot = (
 };
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/bench-longmemeval-synth.test.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' tests/bench-longmemeval-synth.test.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Benchmark — synthetic LongMemEval-style conversational long-term recall.
@@ -6439,7 +6439,7 @@ const QUERIES: readonly SyntheticQuery[] = [
   },
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/bench-locomo-synth.test.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' tests/bench-locomo-synth.test.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Benchmark — synthetic LoCoMo-style factual-recall (Phase 23.6).
@@ -6484,7 +6484,7 @@ exec
  * mean down sharply.
  *
  * Opt-in LLM extractor (Phase 23.7+):
- *   set `WELLINFORMED_BENCH_LLM_EXTRACTOR=1` to swap the
+ *   set `AKASHIK_BENCH_LLM_EXTRACTOR=1` to swap the
  *   containment metric for a real Ollama Phi-4-mini extracted
  *   answer scored via SQuAD-style F1. Not wired in this turn —
  *   the scaffolding is documented in the suite registry.
@@ -6663,7 +6663,7 @@ const QUERIES: readonly LocomoQuery[] = [
 /**
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/phase39.oracle-gossip-e2e.test.ts" in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc "sed -n '1,220p' tests/phase39.oracle-gossip-e2e.test.ts" in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 /**
  * Phase 39 — oracle gossip E2E (Layer B of peer discovery).
@@ -6847,7 +6847,7 @@ describe('Phase 39 — oracle gossip E2E (two real pubsub peers)', () => {
 });
 
 exec
-/bin/zsh -lc 'rg -n "telegram|oracle|onboard|claude-install|personal memory|agent-memory" README.md docs src tests | head -n 200' in /Users/saharbarak/personal/wellinformed
+/bin/zsh -lc 'rg -n "telegram|oracle|onboard|claude-install|personal memory|agent-memory" README.md docs src tests | head -n 200' in /Users/saharbarak/personal/akashik
  succeeded in 0ms:
 tests/phase17.mcp-tool.test.ts:79:  it('C2: server.ts registers exactly 21 tools (14 Phase-17 + code_graph_query Phase-19 + recent_sessions Phase-20 + 5 oracle tools Phase-38)', () => {
 tests/phase17.mcp-tool.test.ts:86:      `expected 21 tools in Phase 38 (14 Phase-17 + code_graph_query + recent_sessions + oracle_ask + oracle_answer + list_open_questions + oracle_answers + oracle_answerable), found ${matches.length}`,
@@ -6884,10 +6884,10 @@ src/domain/oracle.ts:35: *     oracle_kind:  'answer'
 src/domain/oracle.ts:36: *     question_id:  <oracle-question:xxx> this answer is for
 src/domain/oracle.ts:71:const QUESTION_PREFIX = 'oracle-question:';
 src/domain/oracle.ts:72:const ANSWER_PREFIX = 'oracle-answer:';
-src/domain/oracle.ts:96:    source_file: 'wellinformed:oracle',
+src/domain/oracle.ts:96:    source_file: 'akashik:oracle',
 src/domain/oracle.ts:98:    room: 'oracle',
 src/domain/oracle.ts:102:    oracle_kind: 'question',
-src/domain/oracle.ts:118:    source_file: 'wellinformed:oracle',
+src/domain/oracle.ts:118:    source_file: 'akashik:oracle',
 src/domain/oracle.ts:120:    room: 'oracle',
 src/domain/oracle.ts:124:    oracle_kind: 'answer',
 src/domain/oracle.ts:160:  if (n.oracle_kind !== 'question') return undefined;
@@ -6947,7 +6947,7 @@ src/domain/system-rooms.ts:72:  uriPrefixes: ['arxiv:', 'hn:', 'rss:', 'websearc
 src/domain/system-rooms.ts:76: *  here as nodes (schemes oracle-question: / oracle-answer:) and
 src/domain/system-rooms.ts:81:  name: 'oracle',
 src/domain/system-rooms.ts:84:  uriPrefixes: ['oracle-question:', 'oracle-answer:'],
-src/domain/errors.ts:614:      return 'fix: run `wellinformed identity init` to create your DID, or `wellinformed onboard` to run the full setup wizard.';
+src/domain/errors.ts:614:      return 'fix: run `akashik identity init` to create your DID, or `akashik onboard` to run the full setup wizard.';
 src/mcp/server.ts:54:} from '../domain/oracle.js';
 src/mcp/server.ts:842:  // ─────────────── oracle_ask ─────────────
 src/mcp/server.ts:843:  // Layer A of the peer-discovery stack — post a question to the oracle
@@ -6992,31 +6992,31 @@ src/infrastructure/oracle-gossip.ts:4: * Thin wrapper over libp2p pubsub for the
 src/infrastructure/oracle-gossip.ts:18: *     1. build the question / answer node via domain/oracle.ts
 src/infrastructure/oracle-gossip.ts:29: *   - Claude-driven answering (oracle_answerable does that)
 src/infrastructure/oracle-gossip.ts:52:/** libp2p pubsub topic for oracle questions + answers. Versioned so we
-src/infrastructure/oracle-gossip.ts:54:export const ORACLE_TOPIC = '/wellinformed/oracle/1.0.0';
+src/infrastructure/oracle-gossip.ts:54:export const ORACLE_TOPIC = '/akashik/oracle/1.0.0';
 src/infrastructure/oracle-gossip.ts:63:/** Wire envelope. `kind` is redundant with node.oracle_kind but
 src/infrastructure/oracle-gossip.ts:94:      'oracle-gossip: libp2p node was constructed without pubsub. Ensure createNode wires the floodsub service.',
 src/infrastructure/oracle-gossip.ts:110:        throw new Error(`oracle-gossip: message ${json.length}B exceeds ${MAX_MESSAGE_BYTES}B cap`);
 src/infrastructure/oracle-gossip.ts:115:    (e) => GE.writeError('oracle-gossip:publish', (e as Error).message),
 src/infrastructure/oracle-gossip.ts:144: * Subscribe to the oracle topic. Every inbound message is:
 src/infrastructure/oracle-gossip.ts:159:    return errAsync(GE.writeError('oracle-gossip:subscribe', pubsub.message));
-src/cli/commands/onboard.ts:2: * `wellinformed onboard` — first-run installer + onboarding wizard.
+src/cli/commands/onboard.ts:2: * `akashik onboard` — first-run installer + onboarding wizard.
 src/cli/commands/onboard.ts:49:import { claudeInstall } from './claude-install.js';
 src/cli/commands/onboard.ts:138:    cancel('onboarding cancelled — run again whenever.');
 src/cli/commands/onboard.ts:394:  // LIVENESS PROBE (round-3 UX review — `onboard.ts:339` always logged
-src/cli/commands/onboard.ts:460:const USAGE = `usage: wellinformed onboard [--yes] [--home DIR] [--no-sessions]
+src/cli/commands/onboard.ts:460:const USAGE = `usage: akashik onboard [--yes] [--home DIR] [--no-sessions]
 src/cli/commands/onboard.ts:473:export const onboard = async (args: readonly string[]): Promise<number> => {
-src/cli/commands/onboard.ts:481:  intro('wellinformed onboard');
+src/cli/commands/onboard.ts:481:  intro('akashik onboard');
 docs/marketing/positioning-v2.1.md:18:you trust via libp2p. Questions reach peers via an oracle bulletin
 docs/marketing/positioning-v2.1.md:158:entries, oracle answers, room shares — can be wrapped in a signed
 docs/marketing/positioning-v2.1.md:172:(`toolshed`, `research`, `oracle`) every peer advertises by default;
 docs/marketing/positioning-v2.1.md:211:- **Oracle bulletin board** — post a question via `oracle ask`. It
 docs/marketing/positioning-v2.1.md:214:  can plausibly answer see it via `oracle answerable` and respond
 docs/marketing/positioning-v2.1.md:388:- Key points: `toolshed` + `research` always-on + the `oracle`
-docs/marketing/positioning-v2.1.md:391:- Proof: GIF of `wellinformed oracle ask "..." --live` on peer A,
-docs/marketing/positioning-v2.1.md:392:  `wellinformed oracle show <qid>` on peer B within 2 s.
+docs/marketing/positioning-v2.1.md:391:- Proof: GIF of `akashik oracle ask "..." --live` on peer A,
+docs/marketing/positioning-v2.1.md:392:  `akashik oracle show <qid>` on peer B within 2 s.
 docs/marketing/storybrand-messaging-draft.md:405:| Desire | Own my personal memory | Share with my team | **Compound community progress** |
 docs/marketing/SITE-REDESIGN-SPEC.md:1050:- The pseudo-terminal output blocks (identity + oracle examples)
-src/cli/commands/oracle.ts:2: * `wellinformed oracle <sub>` — peer-to-peer Q&A via the oracle system room.
+src/cli/commands/oracle.ts:2: * `akashik oracle <sub>` — peer-to-peer Q&A via the oracle system room.
 src/cli/commands/oracle.ts:5: *   ask "<text>"            post a question to the oracle room; peers see it on next touch
 src/cli/commands/oracle.ts:12: * already gates inbound oracle nodes; secret-gate already redacts them.
 src/cli/commands/oracle.ts:28:} from '../../domain/oracle.js';
@@ -7026,16 +7026,16 @@ src/cli/commands/oracle.ts:52: * configured relay, publish one oracle message ov
 src/cli/commands/oracle.ts:64:    console.error(`oracle --live: identity: ${formatError(idRes.error)}`);
 src/cli/commands/oracle.ts:69:    console.error(`oracle --live: config: ${formatError(cfgRes.error)}`);
 src/cli/commands/oracle.ts:80:    console.error(`oracle --live: libp2p: ${formatError(nodeRes.error)}`);
-src/cli/commands/oracle.ts:93:    pubsub.subscribe('/wellinformed/oracle/1.0.0');
+src/cli/commands/oracle.ts:93:    pubsub.subscribe('/akashik/oracle/1.0.0');
 src/cli/commands/oracle.ts:123:      console.error(`oracle --live: publish: ${formatError(publishRes.error)}`);
-src/cli/commands/oracle.ts:126:    console.log(`  live:   published to /wellinformed/oracle/1.0.0 (${dialed} peer(s) dialed)`);
-src/cli/commands/oracle.ts:144:    console.error('oracle ask: missing question — usage: wellinformed oracle ask "your question" [--live]');
+src/cli/commands/oracle.ts:126:    console.log(`  live:   published to /akashik/oracle/1.0.0 (${dialed} peer(s) dialed)`);
+src/cli/commands/oracle.ts:144:    console.error('oracle ask: missing question — usage: akashik oracle ask "your question" [--live]');
 src/cli/commands/oracle.ts:149:    console.error(`oracle ask: ${formatError(rt.error)}`);
 src/cli/commands/oracle.ts:162:      console.error(`oracle ask: ${formatError(res.error)}`);
 src/cli/commands/oracle.ts:165:    console.log(`oracle ask: posted`);
-src/cli/commands/oracle.ts:169:      ? '  peers subscribed to /wellinformed/oracle/1.0.0 get it now; others on next touch.'
+src/cli/commands/oracle.ts:169:      ? '  peers subscribed to /akashik/oracle/1.0.0 get it now; others on next touch.'
 src/cli/commands/oracle.ts:170:      : '  peers will see it on their next touch of `oracle`.');
-src/cli/commands/oracle.ts:200:    console.error('oracle answer: usage: wellinformed oracle answer <question-id> "your answer" [--confidence 0.7] [--live]');
+src/cli/commands/oracle.ts:200:    console.error('oracle answer: usage: akashik oracle answer <question-id> "your answer" [--confidence 0.7] [--live]');
 src/cli/commands/oracle.ts:204:    console.error(`oracle answer: '${qid}' does not look like a question id (expected 'oracle-question:...')`);
 src/cli/commands/oracle.ts:209:    console.error(`oracle answer: ${formatError(rt.error)}`);
 src/cli/commands/oracle.ts:222:      console.error(`oracle answer: ${formatError(res.error)}`);
@@ -7043,7 +7043,7 @@ src/cli/commands/oracle.ts:225:    console.log(`oracle answer: posted`);
 src/cli/commands/oracle.ts:255:    console.error(`oracle list: ${formatError(rt.error)}`);
 src/cli/commands/oracle.ts:262:      console.error(`oracle list: ${formatError(graph.error)}`);
 src/cli/commands/oracle.ts:271:      console.log('oracle list: no questions yet.');
-src/cli/commands/oracle.ts:289:    console.error('oracle show: missing question id — usage: wellinformed oracle show <qid>');
+src/cli/commands/oracle.ts:289:    console.error('oracle show: missing question id — usage: akashik oracle show <qid>');
 src/cli/commands/oracle.ts:294:    console.error(`oracle show: ${formatError(rt.error)}`);
 src/cli/commands/oracle.ts:301:      console.error(`oracle show: ${formatError(graph.error)}`);
 src/cli/commands/oracle.ts:306:    if (!qNode || qNode.oracle_kind !== 'question') {
@@ -7067,7 +7067,7 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | `NEXT_STEPS.md` | `ARCHIVE` | Duplicates planning intent now better expressed in `docs/PROJECT-PLAN-AKASHIK.md`. |
 | `findings.md` | `ARCHIVE` | Likely useful as a historical scratchpad, not as a live source of truth. |
 | `dist/` | `DELETE` | Generated output; if tracked, remove from git and regenerate in CI/builds only. |
-| `wellinformed-rs/` | `KEEP` | Still valid infrastructure for local retrieval speed, even though it no longer carries the product narrative. |
+| `akashik-rs/` | `KEEP` | Still valid infrastructure for local retrieval speed, even though it no longer carries the product narrative. |
 | `demo/README.md` | `NEEDS-REWRITE` | Demos should sell federation/community compounding, not old single-user memory behavior. |
 
 **.planning**
@@ -7100,7 +7100,7 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | `docs/README.md` | `NEEDS-REWRITE` | Make it a clean docs index around Akashik, not accumulated legacy categories. |
 | `docs/marketing/how-akashik-works.md` | `KEEP` | Best explanation of the compounding mechanism and should remain first-class. |
 | `docs/marketing/storybrand-messaging-draft.md` | `ARCHIVE` | Preserve the evolution internally, but collapse public-facing messaging to a final version. |
-| `docs/marketing/positioning-v2.1.md` | `NEEDS-REWRITE` | Likely close to the new thesis, but still carries transitional wellinformed/oracle-era framing. |
+| `docs/marketing/positioning-v2.1.md` | `NEEDS-REWRITE` | Likely close to the new thesis, but still carries transitional akashik/oracle-era framing. |
 | `docs/marketing/positioning-draft.md` | `ARCHIVE` | Draft-stage messaging should not compete with the current story. |
 | `docs/marketing/SOCIAL-LAUNCH.md` | `KEEP` | Launch execution is still relevant post-pivot. |
 | `docs/marketing/how-akashik-works.md` | `KEEP` | Core architecture/message bridge; not stale. |
@@ -7164,7 +7164,7 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | `src/cli/commands/onboard.ts` | `NEEDS-REWRITE` | Keep if you want adoption, but the onboarding story should be “join the commons,” not “set up your personal memory.” |
 | `src/cli/index.ts` | `NEEDS-REWRITE` | Command surface has grown into product sprawl; prune or regroup around Akashik’s current core use cases. |
 
-A few clear calls. On the two-name issue: stay two-name only as a short transitional tactic, because the upside is package/install continuity, but the downside is constant cognitive tax across docs, tests, CLI, and benchmarks. I would not do an immediate repo/package rename before the pilot if it risks breaking the working distribution path; on the other hand, I would aggressively remove “wellinformed” from narrative docs now and schedule one coordinated technical rename once the pilot-facing docs stabilize. On `storybrand-messaging-draft.md`, keep the revision history only in archive form; the public or active doc should be the final message only. On `beat-the-competitors-retrieval-plan.md`, archive and annotate it rather than delete it; its strengths are real technical research and benchmark archaeology, however its competitive frame is now wrong for the product.
+A few clear calls. On the two-name issue: stay two-name only as a short transitional tactic, because the upside is package/install continuity, but the downside is constant cognitive tax across docs, tests, CLI, and benchmarks. I would not do an immediate repo/package rename before the pilot if it risks breaking the working distribution path; on the other hand, I would aggressively remove “akashik” from narrative docs now and schedule one coordinated technical rename once the pilot-facing docs stabilize. On `storybrand-messaging-draft.md`, keep the revision history only in archive form; the public or active doc should be the final message only. On `beat-the-competitors-retrieval-plan.md`, archive and annotate it rather than delete it; its strengths are real technical research and benchmark archaeology, however its competitive frame is now wrong for the product.
 
 If I were Sahar cleaning up right now, the 3 changes I’d make first are: delete repo junk and local state (`README.md.bak.830lines`, `.claude-octopus/*`, tracked `dist/`) because that is pure signal-to-noise drag; archive most of `.planning/` plus the retrieval-era research docs because they preserve history without continuing to steer the present; rewrite `docs/product/BENCHMARKS.md`, `docs/product/VISION.md`, and onboarding/command-facing docs around Akashik’s actual thesis because the biggest current risk is not dead code, it is a codebase and doc surface still telling two different stories.
 2026-05-26T17:35:48.298803Z ERROR codex_core::session: failed to record rollout items: thread 019e6557-a38e-7183-8dfb-0cd38e5abfe7 not found

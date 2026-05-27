@@ -1,5 +1,5 @@
 /**
- * `wellinformed dashboard [--port N]`
+ * `akashik dashboard [--port N]`
  *
  * Starts a localhost HTTP server serving a browser-based graph
  * visualization with search, room filter, and node inspector.
@@ -21,7 +21,7 @@ const dashboardHtml = (port: number): string => `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>wellinformed dashboard</title>
+<title>akashik dashboard</title>
 <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -57,7 +57,7 @@ h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
 </head>
 <body>
 <div id="sidebar">
-  <div class="logo">wellinformed</div>
+  <div class="logo">akashik</div>
   <div class="panel">
     <h2>Search</h2>
     <input id="search" placeholder="Semantic search..." />
@@ -256,7 +256,7 @@ export const dashboard = async (args: readonly string[]): Promise<number> => {
   });
 
   server.listen(port, () => {
-    console.log(`wellinformed dashboard running at http://localhost:${port}`);
+    console.log(`akashik dashboard running at http://localhost:${port}`);
     console.log('Press Ctrl+C to stop');
   });
 

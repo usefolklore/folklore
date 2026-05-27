@@ -1,7 +1,7 @@
 /**
  * code-graph.ts — sqlite adapter for the Phase 19 structured code graph.
  *
- * Opens ~/.wellinformed/code-graph.db (separate from vectors.db per
+ * Opens ~/.akashik/code-graph.db (separate from vectors.db per
  * 19-CONTEXT.md decisions — different lifecycle, rebuildable). Schema
  * v1 has 4 tables: codebases, code_nodes, code_edges, codebase_rooms.
  *

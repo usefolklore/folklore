@@ -13,7 +13,7 @@ test_fail: 0
 # Phase 20 — Verification
 
 **Phase:** 20 — Session Persistence
-**Goal:** Auto-persist every Claude Code session's progress into wellinformed so context survives kills, crashes, and restarts. No explicit user request.
+**Goal:** Auto-persist every Claude Code session's progress into akashik so context survives kills, crashes, and restarts. No explicit user request.
 **Status:** PASSED
 
 ---
@@ -30,7 +30,7 @@ test_fail: 0
 | claude-sessions source registered | Confirmed — `sources.json` has `kind: "claude_sessions"` with `enabled: true` |
 | `recent-sessions` CLI | Registered + runs successfully |
 | 16th MCP tool `recent_sessions` | Registered (Phase 17 C2 test bumped 15 → 16) |
-| PreToolUse + SessionStart hooks | Idempotent install via `wellinformed claude install` |
+| PreToolUse + SessionStart hooks | Idempotent install via `akashik claude install` |
 | `share room sessions` hard-refuse | Double-layer defense: literal check + `shareable: false` flag |
 
 ---
@@ -43,7 +43,7 @@ test_fail: 0
 | **SESS-02** | Tool calls extracted with command/file/exit-code/stdout metadata | `projectEntry` in claude-sessions.ts parses assistant `tool_use` blocks | phase20 describe C | ✓ |
 | **SESS-03** | Incremental ingest via mtime + byte offset tracking | `sessions-state.ts` (242 lines) atomic tmp+rename | phase20 describe D + pitfall P2 | ✓ |
 | **SESS-04** | Daemon tick runs session-sources adapter | `runOneTick` in `daemon/loop.ts` calls `ensureSessionsRoom` before room ingest + `enforceRetention` after share-sync | phase20 describe E + daemon log confirms auto-provisioning | ✓ |
-| **SESS-05** | `wellinformed recent-sessions list [--hours --project --limit --json]` CLI | `src/cli/commands/recent-sessions.ts` + `rollupSessions` helper | phase20 describe F | ✓ |
+| **SESS-05** | `akashik recent-sessions list [--hours --project --limit --json]` CLI | `src/cli/commands/recent-sessions.ts` + `rollupSessions` helper | phase20 describe F | ✓ |
 | **SESS-06** | `recent_sessions` MCP tool | 16th tool in `src/mcp/server.ts` (reuses `rollupSessions`) | phase20 describe G + phase17 C2 bumped 15 → 16 | ✓ |
 | **SESS-07** | PreToolUse hook extended with SessionStart branch | `src/cli/commands/claude-install.ts` installs 2 hook entries (PreToolUse + SessionStart), both idempotent | phase20 describe H + pitfall P5 | ✓ |
 | **SESS-08** | Retention policy — 30 day default with key-signal exceptions | `enforceRetention` in `session-ingest.ts`, retains git hashes / API URLs / `_blocked_by_secret_scan` markers indefinitely | phase20 describe I | ✓ |
@@ -54,8 +54,8 @@ test_fail: 0
 
 | # | Criterion | Status | Evidence |
 |---|-----------|--------|----------|
-| 1 | Session JSONL files indexed automatically via daemon tick into `sessions` room | ✓ | Daemon log: `tick: room=wellinformed-dev new=34`; sources.json shows `claude-sessions-default` enabled; rooms.json has `sessions` room created at daemon bootstrap |
-| 2 | `wellinformed recent-sessions` CLI shows recent sessions with duration + tool-call summary | ✓ | CLI emits structured output or "no sessions" message — command wired + dispatcher registered |
+| 1 | Session JSONL files indexed automatically via daemon tick into `sessions` room | ✓ | Daemon log: `tick: room=akashik-dev new=34`; sources.json shows `claude-sessions-default` enabled; rooms.json has `sessions` room created at daemon bootstrap |
+| 2 | `akashik recent-sessions` CLI shows recent sessions with duration + tool-call summary | ✓ | CLI emits structured output or "no sessions" message — command wired + dispatcher registered |
 | 3 | MCP tool `recent_sessions` available to Claude from any new session | ✓ | Tool count 15 → 16, phase17 C2 regression test updated, tool handler reuses `rollupSessions` helper |
 | 4 | PreToolUse hook surfaces previous-session summary on SessionStart automatically | ✓ | `claude install` writes both PreToolUse + SessionStart hook entries; hook script shells out to `recent-sessions --hours 24 --limit 1 --json` + emits `additionalContext`; idempotent install verified |
 
@@ -102,7 +102,7 @@ test_fail: 0
 
 Phase 20 code paths are fully unit + integration tested (70 new tests, 313/313 total). The following observations were made during verification but are NOT regression items — they represent live runtime-use-case observations:
 
-1. **Initial historical backlog ingest is slow.** The `~/.claude/projects/` directory contains thousands of historical JSONL entries. On first run, ONNX embedding at ~20 docs/sec means the full backlog takes tens of minutes to index. This is not a bug — it's the expected cost of batch ingestion. Subsequent ticks are fast (incremental via byteOffset). For users who want faster initial bootstrap, they can set `interval_seconds: 60` in config or manually run `wellinformed trigger --room sessions` and let it complete in the background.
+1. **Initial historical backlog ingest is slow.** The `~/.claude/projects/` directory contains thousands of historical JSONL entries. On first run, ONNX embedding at ~20 docs/sec means the full backlog takes tens of minutes to index. This is not a bug — it's the expected cost of batch ingestion. Subsequent ticks are fast (incremental via byteOffset). For users who want faster initial bootstrap, they can set `interval_seconds: 60` in config or manually run `akashik trigger --room sessions` and let it complete in the background.
 
 2. **Daemon interval default (86400 = 24h).** Configured for daily research source refresh. Users who want more frequent session ingest can set `sessions.interval_seconds` separately, or rely on the `trigger --room sessions` manual path for immediate ingest.
 
@@ -114,7 +114,7 @@ These are deployment-tuning observations, not code defects. The ingest pipeline 
 
 **PASSED — 16/16 must-haves verified**
 
-Phase 20 delivers end-to-end Claude Code session persistence that directly closes the pain point surfaced by the user ("session killed, context lost"). Zero new dependencies. Three hard-defense layers protect against pitfalls (current-session race, secrets leakage, P2P leakage). The `~/.claude/projects/<hash>/*.jsonl` files — which Claude Code has always been writing — are now queryable as first-class wellinformed graph nodes with full incremental ingest, retention, and retrieval surfaces (CLI + MCP + PreToolUse hook).
+Phase 20 delivers end-to-end Claude Code session persistence that directly closes the pain point surfaced by the user ("session killed, context lost"). Zero new dependencies. Three hard-defense layers protect against pitfalls (current-session race, secrets leakage, P2P leakage). The `~/.claude/projects/<hash>/*.jsonl` files — which Claude Code has always been writing — are now queryable as first-class akashik graph nodes with full incremental ingest, retention, and retrieval surfaces (CLI + MCP + PreToolUse hook).
 
 **The next time the user kills a Claude session and opens a new one, the first thing the new session will see is a summary of what the previous session was working on — automatically.**
 

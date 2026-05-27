@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Telegram bot that serves as the mobile interface to wellinformed: forward links for ingest, receive daily digests, query the graph from your phone. Single-user, long-polling, runs inside the daemon process.
+Telegram bot that serves as the mobile interface to akashik: forward links for ingest, receive daily digests, query the graph from your phone. Single-user, long-polling, runs inside the daemon process.
 
 </domain>
 
@@ -18,7 +18,7 @@ Telegram bot that serves as the mobile interface to wellinformed: forward links 
 - Raw `node-telegram-bot-api` library (~12K stars, lightweight)
 - Bot runs inside the daemon loop — single process
 - Single-user only — chat_id whitelist from config.yaml
-- BotFather setup documented in CLI `wellinformed telegram setup`
+- BotFather setup documented in CLI `akashik telegram setup`
 
 ### Inbound Capture
 - Room classification via keyword similarity (compare message text against room keywords, pick highest-scoring)
@@ -54,7 +54,7 @@ Telegram bot that serves as the mobile interface to wellinformed: forward links 
 ### Established Patterns
 - ResultAsync for all I/O, sequenceLazy for sequential operations
 - Functional ports + adapters — bot should be a port with an adapter
-- Config loaded from ~/.wellinformed/config.yaml via config-loader.ts
+- Config loaded from ~/.akashik/config.yaml via config-loader.ts
 
 ### Integration Points
 - Daemon loop (src/daemon/loop.ts) — bot starts alongside the timer
@@ -67,7 +67,7 @@ Telegram bot that serves as the mobile interface to wellinformed: forward links 
 <specifics>
 ## Specific Ideas
 
-- BotFather is the setup mechanism — `wellinformed telegram setup` should guide token creation
+- BotFather is the setup mechanism — `akashik telegram setup` should guide token creation
 - Digest should feel like a daily briefing, not a data dump
 
 </specifics>

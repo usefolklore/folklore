@@ -23,7 +23,7 @@ Every number is reproducible via `scripts/bench-*.mjs` on a commodity CPU (M-ser
 
 ### 1. Query latency — 9× on cached, 3.2× on cold (daemon IPC)
 
-**Claim**: A running `wellinformed daemon` with its L1 query cache warm serves repeat `ask` queries in **~100 ms**. A cold CLI (no daemon) takes **~900 ms**.
+**Claim**: A running `akashik daemon` with its L1 query cache warm serves repeat `ask` queries in **~100 ms**. A cold CLI (no daemon) takes **~900 ms**.
 
 **Measured** (live Akashik home, 10,607 nodes, warm ONNX cache on disk):
 | Pipeline | Latency | Speedup vs v3 cold |
@@ -33,14 +33,14 @@ Every number is reproducible via `scripts/bench-*.mjs` on a commodity CPU (M-ser
 | Node shim → IPC + L1 HIT | ~110 ms | 8.2× (Phase 1 + 5) |
 | **NATIVE Rust CLI → IPC + L1 HIT** | **~27 ms** | **33×** (v4.1 native client, in-tree) |
 
-The native Rust client (`wellinformed-rs/src/bin/wellinformed_cli.rs`) collapses the Node-boot floor to ~5 ms — total round trip ~27 ms for cached repeat queries. Compose with daemon IPC + L1 cache and you hit the original 60× plan target *for cached repeats*. Cache misses run ~160–240 ms because the actual work (embed + search) dominates; native client overhead is irrelevant on miss.
+The native Rust client (`akashik-rs/src/bin/akashik_cli.rs`) collapses the Node-boot floor to ~5 ms — total round trip ~27 ms for cached repeat queries. Compose with daemon IPC + L1 cache and you hit the original 60× plan target *for cached repeats*. Cache misses run ~160–240 ms because the actual work (embed + search) dominates; native client overhead is irrelevant on miss.
 
 **Reproduction**:
 ```bash
-npx wellinformed@4 daemon start
+npx akashik@4 daemon start
 # in another terminal:
-time wellinformed ask "your query"                 # cold miss, ~280 ms
-time wellinformed ask "your query"                 # warm hit, ~100 ms
+time akashik ask "your query"                 # cold miss, ~280 ms
+time akashik ask "your query"                 # warm hit, ~100 ms
 ```
 
 **Phases**: 1 (IPC daemon), 5 (L1 query cache)
@@ -61,11 +61,11 @@ time wellinformed ask "your query"                 # warm hit, ~100 ms
 | v4 parallel `Promise.all` via `batchingEmbedder` | **84.66** (9.9×) |
 | Direct `embedBatch(32)` (reference ceiling) | 26.56 |
 
-The coalescing decorator wraps any `Embedder` and queues individual `.embed()` calls into batches, flushing at 32 items OR after 20 ms. On by default; opt-out via `WELLINFORMED_EMBEDDER_BATCH=off`.
+The coalescing decorator wraps any `Embedder` and queues individual `.embed()` calls into batches, flushing at 32 items OR after 20 ms. On by default; opt-out via `AKASHIK_EMBEDDER_BATCH=off`.
 
 **Reproduction**:
 ```bash
-WELLINFORMED_RUST_BIN=./wellinformed-rs/target/release/embed_server \
+AKASHIK_RUST_BIN=./akashik-rs/target/release/embed_server \
   node scripts/bench-embed-throughput.mjs --model bge-base --n 32
 ```
 
@@ -87,7 +87,7 @@ WELLINFORMED_RUST_BIN=./wellinformed-rs/target/release/embed_server \
 | binary-768 hybrid (safer) | 96 | −1.10 pt | 32× |
 | fp32-384 dense-only | 1,536 | −1.42 pt | 2× |
 
-Toggle via `WELLINFORMED_VECTOR_QUANTIZATION=binary-512`. Schema migration is idempotent: existing vectors.db files get a new `raw_bin` column on open; old rows stay NULL (invisible to binary search until re-indexed), new upserts populate both fp32 and binary.
+Toggle via `AKASHIK_VECTOR_QUANTIZATION=binary-512`. Schema migration is idempotent: existing vectors.db files get a new `raw_bin` column on open; old rows stay NULL (invisible to binary search until re-indexed), new upserts populate both fp32 and binary.
 
 **Reproduction**:
 ```bash
@@ -134,7 +134,7 @@ Consolidation is:
 ```bash
 # Start Ollama with a small instruction-tuned model
 ollama pull qwen2.5:1.5b
-wellinformed consolidate run <room> --dry-run --threshold 0.8 --min-size 5
+akashik consolidate run <room> --dry-run --threshold 0.8 --min-size 5
 # to commit: drop --dry-run
 node scripts/bench-consolidation.mjs <room>       # storage + quality gate
 ```
@@ -143,9 +143,9 @@ node scripts/bench-consolidation.mjs <room>       # storage + quality gate
 **Commits**: `f6ab7f1`, `832c91c`, `0385f69`, `6d7ec77`
 **Tests**: `tests/consolidated-memory.test.ts`, `tests/consolidator.test.ts` (26 tests green)
 
-**Coordination with the daemon**: Both `wellinformed daemon` and `wellinformed consolidate run` acquire the cross-process write lock at `<home>/wellinformed.lock` (file-based exclusive create with stale-PID recovery). The daemon holds it for its lifetime + refreshes every 20s; consolidate waits up to 30s for it. **No "stop the daemon first" caveat — run anytime.** Stale-recovery handles the case where a prior holder crashed without releasing.
+**Coordination with the daemon**: Both `akashik daemon` and `akashik consolidate run` acquire the cross-process write lock at `<home>/akashik.lock` (file-based exclusive create with stale-PID recovery). The daemon holds it for its lifetime + refreshes every 20s; consolidate waits up to 30s for it. **No "stop the daemon first" caveat — run anytime.** Stale-recovery handles the case where a prior holder crashed without releasing.
 
-**Atomic prune** — pass `--prune` to `wellinformed consolidate run` and the source raw entries get deleted from BOTH the graph and the vector index after successful consolidation. Closes the §2j quality regression by removing BM25 competition from the still-indexed raw text. Mutually exclusive with `--dry-run`.
+**Atomic prune** — pass `--prune` to `akashik consolidate run` and the source raw entries get deleted from BOTH the graph and the vector index after successful consolidation. Closes the §2j quality regression by removing BM25 competition from the still-indexed raw text. Mutually exclusive with `--dry-run`.
 
 ---
 
@@ -174,7 +174,7 @@ Unexpected bonus: the linear bridge **repairs defective ONNX ports** — bridged
 **Shipped in v3, unchanged in v4**:
 - W3C did:key over Ed25519 (0xed01 multicodec)
 - Three-tier hierarchy: user DID → device key → signed envelope
-- Domain-separated signatures (`wellinformed-auth:v1:` vs `wellinformed-sig:v1:`)
+- Domain-separated signatures (`akashik-auth:v1:` vs `akashik-sig:v1:`)
 - Canonical JSON (key-sorted, deterministic across runtimes)
 - Envelope verify cost: 3 Ed25519 ops, < 2 ms
 
@@ -219,7 +219,7 @@ e156e23  feat(daemon): IPC delegation — `ask` through warm daemon, 3.2× speed
 0385f69  feat(cli): consolidate — end-to-end episodic→semantic distillation pipeline
 832c91c  feat(app): consolidator orchestrator — port-injected episodic→semantic distillation
 f6ab7f1  feat(domain): consolidated-memory primitive — clusters + provenance
-09223d1  feat(runtime): WELLINFORMED_VECTOR_QUANTIZATION env var + search dispatch
+09223d1  feat(runtime): AKASHIK_VECTOR_QUANTIZATION env var + search dispatch
 b16a93a  feat(vector-index): binary-quantized storage + searchHybridBinary
 1e609a6  feat(domain): binary-quantize primitive — Matryoshka slice + sign-bit pack + Hamming
 ```
@@ -233,32 +233,32 @@ Plus the v3 wave (identity, bridge, bloom, pagerank, shamir, log, release — al
 For v3.x users upgrading to v4:
 
 ```bash
-npm install -g wellinformed@4
-wellinformed identity init         # no-op if you already have a DID
-wellinformed daemon start          # enables the IPC hot path
+npm install -g akashik@4
+akashik identity init         # no-op if you already have a DID
+akashik daemon start          # enables the IPC hot path
 ```
 
 To opt into v4 performance modes:
 
 ```bash
 # Binary-quantized storage (48× smaller vectors.db, −1.79 pt worst-case NDCG)
-export WELLINFORMED_VECTOR_QUANTIZATION=binary-512
+export AKASHIK_VECTOR_QUANTIZATION=binary-512
 
 # Rust fastembed backend (higher-quality ONNX ports)
-export WELLINFORMED_EMBEDDER_BACKEND=rust
-export WELLINFORMED_EMBEDDER_MODEL=bge-base
+export AKASHIK_EMBEDDER_BACKEND=rust
+export AKASHIK_EMBEDDER_MODEL=bge-base
 
 # Coalescing batch decorator is ON by default. Opt out:
-# export WELLINFORMED_EMBEDDER_BATCH=off
+# export AKASHIK_EMBEDDER_BATCH=off
 ```
 
 To consolidate an existing sessions room:
 
 ```bash
 ollama pull qwen2.5:1.5b
-wellinformed consolidate run sessions --threshold 0.8 --min-size 5
+akashik consolidate run sessions --threshold 0.8 --min-size 5
 # add --prune to atomically delete source entries (closes §2j quality regression):
-wellinformed consolidate run sessions --threshold 0.8 --min-size 5 --prune
+akashik consolidate run sessions --threshold 0.8 --min-size 5 --prune
 # the daemon coordinates via the cross-process write lock — no stop required.
 ```
 
@@ -268,13 +268,13 @@ wellinformed consolidate run sessions --threshold 0.8 --min-size 5 --prune
 
 Explicitly deferred from v4.0:
 
-- ✅ **v4.0 — Native Rust client** (`wellinformed-rs/src/bin/wellinformed_cli.rs`, commit `a462f86`). Cold-starts ~5 ms, IPC round trip ~22 ms, total **27 ms** end-to-end for cached repeats. **33× faster than v3 cold CLI**. Falls back to Node shim when daemon socket absent or command not delegatable.
-- ✅ **v4.0 — BIP39 24-word mnemonic recovery** (`src/application/bip39-recovery.ts`, commit `8dced04`). 24-word English phrase = 256 bits = exact Ed25519 seed. `wellinformed identity export` defaults to mnemonic; `--hex` for v1 legacy format. Import autodetects either form. Adds `@scure/bip39` (40 KB audited dep, used by every Bitcoin/ETH wallet).
-- ✅ **v4.0 — Cross-process write lock** (`src/infrastructure/process-lock.ts`, commit `5591757`). Daemon and mutating CLI commands coordinate via `<home>/wellinformed.lock`. Stale-PID recovery + 20s heartbeat refresh. No "stop daemon" caveat anymore.
+- ✅ **v4.0 — Native Rust client** (`akashik-rs/src/bin/akashik_cli.rs`, commit `a462f86`). Cold-starts ~5 ms, IPC round trip ~22 ms, total **27 ms** end-to-end for cached repeats. **33× faster than v3 cold CLI**. Falls back to Node shim when daemon socket absent or command not delegatable.
+- ✅ **v4.0 — BIP39 24-word mnemonic recovery** (`src/application/bip39-recovery.ts`, commit `8dced04`). 24-word English phrase = 256 bits = exact Ed25519 seed. `akashik identity export` defaults to mnemonic; `--hex` for v1 legacy format. Import autodetects either form. Adds `@scure/bip39` (40 KB audited dep, used by every Bitcoin/ETH wallet).
+- ✅ **v4.0 — Cross-process write lock** (`src/infrastructure/process-lock.ts`, commit `5591757`). Daemon and mutating CLI commands coordinate via `<home>/akashik.lock`. Stale-PID recovery + 20s heartbeat refresh. No "stop daemon" caveat anymore.
 - ✅ **v4.0 — Atomic prune** (`--prune` flag, commit `3ed850f`). Source raw entries deleted from graph + vectors after consolidation; closes the §2j quality regression by removing BM25 competition.
 - ✅ **v4.0 — Daemon-tick auto-consolidate** (`src/daemon/consolidate-tick.ts`, commit `2989d38`). Operator opts in via `daemon.consolidate.enabled: true` in config.yaml; daemon spawns detached `consolidate run` per configured room on its own cadence. Removes the "operator must trigger" friction.
-- ✅ **v4.0 — Backup-before-prune** (commits `3c16238`, `91840da`). `--prune` writes NDJSON backup of source nodes by default; `--no-backup` opt-out. `wellinformed sessions reingest` recovers from full sessions-state.json wipe + re-trigger.
-- ✅ **v4.0 — Cache observability** (`wellinformed cache-stats`, commit `b2ab5ed`). Daemon-side L1 hit/miss/eviction counters exposed via IPC.
+- ✅ **v4.0 — Backup-before-prune** (commits `3c16238`, `91840da`). `--prune` writes NDJSON backup of source nodes by default; `--no-backup` opt-out. `akashik sessions reingest` recovers from full sessions-state.json wipe + re-trigger.
+- ✅ **v4.0 — Cache observability** (`akashik cache-stats`, commit `b2ab5ed`). Daemon-side L1 hit/miss/eviction counters exposed via IPC.
 - **v4.2 — HippoRAG-2 multi-hop PPR gate.** Measure the existing `src/domain/pagerank.ts` primitive against MuSiQue + HotpotQA. If +3pt NDCG@10 or +5pt R@5, enable `multi_hop: true` flag on MCP queries.
 - **v4.2 — Contextual Retrieval with a larger local LLM.** Current null was measured with Qwen2.5-0.5B (too small). Retry with Qwen3 or Llama-3.2 once they have embedding-pair ONNX ports.
 - **v4.3 — WASM browser runtime.** Same Rust core compiled to WASM for in-browser peers.

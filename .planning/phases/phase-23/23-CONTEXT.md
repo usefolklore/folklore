@@ -8,7 +8,7 @@
 
 Establish a strict, reproducible benchmark suite for the long-term
 memory work shipped in Phase 21/22. The deliverable is a single
-`wellinformed bench memory` command (and matching `npm test` entry)
+`akashik bench memory` command (and matching `npm test` entry)
 that runs every dimension and emits one JSON report.
 
 The benchmark is the **acceptance contract** for any future memory
@@ -54,7 +54,7 @@ not regress the report. Trip-wire ratchets, not narrative claims.
 5. **Write-time gate quality** — does the gate's drop-reason mirror a
    manually-labelled "should this have been promoted" set?
 
-These five are the **wellinformed-specific** axes — no public benchmark
+These five are the **akashik-specific** axes — no public benchmark
 hits them because they're internal to the tier-management pipeline.
 They have to be synthetic, but the synthetic harness can be small,
 deterministic, and shared into the repo so anyone can run it.
@@ -81,7 +81,7 @@ We omit:
   output indirectly via the rerank-on-BEIR signal)
 - RAGBench full (needs a generation step we don't own)
 
-**B. Wellinformed-specific synthetic benchmarks** — the five gap-axes
+**B. Akashik-specific synthetic benchmarks** — the five gap-axes
 above. Each gets a labelled fixture + a pure-domain scorer:
 
 | Axis | Fixture | Metric |
@@ -113,7 +113,7 @@ Total weight = 1.0. Acceptance gate for a PR: composite must not drop
 ### Runner shape
 
 - One driver under `src/cli/commands/bench.ts` (NEW): subcommand
-  `wellinformed bench memory [--suite <name>] [--json]`.
+  `akashik bench memory [--suite <name>] [--json]`.
 - Each suite is a TS file under `tests/bench-*.test.ts` so `npm test`
   picks them up automatically AND they can be invoked standalone via
   the CLI driver.
@@ -128,7 +128,7 @@ Total weight = 1.0. Acceptance gate for a PR: composite must not drop
   }
   ```
 - Composite runner aggregates suite reports + emits
-  `~/.wellinformed/bench-memory-<ISO>.json` plus a one-line summary
+  `~/.akashik/bench-memory-<ISO>.json` plus a one-line summary
   to stdout.
 
 ### Reproducibility
@@ -141,7 +141,7 @@ Total weight = 1.0. Acceptance gate for a PR: composite must not drop
   RNG seed).
 - LongMemEval test set is HF-hosted at
   `xiaowu0162/longmemeval-cleaned`. We pull `longmemeval_oracle.json`
-  on first run, cache under `~/.wellinformed/bench-cache/`.
+  on first run, cache under `~/.akashik/bench-cache/`.
 - LoCoMo subset is hand-extracted from arxiv 2402.17753's released
   dataset (50 factual-recall pairs). Vendored under `tests/fixtures/`.
 
@@ -153,10 +153,10 @@ Total weight = 1.0. Acceptance gate for a PR: composite must not drop
   good answer paragraph". This is a stricter floor: if retrieval is
   bad, generation can't recover.
 - No corpora that require online API access at run time. All test
-  data either ships in-repo or downloads to `~/.wellinformed/
+  data either ships in-repo or downloads to `~/.akashik/
   bench-cache/` on first use.
 - No leakage of test data into the prefetch cache. Bench mode sets
-  `WELLINFORMED_BENCH=1` which disables the auto-save hook.
+  `AKASHIK_BENCH=1` which disables the auto-save hook.
 
 </decisions>
 
@@ -187,7 +187,7 @@ Out:
 <acceptance>
 ## Acceptance criteria
 
-1. `wellinformed bench memory --json` exits 0 and emits a valid
+1. `akashik bench memory --json` exits 0 and emits a valid
    `BenchSuiteReport[]` plus a composite score.
 2. Composite score on the current main branch is documented in
    `docs/product/BENCHMARKS.md`.

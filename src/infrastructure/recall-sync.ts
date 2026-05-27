@@ -1,7 +1,7 @@
 /**
  * Recall sync — federated entity recall over libp2p.
  *
- * Sibling protocol to /wellinformed/search/1.0.0. The architectural
+ * Sibling protocol to /akashik/search/1.0.0. The architectural
  * review (data + solution architects, both converged) said: ship
  * recall as its OWN protocol. Reasons:
  *
@@ -9,7 +9,7 @@
  *     embedding number[384]).
  *   - Lifecycle independence — separate rate limit, separate ACL
  *     decisions later.
- *   - Mirrors how /wellinformed/touch/1.0.0 sits next to /search.
+ *   - Mirrors how /akashik/touch/1.0.0 sits next to /search.
  *
  * Privacy boundary (V5):
  *   - Sender ships a CANONICAL entity_id (e.g. 'entity:product:lemlist').
@@ -39,7 +39,7 @@ import { SearchError as SEARCH_ERR, type SearchError } from '../domain/errors.js
 
 // ─────────────── constants ────────────────
 
-export const RECALL_PROTOCOL_ID = '/wellinformed/recall/1.0.0' as const;
+export const RECALL_PROTOCOL_ID = '/akashik/recall/1.0.0' as const;
 const PER_PEER_TIMEOUT_MS = 2000;
 const MAX_INBOUND_STREAMS = 16;
 const MAX_LIMIT = 50;

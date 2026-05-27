@@ -29,7 +29,7 @@
 import type { GraphNode } from './graph.js';
 
 /** Protocol id registered on the libp2p node. */
-export const TOUCH_PROTOCOL_ID = '/wellinformed/touch/1.0.0' as const;
+export const TOUCH_PROTOCOL_ID = '/akashik/touch/1.0.0' as const;
 
 /**
  * Defense-in-depth cap on the number of nodes returned in a single touch.

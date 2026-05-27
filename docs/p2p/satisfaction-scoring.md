@@ -13,7 +13,7 @@ blocked.
 ## Where it lives
 
 - Base scorer: [`src/domain/peer-telemetry.ts`](../../src/domain/peer-telemetry.ts) — `computeSatisfaction(results)` at line 229.
-- Hook-level boost: [`.claude/hooks/wellinformed-prompt-submit.cjs`](../../.claude/hooks/wellinformed-prompt-submit.cjs) — applied AFTER the base scorer, capped at 1.0, never demotes.
+- Hook-level boost: [`.claude/hooks/akashik-prompt-submit.cjs`](../../.claude/hooks/akashik-prompt-submit.cjs) — applied AFTER the base scorer, capped at 1.0, never demotes.
 - Thresholds: declared in the hook closer + `peer-telemetry.ts` decision table.
 
 ## Five base components
@@ -44,7 +44,7 @@ Subtractive, capped at −0.4 total. Applied to the average.
 
 ## Hook-level boost (post-scorer)
 
-Applied in `wellinformed-prompt-submit.cjs` because the base scorer
+Applied in `akashik-prompt-submit.cjs` because the base scorer
 runs on the federated response BEFORE auto-pull populates peer
 bodies. Two signals the base scorer cannot see at scoring time:
 
@@ -65,7 +65,7 @@ Cap at 1.0. Never demotes. Display surface shows both numbers:
 | `≥ 0.40` | `search_required` | sparse — WebSearch / WebFetch / Grep / Read |
 | `< 0.40` | `ask_user` | bail to the human |
 
-Override the use_memory threshold via `WELLINFORMED_TERMINAL_THRESHOLD`.
+Override the use_memory threshold via `AKASHIK_TERMINAL_THRESHOLD`.
 
 ## Worked example
 

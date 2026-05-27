@@ -56,8 +56,8 @@ Every null is accompanied by a reproduction script in [`scripts/`](scripts/) and
 
 ```bash
 # Phase 25 headline — requires Rust sidecar built
-cd wellinformed-rs && cargo build --release && cd ..
-WELLINFORMED_RUST_BIN=$(pwd)/wellinformed-rs/target/release/embed_server \
+cd akashik-rs && cargo build --release && cd ..
+AKASHIK_RUST_BIN=$(pwd)/akashik-rs/target/release/embed_server \
   node scripts/bench-beir-rust.mjs scifact --model bge-base
 
 # Wave 2 (pure Node, no Rust)
@@ -68,7 +68,7 @@ node scripts/bench-beir-sota.mjs scifact --hybrid --rerank
 
 # Wave 4 / room routing null — requires CQADupStack
 node scripts/bench-room-routing.mjs \
-  --datasets-dir ~/.wellinformed/bench/cqadupstack/cqadupstack \
+  --datasets-dir ~/.akashik/bench/cqadupstack/cqadupstack \
   --rooms mathematica,webmasters,gaming
 
 # Calibrated qrel rejudge — requires Ollama + gpt-oss:20b
@@ -123,7 +123,7 @@ Functional DDD. Every fallible op returns `Result<T, E>`. No classes in domain/a
 12. Phase 38 — **Oracle bulletin board** (Layer A: questions + answers via touch + CRDT, 5 MCP tools)
 13. Phase 39 — **Oracle gossip** (Layer B: real-time pubsub via @libp2p/floodsub, daemon subscribes on boot)
 14. Phase 21–22 — Long-term memory tiers (episodic/semantic/procedural), Bayesian reliability, write-time gate, auto-forget
-15. Phase 23 — **Unified memory bench** (`wellinformed bench memory`): 8 suites scoring 9 dimensions, composite **0.8597** on real public corpora (Phase 23.7 — Hetzner, 2026-05-20). Synthetic-fallback composite is 0.9107.
+15. Phase 23 — **Unified memory bench** (`akashik bench memory`): 8 suites scoring 9 dimensions, composite **0.8597** on real public corpora (Phase 23.7 — Hetzner, 2026-05-20). Synthetic-fallback composite is 0.9107.
 
 </details>
 
@@ -133,13 +133,13 @@ Functional DDD. Every fallible op returns `Result<T, E>`. No classes in domain/a
 
 The long-term memory work shipped in Phase 21/22 (tier vocabulary, Beta(α,β)
 reliability counters, write-time gating, auto-forget) needed a benchmark
-that's stricter than any single public suite. Phase 23 ships `wellinformed
+that's stricter than any single public suite. Phase 23 ships `akashik
 bench memory` — a runner that scores 9 dimensions across 8 suites and
 emits a single composite score.
 
 Run it:
 ```bash
-wellinformed bench memory --json
+akashik bench memory --json
 ```
 
 ### Composite — measured 2026-05-20 (Phase 23.6.1 — scorer fix)
@@ -181,7 +181,7 @@ This is honest retrieval-only scoring. Per-persona breakdown of the current run 
 | Cara | 0.881 | 0.857 |
 | Dan | 0.948 | 0.875 |
 
-LLM-extractor mode (`WELLINFORMED_BENCH_LLM_EXTRACTOR=1`) — opt-in upgrade that swaps containment for a real Ollama Phi-4-mini extracted-answer scored via SQuAD F1 against gold — is the next ratchet (Phase 23.7).
+LLM-extractor mode (`AKASHIK_BENCH_LLM_EXTRACTOR=1`) — opt-in upgrade that swaps containment for a real Ollama Phi-4-mini extracted-answer scored via SQuAD F1 against gold — is the next ratchet (Phase 23.7).
 
 ### Why each suite exists
 
@@ -242,7 +242,7 @@ Direct apples-to-apples comparisons land in Phase 23.5 when the real LongMemEval
 
 ## Phase 23.7 — public-real adapters (measured on Hetzner CAX11 ARM)
 
-Three real-corpus suites are now wired into the bench CLI. They share the env contract `WELLINFORMED_BENCH_PUBLIC_REAL=1` (master gate; off by default to keep CI fast) and each takes a dataset-directory env var. Without the gate or the dataset they `t.skip()` cleanly and the composite falls back to the synth/proxy value (registration order in `src/cli/commands/bench.ts` is `synth → real` so real overwrites synth iff real ran).
+Three real-corpus suites are now wired into the bench CLI. They share the env contract `AKASHIK_BENCH_PUBLIC_REAL=1` (master gate; off by default to keep CI fast) and each takes a dataset-directory env var. Without the gate or the dataset they `t.skip()` cleanly and the composite falls back to the synth/proxy value (registration order in `src/cli/commands/bench.ts` is `synth → real` so real overwrites synth iff real ran).
 
 | Suite | File | Env vars | Dataset | Metric → composite key | Floor |
 |---|---|---|---|---|---:|
@@ -250,17 +250,17 @@ Three real-corpus suites are now wired into the bench CLI. They share the env co
 | `longmemeval-real` | `tests/bench-longmemeval-real.test.ts` | `LONGMEMEVAL_DIR` | LongMemEval-S oracle split (~500 q) | R@5 → `longmemevalRecall5` | 0.40 |
 | `locomo-real` | `tests/bench-locomo-real.test.ts` | `LOCOMO_DIR` | snap-research/locomo10 cats 1/2/3 | harmonic-mean dim → `locomoFactualF1` | 0.28 |
 
-Embedder for all three: real Xenova `all-MiniLM-L6-v2` (fp32, mean-pooled, 512 max_len) — no fixture, no topic vectors. The opt-in `WELLINFORMED_BENCH_LLM_EXTRACTOR=1` flag (Phase 23.8) wires an Ollama-backed extractor into `locomo-real` that produces an answer from the retrieved evidence and scores it with SQuAD-F1 + EM. Default model `phi3:mini`; override via `WELLINFORMED_BENCH_LLM_EXTRACTOR_MODEL`. SQuAD metrics are reported alongside the existing harmonic-mean dimension (which stays the composite-feeding metric — keeps the composite portable across machines without an LLM available).
+Embedder for all three: real Xenova `all-MiniLM-L6-v2` (fp32, mean-pooled, 512 max_len) — no fixture, no topic vectors. The opt-in `AKASHIK_BENCH_LLM_EXTRACTOR=1` flag (Phase 23.8) wires an Ollama-backed extractor into `locomo-real` that produces an answer from the retrieved evidence and scores it with SQuAD-F1 + EM. Default model `phi3:mini`; override via `AKASHIK_BENCH_LLM_EXTRACTOR_MODEL`. SQuAD metrics are reported alongside the existing harmonic-mean dimension (which stays the composite-feeding metric — keeps the composite portable across machines without an LLM available).
 
 To run on the Hetzner box (or any host with the datasets staged):
 
 ```
-WELLINFORMED_BENCH_PUBLIC_REAL=1 \
+AKASHIK_BENCH_PUBLIC_REAL=1 \
   BEIR_SCIFACT_DIR=/data/scifact \
   LONGMEMEVAL_DIR=/data/longmemeval \
   LOCOMO_DIR=/data/locomo \
-  WELLINFORMED_BENCH_OUT=/data/run.jsonl \
-  wellinformed bench memory --json
+  AKASHIK_BENCH_OUT=/data/run.jsonl \
+  akashik bench memory --json
 ```
 
 ### Measured composite — 2026-05-20, first Hetzner run
@@ -284,7 +284,7 @@ Three observations worth recording:
 
 1. **Real BEIR SciFact NDCG@10 = 0.7202** beats the 30-doc local proxy (0.6816) and lands within striking distance of the published all-MiniLM-L6-v2 baseline (~0.42) — the gap comes from our hybrid lex+vec + PPR rerank on top of the bi-encoder. SOTA via SPLADE/ColBERTv2 is ~0.75 NDCG@10; we're 5pp below SOTA with a pure CPU pipeline.
 2. **Real LongMemEval-S oracle R@5 = 0.999** is essentially at-ceiling. Oracle is the easiest split (haystack is per-question and small); the harder S / M splits with 50 / 500 distractor sessions per question are the next ratchet.
-3. **Real LoCoMo factual F1 = 0.3536 vs synth 0.864** is the brutal one — real LoCoMo has 3+ gold evidence sessions per question often, and strict-recall (`every gold tag in top-3`) is unforgiving. mem0's 92.5 LoCoMo composite uses an **LLM judge over accuracy**, not retrieval-only — directly comparable only via the Phase 23.8 SQuAD-F1 path (`WELLINFORMED_BENCH_LLM_EXTRACTOR=1`).
+3. **Real LoCoMo factual F1 = 0.3536 vs synth 0.864** is the brutal one — real LoCoMo has 3+ gold evidence sessions per question often, and strict-recall (`every gold tag in top-3`) is unforgiving. mem0's 92.5 LoCoMo composite uses an **LLM judge over accuracy**, not retrieval-only — directly comparable only via the Phase 23.8 SQuAD-F1 path (`AKASHIK_BENCH_LLM_EXTRACTOR=1`).
 
 Per-suite report JSONL is captured to `/data/reports/run.log` on the box; the composite renderer in `src/cli/commands/bench.ts` regenerates the table above from those reports.
 
@@ -310,7 +310,7 @@ The 0.9202 lands within a hair of ByteRover's claimed 92.8% on the same public b
 
 #### LoCoMo with qwen2.5:1.5b SQuAD-F1 extractor (Mac M-series)
 
-`WELLINFORMED_BENCH_LLM_EXTRACTOR=1` + `WELLINFORMED_BENCH_LLM_EXTRACTOR_MODEL=qwen2.5:1.5b` on the same 699-question factual subset:
+`AKASHIK_BENCH_LLM_EXTRACTOR=1` + `AKASHIK_BENCH_LLM_EXTRACTOR_MODEL=qwen2.5:1.5b` on the same 699-question factual subset:
 
 | Metric | Value |
 |---|---:|

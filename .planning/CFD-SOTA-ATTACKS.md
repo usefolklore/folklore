@@ -5,7 +5,7 @@
 **Target:** beat 75.22% NDCG@10 on BEIR SciFact OR recover the −19.6pt ArguAna regression at ≤500M params, CPU.
 **Honest priors:** Round 1 (Math/Physics/DS) burned the *fusion* surface — RRF sweep, Rocchio PRF, and 3B Contextual Retrieval all NULLED tonight (BENCH §2k). Mechanism: SciFact's 13.3% whiff bucket is *encoder-bound*, and the 26.3% mis-rank bucket has no remaining signal in `(rank_dense, rank_bm25)` space that RRF cannot already extract. Any new attack must touch a NEW operator surface: the kernel itself (preconditioning), the basis (spectral / Krylov), the encoder symmetry (Petrov-Galerkin), or the candidate-set topology (AMR). I propose four such attacks below; #5 is a re-targeting argument.
 
-KG probe (`mcp__wellinformed__search`) on multigrid retrieval, Krylov + IR, Petrov-Galerkin retrieval, and per-dim preconditioning returned only generic RAG indexes (vearch, RAG_Techniques, AutoRAG) and Matryoshka/transformer-family pages. **None of these CFD operators have been applied to dense+BM25 retrieval in this codebase or in indexed prior art.** Net-new attack surface.
+KG probe (`mcp__akashik__search`) on multigrid retrieval, Krylov + IR, Petrov-Galerkin retrieval, and per-dim preconditioning returned only generic RAG indexes (vearch, RAG_Techniques, AutoRAG) and Matryoshka/transformer-family pages. **None of these CFD operators have been applied to dense+BM25 retrieval in this codebase or in indexed prior art.** Net-new attack surface.
 
 ---
 
@@ -30,7 +30,7 @@ Equivalent to scoring with a Mahalanobis kernel where Σ is approximated as `dia
 
 **d. Expected lift.** **+0.2 to +0.7 pt NDCG@10 on SciFact**, +0.5 to +1.5 on ArguAna (where score-magnitude matters more — the BM25-reshuffle failure mode in §2e is partly driven by dense scores being mis-scaled relative to BM25's BM25-natural scale). Honest median: **+0.4 pt** on SciFact. The Su et al. "Whitening Sentence Representations" paper reports +2.3 average for *full* whitening on STS; the diagonal limit typically captures 30–50% of that, i.e. +0.7 to +1.1 in the optimistic case.
 
-**e. Effort.** **2 hours.** Compute `s` once offline from cached corpus vectors in `~/.wellinformed/bench/scifact__rust-via-ts__bge-base/vectors.db` (~50 ms), persist as a 3KB Float32Array, apply at query/index time via `src/domain/vectors.ts` ~15 LOC. Re-rank cached top-100 — no re-embed, no re-index.
+**e. Effort.** **2 hours.** Compute `s` once offline from cached corpus vectors in `~/.akashik/bench/scifact__rust-via-ts__bge-base/vectors.db` (~50 ms), persist as a 3KB Float32Array, apply at query/index time via `src/domain/vectors.ts` ~15 LOC. Re-rank cached top-100 — no re-embed, no re-index.
 
 **f. Risk class.** PROVEN (Jacobi preconditioning is the most-studied numerical primitive in existence) / SPECULATIVE for this exact application (no published ablation of diagonal-vs-full whitening on bge-base + RRF).
 
