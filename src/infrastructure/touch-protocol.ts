@@ -2,22 +2,31 @@
  * Touch protocol — `/wellinformed/touch/1.0.0`.
  *
  * Wire: one request frame, one response frame, stream closed.
- * Request:  TouchRequest    — { type:'touch', room, max_nodes? }
- * Response: TouchResponse   — { type:'touch-response', nodes, redactions_applied, error? }
+ *   Request:  TouchRequest    — { type:'touch', protocol_version:5, max_nodes? }
+ *   Response: TouchResponse   — { type:'touch-response', protocol_version:5, nodes,
+ *                                redactions_applied, error? }
+ *
+ * V5 (Phase 24-03, ROOMS-DEL-05): the `room` parameter is gone. Touch now
+ * means "give me your N freshest non-private nodes." Authorization is per-
+ * node via `node.private === false`; there is no room-level gate anymore.
  *
  * Responder flow:
  *   1. Decode request
- *   2. Rate-limit check (token bucket, per peer)
- *   3. Gate: is `request.room` in this node's shared-rooms?  If not → refuse.
- *   4. Load graph, filter nodes to the room, cap to TOUCH_MAX_NODES
- *   5. Redact every node via secret-gate.redactNodes
+ *   2. V5 envelope guard (reject any payload with `room` field, or protocol_version != 5)
+ *   3. Rate-limit check (token bucket, per peer)
+ *   4. Load graph, filter to non-private nodes, sort by fetched_at desc, cap to TOUCH_MAX_NODES
+ *   5. Redact every node via secret-gate.redactNodes (defence-in-depth on top of the private gate)
  *   6. Serialise and return
  *
  * Initiator flow:
  *   1. dialProtocol(TOUCH_PROTOCOL_ID)
- *   2. Write TouchRequest, read TouchResponse
+ *   2. Write TouchRequest (protocol_version:5), read TouchResponse
  *   3. On peer error → surface as TouchError
  *   4. On success → caller merges nodes into local graph (CLI step)
+ *
+ * The libp2p protocol-path stays at `/wellinformed/touch/1.0.0`; V5 is enforced
+ * at the envelope layer. Pre-V5 peers receive a clear `protocol-mismatch`
+ * response rather than "protocol not handled."
  *
  * Framing mirrors search-sync.ts — copied, not imported, because framing
  * is protocol-local and deliberately decoupled so a change in one
@@ -37,17 +46,12 @@ import {
   type TouchRequest,
   type TouchResponse,
 } from '../domain/touch.js';
-import { nodesInRoom, type GraphNode } from '../domain/graph.js';
+import type { GraphNode } from '../domain/graph.js';
 import type { GraphRepository } from './graph-repository.js';
-import { loadSharedRooms } from './share-store.js';
 import { redactNodes } from '../domain/secret-gate.js';
 import { buildPatterns } from '../domain/sharing.js';
 import { validateRemoteNodes, type ValidationFailure } from '../domain/remote-node-validator.js';
 import { createRateLimiter, type RateLimiter } from './search-sync.js';
-import {
-  findSystemRoom,
-  nodesInSystemRoom,
-} from '../domain/system-rooms.js';
 
 // ─────────────────────── framing ──────────────────────────────────────────────
 
@@ -76,11 +80,13 @@ const makeFramedStream = (stream: Stream): FramedStream => {
 
 const MAX_INBOUND_STREAMS = 16 as const;
 
+/** V5 protocol-version literal carried on every touch envelope. */
+export const TOUCH_PROTOCOL_VERSION = 5 as const;
+
 // ─────────────────────── registry ─────────────────────────────────────────────
 
 export interface TouchRegistryDeps {
   readonly graphRepo: GraphRepository;
-  readonly sharedRoomsPath: string;
   readonly rateLimiter: RateLimiter;
   readonly patterns: ReturnType<typeof buildPatterns>;
 }
@@ -92,7 +98,7 @@ export interface TouchRegistry {
 
 export const createTouchRegistry = (
   node: Libp2p,
-  homePath: string,
+  _homePath: string,
   graphRepo: GraphRepository,
   ratePerSec: number,
   burst: number,
@@ -101,7 +107,6 @@ export const createTouchRegistry = (
   node,
   deps: {
     graphRepo,
-    sharedRoomsPath: `${homePath}/shared-rooms.json`,
     rateLimiter: createRateLimiter(ratePerSec, burst),
     patterns: buildPatterns(extraSecretPatterns),
   },
@@ -118,10 +123,32 @@ const writeResponse = async (fs: FramedStream, resp: TouchResponse): Promise<voi
 
 const errorResponse = (code: TouchResponse['error']): TouchResponse => ({
   type: 'touch-response',
+  protocol_version: TOUCH_PROTOCOL_VERSION,
   nodes: [],
   redactions_applied: 0,
   error: code,
 });
+
+/**
+ * V5: "non-private" gate replaces the room-level shareable check.
+ * A node is touchable iff `node.private === false` (or absent — defaulted false
+ * in the Wave-3 node-construction pass).
+ */
+const isNonPrivate = (n: GraphNode): boolean =>
+  (n as { private?: boolean }).private !== true;
+
+/**
+ * V5 freshness order: newest first by `fetched_at`, falling back to lexical
+ * id order when timestamps are missing or tied.
+ */
+const byFetchedAtDesc = (a: GraphNode, b: GraphNode): number => {
+  const ta = typeof a.fetched_at === 'string' ? Date.parse(a.fetched_at) : NaN;
+  const tb = typeof b.fetched_at === 'string' ? Date.parse(b.fetched_at) : NaN;
+  if (Number.isFinite(tb) && Number.isFinite(ta)) return tb - ta;
+  if (Number.isFinite(tb)) return 1;
+  if (Number.isFinite(ta)) return -1;
+  return a.id.localeCompare(b.id);
+};
 
 const handleTouchRequest = async (
   deps: TouchRegistryDeps,
@@ -134,15 +161,36 @@ const handleTouchRequest = async (
     const first = await iter.next();
     if (first.done || !first.value) return;
 
+    let rawDecoded: Record<string, unknown>;
     let req: TouchRequest;
     try {
-      req = JSON.parse(decoder.decode(first.value)) as TouchRequest;
+      rawDecoded = JSON.parse(decoder.decode(first.value)) as Record<string, unknown>;
+      req = rawDecoded as unknown as TouchRequest;
     } catch {
       await writeResponse(fs, errorResponse('internal-error'));
       return;
     }
-    if (req.type !== 'touch' || typeof req.room !== 'string' || req.room.length === 0) {
+    if (!rawDecoded || typeof rawDecoded !== 'object' || rawDecoded.type !== 'touch') {
       await writeResponse(fs, errorResponse('internal-error'));
+      return;
+    }
+
+    // V5 envelope guard — reject pre-V5 (V4) envelopes BEFORE any other work.
+    // A V4 envelope is identified by either:
+    //   (a) presence of the deleted `room` field, OR
+    //   (b) absence of `protocol_version === 5`.
+    if (rawDecoded.room !== undefined) {
+      process.stderr.write(
+        `wellinformed: peer ${peerIdStr} sent V4 TouchRequest with \`room\` field. This peer speaks V5; see docs/architecture/V5-PROTOCOL.md.\n`,
+      );
+      await writeResponse(fs, errorResponse('protocol-mismatch'));
+      return;
+    }
+    if (rawDecoded.protocol_version !== TOUCH_PROTOCOL_VERSION) {
+      process.stderr.write(
+        `wellinformed: peer ${peerIdStr} sent TouchRequest with unknown protocol_version=${JSON.stringify(rawDecoded.protocol_version)}; this peer speaks V5 only.\n`,
+      );
+      await writeResponse(fs, errorResponse('protocol-mismatch'));
       return;
     }
 
@@ -151,77 +199,28 @@ const handleTouchRequest = async (
       return;
     }
 
-    // System rooms (toolshed / research) are always shareable — they're the
-    // two out-of-the-box surfaces every peer advertises. Other rooms have
-    // to be explicitly opted in via shared-rooms.json. Regardless, we
-    // always load the file here — system-room virtual membership respects
-    // `shareable: false` entries as an opt-out.
-    const systemRoom = findSystemRoom(req.room);
-    const sharedRes = await loadSharedRooms(deps.sharedRoomsPath);
-    if (sharedRes.isErr()) {
-      await writeResponse(fs, errorResponse('internal-error'));
-      return;
-    }
-    const sharedRooms = sharedRes.value.rooms;
-    if (!systemRoom) {
-      const isShared = sharedRooms.some((r) => r.name === req.room && r.shareable !== false);
-      if (!isShared) {
-        await writeResponse(fs, errorResponse('room-not-shared'));
-        return;
-      }
-    }
-
     const graphRes = await deps.graphRepo.load();
     if (graphRes.isErr()) {
       await writeResponse(fs, errorResponse('internal-error'));
       return;
     }
 
-    // Physical rooms explicitly marked `shareable: false` are the user's
-    // opt-out signal — nodes in them must NOT leak via system-room
-    // virtual membership either.
-    const isolatedRooms = new Set<string>(
-      sharedRooms.filter((r) => r.shareable === false).map((r) => r.name),
-    );
-
-    // System rooms are virtual — membership derived from source_uri
-    // scheme and results sorted newest-first by fetched_at. Physical
-    // rooms use the existing room-field filter.
-    //
-    // Bridging rule: if the requested room is a system room AND the
-    // responder has ALSO explicitly shared a physical room of the same
-    // name (e.g. `wellinformed share room research`), include nodes
-    // from that physical room in the response. This covers the natural
-    // user case where they save concept-type notes with `--room research`
-    // — those nodes don't match research's URI scheme prefixes
-    // (concept:// vs arxiv:/hn:/http(s)://) but the user's explicit
-    // share signal is unambiguous intent.
+    // V5: filter to non-private nodes, sort newest first, cap to requested
+    // maximum (or TOUCH_MAX_NODES — whichever is smaller). No room-level
+    // gate; per-node `private` is the authorization signal.
     const cap = Math.min(req.max_nodes ?? TOUCH_MAX_NODES, TOUCH_MAX_NODES);
-    let allRoomNodes;
-    if (systemRoom) {
-      const virtualNodes = nodesInSystemRoom(graphRes.value.json.nodes, systemRoom, isolatedRooms);
-      const physicallySharedSameName = sharedRooms.some(
-        (r) => r.name === req.room && r.shareable !== false,
-      );
-      if (physicallySharedSameName) {
-        const physicalNodes = nodesInRoom(graphRes.value, req.room);
-        const seenIds = new Set(virtualNodes.map((n) => n.id));
-        const additions = physicalNodes.filter((n) => !seenIds.has(n.id));
-        allRoomNodes = [...virtualNodes, ...additions];
-      } else {
-        allRoomNodes = virtualNodes;
-      }
-    } else {
-      allRoomNodes = nodesInRoom(graphRes.value, req.room);
-    }
-    const roomNodes = allRoomNodes.slice(0, cap);
+    const allNodes = graphRes.value.json.nodes
+      .filter(isNonPrivate)
+      .sort(byFetchedAtDesc);
+    const touchableNodes = allNodes.slice(0, cap);
 
-    const { nodes: cleaned, redactions_by_node } = redactNodes(roomNodes, deps.patterns);
+    const { nodes: cleaned, redactions_by_node } = redactNodes(touchableNodes, deps.patterns);
     const totalRedactions = Array.from(redactions_by_node.values())
       .reduce((sum, r) => sum + r.length, 0);
 
     await writeResponse(fs, {
       type: 'touch-response',
+      protocol_version: TOUCH_PROTOCOL_VERSION,
       nodes: cleaned,
       redactions_applied: totalRedactions,
     });
@@ -266,13 +265,15 @@ export interface TouchResult {
 }
 
 /**
- * Initiator — open a touch stream to `peerIdStr`, request `room`, return
- * the redacted node set. Single frame in, single frame out.
+ * Initiator — open a touch stream to `peerIdStr` and pull up to `maxNodes`
+ * non-private nodes. V5: no `room` argument — touch is now an asymmetric
+ * "give me your freshest public nodes" primitive.
+ *
+ * Single frame in, single frame out.
  */
 export const openTouchStream = (
   node: Libp2p,
   peerIdStr: string,
-  room: string,
   maxNodes: number = TOUCH_MAX_NODES,
 ): ResultAsync<TouchResult, TouchError> =>
   ResultAsync.fromPromise(
@@ -281,7 +282,11 @@ export const openTouchStream = (
       const stream = await node.dialProtocol(pid, TOUCH_PROTOCOL_ID);
       const fs = makeFramedStream(stream);
       try {
-        const req: TouchRequest = { type: 'touch', room, max_nodes: maxNodes };
+        const req: TouchRequest = {
+          type: 'touch',
+          protocol_version: TOUCH_PROTOCOL_VERSION,
+          max_nodes: maxNodes,
+        };
         await fs.write(encoder.encode(JSON.stringify(req)));
         const iter = fs.frameIter();
         const frame = await iter.next();
@@ -326,9 +331,9 @@ export const openTouchStream = (
     })(),
     (e) => {
       const msg = (e as Error).message;
-      if (msg.startsWith('remote:room-not-shared')) return TE.roomNotShared(peerIdStr, '');
-      if (msg.startsWith('remote:rate-limited'))    return TE.remoteError(peerIdStr, 'rate-limited');
-      if (msg.startsWith('remote:'))                return TE.remoteError(peerIdStr, msg.slice('remote:'.length));
+      if (msg.startsWith('remote:rate-limited'))     return TE.remoteError(peerIdStr, 'rate-limited');
+      if (msg.startsWith('remote:protocol-mismatch')) return TE.remoteError(peerIdStr, 'protocol-mismatch');
+      if (msg.startsWith('remote:'))                  return TE.remoteError(peerIdStr, msg.slice('remote:'.length));
       return TE.protocolError(peerIdStr, msg);
     },
   );
