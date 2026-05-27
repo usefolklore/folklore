@@ -51,6 +51,17 @@ export interface UseCaseDeps {
   readonly graphs: GraphRepository;
   readonly vectors: VectorIndex;
   readonly embedder: Embedder;
+  /**
+   * Lookup of the local GitHub handle (Phase 26). Called by `indexNode`
+   * at the write boundary to stamp `github_user` on every locally-
+   * authored node. Returns undefined when `akashik login` hasn't been
+   * run — in that case the field is omitted and `migrate --stamp-github`
+   * can back-fill it once the user does link an account.
+   *
+   * Injectable so tests can drive it without touching ~/.akashik/.
+   * Wired by `defaultRuntime()` to `readGithubHandle(akashikHome())`.
+   */
+  readonly githubUser?: () => string | undefined;
 }
 
 // ─────────────────────── indexNode ────────────────────────
@@ -79,10 +90,20 @@ export const indexNode =
       )
       .andThen(() =>
         deps.graphs.load().mapErr((e): AppError => e).andThen((graph) => {
+          // Phase 26: stamp github_user at the write boundary so every
+          // node carries the local author identity. Preserve any value
+          // already on cmd.node (callers re-importing peer data MUST
+          // set it explicitly — that path doesn't go through indexNode
+          // anyway, it goes through share-sync's buildImportedNode).
+          const stampedAuthor =
+            typeof cmd.node.github_user === 'string' && cmd.node.github_user.length > 0
+              ? cmd.node.github_user
+              : deps.githubUser?.();
           const enriched: GraphNode = {
             ...cmd.node,
             wing: cmd.wing,
             embedding_id: cmd.node.id,
+            ...(stampedAuthor ? { github_user: stampedAuthor } : {}),
           };
           return ResultAsync.fromPromise(
             Promise.resolve(upsertNodePure(graph, enriched)),

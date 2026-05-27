@@ -426,11 +426,93 @@ const runRollback = (): number => {
   return 0;
 };
 
+/**
+ * Back-fill `github_user` on every existing node from the linked
+ * github handle in ~/.akashik/linked-accounts.json (Phase 26).
+ *
+ * Nodes that already carry a `github_user` are NEVER overwritten —
+ * peer-imported nodes carry their author's handle, and this command
+ * must not clobber them. Only nodes with no field at all get stamped.
+ *
+ * Idempotent: re-runs with no eligible nodes exit "Already stamped."
+ * No-op when there's no github handle to stamp (the user hasn't run
+ * `akashik login` yet).
+ */
+const runStampGithub = (): number => {
+  const paths = migratePaths();
+  if (!existsSync(paths.graph)) {
+    console.error(`migrate --stamp-github: ${paths.graph} not found.`);
+    return 1;
+  }
+
+  // Pull the handle from linked-accounts.json via the infrastructure
+  // helper. We dynamic-import so this command doesn't drag the OAuth
+  // module into every migrate code path.
+  const linkedPath = join(paths.home, 'linked-accounts.json');
+  let handle: string | undefined;
+  if (existsSync(linkedPath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(linkedPath, 'utf8'));
+      handle = parsed?.accounts?.github?.handle;
+    } catch { /* unreadable — fall through to "no handle" */ }
+  }
+  if (!handle) {
+    console.error(`migrate --stamp-github: no linked github account in ${linkedPath}.`);
+    console.error(`  Run \`akashik login\` first to link an account.`);
+    return 1;
+  }
+
+  let raw: RawGraph;
+  try { raw = JSON.parse(readFileSync(paths.graph, 'utf8')) as RawGraph; }
+  catch (e) {
+    console.error(`migrate --stamp-github: failed to parse ${paths.graph}: ${(e as Error).message}`);
+    return 1;
+  }
+
+  const rawNodes = Array.isArray(raw.nodes) ? (raw.nodes as RawNode[]) : [];
+  let stamped = 0;
+  let preserved = 0;
+  const nextNodes: RawNode[] = rawNodes.map((n) => {
+    const current = (n as { github_user?: unknown }).github_user;
+    if (typeof current === 'string' && current.length > 0) {
+      preserved += 1;
+      return n;
+    }
+    stamped += 1;
+    return { ...n, github_user: handle };
+  });
+
+  if (stamped === 0) {
+    console.log(`Already stamped — all ${preserved} node(s) already carry github_user.`);
+    return 0;
+  }
+
+  // Reuse the v4-backup slot — same atomicity guarantees as runMigrate.
+  if (!confirmBackupOverwrite(paths.backup)) return 1;
+  try { copyFileSync(paths.graph, paths.backup); }
+  catch (e) {
+    console.error(`migrate --stamp-github: backup failed: ${(e as Error).message}`);
+    return 1;
+  }
+
+  try { atomicWriteJson(paths.graph, { ...raw, nodes: nextNodes }); }
+  catch (e) {
+    console.error(`migrate --stamp-github: failed to write ${paths.graph}: ${(e as Error).message}`);
+    return 1;
+  }
+  console.log(`  ✓ Stamped github_user="${handle}" on ${stamped} node(s)`);
+  if (preserved > 0) console.log(`  ✓ Preserved existing github_user on ${preserved} node(s)`);
+  console.log(`  ✓ Backed up pre-stamp graph to ${basename(paths.backup)}`);
+  return 0;
+};
+
 const printUsage = (): void => {
-  console.error('usage: akashik migrate v5 [--rollback]');
+  console.error('usage: akashik migrate v5 [--rollback | --stamp-github]');
   console.error('  V4 → V5 schema migration (rooms abstraction removed) PLUS');
   console.error('  data-dir relocation ~/.wellinformed/ → ~/.akashik/ (Phase 25).');
-  console.error('  --rollback restores the pre-migration graph.json from backup.');
+  console.error('  --rollback     restores the pre-migration graph.json from backup.');
+  console.error('  --stamp-github back-fills github_user on existing nodes from the');
+  console.error('                 verified handle in linked-accounts.json (Phase 26).');
   console.error('  The dir relocation is NOT rolled back by --rollback — it stands.');
 };
 
@@ -442,6 +524,7 @@ export const migrateCommand = async (args: string[]): Promise<number> => {
   const [sub, ...rest] = args;
   if (sub !== 'v5') { printUsage(); return 1; }
   if (rest.includes('--rollback')) return runRollback();
+  if (rest.includes('--stamp-github')) return runStampGithub();
   if (rest.length > 0) {
     console.error(`migrate v5: unknown flag '${rest[0]}'`);
     printUsage();
