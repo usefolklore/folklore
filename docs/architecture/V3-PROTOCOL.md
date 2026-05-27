@@ -1,7 +1,12 @@
-# wellinformed v3 — P2P Memory Protocol
+# Akashik v3 — P2P Memory Protocol
+
+> **⚠ ARCHIVED 2026-05-27.** V3 was superseded by V4 (agent-brain layer)
+> and then by V5 (rooms abstraction removed). See
+> [`V5-PROTOCOL.md`](./V5-PROTOCOL.md) for the current wire format. This
+> document is preserved as historical reference.
 
 **Version:** 0.1 (draft)
-**Status:** Reference implementation shipped in wellinformed v3.x; spec stabilising ahead of v3.0 tag
+**Status:** Reference implementation shipped in Akashik v3.x; spec stabilising ahead of v3.0 tag
 **Audience:** Implementers of cross-agent persistent memory, P2P application authors, anyone building on free LLMs
 
 ---
@@ -12,7 +17,7 @@ Centralized memory stacks (mem0, ChatGPT memory, Claude projects, Zep, Letta) ow
 
 Free/open LLMs (Llama, Mistral, Qwen, DeepSeek, GPT-OSS) have no portable, cryptographically-verifiable, cross-model memory layer. Without one, the free-LLM world is a collection of stateless chat shells. Memory is a **necessary (not sufficient) condition** for a self-sovereign LLM stack.
 
-**wellinformed v3** defines a protocol so that:
+**Akashik v3** defines a protocol so that:
 - Memory entries are **user-authored**, not device-authored or provider-authored
 - Memory **verifiably** originates from a stated user identity, without registries or DID resolvers
 - Memory **portably** federates across encoder choices (nomic, bge, e5, all-MiniLM, future)
@@ -35,7 +40,7 @@ did:key:z<base58btc(0xed 0x01 || publicKey)>
 
 Where `publicKey` is exactly 32 bytes (RFC 8032 Ed25519 public key). The `0xed 0x01` two-byte multicodec prefix is the W3C-registered Ed25519 marker.
 
-**Why did:key over did:web, did:ion, did:plc:** wellinformed needs zero-registry offline verifiability. Any peer can decode a did:key in microseconds without a network round-trip. Composable DID methods (did:web for human-readable names, did:plc for AT Protocol interop) are a v3.1 extension; the core protocol only requires did:key.
+**Why did:key over did:web, did:ion, did:plc:** Akashik needs zero-registry offline verifiability. Any peer can decode a did:key in microseconds without a network round-trip. Composable DID methods (did:web for human-readable names, did:plc for AT Protocol interop) are a v3.1 extension; the core protocol only requires did:key.
 
 The user **private seed** is a 32-byte Ed25519 seed. v1 recovery format is 64-char lowercase hex. v1.1 will add BIP39 mnemonic.
 
@@ -131,7 +136,7 @@ Reference: RFC 8785 (JCS) for the JSON subset we emit.
 
 A peer running BGE (encoder A) cannot query a peer indexing under nomic-v1.5 (encoder B) without some kind of translation: same text gives different vectors in each space, so cosine similarity is meaningless across.
 
-wellinformed v3 ships **linear bridges** — for each supported encoder pair (A, B), a matrix `W_{A→B} ∈ R^{d_B × d_A}` such that `bridge(v_A) = L2_normalize(W · v_A)` is approximately equivalent to embedding the original text in encoder B.
+Akashik v3 ships **linear bridges** — for each supported encoder pair (A, B), a matrix `W_{A→B} ∈ R^{d_B × d_A}` such that `bridge(v_A) = L2_normalize(W · v_A)` is approximately equivalent to embedding the original text in encoder B.
 
 **Measured retention** (SciFact, 5,183 paired corpus vectors, ridge least-squares λ=0.01):
 
@@ -340,7 +345,7 @@ Zero new runtime dependencies beyond Node's built-in `crypto` and `neverthrow` (
 
 ## 10. License
 
-This protocol specification is CC-BY-4.0. The reference implementation is MIT. Cross-model bridge matrices distributed by the wellinformed project are CC0.
+This protocol specification is CC-BY-4.0. The reference implementation is MIT. Cross-model bridge matrices distributed by the Akashik project are CC0.
 
 ---
 

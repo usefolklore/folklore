@@ -1,7 +1,13 @@
-# wellinformed v4 — Agent Brain Protocol
+# Akashik v4 — Agent Brain Protocol
+
+> **⚠ DEPRECATED 2026-05-27.** V4 is superseded by V5; see
+> [`V5-PROTOCOL.md`](./V5-PROTOCOL.md). The wire envelopes lost the `room`
+> field, the room registry was deleted, and per-room Y.Docs collapsed into a
+> single global graph Y.Doc. This document is preserved for migration
+> reference only — run `wellinformed migrate v5` to upgrade live data.
 
 **Version:** 0.4 (draft, supersedes V3-PROTOCOL.md)
-**Status:** Reference implementation shipped in wellinformed v4.x; spec stabilising ahead of v4.0 tag
+**Status:** Reference implementation shipped in Akashik v4.x; spec stabilising ahead of v4.0 tag
 **Audience:** Implementers of cross-agent persistent memory, P2P application authors, anyone building on free LLMs
 
 ---
@@ -20,7 +26,7 @@ This document covers the v4 additions on top of V3-PROTOCOL.md. **Everything in 
 
 ### 2.1 Socket location and protocol
 
-Wellinformed's daemon listens on a Unix-domain socket at `${WELLINFORMED_HOME}/daemon.sock` (POSIX permissions 0600 — only the owning user can connect).
+Akashik's daemon listens on a Unix-domain socket at `${WELLINFORMED_HOME}/daemon.sock` (POSIX permissions 0600 — only the owning user can connect).
 
 Protocol is newline-delimited JSON, request/response. One request per line, one response per line.
 
@@ -95,7 +101,7 @@ Reference: `92f797d`, `scripts/bench-embed-throughput.mjs`.
 
 ### 5.1 Conceptual model
 
-Episodic memory entries (raw session transcripts, ingested chat logs, observed events) accumulate linearly. A brain compresses them via overnight replay into semantic schemas. wellinformed v4 ships this as a CLI primitive plus a graph-node schema.
+Episodic memory entries (raw session transcripts, ingested chat logs, observed events) accumulate linearly. A brain compresses them via overnight replay into semantic schemas. Akashik v4 ships this as a CLI primitive plus a graph-node schema.
 
 ### 5.2 Cluster identification
 
