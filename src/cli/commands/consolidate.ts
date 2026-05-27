@@ -28,7 +28,7 @@
 import { formatError } from '../../domain/errors.js';
 import type { AppError, GraphError } from '../../domain/errors.js';
 import { ResultAsync, okAsync, errAsync } from 'neverthrow';
-import { getNode, nodesInRoom, upsertNode } from '../../domain/graph.js';
+import { getNode, upsertNode } from '../../domain/graph.js';
 import type { GraphNode, NodeId, Room } from '../../domain/graph.js';
 import type { VectorRecord } from '../../domain/vectors.js';
 import type { EpisodicEntry, ConsolidatedMemory } from '../../domain/consolidated-memory.js';
@@ -98,14 +98,21 @@ const buildDeps = (runtime: Runtime, model: string): ConsolidatorDeps => {
       .load()
       .mapErr((e): AppError => e)
       .andThen((graph) => {
-        const roomNodes = nodesInRoom(graph, room).filter((n) => {
-          // Skip already-consolidated raw entries + skip the consolidated
-          // nodes themselves (they live in the same room but have
-          // kind === 'consolidated_memory').
+        // V5 (Phase 24): rooms deleted. The CLI's positional argument
+        // (`<room>`) is now a workspace slug — consolidation operates
+        // on every node whose `workspace` field matches it. Falls back
+        // to the legacy `n.room` extension field for v4 graph data
+        // that hasn't been migrated yet.
+        const wsNodes = graph.json.nodes.filter((n) => {
+          const ws = typeof n.workspace === 'string' ? n.workspace : undefined;
+          const legacyRoom = (n as { room?: unknown }).room;
+          const matches = ws === room || legacyRoom === room;
+          if (!matches) return false;
           if ((n as { consolidated_at?: unknown }).consolidated_at) return false;
           if ((n as { kind?: unknown }).kind === 'consolidated_memory') return false;
           return true;
         });
+        const roomNodes = wsNodes;
         return runtime.vectors.all()
           .mapErr((e): AppError => e)
           .map((records): readonly EpisodicEntry[] => {

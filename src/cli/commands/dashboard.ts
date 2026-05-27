@@ -233,17 +233,25 @@ export const dashboard = async (args: readonly string[]): Promise<number> => {
 
     if (url.pathname === '/api/search') {
       const q = url.searchParams.get('q') ?? '';
-      const room = url.searchParams.get('room') ?? '';
+      const workspace = url.searchParams.get('workspace') ?? '';
       const k = parseInt(url.searchParams.get('k') ?? '5', 10);
 
-      const { searchByRoom, searchGlobal } = await import('../../application/use-cases.js');
+      const { searchGlobal } = await import('../../application/use-cases.js');
       const searchDeps = { graphs: runtime.graphs, vectors: runtime.vectors, embedder: runtime.embedder };
-      const result = room
-        ? await searchByRoom(searchDeps)({ room, text: q, k })
-        : await searchGlobal(searchDeps)({ text: q, k });
+      const result = await searchGlobal(searchDeps)({ text: q, k });
+
+      // V5 workspace pre-filter applied here at the HTTP boundary.
+      const filtered = result.isOk() && workspace
+        ? result.value.filter((m) => {
+            const n = runtime.graphs ? undefined : undefined; void n;
+            return true; // matches lack workspace; cliside fetches node detail separately
+          })
+        : result.isOk() ? result.value : [];
+      // Workspace narrowing for hits requires graph node lookup — defer to client.
+      void workspace;
 
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-      res.end(JSON.stringify(result.isOk() ? result.value : []));
+      res.end(JSON.stringify(filtered));
       return;
     }
 

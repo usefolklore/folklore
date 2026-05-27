@@ -30,16 +30,28 @@ export type Vector = Float32Array;
  */
 export interface VectorRecord {
   readonly node_id: NodeId;
-  readonly room: Room;
+  /**
+   * @deprecated V5 (Phase 24) — rooms were deleted. Optional purely
+   * so legacy sqlite-vec rows round-trip cleanly; new writes should
+   * omit this field.
+   */
+  readonly room?: Room;
   readonly wing?: Wing;
   readonly vector: Vector;
   readonly raw_text?: string;
 }
 
-/** A similarity match returned by a search. `distance` is L2 on unit vectors. */
+/**
+ * A similarity match returned by a search. `distance` is L2 on unit
+ * vectors.
+ *
+ * V5 (Phase 24): `room` is now optional/legacy — search responders
+ * (federated_search) include it when carrying back a wire envelope's
+ * shape, but local-only searches don't populate it.
+ */
 export interface Match {
   readonly node_id: NodeId;
-  readonly room: Room;
+  readonly room?: Room;
   readonly wing?: Wing;
   readonly distance: number;
 }

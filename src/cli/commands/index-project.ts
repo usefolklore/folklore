@@ -1,50 +1,66 @@
 /**
- * `wellinformed index [--room R] [--root DIR]`
+ * `wellinformed index [--workspace W] [--root DIR]`
  *
  * Index the current project into the knowledge graph: source files,
  * package.json dependencies, git submodules, and recent git history.
+ *
+ * V5 (Phase 24): no --room. Optional `--workspace W` tags every
+ * indexed node with the slug; absent the flag, `detectWorkspace(cwd)`
+ * runs against the project root.
  *
  * This command creates ephemeral source descriptors for the four
  * project-indexing adapters (codebase, package_deps, git_submodules,
  * git_log), runs them through the ingest pipeline, and reports
  * what was indexed. The descriptors are NOT persisted to sources.json
  * — they're derived from the working directory each time.
- *
- * By default it uses the default room from the room registry. If no
- * room exists, it creates one named after the project directory.
  */
 
 import { basename } from 'node:path';
 import { formatError } from '../../domain/errors.js';
 import type { SourceDescriptor } from '../../domain/sources.js';
-import { slugifyRoomName, defaultRoom } from '../../domain/rooms.js';
 import { ingestSource } from '../../application/ingest.js';
-import { defaultRuntime } from '../runtime.js';
+import { defaultRuntime, detectWorkspace } from '../runtime.js';
+
+/** Slugify a basename to a workspace-safe slug. */
+const slugify = (s: string): string =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 63) || 'unnamed';
 
 interface ParsedArgs {
-  readonly room?: string;
+  readonly workspace?: string;
   readonly root: string;
   readonly includeDev: boolean;
   readonly maxCommits: number;
 }
 
 const parseArgs = (args: readonly string[]): ParsedArgs => {
-  let room: string | undefined;
+  let workspaceFlag: string | undefined;
+  let workspaceExplicit = false;
   let root = process.cwd();
   let includeDev = true;
   let maxCommits = 50;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     const next = (): string => args[++i] ?? '';
-    if (a === '--room') room = next();
-    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
+    if (a === '--workspace') { workspaceFlag = next(); workspaceExplicit = true; }
+    else if (a.startsWith('--workspace=')) { workspaceFlag = a.slice('--workspace='.length); workspaceExplicit = true; }
     else if (a === '--root') root = next();
     else if (a.startsWith('--root=')) root = a.slice('--root='.length);
     else if (a === '--include-dev') includeDev = true;
     else if (a === '--no-dev') includeDev = false;
     else if (a === '--max-commits') maxCommits = parseInt(next(), 10) || 50;
+    else if (a === '--room' || a.startsWith('--room=')) {
+      console.error('index: --room is removed in V5 (ignored). Use --workspace instead.');
+      if (a === '--room') i++;
+    }
   }
-  return { room, root, includeDev, maxCommits };
+  let workspace: string | undefined;
+  if (workspaceExplicit) {
+    workspace = workspaceFlag || undefined;
+  } else {
+    // Try git toplevel of the project root, fall back to basename slug.
+    workspace = detectWorkspace(root) ?? slugify(basename(root));
+  }
+  return { workspace, root, includeDev, maxCommits };
 };
 
 export const indexProject = async (args: readonly string[]): Promise<number> => {
@@ -58,60 +74,40 @@ export const indexProject = async (args: readonly string[]): Promise<number> => 
   const runtime = rt.value;
 
   try {
-    // Resolve room — use flag, default room, or derive from directory name
-    let room = parsed.room;
-    if (!room) {
-      const reg = await runtime.rooms.load();
-      if (reg.isOk()) {
-        room = defaultRoom(reg.value);
-      }
-    }
-    if (!room) {
-      room = slugifyRoomName(basename(parsed.root));
-      // Auto-create the room
-      await runtime.rooms.create({
-        id: room,
-        name: basename(parsed.root),
-        description: `Project index for ${basename(parsed.root)}`,
-        keywords: [],
-        created_at: new Date().toISOString(),
-      });
-      console.log(`auto-created room '${room}'`);
-    }
+    const workspace = parsed.workspace ?? slugify(basename(parsed.root));
+    const idPrefix = workspace;
 
-    // Build project-indexing descriptors (ephemeral, not saved)
+    // Build project-indexing descriptors (ephemeral, not saved).
+    // V5: descriptors omit the deprecated `room` field; ingest tags
+    // nodes via the source-adapter's own logic.
     const descriptors: SourceDescriptor[] = [
       {
-        id: `${room}-codebase`,
+        id: `${idPrefix}-codebase`,
         kind: 'codebase',
-        room,
         enabled: true,
-        config: { root: parsed.root },
+        config: { root: parsed.root, workspace },
       },
       {
-        id: `${room}-deps`,
+        id: `${idPrefix}-deps`,
         kind: 'package_deps',
-        room,
         enabled: true,
-        config: { root: parsed.root, include_dev: parsed.includeDev },
+        config: { root: parsed.root, include_dev: parsed.includeDev, workspace },
       },
       {
-        id: `${room}-submodules`,
+        id: `${idPrefix}-submodules`,
         kind: 'git_submodules',
-        room,
         enabled: true,
-        config: { root: parsed.root },
+        config: { root: parsed.root, workspace },
       },
       {
-        id: `${room}-git`,
+        id: `${idPrefix}-git`,
         kind: 'git_log',
-        room,
         enabled: true,
-        config: { root: parsed.root, max_commits: parsed.maxCommits },
+        config: { root: parsed.root, max_commits: parsed.maxCommits, workspace },
       },
     ];
 
-    console.log(`indexing project at ${parsed.root} → room=${room}\n`);
+    console.log(`indexing project at ${parsed.root} → workspace=${workspace}\n`);
 
     const ingest = ingestSource(runtime.ingestDeps);
     let totalNew = 0;

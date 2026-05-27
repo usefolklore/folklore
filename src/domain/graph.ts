@@ -28,6 +28,15 @@ import { GraphError } from './errors.js';
 
 export type NodeId = string;
 export type Wing = string;
+/**
+ * @deprecated V5 (Phase 24) — rooms were deleted. This alias remains
+ * solely so legacy call sites compile during the wave-3 rollout. Treat
+ * any value of this type as a free-form string with no domain meaning
+ * (workspace/private flags replaced the room primitive). New code MUST
+ * NOT introduce new uses; all references should disappear after the
+ * wave-3 surgical edits.
+ */
+export type Room = string;
 
 /** graphify-required node fields. */
 export interface GraphifyNodeCore {
@@ -206,6 +215,16 @@ export const size = (g: Graph): { nodes: number; edges: number } => ({
 });
 
 export const getNode = (g: Graph, id: NodeId): GraphNode | undefined => g.nodeById.get(id);
+
+/**
+ * @deprecated V5 (Phase 24) — rooms were deleted. Filters on the
+ * legacy `room` extension field that may still round-trip on v4 graph
+ * data. Returns an empty list when no node carries the field. New code
+ * MUST NOT use this helper; switch to source_uri-prefix filters,
+ * workspace tags, or other domain-specific predicates.
+ */
+export const nodesInRoom = (g: Graph, room: string): readonly GraphNode[] =>
+  g.json.nodes.filter((n) => (n as { room?: unknown }).room === room);
 
 export const hasNode = (g: Graph, id: NodeId): boolean => g.nodeById.has(id);
 

@@ -42,7 +42,6 @@ import {
 } from '@clack/prompts';
 import { formatError } from '../../domain/errors.js';
 import { loadOrCreateIdentity } from '../../infrastructure/peer-transport.js';
-import { ensureSystemRoomsShared, loadSharedRooms } from '../../infrastructure/share-store.js';
 import { loadPeers } from '../../infrastructure/peer-store.js';
 import { isRunning, readPid } from '../../daemon/loop.js';
 import { runtimePaths } from '../runtime.js';
@@ -243,15 +242,14 @@ const stepLoginGithub = async (flags: Flags): Promise<void> => {
   }
 };
 
-const stepSystemRooms = async (home: string): Promise<void> => {
+const stepSystemRooms = async (_home: string): Promise<void> => {
+  // V5 (Phase 24): rooms deleted. The boot step that pre-shared the
+  // toolshed + research system rooms is a no-op now — sharing happens
+  // per-node via the `private` flag. Kept as a step so the numbered
+  // wizard output stays stable for users following docs.
   const sp = spinner();
-  sp.start('marking system rooms shareable');
-  const r = await ensureSystemRoomsShared(join(home, 'shared-rooms.json'));
-  if (r.isErr()) {
-    sp.stop(`system rooms: ${formatError(r.error)}`);
-    return;
-  }
-  sp.stop('system rooms ready: toolshed (code/deps/git), research (arxiv/hn/rss/web)');
+  sp.start('sharing primitives');
+  sp.stop('per-node sharing ready (V5: rooms deleted, use `--private` on save)');
 };
 
 const stepClaudeInstall = async (projectDir: string): Promise<void> => {
@@ -316,7 +314,7 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
   const logPath = join(home, 'sessions-ingest.log');
   const child = spawn(
     process.execPath,
-    [process.argv[1], 'trigger', '--room', 'sessions'],
+    [process.argv[1], 'trigger'],
     {
       detached: true,
       stdio: ['ignore', 'inherit', 'inherit'],
@@ -438,13 +436,11 @@ const stepDaemon = async (home: string): Promise<void> => {
 const stepP2pStatus = async (home: string, peerId: string | null): Promise<void> => {
   const peers = await loadPeers(join(home, 'peers.json'));
   const known = peers.isOk() ? peers.value.peers.length : 0;
-  const shared = await loadSharedRooms(join(home, 'shared-rooms.json'));
-  const sharedCount = shared.isOk() ? shared.value.rooms.length : 0;
 
   const lines = [
     `identity:     ${peerId ?? '<unknown>'}`,
     `known peers:  ${known} (daemon dials these on connect)`,
-    `shared rooms: ${sharedCount} (toolshed + research always-on)`,
+    `sharing:      V5 per-node — public by default, --private to opt out`,
   ];
   if (known === 0) {
     lines.push('');
