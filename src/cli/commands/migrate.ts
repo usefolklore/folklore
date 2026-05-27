@@ -1,25 +1,39 @@
 /**
  * `akashik migrate v5 [--rollback]` — V4 → V5 schema migration
- * (Phase 24, Plan 11, ROOMS-DEL-06).
+ * (Phase 24, Plan 11, ROOMS-DEL-06) PLUS the Phase 25 data-dir
+ * relocation `~/.wellinformed/` → `~/.akashik/`.
  *
- * Reads graph.json as raw JSON (the V5 type lacks `room`), backs it up to
- * graph.v4-backup.json, strips `room` from every node, stamps `private: false`,
- * heuristically infers `workspace` from known repo paths, flattens legacy
- * room-prefixed peer-reputation entries, deletes rooms.json + shared-rooms.json.
+ * Two transitions in one command, in order:
+ *   1. Directory relocate: rename ~/.wellinformed/ → ~/.akashik/ (or
+ *      copy+delete on cross-device). Atomic where filesystems allow.
+ *   2. Schema migrate: graph.json V4 → V5 — strip `room` from every
+ *      node, stamp `private: false`, heuristically infer `workspace`,
+ *      flatten legacy room-prefixed peer-reputation entries, delete
+ *      rooms.json + shared-rooms.json. graph.v4-backup.json captures
+ *      pre-migration state.
  *
- * Idempotent (re-runs exit "Already on V5"). Rollback restores the graph blob
- * only; rooms.json + shared-rooms.json deletions and rep flattening are one-way.
+ * Idempotent — re-runs exit "Already on V5" without touching disk.
+ * Rollback restores the graph blob from backup; rooms.json +
+ * shared-rooms.json deletions, reputation flattening, and the dir
+ * relocate are one-way. The dir relocate is deliberately not rolled
+ * back: ~/.akashik/ is the canonical post-rebrand home; reverting
+ * the brand is out of scope for a schema rollback.
  */
 
 import {
-  existsSync, readFileSync, writeFileSync, copyFileSync,
-  unlinkSync, renameSync, statSync,
+  existsSync, readFileSync, writeFileSync, copyFileSync, readdirSync,
+  unlinkSync, renameSync, statSync, mkdirSync, rmSync, cpSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 
 const akashikHome = (): string =>
   process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
+
+/** Pre-rebrand home. Only consulted by the relocator below; the rest of
+ *  the CLI has been swept to akashikHome(). */
+const legacyHome = (): string =>
+  process.env.AKASHIK_LEGACY_HOME ?? join(homedir(), '.wellinformed');
 
 const slugify = (s: string): string =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 63);
@@ -190,8 +204,130 @@ const confirmBackupOverwrite = (path: string): boolean => {
   return false;
 };
 
+/** Is the directory empty (or just a stale .DS_Store)? Used to decide
+ *  whether a target like ~/.akashik/ counts as a real "would clobber"
+ *  conflict or is safe to consume. */
+const isDirEffectivelyEmpty = (path: string): boolean => {
+  if (!existsSync(path)) return true;
+  try {
+    const entries = readdirSync(path).filter((e) => e !== '.DS_Store');
+    return entries.length === 0;
+  } catch { return false; }
+};
+
+interface RelocateOutcome {
+  readonly kind: 'noop' | 'relocated' | 'merged' | 'aborted';
+  readonly message: string;
+}
+
+/**
+ * Relocate `~/.wellinformed/` → `~/.akashik/`. Decision matrix:
+ *
+ *   legacy │ target          │ action
+ *   ───────┼─────────────────┼─────────────────────────────────────
+ *   none   │ any             │ noop (nothing to migrate)
+ *   exists │ none            │ rename (or cross-device copy+delete)
+ *   exists │ exists, empty   │ rmdir target, then rename
+ *   exists │ exists, non-empty │ ABORT (ambiguous — user must resolve)
+ *
+ * After a successful rename we leave behind a marker file at the legacy
+ * path so the user can see — at a glance — that the relocate happened.
+ * The marker is a single-line breadcrumb, never read by code.
+ */
+const relocateDir = (): RelocateOutcome => {
+  const legacy = legacyHome();
+  const target = akashikHome();
+
+  if (!existsSync(legacy)) {
+    return { kind: 'noop', message: `Legacy ${legacy} not present — skipping dir relocate.` };
+  }
+  try {
+    if (!statSync(legacy).isDirectory()) {
+      return { kind: 'aborted', message: `${legacy} exists but is not a directory; refusing to touch.` };
+    }
+  } catch (e) {
+    return { kind: 'aborted', message: `failed to stat ${legacy}: ${(e as Error).message}` };
+  }
+
+  // Safety: refuse to relocate while a legacy daemon holds the pidfile.
+  const legacyPid = join(legacy, 'daemon.pid');
+  if (existsSync(legacyPid)) {
+    try {
+      const pid = parseInt(readFileSync(legacyPid, 'utf8').trim(), 10);
+      if (Number.isFinite(pid) && pid > 0) {
+        // Probe — sending signal 0 throws if process is gone.
+        try {
+          process.kill(pid, 0);
+          return {
+            kind: 'aborted',
+            message: `daemon still running in ${legacy} (pid ${pid}). Stop it first: 'akashik daemon stop' (against the legacy home).`,
+          };
+        } catch { /* stale pidfile, safe to proceed */ }
+      }
+    } catch { /* unreadable pidfile, treat as stale */ }
+  }
+
+  if (existsSync(target)) {
+    if (!isDirEffectivelyEmpty(target)) {
+      return {
+        kind: 'aborted',
+        message:
+          `Both ${legacy} and ${target} exist with data — refusing to merge automatically.\n` +
+          `  Inspect both directories, move whichever you want to keep aside, then retry.`,
+      };
+    }
+    // Target is empty (or only .DS_Store) — clear it so the rename can target it.
+    try { rmSync(target, { recursive: true, force: true }); }
+    catch (e) {
+      return { kind: 'aborted', message: `failed to clear empty ${target}: ${(e as Error).message}` };
+    }
+  }
+
+  // Try same-filesystem atomic rename first.
+  try {
+    renameSync(legacy, target);
+  } catch (e) {
+    const err = e as NodeJS.ErrnoException;
+    if (err.code === 'EXDEV') {
+      // Cross-device: copy then delete. Not atomic, but the only option.
+      try {
+        cpSync(legacy, target, { recursive: true, preserveTimestamps: true });
+        rmSync(legacy, { recursive: true, force: true });
+      } catch (e2) {
+        return { kind: 'aborted', message: `cross-device relocate failed: ${(e2 as Error).message}` };
+      }
+    } else {
+      return { kind: 'aborted', message: `rename failed: ${err.message}` };
+    }
+  }
+
+  // Breadcrumb so the user knows where their data went.
+  try {
+    mkdirSync(legacy, { recursive: true });
+    writeFileSync(
+      join(legacy, 'RELOCATED.txt'),
+      `This directory was relocated to ${target} on ${new Date().toISOString()}\n` +
+      `by 'akashik migrate v5'. The relocation is one-way; akashik no longer\n` +
+      `reads from this path. Safe to delete.\n`,
+    );
+  } catch { /* breadcrumb is best-effort */ }
+
+  return { kind: 'relocated', message: `Relocated ${legacy} → ${target}` };
+};
+
 /** Forward migration: V4 → V5. */
 const runMigrate = (): number => {
+  // Step 0 — relocate ~/.wellinformed/ → ~/.akashik/ before touching schema.
+  console.log('Checking data home...');
+  const reloc = relocateDir();
+  if (reloc.kind === 'aborted') {
+    console.error(`migrate: ${reloc.message}`);
+    return 1;
+  }
+  if (reloc.kind === 'relocated') console.log(`  ✓ ${reloc.message}`);
+  else console.log(`  ${reloc.message}`);
+  console.log('');
+
   const paths = migratePaths();
   console.log(`Reading ${paths.graph}...`);
   if (!existsSync(paths.graph)) {
@@ -292,9 +428,15 @@ const runRollback = (): number => {
 
 const printUsage = (): void => {
   console.error('usage: akashik migrate v5 [--rollback]');
-  console.error('  V4 → V5 schema migration (rooms abstraction removed).');
+  console.error('  V4 → V5 schema migration (rooms abstraction removed) PLUS');
+  console.error('  data-dir relocation ~/.wellinformed/ → ~/.akashik/ (Phase 25).');
   console.error('  --rollback restores the pre-migration graph.json from backup.');
+  console.error('  The dir relocation is NOT rolled back by --rollback — it stands.');
 };
+
+// Test seam — exposed so tests can drive the relocator with synthetic
+// AKASHIK_HOME / AKASHIK_LEGACY_HOME without invoking the full migrate.
+export const __relocateDirForTest = relocateDir;
 
 export const migrateCommand = async (args: string[]): Promise<number> => {
   const [sub, ...rest] = args;

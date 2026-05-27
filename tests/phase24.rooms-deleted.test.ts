@@ -431,7 +431,7 @@ describe('Phase 24 — migrate v5 (ROOMS-DEL-06)', () => {
     const home = makeTmp('migrate-fwd');
     try {
       writeV4Fixture(home);
-      const r = runCli(['migrate', 'v5'], { AKASHIK_HOME: home });
+      const r = runCli(['migrate', 'v5'], { AKASHIK_HOME: home, AKASHIK_LEGACY_HOME: join(home, '_no_legacy') });
       assert.equal(r.code, 0, `migrate must succeed: ${r.stderr}`);
 
       const graph = JSON.parse(readFileSync(join(home, 'graph.json'), 'utf8'));
@@ -453,10 +453,10 @@ describe('Phase 24 — migrate v5 (ROOMS-DEL-06)', () => {
     const home = makeTmp('migrate-idem');
     try {
       writeV4Fixture(home);
-      const r1 = runCli(['migrate', 'v5'], { AKASHIK_HOME: home });
+      const r1 = runCli(['migrate', 'v5'], { AKASHIK_HOME: home, AKASHIK_LEGACY_HOME: join(home, '_no_legacy') });
       assert.equal(r1.code, 0, 'first migration must succeed');
 
-      const r2 = runCli(['migrate', 'v5'], { AKASHIK_HOME: home });
+      const r2 = runCli(['migrate', 'v5'], { AKASHIK_HOME: home, AKASHIK_LEGACY_HOME: join(home, '_no_legacy') });
       assert.equal(r2.code, 0, 'second migration must exit 0');
       assert.match(r2.stdout, /Already on V5/i,
         `second migration must report "Already on V5":\n${r2.stdout}`);
@@ -469,7 +469,7 @@ describe('Phase 24 — migrate v5 (ROOMS-DEL-06)', () => {
     const home = makeTmp('migrate-backup');
     try {
       writeV4Fixture(home);
-      const r = runCli(['migrate', 'v5'], { AKASHIK_HOME: home });
+      const r = runCli(['migrate', 'v5'], { AKASHIK_HOME: home, AKASHIK_LEGACY_HOME: join(home, '_no_legacy') });
       assert.equal(r.code, 0);
       assert.ok(existsSync(join(home, 'graph.v4-backup.json')),
         'graph.v4-backup.json must exist after migration');
@@ -496,7 +496,7 @@ describe('Phase 24 — migrate v5 (ROOMS-DEL-06)', () => {
           },
         },
       }));
-      const r = runCli(['migrate', 'v5'], { AKASHIK_HOME: home });
+      const r = runCli(['migrate', 'v5'], { AKASHIK_HOME: home, AKASHIK_LEGACY_HOME: join(home, '_no_legacy') });
       assert.equal(r.code, 0);
 
       const rep = JSON.parse(readFileSync(repPath, 'utf8'));
@@ -517,10 +517,10 @@ describe('Phase 24 — migrate v5 (ROOMS-DEL-06)', () => {
       writeV4Fixture(home);
       const originalGraph = readFileSync(join(home, 'graph.json'), 'utf8');
 
-      const rFwd = runCli(['migrate', 'v5'], { AKASHIK_HOME: home });
+      const rFwd = runCli(['migrate', 'v5'], { AKASHIK_HOME: home, AKASHIK_LEGACY_HOME: join(home, '_no_legacy') });
       assert.equal(rFwd.code, 0);
 
-      const rRollback = runCli(['migrate', 'v5', '--rollback'], { AKASHIK_HOME: home });
+      const rRollback = runCli(['migrate', 'v5', '--rollback'], { AKASHIK_HOME: home, AKASHIK_LEGACY_HOME: join(home, '_no_legacy') });
       assert.equal(rRollback.code, 0, `rollback must succeed: ${rRollback.stderr}`);
 
       const restored = readFileSync(join(home, 'graph.json'), 'utf8');
