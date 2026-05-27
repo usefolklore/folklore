@@ -33,7 +33,7 @@ import * as sqliteVec from 'sqlite-vec';
 
 import { rustSubprocessEmbedder } from '../dist/infrastructure/embedders.js';
 
-const CACHE_DIR = join(homedir(), '.wellinformed', 'bench');
+const CACHE_DIR = join(homedir(), '.akashik', 'bench');
 const DB_PATH = join(CACHE_DIR, 'scifact__rust-via-ts__bge-base', 'vectors.db');
 const DATASET_DIR = join(CACHE_DIR, 'scifact', 'scifact');
 const QUERIES_JSONL = join(DATASET_DIR, 'queries.jsonl');
@@ -46,7 +46,7 @@ const TOP_K = 100;
 const RRF_K = 60;
 
 console.log('━'.repeat(60));
-console.log(' wellinformed — Diagonal Jacobi preconditioning (CFD #1)');
+console.log(' akashik — Diagonal Jacobi preconditioning (CFD #1)');
 console.log('━'.repeat(60));
 console.log(' Baseline: Phase 25 hybrid bge-base = 75.22% NDCG@10');
 console.log(' Math:    cosine(W·(d−μ), W·(q−μ)) where W = diag(1/√σ²)');

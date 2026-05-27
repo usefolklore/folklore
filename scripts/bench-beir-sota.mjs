@@ -55,7 +55,7 @@ const RERANK_IN = parseInt(getArg('--rerank-in', '100'), 10);
 const RRF_K = 60; // standard RRF constant
 const BATCH_SIZE = parseInt(getArg('--batch', '32'), 10);
 
-const CACHE_ROOT = join(homedir(), '.wellinformed', 'bench');
+const CACHE_ROOT = join(homedir(), '.akashik', 'bench');
 const DATASET_DIR = join(CACHE_ROOT, DATASET);
 const MODEL_SLUG = MODEL.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
 const SUFFIX = (HYBRID ? '__hybrid' : '') + (RERANK ? '__rerank' : '');
@@ -68,7 +68,7 @@ const DATASET_URL = `https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/d
 
 // ─── banner ──────────────────────────────────────────────────────
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log(` wellinformed — BEIR ${DATASET.toUpperCase()} SOTA Benchmark`);
+console.log(` akashik — BEIR ${DATASET.toUpperCase()} SOTA Benchmark`);
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(` Dataset: BeIR/${DATASET} (BEIR v1, test split)`);
 console.log(` Model:   ${MODEL} (${DIM} dim)`);

@@ -1,6 +1,6 @@
 /**
  * Rust retrieval client — thin stdio JSON-RPC wrapper around the
- * wellinformed-rs `embed_server` binary for the non-embedder ops:
+ * akashik-rs `embed_server` binary for the non-embedder ops:
  * tunnel detection (Phase 27, mathematician Proposal B — RNG graph)
  * and pilot-centroid room routing (Phase 28, RouterRetriever-style).
  *
@@ -63,7 +63,7 @@ interface RustResponse {
 // ─────────────────────── domain-layer outputs ─────────────
 
 /**
- * Tunnel in wellinformed's domain shape — a semantic bridge between
+ * Tunnel in akashik's domain shape — a semantic bridge between
  * two rooms, returned by the RNG graph pass. Distance is L2 between
  * the two nodes' embeddings.
  */
@@ -116,8 +116,8 @@ export interface RustRetrievalClient {
 export interface RustRetrievalOptions {
   /**
    * Path to the embed_server binary. Defaults to the repo-local
-   * `wellinformed-rs/target/release/embed_server`; override via
-   * `$WELLINFORMED_RUST_BIN` env var or this option.
+   * `akashik-rs/target/release/embed_server`; override via
+   * `$AKASHIK_RUST_BIN` env var or this option.
    */
   readonly binaryPath?: string;
 }
@@ -125,10 +125,10 @@ export interface RustRetrievalOptions {
 // ─────────────────────── adapter ─────────────────────────
 
 const defaultBinaryPath = (): string => {
-  const envBin = process.env.WELLINFORMED_RUST_BIN;
+  const envBin = process.env.AKASHIK_RUST_BIN;
   if (envBin) return envBin;
   const here = dirname(fileURLToPath(import.meta.url));
-  return join(here, '..', '..', 'wellinformed-rs', 'target', 'release', 'embed_server');
+  return join(here, '..', '..', 'akashik-rs', 'target', 'release', 'embed_server');
 };
 
 /**

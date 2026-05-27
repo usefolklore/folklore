@@ -7,7 +7,7 @@
  *   - plain payload + soft mode → unsigned_allowed
  *   - plain payload + strict mode → unsigned_rejected
  *   - garbage → malformed
- *   - sharePolicyModeFromEnv reads WELLINFORMED_REQUIRE_SIGNED_NODES
+ *   - sharePolicyModeFromEnv reads AKASHIK_REQUIRE_SIGNED_NODES
  */
 
 import { test } from 'node:test';
@@ -66,14 +66,14 @@ const buildSignedEnvelope = () => {
 
 test('sharePolicyModeFromEnv defaults to soft when var unset', () => {
   assert.equal(sharePolicyModeFromEnv({}), 'soft');
-  assert.equal(sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: '' }), 'soft');
-  assert.equal(sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: '0' }), 'soft');
+  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '' }), 'soft');
+  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '0' }), 'soft');
 });
 
 test('sharePolicyModeFromEnv flips to strict for "1" or "true"', () => {
-  assert.equal(sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: '1' }), 'strict');
+  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '1' }), 'strict');
   assert.equal(
-    sharePolicyModeFromEnv({ WELLINFORMED_REQUIRE_SIGNED_NODES: 'true' }),
+    sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: 'true' }),
     'strict',
   );
 });

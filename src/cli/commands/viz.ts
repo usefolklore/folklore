@@ -1,5 +1,5 @@
 /**
- * `wellinformed viz [--workspace W|all] [--output FILE]`
+ * `akashik viz [--workspace W|all] [--output FILE]`
  *
  * Generates an interactive HTML graph visualization by shelling out
  * to graphify's Python sidecar for Leiden clustering + vis.js export.
@@ -19,12 +19,12 @@ import { formatError } from '../../domain/errors.js';
 import { defaultRuntime, runtimePaths, detectWorkspace } from '../runtime.js';
 
 const fallbackHtml = (graphJson: string, title: string): string => `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>wellinformed — ${title}</title>
+<html><head><meta charset="UTF-8"><title>akashik — ${title}</title>
 <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 <style>body{margin:0;background:#0c0c14;color:#fafafa;font-family:sans-serif}
 #graph{width:100vw;height:100vh}#info{position:fixed;top:12px;left:12px;font-size:13px;opacity:0.7}</style>
 </head><body>
-<div id="info">wellinformed — ${title}</div>
+<div id="info">akashik — ${title}</div>
 <div id="graph"></div>
 <script>
 const raw = ${graphJson};

@@ -77,7 +77,7 @@ const signManifest = (
   const parts: string[] = [];
   for (const k of keys) parts.push(`${JSON.stringify(k)}:${JSON.stringify(obj[k])}`);
   const json = `{${parts.join(',')}}`;
-  const message = new TextEncoder().encode(`wellinformed-release:v1:${json}`);
+  const message = new TextEncoder().encode(`akashik-release:v1:${json}`);
   const sigRes = signBytes(privateKey, message);
   if (sigRes.isErr()) throw new Error(`signBytes: ${sigRes.error.type}`);
   return { ...body, signature_hex: toHex(sigRes.value) };

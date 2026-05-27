@@ -9,7 +9,7 @@
  * All 7 pitfalls from 18-RESEARCH.md are encoded as regression tests.
  *
  * Slow tier: the 10-peer integration test is tagged slow and skippable via
- * `WELLINFORMED_SKIP_SLOW=1`. Unit + structural tiers run always.
+ * `AKASHIK_SKIP_SLOW=1`. Unit + structural tiers run always.
  *
  * Runner: node --import tsx --test tests/phase18.production-net.test.ts
  */
@@ -577,7 +577,7 @@ describe('Phase 18 — Unit: syncNodeIntoYDoc bandwidth gate (NET-02)', async ()
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Integration tier — 10-peer mesh (NET-04)
-// Slow: opt-out via WELLINFORMED_SKIP_SLOW=1
+// Slow: opt-out via AKASHIK_SKIP_SLOW=1
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -593,7 +593,7 @@ describe('Phase 18 — Unit: syncNodeIntoYDoc bandwidth gate (NET-02)', async ()
  *   listenPort:0 prevents EADDRINUSE (OS assigns a free port)
  *   Promise.allSettled in cleanup prevents one stop() failure from cascading
  */
-const SKIP_SLOW = process.env['WELLINFORMED_SKIP_SLOW'] === '1';
+const SKIP_SLOW = process.env['AKASHIK_SKIP_SLOW'] === '1';
 
 describe('Phase 18 — Integration: 10-peer mesh (NET-04)', { skip: SKIP_SLOW }, async () => {
   const { loadOrCreateIdentity, createNode } = await import('../src/infrastructure/peer-transport.js');

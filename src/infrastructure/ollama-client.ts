@@ -64,11 +64,11 @@ const DEFAULTS = {
 
 /**
  * Construct an Ollama client. The base URL defaults to localhost;
- * override via WELLINFORMED_OLLAMA_URL at the runtime layer.
+ * override via AKASHIK_OLLAMA_URL at the runtime layer.
  */
 export const ollamaClient = (opts: OllamaClientOptions = {}): OllamaClient => {
-  const baseUrl = (opts.baseUrl ?? process.env.WELLINFORMED_OLLAMA_URL ?? DEFAULTS.baseUrl).replace(/\/$/, '');
-  const defaultModel = opts.model ?? process.env.WELLINFORMED_OLLAMA_MODEL ?? DEFAULTS.model;
+  const baseUrl = (opts.baseUrl ?? process.env.AKASHIK_OLLAMA_URL ?? DEFAULTS.baseUrl).replace(/\/$/, '');
+  const defaultModel = opts.model ?? process.env.AKASHIK_OLLAMA_MODEL ?? DEFAULTS.model;
   const timeoutMs = opts.timeoutMs ?? DEFAULTS.timeoutMs;
   const retries = Math.max(1, opts.retries ?? DEFAULTS.retries);
   const fetchImpl = opts.fetchImpl ?? fetch;

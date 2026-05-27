@@ -1,5 +1,5 @@
-# wellinformed — example configuration.
-# Copy to ~/.wellinformed/config.yaml and fill in secrets.
+# akashik — example configuration.
+# Copy to ~/.akashik/config.yaml and fill in secrets.
 # Never commit real bot tokens or chat ids.
 
 daemon:
@@ -11,17 +11,17 @@ daemon:
 embeddings:
   model: Xenova/all-MiniLM-L6-v2
   dim: 384
-  cache_dir: ~/.wellinformed/models
+  cache_dir: ~/.akashik/models
 
 graph:
   # forked graphify sidecar — Phase 1
-  path: ~/.wellinformed/graph
-  python_venv: ~/.wellinformed/.venv
+  path: ~/.akashik/graph
+  python_venv: ~/.akashik/.venv
   schema_version: 1
 
 vectors:
   # sqlite-vec table shared across rooms; room is a column, not a separate DB
-  path: ~/.wellinformed/vectors.db
+  path: ~/.akashik/vectors.db
 
 rooms:
   default_room: default

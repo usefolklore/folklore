@@ -46,7 +46,7 @@ import * as sqliteVec from 'sqlite-vec';
 
 import { rustSubprocessEmbedder } from '../dist/infrastructure/embedders.js';
 
-const CACHE_DIR = join(homedir(), '.wellinformed', 'bench');
+const CACHE_DIR = join(homedir(), '.akashik', 'bench');
 const DB_PATH = join(CACHE_DIR, 'scifact__rust-via-ts__bge-base', 'vectors.db');
 const DATASET_DIR = join(CACHE_DIR, 'scifact', 'scifact');
 const CORPUS_JSONL = join(DATASET_DIR, 'corpus.jsonl');
@@ -62,7 +62,7 @@ const OLLAMA_MODEL = 'qwen2.5:3b';
 const OLLAMA_URL = 'http://localhost:11434';
 
 console.log('━'.repeat(60));
-console.log(' wellinformed — SciFact qrel completeness audit (Round 2)');
+console.log(' akashik — SciFact qrel completeness audit (Round 2)');
 console.log('━'.repeat(60));
 console.log(` Sample: ${SAMPLE_SIZE} queries × top-${TOP_K_TO_JUDGE} + ${N_CONTROLS} controls`);
 console.log(` Judge:  ${OLLAMA_MODEL} via ${OLLAMA_URL}`);

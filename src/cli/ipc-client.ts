@@ -3,7 +3,7 @@
  * already-running daemon (jobs.ts, future trigger / this when we
  * route them through the queue).
  *
- * Mirrors the wire format used in bin/wellinformed.js but lives in
+ * Mirrors the wire format used in bin/akashik.js but lives in
  * the TS surface so commands compiled into dist/ can use it without
  * the bin shim's auto-delegation.
  *
@@ -15,7 +15,7 @@ import { existsSync } from 'node:fs';
 import { connect } from 'node:net';
 import { createInterface } from 'node:readline';
 import { join } from 'node:path';
-import { wellinformedHome } from './runtime.js';
+import { akashikHome } from './runtime.js';
 
 const FALLBACK_SENTINEL = '__fallback__';
 const TIMEOUT_MS = 8000;
@@ -30,7 +30,7 @@ interface IpcResponse {
 
 const ipcCall = (cmd: string, args: readonly string[]): Promise<IpcResponse | null> =>
   new Promise((resolve) => {
-    const sockPath = join(wellinformedHome(), 'daemon.sock');
+    const sockPath = join(akashikHome(), 'daemon.sock');
     if (!existsSync(sockPath)) {
       resolve(null);
       return;

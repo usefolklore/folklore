@@ -1,11 +1,11 @@
 /**
- * `wellinformed entity <sub>` — manage the entity registry.
+ * `akashik entity <sub>` — manage the entity registry.
  *
  *   add <label> [--alias A] [--alias B] [--type T] [--note ...]
  *   list [--json]
  *   remove <id>
  *
- * The registry lives at $WELLINFORMED_HOME/entities.json. It's the
+ * The registry lives at $AKASHIK_HOME/entities.json. It's the
  * source of truth for canonical aliases — heuristic detection
  * augments it but cannot override.
  */
@@ -19,7 +19,7 @@ const VALID_TYPES: ReadonlySet<EntityKind> = new Set([
   'product', 'org', 'person', 'repo', 'package', 'concept', 'symbol', 'url', 'unknown',
 ]);
 
-const USAGE = `usage: wellinformed entity <sub>
+const USAGE = `usage: akashik entity <sub>
 
   add <label> [--alias A]+ [--type T] [--note ...]
                               register a canonical entity. label is
@@ -80,7 +80,7 @@ const add = async (rest: readonly string[]): Promise<number> => {
   if (ent.note) console.log(`  note:    ${ent.note}`);
   console.log('');
   console.log(`mentions across the graph will be picked up on the next ingest.`);
-  console.log(`run \`wellinformed recall ${label}\` after ingest to see hits.`);
+  console.log(`run \`akashik recall ${label}\` after ingest to see hits.`);
   return 0;
 };
 
@@ -103,12 +103,12 @@ const list = async (rest: readonly string[]): Promise<number> => {
   }
   if (allEnts.length === 0) {
     console.log('no entities registered yet.');
-    console.log('add one with: wellinformed entity add <label> [--alias A] [--type T]');
+    console.log('add one with: akashik entity add <label> [--alias A] [--type T]');
     return 0;
   }
   if (ents.length === 0) {
     console.log(`no user-curated entities (${autoCount} heuristic auto-detected — pass --all to see them).`);
-    console.log('add one with: wellinformed entity add <label> [--alias A] [--type T]');
+    console.log('add one with: akashik entity add <label> [--alias A] [--type T]');
     return 0;
   }
   console.log(`entities (${ents.length}${showAll ? '' : `, +${autoCount} auto hidden`}):\n`);

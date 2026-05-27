@@ -5,7 +5,7 @@
  * tier. Runs `tierForUri` over the fixture, computes per-class
  * confusion matrices, reports macro-F1.
  *
- * This is a wellinformed-specific axis — no public benchmark exists
+ * This is a akashik-specific axis — no public benchmark exists
  * for "did the system correctly classify this URI's tier?" — so
  * the fixture is in-repo + deterministic.
  *
@@ -118,8 +118,8 @@ test('bench: tier-promotion macro-F1 ≥ 0.95', () => {
   };
 
   // Persist the report for the composite runner to pick up.
-  if (process.env.WELLINFORMED_BENCH_OUT) {
-    appendBenchReport(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
+  if (process.env.AKASHIK_BENCH_OUT) {
+    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
   }
 
   console.log(`bench tier-promotion: macro-F1=${macro.toFixed(4)} in ${elapsedMs.toFixed(1)}ms`);

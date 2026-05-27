@@ -1,6 +1,6 @@
 /**
  * Session state file — persists incremental ingest progress to
- * ~/.wellinformed/sessions-state.json.
+ * ~/.akashik/sessions-state.json.
  *
  * Schema: { version: 1, files: { [absPath]: { mtime, byteOffset, lastLineNum } } }
  *
@@ -206,7 +206,7 @@ export const updateFileState = (
  *
  * Acquires a cross-process lock, loads the current state, applies the
  * pure transform, saves atomically, and releases the lock. Prevents two
- * wellinformed processes (e.g., daemon + CLI) from racing and clobbering
+ * akashik processes (e.g., daemon + CLI) from racing and clobbering
  * each other's ingest offsets.
  *
  * The `transform` function receives the current SessionState and must

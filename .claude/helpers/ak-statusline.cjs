@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * wellinformed status line for Claude Code.
+ * akashik status line for Claude Code.
  *
  * Shows real-time knowledge graph stats in the Claude Code status bar.
- * Reads directly from ~/.wellinformed/ files — no server needed.
+ * Reads directly from ~/.akashik/ files — no server needed.
  *
  * Output format (ANSI colored):
- * ┃ wellinformed • homelab │ 📊 154 nodes  30 edges │ 🔍 154 vectors │ 📡 4 sources │ 🏠 1 room │ 🤖 MCP 11 tools
+ * ┃ akashik • homelab │ 📊 154 nodes  30 edges │ 🔍 154 vectors │ 📡 4 sources │ 🏠 1 room │ 🤖 MCP 11 tools
  *
  * Performance: reads 3 small JSON files, no spawns, < 50ms.
  */
@@ -15,7 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const HOME = process.env.WELLINFORMED_HOME || path.join(require('os').homedir(), '.wellinformed');
+const HOME = process.env.AKASHIK_HOME || path.join(require('os').homedir(), '.akashik');
 
 // Repo-derived room: basename of the git toplevel for the current
 // working directory (CLAUDE_PROJECT_DIR wins, then cwd). Slugified to
@@ -44,8 +44,8 @@ function getRepoRoom() {
 
 // GitHub identity (Phase 26 prep). Returns `{handle, email, source}`
 // where `source` is one of:
-//   - 'auth'    — verified via `wellinformed login`, read from
-//                 ~/.wellinformed/linked-accounts.json
+//   - 'auth'    — verified via `akashik login`, read from
+//                 ~/.akashik/linked-accounts.json
 //   - 'git'     — fallback from git config user.name + user.email
 //                 (best-effort; not cryptographically verified)
 //   - null      — no identity available; caller falls back to workspace
@@ -74,7 +74,7 @@ function getGithubIdentity() {
       }
     } catch { /* fall through */ }
   }
-  // git-config fallback — useful before the user runs `wellinformed login`.
+  // git-config fallback — useful before the user runs `akashik login`.
   // Both name + email come from $(git config). We only return when
   // BOTH are present; partial data is worse than the workspace fallback.
   let name = null, email = null;
@@ -199,10 +199,10 @@ function getLastTrigger() {
 }
 
 function getLastFederation() {
-  // Reads ~/.wellinformed/prefetch-cache.jsonl — written by the
-  // UserPromptSubmit + mcp-pre hooks every time wellinformed
+  // Reads ~/.akashik/prefetch-cache.jsonl — written by the
+  // UserPromptSubmit + mcp-pre hooks every time akashik
   // federates. Shows the latest verdict in the status bar
-  // persistently — the watcher can always see what wellinformed
+  // persistently — the watcher can always see what akashik
   // last reported, even when Claude Code's TUI folds the hook's
   // additionalContext into a (ctrl+o to expand) collapse.
   //
@@ -282,7 +282,7 @@ function main() {
 
   // Project name + identity. The right side of the segment shows
   // WHO is talking to the graph — the verified GitHub identity if
-  // `wellinformed login` has been run, else best-effort from git
+  // `akashik login` has been run, else best-effort from git
   // config, else (final fallback) the repo basename so the panel
   // still says something useful in a fresh checkout.
   //

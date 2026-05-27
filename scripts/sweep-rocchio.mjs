@@ -33,7 +33,7 @@ import * as sqliteVec from 'sqlite-vec';
 
 import { rustSubprocessEmbedder } from '../dist/infrastructure/embedders.js';
 
-const CACHE_DIR = join(homedir(), '.wellinformed', 'bench');
+const CACHE_DIR = join(homedir(), '.akashik', 'bench');
 const DATASET = 'scifact';
 const DB_PATH = join(CACHE_DIR, 'scifact__rust-via-ts__bge-base', 'vectors.db');
 const DATASET_DIR = join(CACHE_DIR, DATASET, DATASET);
@@ -47,7 +47,7 @@ const ALPHA = parseFloat(process.argv[3] ?? '0.7');
 const BETA = parseFloat(process.argv[4] ?? '0.3');
 
 console.log('━'.repeat(60));
-console.log(' wellinformed — Rocchio dense PRF on SciFact');
+console.log(' akashik — Rocchio dense PRF on SciFact');
 console.log('━'.repeat(60));
 console.log(` Baseline: Phase 25 dense+BM25 hybrid = 75.22% NDCG@10`);
 console.log(` Settings: m=${PRF_M}, α=${ALPHA}, β=${BETA} (positive-only Rocchio)`);

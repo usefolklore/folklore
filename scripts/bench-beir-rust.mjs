@@ -3,7 +3,7 @@
 // with the Rust subprocess embedder swapped in.
 //
 // Pipeline: bench BEIR corpus → rustSubprocessEmbedder (spawns
-// wellinformed-rs embed_server binary) → openSqliteVectorIndex.upsert
+// akashik-rs embed_server binary) → openSqliteVectorIndex.upsert
 // with raw_text → searchHybrid (dense + FTS5 BM25 + RRF via the
 // Phase 23 production port).
 //
@@ -15,7 +15,7 @@
 //   node scripts/bench-beir-rust.mjs <dataset> [--model minilm|nomic|bge-base]
 //
 // Env:
-//   WELLINFORMED_RUST_BIN — override path to embed_server
+//   AKASHIK_RUST_BIN — override path to embed_server
 
 import { existsSync, mkdirSync, createReadStream, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -44,7 +44,7 @@ if (!DIM) {
 const BATCH_SIZE = parseInt(getArg('--batch') ?? '32', 10);
 const K = 10;
 
-const CACHE_ROOT = join(homedir(), '.wellinformed', 'bench');
+const CACHE_ROOT = join(homedir(), '.akashik', 'bench');
 const CACHE_DIR = join(CACHE_ROOT, `${DATASET}__rust-via-ts__${MODEL}`);
 const DB_PATH = join(CACHE_DIR, 'vectors.db');
 const DATASET_DIR = join(CACHE_ROOT, DATASET);

@@ -3,7 +3,7 @@
  *
  * Replaces the per-peer dialProtocol fan-out in federated-search.ts
  * with a single publish + collect. Cuts the dominant cost of
- * `wellinformed ask --peers` from O(peers × dial_handshake_ms) to
+ * `akashik ask --peers` from O(peers × dial_handshake_ms) to
  * O(propagation_ms + collector_window_ms).
  *
  * Mirrors oracle-gossip.ts pattern: floodsub today, gossipsub when
@@ -11,8 +11,8 @@
  *
  * Topic layout:
  *
- *   /wellinformed/search/1.0.0           — request topic
- *   /wellinformed/search-resp/1.0.0      — response topic
+ *   /akashik/search/1.0.0           — request topic
+ *   /akashik/search-resp/1.0.0      — response topic
  *
  *   Two topics so a responder never sees its own response and so
  *   askers can subscribe-to-responses without re-processing every
@@ -72,8 +72,8 @@ import type { Match } from '../domain/vectors.js';
 
 // ─────────────────────── constants ────────────────────────
 
-export const SEARCH_REQ_TOPIC = '/wellinformed/search/1.0.0' as const;
-export const SEARCH_RESP_TOPIC = '/wellinformed/search-resp/1.0.0' as const;
+export const SEARCH_REQ_TOPIC = '/akashik/search/1.0.0' as const;
+export const SEARCH_RESP_TOPIC = '/akashik/search-resp/1.0.0' as const;
 
 const MAX_REQUEST_BYTES = 16 * 1024;
 const MAX_RESPONSE_BYTES = 256 * 1024;
@@ -225,7 +225,7 @@ export const registerSearchGossipResponder = (
 // ─────────────────────── swarm-sim responder ──────────────
 //
 // Phase 3 of the P2P scale plan: when a daemon has a swarm corpus
-// loaded (~/.wellinformed/swarm-corpus.jsonl), it ALSO publishes
+// loaded (~/.akashik/swarm-corpus.jsonl), it ALSO publishes
 // synthetic responses on behalf of virtual peers from that corpus.
 // Each virtual peer that owns a top-relevance hit gets its OWN
 // SearchGossipResponse published to the response topic.

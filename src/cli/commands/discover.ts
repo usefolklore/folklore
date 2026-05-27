@@ -1,5 +1,5 @@
 /**
- * `wellinformed discover [--workspace W|all] [--auto]`
+ * `akashik discover [--workspace W|all] [--auto]`
  *
  * V5 stub (Phase 24). Source-suggestion engine was room-keyword-driven;
  * with rooms deleted, this command returns an empty suggestion list

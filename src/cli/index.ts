@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * wellinformed CLI — subcommand router.
+ * akashik CLI — subcommand router.
  *
  * Phase 0: doctor, version, help.
  * Phase 1: (runtime checks extended in doctor).
@@ -111,13 +111,13 @@ const commands: Record<string, CommandFn> = {
   gc,
   bench,
   'migrate': migrateCommand,
-  // Plural-form alias: `wellinformed peers rep …` works as well as
-  // `wellinformed peer rep …`. The subcommand dispatcher handles both.
+  // Plural-form alias: `akashik peers rep …` works as well as
+  // `akashik peer rep …`. The subcommand dispatcher handles both.
   peers: async (args: string[]): Promise<number> => {
     const [sub, ...rest] = args;
     if (sub === 'rep') return peersRep(rest);
     console.error('peers: only `rep` is implemented today (more coming).');
-    console.error('  usage: wellinformed peers rep [<peer-id>] [--subject <key>] [--json]');
+    console.error('  usage: akashik peers rep [<peer-id>] [--subject <key>] [--json]');
     return sub ? 1 : 1;
   },
 };
@@ -135,18 +135,18 @@ async function main(): Promise<number> {
     return (await handler(rest)) ?? 0;
   }
   if (futureCommands.has(cmd)) {
-    console.error(`wellinformed: '${cmd}' is recognized but not yet implemented (Phase 0 scaffold).`);
+    console.error(`akashik: '${cmd}' is recognized but not yet implemented (Phase 0 scaffold).`);
     console.error(`               see the roadmap — it lands in a later phase.`);
     return 2;
   }
-  console.error(`wellinformed: unknown command '${cmd}'. run 'wellinformed help'.`);
+  console.error(`akashik: unknown command '${cmd}'. run 'akashik help'.`);
   return 1;
 }
 
 main()
   .then((code) => process.exit(code))
   .catch((err) => {
-    console.error('wellinformed: fatal error');
+    console.error('akashik: fatal error');
     console.error(err);
     process.exit(1);
   });

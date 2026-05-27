@@ -34,14 +34,14 @@ export type SharePolicyMode = 'soft' | 'strict';
 /**
  * Read mode from env. Default is soft (backward compatible — existing
  * peers without signing keep working). Set
- *   WELLINFORMED_REQUIRE_SIGNED_NODES=1
+ *   AKASHIK_REQUIRE_SIGNED_NODES=1
  * to enforce strict mode (only SignedShareableNode survives, plain
  * unsigned drops with a metric + log).
  */
 export const sharePolicyModeFromEnv = (
   env: NodeJS.ProcessEnv = process.env,
 ): SharePolicyMode => {
-  const v = env.WELLINFORMED_REQUIRE_SIGNED_NODES;
+  const v = env.AKASHIK_REQUIRE_SIGNED_NODES;
   return v === '1' || v === 'true' ? 'strict' : 'soft';
 };
 

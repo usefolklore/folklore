@@ -96,8 +96,8 @@ test('bench: beta calibration converges to truth within 0.05 over 1000 steps', (
     elapsedMs,
   };
 
-  if (process.env.WELLINFORMED_BENCH_OUT) {
-    appendBenchReport(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
+  if (process.env.AKASHIK_BENCH_OUT) {
+    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
   }
 
   console.log(

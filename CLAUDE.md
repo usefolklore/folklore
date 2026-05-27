@@ -245,10 +245,10 @@ npx @claude-flow/cli@latest doctor --fix
 - Documentation: https://github.com/ruvnet/ruflo
 - Issues: https://github.com/ruvnet/ruflo/issues
 
-<!-- wellinformed:start -->
+<!-- akashik:start -->
 
-# wellinformed
-wellinformed is a knowledge-graph-first research layer with P2P
+# akashik
+akashik is a knowledge-graph-first research layer with P2P
 federation. It is **network-before-web** by design: local tool calls
 (Read / Grep / Glob) run unaffected, but the moment you reach for
 `WebSearch` or `WebFetch`, a PreToolUse hook asks your own graph +
@@ -263,23 +263,23 @@ graph instead of the web.
 
 What this means in practice:
 - Routine prompts ("fix this typo", "rename X to Y") never touch
-  wellinformed — zero overhead, zero noise.
+  akashik — zero overhead, zero noise.
 - Local code exploration (Read / Grep / Glob) runs without the hook.
 - Only outbound network lookups trigger the prefetch + possible deny.
 - When you (or other peers) have already researched something, you
   pay the network cost zero additional times after the first.
 
 Tuning knobs (env in `.claude/settings.json`):
-- `WELLINFORMED_DENY_WEBSEARCH=1` — enable deny-on-confidence (on by
+- `AKASHIK_DENY_WEBSEARCH=1` — enable deny-on-confidence (on by
   default in this project).
-- `WELLINFORMED_DENY_THRESHOLD=0.85` — confidence floor for deny.
-- `WELLINFORMED_DENY_MIN_HITS=2` — minimum graph hits before denying.
-- `WELLINFORMED_PREFETCH_PEERS=0` — force local-only (skip federated
+- `AKASHIK_DENY_THRESHOLD=0.85` — confidence floor for deny.
+- `AKASHIK_DENY_MIN_HITS=2` — minimum graph hits before denying.
+- `AKASHIK_PREFETCH_PEERS=0` — force local-only (skip federated
   fan-out).
 
 ## System rooms (always-on, P2P-shared, auto-populated)
 
-Two canonical rooms every wellinformed peer advertises out of the box:
+Two canonical rooms every akashik peer advertises out of the box:
 
 - **`toolshed`** — codebase, skills, MCP tools, deps, git history.
   "What can this peer do." Stale-after: 30 days.
@@ -288,7 +288,7 @@ Two canonical rooms every wellinformed peer advertises out of the box:
 
 Membership is virtual — derived from each node's `source_uri` scheme,
 not from its `room` field. You don't need to set the room when you
-`wellinformed save`: a URL-sourced save lands in `research`
+`akashik save`: a URL-sourced save lands in `research`
 automatically; a codebase save lands in `toolshed`. The system rooms
 are always present in shared-rooms.json and cannot be unshared.
 
@@ -303,12 +303,12 @@ hit vs re-fetch:
 
 - If the hit is younger than the room's stale-after window, trust the
   cache. (research: <7d, toolshed: <30d.)
-- If the hit is older, prefer a fresh pull — `mcp__wellinformed__trigger_room`
+- If the hit is older, prefer a fresh pull — `mcp__akashik__trigger_room`
   or the original WebFetch / WebSearch — and let the auto-save hook put
   the newer version back into the graph.
 - If a hit has no `fetched_at` at all, treat it as stale of unknown age.
 
-## When to invoke wellinformed
+## When to invoke akashik
 
 The hook handles the **passive** lane — outbound `WebSearch` /
 `WebFetch` calls are gated by the graph automatically, you don't have
@@ -317,7 +317,7 @@ memory explicitly, before deciding whether you even need a web call:
 
 1. **Pull from memory first, web second.** For any "what did I read
    about X?", "how did we approach Y before?", "is this concept
-   already indexed?" question, call the wellinformed MCP tools
+   already indexed?" question, call the akashik MCP tools
    (`search`, `ask`, `get_node`, `get_neighbors`, `find_tunnels`,
    `recall`) before deciding to WebSearch. The deny-on-confidence
    hook will cancel a WebSearch you launch redundantly, but it's
@@ -328,7 +328,7 @@ memory explicitly, before deciding whether you even need a web call:
    proper permission-deny support, and cross-harness portability
    (the same MCP server speaks to Claude Code, Cursor, Cline, Gemini
    CLI, etc.). The visibility of federation is handled separately by
-   the statusline panel and the `wellinformed metrics bypass` audit,
+   the statusline panel and the `akashik metrics bypass` audit,
    not by routing through Bash.
 
 3. **`search` / `ask`** take a query string and optional room filter.
@@ -342,7 +342,7 @@ memory explicitly, before deciding whether you even need a web call:
 5. **`get_node` / `get_neighbors`** for graph traversal when you
    already have a node id (from a prior search hit or a citation).
 
-6. **Save synthesized insights with `wellinformed save --type
+6. **Save synthesized insights with `akashik save --type
    synthesis --room <room>`** after reasoning through an external
    result. The auto-save hook already filed the raw source; your
    synthesis adds the *distilled* claim alongside it. Future
@@ -352,7 +352,7 @@ memory explicitly, before deciding whether you even need a web call:
 7. **When the deny-hook overrides your WebSearch.** If you see the
    tool call denied with a graph hit injected, treat the graph data
    as the authoritative answer. If it turns out wrong or stale,
-   tune `WELLINFORMED_DENY_THRESHOLD` upward (0.90 / 0.95) or trigger
-   a refresh via `mcp__wellinformed__trigger_room` then retry.
+   tune `AKASHIK_DENY_THRESHOLD` upward (0.90 / 0.95) or trigger
+   a refresh via `mcp__akashik__trigger_room` then retry.
 
-<!-- wellinformed:end -->
+<!-- akashik:end -->

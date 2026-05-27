@@ -1,5 +1,5 @@
 /**
- * `wellinformed export obsidian [--workspace W] [--output DIR]`
+ * `akashik export obsidian [--workspace W] [--output DIR]`
  *
  * V5 (Phase 24): exports the global graph (or workspace-filtered
  * slice) as an Obsidian vault: one .md file per node with YAML
@@ -101,7 +101,7 @@ export const exportObsidian = async (args: readonly string[]): Promise<number> =
     const vaultDir = output ?? join(runtimePaths().home, 'obsidian-vault', workspace ?? 'all');
     mkdirSync(vaultDir, { recursive: true });
 
-    const indexLines = [`# wellinformed vault — ${workspace ?? 'all workspaces'}`, '', `${nodes.length} nodes, ${edges.length} edges`, ''];
+    const indexLines = [`# akashik vault — ${workspace ?? 'all workspaces'}`, '', `${nodes.length} nodes, ${edges.length} edges`, ''];
     const byWorkspace = new Map<string, GraphNode[]>();
     for (const n of nodes) {
       const ws = typeof n.workspace === 'string' ? n.workspace : 'unassigned';

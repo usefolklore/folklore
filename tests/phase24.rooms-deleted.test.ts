@@ -4,14 +4,14 @@
  * Canonical regression-lock for the V5 cutover. Each of the 8
  * ROOMS-DEL-* requirements gets at least one passing assertion.
  *
- *   ROOMS-DEL-01  `wellinformed room` CLI is removed
- *   ROOMS-DEL-02  ~/.wellinformed/rooms.json no longer read/written
+ *   ROOMS-DEL-01  `akashik room` CLI is removed
+ *   ROOMS-DEL-02  ~/.akashik/rooms.json no longer read/written
  *   ROOMS-DEL-03  shared-rooms.json removed; sharing on node.private === false
  *   ROOMS-DEL-04  GraphNode has `room` removed, `workspace?` + `private` added
  *   ROOMS-DEL-05  Wire protocol V5 — no `room` field
- *   ROOMS-DEL-06  `wellinformed migrate v5` exists + idempotent + lossless
+ *   ROOMS-DEL-06  `akashik migrate v5` exists + idempotent + lossless
  *   ROOMS-DEL-07  Read-side workspace pre-filter; `--workspace all` opts out
- *   ROOMS-DEL-08  All wellinformed hooks pass without `room` field
+ *   ROOMS-DEL-08  All akashik hooks pass without `room` field
  *
  * Runner: node --import tsx --test tests/phase24.rooms-deleted.test.ts
  */
@@ -82,7 +82,7 @@ describe('Phase 24 — graph schema (ROOMS-DEL-04)', () => {
       id: 'v5-test',
       label: 'V5 schema test',
       file_type: 'document' as const,
-      source_file: 'wellinformed:test',
+      source_file: 'akashik:test',
       private: false,
       workspace: 'akashik',
     };
@@ -123,13 +123,13 @@ describe('Phase 24 — graph schema (ROOMS-DEL-04)', () => {
 // Group 2 — CLI dispatch (ROOMS-DEL-01)
 // ════════════════════════════════════════════════════════════════════════════
 describe('Phase 24 — CLI surface (ROOMS-DEL-01)', () => {
-  test('`wellinformed room` is an unknown subcommand (non-zero + "unknown" in stderr)', () => {
+  test('`akashik room` is an unknown subcommand (non-zero + "unknown" in stderr)', () => {
     const r = runCli(['room']);
-    assert.notEqual(r.code, 0, '`wellinformed room` must exit non-zero');
+    assert.notEqual(r.code, 0, '`akashik room` must exit non-zero');
     assert.match(r.stderr, /unknown/i, 'stderr must indicate unknown command');
   });
 
-  test('`wellinformed save --room x` is rejected with a V5 error', () => {
+  test('`akashik save --room x` is rejected with a V5 error', () => {
     const r = runCli(['save', '--room', 'foo', '--label', 'x']);
     assert.notEqual(r.code, 0, '--room must be rejected');
     assert.match(r.stderr, /--room is removed in V5/i,
@@ -418,7 +418,7 @@ describe('Phase 24 — migrate v5 (ROOMS-DEL-06)', () => {
       nodes: [
         { id: 'n1', label: 'A', file_type: 'document', source_file: '/a', room: 'akashik' },
         { id: 'n2', label: 'B', file_type: 'document', source_file: '/b', room: 'tlvtech' },
-        { id: 'n3', label: 'C', file_type: 'document', source_file: '/c', room: 'wellinformed-dev' },
+        { id: 'n3', label: 'C', file_type: 'document', source_file: '/c', room: 'akashik-dev' },
       ],
       links: [],
     };
@@ -431,7 +431,7 @@ describe('Phase 24 — migrate v5 (ROOMS-DEL-06)', () => {
     const home = makeTmp('migrate-fwd');
     try {
       writeV4Fixture(home);
-      const r = runCli(['migrate', 'v5'], { WELLINFORMED_HOME: home });
+      const r = runCli(['migrate', 'v5'], { AKASHIK_HOME: home });
       assert.equal(r.code, 0, `migrate must succeed: ${r.stderr}`);
 
       const graph = JSON.parse(readFileSync(join(home, 'graph.json'), 'utf8'));
@@ -453,10 +453,10 @@ describe('Phase 24 — migrate v5 (ROOMS-DEL-06)', () => {
     const home = makeTmp('migrate-idem');
     try {
       writeV4Fixture(home);
-      const r1 = runCli(['migrate', 'v5'], { WELLINFORMED_HOME: home });
+      const r1 = runCli(['migrate', 'v5'], { AKASHIK_HOME: home });
       assert.equal(r1.code, 0, 'first migration must succeed');
 
-      const r2 = runCli(['migrate', 'v5'], { WELLINFORMED_HOME: home });
+      const r2 = runCli(['migrate', 'v5'], { AKASHIK_HOME: home });
       assert.equal(r2.code, 0, 'second migration must exit 0');
       assert.match(r2.stdout, /Already on V5/i,
         `second migration must report "Already on V5":\n${r2.stdout}`);
@@ -469,7 +469,7 @@ describe('Phase 24 — migrate v5 (ROOMS-DEL-06)', () => {
     const home = makeTmp('migrate-backup');
     try {
       writeV4Fixture(home);
-      const r = runCli(['migrate', 'v5'], { WELLINFORMED_HOME: home });
+      const r = runCli(['migrate', 'v5'], { AKASHIK_HOME: home });
       assert.equal(r.code, 0);
       assert.ok(existsSync(join(home, 'graph.v4-backup.json')),
         'graph.v4-backup.json must exist after migration');
@@ -496,7 +496,7 @@ describe('Phase 24 — migrate v5 (ROOMS-DEL-06)', () => {
           },
         },
       }));
-      const r = runCli(['migrate', 'v5'], { WELLINFORMED_HOME: home });
+      const r = runCli(['migrate', 'v5'], { AKASHIK_HOME: home });
       assert.equal(r.code, 0);
 
       const rep = JSON.parse(readFileSync(repPath, 'utf8'));
@@ -517,10 +517,10 @@ describe('Phase 24 — migrate v5 (ROOMS-DEL-06)', () => {
       writeV4Fixture(home);
       const originalGraph = readFileSync(join(home, 'graph.json'), 'utf8');
 
-      const rFwd = runCli(['migrate', 'v5'], { WELLINFORMED_HOME: home });
+      const rFwd = runCli(['migrate', 'v5'], { AKASHIK_HOME: home });
       assert.equal(rFwd.code, 0);
 
-      const rRollback = runCli(['migrate', 'v5', '--rollback'], { WELLINFORMED_HOME: home });
+      const rRollback = runCli(['migrate', 'v5', '--rollback'], { AKASHIK_HOME: home });
       assert.equal(rRollback.code, 0, `rollback must succeed: ${rRollback.stderr}`);
 
       const restored = readFileSync(join(home, 'graph.json'), 'utf8');
@@ -535,11 +535,11 @@ describe('Phase 24 — migrate v5 (ROOMS-DEL-06)', () => {
 // ════════════════════════════════════════════════════════════════════════════
 // Group 8 — Hooks (ROOMS-DEL-08)
 // ════════════════════════════════════════════════════════════════════════════
-describe('Phase 24 — wellinformed hooks (ROOMS-DEL-08)', () => {
+describe('Phase 24 — akashik hooks (ROOMS-DEL-08)', () => {
   test('smart-hook hit-formatter does not emit [room, ...] segment', () => {
     const candidates = [
-      '.claude/hooks/wellinformed-smart-hook.cjs',
-      '.claude/hooks/wellinformed-hook.sh',
+      '.claude/hooks/akashik-smart-hook.cjs',
+      '.claude/hooks/akashik-hook.sh',
     ];
     let found = false;
     for (const c of candidates) {
@@ -560,8 +560,8 @@ describe('Phase 24 — wellinformed hooks (ROOMS-DEL-08)', () => {
 
   test('post-fetch hook does not pass --room flag (V5 save invocation)', () => {
     const candidates = [
-      '.claude/hooks/wellinformed-post-fetch.cjs',
-      '.claude/hooks/wellinformed-hook.sh',
+      '.claude/hooks/akashik-post-fetch.cjs',
+      '.claude/hooks/akashik-hook.sh',
     ];
     for (const c of candidates) {
       const full = join(ROOT, c);
@@ -574,8 +574,8 @@ describe('Phase 24 — wellinformed hooks (ROOMS-DEL-08)', () => {
 
   test('session-start statusline source does not reference rooms count', () => {
     const candidates = [
-      '.claude/hooks/wellinformed-session-start.sh',
-      '.claude/helpers/wi-statusline.cjs',
+      '.claude/hooks/akashik-session-start.sh',
+      '.claude/helpers/ak-statusline.cjs',
     ];
     for (const c of candidates) {
       const full = join(ROOT, c);

@@ -39,7 +39,7 @@ export interface BenchSuiteReport {
  *   - 0.15 HotpotQA-style R@5 — multi-hop retrieval
  *   - 0.20 LongMemEval-S R@5 — conversational long-term recall
  *   - 0.10 LoCoMo factual F1 — temporal/causal recall
- *   - 0.10 tier-promotion F1 — wellinformed-specific
+ *   - 0.10 tier-promotion F1 — akashik-specific
  *   - 0.05 Beta calibration (1 − error) — Phase 22 EU lane
  *   - 0.05 auto-forget F1 — Phase 22 lifecycle
  *   - 0.05 retention-band accuracy — Phase 22 banding

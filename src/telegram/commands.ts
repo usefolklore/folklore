@@ -102,7 +102,7 @@ async function handleStatus(runtime: Runtime, _args: string): Promise<string> {
   const sources = sourcesResult.isOk() ? sourcesResult.value.length : 0;
 
   return [
-    '*wellinformed status*',
+    '*akashik status*',
     `Nodes: ${nodes}`,
     `Edges: ${edges}`,
     `Vectors: ${vectors}`,
@@ -112,7 +112,7 @@ async function handleStatus(runtime: Runtime, _args: string): Promise<string> {
 
 async function handleHelp(_runtime: Runtime, _args: string): Promise<string> {
   return [
-    '*wellinformed commands:*',
+    '*akashik commands:*',
     '• `ask <query>` — search the knowledge graph',
     '• `report` — generate a report',
     '• `trigger` — fetch + index all sources',

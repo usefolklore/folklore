@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * wellinformed PostToolUse auto-save hook.
+ * akashik PostToolUse auto-save hook.
  *
  * Runs AFTER Claude calls WebSearch / WebFetch. Captures the tool
  * result and files it as a `source` note in the global graph so the
@@ -25,7 +25,7 @@ const { readFileSync, existsSync } = require('node:fs');
 const { join } = require('node:path');
 const os = require('node:os');
 
-const HOME = process.env.WELLINFORMED_HOME || join(os.homedir(), '.wellinformed');
+const HOME = process.env.AKASHIK_HOME || join(os.homedir(), '.akashik');
 const GRAPH_PATH = join(HOME, 'graph.json');
 const SAVE_TIMEOUT_MS = 8000;
 const MAX_BODY_BYTES = 32_000;
@@ -65,7 +65,7 @@ const sourceUriFor = (toolName, ti) => {
 const saveToGraph = (label, body, sourceUri) => new Promise((resolve) => {
   const args = ['save', '--type', 'source', '--label', label];
   if (sourceUri) args.push('--source-uri', sourceUri);
-  const child = spawn('wellinformed', args, {
+  const child = spawn('akashik', args, {
     stdio: ['pipe', 'ignore', 'ignore'],
     timeout: SAVE_TIMEOUT_MS,
   });

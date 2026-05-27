@@ -1,5 +1,5 @@
 /**
- * `wellinformed trigger [--sync]` — run an ingest pass against every
+ * `akashik trigger [--sync]` — run an ingest pass against every
  * enabled source.
  *
  * V5 (Phase 24): no --room flag. Trigger runs ALL enabled sources
@@ -57,7 +57,7 @@ const submitToDaemon = async (): Promise<number> => {
   }
   const id = out.trim();
   console.log(`  queued  ${id}  ingest:all`);
-  console.log('\n1 job queued — track with: wellinformed jobs watch');
+  console.log('\n1 job queued — track with: akashik jobs watch');
   return 0;
 };
 
@@ -85,7 +85,7 @@ export const trigger = async (args: readonly string[]): Promise<number> => {
     }
     const tick = result.value;
     if (tick.runs.length === 0) {
-      console.log('trigger: no sources configured — use `wellinformed sources add` to seed one.');
+      console.log('trigger: no sources configured — use `akashik sources add` to seed one.');
       return 0;
     }
     console.log(renderTickRun(tick));

@@ -1,10 +1,10 @@
 #!/bin/sh
-# wellinformed SessionStart hook — announces the knowledge graph on session start
+# akashik SessionStart hook — announces the knowledge graph on session start
 # Shows: stats, recent activity, trending topics, tunnel candidates
 
-GRAPH="${WELLINFORMED_HOME:-$HOME/.wellinformed}/graph.json"
-SOURCES="${WELLINFORMED_HOME:-$HOME/.wellinformed}/sources.json"
-LOG="${WELLINFORMED_HOME:-$HOME/.wellinformed}/daemon.log"
+GRAPH="${AKASHIK_HOME:-$HOME/.akashik}/graph.json"
+SOURCES="${AKASHIK_HOME:-$HOME/.akashik}/sources.json"
+LOG="${AKASHIK_HOME:-$HOME/.akashik}/daemon.log"
 
 if [ ! -f "$GRAPH" ]; then exit 0; fi
 
@@ -33,7 +33,7 @@ except: pass
 " 2>/dev/null)
 fi
 
-MSG="━━ wellinformed ━━ ${NODES} nodes │ ${EDGES} edges │ ${SOURCE_COUNT} sources"
+MSG="━━ akashik ━━ ${NODES} nodes │ ${EDGES} edges │ ${SOURCE_COUNT} sources"
 
 if [ -n "$RECENT" ]; then
   MSG="$MSG

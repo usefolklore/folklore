@@ -1,7 +1,7 @@
 //! embed_server — stdio JSON-RPC embedding server.
 //!
 //! Phase 24 of the v2.1 milestone. Long-lived process the TypeScript
-//! wellinformed stack spawns on first use to embed via production-
+//! akashik stack spawns on first use to embed via production-
 //! quality ONNX weights (fastembed, which pulls Qdrant-curated ports)
 //! instead of `@xenova/transformers` (which silently ships a defective
 //! bge-base-en-v1.5 conversion — measured -11.4 NDCG@10 on BEIR SciFact
@@ -38,7 +38,7 @@ use std::{
     collections::HashMap,
     io::{BufRead, BufReader, Write},
 };
-use wellinformed_bench::{
+use akashik_bench::{
     domain::{
         beir::{doc_text as prefix_doc, query_text as prefix_query, BeirDoc},
         compute_centroids, find_tunnels_rng, BeirQuery, EncoderSpec, LabeledVector, Tunnel,
@@ -190,7 +190,7 @@ fn handle_embed(
 
     // Apply the canonical prefix unless the caller said `raw: true`.
     // This mirrors the TypeScript BEIR bench prep exactly so that
-    // wellinformed's production indexNode path gets the correct
+    // akashik's production indexNode path gets the correct
     // nomic `search_document: ` / `search_query: ` prefixes without
     // the caller having to know about them.
     let prefixed: Vec<String> = if raw {
@@ -287,7 +287,7 @@ fn err_response(msg: impl Into<String>) -> Response {
 fn main() -> Result<()> {
     // Startup banner to stderr so stdout stays pure JSON for the client.
     eprintln!(
-        "wellinformed-bench embed_server v{} — stdio JSON-RPC",
+        "akashik-bench embed_server v{} — stdio JSON-RPC",
         env!("CARGO_PKG_VERSION")
     );
     eprintln!("supported models: nomic, bge-base, minilm");

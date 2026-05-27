@@ -1,5 +1,5 @@
 /**
- * `wellinformed touch <peer-id-or-multiaddr> [--max N] [--dry-run]`
+ * `akashik touch <peer-id-or-multiaddr> [--max N] [--dry-run]`
  *
  * V5 (Phase 24): asymmetric P2P pull — ask the remote peer for their
  * freshest non-private nodes, receive them with server-side secret
@@ -14,7 +14,7 @@
  */
 
 import { join } from 'node:path';
-import { wellinformedHome } from '../runtime.js';
+import { akashikHome } from '../runtime.js';
 import {
   loadOrCreateIdentity,
   createNode,
@@ -29,10 +29,10 @@ import { TOUCH_MAX_NODES } from '../../domain/touch.js';
 import { upsertNode } from '../../domain/graph.js';
 import type { Graph, GraphNode } from '../../domain/graph.js';
 
-const identityPath = (): string => join(wellinformedHome(), 'peer-identity.json');
-const peersPath = (): string => join(wellinformedHome(), 'peers.json');
-const configPath = (): string => join(wellinformedHome(), 'config.yaml');
-const graphPath = (): string => join(wellinformedHome(), 'graph.json');
+const identityPath = (): string => join(akashikHome(), 'peer-identity.json');
+const peersPath = (): string => join(akashikHome(), 'peers.json');
+const configPath = (): string => join(akashikHome(), 'config.yaml');
+const graphPath = (): string => join(akashikHome(), 'graph.json');
 
 interface TouchArgs {
   readonly target: string;
@@ -42,7 +42,7 @@ interface TouchArgs {
 
 const parseArgs = (rest: readonly string[]): TouchArgs | string => {
   if (rest.length === 0) {
-    return 'touch: missing <peer-id-or-multiaddr>. usage: wellinformed touch <peer> [--max N] [--dry-run]';
+    return 'touch: missing <peer-id-or-multiaddr>. usage: akashik touch <peer> [--max N] [--dry-run]';
   }
   const target = rest[0];
   const flags = rest.slice(1);
@@ -74,7 +74,7 @@ const resolveTarget = async (
   const peersRes = await loadPeers(peersPath());
   if (peersRes.isErr()) return `touch: ${formatError(peersRes.error)}`;
   const rec = peersRes.value.peers.find((p) => p.id === target);
-  if (!rec || rec.addrs.length === 0) return `touch: peer '${target}' not found in peers.json (add via 'wellinformed peer add <multiaddr>' first)`;
+  if (!rec || rec.addrs.length === 0) return `touch: peer '${target}' not found in peers.json (add via 'akashik peer add <multiaddr>' first)`;
   return { peerId: rec.id, addr: rec.addrs[0] };
 };
 

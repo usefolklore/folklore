@@ -71,33 +71,33 @@ Bench source: [`tests/bench-akashik-federation.test.ts`](tests/bench-akashik-fed
 
 ## Quickstart
 
-> The npm package and CLI binary are still named `wellinformed` during the two-name period. The brand-marketing name is **Akashik**; a coordinated rename of package + repo + DNS is queued behind the public launch. Examples below show both forms.
+> The npm package and CLI binary are still named `akashik` during the two-name period. The brand-marketing name is **Akashik**; a coordinated rename of package + repo + DNS is queued behind the public launch. Examples below show both forms.
 
 Install:
 
 ```bash
-npm install -g wellinformed
+npm install -g akashik
 # (will become: npm install -g akashik)
 ```
 
 Run your first peer:
 
 ```bash
-wellinformed init
-wellinformed daemon start
+akashik init
+akashik daemon start
 ```
 
 Save what teaches you:
 
 ```bash
-wellinformed save https://arxiv.org/abs/2406.16678 --room research
-wellinformed save ./notes/cuda-oom-debug.md --room toolshed
+akashik save https://arxiv.org/abs/2406.16678 --room research
+akashik save ./notes/cuda-oom-debug.md --room toolshed
 ```
 
 Query the record:
 
 ```bash
-wellinformed ask "how does mxbai-rerank compare to cross-encoder on long contexts?"
+akashik ask "how does mxbai-rerank compare to cross-encoder on long contexts?"
 ```
 
 The query checks your local graph, then federates to peers you share rooms with, then falls back to web research only if neither can answer. The web result lands in your local graph signed by you — the next contributor who asks something similar pulls it from your peer with full attribution.
@@ -122,7 +122,7 @@ Active workstreams (planning doc forthcoming at [`docs/PROJECT-PLAN-AKASHIK.md`]
 
 - **AkashikBench-F v2** — real per-peer retrieval (not boolean), measure compounding under genuine retrieval-quality variance.
 - **100-peer pilot in the local-AI / agent-tooling ecosystem** — seed contributors to `llama.cpp + ollama`, `vllm-project/vllm`, and `aider` with 50-80 canonical artifacts. Publish the real `web_fallback_rate` curve after 30 days.
-- **Codebase rename** — coordinated `wellinformed → akashik` migration across npm, GitHub, DNS.
+- **Codebase rename** — coordinated `akashik → akashik` migration across npm, GitHub, DNS.
 - **Read-only public peer endpoint** — "Browse the record" entry point for newcomers, no login required.
 - **GDPR Article 17 tombstones** — reconciling immutable provenance with right-to-erasure via signed deletion records.
 - **Rarity-aware replication quotas** — LOCKSS-style protection against niche-content evaporation; BitTorrent rarest-first weighting on federation fan-out.
@@ -141,7 +141,7 @@ Open an issue, fork the repo, or DM the maintainer. The project is in flux and t
 
 ## Status
 
-Pre-launch. Simulator-validated, retrieval-benchmarked, pilot pending. Two-name period in effect (`wellinformed` in code, `Akashik` in marketing). Public protocol spec lands with the rename.
+Pre-launch. Simulator-validated, retrieval-benchmarked, pilot pending. Two-name period in effect (`akashik` in code, `Akashik` in marketing). Public protocol spec lands with the rename.
 
 ## License
 

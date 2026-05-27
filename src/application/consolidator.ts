@@ -78,7 +78,7 @@ export interface ConsolidationParams {
   readonly clusterOpts?: ClusterOptions;
   /**
    * If true, the orchestrator builds clusters + LLM-summarizes but
-   * does NOT call persist/mark. Useful for `wellinformed consolidate
+   * does NOT call persist/mark. Useful for `akashik consolidate
    * dry-run` and the bench gate measurement.
    */
   readonly dryRun?: boolean;

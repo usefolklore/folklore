@@ -1,17 +1,17 @@
 {
-  "name": "wellinformed",
+  "name": "akashik",
   "version": "4.0.0-rc1",
   "description": "OSS P2P agent memory — DID-authored cryptographic envelopes, 48× compressed vectors, 33× faster cached queries via daemon IPC + native Rust client, episodic→semantic consolidation worker, cross-model embedding bridge. CPU-local, zero GPU, zero SaaS. v4 Agent Brain.",
   "type": "module",
   "bin": {
-    "wellinformed": "./bin/wellinformed.js"
+    "akashik": "./bin/akashik.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "bootstrap": "bash scripts/bootstrap.sh",
-    "doctor": "node bin/wellinformed.js doctor",
-    "start": "node bin/wellinformed.js",
+    "doctor": "node bin/akashik.js doctor",
+    "start": "node bin/akashik.js",
     "test": "node --import tsx --test tests/*.test.ts"
   },
   "files": [

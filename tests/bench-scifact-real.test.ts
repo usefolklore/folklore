@@ -14,7 +14,7 @@
  * Environment contract (all required to run; otherwise the test is
  * skipped — keeps CI fast):
  *
- *   WELLINFORMED_BENCH_PUBLIC_REAL=1
+ *   AKASHIK_BENCH_PUBLIC_REAL=1
  *     The master gate. Off by default.
  *
  *   BEIR_SCIFACT_DIR=/path/to/scifact
@@ -24,7 +24,7 @@
  *         qrels/test.tsv            (339 lines — header + 300 q-doc pairs)
  *     Get it via `wget -O - https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/scifact.zip | bsdtar -xf-`.
  *
- *   WELLINFORMED_BENCH_OUT=/path/to/report.jsonl   (optional)
+ *   AKASHIK_BENCH_OUT=/path/to/report.jsonl   (optional)
  *     If set, the suite appends one BenchSuiteReport JSON line so the
  *     composite runner can pick it up.
  *
@@ -104,8 +104,8 @@ const readQrels = (path: string): Map<string, Set<string>> => {
 };
 
 test('bench: real BEIR SciFact NDCG@10', { timeout: 24 * 60 * 60 * 1000 }, async (t) => {
-  if (process.env.WELLINFORMED_BENCH_PUBLIC_REAL !== '1') {
-    t.skip('WELLINFORMED_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
+  if (process.env.AKASHIK_BENCH_PUBLIC_REAL !== '1') {
+    t.skip('AKASHIK_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
     return;
   }
   const dir = process.env.BEIR_SCIFACT_DIR;
@@ -149,15 +149,15 @@ test('bench: real BEIR SciFact NDCG@10', { timeout: 24 * 60 * 60 * 1000 }, async
     );
 
     // E1' (Phase 23.9): opt-in cross-encoder rerank in the bench path.
-    // Activated via WELLINFORMED_RERANK=1; model selectable via
-    // WELLINFORMED_RERANK_MODEL (default Xenova/ms-marco-MiniLM-L-6-v2,
+    // Activated via AKASHIK_RERANK=1; model selectable via
+    // AKASHIK_RERANK_MODEL (default Xenova/ms-marco-MiniLM-L-6-v2,
     // recommended swap Xenova/bge-reranker-base for SciFact since BGE
     // is trained on a wider mix of retrieval domains).
     const reranker = crossEncoderFromEnv();
     const RERANK_HEAD = 50;  // BEIR convention: rerank top-50 for NDCG@10
     const overRetrieveK = reranker ? Math.max(RERANK_HEAD, K * 5) : K;
     if (reranker) {
-      console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → NDCG@${K}`);
+      console.log(`  cross-encoder rerank ON · model=${process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → NDCG@${K}`);
     }
 
     // ─── index corpus ───
@@ -241,11 +241,11 @@ test('bench: real BEIR SciFact NDCG@10', { timeout: 24 * 60 * 60 * 1000 }, async
       },
       perQuery,
       elapsedMs,
-      notes: `Real BEIR SciFact — ${corpus.length} docs × ${queries.length} test queries via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Rerank=${reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}). Replaces the 30-doc labeled proxy.`,
+      notes: `Real BEIR SciFact — ${corpus.length} docs × ${queries.length} test queries via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Rerank=${reranker ? (process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}). Replaces the 30-doc labeled proxy.`,
     };
 
-    if (process.env.WELLINFORMED_BENCH_OUT) {
-      appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
+    if (process.env.AKASHIK_BENCH_OUT) {
+      appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
     }
 
     console.log(`bench scifact-real: NDCG@10=${ndcg10.toFixed(4)} R@10=${recall10.toFixed(4)} MRR=${mrr.toFixed(4)} (n=${queries.length}) in ${(elapsedMs / 1000).toFixed(1)}s`);

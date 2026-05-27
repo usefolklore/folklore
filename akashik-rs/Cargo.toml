@@ -1,14 +1,14 @@
 [package]
-name = "wellinformed-bench"
+name = "akashik-bench"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.82"
 
-# Minimum-viable BEIR benchmark for wellinformed in Rust.
+# Minimum-viable BEIR benchmark for akashik in Rust.
 #
 # Pipeline: nomic-embed-text-v1.5 via ONNX Runtime (ort) + tokenizers →
 # in-memory L2-normalized vectors → brute-force cosine similarity →
-# NDCG@10. Reads BEIR corpora directly from ~/.wellinformed/bench/
+# NDCG@10. Reads BEIR corpora directly from ~/.akashik/bench/
 # (shared with the TypeScript bench so both run on the exact same data).
 #
 # This is the apples-to-apples comparison target for the TypeScript

@@ -1,5 +1,5 @@
 /**
- * `wellinformed this [me|everyone] [--root DIR] [--name NAME]`
+ * `akashik this [me|everyone] [--root DIR] [--name NAME]`
  *
  * Index the current (or `--root`) directory into the knowledge graph
  * tagged with a workspace slug derived from its basename. The
@@ -7,10 +7,10 @@
  * private (`me`, default) — V5 (Phase 24) per-node `private: bool`
  * gate — or left federation-eligible (`everyone`).
  *
- *   wellinformed this              → index cwd, nodes private
- *   wellinformed this me           → same (explicit private)
- *   wellinformed this everyone     → index cwd, nodes NOT marked private;
- *                                    use `wellinformed share <peer>` to
+ *   akashik this              → index cwd, nodes private
+ *   akashik this me           → same (explicit private)
+ *   akashik this everyone     → index cwd, nodes NOT marked private;
+ *                                    use `akashik share <peer>` to
  *                                    actually publish.
  */
 
@@ -22,7 +22,7 @@ import { share } from './share.js';
 const slugifyWorkspace = (s: string): string =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 63) || 'unnamed';
 import { registerWatchTarget } from '../../infrastructure/watch-targets.js';
-import { wellinformedHome, runtimePaths } from '../runtime.js';
+import { akashikHome, runtimePaths } from '../runtime.js';
 import { isRunning } from '../../daemon/loop.js';
 import { ipcCallLines } from '../ipc-client.js';
 
@@ -52,7 +52,7 @@ const parseArgs = (args: readonly string[]): Parsed => {
   return { visibility, root, name };
 };
 
-const USAGE = `usage: wellinformed this [me|everyone] [--root DIR] [--name NAME]
+const USAGE = `usage: akashik this [me|everyone] [--root DIR] [--name NAME]
 
   me           keep workspace private (default; nothing leaves the host)
   everyone     index + mark workspace shareable on the P2P network
@@ -70,14 +70,14 @@ export const thisCmd = async (args: readonly string[]): Promise<number> => {
   const { visibility, root, name } = parseArgs(args);
   const slug = slugifyWorkspace(name ?? basename(root));
 
-  console.log(`wellinformed this ${visibility} — workspace '${slug}' (${root})\n`);
+  console.log(`akashik this ${visibility} — workspace '${slug}' (${root})\n`);
   const absRoot = resolve(root);
 
   // Register the watch-target FIRST. This is independent of the index
   // result. V5: the watch-target shape carries a workspace slug
   // instead of a room (back-compat: the field name remains `room`
   // until watch-targets.json shape is migrated).
-  registerWatchTarget(join(wellinformedHome(), 'watch-targets.json'), {
+  registerWatchTarget(join(akashikHome(), 'watch-targets.json'), {
     room: slug,
     root: absRoot,
   });
@@ -95,15 +95,15 @@ export const thisCmd = async (args: readonly string[]): Promise<number> => {
     console.log(`  queued  ${id}  ingest:project ${slug} (${absRoot})`);
     console.log(`\n  watch-target registered for ${absRoot}`);
     console.log(`  the daemon picks up the new watcher on next restart:`);
-    console.log(`    wellinformed daemon stop && wellinformed daemon start`);
-    console.log(`\n  track ingest progress with:  wellinformed jobs watch`);
+    console.log(`    akashik daemon stop && akashik daemon start`);
+    console.log(`\n  track ingest progress with:  akashik jobs watch`);
     if (visibility === 'everyone') {
       console.log(`\n  workspace '${slug}' indexed — nodes are NOT marked private.`);
-      console.log(`  publish to a peer with: wellinformed share <peer-id>`);
+      console.log(`  publish to a peer with: akashik share <peer-id>`);
     } else {
       console.log(`\n  workspace '${slug}' indexed privately (V5: nodes get private:true).`);
-      console.log(`  to publish later: re-run with 'wellinformed this everyone' or`);
-      console.log(`  flip nodes manually with 'wellinformed save --label X' (default public).`);
+      console.log(`  to publish later: re-run with 'akashik this everyone' or`);
+      console.log(`  flip nodes manually with 'akashik save --label X' (default public).`);
     }
     return 0;
   }
@@ -111,16 +111,16 @@ export const thisCmd = async (args: readonly string[]): Promise<number> => {
   // Sync path — daemon not running.
   const indexCode = await indexProject(['--workspace', slug, '--root', root]);
   console.log(`\nwatch-target registered — start the daemon to enable auto re-embed:`);
-  console.log(`  wellinformed daemon start`);
+  console.log(`  akashik daemon start`);
 
   if (indexCode !== 0) return indexCode;
 
   if (visibility === 'everyone') {
     console.log(`\nworkspace '${slug}' indexed — nodes are NOT marked private.`);
-    console.log(`  publish to a peer with: wellinformed share <peer-id>`);
+    console.log(`  publish to a peer with: akashik share <peer-id>`);
   } else {
     console.log(`\nworkspace '${slug}' indexed privately. nothing leaves this machine.`);
-    console.log(`  to publish later: see 'wellinformed share <peer-id>'`);
+    console.log(`  to publish later: see 'akashik share <peer-id>'`);
   }
   // Silence unused-import warning while keeping the symbol available
   // for future re-introduction of an automatic share step.

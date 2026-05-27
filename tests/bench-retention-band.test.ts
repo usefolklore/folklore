@@ -127,8 +127,8 @@ test('bench: retention-band accuracy ≥ 0.80', () => {
     elapsedMs,
   };
 
-  if (process.env.WELLINFORMED_BENCH_OUT) {
-    appendBenchReport(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
+  if (process.env.AKASHIK_BENCH_OUT) {
+    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
   }
 
   console.log(`bench retention-band: accuracy=${acc.toFixed(4)} (${correct}/${FIXTURE.length}) in ${elapsedMs.toFixed(1)}ms`);

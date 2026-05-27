@@ -1,5 +1,5 @@
 /**
- * `wellinformed ask "<query>" [--workspace W|all] [--k N] [--peers]`
+ * `akashik ask "<query>" [--workspace W|all] [--k N] [--peers]`
  *
  * Semantic search + formatted context output. Embeds the query, runs
  * k-NN, loads matching nodes from the graph, and prints a structured
@@ -9,7 +9,7 @@
  * workspace pre-filter when cwd is in a git repo. Use `--workspace all`
  * to opt out, or `--workspace <slug>` to override the cwd detection.
  *
- * With --peers: fans out to all connected peers via /wellinformed/search/1.0.0,
+ * With --peers: fans out to all connected peers via /akashik/search/1.0.0,
  * merges results with _source_peer annotation.
  */
 
@@ -23,7 +23,7 @@ import { runFederatedSearch } from '../../application/federated-search.js';
 import { buildPeerPullTelemetry } from '../../application/peer-pull-telemetry.js';
 import { formatTelemetryBlock } from '../../infrastructure/telemetry-formatter.js';
 import { ask as askUseCase, type AskResult } from '../../application/ask.js';
-import { defaultRuntime, wellinformedHome, detectWorkspace } from '../runtime.js';
+import { defaultRuntime, akashikHome, detectWorkspace } from '../runtime.js';
 import type { Runtime } from '../runtime.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../../infrastructure/peer-transport.js';
 import { loadPeers } from '../../infrastructure/peer-store.js';
@@ -57,7 +57,7 @@ const parseArgs = (args: readonly string[]): ParsedArgs | string => {
     else if (a === '--json') json = true;
     else if (!a.startsWith('-')) query = query ? `${query} ${a}` : a;
   }
-  if (!query) return 'missing query — usage: wellinformed ask "your question" [--workspace W|all] [--k N] [--peers] [--json]';
+  if (!query) return 'missing query — usage: akashik ask "your question" [--workspace W|all] [--k N] [--peers] [--json]';
 
   // Resolve workspace: explicit --workspace all → undefined (no filter);
   // explicit slug → that slug; absent → detectWorkspace(cwd) → slug | undefined.
@@ -191,7 +191,7 @@ const HOOK_SCHEMA_VERSION = 2;
 
 const renderAgentContract = (r: AskResult): void => {
   const s = r.satisfaction;
-  console.log(`# wellinformed agent contract (hook_version: ${HOOK_SCHEMA_VERSION})`);
+  console.log(`# akashik agent contract (hook_version: ${HOOK_SCHEMA_VERSION})`);
   console.log(`action:        ${r.decision}`);
   console.log(`satisfaction:  ${s.score.toFixed(2)}  (range 0.00–1.00)`);
   console.log(
@@ -214,7 +214,7 @@ const renderAskHuman = (r: AskResult): number => {
 
   if (r.resolved_entity && r.recall_result && r.recall_result.hits.length > 0) {
     const e = r.resolved_entity;
-    console.log(`# wellinformed: "${r.query}" matches entity ${e.id}`);
+    console.log(`# akashik: "${r.query}" matches entity ${e.id}`);
     console.log(`type: ${e.type} | aliases: ${e.aliases.join(', ')} | mentions: ${r.recall_result.total}`);
     console.log('');
     console.log(`## entity recall (top ${r.recall_result.hits.length})`);
@@ -234,7 +234,7 @@ const renderAskHuman = (r: AskResult): number => {
 
   if (r.search_hits.length === 0) {
     if (!r.resolved_entity) {
-      console.log('no results found. try a broader query or run `wellinformed trigger` to index content first.');
+      console.log('no results found. try a broader query or run `akashik trigger` to index content first.');
     }
     return 0;
   }
@@ -279,9 +279,9 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
   }
   const embedding = embedRes.value;
 
-  const identityPath = join(wellinformedHome(), 'peer-identity.json');
-  const peersPath = join(wellinformedHome(), 'peers.json');
-  const configPath = join(wellinformedHome(), 'config.yaml');
+  const identityPath = join(akashikHome(), 'peer-identity.json');
+  const peersPath = join(akashikHome(), 'peers.json');
+  const configPath = join(akashikHome(), 'config.yaml');
 
   const cfgRes = await loadConfig(configPath);
   if (cfgRes.isErr()) {
@@ -327,7 +327,7 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
     }
 
     const peerOrderRes = await buildReputationPeerOrder({
-      home: wellinformedHome(),
+      home: akashikHome(),
       localPeerId: idRes.value.peerId,
       query: parsed.query,
       registry: runtime.entityRegistry,
@@ -357,7 +357,7 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
     if (result.peers_responded > 0) {
       void (async () => {
         try {
-          const id = await ensureIdentity(wellinformedHome());
+          const id = await ensureIdentity(akashikHome());
           if (id.isErr()) return;
           await updatePeerReputation({
             satisfaction_score: telemetry.satisfaction.score,
@@ -365,7 +365,7 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
             graph: graph.value,
             reviewer_did: id.value.user.did,
             local_peer_id: idRes.value.peerId,
-            home: wellinformedHome(),
+            home: akashikHome(),
           });
         } catch { /* benign — rep is observability, not state */ }
       })();
@@ -406,7 +406,7 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
       return 0;
     }
 
-    console.log(`# wellinformed federated results for: ${parsed.query}`);
+    console.log(`# akashik federated results for: ${parsed.query}`);
     console.log(`peers_queried: ${result.peers_queried}`);
     console.log(`peers_responded: ${result.peers_responded}`);
     if (result.peers_timed_out > 0) console.log(`peers_timed_out: ${result.peers_timed_out}`);

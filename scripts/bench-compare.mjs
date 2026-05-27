@@ -7,8 +7,8 @@
 // Usage:
 //   node scripts/bench-compare.mjs <runA.json> <runB.json>
 //   node scripts/bench-compare.mjs \
-//     ~/.wellinformed/bench/scifact__nomic-ai-nomic-embed-text-v1-5/results.json \
-//     ~/.wellinformed/bench/scifact__nomic-ai-nomic-embed-text-v1-5__hybrid/results.json
+//     ~/.akashik/bench/scifact__nomic-ai-nomic-embed-text-v1-5/results.json \
+//     ~/.akashik/bench/scifact__nomic-ai-nomic-embed-text-v1-5__hybrid/results.json
 //
 // Both runs must have been produced by bench-beir-sota.mjs ≥ Phase 21 so they
 // include per_query_qids + per_query_ndcg10 arrays. Reports delta, 95% CI on

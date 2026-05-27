@@ -187,7 +187,7 @@ test('BEIR/HotPotQA-style: multi-hop retrieval with real ONNX embeddings', async
     };
 
     console.log(`\n  ╔═══════════════════════════════════════════════════════════╗`);
-    console.log(`  ║  BEIR/HotPotQA-style Benchmark (wellinformed v1.1)       ║`);
+    console.log(`  ║  BEIR/HotPotQA-style Benchmark (akashik v1.1)       ║`);
     console.log(`  ║  ${Object.keys(CORPUS).length} passages, ${QUERIES.length} queries, real all-MiniLM-L6-v2          ║`);
     console.log(`  ╠═══════════════════════════════════════════════════════════╣`);
     console.log(`  ║  NDCG@10:   ${(overall.ndcg10 * 100).toFixed(1).padStart(6)}%                                   ║`);
@@ -212,7 +212,7 @@ test('BEIR/HotPotQA-style: multi-hop retrieval with real ONNX embeddings', async
     console.log(`  ║    Cognee HotPotQA:           NDCG not published         ║`);
     console.log(`  ║    mem0 LOCOMO:               67.1% LLM-as-Judge         ║`);
     console.log(`  ║    mcp-memory-service:        86.0% R@5 (custom)         ║`);
-    console.log(`  ║    wellinformed (this run):   ${(overall.r5 * 100).toFixed(1)}% R@5, ${(overall.ndcg10 * 100).toFixed(1)}% NDCG@10  ║`);
+    console.log(`  ║    akashik (this run):   ${(overall.r5 * 100).toFixed(1)}% R@5, ${(overall.ndcg10 * 100).toFixed(1)}% NDCG@10  ║`);
     console.log(`  ╚═══════════════════════════════════════════════════════════╝`);
 
     console.log(`\n  Per-query:`);
@@ -221,7 +221,7 @@ test('BEIR/HotPotQA-style: multi-hop retrieval with real ONNX embeddings', async
     }
 
     // Emit BenchSuiteReport for the composite runner (Phase 23).
-    if (process.env.WELLINFORMED_BENCH_OUT) {
+    if (process.env.AKASHIK_BENCH_OUT) {
       const report: BenchSuiteReport = {
         suite: 'hotpotqa-style',
         metrics: {
@@ -238,7 +238,7 @@ test('BEIR/HotPotQA-style: multi-hop retrieval with real ONNX embeddings', async
         elapsedMs: performance.now() - indexStart,
         notes: 'Multi-hop HotpotQA-style: 15 wiki passages, 20 queries, Xenova all-MiniLM-L6-v2 fp32',
       };
-      appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
+      appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
     }
 
     // Assertions

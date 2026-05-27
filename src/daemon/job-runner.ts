@@ -6,7 +6,7 @@
  * for its lifetime, so ingestion work runs lock-free here).
  *
  * Each handler returns a single-line result summary that surfaces in
- * `wellinformed jobs list`. Errors throw — the queue catches them and
+ * `akashik jobs list`. Errors throw — the queue catches them and
  * tags the job `failed`.
  *
  * V5: per-room dispatch is gone. The legacy `ingest:room` payload is
@@ -221,10 +221,10 @@ const runIngestBatch = async (
 };
 
 /**
- * Project ingest — the four ephemeral descriptors that `wellinformed
+ * Project ingest — the four ephemeral descriptors that `akashik
  * this` wants to run, but routed through the daemon's worker so the
  * graph.json write-lock dance stays single-writer. Descriptors are
- * NOT persisted to sources.json (mirrors `wellinformed index`).
+ * NOT persisted to sources.json (mirrors `akashik index`).
  *
  * V5: the `label` argument identifies the project for the result
  * summary; it no longer drives source partitioning.

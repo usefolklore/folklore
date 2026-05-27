@@ -1,5 +1,5 @@
 /**
- * Pure domain model for the wellinformed knowledge graph.
+ * Pure domain model for the akashik knowledge graph.
  *
  * This module owns the vocabulary (Node, Edge, Graph, Wing) and
  * the pure transformations over it. No I/O, no mutation, no throws —
@@ -46,8 +46,8 @@ export interface GraphifyNodeCore {
   readonly source_file: string;
 }
 
-/** wellinformed-added optional fields. Declared in graphify.validate.OPTIONAL_NODE_FIELDS. */
-export interface WellinformedNodeFields {
+/** akashik-added optional fields. Declared in graphify.validate.OPTIONAL_NODE_FIELDS. */
+export interface AkashikNodeFields {
   readonly wing?: Wing;
   readonly source_uri?: string;
   readonly fetched_at?: string;
@@ -72,8 +72,8 @@ export interface WellinformedNodeFields {
    * Phase 26 (GitHub-as-primary identity); the field is reserved so
    * future write sites and federation envelopes can key on a single
    * canonical user identity without re-bumping the schema. Reads the
-   * `accounts.github.handle` from ~/.wellinformed/linked-accounts.json
-   * at write time when `wellinformed login github` has been run.
+   * `accounts.github.handle` from ~/.akashik/linked-accounts.json
+   * at write time when `akashik login` has been run.
    *
    * IMPORTANT: Phase 26 will:
    *   1. Stamp this field at every write site (save, source adapters,
@@ -87,7 +87,7 @@ export interface WellinformedNodeFields {
 }
 
 /** A single graph node. Arbitrary extra keys are preserved through round-trip. */
-export type GraphNode = GraphifyNodeCore & WellinformedNodeFields & Readonly<Record<string, unknown>>;
+export type GraphNode = GraphifyNodeCore & AkashikNodeFields & Readonly<Record<string, unknown>>;
 
 /** A single graph edge. Undirected. */
 export interface GraphEdge {

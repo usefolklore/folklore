@@ -132,7 +132,7 @@ test('onnx-bench: real all-MiniLM-L6-v2 IR metrics', async () => {
 
     console.log(`\n  Comparison:`);
     console.log(`    mcp-memory-service: 86.0% R@5 (claimed)`);
-    console.log(`    wellinformed:       ${(avgR5 * 100).toFixed(1)}% R@5 (measured, real ONNX)`);
+    console.log(`    akashik:       ${(avgR5 * 100).toFixed(1)}% R@5 (measured, real ONNX)`);
     console.log(`    Cognee HotPotQA:    published but different corpus/metric`);
 
     // With real embeddings, MRR should be significantly better than fixture embedder

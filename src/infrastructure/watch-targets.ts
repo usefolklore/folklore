@@ -2,7 +2,7 @@
  * watch-targets.json — persistent registry of folders the daemon
  * watches for auto-re-ingest.
  *
- * Each entry: { room, root, registered_at }. `wellinformed this`
+ * Each entry: { room, root, registered_at }. `akashik this`
  * registers the cwd; the daemon reads the file on boot and starts a
  * chokidar watcher per root.
  *
@@ -47,7 +47,7 @@ const safeRead = (path: string): WatchTargetsFile => {
 
 const safeWrite = (path: string, file: WatchTargetsFile): void => {
   // tmp+rename so a crash mid-write never loses the registered
-  // watch-targets — losing them means every `wellinformed this` has
+  // watch-targets — losing them means every `akashik this` has
   // to be re-run.
   atomicWriteSync(path, JSON.stringify(file, null, 2));
 };
@@ -57,7 +57,7 @@ export const loadWatchTargets = (path: string): readonly WatchTarget[] =>
 
 /**
  * Idempotent register. Replaces any existing row with the same
- * (room, root) pair so re-running `wellinformed this` refreshes the
+ * (room, root) pair so re-running `akashik this` refreshes the
  * registered_at timestamp without duplicating the entry.
  */
 export const registerWatchTarget = (

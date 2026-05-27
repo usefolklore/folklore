@@ -16,7 +16,7 @@
  *     and sanitised values. The returned node is safe to feed into
  *     upsertNode without further checks.
  *
- * The allow list is derived from GraphifyNodeCore + WellinformedNodeFields
+ * The allow list is derived from GraphifyNodeCore + AkashikNodeFields
  * plus a small set of permitted "extra" keys that legitimate adapters set.
  * Any other key — including `__proto__`, function properties, and
  * adapter-specific fields we haven't audited — is dropped silently.
@@ -96,7 +96,7 @@ const ALLOWED_KEYS = new Set<string>([
   'label',
   'file_type',
   'source_file',
-  // WellinformedNodeFields (optional)
+  // AkashikNodeFields (optional)
   'room',
   'wing',
   'source_uri',

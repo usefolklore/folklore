@@ -25,7 +25,7 @@
  * payload type and adds payload-shape validation on top.
  *
  * NOT YET WIRED into src/infrastructure/share-sync.ts — that's a
- * separate commit behind WELLINFORMED_REQUIRE_SIGNED_NODES so the
+ * separate commit behind AKASHIK_REQUIRE_SIGNED_NODES so the
  * existing live shares stay backward-compatible during rollout.
  *
  * Pure: no I/O, no classes, all sync.
