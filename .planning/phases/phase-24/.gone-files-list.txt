@@ -1,0 +1,10 @@
+src/domain/rooms.ts	116
+src/domain/system-rooms.ts	157
+src/infrastructure/rooms-config.ts	80
+src/infrastructure/share-store.ts	322
+src/cli/commands/room.ts	171
+tests/phase4.rooms.test.ts	248
+tests/phase1.graph-rooms.test.ts	216
+tests/phase36.system-rooms.test.ts	229
+src/cli/tui/share-picker-tty.ts	142
+tests/phase37.share-picker.test.ts	162
