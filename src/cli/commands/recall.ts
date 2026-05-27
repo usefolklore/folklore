@@ -1,30 +1,35 @@
 /**
- * `wellinformed recall <name> [--room R] [--k N] [--json]`
+ * `wellinformed recall <name> [--workspace W|all] [--k N] [--json]`
  *
  * Entity-first lookup. Resolves <name> against the entity registry,
  * traverses every `mentions` edge, returns ranked source chunks
- * across every room.
+ * across the global graph.
+ *
+ * V5 (Phase 24): no --room flag. Read-side workspace pre-filter is
+ * auto-applied when cwd is in a git repo; --workspace all opts out.
+ * Uniform global half-life (14d) — per-source-uri tuning deferred to
+ * Phase 25+.
  *
  * The contrast with `ask`: ask runs a vector search over the
- * embedding space; recall runs a graph traversal from a known
- * entity. For a query like "lemlist" — a brand name that doesn't
- * embed especially well — recall is the right channel. For a
- * query like "how to do hybrid retrieval" — semantic — ask still
- * wins.
+ * embedding space; recall runs a graph traversal from a known entity.
  */
 
 import { join } from 'node:path';
 import { recall } from '../../application/recall.js';
 import { runFederatedRecall } from '../../application/federated-recall.js';
-import { defaultRuntime, wellinformedHome } from '../runtime.js';
+import { defaultRuntime, wellinformedHome, detectWorkspace } from '../runtime.js';
 import { formatError, formatErrorWithHint } from '../../domain/errors.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../../infrastructure/peer-transport.js';
 import { loadPeers } from '../../infrastructure/peer-store.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
 
+/** Single uniform half-life — V5 dropped HALF_LIFE_BY_ROOM; see
+ *  src/domain/recency-rerank.ts DEFAULT_HALF_LIFE_DAYS. */
+const RECENCY_HALF_LIFE_DAYS = 14;
+
 interface ParsedArgs {
   readonly query: string;
-  readonly room?: string;
+  readonly workspace?: string;
   readonly k: number;
   readonly json: boolean;
   readonly peers: boolean;
@@ -32,42 +37,52 @@ interface ParsedArgs {
 
 const parseArgs = (args: readonly string[]): ParsedArgs | string => {
   let query = '';
-  let room: string | undefined;
+  let workspaceFlag: string | undefined;
+  let workspaceExplicit = false;
   let k = 20;
   let json = false;
   let peers = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     const next = (): string => args[++i] ?? '';
-    if (a === '--room') room = next();
-    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
+    if (a === '--workspace') { workspaceFlag = next(); workspaceExplicit = true; }
+    else if (a.startsWith('--workspace=')) { workspaceFlag = a.slice('--workspace='.length); workspaceExplicit = true; }
     else if (a === '--k' || a === '-k') k = parseInt(next(), 10) || 20;
     else if (a.startsWith('--k=')) k = parseInt(a.slice('--k='.length), 10) || 20;
     else if (a === '--json') json = true;
     else if (a === '--peers') peers = true;
     else if (!a.startsWith('-')) query = query ? `${query} ${a}` : a;
   }
-  if (!query) return 'missing name — usage: wellinformed recall <name> [--room R] [--k N] [--peers] [--json]';
-  return { query, room, k, json, peers };
+  if (!query) return 'missing name — usage: wellinformed recall <name> [--workspace W|all] [--k N] [--peers] [--json]';
+
+  let workspace: string | undefined;
+  if (workspaceExplicit) {
+    workspace = workspaceFlag === 'all' ? undefined : (workspaceFlag || undefined);
+  } else {
+    workspace = detectWorkspace();
+  }
+  return { query, workspace, k, json, peers };
 };
 
 export const recallCmd = async (args: readonly string[]): Promise<number> => {
   if (args.includes('--help') || args.includes('-h') || args.includes('help')) {
-    console.log(`usage: wellinformed recall <name> [--room R] [--k N] [--peers] [--json]
+    console.log(`usage: wellinformed recall <name> [--workspace W|all] [--k N] [--peers] [--json]
 
 Entity-first lookup. Resolves <name> against the entity registry
 (\`wellinformed entity add ...\`) plus heuristic auto-detected
 entities, then walks every \`mentions\` edge in the graph to
-return chunks that reference it across every room.
+return chunks that reference it.
 
 flags:
-  --room R    restrict to a single room
-  --k N       max results (default 20)
-  --peers     fan out to connected libp2p peers via the
-              /wellinformed/recall/1.0.0 protocol — returns
-              chunks that reference the entity on OTHER peers,
-              gated by their share-store
-  --json      machine-readable output`);
+  --workspace W  pre-filter to a workspace slug (auto-detected from
+                 git toplevel when run inside a repo). Use 'all' to
+                 opt out of the cwd-based pre-filter.
+  --k N          max results (default 20)
+  --peers        fan out to connected libp2p peers via the
+                 /wellinformed/recall/1.0.0 protocol
+  --json         machine-readable output
+
+Recency decay: uniform ${RECENCY_HALF_LIFE_DAYS}d half-life.`);
     return 0;
   }
 
@@ -130,7 +145,6 @@ const runRecallFederated = async (
   }
   const node = nodeRes.value;
   try {
-    // Best-effort dial
     const peersRes = await loadPeers(peersPath);
     if (peersRes.isOk()) {
       await Promise.all(
@@ -144,7 +158,7 @@ const runRecallFederated = async (
 
     const result = await runFederatedRecall(
       { node, entityRegistry: runtime.entityRegistry },
-      { query: parsed.query, limit: parsed.k, room: parsed.room },
+      { query: parsed.query, limit: parsed.k },
     );
 
     if (parsed.json) {
@@ -185,7 +199,6 @@ const runRecallFederated = async (
     }
     console.log(`## remote mentions (${result.remote_hits.length})`);
     for (const h of result.remote_hits) {
-      const room = h.room ?? '-';
       const ageStr =
         h.age_days === undefined ? ''
         : h.age_days < 1 ? ' · today'
@@ -193,7 +206,7 @@ const runRecallFederated = async (
         : h.age_days < 90 ? ` · ${Math.round(h.age_days / 7)}w`
         : ` · ${Math.round(h.age_days / 30)}mo`;
       const peer = h.source_peer.slice(0, 12);
-      console.log(`  - ${h.label} [${room}${ageStr}] peer:${peer}`);
+      console.log(`  - ${h.label} [${ageStr}] peer:${peer}`);
       if (h.source_uri) console.log(`      ${h.source_uri}`);
     }
     return 0;
@@ -205,11 +218,11 @@ const runRecallFederated = async (
 const runRecall = async (
   runtime: import('../runtime.js').Runtime,
   graph: import('../../domain/graph.js').Graph,
-  parsed: { readonly query: string; readonly room?: string; readonly k: number; readonly json: boolean },
+  parsed: ParsedArgs,
 ): Promise<number> => {
   const result = recall(
     { registry: runtime.entityRegistry, graph },
-    { query: parsed.query, limit: parsed.k, room: parsed.room },
+    { query: parsed.query, limit: parsed.k },
   );
 
   if (result.isErr()) {
@@ -228,7 +241,11 @@ const runRecall = async (
     return 1;
   }
 
-  const { entity, hits, total } = result.value;
+  // V5 workspace pre-filter at CLI boundary.
+  const { entity, hits: rawHits, total } = result.value;
+  const hits = parsed.workspace
+    ? rawHits.filter((h) => h.workspace === parsed.workspace)
+    : rawHits;
 
   if (parsed.json) {
     console.log(JSON.stringify({
@@ -253,7 +270,7 @@ const runRecall = async (
   console.log(`type:    ${entity.type}`);
   console.log(`aliases: ${entity.aliases.join(', ')}`);
   console.log(`mentions: ${total} (showing ${hits.length})`);
-  if (parsed.room) console.log(`room:    ${parsed.room}`);
+  if (parsed.workspace) console.log(`workspace: ${parsed.workspace}`);
   console.log('');
 
   if (hits.length === 0) {
@@ -272,7 +289,7 @@ const runRecall = async (
 
   for (const h of hits) {
     console.log(`## ${h.label}`);
-    console.log(`room: ${h.room ?? '-'} | ${renderAge(h.age_days)} | surface: "${h.surface}"`);
+    console.log(`workspace: ${h.workspace ?? '-'} | ${renderAge(h.age_days)} | surface: "${h.surface}"`);
     if (h.source_uri) console.log(`source: ${h.source_uri}`);
     if (h.summary) {
       const snippet = h.summary.replace(/\s+/g, ' ').slice(0, 320);

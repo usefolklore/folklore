@@ -4,24 +4,27 @@
  * Given a name like "lemlist", resolves it to the canonical entity
  * (registry is source-of-truth for entity metadata), traverses every
  * `mentions` edge into source chunks, ranks the results by
- * recency × frequency. Returns a unified timeline across every
- * room: research, sessions, toolshed, user-defined.
+ * recency × frequency. Returns a unified timeline across the whole
+ * graph (V5: no room scope).
  *
  * Schema invariant: entity GraphNodes are stubs (id + kind + forward
- * pointer to entities.json). Canonical entity state — label,
- * aliases, mention_count, first_seen, last_seen — lives ONLY in
+ * pointer to entities.json). Canonical entity state lives ONLY in
  * the registry. Recall joins the two on read, never on write.
- * This eliminates the dual-write drift class flagged in the
- * architectural review.
  *
  * Pure (no I/O of its own — calls into the registry + graph). All
  * the rendering work happens at the CLI / MCP boundary.
+ *
+ * V5 (Phase 24): workspace-agnostic. Each RecallHit carries the chunk's
+ * workspace tag; the CLI applies a pre-filter at the boundary. The
+ * room-keyed half-life map is gone — uniform global decay (14d) via
+ * `DEFAULT_HALF_LIFE_DAYS` matches the recency-rerank policy.
  */
 
 import { type Result, ok, err } from 'neverthrow';
 import { type Entity } from '../domain/entity.js';
 import { type Graph, type GraphEdge, edgesByRelationAndTarget } from '../domain/graph.js';
 import { type EntityRegistry } from '../infrastructure/entity-registry.js';
+import { DEFAULT_HALF_LIFE_DAYS } from '../domain/recency-rerank.js';
 
 /**
  * One row in the recall result — the chunk that mentioned the
@@ -29,7 +32,7 @@ import { type EntityRegistry } from '../infrastructure/entity-registry.js';
  */
 export interface RecallHit {
   readonly node_id: string;
-  readonly room?: string;
+  readonly workspace?: string;
   readonly label: string;
   readonly source_uri?: string;
   readonly fetched_at?: string;
@@ -53,22 +56,14 @@ export type RecallError =
 /**
  * Combined score = relevance × recency-decay.
  *   relevance = 1 (every mention is a direct hit by definition)
- *   decay     = 0.5 ^ (age_days / half_life_days)
+ *   decay     = 0.5 ^ (age_days / DEFAULT_HALF_LIFE_DAYS)
  *
- * No half-life policy => stays at 1. Recall ordering then becomes
- * pure recency (newest first), which is the right default for a
- * "what do I know about X" query.
+ * V5: uniform global half-life (14d). Per-source-uri-scheme tuning
+ * is deferred to Phase 25+.
  */
-const HALF_LIFE_BY_ROOM: ReadonlyMap<string, number> = new Map([
-  ['sessions', 30],
-  ['research', 14],
-  ['toolshed', 60],
-]);
-
 const score = (h: RecallHit): number => {
-  const halfLife = h.room ? HALF_LIFE_BY_ROOM.get(h.room) : undefined;
-  if (halfLife === undefined || h.age_days === undefined) return 1;
-  return Math.pow(0.5, h.age_days / halfLife);
+  if (h.age_days === undefined) return 1;
+  return Math.pow(0.5, h.age_days / DEFAULT_HALF_LIFE_DAYS);
 };
 
 // ─────────────── helpers ───────────────────
@@ -113,9 +108,9 @@ const enrichHit = (
     typeof edge.surface === 'string' ? (edge.surface as string) : node.label;
   return {
     node_id: node.id,
-    room: node.room,
+    workspace: typeof node.workspace === 'string' ? node.workspace : undefined,
     label: node.label,
-    source_uri: node.source_uri ?? node.source_file,
+    source_uri: node.source_uri ?? (typeof node.source_file === 'string' ? node.source_file as string : undefined),
     fetched_at: fetchedAt,
     age_days: ageDays,
     summary,
@@ -128,7 +123,6 @@ const enrichHit = (
 export interface RecallParams {
   readonly query: string;
   readonly limit?: number;          // default 20
-  readonly room?: string;           // optional room filter
 }
 
 export interface RecallDeps {
@@ -156,7 +150,6 @@ export const recall = (
   for (const e of edges) {
     const hit = enrichHit(deps.graph, e, now);
     if (!hit) continue;
-    if (params.room && hit.room !== params.room) continue;
     enriched.push(hit);
   }
 
