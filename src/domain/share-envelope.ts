@@ -1,8 +1,14 @@
 /**
  * Cryptographic envelope for shared graph nodes (Phase 32 identity wave
- * extension). Each ShareableNode that flows over the libp2p share-sync
- * protocol can be wrapped in a SignedEnvelope so that receiving peers
- * verify three things offline before committing the node to graph.json:
+ * extension; V5 envelope shape Phase 24-03 — ROOMS-DEL-05).
+ *
+ * V5: the wrapped ShareableNode no longer carries a `room` field. Sharing
+ * authorization is per-node via `node.private === false`; consult the
+ * gating call site (share.ts / share-sync.ts) rather than the envelope.
+ *
+ * Each ShareableNode that flows over the libp2p share-sync protocol can be
+ * wrapped in a SignedEnvelope so that receiving peers verify three things
+ * offline before committing the node to graph.json:
  *
  *   1. The payload was signed by the claimed device key.
  *   2. The device key was authorized by the claimed user DID.
@@ -83,9 +89,9 @@ const validateShareablePayload = (n: ShareableNode): Result<void, ShareEnvelopeE
   if (typeof n.label !== 'string' || n.label.length === 0) {
     return err(ShareEnvelopeError.invalid('payload.label missing or empty'));
   }
-  if (typeof n.room !== 'string' || n.room.length === 0) {
-    return err(ShareEnvelopeError.invalid('payload.room missing or empty'));
-  }
+  // V5 (Phase 24-03, ROOMS-DEL-05): the `room` field is gone from ShareableNode.
+  // Authorization is per-node via `private: boolean` (enforced upstream of the
+  // signing call). The envelope itself no longer carries a room field.
   // Optional fields — only validate if present.
   if (n.embedding_id !== undefined && typeof n.embedding_id !== 'string') {
     return err(ShareEnvelopeError.invalid('payload.embedding_id must be string when present'));
