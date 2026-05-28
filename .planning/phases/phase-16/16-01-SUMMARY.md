@@ -107,7 +107,7 @@ export type AppError = GraphError | VectorError | EmbeddingError | PeerError | S
 
 **File:** `src/infrastructure/ydoc-store.ts` (121 lines)
 
-**File location pattern:** `~/.wellinformed/ydocs/<room>.ydoc`
+**File location pattern:** `~/.akashik/ydocs/<room>.ydoc`
 
 **V1 Encoding Rule (CRITICAL for downstream plans):**
 - ONLY `Y.encodeStateAsUpdate(doc)` for serialization — NEVER `encodeStateAsUpdateV2`

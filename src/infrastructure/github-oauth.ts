@@ -3,7 +3,7 @@
  *
  * Why device flow and not authorization-code:
  *
- *   1. wellinformed runs in a terminal on the user's laptop. There's
+ *   1. akashik runs in a terminal on the user's laptop. There's
  *      no public callback URL. Device flow needs no redirect URI, no
  *      localhost callback server, no client secret.
  *   2. Works the same on a server, a corporate workstation, or behind
@@ -27,7 +27,7 @@
  *   - All HTTP via Node fetch (no third-party OAuth lib pulls).
  *   - Access token stays in memory; never persisted. Only the public
  *     verified handle + GitHub user id + profile URL go to disk.
- *   - User-Agent identifies wellinformed so GitHub's audit log can
+ *   - User-Agent identifies akashik so GitHub's audit log can
  *     show what tool created the OAuth session.
  *   - Device-code endpoint requires the client_id only (no secret).
  *     Caller validates client_id is set before any request fires.
@@ -89,6 +89,11 @@ export interface VerifiedGitHubUser {
   readonly name: string | null;
   /** Profile URL — used as the canonical reference in the social DID. */
   readonly html_url: string;
+  /** Primary verified email from `/user/emails` (v2 schema). Optional
+   *  because the user may have revoked the `user:email` scope or have
+   *  no verified addresses; downstream code degrades to login-only
+   *  identity. */
+  readonly email: string | null;
 }
 
 // ─────────────── injectable fetch ─────────
@@ -115,8 +120,9 @@ export const __setOAuthFetchForTest = (next: FetchLike): FetchLike => {
 const GITHUB_DEVICE_CODE_URL = 'https://github.com/login/device/code';
 const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token';
 const GITHUB_USER_URL = 'https://api.github.com/user';
+const GITHUB_USER_EMAILS_URL = 'https://api.github.com/user/emails';
 
-const USER_AGENT = 'wellinformed-oauth/1.0';
+const USER_AGENT = 'akashik-oauth/1.0';
 
 // ─────────────── step 1: request device code ─────
 
@@ -128,7 +134,7 @@ const USER_AGENT = 'wellinformed-oauth/1.0';
  */
 export const requestDeviceCode = (
   clientId: string,
-  scope: string = 'read:user',
+  scope: string = 'read:user user:email',
 ): ResultAsync<DeviceCodeResponse, GitHubOAuthError> => {
   if (!clientId || clientId.trim().length === 0) {
     return errAsync(GitHubOAuthError.missingClientId());
@@ -307,10 +313,17 @@ export const pollForToken = async (
 // ─────────────── step 3: fetch user ──────
 
 /**
- * Verify the access_token by calling /user. The handle returned here
- * is the cryptographic anchor for the social DID — never compute it
- * from the user's input, always read it back from GitHub's API after
- * the token grant.
+ * Verify the access_token by calling /user + /user/emails. Login + id
+ * + html_url come from /user; the primary verified email comes from
+ * /user/emails (picking the row with {primary:true, verified:true}).
+ * The handle is the cryptographic anchor for the social DID — never
+ * compute it from the user's input, always read it back from GitHub's
+ * API after the token grant.
+ *
+ * Email failure is non-fatal — if the user has `user:email` scope
+ * revoked or no verified addresses, we still return the user with
+ * email:null. The downstream identity layer treats email as optional
+ * and degrades gracefully to login-only identity.
  */
 export const getUserHandle = (
   accessToken: string,
@@ -318,7 +331,7 @@ export const getUserHandle = (
   if (!accessToken) {
     return errAsync(GitHubOAuthError.invalidResponse('empty access_token'));
   }
-  return ResultAsync.fromPromise(
+  const userCall = ResultAsync.fromPromise(
     oauthFetch(GITHUB_USER_URL, {
       headers: {
         'Accept': 'application/vnd.github+json',
@@ -338,11 +351,59 @@ export const getUserHandle = (
       return parseUser(text);
     }),
   );
+  return userCall.andThen((user) =>
+    fetchPrimaryEmail(accessToken).map((email) => ({ ...user, email })),
+  );
 };
+
+/** Fetch primary verified email from `/user/emails`. Returns null
+ *  (never errors) on any HTTP/parse problem — email is optional. */
+const fetchPrimaryEmail = (
+  accessToken: string,
+): ResultAsync<string | null, GitHubOAuthError> =>
+  ResultAsync.fromPromise(
+    oauthFetch(GITHUB_USER_EMAILS_URL, {
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': `Bearer ${accessToken}`,
+        'User-Agent': USER_AGENT,
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    }),
+    (e) => GitHubOAuthError.network((e as Error).message),
+  )
+    .andThen((res) =>
+      ResultAsync.fromPromise(
+        res.text(),
+        (e) => GitHubOAuthError.network((e as Error).message),
+      ).map((text) => ({ ok: res.ok, text })),
+    )
+    .map(({ ok, text }) => {
+      if (!ok) return null;
+      try {
+        const parsed = JSON.parse(text) as unknown;
+        if (!Array.isArray(parsed)) return null;
+        for (const row of parsed) {
+          if (
+            row &&
+            typeof row === 'object' &&
+            (row as { primary?: unknown }).primary === true &&
+            (row as { verified?: unknown }).verified === true &&
+            typeof (row as { email?: unknown }).email === 'string'
+          ) {
+            return (row as { email: string }).email;
+          }
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    })
+    .orElse(() => okAsync(null));
 
 const parseUser = (
   body: string,
-): ResultAsync<VerifiedGitHubUser, GitHubOAuthError> => {
+): ResultAsync<Omit<VerifiedGitHubUser, 'email'>, GitHubOAuthError> => {
   let parsed: unknown;
   try {
     parsed = JSON.parse(body);

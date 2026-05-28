@@ -104,7 +104,7 @@ test('recordObservation no-decay when timestamps equal', () => {
 
 // ─────────────── novel chunk → room-only ──
 
-test('extractPerPeerSubjects credits room when chunk is not in local graph', () => {
+test('V5: extractPerPeerSubjects yields no subjects when chunk is not in local graph (room: fallback removed)', () => {
   // Empty graph — peer returns a chunk we've never seen.
   const g: Graph = (() => {
     const r = fromJson({
@@ -117,24 +117,22 @@ test('extractPerPeerSubjects credits room when chunk is not in local graph', () 
   const matches: PeerAttributedMatch[] = [
     {
       node_id: 'novel-chunk-from-peer-A',
-      room: 'research',
       _source_peer: '12D3KooWPeerA',
     },
   ];
   const out = extractPerPeerSubjects(matches, g);
-  // Peer A must get at least the room subject — silent zero-credit
-  // bug fixed.
-  assert.equal(out.size, 1);
-  const subjects = out.get('12D3KooWPeerA');
-  assert.ok(subjects);
-  assert.ok(subjects!.has('room:research'));
+  // V5 (Phase 24): the room: fallback subject was removed. Novel chunks
+  // contribute no reputation signal because we can't verify what they
+  // mention without a local link in the mentions graph.
+  assert.equal(out.size, 0,
+    'V5: novel chunks yield no subjects (room: fallback gone)');
 });
 
-test('extractPerPeerSubjects emits both entity AND room when local graph has the chunk', () => {
+test('V5: extractPerPeerSubjects emits entity-only subjects when local graph has the chunk', () => {
   const g: Graph = (() => {
     const r = fromJson({
       directed: false, multigraph: false, graph: {}, nodes: [
-        { id: 'chunk-1', label: 'c', file_type: 'rationale', source_file: 'f', room: 'research' },
+        { id: 'chunk-1', label: 'c', file_type: 'rationale', source_file: 'f' },
         { id: 'entity:product:lemlist', label: 'lemlist', file_type: 'rationale', source_file: 'f', kind: 'entity' },
       ], links: [
         { source: 'chunk-1', target: 'entity:product:lemlist', relation: 'mentions',
@@ -146,14 +144,15 @@ test('extractPerPeerSubjects emits both entity AND room when local graph has the
   })();
 
   const matches: PeerAttributedMatch[] = [
-    { node_id: 'chunk-1', room: 'research', _source_peer: '12D3KooWPeerA' },
+    { node_id: 'chunk-1', _source_peer: '12D3KooWPeerA' },
   ];
   const out = extractPerPeerSubjects(matches, g);
   const subjects = out.get('12D3KooWPeerA');
   assert.ok(subjects);
-  // Both entity AND room should be present — room is no longer a fallback.
+  // V5 (Phase 24): entity-only subjects. Room subject scheme is gone.
   assert.ok(subjects!.has('entity:product:lemlist'));
-  assert.ok(subjects!.has('room:research'));
+  assert.ok(!subjects!.has('room:research'),
+    'V5: room: subject scheme must not appear (24-10 entity-only flatten)');
 });
 
 // ─────────────── reviewer DID gate ────────

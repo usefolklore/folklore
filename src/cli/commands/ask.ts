@@ -1,12 +1,16 @@
 /**
- * `wellinformed ask "<query>" [--room R] [--k N] [--peers]`
+ * `akashik ask "<query>" [--workspace W|all] [--k N] [--peers]`
  *
  * Semantic search + formatted context output. Embeds the query, runs
  * k-NN, loads matching nodes from the graph, and prints a structured
  * context block to stdout that a human or LLM can consume.
  *
- * With --peers: fans out to all connected peers via /wellinformed/search/1.0.0,
- * merges results with _source_peer annotation, and surfaces cross-room tunnels.
+ * V5 (Phase 24): room flag is gone. Read-side commands auto-apply a
+ * workspace pre-filter when cwd is in a git repo. Use `--workspace all`
+ * to opt out, or `--workspace <slug>` to override the cwd detection.
+ *
+ * With --peers: fans out to all connected peers via /akashik/search/1.0.0,
+ * merges results with _source_peer annotation.
  */
 
 import { join } from 'node:path';
@@ -19,7 +23,7 @@ import { runFederatedSearch } from '../../application/federated-search.js';
 import { buildPeerPullTelemetry } from '../../application/peer-pull-telemetry.js';
 import { formatTelemetryBlock } from '../../infrastructure/telemetry-formatter.js';
 import { ask as askUseCase, type AskResult } from '../../application/ask.js';
-import { defaultRuntime, wellinformedHome } from '../runtime.js';
+import { defaultRuntime, akashikHome, detectWorkspace } from '../runtime.js';
 import type { Runtime } from '../runtime.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../../infrastructure/peer-transport.js';
 import { loadPeers } from '../../infrastructure/peer-store.js';
@@ -27,7 +31,9 @@ import { loadConfig } from '../../infrastructure/config-loader.js';
 
 interface ParsedArgs {
   readonly query: string;
-  readonly room?: string;
+  /** Resolved workspace pre-filter. undefined = no filter (--workspace all
+   * or no git repo); string = filter to this slug. */
+  readonly workspace?: string;
   readonly k: number;
   readonly peers: boolean;
   readonly json: boolean;
@@ -35,23 +41,33 @@ interface ParsedArgs {
 
 const parseArgs = (args: readonly string[]): ParsedArgs | string => {
   let query = '';
-  let room: string | undefined;
+  let workspaceFlag: string | undefined;
+  let workspaceExplicit = false;
   let k = 5;
   let peers = false;
   let json = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     const next = (): string => args[++i] ?? '';
-    if (a === '--room') room = next();
-    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
+    if (a === '--workspace') { workspaceFlag = next(); workspaceExplicit = true; }
+    else if (a.startsWith('--workspace=')) { workspaceFlag = a.slice('--workspace='.length); workspaceExplicit = true; }
     else if (a === '--k' || a === '-k') k = parseInt(next(), 10) || 5;
     else if (a.startsWith('--k=')) k = parseInt(a.slice('--k='.length), 10) || 5;
     else if (a === '--peers') peers = true;
     else if (a === '--json') json = true;
     else if (!a.startsWith('-')) query = query ? `${query} ${a}` : a;
   }
-  if (!query) return 'missing query — usage: wellinformed ask "your question" [--room R] [--k N] [--peers] [--json]';
-  return { query, room, k, peers, json };
+  if (!query) return 'missing query — usage: akashik ask "your question" [--workspace W|all] [--k N] [--peers] [--json]';
+
+  // Resolve workspace: explicit --workspace all → undefined (no filter);
+  // explicit slug → that slug; absent → detectWorkspace(cwd) → slug | undefined.
+  let workspace: string | undefined;
+  if (workspaceExplicit) {
+    workspace = workspaceFlag === 'all' ? undefined : (workspaceFlag || undefined);
+  } else {
+    workspace = detectWorkspace();
+  }
+  return { query, workspace, k, peers, json };
 };
 
 export const ask = async (args: readonly string[]): Promise<number> => {
@@ -72,32 +88,52 @@ export const ask = async (args: readonly string[]): Promise<number> => {
     if (parsed.peers) {
       // CRITICAL: `await` here. Without it, the outer async function's
       // `finally { runtime.close() }` runs before askFederated completes,
-      // closing the SQLite vector index mid-query and silently poisoning
-      // every federated-local search. Caught while wiring the v2.1 smart-
-      // hook to consult peers by default.
+      // closing the SQLite vector index mid-query.
       return await askFederated(runtime, parsed);
     }
 
-    // Delegate to the application-layer ask use case. CLI is now
-    // a renderer of AskResult — composition (search + recall +
-    // rerank + mention enrichment) lives in application/ask.ts.
+    // Delegate to the application-layer ask use case.
     const result = await askUseCase({
       graphs: runtime.graphs,
       vectors: runtime.vectors,
       embedder: runtime.embedder,
       entityRegistry: runtime.entityRegistry,
-    })({ query: parsed.query, room: parsed.room, k: parsed.k });
+    })({ query: parsed.query, k: parsed.k });
 
     if (result.isErr()) {
       console.error(`ask: ${formatErrorWithHint(result.error)}`);
       return 1;
     }
+
+    // Apply workspace pre-filter at the CLI boundary (V5: application
+    // layer is workspace-agnostic; CLI is the only filter site).
+    const filtered = applyWorkspaceFilter(result.value, parsed.workspace);
     return parsed.json
-      ? renderAskJson(result.value)
-      : renderAskHuman(result.value);
+      ? renderAskJson(filtered)
+      : renderAskHuman(filtered);
   } finally {
     runtime.close();
   }
+};
+
+// ─────────────── workspace filter ─────────
+
+/**
+ * Pre-filter search/recall hits to those tagged with the given workspace.
+ * Applied at the CLI boundary AFTER the application-layer query returns.
+ * Per the plan (Wave 2 vector-index simplification): the index stays
+ * workspace-blind; filtering is a read-site concern.
+ */
+const applyWorkspaceFilter = (r: AskResult, workspace: string | undefined): AskResult => {
+  if (!workspace) return r;
+  const search_hits = r.search_hits.filter((h) => h.workspace === workspace);
+  const recall_result = r.recall_result
+    ? {
+        ...r.recall_result,
+        hits: r.recall_result.hits.filter((h) => h.workspace === workspace),
+      }
+    : undefined;
+  return { ...r, search_hits, recall_result };
 };
 
 // ─────────────── renderers ────────────────
@@ -106,7 +142,7 @@ const renderAskJson = (r: AskResult): number => {
   const hits = r.search_hits.map((h) => ({
     id: h.node_id,
     label: h.label,
-    room: h.room ?? null,
+    workspace: h.workspace ?? null,
     distance: Number(h.distance.toFixed(4)),
     source_uri: h.source_uri ?? null,
     summary: typeof h.summary === 'string' ? h.summary.slice(0, 400) : null,
@@ -116,7 +152,6 @@ const renderAskJson = (r: AskResult): number => {
   }));
   const out: Record<string, unknown> = {
     query: r.query,
-    room: r.room ?? null,
     hits,
     reranked: r.reranked,
     satisfaction: r.satisfaction.score,
@@ -150,27 +185,13 @@ const renderAskJson = (r: AskResult): number => {
 
 /**
  * Hook payload schema version. Bump when the field set or ordering
- * changes so downstream agent integrations can skip a stale block
- * instead of silently misinterpreting it (round-3 review:
- * "wellinformed_hook_version" — defends against zombie hooks after a
- * project gets dropped or upgraded).
+ * changes so downstream agent integrations can skip a stale block.
  */
 const HOOK_SCHEMA_VERSION = 2;
 
-/**
- * Inline agent contract — embedded directly in the rendered block so
- * an LLM consuming the hook output does not need source-code access
- * or vendor docs to interpret the satisfaction score. Without this,
- * agents from different vendors (Codex, Gemini, Cursor) interpreting
- * `satisfaction: 0.87` are guessing what the threshold for
- * `use_memory` is.
- */
 const renderAgentContract = (r: AskResult): void => {
   const s = r.satisfaction;
-  // Decision FIRST — agents read top-to-bottom, so this is where
-  // they can short-circuit on use_memory and skip reading the rest
-  // (round-3 UX review HIGH on ask.ts:208-213).
-  console.log(`# wellinformed agent contract (hook_version: ${HOOK_SCHEMA_VERSION})`);
+  console.log(`# akashik agent contract (hook_version: ${HOOK_SCHEMA_VERSION})`);
   console.log(`action:        ${r.decision}`);
   console.log(`satisfaction:  ${s.score.toFixed(2)}  (range 0.00–1.00)`);
   console.log(
@@ -189,25 +210,16 @@ const renderAgentContract = (r: AskResult): void => {
 };
 
 const renderAskHuman = (r: AskResult): number => {
-  // 0. AGENT CONTRACT FIRST.
-  //
-  //    The hook injects this block into the LLM context window. Agents
-  //    read top-to-bottom; placing the decision + threshold legend at
-  //    the TOP lets them short-circuit reading 20-60 lines of result
-  //    text when action=use_memory. Round-3 multi-LLM UX review
-  //    flagged this as the #1 highest-leverage change in the codebase.
   renderAgentContract(r);
 
-  // 1. Entity recall — when the query resolved to a known entity,
-  //    show the recall block.
   if (r.resolved_entity && r.recall_result && r.recall_result.hits.length > 0) {
     const e = r.resolved_entity;
-    console.log(`# wellinformed: "${r.query}" matches entity ${e.id}`);
+    console.log(`# akashik: "${r.query}" matches entity ${e.id}`);
     console.log(`type: ${e.type} | aliases: ${e.aliases.join(', ')} | mentions: ${r.recall_result.total}`);
     console.log('');
     console.log(`## entity recall (top ${r.recall_result.hits.length})`);
     for (const h of r.recall_result.hits) {
-      const room = h.room ?? '-';
+      const ws = h.workspace ?? '-';
       const ageStr =
         h.age_days === undefined
           ? ''
@@ -215,35 +227,27 @@ const renderAskHuman = (r: AskResult): number => {
           : h.age_days < 14 ? ` · ${Math.round(h.age_days)}d`
           : h.age_days < 90 ? ` · ${Math.round(h.age_days / 7)}w`
           : ` · ${Math.round(h.age_days / 30)}mo`;
-      // Renamed `surface:` → `matched_on:` (round-3 UX review — `surface`
-      // was internal jargon; agents reading the hook had no context).
-      console.log(`  - ${h.label} [${room}${ageStr}] matched_on: "${h.surface}"`);
+      console.log(`  - ${h.label} [${ws}${ageStr}] matched_on: "${h.surface}"`);
     }
     console.log('');
   }
 
-  // 2. Vector search results
   if (r.search_hits.length === 0) {
     if (!r.resolved_entity) {
-      console.log('no results found. try a broader query or run `wellinformed trigger` to index content first.');
+      console.log('no results found. try a broader query or run `akashik trigger` to index content first.');
     }
     return 0;
   }
 
   console.log(`## semantic search results`);
-  if (r.room) console.log(`room: ${r.room}`);
   if (r.reranked) console.log('ranked by: relevance × recency-decay');
   console.log('');
 
   for (const h of r.search_hits) {
     console.log(`### ${h.label}`);
-    // Both relevance (1-distance, higher=better) and the underlying
-    // distance for callers who want it — round-3 UX review: agents and
-    // humans alike misread `distance: 0.187` because the orientation
-    // wasn't documented.
     const relevance = Math.max(0, 1 - h.distance);
     console.log(
-      `relevance: ${relevance.toFixed(3)} (cosine_distance ${h.distance.toFixed(3)}) | room: ${h.room ?? '-'}`,
+      `relevance: ${relevance.toFixed(3)} (cosine_distance ${h.distance.toFixed(3)}) | workspace: ${h.workspace ?? '-'}`,
     );
     if (h.source_uri) console.log(`source: ${h.source_uri}`);
     if (h.mentioned_entities.length > 0) {
@@ -253,8 +257,6 @@ const renderAskHuman = (r: AskResult): number => {
     }
     if (typeof h.summary === 'string' && h.summary.length > 0) {
       console.log('');
-      // Mark truncation so consumers don't treat the cut as the end
-      // of the source text (round-3 UX review).
       const TRUNC = 400;
       const out = h.summary.length > TRUNC ? `${h.summary.slice(0, TRUNC)} […]` : h.summary;
       console.log(out);
@@ -266,28 +268,20 @@ const renderAskHuman = (r: AskResult): number => {
 
 /**
  * Federated ask — embeds the query locally, opens a short-lived libp2p
- * node (same pattern as `peer add`), fans out to connected peers with a
- * 2s per-peer deadline, merges and prints results with _source_peer.
- *
- * When no peers are connected (fresh install, daemon not running, etc.)
- * this returns local-only results with "peers_queried: 0" — no hard error.
+ * node, fans out to connected peers with a 2s per-peer deadline.
  */
 const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<number> => {
-  // 1. Embed the query locally (same embedder as non-federated path)
+  // 1. Embed the query locally
   const embedRes = await runtime.embedder.embed(parsed.query);
   if (embedRes.isErr()) {
     console.error(`ask --peers: ${formatError(embedRes.error)}`);
     return 1;
   }
-  const embedding = embedRes.value; // Float32Array, length 384
+  const embedding = embedRes.value;
 
-  // 2. Boot a short-lived libp2p node so we can dial connected peers.
-  //    This mirrors the pattern in peer add — load identity, createNode,
-  //    call node.stop() in finally. We do NOT register any protocols
-  //    (we're outbound-only for this query).
-  const identityPath = join(wellinformedHome(), 'peer-identity.json');
-  const peersPath = join(wellinformedHome(), 'peers.json');
-  const configPath = join(wellinformedHome(), 'config.yaml');
+  const identityPath = join(akashikHome(), 'peer-identity.json');
+  const peersPath = join(akashikHome(), 'peers.json');
+  const configPath = join(akashikHome(), 'config.yaml');
 
   const cfgRes = await loadConfig(configPath);
   if (cfgRes.isErr()) {
@@ -303,11 +297,11 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
   }
 
   const nodeRes = await createNode(idRes.value, {
-    listenPort: 0, // ephemeral — outbound-only
+    listenPort: 0,
     listenHost: '127.0.0.1',
     mdns: cfg.peer.mdns,
     dhtEnabled: cfg.peer.dht.enabled,
-    peersPath, // so peer:discovery events (if any during this tick) persist
+    peersPath,
   });
   if (nodeRes.isErr()) {
     console.error(`ask --peers: ${formatError(nodeRes.error)}`);
@@ -316,8 +310,6 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
   const node = nodeRes.value;
 
   try {
-    // 3. Best-effort dial of every known peer so fan-out has targets.
-    //    Short grace period — dials resolve in parallel.
     const peersRes = await loadPeers(peersPath);
     if (peersRes.isOk()) {
       await Promise.all(
@@ -334,20 +326,10 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
       );
     }
 
-    // 4. Run the federated search — 2s per-peer deadline locked in Plan 02.
-    // Pass `text` so the local half uses the hybrid (BM25 + vector + RRF)
-    // path that non-federated `ask` uses; peers still only receive the
-    // embedding (SEC-03 boundary).
-    //
-    // peerOrder: reputation-aware ranking with an epsilon-greedy
-    // exploration floor — bubbles peers with a track record on this
-    // subject to the front while still sampling unknowns. Cold-start
-    // safe: empty/missing rep file degrades to libp2p's native order.
     const peerOrderRes = await buildReputationPeerOrder({
-      home: wellinformedHome(),
+      home: akashikHome(),
       localPeerId: idRes.value.peerId,
       query: parsed.query,
-      room: parsed.room,
       registry: runtime.entityRegistry,
     });
     const peerOrder = peerOrderRes.isOk() ? peerOrderRes.value : undefined;
@@ -355,44 +337,27 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
     const result = await runFederatedSearch(
       { node, vectorIndex: runtime.vectors },
       {
-        embedding, k: parsed.k, room: parsed.room, text: parsed.query, peerOrder,
-        // CLI --peers is the hot demo path. Skip the cross-room
-        // tunnel pass — it adds ~150-250ms and the CLI rendering
-        // doesn't display tunnels anyway.
+        embedding, k: parsed.k, text: parsed.query, peerOrder,
         skipTunnels: true,
       },
     );
 
-    // 5. Print results with _source_peer annotation
     const graph = await runtime.graphs.load();
     if (graph.isErr()) {
       console.error(`ask --peers: ${formatError(graph.error)}`);
       return 1;
     }
 
-    // Compose the agent-session telemetry block once. Used by both
-    // --json (structured payload + pre-rendered text) and the human
-    // surface (printed at the end so the user sees timing/peer/sat).
     const telemetry = buildPeerPullTelemetry({
       query: parsed.query,
-      room: parsed.room,
       result,
       graph: graph.value,
     });
 
-    // FIRE-AND-FORGET REPUTATION UPDATE.
-    //
-    //   Every federated ask becomes a review of the peers that
-    //   contributed, scoped to the subjects the answer was about.
-    //   Sourced from telemetry.satisfaction.score so it benefits
-    //   from the existing scorer's confidence + provenance signals.
-    //   Reviewer DID comes from `ensureIdentity()` — first ever call
-    //   creates a fresh DID; subsequent calls reuse it. Failures are
-    //   swallowed: reputation is observability, never user-facing.
     if (result.peers_responded > 0) {
       void (async () => {
         try {
-          const id = await ensureIdentity(wellinformedHome());
+          const id = await ensureIdentity(akashikHome());
           if (id.isErr()) return;
           await updatePeerReputation({
             satisfaction_score: telemetry.satisfaction.score,
@@ -400,16 +365,13 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
             graph: graph.value,
             reviewer_did: id.value.user.did,
             local_peer_id: idRes.value.peerId,
-            home: wellinformedHome(),
+            home: akashikHome(),
           });
         } catch { /* benign — rep is observability, not state */ }
       })();
     }
 
     if (parsed.json) {
-      // JSON surface for the smart-hook and any programmatic consumer.
-      // Same shape as local --json plus peer provenance fields so the
-      // caller can surface "this hit came from peer X" context.
       const nowMs = Date.now();
       const hits = result.matches.map((m) => {
         const graphNode = getNode(graph.value, m.node_id);
@@ -421,7 +383,7 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
         return {
           id: m.node_id,
           label: graphNode?.label ?? null,
-          room: graphNode?.room ?? m.room ?? null,
+          workspace: graphNode?.workspace ?? null,
           distance: Number(m.distance.toFixed(4)),
           source_uri: graphNode?.source_uri ?? graphNode?.source_file ?? null,
           summary: typeof graphNode?.summary === 'string' ? (graphNode.summary as string).slice(0, 400) : null,
@@ -433,24 +395,18 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
       });
       console.log(JSON.stringify({
         query: parsed.query,
-        room: parsed.room ?? null,
         peers_queried: result.peers_queried,
         peers_responded: result.peers_responded,
         peers_timed_out: result.peers_timed_out,
         peers_errored: result.peers_errored,
         hits,
-        tunnels: result.tunnels.map((t) => ({
-          a: t.a, b: t.b, room_a: t.room_a, room_b: t.room_b,
-          distance: Number(t.distance.toFixed(4)),
-        })),
         _telemetry: telemetry,
         _telemetry_block: formatTelemetryBlock(telemetry),
       }));
       return 0;
     }
 
-    console.log(`# wellinformed federated results for: ${parsed.query}`);
-    if (parsed.room) console.log(`room: ${parsed.room}`);
+    console.log(`# akashik federated results for: ${parsed.query}`);
     console.log(`peers_queried: ${result.peers_queried}`);
     console.log(`peers_responded: ${result.peers_responded}`);
     if (result.peers_timed_out > 0) console.log(`peers_timed_out: ${result.peers_timed_out}`);
@@ -470,28 +426,17 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
             ? ` (also: ${m._also_from_peers.join(', ')})`
             : '';
         console.log(`source_peer: ${peerLabel}${alsoFrom}`);
-        console.log(`distance: ${m.distance.toFixed(3)} | room: ${m.room ?? '-'} | wing: ${m.wing ?? '-'}`);
+        const ws = typeof graphNode?.workspace === 'string' ? graphNode.workspace : '-';
+        console.log(`distance: ${m.distance.toFixed(3)} | workspace: ${ws}`);
         if (graphNode?.source_uri) console.log(`source: ${graphNode.source_uri}`);
         console.log('');
       }
     }
 
-    // 6. Cross-room tunnels section (FED-04 rendering)
-    if (result.tunnels.length > 0) {
-      console.log('## Cross-room tunnels');
-      for (const t of result.tunnels) {
-        console.log(`  ${t.a} (${t.room_a}) <-> ${t.b} (${t.room_b}) — distance: ${t.distance.toFixed(3)}`);
-      }
-      console.log('');
-    }
-
-    // 7. Peer-pull telemetry block — visible signal of "wellinformed
-    //    actually went to the network and here's what came back".
     console.log(formatTelemetryBlock(telemetry));
 
     return 0;
   } finally {
-    // CRITICAL: always stop the libp2p node — orphaned nodes leak TCP listeners
     try {
       await node.stop();
     } catch {

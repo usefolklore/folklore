@@ -8,12 +8,12 @@ CONTEXT:
 The project has gone through:
 1. Multiple ML retrieval optimization attempts (E1' rerank, E11 enrichment, listwise rerank, NDCG/MRR augmentation)
 2. Three octopus-discover synthesis rounds with empirical pushback
-3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
 5. The scaffolding of AkashikBench-F which validated the compounding thesis (slope -4.74e-5 on LoCoMo)
 6. Now: rebrand sweep in progress (Akashik), and need to clean up the codebase + docs of stale artifacts.
 
-WORKING DIR: /Users/saharbarak/personal/wellinformed
+WORKING DIR: /Users/saharbarak/personal/akashik
 
 QUESTIONS:
 
@@ -22,10 +22,10 @@ Q1. Looking at the project layout (src/, tests/, docs/, .planning/, scripts/, ex
 Q2. Specific things to investigate:
    - .planning/ directory — there are phase-21, phase-23 dirs, HANDOFF.md, long-term-memory-integration.md. The phase-based GSD planning workflow may be useful or may be cruft.
    - docs/research/ — multiple research docs (energy-based-contradiction-detection, beat-the-competitors-retrieval-plan, performance-prediction-matrix). Some of these may have been superseded by the pivot.
-   - src/ — there's wellinformed-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
+   - src/ — there's akashik-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
    - tests/ — many tests reflect the old framing. Tests for bench-real.test.ts (30-doc proxy), bench-standard.test.ts (synth HotpotQA). Are these still useful or superseded?
    - Markdown clutter — README.md.bak.830lines is in the working tree (a backup of an old README). docs has potential duplication.
-   - Codebase identifiers (wellinformed* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
+   - Codebase identifiers (akashik* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
 
 Q3. What docs/research artifacts should be ARCHIVED (moved to a docs/archive/ subfolder with a note) vs DELETED outright? Archive = useful historical record; delete = noise.
 
@@ -66,7 +66,7 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 
 | File / Dir | Action | Reason |
 |---|---|---|
-| `README.md` | NEEDS-REWRITE | Still says "wellinformed", north-star is the old demo loop, no mention of compounding thesis or OSS commons |
+| `README.md` | NEEDS-REWRITE | Still says "akashik", north-star is the old demo loop, no mention of compounding thesis or OSS commons |
 | `README.md.bak.830lines` | **DELETE** | 50 KB backup file committed by mistake; every git clone carries it; no historical value beyond git log |
 | `NEXT_STEPS.md` | **ARCHIVE → `docs/archive/`** | North star ("make federated search match local search") is the old agent-memory framing; superseded by PROJECT-PLAN-AKASHIK.md and the compounding thesis |
 | `findings.md` | **ARCHIVE → `docs/archive/`** | SOTA retrieval synthesis for the Phase 21-23 CPU-bound optimization era; genuinely good research but frozen-in-time; will confuse contributors who read it as current direction |
@@ -74,13 +74,13 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 | `Dockerfile` | KEEP | Infra unchanged |
 | `package.json` / `tsconfig.json` | KEEP | |
 | `skills-lock.json` | KEEP | Harness tooling config |
-| `.mcp.json` | NEEDS-REWRITE | Tool names will still say `wellinformed` after rename; update after binary rename lands |
+| `.mcp.json` | NEEDS-REWRITE | Tool names will still say `akashik` after rename; update after binary rename lands |
 | `.gitignore` | **NEEDS EDIT** | `.claude-octopus/`, `.agents/`, `.claude-plugin/` are NOT gitignored but are committed local tool state — add all three |
 | `.claude-octopus/` | **DELETE from git + GITIGNORE** | state.json tracks session counts and local workflow state; accidentally committed; is per-developer local state; `state.json.backup` means someone was editing it manually. High-risk if it ever captures tokens. |
 | `.agents/` | ARCHIVE/GITIGNORE | Skills and hooks specific to the octopus workflow runner; local runtime state, not source |
 | `.claude-plugin/` | KEEP + GITIGNORE | Plugin config is fine but shouldn't be committed if it contains instance-specific data |
-| `bin/wellinformed.js` | NEEDS-REWRITE | Will become `bin/akashik.js` at rename; keep `wellinformed` as a symlink alias for zombie-integration continuity (see §Zombie Integrations below) |
-| `demo/` (all `.gif` files) | NEEDS-REWRITE | All GIFs show `wellinformed` branding; the `.tape` scripts are the source-of-truth and should be re-run after rebrand; binary GIFs bloat git history — consider moving to a CDN or GitHub Releases attachment |
+| `bin/akashik.js` | NEEDS-REWRITE | Will become `bin/akashik.js` at rename; keep `akashik` as a symlink alias for zombie-integration continuity (see §Zombie Integrations below) |
+| `demo/` (all `.gif` files) | NEEDS-REWRITE | All GIFs show `akashik` branding; the `.tape` scripts are the source-of-truth and should be re-run after rebrand; binary GIFs bloat git history — consider moving to a CDN or GitHub Releases attachment |
 | `demo/*.tape` / `*.sh` | KEEP | Source scripts are still valid conceptually; just need brand find-replace |
 | `vendor/` | KEEP | |
 | `config/config.example.yaml` | KEEP | |
@@ -127,7 +127,7 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 |---|---|---|
 | `docs/PROJECT-PLAN-AKASHIK.md` | **KEEP** | Living plan; the single source of truth for Phase 24+ direction |
 | `docs/product/BENCHMARKS.md` | KEEP | Acceptance contracts; the ratchet table is the CI contract |
-| `docs/product/MANIFESTO.md` | NEEDS-REWRITE | Presumably wellinformed-branded; core mission text needs Akashik language |
+| `docs/product/MANIFESTO.md` | NEEDS-REWRITE | Presumably akashik-branded; core mission text needs Akashik language |
 | `docs/product/VISION.md` | NEEDS-REWRITE | Same |
 | `docs/product/ROADMAP.md` | NEEDS-REWRITE | Should reflect Phase 24+ only |
 | `docs/product/GRAPHRAG-AUDIT.md` | KEEP | Architecture audit; still accurate |
@@ -150,11 +150,11 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 | `docs/research/github-star-growth.md` | KEEP | OSS growth strategy; directly relevant to Akashik's OSS community positioning |
 | `docs/research/octopus-discover/round-5-2026-05-26/` | KEEP | The synthesis that produced the current direction; this is the evidence for the pivot |
 | `docs/research/octopus-discover/round-4-2026-05-26/` | ARCHIVE | Round 4 was superseded by round 5; the intermediate probes are noise without the synthesis |
-| `docs/index.html` | NEEDS-REWRITE | The public-facing website; still says wellinformed |
+| `docs/index.html` | NEEDS-REWRITE | The public-facing website; still says akashik |
 | `docs/probe.html` | **DELETE** | Debug/network probe page; has no place in the public docs tree; likely contains local IP addresses |
-| `docs/welly-idle.png` | **DELETE** | "welly" is the old mascot/nickname for wellinformed; not part of the Akashik brand |
-| `docs/banner.png/svg`, `docs/logo.png/svg` | NEEDS-REWRITE | wellinformed branding; needs Akashik rebrand |
-| `docs/memory-stack.png/svg` | NEEDS-REWRITE | Architecture diagram references wellinformed stack; update to show Akashik federation layer |
+| `docs/welly-idle.png` | **DELETE** | "welly" is the old mascot/nickname for akashik; not part of the Akashik brand |
+| `docs/banner.png/svg`, `docs/logo.png/svg` | NEEDS-REWRITE | akashik branding; needs Akashik rebrand |
+| `docs/memory-stack.png/svg` | NEEDS-REWRITE | Architecture diagram references akashik stack; update to show Akashik federation layer |
 | `docs/assets/logo-*.svg`, `og-*.png/svg`, `manifesto-illustration.svg` | NEEDS-REWRITE | Brand assets; some may already be Akashik-branded (check), rest need the rename sweep |
 | `docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md` | KEEP | Protocol design questions; still forward-relevant |
 
@@ -173,7 +173,7 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 | `tests/llm-listwise-rerank.test.ts` | **ARCHIVE** | Listwise LLM reranking was one of the explicitly abandoned ML optimization attempts (named in your project context). These tests guard dead code. If `src/domain/llm-listwise-rerank.ts` still exports anything, it should be deleted; if it's purely test-only, delete the test |
 | `tests/bench-locomo-synth.test.ts` | ARCHIVE | Synthetic LoCoMo proxy superseded by bench-locomo-real.test.ts and AkashikBench-F; keeping both creates ambiguity about which is the acceptance gate |
 | `tests/bench-longmemeval-synth.test.ts` | ARCHIVE | Same — synthetic proxy replaced by real corpus; keeping both adds CI cost for no new signal |
-| `tests/phase29.rust-retrieval-regression.test.ts` | NEEDS-REVIEW | Phase 29 isn't in the ROADMAP — it was added in the 21-23 era. Verify that wellinformed-rs is still active and the test still passes; if the Rust sidecar is not on the Phase 24 roadmap, this becomes a maintenance liability |
+| `tests/phase29.rust-retrieval-regression.test.ts` | NEEDS-REVIEW | Phase 29 isn't in the ROADMAP — it was added in the 21-23 era. Verify that akashik-rs is still active and the test still passes; if the Rust sidecar is not on the Phase 24 roadmap, this becomes a maintenance liability |
 | `tests/fixtures/phase19/`, `tests/fixtures/phase20/` | KEEP | Support live phaseNN tests; not bloat |
 
 ---
@@ -190,7 +190,7 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 | `src/application/auto-forget-tick.ts` | KEEP | Phase 21/22; live daemon tick |
 | `src/domain/long-term-memory.ts` | KEEP | Phase 21 core domain; the tier math and Beta(α,β) is the published architecture |
 | `src/domain/federation-sim.ts` | KEEP | AkashikBench-F simulator; Phase 24's key instrument |
-| `wellinformed-rs/` (submodule) | NEEDS-REVIEW | The Rust sidecar delivered phase29 regression testing. Per PROJECT-PLAN-AKASHIK.md, per-peer retrieval is de-prioritized; but if the Rust path is still in the test matrix, it needs to be maintained or explicitly frozen |
+| `akashik-rs/` (submodule) | NEEDS-REVIEW | The Rust sidecar delivered phase29 regression testing. Per PROJECT-PLAN-AKASHIK.md, per-peer retrieval is de-prioritized; but if the Rust path is still in the test matrix, it needs to be maintained or explicitly frozen |
 | `src/cli/commands/bench.ts` | KEEP | The unified bench runner; becomes the `akashik bench` command after rename |
 
 ---
@@ -215,13 +215,13 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 
 ### 1. Auth mechanism → API version boundary
 
-The project uses ed25519 peer identity (Phase 15, `~/.wellinformed/peer-identity.json`). The identity strategy memory entry says GitHub OAuth is the planned social DID anchor. **This is a hard API version break.** Existing peers authenticating via raw ed25519 multiaddrs will silently fail to establish sessions if the OAuth requirement lands as a patch. The correct treatment: gate GitHub OAuth behind a new handshake version in the `/wellinformed/share/1.0.0` libp2p protocol (bump to `/akashik/share/2.0.0`), keep the v1 handler alive for at least one major version, and add a deprecation notice to the `wellinformed peer add` CLI response. The identity bridge code (`src/application/identity-bridge.ts`) should contain the migration path. This is **not currently documented** in any phase plan — it's an implicit assumption that auth and API versioning are decoupled. They are not.
+The project uses ed25519 peer identity (Phase 15, `~/.akashik/peer-identity.json`). The identity strategy memory entry says GitHub OAuth is the planned social DID anchor. **This is a hard API version break.** Existing peers authenticating via raw ed25519 multiaddrs will silently fail to establish sessions if the OAuth requirement lands as a patch. The correct treatment: gate GitHub OAuth behind a new handshake version in the `/akashik/share/1.0.0` libp2p protocol (bump to `/akashik/share/2.0.0`), keep the v1 handler alive for at least one major version, and add a deprecation notice to the `akashik peer add` CLI response. The identity bridge code (`src/application/identity-bridge.ts`) should contain the migration path. This is **not currently documented** in any phase plan — it's an implicit assumption that auth and API versioning are decoupled. They are not.
 
 ### 2. Zombie integrations
 
-The MCP server exposes `wellinformed` tool names. Any Claude Code user who installed the MCP via `.mcp.json` or `claude_desktop_config.json` has entries like `"command": "wellinformed"` hard-coded. When the npm package renames to `akashik`, the MCP server stops responding for every user who installed it and moved on. These users will never voluntarily migrate — they're in set-and-forget mode.
+The MCP server exposes `akashik` tool names. Any Claude Code user who installed the MCP via `.mcp.json` or `claude_desktop_config.json` has entries like `"command": "akashik"` hard-coded. When the npm package renames to `akashik`, the MCP server stops responding for every user who installed it and moved on. These users will never voluntarily migrate — they're in set-and-forget mode.
 
-**Strategy:** Keep `"wellinformed"` as a bin alias in `package.json` for at least 2 major versions (`"bin": { "wellinformed": "bin/akashik.js", "akashik": "bin/akashik.js" }`). The startup banner should print a one-time deprecation warning: `"wellinformed is deprecated; use akashik instead"` — but only if invoked as `wellinformed`, never if invoked as `akashik`. This respects the zero-noise contract for new users while notifying old users passively.
+**Strategy:** Keep `"akashik"` as a bin alias in `package.json` for at least 2 major versions (`"bin": { "akashik": "bin/akashik.js", "akashik": "bin/akashik.js" }`). The startup banner should print a one-time deprecation warning: `"akashik is deprecated; use akashik instead"` — but only if invoked as `akashik`, never if invoked as `akashik`. This respects the zero-noise contract for new users while notifying old users passively.
 
 ### 3. Shadow traffic validation / parity definition
 
@@ -259,7 +259,7 @@ This single sweep removes ~65 files from the "active" view of the planning direc
 
 **3. Delete `docs/marketing/positioning-draft.md` + `positioning-v2.1.md`, and add the 3-line annotation header to `docs/research/beat-the-competitors-retrieval-plan.md` before moving it to `docs/archive/`**
 
-These three files are the most dangerous clutter in the repo because they actively contradict the current mission. A new contributor reading the docs/ folder will hit "wellinformed competes with mem0/ByteRover on R@5" before they hit "Akashik is the federated knowledge commons for the OSS community." That's a positioning inversion that takes time to undo mentally. The storybrand-messaging-draft.md (written today) is the canonical voice; every pre-pivot positioning document left in the active tree is a hole in that narrative.
+These three files are the most dangerous clutter in the repo because they actively contradict the current mission. A new contributor reading the docs/ folder will hit "akashik competes with mem0/ByteRover on R@5" before they hit "Akashik is the federated knowledge commons for the OSS community." That's a positioning inversion that takes time to undo mentally. The storybrand-messaging-draft.md (written today) is the canonical voice; every pre-pivot positioning document left in the active tree is a hole in that narrative.
 ```
 
 ## Status: SUCCESS

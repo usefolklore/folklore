@@ -15,8 +15,8 @@ npm-debug.log*
 .env.*
 !.env.example
 
-# wellinformed runtime state — per-user, never commit
-.wellinformed/
+# akashik runtime state — per-user, never commit
+.akashik/
 
 # vector store
 vectors.db

@@ -8,11 +8,11 @@ dependency_graph:
     - 15-01 (PeerError, ScanError, ShareableNode, auditRoom, buildPatterns, isMultiaddrShaped)
     - 15-02 (loadOrCreateIdentity, createNode, dialAndTag, loadPeers, savePeers, addPeerRecord, removePeerRecord)
   provides:
-    - "`wellinformed peer add <multiaddr>` — dial + persist to peers.json"
-    - "`wellinformed peer remove <id>` — remove entry from peers.json"
-    - "`wellinformed peer list` — stored peers (live status deferred to Phase 18)"
-    - "`wellinformed peer status` — own PeerId, public key, peer count"
-    - "`wellinformed share audit --room <name> [--json]` — sharing boundary preview (SEC-04)"
+    - "`akashik peer add <multiaddr>` — dial + persist to peers.json"
+    - "`akashik peer remove <id>` — remove entry from peers.json"
+    - "`akashik peer list` — stored peers (live status deferred to Phase 18)"
+    - "`akashik peer status` — own PeerId, public key, peer count"
+    - "`akashik share audit --room <name> [--json]` — sharing boundary preview (SEC-04)"
     - peer and share commands registered in CLI router
   affects:
     - src/cli/commands/peer.ts (new)
@@ -122,8 +122,8 @@ Acceptance criteria (Plan 15-03):
 **1. [Rule 1 - Bug] Removed unused imports and spurious AppError casts from plan snippet**
 
 - **Found during:** Task 1 write (before commit)
-- **Issue:** The plan's code snippet imported `hangUpPeer` and `getNodeStatus` from peer-transport, and `runtimePaths` from runtime.ts, but `peer.ts` never uses them (hangUp happens inside `node.stop()`; getNodeStatus is for a live-node list which is deferred to Phase 18; peers/identity paths use `wellinformedHome()` directly). It also imported `AppError` and cast every error branch as `error as AppError`, but `loadConfig` returns `GraphError` and the peer-* functions return `PeerError` — both are already union members of `AppError`, so `formatError` accepts them directly without casts. TypeScript's strict noUnusedLocals would fail on the unused imports, and the redundant casts add noise.
-- **Fix:** Trimmed imports to only what `peer.ts` actually uses (`loadOrCreateIdentity`, `createNode`, `dialAndTag`, `loadPeers`, `savePeers`, `addPeerRecord`, `removePeerRecord`, `loadConfig`, `wellinformedHome`, `isMultiaddrShaped`, `formatError`). Removed `AppError` type import and the `error as AppError` casts at each `formatError(...)` callsite.
+- **Issue:** The plan's code snippet imported `hangUpPeer` and `getNodeStatus` from peer-transport, and `runtimePaths` from runtime.ts, but `peer.ts` never uses them (hangUp happens inside `node.stop()`; getNodeStatus is for a live-node list which is deferred to Phase 18; peers/identity paths use `akashikHome()` directly). It also imported `AppError` and cast every error branch as `error as AppError`, but `loadConfig` returns `GraphError` and the peer-* functions return `PeerError` — both are already union members of `AppError`, so `formatError` accepts them directly without casts. TypeScript's strict noUnusedLocals would fail on the unused imports, and the redundant casts add noise.
+- **Fix:** Trimmed imports to only what `peer.ts` actually uses (`loadOrCreateIdentity`, `createNode`, `dialAndTag`, `loadPeers`, `savePeers`, `addPeerRecord`, `removePeerRecord`, `loadConfig`, `akashikHome`, `isMultiaddrShaped`, `formatError`). Removed `AppError` type import and the `error as AppError` casts at each `formatError(...)` callsite.
 - **Files modified:** src/cli/commands/peer.ts
 - **Commit:** ba7db60
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# wellinformed demo — one-shot setup.
+# akashik demo — one-shot setup.
 #
 # Loads the 15-node cryogenic-LH2 research corpus into a fresh
-# wellinformed home, then verifies the install with a sample query.
+# akashik home, then verifies the install with a sample query.
 # Designed to be re-runnable: clears any prior state under
-# ~/.wellinformed.demo so the demo always starts from the same place.
+# ~/.akashik.demo so the demo always starts from the same place.
 #
 # Run from anywhere:
 #
@@ -13,21 +13,21 @@
 #
 # Environment overrides:
 #
-#   WELLINFORMED_DEMO_HOME   alternate data home (default ~/.wellinformed.demo)
-#   WELLINFORMED_DEMO_KEEP   set to "1" to skip the wipe step
+#   AKASHIK_DEMO_HOME   alternate data home (default ~/.akashik.demo)
+#   AKASHIK_DEMO_KEEP   set to "1" to skip the wipe step
 
 set -euo pipefail
 
-DEMO_HOME="${WELLINFORMED_DEMO_HOME:-$HOME/.wellinformed.demo}"
+DEMO_HOME="${AKASHIK_DEMO_HOME:-$HOME/.akashik.demo}"
 CORPUS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/research-corpus" && pwd)"
 
-echo "── wellinformed demo setup ─────────────────────────────"
+echo "── akashik demo setup ─────────────────────────────"
 echo "  data home:  $DEMO_HOME"
 echo "  corpus:     $CORPUS_DIR ($(ls "$CORPUS_DIR" | wc -l | tr -d ' ') files)"
 echo
 
 # 1. Wipe prior demo state unless asked to keep it.
-if [[ "${WELLINFORMED_DEMO_KEEP:-0}" != "1" ]]; then
+if [[ "${AKASHIK_DEMO_KEEP:-0}" != "1" ]]; then
   if [[ -d "$DEMO_HOME" ]]; then
     echo "→ archiving previous demo home"
     mv "$DEMO_HOME" "$DEMO_HOME.archived-$(date +%s)"
@@ -36,9 +36,9 @@ fi
 mkdir -p "$DEMO_HOME"
 
 # 2. Stop any running daemon to avoid lock contention while we onboard.
-WELLINFORMED_HOME="$DEMO_HOME" wellinformed daemon stop 2>/dev/null || true
+AKASHIK_HOME="$DEMO_HOME" akashik daemon stop 2>/dev/null || true
 
-# 3. Load each markdown note via `wellinformed save`. Each file is
+# 3. Load each markdown note via `akashik save`. Each file is
 #    one canonical "concept" node in the local-only research room.
 #    The label is read from the first markdown heading; the body is
 #    streamed via stdin so chunking + embedding happens server-side
@@ -50,7 +50,7 @@ for f in "$CORPUS_DIR"/*.md; do
   if [[ -z "$label" ]]; then
     label=$(basename "$f" .md)
   fi
-  if WELLINFORMED_HOME="$DEMO_HOME" wellinformed save \
+  if AKASHIK_HOME="$DEMO_HOME" akashik save \
        --room research \
        --type concept \
        --label "$label" \
@@ -67,7 +67,7 @@ echo
 echo "── verification ──────────────────────────────────────"
 echo "→ sample query: \"ML methods for liquid hydrogen leak detection\""
 echo
-WELLINFORMED_HOME="$DEMO_HOME" wellinformed ask \
+AKASHIK_HOME="$DEMO_HOME" akashik ask \
   "ML methods for liquid hydrogen leak detection" --k 3 | head -25
 
 echo
@@ -75,8 +75,8 @@ echo "── ready ────────────────────�
 echo "  Demo data home: $DEMO_HOME"
 echo
 echo "  Try:"
-echo "    WELLINFORMED_HOME=$DEMO_HOME wellinformed ask \"who runs the cryo lab at stanford\""
-echo "    WELLINFORMED_HOME=$DEMO_HOME wellinformed recall stanford-cryo-lab"
-echo "    WELLINFORMED_HOME=$DEMO_HOME wellinformed metrics | jq ."
+echo "    AKASHIK_HOME=$DEMO_HOME akashik ask \"who runs the cryo lab at stanford\""
+echo "    AKASHIK_HOME=$DEMO_HOME akashik recall stanford-cryo-lab"
+echo "    AKASHIK_HOME=$DEMO_HOME akashik metrics | jq ."
 echo
 echo "  Recording? Follow demo/MANUSCRIPT.md scene-by-scene."

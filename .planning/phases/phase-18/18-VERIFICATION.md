@@ -88,7 +88,7 @@ test_fail: 0
 
 | Concern | Resolution |
 |---------|------------|
-| Circuit-relay client-only | No relay serving — wellinformed cannot be used as a relay hop for others |
+| Circuit-relay client-only | No relay serving — akashik cannot be used as a relay hop for others |
 | UPnP opt-out | `config.peer.upnp: false` disables port forwarding entirely |
 | Bandwidth DOS protection | Rate limiter drops flagged updates with audit log entry |
 | Health monitoring is passive | No active probes = no additional traffic or attack surface |

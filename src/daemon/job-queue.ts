@@ -1,16 +1,16 @@
 /**
  * In-memory job queue + single-worker driver.
  *
- * Owned by the daemon process (one instance per `wellinformed daemon
+ * Owned by the daemon process (one instance per `akashik daemon
  * _run`). The IPC layer submits jobs over the unix socket; the worker
  * pulls from the queue serially. Single-worker is intentional for v1:
  *
  *   - Ingestion mutates graph.json + vectors.db. The cross-process
  *     write lock (process-lock.ts) only allows one writer at a time;
  *     parallel workers would just queue on the lock anyway.
- *   - Sequential output is easier to read in `wellinformed jobs watch`.
+ *   - Sequential output is easier to read in `akashik jobs watch`.
  *
- * Persistence: queue + completed log written to ~/.wellinformed/jobs.json
+ * Persistence: queue + completed log written to ~/.akashik/jobs.json
  * on every state transition (best-effort, fire-and-forget). On daemon
  * boot the file is read; queued and running jobs are reset to `queued`
  * and re-run. Done/failed jobs are kept up to MAX_HISTORY rows for

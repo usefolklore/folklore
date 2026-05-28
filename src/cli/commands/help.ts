@@ -3,36 +3,35 @@
  */
 
 const HELP = `
-wellinformed — knowledge graph + research daemon Claude Code plugin
+akashik — knowledge graph + research daemon Claude Code plugin
 
 usage:
-  wellinformed <command> [options]
+  akashik <command> [options]
 
 commands:
-  onboard [--yes]         first-run installer — daemon, hooks, identity, rooms
+  onboard [--yes]         first-run installer — daemon, hooks, identity
   login                   link a verified GitHub identity to your DID (OAuth)
   this [me|everyone]      index the current folder; 'everyone' shares it on P2P
-  recall <name>           entity-first lookup across every room
+  recall <name>           entity-first lookup across the graph
   entity add|list|remove  manage the canonical entity registry
   doctor [--fix]          check runtime prerequisites (and bootstrap with --fix)
   version                 print version
   help                    this message
-  init                    interactive room seeding wizard
-  room <sub>              list | create | switch | current | describe
-  trigger [--room R]      fetch and index content from enabled sources
+  init                    register external content sources (RSS / ArXiv / HN)
+  trigger                 fetch and index content from enabled sources
   sources <sub>           list | add | remove | enable | disable
   ask "<query>"           semantic search + context output
   eval <queries.jsonl>    retrieval quality eval — recall@k, NDCG@k, MRR
   metrics                 daemon counters/gauges/histograms snapshot (JSON)
-  report [--room R]       generate a knowledge graph report
-  index [--room R]        index the project codebase, deps, submodules, git history
+  report                  generate a knowledge graph report
+  index                   index the project codebase, deps, submodules, git history
   daemon <sub>            start | stop | status — background research daemon
-  discover [--room R]     suggest new sources for a room (--auto to add)
-  discover-loop [--room R] recursive: discover + index + extract keywords + repeat
+  discover                suggest new sources (--auto to add)
   publish auth|tweet|thread|launch|preview  post to X/Twitter (OAuth 2.0)
   telegram setup|test|start  Telegram bot (inbound capture + commands + digests)
   claude install|uninstall  make Claude Code use the graph automatically (hook + CLAUDE.md)
   mcp start               run the MCP server (Claude Code auto-spawns this)
+  migrate v5              upgrade ~/.akashik/ from V4 (rooms) to V5 (workspace+private)
 `.trimStart();
 
 export function printHelp(_args: string[]): number {

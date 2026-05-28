@@ -1,6 +1,6 @@
-# wellinformed Next Steps
+# akashik Next Steps
 
-This is the execution README for getting wellinformed closer to SOTA as a
+This is the execution README for getting akashik closer to SOTA as a
 local-first agent memory system.
 
 The target is not BEIR leaderboard SOTA. The repo already documents that
@@ -11,11 +11,11 @@ research.
 
 ## North Star
 
-wellinformed should make this demo feel inevitable:
+akashik should make this demo feel inevitable:
 
 1. Peer A researches or fixes something current.
 2. Peer B asks Claude/Codex a related task.
-3. wellinformed retrieves the trusted peer memory before web search.
+3. akashik retrieves the trusted peer memory before web search.
 4. The agent sees source age, room, peer attribution, and provenance.
 5. The answer is faster, cheaper, and better than local-only context.
 
@@ -82,8 +82,8 @@ first-class shipped artifact.
 
 Relevant files:
 
-- `wellinformed-rs/src/bin/wellinformed_cli.rs`
-- `bin/wellinformed.js`
+- `akashik-rs/src/bin/akashik_cli.rs`
+- `bin/akashik.js`
 - `package.json`
 - `scripts/bootstrap.sh`
 - `docs/V4-PROTOCOL.md`
@@ -157,7 +157,7 @@ Acceptance gate:
 ## Priority 6: Add Product-Shaped Evals
 
 BEIR is useful but incomplete for this product. The important eval is whether
-wellinformed changes agent behavior.
+akashik changes agent behavior.
 
 Relevant files:
 
@@ -226,7 +226,7 @@ Acceptance gate:
 
 ## Definition Of Done
 
-wellinformed is ready to claim category leadership when:
+akashik is ready to claim category leadership when:
 
 - federated search is not lower quality than local search by default policy;
 - room search has deterministic recall;

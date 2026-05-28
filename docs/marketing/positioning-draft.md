@@ -42,7 +42,7 @@ Leads with what's measurable. Good for technical decision-makers, engineering le
 
 - **12 words:** *Sub-second knowledge retrieval for AI agents. Cited, federated, no central server.*
 - **25 words:** *Akashik gives every AI agent a sub-second knowledge layer. Local graphs federate over libp2p; retrieval lands as cited context before the agent reaches for the internet.*
-- **60 words:** *Akashik is a knowledge layer for AI agents. 11 ms p50 retrieval over your code, your dependencies, your research. Hook-injected into Claude Code, Codex, Gemini, and any MCP host before the agent considers a tool call. Federates over libp2p with W3C identity; signed envelopes prove what came from where. **75% NDCG@10 on BEIR SciFact, MIT-licensed, github.com/SaharBarak/wellinformed.***
+- **60 words:** *Akashik is a knowledge layer for AI agents. 11 ms p50 retrieval over your code, your dependencies, your research. Hook-injected into Claude Code, Codex, Gemini, and any MCP host before the agent considers a tool call. Federates over libp2p with W3C identity; signed envelopes prove what came from where. **75% NDCG@10 on BEIR SciFact, MIT-licensed, github.com/SaharBarak/akashik.***
 
 **Tradeoff.** Honest, defensible, easy to verify. Misses the ideological pull that Lead A carries — reads more "feature" than "movement."
 

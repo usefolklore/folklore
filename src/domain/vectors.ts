@@ -30,26 +30,46 @@ export type Vector = Float32Array;
  */
 export interface VectorRecord {
   readonly node_id: NodeId;
-  readonly room: Room;
+  /**
+   * @deprecated V5 (Phase 24) — rooms were deleted. Optional purely
+   * so legacy sqlite-vec rows round-trip cleanly; new writes should
+   * omit this field.
+   */
+  readonly room?: Room;
   readonly wing?: Wing;
   readonly vector: Vector;
   readonly raw_text?: string;
 }
 
-/** A similarity match returned by a search. `distance` is L2 on unit vectors. */
+/**
+ * A similarity match returned by a search. `distance` is L2 on unit
+ * vectors.
+ *
+ * V5 (Phase 24): `room` is now optional/legacy — search responders
+ * (federated_search) include it when carrying back a wire envelope's
+ * shape, but local-only searches don't populate it.
+ */
 export interface Match {
   readonly node_id: NodeId;
-  readonly room: Room;
+  readonly room?: Room;
   readonly wing?: Wing;
   readonly distance: number;
 }
 
-/** A pair of nodes from different rooms with a short semantic distance. */
+/**
+ * A pair of nodes with a short semantic distance.
+ *
+ * V5 (Phase 24): `room_a` / `room_b` are optional and only populated
+ * when the underlying VectorRecord still carries legacy room metadata.
+ * Cross-room tunnel detection is no longer the primary use case; the
+ * field set is retained so the federated-search wire envelope can
+ * still round-trip a tunnels block from V4 peers (if any).
+ */
 export interface Tunnel {
   readonly a: NodeId;
   readonly b: NodeId;
-  readonly room_a: Room;
-  readonly room_b: Room;
+  readonly room_a?: Room;
+  readonly room_b?: Room;
   readonly distance: number;
 }
 

@@ -2,11 +2,12 @@
  * Unit tests — linked-accounts persistence.
  *
  * Locks the contract:
- *   - load on a fresh home returns empty schema (version 1, accounts {})
+ *   - load on a fresh home returns empty schema (current version, accounts {})
  *   - save round-trips the verified handle for one provider
  *   - save preserves other providers (multi-provider isolation)
  *   - corrupted file gracefully falls back to empty
  *   - tokens never make it to disk (smoke check on payload schema)
+ *   - v1 files forward-load into v2 shape (email absent, no data loss)
  */
 
 import assert from 'node:assert/strict';
@@ -32,7 +33,7 @@ test('loadLinkedAccounts on a fresh home returns empty file', () => {
   const home = tmpHome();
   try {
     const f = loadLinkedAccounts(home);
-    assert.equal(f.version, 1);
+    assert.equal(f.version, 2);
     assert.deepEqual(f.accounts, {});
   } finally {
     rmSync(home, { recursive: true, force: true });
@@ -86,8 +87,47 @@ test('corrupted file gracefully falls back to empty', () => {
   try {
     writeFileSync(join(home, 'linked-accounts.json'), 'not-json{{{');
     const f = loadLinkedAccounts(home);
-    assert.equal(f.version, 1);
+    assert.equal(f.version, 2);
     assert.deepEqual(f.accounts, {});
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('v1 file forward-loads into v2 shape with email absent', () => {
+  const home = tmpHome();
+  try {
+    const v1Body = JSON.stringify({
+      version: 1,
+      accounts: {
+        github: {
+          handle: 'sahar-barak',
+          user_id: '12345',
+          profile_url: 'https://github.com/sahar-barak',
+          verified_at: '2026-05-06T20:30:00.000Z',
+        },
+      },
+    });
+    writeFileSync(join(home, 'linked-accounts.json'), v1Body);
+    const f = loadLinkedAccounts(home);
+    assert.equal(f.version, 2);
+    assert.equal(f.accounts.github?.handle, 'sahar-barak');
+    assert.equal(f.accounts.github?.email, undefined);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('v2 file with email round-trips through save + load', () => {
+  const home = tmpHome();
+  try {
+    saveLinkedAccount(home, 'github', {
+      ...sampleAccount,
+      email: 'sahar.h.barak@gmail.com',
+    });
+    const f = loadLinkedAccounts(home);
+    assert.equal(f.version, 2);
+    assert.equal(f.accounts.github?.email, 'sahar.h.barak@gmail.com');
   } finally {
     rmSync(home, { recursive: true, force: true });
   }

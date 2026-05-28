@@ -175,9 +175,9 @@ The retrieval ceiling question is empirically closed. Twelve SOTA attacks across
 
 **Named communities to seed (not categories):**
 
-1. **Nix/NixOS community** — discourse.nixos.org (~40K members), GitHub nix-community (~600 active contributors). Value proposition: reproducible local tooling, no cloud dependency, Nix flake install is a natural fit for wellinformed.
+1. **Nix/NixOS community** — discourse.nixos.org (~40K members), GitHub nix-community (~600 active contributors). Value proposition: reproducible local tooling, no cloud dependency, Nix flake install is a natural fit for akashik.
 2. **llama.cpp + Ollama community** — github.com/ggerganov/llama.cpp discussions (65K stars, ~2K monthly commenters). They are already running local inference; adding a local knowledge graph to their Claude/Ollama setup is a natural extension.
-3. **Elixir/Phoenix community** — elixirforum.com (~50K members). Highly documentation-oriented, love functional programming, many run local dev environments. wellinformed's functional DDD architecture resonates.
+3. **Elixir/Phoenix community** — elixirforum.com (~50K members). Highly documentation-oriented, love functional programming, many run local dev environments. akashik's functional DDD architecture resonates.
 
 **Named seed content (specific, not categories):**
 
@@ -264,7 +264,7 @@ The `GraphNode` schema must be additive-only from v1 forward. The current `conso
 The curiosity-driven cache currently has no TTL — nodes persist indefinitely. A retracted paper or a deleted repo would remain in every peer's graph forever. There is no staggered invalidation mechanism. Fix: add a `expires_at: Date | null` field per node, derived from `source_uri` domain (arxiv: 365d, HN: 7d, web: 1d). On next read, expired nodes trigger a lazy re-fetch. Circuit breaker: if re-fetch fails, serve stale with a `stale_since` annotation rather than evicting (matches the graceful-degradation model of the Phase 17 federated search timeout).
 
 **Long tail / orphaned records:**
-The Phase 4 consolidation left 6,013 raw entries flagged `consolidated_at != null` but not pruned. These compete with consolidated_memory nodes in BM25 (confirmed cause of the 55% quality proxy failure in §2j). The quarantine pattern: after consolidation, raw entries move to a `consolidated_raw` partition that is excluded from BM25 but retained for vector search. Add a `wellinformed prune --room <room>` command that performs this partition split and verify with the entity-extraction probe (§2j path forward).
+The Phase 4 consolidation left 6,013 raw entries flagged `consolidated_at != null` but not pruned. These compete with consolidated_memory nodes in BM25 (confirmed cause of the 55% quality proxy failure in §2j). The quarantine pattern: after consolidation, raw entries move to a `consolidated_raw` partition that is excluded from BM25 but retained for vector search. Add a `akashik prune --room <room>` command that performs this partition split and verify with the entity-extraction probe (§2j path forward).
 
 **Auth error taxonomy:**
 Current errors: `PeerError` has 10 variants, `ScanError.SecretDetected` is a hard block, `BandwidthExceeded` is a ResultAsync error. None are structured as a taxonomy visible to the remote peer. Fix: define a `PeerResponseError` with three top-level codes: `UNAUTHORIZED` (invalid/missing signature on signed envelope), `FORBIDDEN` (peer DID not authorized to access room), `RATE_LIMITED` (BandwidthExceeded with `retry_after_ms`). These map to HTTP 401/403/429 semantics. The `FramedStream` in `search-sync.ts` (Phase 17) should encode these in the length-prefixed response frame so the requester can distinguish and retry appropriately.

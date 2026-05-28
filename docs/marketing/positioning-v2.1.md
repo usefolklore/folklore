@@ -193,7 +193,7 @@ Wave 2 (72.30% NDCG@10) is **within 2 NDCG points of bge-base-en-v1.5
 (74.0)** and 4.4 points below GPU-required monoT5-3B reranker stacks
 (76.7). At 137M parameters and 36ms p50 latency. The gap isn't an
 abyss; it's a rounding error most workloads won't notice. If you
-want the extra two points, flip `WELLINFORMED_EMBEDDER_BACKEND=rust`
+want the extra two points, flip `AKASHIK_EMBEDDER_BACKEND=rust`
 and get 75.22% with the Rust bge-base sidecar — no API, still CPU,
 still local.
 
@@ -201,7 +201,7 @@ still local.
 
 Two paths, both in-tree:
 
-- **Auto-prefetch** — the Claude Code hook runs `wellinformed ask`
+- **Auto-prefetch** — the Claude Code hook runs `akashik ask`
   before every Glob / Grep / Read / WebSearch / WebFetch. If your
   graph has the answer, Claude answers from it. If not, Claude makes
   the outbound call — and the PostToolUse hook auto-saves the result
@@ -231,8 +231,8 @@ You don't, and you shouldn't. The trust boundary is explicit:
   device-signed envelope carrying its user-DID authorization chain.
   Receivers verify the chain offline (three Ed25519 checks, sub-2 ms)
   and know exactly *which user, which device* produced the claim.
-  Domain-separation tags (`wellinformed-auth:v1:` vs
-  `wellinformed-sig:v1:`) prevent replay of authorization signatures
+  Domain-separation tags (`akashik-auth:v1:` vs
+  `akashik-sig:v1:`) prevent replay of authorization signatures
   as payload signatures — enforced in `src/domain/identity.ts`.
 - **`secret-gate`** scans every node against 14 patterns (API keys,
   JWT-anchored bearer tokens, private key blocks) before anything
@@ -285,7 +285,7 @@ Mirror the hero. Repeat the install command. No risk reversal needed
 — there's no trial, no sign-up, no credit card.
 
 > **Run your own node**
-> `git clone https://github.com/SaharBarak/wellinformed && npm i && bash scripts/bootstrap.sh`
+> `git clone https://github.com/SaharBarak/akashik && npm i && bash scripts/bootstrap.sh`
 >
 > One command to install, three minutes to index, no account required.
 > Connect to peers you trust when you're ready.
@@ -350,7 +350,7 @@ federated by protocol not by platform."
 - Key points: every node is a peer, runs the same code, answers
   answers FROM its own graph. No Akashik server. No directory.
   Just multiaddrs.
-- Proof: screenshot of `wellinformed peer list` with real peer IDs.
+- Proof: screenshot of `akashik peer list` with real peer IDs.
   MIT license. 396 tests pass. Phase log with commit SHAs.
 - Visual: the same users as chapter 1, now each their own node,
   edges between them instead of spokes to a center. Motion: soft
@@ -363,7 +363,7 @@ federated by protocol not by platform."
   per spec. Device keys authorized by the user DID. Signed envelopes
   verified offline in under 2 ms. Rotate a compromised device, keep
   the user DID.
-- Proof: `wellinformed identity show` output — real DID,
+- Proof: `akashik identity show` output — real DID,
   authorization chain, device pubkey. 38/38 identity tests.
 - Visual: a keypair unfolding from a pair of cryptographic glyphs.
   Authorization chain as a folded ribbon. Dark background to emphasise
@@ -388,8 +388,8 @@ federated by protocol not by platform."
 - Key points: `toolshed` + `research` always-on + the `oracle`
   bulletin board for peer Q&A. Layer B over libp2p pubsub for
   real-time. CRDT sync for durability.
-- Proof: GIF of `wellinformed oracle ask "..." --live` on peer A,
-  `wellinformed oracle show <qid>` on peer B within 2 s.
+- Proof: GIF of `akashik oracle ask "..." --live` on peer A,
+  `akashik oracle show <qid>` on peer B within 2 s.
 - Visual: three nodes, questions flowing between them as small
   glowing dots along the edges. Motion: subtle, continuous.
 

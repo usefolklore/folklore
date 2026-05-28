@@ -74,13 +74,13 @@ libp2p node lifecycle and ed25519 identity management:
 - `NodeStatus` — `{ peerId, listenAddrs, connectedPeers }` — observable node state
 - `loadOrCreateIdentity(path)` — `ResultAsync<PeerIdentity, PeerError>`: reads existing `peer-identity.json` or generates a new ed25519 keypair and persists it. Format: `{ privateKeyB64, peerId, createdAt }`. Uses `.raw` (64 bytes) for serialization, `privateKeyFromRaw()` for deserialization (libp2p 3.x API).
 - `createNode(identity, cfg)` — `ResultAsync<Libp2p, PeerError>`: constructs libp2p with TCP + `noise()` (SEC-05: all traffic encrypted; SEC-06: ed25519 peer auth via Noise handshake) + `yamux()`. Calls `await node.start()` explicitly.
-- `dialAndTag(node, rawAddr)` — `ResultAsync<string, PeerError>`: wraps synchronous `multiaddr()` parse in try/catch (maps to `PE.invalidMultiaddr`), dials, tags with `keep-alive-wellinformed`, returns remote PeerId string.
+- `dialAndTag(node, rawAddr)` — `ResultAsync<string, PeerError>`: wraps synchronous `multiaddr()` parse in try/catch (maps to `PE.invalidMultiaddr`), dials, tags with `keep-alive-akashik`, returns remote PeerId string.
 - `hangUpPeer(node, peerIdStr)` — `ResultAsync<void, PeerError>`: disconnects peer. Error mapped to `PE.transportError` (not `PE.notFound`).
 - `getNodeStatus(node)` — pure snapshot of peerId, listenAddrs, connectedPeers.
 
 ### src/infrastructure/peer-store.ts (new)
 
-Atomic persistence for `~/.wellinformed/peers.json`:
+Atomic persistence for `~/.akashik/peers.json`:
 
 - `PeerRecord` — `{ id, addrs, addedAt, label? }` — readonly peer entry
 - `PeersFile` — `{ peers: readonly PeerRecord[] }` — file envelope

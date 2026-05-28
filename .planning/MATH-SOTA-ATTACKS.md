@@ -5,7 +5,7 @@
 **Target:** beat 75.22% NDCG@10 on BEIR SciFact at ≤500M params, CPU, no GPU
 **Honest priors:** Phase 25 already extracts what the parameter tier can give from a single encoder. Lifts of >2pt require either (a) extracting orthogonal signal from already-encoded vectors that the cosine kernel discards, or (b) better fusion math than RRF k=60. Anything that re-touches the encoder family has been measured null (Wave 3, Wave 4, Contextual Retrieval, Qwen3-Int4, 3-way ensemble). What I propose below operates **strictly post-encoder** on the 768-dim bge-base outputs we already have cached in `sota.db`.
 
-The graph (wellinformed search) was probed for prior art on each idea: no local research notes or indexed papers cover **whitening, optimal-transport ranking, isotonic-RRF, conformal pruning, or PRF/Rocchio in the v4 hybrid path**. These are net-new attack vectors for this codebase.
+The graph (akashik search) was probed for prior art on each idea: no local research notes or indexed papers cover **whitening, optimal-transport ranking, isotonic-RRF, conformal pruning, or PRF/Rocchio in the v4 hybrid path**. These are net-new attack vectors for this codebase.
 
 ---
 

@@ -25,12 +25,12 @@ is a centralisation failure dressed in P2P clothes.
 
 ## Why this is solvable in our architecture
 
-Two facts about the existing wellinformed code make load-spreading
+Two facts about the existing Akashik code make load-spreading
 **incremental, not architectural**:
 
-1. **Touch already replicates chunks.** When peer A `wellinformed touch`-es a
+1. **Touch already replicates chunks.** When peer A `akashik touch`-es a
    chunk from peer B, that chunk lands in A's `graph.json` with
-   `_wellinformed_source_peer: B` provenance. A is now a secondary source for
+   `_akashik_source_peer: B` provenance. A is now a secondary source for
    anyone asking A about the same subject. We don't need new wire protocol —
    we need to make this re-seeding *intentional* instead of accidental.
 2. **Receiver-side rate limiting already exists.** `src/infrastructure/recall-sync.ts`
@@ -59,8 +59,8 @@ Discussion below.
 
 ### 1. Replication-on-touch — the foundational primitive
 
-**What it does.** `wellinformed touch --peer B --label "lemlist pricing"` pulls
-the chunk and writes it to A's local `graph.json` with `_wellinformed_source_peer: B`.
+**What it does.** `akashik touch --peer B --label "lemlist pricing"` pulls
+the chunk and writes it to A's local `graph.json` with `_akashik_source_peer: B`.
 A's next `ask` for "lemlist pricing" surfaces this chunk *as if A had originally
 indexed it*, with peer-B attribution preserved for audit.
 
@@ -70,7 +70,7 @@ on A's disk after the pull.
 **What's missing.**
 - Touch is *manual* — the user has to know to run `touch` for a specific node.
   The natural instinct is to pull-on-ask, automatically. Add a `--auto-pull`
-  flag to `wellinformed ask --peers` that, on a high-confidence federated
+  flag to `akashik ask --peers` that, on a high-confidence federated
   result, also touches the underlying chunks so they're locally durable for
   next time.
 - Bandwidth: an over-aggressive auto-pull means every federated ask doubles
@@ -172,7 +172,7 @@ floor" recommendation.
 ### 5. Re-seeder credit — knowledge actually propagates
 
 **What it does.** When peer A answers peer Y's query with chunks A originally
-*touched* from peer B (carrying `_wellinformed_source_peer: B`), the
+*touched* from peer B (carrying `_akashik_source_peer: B`), the
 satisfaction-based reputation update credits **both A and B**. Specifically:
 
 - B gets full credit (it's the original source)
@@ -191,7 +191,7 @@ re-seeder rep gain at the *original* peer's rep on that subject, so circular
 amplification can't exceed the source.
 
 **Files:** `src/application/update-peer-reputation.ts` (new — extend the
-local update path to credit `_wellinformed_source_peer` chains).
+local update path to credit `_akashik_source_peer` chains).
 
 ---
 
@@ -211,7 +211,7 @@ locally — F's queries are answered locally, X is left alone.
 chunk sizes). Solvable by capping K and only pulling chunk *summaries*, not
 full bodies — full body pulled lazily on first ask.
 
-**Files:** new wire protocol `/wellinformed/seed/1.0.0`. Substantial — Phase 3
+**Files:** new wire protocol `/akashik/seed/1.0.0`. Substantial — Phase 3
 or later.
 
 ---
@@ -305,7 +305,7 @@ Three mechanisms working together close the loop:
 **Why this is enough.** Item (1) is a 50-line change in
 `peer-reputation.ts:rank_score` + a sliding window in `federated-search.ts`.
 Item (2) is a `--auto-pull` flag on `ask --peers` plus a satisfaction-gate.
-Item (3) is the rep-update path crediting `_wellinformed_source_peer` chains.
+Item (3) is the rep-update path crediting `_akashik_source_peer` chains.
 None of them needs new wire protocol; the touch protocol is already the
 replication channel.
 

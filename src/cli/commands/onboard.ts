@@ -1,12 +1,12 @@
 /**
- * `wellinformed onboard` — first-run installer + onboarding wizard.
+ * `akashik onboard` — first-run installer + onboarding wizard.
  *
  * Eight numbered steps that take a fresh machine to a wired install:
  *
  *   1. Pick the data home directory
  *   2. Run doctor (informational)
  *   3. Materialise the libp2p identity
- *   4. Ensure system rooms (toolshed + research) are shareable
+ *   4. Confirm per-node sharing primitives ready (V5: no system rooms)
  *   5. Wire Claude Code hooks + strip ghost helper-script entries
  *   6. Optionally ingest past Claude Code sessions (detached)
  *   7. Start the daemon
@@ -15,7 +15,7 @@
  * The UI uses @clack/prompts so the surface matches modern installer
  * UX (bordered intro/outro, spinners with live status, clean Ctrl-C
  * cancellation). Onboarding deliberately does NOT index the cwd —
- * indexing is the user's intent, exposed as `wellinformed this`.
+ * indexing is the user's intent, exposed as `akashik this`.
  */
 
 import {
@@ -42,7 +42,6 @@ import {
 } from '@clack/prompts';
 import { formatError } from '../../domain/errors.js';
 import { loadOrCreateIdentity } from '../../infrastructure/peer-transport.js';
-import { ensureSystemRoomsShared, loadSharedRooms } from '../../infrastructure/share-store.js';
 import { loadPeers } from '../../infrastructure/peer-store.js';
 import { isRunning, readPid } from '../../daemon/loop.js';
 import { runtimePaths } from '../runtime.js';
@@ -144,7 +143,7 @@ const ensure = <T>(v: T | symbol): T => {
 // ─────────────── steps ─────────────────────
 
 const stepHome = async (flags: Flags): Promise<string> => {
-  const def = flags.home ?? process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
+  const def = flags.home ?? process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
   const chosen = flags.yes
     ? def
     : ensure(
@@ -155,11 +154,11 @@ const stepHome = async (flags: Flags): Promise<string> => {
           validate: (v) => (v && v.trim() ? undefined : 'path required'),
         }),
       );
-  process.env.WELLINFORMED_HOME = chosen;
+  process.env.AKASHIK_HOME = chosen;
   mkdirSync(chosen, { recursive: true });
-  if (chosen !== join(homedir(), '.wellinformed')) {
+  if (chosen !== join(homedir(), '.akashik')) {
     note(
-      `Add to your shell profile so future sessions agree:\n  export WELLINFORMED_HOME="${chosen}"`,
+      `Add to your shell profile so future sessions agree:\n  export AKASHIK_HOME="${chosen}"`,
       'non-default home',
     );
   }
@@ -175,7 +174,7 @@ const stepDoctor = (): void => {
   if (r.status === 0) {
     sp.stop('runtime healthy');
   } else {
-    sp.stop("runtime check reported issues — run 'wellinformed doctor --fix'");
+    sp.stop("runtime check reported issues — run 'akashik doctor --fix'");
   }
 };
 
@@ -192,35 +191,57 @@ const stepIdentity = async (home: string): Promise<string | null> => {
 };
 
 /**
- * Optional GitHub OAuth link — wires a verified GitHub handle to the
- * local DID via Device Flow. Skippable; users without
- * `WELLINFORMED_GITHUB_CLIENT_ID` configured see a clear "skip + how
- * to enable later" message rather than a broken flow.
+ * MANDATORY GitHub OAuth link (Phase 26 stage B). akashik communication
+ * and identity are GitHub-anchored — every node is tagged github_user
+ * at write time, federation envelopes pin the peer's claimed handle —
+ * so a fresh install MUST link an account before the wizard advances.
  *
- * The actual OAuth round-trip lives in src/cli/commands/login.ts; this
- * step calls it via the same dispatcher the standalone command uses.
+ * Three abort paths:
+ *   - No AKASHIK_GITHUB_CLIENT_ID  → process.exit(1) with setup steps
+ *   - User declines the prompt     → process.exit(1) with re-run hint
+ *   - OAuth flow fails             → process.exit(1) with retry hint
+ *
+ * Idempotent: if linked-accounts.json already has a github entry, the
+ * step short-circuits with "already linked" and proceeds. Re-running
+ * onboard never re-triggers an OAuth round-trip the user doesn't need.
+ *
+ * The actual OAuth flow lives in src/cli/commands/login.ts; this step
+ * calls it via the same dispatcher the standalone command uses.
  */
-const stepLoginGithub = async (flags: Flags): Promise<void> => {
-  const clientId = process.env.WELLINFORMED_GITHUB_CLIENT_ID;
-  if (!clientId || clientId.trim().length === 0) {
-    note(
-      [
-        'Linking a GitHub identity to your local DID lets P2P peers verify',
-        'your signed envelopes against your public GitHub profile.',
-        '',
-        'To enable later:',
-        '  1. Register a Device Flow OAuth app:',
-        '     https://github.com/settings/applications/new',
-        '  2. export WELLINFORMED_GITHUB_CLIENT_ID="Iv1.<your_id>"',
-        '  3. wellinformed login',
-      ].join('\n'),
-      'GitHub login (optional, skipped — no client id configured)',
-    );
+const stepLoginGithub = async (flags: Flags, home: string): Promise<void> => {
+  // Idempotency: skip cleanly when already linked.
+  const { loadLinkedAccounts } = await import('../../infrastructure/linked-accounts.js');
+  const linked = loadLinkedAccounts(home);
+  if (linked.accounts.github?.handle) {
+    const gh = linked.accounts.github;
+    log.success(`github already linked · @${gh.handle}${gh.email ? ` <${gh.email}>` : ''}`);
     return;
   }
 
+  const clientId = process.env.AKASHIK_GITHUB_CLIENT_ID;
+  if (!clientId || clientId.trim().length === 0) {
+    note(
+      [
+        'akashik identity is GitHub-anchored — every node you author is',
+        'tagged with your verified handle, and peers verify that handle',
+        'against your local signing key before accepting your nodes.',
+        '',
+        'No GitHub login = no shared graph. To finish onboarding:',
+        '  1. Register a Device Flow OAuth app:',
+        '     https://github.com/settings/applications/new',
+        '     (any callback URL; enable "Device Flow" in app settings)',
+        '  2. export AKASHIK_GITHUB_CLIENT_ID="Iv1.<your_id>"',
+        '  3. Re-run `akashik onboard`',
+      ].join('\n'),
+      'GitHub login required — AKASHIK_GITHUB_CLIENT_ID not set',
+    );
+    cancel('onboarding cannot proceed without a GitHub identity.');
+    process.exit(1);
+  }
+
+  // --yes auto-confirms login (CI path). Interactive: explicit confirm.
   const proceed = flags.yes
-    ? false
+    ? true
     : ensure(
         await confirm({
           message: `Link your GitHub identity now via ${clientId.slice(0, 8)}…?`,
@@ -228,30 +249,29 @@ const stepLoginGithub = async (flags: Flags): Promise<void> => {
         }),
       );
   if (!proceed) {
-    log.message('skipped — run `wellinformed login` when convenient');
-    return;
+    cancel('GitHub link declined — onboarding aborted. Re-run when you\'re ready to link.');
+    process.exit(1);
   }
 
   // Defer to the standalone login command so the flow + persistence
-  // logic is identical to `wellinformed login`. One canonical path
-  // keeps the codex round-3 "behavioral inconsistency across parallel
-  // surfaces" verdict from re-emerging here.
+  // logic is identical to `akashik login`. One canonical path keeps
+  // behavior consistent across the wizard and the direct command.
   const { login } = await import('./login.js');
   const exit = await login([]);
   if (exit !== 0) {
-    log.warn('login failed — `wellinformed login` to retry');
+    cancel('GitHub login failed — onboarding aborted. Run `akashik login` to retry.');
+    process.exit(1);
   }
 };
 
-const stepSystemRooms = async (home: string): Promise<void> => {
+const stepSystemRooms = async (_home: string): Promise<void> => {
+  // V5 (Phase 24): rooms deleted. The boot step that pre-shared the
+  // toolshed + research system rooms is a no-op now — sharing happens
+  // per-node via the `private` flag. Kept as a step so the numbered
+  // wizard output stays stable for users following docs.
   const sp = spinner();
-  sp.start('marking system rooms shareable');
-  const r = await ensureSystemRoomsShared(join(home, 'shared-rooms.json'));
-  if (r.isErr()) {
-    sp.stop(`system rooms: ${formatError(r.error)}`);
-    return;
-  }
-  sp.stop('system rooms ready: toolshed (code/deps/git), research (arxiv/hn/rss/web)');
+  sp.start('sharing primitives');
+  sp.stop('per-node sharing ready (V5: rooms deleted, use `--private` on save)');
 };
 
 const stepClaudeInstall = async (projectDir: string): Promise<void> => {
@@ -291,12 +311,12 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
   }
   const explainer = [
     'Reads every transcript under ~/.claude/projects/**/*.jsonl.',
-    'Each becomes a searchable node in the local-only "sessions" room.',
+    'Each becomes a searchable, locally-stored node (V5: private:true by default).',
     'Secrets pre-scan strips API keys / tokens / .env values before embed.',
-    "The 'sessions' room is hard-blocked from P2P sharing — stays local.",
+    "Session nodes never federate — they're hard-blocked at the sharing gate.",
     '',
     'Default is NO because re-walking can be heavy on the first run.',
-    "Skip if unsure; you can always run 'wellinformed trigger --room sessions' later.",
+    "Skip if unsure; you can always run 'akashik trigger' later.",
   ].join('\n');
   note(explainer, 'past Claude sessions');
 
@@ -309,18 +329,18 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
         }),
       );
   if (!yes) {
-    log.message('skipped — run `wellinformed trigger --room sessions` when convenient');
+    log.message('skipped — run `akashik trigger` when convenient');
     return;
   }
 
   const logPath = join(home, 'sessions-ingest.log');
   const child = spawn(
     process.execPath,
-    [process.argv[1], 'trigger', '--room', 'sessions'],
+    [process.argv[1], 'trigger'],
     {
       detached: true,
       stdio: ['ignore', 'inherit', 'inherit'],
-      env: { ...process.env, WELLINFORMED_HOME: home },
+      env: { ...process.env, AKASHIK_HOME: home },
     },
   );
   child.unref();
@@ -360,11 +380,11 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
   }
   if (!childAlive) {
     if (childExitCode === 0) {
-      sp.stop('ingest finished quickly — sessions room is up to date');
+      sp.stop('ingest finished quickly — session entries are up to date');
     } else {
       sp.stop(`ingest exited early (code=${childExitCode ?? 'error'})`);
       note(
-        `The 'wellinformed trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - WELLINFORMED_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  wellinformed trigger --room sessions`,
+        `The 'akashik trigger' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - AKASHIK_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  akashik trigger`,
         'session ingest failed',
       );
     }
@@ -372,7 +392,7 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
   }
   sp.stop(`ingest still running in background (pid=${child.pid})`);
   note(
-    `Track progress with:\n  wellinformed sessions status\n  tail -f ${logPath}\n\nThe daemon will pick up the new nodes once it starts.`,
+    `Track progress with:\n  akashik sessions status\n  tail -f ${logPath}\n\nThe daemon will pick up the new nodes once it starts.`,
     'sessions ingest detached',
   );
   void logPath; // reserved for future stdout redirect
@@ -438,36 +458,34 @@ const stepDaemon = async (home: string): Promise<void> => {
 const stepP2pStatus = async (home: string, peerId: string | null): Promise<void> => {
   const peers = await loadPeers(join(home, 'peers.json'));
   const known = peers.isOk() ? peers.value.peers.length : 0;
-  const shared = await loadSharedRooms(join(home, 'shared-rooms.json'));
-  const sharedCount = shared.isOk() ? shared.value.rooms.length : 0;
 
   const lines = [
     `identity:     ${peerId ?? '<unknown>'}`,
     `known peers:  ${known} (daemon dials these on connect)`,
-    `shared rooms: ${sharedCount} (toolshed + research always-on)`,
+    `sharing:      V5 per-node — public by default, --private to opt out`,
   ];
   if (known === 0) {
     lines.push('');
     lines.push('No peers yet. Your graph works fully offline; federation is opt-in.');
     lines.push('Add a bootstrap peer:');
-    lines.push('  wellinformed peer add /ip4/<host>/tcp/<port>/p2p/<id>');
+    lines.push('  akashik peer add /ip4/<host>/tcp/<port>/p2p/<id>');
   }
   note(lines.join('\n'), 'P2P status');
 };
 
 // ─────────────── usage + entry ─────────────
 
-const USAGE = `usage: wellinformed onboard [--yes] [--home DIR] [--no-sessions]
+const USAGE = `usage: akashik onboard [--yes] [--home DIR] [--no-sessions]
 
   --yes, -y       accept every default; skip optional prompts
-  --home DIR      data home (graph + vectors + model cache); also via $WELLINFORMED_HOME
+  --home DIR      data home (graph + vectors + model cache); also via $AKASHIK_HOME
   --no-sessions   skip ingesting past Claude Code sessions
 
-  Run once on a fresh machine. Sets up identity, system rooms, hooks,
-  daemon, and prints what wellinformed will do on every session.
+  Run once on a fresh machine. Sets up identity, hooks, daemon, and prints
+  what akashik will do on every session.
 
   Onboard does NOT index any folder. To index a project, cd into it and
-  run 'wellinformed this me' (private) or 'wellinformed this everyone'
+  run 'akashik this me' (private) or 'akashik this everyone'
   (P2P-shared, secrets-audited).`;
 
 export const onboard = async (args: readonly string[]): Promise<number> => {
@@ -478,7 +496,7 @@ export const onboard = async (args: readonly string[]): Promise<number> => {
   const flags = parseFlags(args);
   const projectDir = process.cwd();
 
-  intro('wellinformed onboard');
+  intro('akashik onboard');
   note(
     [
       'CPU-local knowledge graph + opt-in P2P federation.',
@@ -499,9 +517,9 @@ export const onboard = async (args: readonly string[]): Promise<number> => {
   const peerId = await stepIdentity(home);
 
   log.step('4/9 · link GitHub identity (optional)');
-  await stepLoginGithub(flags);
+  await stepLoginGithub(flags, home);
 
-  log.step('5/9 · system rooms');
+  log.step('5/9 · sharing primitives');
   await stepSystemRooms(home);
 
   log.step('6/9 · wire Claude Code hooks');
@@ -525,18 +543,18 @@ export const onboard = async (args: readonly string[]): Promise<number> => {
       '  · daemon         fetches sources, consolidates memory, syncs P2P rooms',
       '',
       'Daily commands:',
-      '  wellinformed this              index the current folder, keep it private',
-      '  wellinformed this everyone     index + share with the P2P network',
-      '  wellinformed ask "..."         semantic search across your graph',
-      '  wellinformed trigger           refresh all rooms',
-      '  wellinformed peer list         see who you talk to',
-      '  wellinformed doctor            health check',
+      '  akashik this              index the current folder, keep it private',
+      '  akashik this everyone     index + share with the P2P network',
+      '  akashik ask "..."         semantic search across your graph',
+      '  akashik trigger           refresh all rooms',
+      '  akashik peer list         see who you talk to',
+      '  akashik doctor            health check',
       '',
       'Privacy:',
-      `  · Everything stays under ${process.env.WELLINFORMED_HOME}`,
+      `  · Everything stays under ${process.env.AKASHIK_HOME}`,
       "  · 'this me' never leaves your machine",
       "  · 'this everyone' enters the secrets-audit gate before federation",
-      "  · Stop the network at any time: wellinformed daemon stop",
+      "  · Stop the network at any time: akashik daemon stop",
     ].join('\n'),
     'you are wired in',
   );

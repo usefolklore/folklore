@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Production-grade P2P networking for wellinformed. NAT traversal via libp2p circuit-relay-v2 + dcutr hole punching + UPnP. Bandwidth management at the application layer with layered limits (updates/sec per peer per room, concurrent syncs per tick). Connection health monitoring via passive libp2p events with in-memory degraded-peer tracking. A real 10-peer in-process integration test proves NET-04's "10+ simultaneous peers without degradation." This is the last phase of v2.0 — after Phase 18, the P2P milestone is shippable.
+Production-grade P2P networking for akashik. NAT traversal via libp2p circuit-relay-v2 + dcutr hole punching + UPnP. Bandwidth management at the application layer with layered limits (updates/sec per peer per room, concurrent syncs per tick). Connection health monitoring via passive libp2p events with in-memory degraded-peer tracking. A real 10-peer in-process integration test proves NET-04's "10+ simultaneous peers without degradation." This is the last phase of v2.0 — after Phase 18, the P2P milestone is shippable.
 
 </domain>
 
@@ -35,7 +35,7 @@ Production-grade P2P networking for wellinformed. NAT traversal via libp2p circu
 
 ### Multi-Peer Testing (NET-04)
 - **In-process 10-peer integration test** — spin up 10 short-lived libp2p nodes on OS-assigned ports, connect in a mesh, exchange one share update + one federated search, verify connectivity
-- **Runtime budget: 30-45 seconds** — slower than unit tests but acceptable. Tagged as a "slow" test; skippable via `WELLINFORMED_SKIP_SLOW=1`
+- **Runtime budget: 30-45 seconds** — slower than unit tests but acceptable. Tagged as a "slow" test; skippable via `AKASHIK_SKIP_SLOW=1`
 - **Shared `afterAll` cleanup** stops every node in the test file, catching individual stop failures so cleanup can't cascade into test failures
 - **Pass bar: hard = all 10 nodes connected to at least 3 others** (NET-04 literal text is "10+ connected simultaneously without degradation"); soft logging if fewer actually connect, but assertion fails
 
@@ -55,7 +55,7 @@ Production-grade P2P networking for wellinformed. NAT traversal via libp2p circu
 - `src/infrastructure/peer-store.ts` — `PeerRecord` already has `discovery_method`; Phase 18 does NOT modify the persisted schema (health is in-memory only)
 - `src/cli/commands/peer.ts` — `peer list` output already has discovery_method column; add `health` column the same way
 - `src/daemon/loop.ts` — Phase 17 wired search protocol; Phase 18 adds the health event listener registration alongside
-- `~/.wellinformed/share-log.jsonl` — extend with new action types per Phase 15-17 precedent
+- `~/.akashik/share-log.jsonl` — extend with new action types per Phase 15-17 precedent
 
 ### Established Patterns
 - Functional DDD, neverthrow, no classes in domain/app

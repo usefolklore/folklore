@@ -5,7 +5,7 @@ workflow (`marketing/storybrand-messaging-engine.md` in the
 `SaharBarak/skills-and-workflows` repo) against Akashik's actual
 mission. Captured 2026-05-26.
 
-**Brand name:** Akashik (formerly project codename `wellinformed`).
+**Brand name:** Akashik (formerly project codename `akashik`).
 The name borrows from the **Akashic Records** — the mythological
 compendium of all knowledge ever held by the human collective —
 and reframes the idea as concrete, contributor-owned infrastructure:
@@ -386,14 +386,14 @@ mechanism doc.
 ## Codebase ↔ brand-name reality
 
 The codebase, npm package, and existing GitHub repo are still
-called `wellinformed` as of this writing. The brand-marketing
+called `akashik` as of this writing. The brand-marketing
 name is **Akashik**. Two-name period is normal during a rebrand;
 the package will be renamed before public launch. Until then:
 
 - Marketing materials, the website, social, and press: **Akashik**
 - Code, packages, repo URLs, internal docs (CLAUDE.md, HANDOFF.md,
-  PROJECT.md, source code): **wellinformed** (for now)
-- Migration plan to rename `wellinformed → akashik` in the
+  PROJECT.md, source code): **akashik** (for now)
+- Migration plan to rename `akashik → akashik` in the
   codebase is a separate workstream — likely a single coordinated
   rename PR + npm package alias + DNS + GitHub repo redirect.
 

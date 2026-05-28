@@ -14,13 +14,13 @@ first; do not improvise during execution.
 
 These apply to every artifact (README, landing page, social pack):
 
-- **GitHub repo (target):** `github.com/twocirclestudios/wellinformed`
-  (currently `github.com/SaharBarak/wellinformed`; migration pending)
+- **GitHub repo (target):** `github.com/twocirclestudios/akashik`
+  (currently `github.com/SaharBarak/akashik`; migration pending)
 - **Install path (canonical, npm, homebrew):**
 
   ```bash
-  git clone https://github.com/twocirclestudios/wellinformed.git
-  cd wellinformed
+  git clone https://github.com/twocirclestudios/akashik.git
+  cd akashik
   npm install
   npm run bootstrap
   ```
@@ -32,7 +32,7 @@ These apply to every artifact (README, landing page, social pack):
 - **Tighter one-liner (post-npm-publish, future):**
 
   ```bash
-  npx -y wellinformed init
+  npx -y akashik init
   ```
 
   Pre-publish, the four-line clone-and-bootstrap is the canonical path.
@@ -40,12 +40,12 @@ These apply to every artifact (README, landing page, social pack):
 - **Verbatim hero install strip (use this exact text):**
 
   ```
-  $ git clone https://github.com/twocirclestudios/wellinformed.git
-  $ cd wellinformed && npm install && npm run bootstrap
+  $ git clone https://github.com/twocirclestudios/akashik.git
+  $ cd akashik && npm install && npm run bootstrap
   ```
 
-**Migration touchpoints — every reference to `SaharBarak/wellinformed`
-must flip to `twocirclestudios/wellinformed` when execution starts.**
+**Migration touchpoints — every reference to `SaharBarak/akashik`
+must flip to `twocirclestudios/akashik` when execution starts.**
 Known files holding the old org:
 
 - `README.md` (multiple star/fork badge URLs + repo links)
@@ -131,8 +131,8 @@ Plus three smaller misses:
 │   └──────────────────────────────────────────┘                    │
 │   ╔══════════════════════════════════════════╗                    │
 │   ║  $ git clone https://github.com/         ║                    │
-│   ║      twocirclestudios/wellinformed.git   ║                    │
-│   ║  $ cd wellinformed && npm install &&     ║                    │
+│   ║      twocirclestudios/akashik.git   ║                    │
+│   ║  $ cd akashik && npm install &&     ║                    │
 │   ║      npm run bootstrap          [⎘ copy] ║                    │
 │   ╚══════════════════════════════════════════╝                    │
 │                                                                   │
@@ -178,25 +178,25 @@ Three install commands surfaced, default `git clone`:
 
 ```bash
 # git clone (default — canonical today)
-$ git clone https://github.com/twocirclestudios/wellinformed.git
-$ cd wellinformed && npm install && npm run bootstrap
+$ git clone https://github.com/twocirclestudios/akashik.git
+$ cd akashik && npm install && npm run bootstrap
 
 # npm (post-publish, future)
-$ npx -y wellinformed init
+$ npx -y akashik init
 
 # Homebrew (post-tap-publish, future)
-$ brew install twocirclestudios/wellinformed/wellinformed
+$ brew install twocirclestudios/akashik/akashik
 ```
 
 **CTA row** (RESOLVED — 2 live signals + 1 conversion action; full
 implementation in §2.6):
 
 - Counter A: `· 12 peers online` (clickable, links to repo `/network`
-  page; will be `wellinformed peer list` JSON output until built)
+  page; will be `akashik peer list` JSON output until built)
 - Counter B: `· 4 domains indexed` (clickable, scrolls to `#arch`
   rooms section)
 - Action: `☆ Star on GitHub` (primary `btn-primary`, emerald fill,
-  links to `https://github.com/twocirclestudios/wellinformed`)
+  links to `https://github.com/twocirclestudios/akashik`)
 
 The "see it in 60 seconds" CTA from the round-1 draft is **dropped**.
 Demo section sits one scroll below the hero; nav links to `#demo`;
@@ -320,9 +320,9 @@ const block    = document.getElementById('install-code');
 const copyBtn  = document.getElementById('install-copy');
 
 const commands = {
-  git:      '$ git clone https://github.com/twocirclestudios/wellinformed.git\n$ cd wellinformed && npm install && npm run bootstrap',
-  npm:      '$ npx -y wellinformed init',
-  homebrew: '$ brew install twocirclestudios/wellinformed/wellinformed',
+  git:      '$ git clone https://github.com/twocirclestudios/akashik.git\n$ cd akashik && npm install && npm run bootstrap',
+  npm:      '$ npx -y akashik init',
+  homebrew: '$ brew install twocirclestudios/akashik/akashik',
 };
 
 let active = 'git';
@@ -419,14 +419,14 @@ trust priming).
 ```html
 <div class="hero-ctas" data-reveal style="--d: 3">
   <a class="counter" id="counter-peers"
-     href="https://github.com/twocirclestudios/wellinformed">
+     href="https://github.com/twocirclestudios/akashik">
     · <span data-counter="peers">—</span> peers online
   </a>
   <a class="counter" id="counter-domains"
      href="#arch">
     · <span data-counter="domains">—</span> domains indexed
   </a>
-  <a class="btn btn-primary" href="https://github.com/twocirclestudios/wellinformed">
+  <a class="btn btn-primary" href="https://github.com/twocirclestudios/akashik">
     ☆ Star on GitHub
     <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
       <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.6"
@@ -681,7 +681,7 @@ Anchor: `#how`. Position: between Demo (`#demo`) and Quickstart
 >
 > Akashik registers a `UserPromptSubmit` hook with Claude Code
 > (Codex, Gemini, and any MCP host work the same way). When you type
-> a message, the hook runs `wellinformed ask` against your local
+> a message, the hook runs `akashik ask` against your local
 > graph — and injects the top matches as `additionalContext` before
 > the LLM reads a single token of your prompt.
 
@@ -710,8 +710,8 @@ turns visitor-into-user):
 
 ```bash
 # wire it once, globally:
-claude mcp add --scope user wellinformed -- wellinformed mcp
-wellinformed claude install
+claude mcp add --scope user akashik -- akashik mcp
+akashik claude install
 # every project gets it. no per-repo config.
 ```
 
@@ -739,8 +739,8 @@ undersized, the install command still uses the bash form.
 │   You are the next peer. Every query you answer adds to what      │
 │   the whole network knows.                                        │
 │                                                                   │
-│   $ git clone https://github.com/twocirclestudios/wellinformed.git│
-│   $ cd wellinformed && npm install && npm run bootstrap           │
+│   $ git clone https://github.com/twocirclestudios/akashik.git│
+│   $ cd akashik && npm install && npm run bootstrap           │
 │                                                                   │
 │   [ ☆ Star on GitHub ]   [ Join Discussions ]                    │
 │                                                                   │
@@ -762,13 +762,13 @@ undersized, the install command still uses the bash form.
 **Install block** (same npm flow as the hero — repeat is intentional, the visitor scrolled here to copy):
 
 ```
-$ git clone https://github.com/twocirclestudios/wellinformed.git
-$ cd wellinformed && npm install && npm run bootstrap
+$ git clone https://github.com/twocirclestudios/akashik.git
+$ cd akashik && npm install && npm run bootstrap
 ```
 
 **CTA pair:**
-- Primary: `☆ Star on GitHub` → `https://github.com/twocirclestudios/wellinformed`
-- Ghost: `Join Discussions` → `https://github.com/twocirclestudios/wellinformed/discussions`
+- Primary: `☆ Star on GitHub` → `https://github.com/twocirclestudios/akashik`
+- Ghost: `Join Discussions` → `https://github.com/twocirclestudios/akashik/discussions`
   (use Discord URL if/when one exists; until then, GitHub Discussions
   is the default community surface)
 
@@ -776,9 +776,9 @@ $ cd wellinformed && npm install && npm run bootstrap
 > MIT · no account · no API key · no cloud · CPU-only
 
 **Live signals (small, mono, ink-mute):**
-- `shields.io/github/stars/twocirclestudios/wellinformed?style=social`
-- `shields.io/github/v/release/twocirclestudios/wellinformed`
-- (optional) `shields.io/npm/v/wellinformed` once published
+- `shields.io/github/stars/twocirclestudios/akashik?style=social`
+- `shields.io/github/v/release/twocirclestudios/akashik`
+- (optional) `shields.io/npm/v/akashik` once published
 
 ---
 
@@ -791,7 +791,7 @@ or the section reorder.
 
 Current (`docs/index.html` ~line 1042):
 ```html
-<img src="https://raw.githubusercontent.com/SaharBarak/wellinformed/main/demo/scene-claude.gif" …>
+<img src="https://raw.githubusercontent.com/SaharBarak/akashik/main/demo/scene-claude.gif" …>
 ```
 
 New:
@@ -865,7 +865,7 @@ the next commit until the previous one is approved.
 - Add hero install strip (npm-only)
 - Rewrite CTAs (`See it in 60 seconds`, `Star on GitHub`)
 - Update meta strip (4 stats — keep current)
-- Update repo references to `twocirclestudios/wellinformed`
+- Update repo references to `twocirclestudios/akashik`
 - Drop Three.js import + scene code (~1000 LOC removed)
 - Hero section only — leave the rest of the page untouched
 
@@ -911,9 +911,9 @@ Commit 3 is polish-only, ships cleanly once 1+2 are accepted.
 These need a one-line answer each. Capturing here so we don't get
 stuck mid-execution:
 
-1. **Repo migration timing.** Is `twocirclestudios/wellinformed` live
+1. **Repo migration timing.** Is `twocirclestudios/akashik` live
    yet? If not, do we ship the redesign with the new org URLs (links
-   404 until upload) or keep `SaharBarak/wellinformed` until the move
+   404 until upload) or keep `SaharBarak/akashik` until the move
    is done?
    - Recommended: do the migration FIRST (push to new org), then ship
      redesign with correct URLs. Otherwise we'd ship dead links to HN.
@@ -936,10 +936,10 @@ stuck mid-execution:
    - Recommended: keep `<img>` and accept the 2.2.2 finding for now;
      revisit if we add a third gif or extend to >30 s.
 
-5. **npm package name.** Will we publish as `wellinformed` or
-   `@twocircle/wellinformed` (scoped)?
-   - Recommended: try `wellinformed` first — short, memorable. If
-     taken on npm, fall back to `@twocircle/wellinformed`.
+5. **npm package name.** Will we publish as `akashik` or
+   `@twocircle/akashik` (scoped)?
+   - Recommended: try `akashik` first — short, memorable. If
+     taken on npm, fall back to `@twocircle/akashik`.
 
 6. **Live-counter polling cadence.** §2.6 (round-3 update) specifies
    the hero counters are LIVE — polling `/api/stats` every 30 s,
@@ -957,12 +957,12 @@ stuck mid-execution:
    URL until a `/network` page exists. Build that page now, or ship
    with the repo-link fallback and add it post-launch?
    - Recommended: ship with repo-link fallback. The page is a
-     cheap follow-up — JSON dump of `wellinformed peer list --json`
+     cheap follow-up — JSON dump of `akashik peer list --json`
      pretty-printed in a `/network/index.html` static file, regenerated
      by the same cron that writes `/_counters.json`.
 
 8. **Homebrew tap.** §2.5 surfaces `brew install
-   twocirclestudios/wellinformed/wellinformed` as one of the three
+   twocirclestudios/akashik/akashik` as one of the three
    install channels. Does the tap exist? If not, do we (a) ship the
    pill with Homebrew shown today and a "coming soon" footnote, or
    (b) hide the Homebrew segment until the tap is published?
@@ -972,11 +972,11 @@ stuck mid-execution:
      for v1; restore Homebrew as a third segment when ready.
 
 9. **Live-demo server hosting.** §11 needs a public `POST /api/ask`
-   endpoint that runs `wellinformed ask --peers --json` against the
+   endpoint that runs `akashik ask --peers --json` against the
    bootstrap node. Hosted as a Cloudflare Worker (proxying to a Fly.io
    bootstrap host), Vercel Edge function, or a small VPS / Fly.io node
    running the daemon directly?
-   - Recommended: Fly.io node running `wellinformed daemon` + a thin
+   - Recommended: Fly.io node running `akashik daemon` + a thin
      `/api/ask` HTTP wrapper. Simplest path — the daemon already
      exists; we just expose one method. Cloudflare Worker fronts it
      for rate limiting + TLS + edge cache on `/_graph.json`.
@@ -985,7 +985,7 @@ stuck mid-execution:
     founder's laptop is wrong (uptime, WAN exposure). A dedicated VM
     is right. What's its DID, and is the cost (~$5/mo Fly.io) okay?
     - Recommended: dedicated Fly.io 256 MB shared-cpu instance
-      ($1.94/mo) running `wellinformed daemon`. Generates a fresh
+      ($1.94/mo) running `akashik daemon`. Generates a fresh
       did:key on first boot, persisted to a Fly volume.
 
 11. **Demo-content room.** §11 suggests loading a `demo-content`
@@ -1094,7 +1094,7 @@ A two-column live demo:
   knowledge graph (toolshed + research rooms + public demo content).
   Nodes pulse and edges glow when a query touches them.
 - **Right:** a query input + results panel. Visitor types a question.
-  The page fires `POST /api/ask`, the server runs `wellinformed ask
+  The page fires `POST /api/ask`, the server runs `akashik ask
   --peers --json` against the federation, results stream back with
   per-peer attribution and timing. The graph nodes that answered
   light up.
@@ -1239,7 +1239,7 @@ has more, server-side downsamples to keep the visual readable.
 | Submitted  | input disabled (1.5 s max), shimmer animation under input border |
 | Streaming  | results cards animate in one at a time as `chunks[i]` arrives |
 | Complete   | total-latency line renders at the bottom, input re-enabled, focus restored |
-| Error      | inline message: `couldn't reach the network — try again? (or run `wellinformed ask` locally)` |
+| Error      | inline message: `couldn't reach the network — try again? (or run `akashik ask` locally)` |
 | Rate-limited | inline message: `you've hit the demo rate limit — install to keep asking` + link to `#install` |
 
 **Suggested-query chips** (below the input on idle, click-to-fill):
@@ -1278,7 +1278,7 @@ The live demo needs two endpoints. Both are public, both rate-limited.
 
 **`POST /api/ask`**
 - Body: `{ "query": "string" }`
-- Runs `wellinformed ask --peers --json --k 5` server-side against the
+- Runs `akashik ask --peers --json --k 5` server-side against the
   bootstrap node's daemon
 - Returns:
   ```json

@@ -22,7 +22,7 @@ named explicitly:
    `archive/` folder — they actively mislead new contributors by
    presenting the dead positioning as current strategy.
 3. **Rewrite `MANIFESTO.md`, `VISION.md`, `ROADMAP.md`** to the
-   Akashik OSS-commons framing + set up a `wellinformed` bin
+   Akashik OSS-commons framing + set up a `akashik` bin
    alias for zombie integrations during the two-name period.
 
 ## Priority matrix (verbatim from synthesis)
@@ -42,9 +42,9 @@ named explicitly:
 ## Conflicts + trade-offs surfaced
 
 - **Codebase naming (rename vs two-name):** Full rename cleanly
-  aligns branding but breaks the Rust IPC (`wellinformed-rs`) and
+  aligns branding but breaks the Rust IPC (`akashik-rs`) and
   legacy zombie integrations. Resolution: tolerate cognitive debt
-  of two-name period; keep `wellinformed` for code/binaries with
+  of two-name period; keep `akashik` for code/binaries with
   later deprecation-aliased rename.
 - **Experimental rerankers (`cross-rerank.ts`,
   `llm-listwise-rerank.ts`):** Archive/disable rather than delete.

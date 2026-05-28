@@ -1,4 +1,4 @@
-# wellinformed
+# akashik
 
 ## What This Is
 
@@ -31,7 +31,7 @@ Your coding agent answers from your actual research and codebase, not its traini
 ### Active
 
 - [ ] Telegram bridge (inbound capture + outbound digests)
-- [ ] npm publish (so users can `npx wellinformed init`)
+- [ ] npm publish (so users can `npx akashik init`)
 - [ ] CI/CD (GitHub Actions: test on push, build check, auto-release)
 - [ ] More adapters (Reddit, Dev.to, Product Hunt)
 - [ ] Graphify visualization (HTML graph + Leiden clustering via Python sidecar)
@@ -48,9 +48,9 @@ Your coding agent answers from your actual research and codebase, not its traini
 ## Context
 
 - TypeScript + ESM, Node 20+, functional DDD with neverthrow Result monads
-- Graphify vendored as submodule (saharbarak/graphify, wellinformed branch)
-- Python 3.10+ venv for graphify sidecar at ~/.wellinformed/venv
-- All runtime state under ~/.wellinformed/
+- Graphify vendored as submodule (saharbarak/graphify, akashik branch)
+- Python 3.10+ venv for graphify sidecar at ~/.akashik/venv
+- All runtime state under ~/.akashik/
 - 29 commits, 27 tests, 492 nodes in production graph
 - Libraries verified via gh API + ossinsight before selection
 - taste-skill + copywriting skill installed for design + marketing
@@ -77,7 +77,7 @@ Your coding agent answers from your actual research and codebase, not its traini
 
 ## Current Milestone: v2.0 P2P Knowledge Graph
 
-**Goal:** Transform wellinformed from a single-user tool into a distributed P2P network where nodes share graph fragments, enabling collective intelligence across developers.
+**Goal:** Transform akashik from a single-user tool into a distributed P2P network where nodes share graph fragments, enabling collective intelligence across developers.
 
 **Target features:**
 - Peer identity + manual peer management (ed25519 keypair, `peer add/remove/list`)

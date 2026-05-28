@@ -9,7 +9,7 @@ It fetches from ArXiv, Hacker News, and RSS feeds. Indexes your codebase. Search
 
 Your agent answers from YOUR sources, not training data.
 
-Open source: github.com/SaharBarak/wellinformed
+Open source: github.com/SaharBarak/akashik
 
 **Post 2 (demo):**
 Here's what happens when Claude asks for context on vector search:
@@ -23,15 +23,15 @@ Three source types. One query. No copy-paste.
 **Post 3 (how it works):**
 How it works:
 
-1. `wellinformed init` — pick your research topics
-2. `wellinformed trigger` — fetch from ArXiv, HN, RSS
-3. `wellinformed index` — index your codebase
-4. `wellinformed claude install` — hook into Claude Code
+1. `akashik init` — pick your research topics
+2. `akashik trigger` — fetch from ArXiv, HN, RSS
+3. `akashik index` — index your codebase
+4. `akashik claude install` — hook into Claude Code
 
 After step 4, Claude checks your graph before every file search. Automatically.
 
 **Post 4 (differentiator):**
-The key command is `wellinformed claude install`.
+The key command is `akashik claude install`.
 
 It adds a PreToolUse hook that fires before every Glob/Grep/Read. Claude sees "knowledge graph exists (425 nodes)" and uses MCP tools instead of grepping.
 
@@ -85,10 +85,10 @@ If you use Claude Code, Codex, or OpenClaw, your agent has no memory of what you
 Akashik fixes that in 4 commands:
 
 ```
-wellinformed init
-wellinformed trigger --room homelab
-wellinformed index
-wellinformed claude install
+akashik init
+akashik trigger --room homelab
+akashik index
+akashik claude install
 ```
 
 Now Claude checks your research graph automatically.
@@ -96,7 +96,7 @@ Now Claude checks your research graph automatically.
 **Post 2:**
 The `discover` command suggests sources you didn't know about.
 
-I typed `wellinformed discover --room wellinformed-dev --auto` and it found:
+I typed `akashik discover --room akashik-dev --auto` and it found:
 - selfh.st RSS (homelab feed)
 - Simon Willison's blog (matched "claude" keyword)
 - Papers With Code (matched "embeddings")
@@ -112,7 +112,7 @@ Your AI coding agent reads 0 of the 50 articles you read this week.
 
 Akashik changes that.
 
-github.com/SaharBarak/wellinformed
+github.com/SaharBarak/akashik
 
 **Short post 2:**
 Every AI memory tool is key-value or markdown files.
@@ -128,4 +128,4 @@ Then I built a tool that does the same thing automatically for your research.
 
 The meta is strong with this one.
 
-github.com/SaharBarak/wellinformed
+github.com/SaharBarak/akashik

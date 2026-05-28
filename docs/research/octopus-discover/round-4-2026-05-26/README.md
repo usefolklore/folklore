@@ -2,7 +2,7 @@
 
 Multi-LLM discover round run after:
 - Three prior rounds (2026-05-21, 2026-05-24, 2026-05-26 morning)
-- The pivot from `wellinformed` (agent-memory product) to **Akashik**
+- The pivot from `akashik` (agent-memory product) to **Akashik**
   (federated knowledge commons for the OSS community)
 - The articulation of the **compounding mechanism** (peer-local
   storage, federation-on-query, web-on-miss, save-locally,

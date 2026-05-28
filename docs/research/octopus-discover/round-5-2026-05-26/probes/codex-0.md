@@ -127,7 +127,7 @@ If I were Sahar, the next engineering month I’d spend on **federation architec
 ```
 OpenAI Codex v0.125.0 (research preview)
 --------
-workdir: /Users/saharbarak/personal/wellinformed
+workdir: /Users/saharbarak/personal/akashik
 model: gpt-5.4
 provider: openai
 approval: never

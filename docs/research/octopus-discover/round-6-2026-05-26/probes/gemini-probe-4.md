@@ -9,12 +9,12 @@ CONTEXT:
 The project has gone through:
 1. Multiple ML retrieval optimization attempts (E1' rerank, E11 enrichment, listwise rerank, NDCG/MRR augmentation)
 2. Three octopus-discover synthesis rounds with empirical pushback
-3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
 5. The scaffolding of AkashikBench-F which validated the compounding thesis (slope -4.74e-5 on LoCoMo)
 6. Now: rebrand sweep in progress (Akashik), and need to clean up the codebase + docs of stale artifacts.
 
-WORKING DIR: /Users/saharbarak/personal/wellinformed
+WORKING DIR: /Users/saharbarak/personal/akashik
 
 QUESTIONS:
 
@@ -23,10 +23,10 @@ Q1. Looking at the project layout (src/, tests/, docs/, .planning/, scripts/, ex
 Q2. Specific things to investigate:
    - .planning/ directory — there are phase-21, phase-23 dirs, HANDOFF.md, long-term-memory-integration.md. The phase-based GSD planning workflow may be useful or may be cruft.
    - docs/research/ — multiple research docs (energy-based-contradiction-detection, beat-the-competitors-retrieval-plan, performance-prediction-matrix). Some of these may have been superseded by the pivot.
-   - src/ — there's wellinformed-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
+   - src/ — there's akashik-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
    - tests/ — many tests reflect the old framing. Tests for bench-real.test.ts (30-doc proxy), bench-standard.test.ts (synth HotpotQA). Are these still useful or superseded?
    - Markdown clutter — README.md.bak.830lines is in the working tree (a backup of an old README). docs has potential duplication.
-   - Codebase identifiers (wellinformed* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
+   - Codebase identifiers (akashik* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
 
 Q3. What docs/research artifacts should be ARCHIVED (moved to a docs/archive/ subfolder with a note) vs DELETED outright? Archive = useful historical record; delete = noise.
 
@@ -56,7 +56,7 @@ When synthesizing, verify that these commonly-missed perspectives have been addr
 <!-- BEGIN-UNTRUSTED:provider=gemini:nonce=ba7b8e0c23f4d50f -->
 ## Output
 ```
-Based on the codebase audit, the pivot from a single-user memory product (`wellinformed`) to a federated knowledge commons (`Akashik`) renders a significant portion of the repository's planning, benchmarking, and single-agent optimization code obsolete. The new priority is network compounding and cross-peer routing, not chasing personal-agent retrieval leaderboards.
+Based on the codebase audit, the pivot from a single-user memory product (`akashik`) to a federated knowledge commons (`Akashik`) renders a significant portion of the repository's planning, benchmarking, and single-agent optimization code obsolete. The new priority is network compounding and cross-peer routing, not chasing personal-agent retrieval leaderboards.
 
 Here is the synthesis of cross-cutting concerns, integrating the required perspectives on migrations, zombie integrations, and operational realities.
 
@@ -65,7 +65,7 @@ Here is the synthesis of cross-cutting concerns, integrating the required perspe
 - **API Versioning & Auth Boundaries:** The pivot introduces Ed25519 DIDs for P2P identity. This fundamentally clashes with the existing local API key/token models used for daemon IPC. This is a hard v1-to-v2 boundary. **Tradeoff:** Tying the auth migration directly to the P2P release forces a breaking change on all existing local users. *Conversely*, supporting both auth models indefinitely creates a split-brain security surface. We must decouple local IPC auth from P2P identity during a transition period, allowing local agents to function while the DID network bootstraps.
 - **Zombie Integrations (`src/telegram/bot.ts`):** The Telegram integration is a relic of the "personal memory" era. The maintainers of such scripts will never voluntarily migrate to a federated DID model. **Tradeoff:** Maintaining it drains engineering time from the core P2P daemon. *On the other hand*, immediately deleting it breaks existing workflows for early adopters. **Strategy:** Quarantine it into a `src/legacy/` namespace and explicitly deprecate it for v2.
 - **Shadow Traffic Validation:** As the primary `ask()` pipeline shifts from a local SQLite query to a `federated-search.ts` gossip fan-out, unit tests are insufficient. **Tradeoff:** Shadow routing doubles the query latency for the test cohort. *However*, failing to do so risks silent quality degradation (like the currently documented "remote peers get embeddings only" bug). **Strategy:** Implement a shadow traffic pass in the daemon that runs local queries against *both* the local store and the network, diffing the results to define what 'parity' means in a federated context.
-- **Backups and True RTO:** In a federated model, the concept of a "backup" shifts. If a peer loses their local `.wellinformed` SQLite database, what is the actual Recovery Time Objective (RTO) to rebuild their graph from the P2P network using their DID? **Tradeoff:** Relying purely on the network for restores saves disk space and complexity. *Conversely*, if a niche topic was only held locally and the peer dies, that knowledge evaporates (the "niche knowledge evaporation" failure mode). The restore process must be empirically timed and documented.
+- **Backups and True RTO:** In a federated model, the concept of a "backup" shifts. If a peer loses their local `.akashik` SQLite database, what is the actual Recovery Time Objective (RTO) to rebuild their graph from the P2P network using their DID? **Tradeoff:** Relying purely on the network for restores saves disk space and complexity. *Conversely*, if a niche topic was only held locally and the peer dies, that knowledge evaporates (the "niche knowledge evaporation" failure mode). The restore process must be empirically timed and documented.
 
 ### Cleanup Audit Table
 
@@ -93,7 +93,7 @@ Here is the synthesis of cross-cutting concerns, integrating the required perspe
 | `tests/auto-forget.test.ts` | NEEDS-REWRITE | Must be updated to handle federated contradictions and inverse-frequency replication weighting, not just local TTLs. |
 | `tests/bench-auto-forget.test.ts` | DELETE | Gated synthetic test that doesn't measure cross-peer TTL. |
 | **Src (Top 10)** | | |
-| `src/wellinformed-rs/` | KEEP | Rust IPC client is a massive adoption driver for the local-first community (Rust Discord). |
+| `src/akashik-rs/` | KEEP | Rust IPC client is a massive adoption driver for the local-first community (Rust Discord). |
 | `src/domain/cross-rerank.ts` | KEEP | Valid optimization for the local retrieval layer before federation fan-out. |
 | `src/domain/recency-rerank.ts` | DELETE | Superseded by retention scoring and auto-forget math in `retention.ts`. |
 | `src/domain/llm-listwise-rerank.ts` | ARCHIVE | Too heavy for commodity peers (CAX11 ARM); cross-encoder is the ceiling for the target hardware. |
@@ -121,7 +121,7 @@ Here is the synthesis of cross-cutting concerns, integrating the required perspe
 If I were Sahar cleaning up right now, the 3 changes I'd make first are:
 1. **Delete the synthetic benchmark suites (`bench-standard`, `bench-real`, `*synth.test.ts`) and `.planning/phase-*` directories.** Because they anchor the team to the dead "single-player leaderboard" positioning and clutter the CI pipeline with tests that don't reflect the new Definition of Done.
 2. **Add `.claude-octopus/` to `.gitignore` and delete it, along with `README.md.bak.830lines`.** Because checking in transient agent state and 800-line backups is pure noise that confuses codebase context windows and bloats the repo size.
-3. **Execute a coordinated global rename from `wellinformed` to `akashik` across the codebase, while quarantining `src/telegram/bot.ts` to a `legacy/` dir.** Because operating in a "two-name" period creates cognitive dissonance for contributors, and moving zombie integrations out of the main path forces a clean v2 auth boundary.
+3. **Execute a coordinated global rename from `akashik` to `akashik` across the codebase, while quarantining `src/telegram/bot.ts` to a `legacy/` dir.** Because operating in a "two-name" period creates cognitive dissonance for contributors, and moving zombie integrations out of the main path forces a clean v2 auth boundary.
 ```
 <!-- END-UNTRUSTED:provider=gemini:nonce=ba7b8e0c23f4d50f -->
 

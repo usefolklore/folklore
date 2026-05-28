@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1020" fill="none" role="img" aria-label="Why wellinformed compounds — same Claude session, two different Fridays">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1020" fill="none" role="img" aria-label="Why akashik compounds — same Claude session, two different Fridays">
   <defs>
     <radialGradient id="bg" cx="50%" cy="40%" r="60%">
       <stop offset="0%"  stop-color="#14141f" stop-opacity="1"/>
@@ -26,7 +26,7 @@
   <!-- ─── column headers ────────────────────────────────── -->
   <g font-family="'JetBrains Mono','SF Mono','Menlo','Consolas',monospace" font-size="12" font-weight="600" letter-spacing="1.6">
     <text x="340" y="156" text-anchor="middle" fill="#6c6c78">TODAY</text>
-    <text x="1060" y="156" text-anchor="middle" fill="#34d399">WITH WELLINFORMED</text>
+    <text x="1060" y="156" text-anchor="middle" fill="#34d399">WITH AKASHIK</text>
   </g>
 
   <!-- ─── column divider ────────────────────────────────── -->
@@ -91,7 +91,7 @@
     </g>
   </g>
 
-  <!-- ─── RIGHT COLUMN — with wellinformed ────────────────── -->
+  <!-- ─── RIGHT COLUMN — with akashik ────────────────── -->
   <g font-family="'Outfit','Inter',-apple-system,'Helvetica Neue',Arial,sans-serif">
 
     <!-- soft emerald glow behind the right column -->
@@ -102,7 +102,7 @@
       <circle cx="800" cy="210" r="18" fill="none" stroke="#34d399" stroke-width="1.8"/>
       <text x="800" y="216" text-anchor="middle" font-family="'JetBrains Mono','SF Mono','Menlo',monospace" font-size="16" font-weight="700" fill="#34d399">?</text>
       <text x="840" y="203" font-size="17" font-weight="700" fill="#f7f4ec">You ask Claude.</text>
-      <text x="840" y="227" font-size="13" font-family="'JetBrains Mono','SF Mono','Menlo',monospace" fill="#b4b4c0">PreToolUse hook fires · `wellinformed ask` runs before Claude reaches for a tool</text>
+      <text x="840" y="227" font-size="13" font-family="'JetBrains Mono','SF Mono','Menlo',monospace" fill="#b4b4c0">PreToolUse hook fires · `akashik ask` runs before Claude reaches for a tool</text>
     </g>
 
     <!-- Row 2 — graph replies -->

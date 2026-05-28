@@ -1,4 +1,4 @@
-# wellinformed — terminal demo (screencast)
+# akashik — terminal demo (screencast)
 #
 # Headline gif. Walks through the queries described in
 # demo/MANUSCRIPT.md scenes 1, 2, 5, 7, 8 — the terminal-only beats.
@@ -25,7 +25,7 @@ Set WindowBarSize 30
 
 # ─── hidden setup ──────────────────────────────────────────
 Hide
-Type "export WELLINFORMED_HOME=$HOME/.wellinformed.demo"
+Type "export AKASHIK_HOME=$HOME/.akashik.demo"
 Enter
 Type "clear"
 Enter
@@ -33,14 +33,14 @@ Sleep 200ms
 Show
 
 # ─── opening — value prop ──────────────────────────────────
-Type '# wellinformed — local-first knowledge graph for AI agents'
+Type '# akashik — local-first knowledge graph for AI agents'
 Enter
 Type '# 15 cryogenic-LH2 research notes already loaded · ready'
 Enter
 Sleep 1800ms
 
 # ─── direct ask with timing ────────────────────────────────
-Type 'time wellinformed ask "ML methods for liquid hydrogen leak detection" --k 3'
+Type 'time akashik ask "ML methods for liquid hydrogen leak detection" --k 3'
 Enter
 Sleep 4500ms
 
@@ -51,7 +51,7 @@ Type '# entity recall — every chunk that mentions stanford-cryo-lab, across ro
 Enter
 Sleep 700ms
 
-Type 'wellinformed recall stanford-cryo-lab'
+Type 'akashik recall stanford-cryo-lab'
 Enter
 Sleep 4500ms
 
@@ -62,7 +62,7 @@ Type '# same query channel, different entity'
 Enter
 Sleep 700ms
 
-Type 'wellinformed recall nasa-glenn'
+Type 'akashik recall nasa-glenn'
 Enter
 Sleep 4500ms
 
@@ -73,14 +73,14 @@ Type '# peer reputation — the system tracks who knows what, learned from real 
 Enter
 Sleep 800ms
 
-Type 'wellinformed peers rep'
+Type 'akashik peers rep'
 Enter
 Sleep 3500ms
 
 # ─── closing ───────────────────────────────────────────────
 Type 'clear'
 Enter
-Type 'echo "wellinformed — local-first knowledge for AI agents"'
+Type 'echo "akashik — local-first knowledge for AI agents"'
 Enter
 Type 'echo "  ✓ sub-second local retrieval"'
 Enter
@@ -92,6 +92,6 @@ Type 'echo "  ✓ P2P federation, signed envelopes, no server"'
 Enter
 Type 'echo'
 Enter
-Type 'echo "  github.com/SaharBarak/wellinformed"'
+Type 'echo "  github.com/SaharBarak/akashik"'
 Enter
 Sleep 3500ms

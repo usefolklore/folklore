@@ -21,7 +21,7 @@ re_verification: false
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | First run generates ed25519 keypair at ~/.wellinformed/peer-identity.json | VERIFIED | `loadOrCreateIdentity` in peer-transport.ts:43 — generates Ed25519 via `generateKeyPair('Ed25519')`, writes `{privateKeyB64, peerId, createdAt}` JSON to disk; PEER-01 tests in phase15 suite confirm generate+load cycle |
+| 1 | First run generates ed25519 keypair at ~/.akashik/peer-identity.json | VERIFIED | `loadOrCreateIdentity` in peer-transport.ts:43 — generates Ed25519 via `generateKeyPair('Ed25519')`, writes `{privateKeyB64, peerId, createdAt}` JSON to disk; PEER-01 tests in phase15 suite confirm generate+load cycle |
 | 2 | `peer add <multiaddr>` establishes a js-libp2p connection | VERIFIED | peer.ts:34-95 — `add` subcommand validates multiaddr shape, calls `loadOrCreateIdentity` + `createNode` (libp2p@3.2.0) + `dialAndTag`, persists to peers.json via atomic store; PEER-02 structural test confirms `dialAndTag` export |
 | 3 | Secrets scanner detects API keys in test fixtures and blocks them | VERIFIED | sharing.ts:64-76 — 10 BUILT_IN_PATTERNS (openai-key, github-token, github-oauth, aws-key-id, stripe-live, bearer-token, password-kv, api-key-kv, env-token, env-secret); SEC-01 suite tests each pattern individually; `scanNode` returns `err(ScanError)` for any match |
 | 4 | `share audit --room X` shows the metadata that would be shared | VERIFIED | share.ts:22-105 — `audit` subcommand loads graph, calls `nodesInRoom`, runs `buildPatterns + auditRoom`, prints allowed/blocked table + optional `--json` output; SEC-04 tests confirm counts |
@@ -49,7 +49,7 @@ re_verification: false
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | First peer command generates ed25519 keypair at ~/.wellinformed/peer-identity.json | VERIFIED | peer-transport.ts:43-83 — `loadOrCreateIdentity` generates+writes when file absent |
+| 1 | First peer command generates ed25519 keypair at ~/.akashik/peer-identity.json | VERIFIED | peer-transport.ts:43-83 — `loadOrCreateIdentity` generates+writes when file absent |
 | 2 | Subsequent peer commands load the existing keypair — PeerId is stable across restarts | VERIFIED | peer-transport.ts:46-59 — loads from disk via `privateKeyFromRaw`; PEER-01 stable-PeerId test confirms r1.peerId === r2.peerId |
 | 3 | createNode() produces a libp2p node with Noise encryption and yamux multiplexing | VERIFIED | peer-transport.ts:100-111 — `connectionEncrypters: [noise()]`, `streamMuxers: [yamux()]` |
 | 4 | All P2P traffic is encrypted via the Noise protocol (SEC-05) | VERIFIED | peer-transport.ts:104 — `connectionEncrypters: [noise()]` as contiguous pattern; SEC-05 test `assert.match(src, /connectionEncrypters:\s*\[noise\(\)\]/)` passes |
@@ -62,11 +62,11 @@ re_verification: false
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | `wellinformed peer add <multiaddr>` dials the remote peer and persists to peers.json | VERIFIED | peer.ts:34-95 — validates multiaddr shape, creates libp2p node, dials via `dialAndTag`, upserts via `addPeerRecord`+`savePeers` |
-| 2 | `wellinformed peer remove <id>` disconnects and removes from peers.json | VERIFIED | peer.ts:97-123 — loads peers, guards existence, `removePeerRecord`+`savePeers` |
-| 3 | `wellinformed peer list` shows stored peers (live status deferred to Phase 18) | VERIFIED | peer.ts:125-147 — reads peers.json, prints id/addrs/addedAt; USAGE banner explicitly notes "stored — live status in Phase 18" |
-| 4 | `wellinformed peer status` shows own PeerId, public key, connected peer count | VERIFIED | peer.ts:149-168 — `loadOrCreateIdentity` + `raw.slice(32)` for pubkey + peer count from peers.json |
-| 5 | `wellinformed share audit --room X` shows what would be shared | VERIFIED | share.ts:22-105 — `--room` flag required, runs `auditRoom`, prints allowed/blocked with detail rows |
+| 1 | `akashik peer add <multiaddr>` dials the remote peer and persists to peers.json | VERIFIED | peer.ts:34-95 — validates multiaddr shape, creates libp2p node, dials via `dialAndTag`, upserts via `addPeerRecord`+`savePeers` |
+| 2 | `akashik peer remove <id>` disconnects and removes from peers.json | VERIFIED | peer.ts:97-123 — loads peers, guards existence, `removePeerRecord`+`savePeers` |
+| 3 | `akashik peer list` shows stored peers (live status deferred to Phase 18) | VERIFIED | peer.ts:125-147 — reads peers.json, prints id/addrs/addedAt; USAGE banner explicitly notes "stored — live status in Phase 18" |
+| 4 | `akashik peer status` shows own PeerId, public key, connected peer count | VERIFIED | peer.ts:149-168 — `loadOrCreateIdentity` + `raw.slice(32)` for pubkey + peer count from peers.json |
+| 5 | `akashik share audit --room X` shows what would be shared | VERIFIED | share.ts:22-105 — `--room` flag required, runs `auditRoom`, prints allowed/blocked with detail rows |
 | 6 | CLI commands registered in src/cli/index.ts as `peer` and `share` | VERIFIED | index.ts:31-32 imports both; :61-62 both in `commands` record |
 
 #### Plan 15-04: Test Suite
@@ -127,7 +127,7 @@ re_verification: false
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |-------------|-------------|-------------|--------|----------|
-| PEER-01 | 15-02 | ed25519 keypair generated on first run at ~/.wellinformed/peer-identity.json | VERIFIED | loadOrCreateIdentity generates + persists; PEER-01 tests confirm file creation + field presence |
+| PEER-01 | 15-02 | ed25519 keypair generated on first run at ~/.akashik/peer-identity.json | VERIFIED | loadOrCreateIdentity generates + persists; PEER-01 tests confirm file creation + field presence |
 | PEER-02 | 15-03 | `peer add <multiaddr>` connects via js-libp2p | VERIFIED | peer.ts add subcommand: createNode + dialAndTag; PEER-02 structural export test |
 | PEER-03 | 15-03 | `peer remove <id>` disconnects and removes | VERIFIED | peer.ts remove subcommand: removePeerRecord + savePeers; PEER-03 tests |
 | PEER-04 | 15-03 | `peer list` shows peers with status (partial — stored only, Phase 18 for live status) | PARTIAL (by design) | peer.ts list: reads peers.json, shows id/addrs/addedAt. Live status/latency/shared rooms explicitly deferred to Phase 18 per plan scope note |

@@ -1,11 +1,15 @@
 /**
  * Federated search — fan-out orchestrator for cross-peer semantic search.
  *
- * Phase 17 application layer. Coordinates:
- *   1. Local vector query (searchGlobal or searchByRoom)
+ * Phase 17 application layer; V5 envelope cutover Phase 24-03 (ROOMS-DEL-05).
+ * V5: no `room` parameter on the request. Read-side workspace pre-filtering
+ * happens at the CALLER (Wave 3) before fan-out, not on the wire.
+ *
+ * Coordinates:
+ *   1. Local vector query (searchGlobal — V5 has no room dimension)
  *   2. Parallel fan-out to all connected peers via openSearchStream
  *   3. Result merging with deduplication (prefer local, collapse peer dupes into _also_from_peers)
- *   4. Cross-room tunnel detection via findTunnels over the merged synthetic record set (FED-04)
+ *   4. Tunnel detection via findTunnels over the merged synthetic record set (FED-04)
  *
  * CRITICAL invariants:
  *   1. Fan-out MUST use Promise.all with per-promise Promise.race timeout — NOT
@@ -29,9 +33,8 @@ import type { Libp2p } from '@libp2p/interface';
 import type { VectorIndex } from '../infrastructure/vector-index.js';
 import type { Vector, Tunnel, VectorRecord } from '../domain/vectors.js';
 import { findTunnels as findTunnelsPure } from '../domain/vectors.js';
-import type { Room } from '../domain/graph.js';
 import type { PeerMatch, SearchRequest } from '../infrastructure/search-sync.js';
-import { openSearchStream } from '../infrastructure/search-sync.js';
+import { openSearchStream, SEARCH_PROTOCOL_VERSION } from '../infrastructure/search-sync.js';
 import { askGossip } from '../infrastructure/search-gossip.js';
 
 // ─────────────────────── output types ─────────────────────────────────────────
@@ -40,6 +43,9 @@ import { askGossip } from '../infrastructure/search-gossip.js';
  * A merged search result — either local (source_peer=null) or
  * from a specific remote peer (source_peer=peerId string).
  *
+ * V5 (Phase 24-03): no `room` field. Local-side workspace filtering happens
+ * at the read caller before the search runs.
+ *
  * _also_from_peers lets the caller see which OTHER peers returned the
  * same node_id. Deduplication prefers the local entry (or first-seen peer);
  * same-node_id hits from additional peers are collapsed into _also_from_peers
@@ -47,7 +53,6 @@ import { askGossip } from '../infrastructure/search-gossip.js';
  */
 export interface FederatedMatch {
   readonly node_id: string;
-  readonly room: string;
   readonly wing?: string;
   readonly distance: number;
   readonly _source_peer: string | null;
@@ -91,7 +96,6 @@ export interface FederatedSearchDeps {
 export interface FederatedSearchParams {
   readonly embedding: Vector;     // Float32Array, length === DEFAULT_DIM
   readonly k: number;
-  readonly room?: string;
   /**
    * Raw query text for the local-half hybrid (vector + BM25) lookup. When
    * omitted, local search falls back to vector-only. Peers still receive
@@ -261,7 +265,7 @@ const computeCrossRoomTunnels = async (
  * Run a federated search across the local vector index and all connected peers.
  *
  * Steps:
- *   1. Query local vectorIndex (searchByRoom or searchGlobal depending on room param)
+ *   1. Query local vectorIndex (searchGlobal / searchHybrid — V5 has no room param)
  *   2. Parallel fan-out: send SearchRequest to all connected peers via openSearchStream,
  *      each wrapped in withTimeout(2000ms). Uses Promise.all — NOT ResultAsync.combine.
  *   3. Merge local + remote results, dedupe by node_id (prefer local), sort by distance,
@@ -278,7 +282,6 @@ export const runFederatedSearch = async (
   params: FederatedSearchParams,
 ): Promise<FederatedSearchResult> => {
   const k = params.k;
-  const room = params.room;
   const perPeerTimeoutMs = params.perPeerTimeoutMs ?? 2000;
   const tunnelThreshold = params.tunnelThreshold ?? 0.6;
 
@@ -287,24 +290,23 @@ export const runFederatedSearch = async (
 
   const t0 = Date.now();
 
-  // 1. Local query — synchronous from the caller's perspective.
-  // Use the hybrid (BM25 + vector + RRF) path whenever the caller supplied
-  // the raw text. Hybrid is what the non-federated `searchGlobal` use case
-  // calls — without it, federated local-half would silently diverge in
-  // retrieval quality from the local-only `ask` path (bug caught while
-  // wiring the v2.1 smart-hook to consult peers by default).
+  // 1. Local query — V5 has no room dimension. Use the hybrid (BM25 + vector
+  // + RRF) path whenever the caller supplied the raw text. Hybrid is what
+  // the non-federated `searchGlobal` use case calls — without it, federated
+  // local-half would silently diverge in retrieval quality from the local-
+  // only `ask` path (bug caught while wiring the v2.1 smart-hook to consult
+  // peers by default).
+  //
+  // Workspace pre-filter (when present) is applied at the read CALLER site
+  // (Wave 3), BEFORE this function runs — federated-search itself stays
+  // workspace-agnostic.
   const localRes = params.text
-    ? (room
-        ? await deps.vectorIndex.searchByRoomHybrid(room as Room, params.text, params.embedding, k)
-        : await deps.vectorIndex.searchHybrid(params.text, params.embedding, k))
-    : (room
-        ? await deps.vectorIndex.searchByRoom(room as Room, params.embedding, k)
-        : await deps.vectorIndex.searchGlobal(params.embedding, k));
+    ? await deps.vectorIndex.searchHybrid(params.text, params.embedding, k)
+    : await deps.vectorIndex.searchGlobal(params.embedding, k);
 
   const localMatches: FederatedMatch[] = localRes.isOk()
     ? localRes.value.map((m) => ({
         node_id: m.node_id,
-        room: m.room,
         wing: m.wing,
         distance: m.distance,
         _source_peer: null,
@@ -325,7 +327,7 @@ export const runFederatedSearch = async (
   // returning a stack of near-duplicates. Audit fold-in from
   // .planning/p2p-scale-plan.md Phase 1 mod.
   const gossipDisabled = params.useGossip === false
-    || process.env.WELLINFORMED_SEARCH_GOSSIP === '0';
+    || process.env.AKASHIK_SEARCH_GOSSIP === '0';
   let gossipPeerOutcomes: PeerOutcome[] | null = null;
 
   if (!gossipDisabled) {
@@ -338,7 +340,6 @@ export const runFederatedSearch = async (
     const gossipRes = await askGossip(
       deps.node,
       params.embedding,
-      room ?? null,
       k,
       {
         // Default 250ms — covers floodsub on a LAN mesh + parallel
@@ -386,8 +387,8 @@ export const runFederatedSearch = async (
       : perPeerTimeoutMs;
   const req: SearchRequest = {
     type: 'search',
+    protocol_version: SEARCH_PROTOCOL_VERSION,
     embedding: Array.from(params.embedding),  // Float32Array → number[] (JSON-safe, Pitfall 3)
-    room,
     k,
   };
 
@@ -453,7 +454,6 @@ export const runFederatedSearch = async (
       if (!existing) {
         byId.set(pm.node_id, {
           node_id: pm.node_id,
-          room: pm.room,
           wing: pm.wing,
           distance: pm.distance,
           _source_peer: outcome.peerId,

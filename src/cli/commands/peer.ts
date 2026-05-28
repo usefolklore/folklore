@@ -1,5 +1,5 @@
 /**
- * `wellinformed peer <sub>` — manage P2P peer connections.
+ * `akashik peer <sub>` — manage P2P peer connections.
  *
  * Subcommands:
  *   add <multiaddr>   connect to a remote peer and persist to peers.json
@@ -23,17 +23,17 @@ import {
   removePeerRecord,
 } from '../../infrastructure/peer-store.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
-import { wellinformedHome } from '../runtime.js';
+import { akashikHome } from '../runtime.js';
 
-const identityPath = (): string => join(wellinformedHome(), 'peer-identity.json');
-const peersPath = (): string => join(wellinformedHome(), 'peers.json');
-const configPath = (): string => join(wellinformedHome(), 'config.yaml');
+const identityPath = (): string => join(akashikHome(), 'peer-identity.json');
+const peersPath = (): string => join(akashikHome(), 'peers.json');
+const configPath = (): string => join(akashikHome(), 'config.yaml');
 
 // ─────────────────────── subcommands ──────────────────────
 
 const add = async (rest: readonly string[]): Promise<number> => {
   if (rest.length === 0) {
-    console.error('peer add: missing <multiaddr>. usage: wellinformed peer add /ip4/1.2.3.4/tcp/9001');
+    console.error('peer add: missing <multiaddr>. usage: akashik peer add /ip4/1.2.3.4/tcp/9001');
     return 1;
   }
   const rawAddr = rest[0];
@@ -104,7 +104,7 @@ const add = async (rest: readonly string[]): Promise<number> => {
 
 const remove = async (rest: readonly string[]): Promise<number> => {
   if (rest.length === 0) {
-    console.error('peer remove: missing <id>. usage: wellinformed peer remove <peerId>');
+    console.error('peer remove: missing <id>. usage: akashik peer remove <peerId>');
     return 1;
   }
   const targetId = rest[0];
@@ -170,7 +170,7 @@ const list = async (rest: readonly string[]): Promise<number> => {
   }
 
   if (peers.length === 0) {
-    console.log('no known peers. try `wellinformed peer add <multiaddr>`.');
+    console.log('no known peers. try `akashik peer add <multiaddr>`.');
     return 0;
   }
   console.log(`known peers (${peers.length}):\n`);
@@ -213,7 +213,7 @@ const status = async (): Promise<number> => {
 
 // ─────────────────────── usage ────────────────────────────
 
-const USAGE = `usage: wellinformed peer <add|remove|list|status>
+const USAGE = `usage: akashik peer <add|remove|list|status>
 
 subcommands:
   add <multiaddr>   connect to a remote peer

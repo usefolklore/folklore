@@ -1,6 +1,6 @@
 # Satisfaction scoring
 
-How wellinformed turns a set of retrieval hits into a single number
+How Akashik turns a set of retrieval hits into a single number
 in [0, 1] that drives the agent contract: `use_memory`,
 `verify_one_source`, `search_required`, `ask_user`.
 
@@ -13,7 +13,7 @@ blocked.
 ## Where it lives
 
 - Base scorer: [`src/domain/peer-telemetry.ts`](../../src/domain/peer-telemetry.ts) — `computeSatisfaction(results)` at line 229.
-- Hook-level boost: [`.claude/hooks/wellinformed-prompt-submit.cjs`](../../.claude/hooks/wellinformed-prompt-submit.cjs) — applied AFTER the base scorer, capped at 1.0, never demotes.
+- Hook-level boost: [`.claude/hooks/akashik-prompt-submit.cjs`](../../.claude/hooks/akashik-prompt-submit.cjs) — applied AFTER the base scorer, capped at 1.0, never demotes.
 - Thresholds: declared in the hook closer + `peer-telemetry.ts` decision table.
 
 ## Five base components
@@ -44,7 +44,7 @@ Subtractive, capped at −0.4 total. Applied to the average.
 
 ## Hook-level boost (post-scorer)
 
-Applied in `wellinformed-prompt-submit.cjs` because the base scorer
+Applied in `akashik-prompt-submit.cjs` because the base scorer
 runs on the federated response BEFORE auto-pull populates peer
 bodies. Two signals the base scorer cannot see at scoring time:
 
@@ -65,7 +65,7 @@ Cap at 1.0. Never demotes. Display surface shows both numbers:
 | `≥ 0.40` | `search_required` | sparse — WebSearch / WebFetch / Grep / Read |
 | `< 0.40` | `ask_user` | bail to the human |
 
-Override the use_memory threshold via `WELLINFORMED_TERMINAL_THRESHOLD`.
+Override the use_memory threshold via `AKASHIK_TERMINAL_THRESHOLD`.
 
 ## Worked example
 
@@ -102,7 +102,7 @@ in the full contract block).
 
 - **0.85 use_memory** — the bar above which the agent's outbound tool
   is statistically wasteful. Calibrated against an internal sample of
-  100 queries where Claude was told to use vs. ignore wellinformed
+  100 queries where Claude was told to use vs. ignore Akashik
   context; over 0.85, Claude using-the-context outperformed
   ignoring-it on every question. Under 0.85 the gap closes.
 - **0.65 verify_one_source** — at-or-above is "evidence is strong

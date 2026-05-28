@@ -573,7 +573,7 @@ crops centered; OG default).
 │                           positioned bottom-right ~40%   │
 │                           of card width, 0.55 opacity]   │
 │                                                          │
-│   github.com/twocirclestudios/wellinformed   MIT · 2026 │
+│   github.com/twocirclestudios/akashik   MIT · 2026 │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -591,11 +591,11 @@ crops centered; OG default).
 **Embed:**
 
 ```html
-<meta property="og:image" content="https://wellinformed.dev/og-card.png">
+<meta property="og:image" content="https://akashik.dev/og-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://wellinformed.dev/og-card.png">
+<meta name="twitter:image" content="https://akashik.dev/og-card.png">
 ```
 
 ### 9.2 OG image variants

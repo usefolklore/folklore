@@ -133,12 +133,12 @@ These are intellectually fun and produce 0.0 NDCG@10 lift. Avoid.
 
 ## Build order (if any pass their gate)
 
-1. **Hour 0–3**: Build #1 (γ-blend). Gate on cached SciFact+ArguAna+NFCorpus. If +0.5pt PASS → ship behind `WELLINFORMED_FUSION=score-blend`.
+1. **Hour 0–3**: Build #1 (γ-blend). Gate on cached SciFact+ArguAna+NFCorpus. If +0.5pt PASS → ship behind `AKASHIK_FUSION=score-blend`.
 2. **Hour 3–7**: Build #2 (Boltzmann). Gate composed with #1. If additive +0.3pt → ship.
 3. **Hour 7–13**: Build #3 (heat-kernel) **only if ArguAna is a target workload**. Gate per-dataset; ship behind `multi_doc_diffusion=true` query flag like the v3.2 PPR primitive.
 4. Skip #4 unless #1+#2 leave headroom; skip #5 entirely.
 
-All four buildable variants re-rank from cached `~/.wellinformed/bench/<dataset>__*-bge-base*/sota.db` — zero re-embedding, full benchmark in <60s per gate.
+All four buildable variants re-rank from cached `~/.akashik/bench/<dataset>__*-bge-base*/sota.db` — zero re-embedding, full benchmark in <60s per gate.
 
 ---
 

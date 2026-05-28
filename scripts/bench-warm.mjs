@@ -25,7 +25,7 @@ const stats = (xs) => {
 const now = () => Number(process.hrtime.bigint() / 1000000n);
 
 // ─── open the real DBs ─────────────────────────────────────────
-const home = process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
+const home = process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
 
 console.log('━━━━ Warm-state benchmark (single-process, no cold-start) ━━━━\n');
 

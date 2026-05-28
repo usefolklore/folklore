@@ -6,8 +6,14 @@
  * for its lifetime, so ingestion work runs lock-free here).
  *
  * Each handler returns a single-line result summary that surfaces in
- * `wellinformed jobs list`. Errors throw — the queue catches them and
+ * `akashik jobs list`. Errors throw — the queue catches them and
  * tags the job `failed`.
+ *
+ * V5: per-room dispatch is gone. The legacy `ingest:room` payload is
+ * still carried by the Job type (24-09 owns the domain narrowing) but
+ * the runner now interprets it as "run every enabled source flat" —
+ * the room label is captured in the summary only. Jobs (ingest,
+ * share-sync, search-gossip) run against the global graph.
  */
 
 import { dirname, isAbsolute } from 'node:path';
@@ -19,28 +25,44 @@ import type { Job } from '../domain/job.js';
 import type { Runtime } from '../cli/runtime.js';
 import type { Source, SourceDescriptor } from '../domain/sources.js';
 import type { ContentItem } from '../domain/content.js';
-import { triggerRoom, ingestSource } from '../application/ingest.js';
+import { ingestSource } from '../application/ingest.js';
 import { ingestBatch } from '../application/batch-ingest.js';
+import { isEnabled } from '../domain/sources.js';
 
 export interface RunnerDeps {
   readonly runtime: Runtime;
 }
 
-const runIngestRoom = async (deps: RunnerDeps, room: string): Promise<string> => {
-  const result = await triggerRoom(deps.runtime.ingestDeps)(room);
-  if (result.isErr()) {
-    throw new Error(`ingest:room ${room} — ${formatError(result.error)}`);
+/**
+ * V5: run every enabled source flat. The `room` label is preserved in
+ * the result summary for parity with the legacy `ingest:room` payload
+ * shape, but no longer drives source selection.
+ */
+const runIngestAll = async (deps: RunnerDeps, label: string): Promise<string> => {
+  const listed = await deps.runtime.sources.list();
+  if (listed.isErr()) {
+    throw new Error(`ingest:all label=${label} — ${formatError(listed.error)}`);
   }
-  const r = result.value;
-  const newCount = r.runs.reduce((a, x) => a + x.items_new, 0);
-  const updCount = r.runs.reduce((a, x) => a + x.items_updated, 0);
-  const errCount = r.runs.filter((x) => x.error !== undefined).length;
-  return `room=${room} sources=${r.runs.length} new=${newCount} updated=${updCount} errors=${errCount}`;
+  const descriptors = listed.value.filter(isEnabled);
+  const built = deps.runtime.registry.buildAll(descriptors);
+  let newCount = 0;
+  let updCount = 0;
+  let errCount = built.errors.length;
+  for (const source of built.sources) {
+    const r = await ingestSource(deps.runtime.ingestDeps)(source);
+    if (r.isErr()) {
+      errCount++;
+      continue;
+    }
+    newCount += r.value.items_new;
+    updCount += r.value.items_updated;
+  }
+  return `label=${label} sources=${built.sources.length} new=${newCount} updated=${updCount} errors=${errCount}`;
 };
 
 /**
- * Re-ingest a single file inside a known room. Reads the file directly,
- * builds a synthetic ContentItem, and routes through the chunk-based
+ * Re-ingest a single file. Reads the file directly, builds a
+ * synthetic ContentItem, and routes through the chunk-based
  * ingest pipeline — bypassing the codebase adapter's directory walk
  * entirely.
  *
@@ -51,10 +73,14 @@ const runIngestRoom = async (deps: RunnerDeps, room: string): Promise<string> =>
  * O(N) sibling walks → O(N²) on a single repo edit.
  *
  * Now: O(1) per save. Just the file we got the change event for.
+ *
+ * V5: the `label` argument is a vestigial pass-through of the legacy
+ * job-payload `room` field — used only in the result summary, never
+ * for routing.
  */
 const runIngestFile = async (
   deps: RunnerDeps,
-  room: string,
+  label: string,
   path: string,
 ): Promise<string> => {
   if (!isAbsolute(path) || path === '/') {
@@ -70,16 +96,16 @@ const runIngestFile = async (
     text = buf;
     mtime = statSync(path).mtime;
   } catch (e) {
-    return `file=${path} room=${room} skipped (${(e as Error).message})`;
+    return `file=${path} label=${label} skipped (${(e as Error).message})`;
   }
 
   // Skip empty / huge files — embedding them is wasted work, and the
   // codebase adapter already filters by extension at the directory
   // walk; here we re-apply a size sanity check.
   const MAX_FILE_BYTES = 2_000_000;
-  if (text.length === 0) return `file=${path} room=${room} skipped (empty)`;
+  if (text.length === 0) return `file=${path} label=${label} skipped (empty)`;
   if (text.length > MAX_FILE_BYTES) {
-    return `file=${path} room=${room} skipped (>${MAX_FILE_BYTES}B)`;
+    return `file=${path} label=${label} skipped (>${MAX_FILE_BYTES}B)`;
   }
 
   // Build a synthetic single-item Source so the existing chunk
@@ -94,9 +120,8 @@ const runIngestFile = async (
     metadata: { kind: 'ingest:file-watch', mtime: mtime.toISOString() },
   };
   const desc: SourceDescriptor = {
-    id: `${room}-watch-${path}`,
+    id: `${label}-watch-${path}`,
     kind: 'codebase',
-    room,
     enabled: true,
     config: { root: dirname(path) },
   };
@@ -108,24 +133,24 @@ const runIngestFile = async (
   const ingest = ingestSource(deps.runtime.ingestDeps);
   const r = await ingest(synthSource);
   if (r.isErr()) throw new Error(`ingest:file ${path} — ${formatError(r.error)}`);
-  return `file=${path} room=${room} new=${r.value.items_new} updated=${r.value.items_updated} skipped=${r.value.items_skipped}`;
+  return `file=${path} label=${label} new=${r.value.items_new} updated=${r.value.items_updated} skipped=${r.value.items_skipped}`;
 };
 
 /**
- * Incremental session ingest. Routes through triggerRoom('sessions')
- * which uses the existing sessions-state.json offset cursor — only
- * new lines are read; the JSONL re-walk is cheap when most files are
- * unchanged.
+ * Incremental session ingest. V5: with per-room dispatch retired, this
+ * routes through the flat source list and lets the sessions adapter's
+ * own cursor decide what work to do.
+ *
+ * The path argument is reserved for a future targeted re-walk; for v1
+ * we still run the full flat fan-out — the sessions adapter's offset
+ * cursor keeps the work proportional to new bytes.
  */
 const runIngestSession = async (
   deps: RunnerDeps,
   path?: string,
 ): Promise<string> => {
-  // path is reserved for a future targeted re-walk; for v1 we route
-  // through the room-level trigger which inspects every JSONL via the
-  // cursor and is already efficient on incremental change.
   void path;
-  return runIngestRoom(deps, 'sessions');
+  return runIngestAll(deps, 'sessions');
 };
 
 /**
@@ -147,10 +172,10 @@ const MAX_BATCH_FILE_BYTES = 2_000_000;
 
 const runIngestBatch = async (
   deps: RunnerDeps,
-  room: string,
+  label: string,
   paths: readonly string[],
 ): Promise<string> => {
-  if (paths.length === 0) return `room=${room} paths=0 (empty)`;
+  if (paths.length === 0) return `label=${label} paths=0 (empty)`;
 
   // Read every file into a ContentItem. Anything we can't or
   // shouldn't index is skipped without aborting the batch.
@@ -175,7 +200,7 @@ const runIngestBatch = async (
     }
   }
   if (items.length === 0) {
-    return `room=${room} paths=${paths.length} skipped_read=${skippedRead} skipped_size=${skippedSize}`;
+    return `label=${label} paths=${paths.length} skipped_read=${skippedRead} skipped_size=${skippedSize}`;
   }
 
   // Delegate to the application-layer batch use case. The runtime's
@@ -184,36 +209,38 @@ const runIngestBatch = async (
   // this daemon adapter does not import infrastructure or domain
   // entity modules at all.
   const descriptor: SourceDescriptor = {
-    id: `${room}-batch-${Date.now()}`,
+    id: `${label}-batch-${Date.now()}`,
     kind: 'codebase',
-    room,
     enabled: true,
     config: { root: '<batch>' },
   };
   const r = await ingestBatch(deps.runtime.ingestDeps)({ descriptor, items });
-  if (r.isErr()) throw new Error(`ingest:batch room=${room} — ${formatError(r.error)}`);
+  if (r.isErr()) throw new Error(`ingest:batch label=${label} — ${formatError(r.error)}`);
   const v = r.value;
-  return `room=${room} paths=${paths.length} new=${v.items_new} updated=${v.items_updated} skipped=${v.items_skipped + skippedRead + skippedSize}`;
+  return `label=${label} paths=${paths.length} new=${v.items_new} updated=${v.items_updated} skipped=${v.items_skipped + skippedRead + skippedSize}`;
 };
 
 /**
- * Project ingest — the four ephemeral descriptors that `wellinformed
+ * Project ingest — the four ephemeral descriptors that `akashik
  * this` wants to run, but routed through the daemon's worker so the
  * graph.json write-lock dance stays single-writer. Descriptors are
- * NOT persisted to sources.json (mirrors `wellinformed index`).
+ * NOT persisted to sources.json (mirrors `akashik index`).
+ *
+ * V5: the `label` argument identifies the project for the result
+ * summary; it no longer drives source partitioning.
  */
 const runIngestProject = async (
   deps: RunnerDeps,
-  room: string,
+  label: string,
   root: string,
   maxCommits: number,
   includeDev: boolean,
 ): Promise<string> => {
   const descriptors: SourceDescriptor[] = [
-    { id: `${room}-codebase`, kind: 'codebase', room, enabled: true, config: { root } },
-    { id: `${room}-deps`, kind: 'package_deps', room, enabled: true, config: { root, include_dev: includeDev } },
-    { id: `${room}-submodules`, kind: 'git_submodules', room, enabled: true, config: { root } },
-    { id: `${room}-git`, kind: 'git_log', room, enabled: true, config: { root, max_commits: maxCommits } },
+    { id: `${label}-codebase`, kind: 'codebase', enabled: true, config: { root } },
+    { id: `${label}-deps`, kind: 'package_deps', enabled: true, config: { root, include_dev: includeDev } },
+    { id: `${label}-submodules`, kind: 'git_submodules', enabled: true, config: { root } },
+    { id: `${label}-git`, kind: 'git_log', enabled: true, config: { root, max_commits: maxCommits } },
   ];
   const ingest = ingestSource(deps.runtime.ingestDeps);
   let totalNew = 0;
@@ -235,7 +262,7 @@ const runIngestProject = async (
     totalUpd += r.value.items_updated;
     totalSkip += r.value.items_skipped;
   }
-  return `room=${room} root=${root} new=${totalNew} updated=${totalUpd} skipped=${totalSkip} errors=${errs}`;
+  return `label=${label} root=${root} new=${totalNew} updated=${totalUpd} skipped=${totalSkip} errors=${errs}`;
 };
 
 // ─────────────── dispatch ──────────────────
@@ -253,7 +280,10 @@ export const buildJobRunner = (deps: RunnerDeps) =>
   async (job: Job): Promise<string> => {
     const p = job.payload;
     switch (p.kind) {
-      case 'ingest:room':    return runIngestRoom(deps, p.room);
+      // V5: the legacy per-room dispatch is gone. Job payloads still carry
+      // a `room` field (24-09 owns the domain narrowing); the runner reads
+      // it as an opaque label for the result summary only.
+      case 'ingest:room':    return runIngestAll(deps, p.room);
       case 'ingest:file':    return runIngestFile(deps, p.room, p.path);
       case 'ingest:session': return runIngestSession(deps, p.path);
       case 'ingest:project': return runIngestProject(deps, p.room, p.root, p.maxCommits ?? 50, p.includeDev ?? true);

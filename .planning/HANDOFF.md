@@ -34,8 +34,8 @@ essential, git, jq, tmux). OpenClaw `2026.5.18` installed via
 `npm install -g openclaw`; gateway running as a systemd service
 (`openclaw-gateway.service`) on `127.0.0.1:37777` with token auth
 (token in `/etc/openclaw-gateway.env` mode 600). Loopback bind, no
-external exposure. wellinformed working tree rsynced to
-`/opt/wellinformed/` (`npm install` complete — 503 packages). All
+external exposure. akashik working tree rsynced to
+`/opt/akashik/` (`npm install` complete — 503 packages). All
 three datasets staged: `/data/scifact` (8 MB), `/data/longmemeval`
 (15 MB `longmemeval_oracle.json`), `/data/locomo` (2.7 MB
 `locomo10.json`). Composite bench currently running in tmux session
@@ -95,7 +95,7 @@ Order of operations once `ssh hetzner-root` starts responding (usually 30-60 s a
    - `bench-scifact-real.test.ts` — full BEIR SciFact (5,183 docs × 300 queries), NDCG@10. Replaces the 30-doc proxy currently feeding `beirSciFactNdcg10`.
    - `bench-longmemeval-real.test.ts` — LongMemEval-S oracle split (500 questions, ~3 GB HF download). Recall@5 against gold evidence sessions.
    - `bench-locomo-real.test.ts` — LoCoMo factual subset from `snap-research/locomo` GitHub. F1 via the same harmonic-mean scorer the synthetic suite uses.
-   All three are env-gated (`WELLINFORMED_BENCH_PUBLIC_REAL=1`) so CI stays fast — they only run on the Hetzner box.
+   All three are env-gated (`AKASHIK_BENCH_PUBLIC_REAL=1`) so CI stays fast — they only run on the Hetzner box.
 6. **Run + report.** Expected composite jump: 0.9012 → ~0.95 depending on real-corpus reality (BEIR SOTA is 0.7522 not 1.0 so composite can't hit 1.0 on real data).
 
 ## 5. Secrets discipline
@@ -119,8 +119,8 @@ Order of operations once `ssh hetzner-root` starts responding (usually 30-60 s a
 | infra | `src/infrastructure/summariser.ts` | NEW — Summariser port + ollama/fixture adapters |
 | application | `src/application/ask.ts` | EDIT — wired cross-encoder rerank between hybrid + PPR |
 | application | `src/application/auto-forget-tick.ts` | NEW — auto-forget orchestrator |
-| cli | `src/cli/commands/gc.ts` | NEW — `wellinformed gc {list,apply}` |
-| cli | `src/cli/commands/bench.ts` | NEW — `wellinformed bench memory` |
+| cli | `src/cli/commands/gc.ts` | NEW — `akashik gc {list,apply}` |
+| cli | `src/cli/commands/bench.ts` | NEW — `akashik bench memory` |
 | cli | `src/cli/index.ts` | EDIT — registered `gc` + `bench` |
 | tests | `tests/bench-tier-promotion.test.ts` | NEW — F1 = 1.0 |
 | tests | `tests/bench-beta-calibration.test.ts` | NEW — worst err 0.011 |
@@ -162,7 +162,7 @@ Carry these as TodoWrite items on resume:
 6. Verify MCP call works from this Mac
 7. ~~Write 3 real-corpus bench adapters~~ — **DONE 2026-05-20**, files
    landed flat under `tests/` (project test glob is `tests/*.test.ts`, not
-   nested) and all env-gated behind `WELLINFORMED_BENCH_PUBLIC_REAL=1`:
+   nested) and all env-gated behind `AKASHIK_BENCH_PUBLIC_REAL=1`:
    - `tests/bench-scifact-real.test.ts` — BEIR SciFact NDCG@10. Needs
      `BEIR_SCIFACT_DIR` pointing at `corpus.jsonl + queries.jsonl +
      qrels/test.tsv`. Floor: NDCG@10 ≥ 0.30.
@@ -187,9 +187,9 @@ Carry these as TodoWrite items on resume:
 - The user pinned Codex specifically (not Claude/Gemini) for the remote provider — relevant if `octo:claw` asks which provider to wire.
 - Tailscale is NOT installed — don't suggest it. Reverse-SSH is the agreed transport.
 - All public-corpus adapters MUST be env-gated. CI stays fast; only the Hetzner box runs them.
-- `WELLINFORMED_BENCH_OUT` is the JSONL append target for any bench file — the composite runner spawns each suite with it set. Document this in any new bench file.
+- `AKASHIK_BENCH_OUT` is the JSONL append target for any bench file — the composite runner spawns each suite with it set. Document this in any new bench file.
 - The pre-existing 4 test failures (Phase 17 tool-count, Phase 20 deps, Phase 35 P2P E2E, peer-order-builder flake) are NOT in scope to fix — they're project drift, document only.
-- Synthetic LoCoMo scorer: dropped full-summary token-F1 because it was mathematically pinned tiny; replaced with harmonic mean of evidence-recall + answer-token-containment. Documented in suite header. Real-LoCoMo Phase 23.7 adapter should use the same metric — OR opt-in to LLM extractor via `WELLINFORMED_BENCH_LLM_EXTRACTOR=1`.
+- Synthetic LoCoMo scorer: dropped full-summary token-F1 because it was mathematically pinned tiny; replaced with harmonic mean of evidence-recall + answer-token-containment. Documented in suite header. Real-LoCoMo Phase 23.7 adapter should use the same metric — OR opt-in to LLM extractor via `AKASHIK_BENCH_LLM_EXTRACTOR=1`.
 
 ## 9. Composite numbers worth quoting
 

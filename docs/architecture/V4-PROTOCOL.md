@@ -1,7 +1,13 @@
-# wellinformed v4 — Agent Brain Protocol
+# Akashik v4 — Agent Brain Protocol
+
+> **⚠ DEPRECATED 2026-05-27.** V4 is superseded by V5; see
+> [`V5-PROTOCOL.md`](./V5-PROTOCOL.md). The wire envelopes lost the `room`
+> field, the room registry was deleted, and per-room Y.Docs collapsed into a
+> single global graph Y.Doc. This document is preserved for migration
+> reference only — run `akashik migrate v5` to upgrade live data.
 
 **Version:** 0.4 (draft, supersedes V3-PROTOCOL.md)
-**Status:** Reference implementation shipped in wellinformed v4.x; spec stabilising ahead of v4.0 tag
+**Status:** Reference implementation shipped in Akashik v4.x; spec stabilising ahead of v4.0 tag
 **Audience:** Implementers of cross-agent persistent memory, P2P application authors, anyone building on free LLMs
 
 ---
@@ -20,12 +26,12 @@ This document covers the v4 additions on top of V3-PROTOCOL.md. **Everything in 
 
 ### 2.1 Socket location and protocol
 
-Wellinformed's daemon listens on a Unix-domain socket at `${WELLINFORMED_HOME}/daemon.sock` (POSIX permissions 0600 — only the owning user can connect).
+Akashik's daemon listens on a Unix-domain socket at `${AKASHIK_HOME}/daemon.sock` (POSIX permissions 0600 — only the owning user can connect).
 
 Protocol is newline-delimited JSON, request/response. One request per line, one response per line.
 
 ```
-client → daemon:  {"id": <number>, "cmd": "ask", "args": ["--room", "wellinformed-dev", "p2p memory"]}
+client → daemon:  {"id": <number>, "cmd": "ask", "args": ["--room", "akashik-dev", "p2p memory"]}
 daemon → client:  {"id": <number>, "ok": true, "stdout": "...", "exit": 0}
 ```
 
@@ -42,7 +48,7 @@ Unknown `cmd` returns `{ok: false, stderr: "__fallback__", exit: 255}` — the c
 
 ### 2.3 Client integration
 
-`bin/wellinformed.js` checks for the socket file BEFORE importing `dist/cli/index.js`. If present and the command is in the delegatable set (currently `ask`, `stats`), the request is forwarded over IPC. Otherwise the CLI takes the normal spawn path.
+`bin/akashik.js` checks for the socket file BEFORE importing `dist/cli/index.js`. If present and the command is in the delegatable set (currently `ask`, `stats`), the request is forwarded over IPC. Otherwise the CLI takes the normal spawn path.
 
 This is what gives **3.2× speedup** on cold CLI invocations (900ms → 280ms) — measured at `e156e23`. The remaining floor is Node startup; v4.1's native client collapses it further.
 
@@ -77,7 +83,7 @@ Any `Embedder` (Xenova in-process, Rust subprocess, fixture) can be wrapped with
 
 Direct `.embedBatch(texts)` calls bypass the queue.
 
-**Default-on** in v4 — `defaultRuntime()` wraps the chosen backend automatically. Opt-out via `WELLINFORMED_EMBEDDER_BATCH=off`.
+**Default-on** in v4 — `defaultRuntime()` wraps the chosen backend automatically. Opt-out via `AKASHIK_EMBEDDER_BATCH=off`.
 
 ### 4.2 Measured throughput (bge-base via Rust fastembed, N=32)
 
@@ -95,7 +101,7 @@ Reference: `92f797d`, `scripts/bench-embed-throughput.mjs`.
 
 ### 5.1 Conceptual model
 
-Episodic memory entries (raw session transcripts, ingested chat logs, observed events) accumulate linearly. A brain compresses them via overnight replay into semantic schemas. wellinformed v4 ships this as a CLI primitive plus a graph-node schema.
+Episodic memory entries (raw session transcripts, ingested chat logs, observed events) accumulate linearly. A brain compresses them via overnight replay into semantic schemas. Akashik v4 ships this as a CLI primitive plus a graph-node schema.
 
 ### 5.2 Cluster identification
 
@@ -172,7 +178,7 @@ Reference: BENCH-v2.md §2j, commit `b0548d6`.
 
 ### 6.1 Lock file location
 
-`${WELLINFORMED_HOME}/wellinformed.lock` — POSIX exclusive-create file.
+`${AKASHIK_HOME}/akashik.lock` — POSIX exclusive-create file.
 
 Content:
 ```json
@@ -210,8 +216,8 @@ Read-only commands (`ask`, `stats`, `search`) do NOT take the lock.
 V3 specified the negotiation handshake for federated peers to choose an encoding (fp32-768, fp32-512, binary-768, binary-512, ...). V4 ships this as a runtime toggle:
 
 ```bash
-WELLINFORMED_VECTOR_QUANTIZATION=binary-512   # 64 bytes/vec, -1.79pt worst-case (measured)
-WELLINFORMED_VECTOR_QUANTIZATION=binary-768   # 96 bytes/vec, -1.10pt worst-case (safer)
+AKASHIK_VECTOR_QUANTIZATION=binary-512   # 64 bytes/vec, -1.79pt worst-case (measured)
+AKASHIK_VECTOR_QUANTIZATION=binary-768   # 96 bytes/vec, -1.10pt worst-case (safer)
 unset                                          # fp32-768 (default, identical to v3)
 ```
 
@@ -245,7 +251,7 @@ Reference suite: `tests/ipc.test.ts` + `tests/embedder-batching.test.ts` + `test
 src/daemon/ipc.ts                    Unix-socket server + client (Phase 1)
 src/daemon/ipc-handlers.ts           Command registry (Phase 1) + L1 cache wiring (Phase 5)
 src/cli/commands/daemon.ts           Daemon entry + lock acquire (Phase 4.1)
-bin/wellinformed.js                  Client-side IPC delegation (Phase 1)
+bin/akashik.js                  Client-side IPC delegation (Phase 1)
 
 src/domain/binary-quantize.ts        Matryoshka + sign-bit + Hamming primitive (Phase 3a)
 src/infrastructure/vector-index.ts   Binary storage + searchHybridBinary + deleteByNodeId (Phase 3b/4.1)
@@ -278,16 +284,16 @@ Explicitly deferred from v4.0:
 - **L2 semantic query cache** — paraphrase-aware lookup catches the 30-50% of queries the L1 hash cache misses (`src/domain/semantic-cache.ts`). Cosine threshold 0.92, embed-once-route-twice on miss. Wired into the daemon ask handler; cache-stats reports both layers.
 - **HippoRAG-2 multi-hop PPR bench skeleton** — algorithmic harness (`scripts/bench-ppr-multihop.mjs`) reuses `src/domain/pagerank.ts` over a localized doc-doc kNN graph. Synthetic mode validates pipeline; `--dataset hotpotqa|musique` is the path to the real gate.
 - **Browser/WASM portability for the domain layer** — `src/domain/{binary-quantize, semantic-cache, query-cache, vectors}.ts` certified zero `node:` imports. `query-cache` swapped from `node:crypto` to `@noble/hashes` (pure JS, transitive via `@scure/bip39`). Fitness contract enforced by `tests/browser-portability.test.ts`.
-- **SignedShareableNode envelope primitive** — `src/domain/share-envelope.ts` builds on the identity primitive to wrap each ShareableNode in a verifiable Ed25519 envelope chain. Sign/verify roundtrip + 9 tamper-detection tests pass; wiring into the share-sync inbound observer ships behind `WELLINFORMED_REQUIRE_SIGNED_NODES` in a follow-up commit.
+- **SignedShareableNode envelope primitive** — `src/domain/share-envelope.ts` builds on the identity primitive to wrap each ShareableNode in a verifiable Ed25519 envelope chain. Sign/verify roundtrip + 9 tamper-detection tests pass; wiring into the share-sync inbound observer ships behind `AKASHIK_REQUIRE_SIGNED_NODES` in a follow-up commit.
 
 **Still deferred:**
 
-- **v4.1 — Native binary client** (Rust `wellinformed-cli` that speaks the IPC protocol directly, bypassing Node boot). Target: warm-hit latency 100ms → 15ms.
+- **v4.1 — Native binary client** (Rust `akashik-cli` that speaks the IPC protocol directly, bypassing Node boot). Target: warm-hit latency 100ms → 15ms.
 - **v4.1 — BIP39 mnemonic recovery** — adds `@scure/bip39` (40 KB audited dep) for human-readable 12/24-word phrases. Hex format remains supported.
 - **v4.2 — Real-data PPR gate** — wire `scripts/bench-ppr-multihop.mjs` to BEIR HotpotQA + MuSiQue corpora. If +3pt NDCG@10 or +5pt R@5, enable `multi_hop: true` flag on MCP queries.
 - **v4.2 — Contextual Retrieval with a larger local LLM** — current null was measured with Qwen2.5-0.5B (too small). Retry with Qwen3 or Llama-3.2 once their embedding-pair ONNX ports are validated.
 - **v4.2 — Cross-encoder rerank with domain-matched models** — bge-reranker-v2-m3, jina-reranker-v2 — both untested in our pipeline.
-- **v4.2 — Wire `WELLINFORMED_REQUIRE_SIGNED_NODES` into share-sync inbound observer** — the receive-side complement to §5.6, using the now-shipped envelope primitive.
+- **v4.2 — Wire `AKASHIK_REQUIRE_SIGNED_NODES` into share-sync inbound observer** — the receive-side complement to §5.6, using the now-shipped envelope primitive.
 - **v4.3 — WASM browser runtime** — Rust core compiled to WASM for in-browser peers. The TS domain layer is already browser-portable (this session); WASM is for the high-throughput sqlite-vec/HNSW path.
 
 ---

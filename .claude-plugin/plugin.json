@@ -1,14 +1,14 @@
 {
-  "name": "wellinformed",
+  "name": "akashik",
   "version": "0.0.1",
   "description": "Queryable, embeddings-backed knowledge graph fed by a research daemon and your daily scroll (via Telegram). Rooms-scoped, shared tools.",
   "engines": {
     "claudeCode": ">=1.0.0"
   },
   "mcpServers": {
-    "wellinformed": {
+    "akashik": {
       "command": "npx",
-      "args": ["--yes", "wellinformed", "mcp", "start"],
+      "args": ["--yes", "akashik", "mcp", "start"],
       "env": {}
     }
   }

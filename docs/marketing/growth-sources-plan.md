@@ -86,7 +86,7 @@ discover_loop — "Expand my research automatically. Discover new sources,
 ### CLI command
 
 ```bash
-wellinformed discover-loop --room homelab --max-iterations 3
+akashik discover-loop --room homelab --max-iterations 3
 # iteration 1: found 4 sources from room keywords
 # iteration 2: found 2 more from extracted keywords ("VFIO", "iommu")
 # iteration 3: found 0 new — converged

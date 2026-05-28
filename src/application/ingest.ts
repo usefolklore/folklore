@@ -17,7 +17,7 @@
  *   1. load the current graph
  *   2. compute sha256(normalized text) of every fetched ContentItem
  *   3. compare against `content_sha256` stored on the existing node
- *      (a new wellinformed extra field — not in graphify's patch but
+ *      (a new akashik extra field — not in graphify's patch but
  *      graphify's validator passes extras through unchanged)
  *   4. equal → skipped, different → updated, not-seen → new
  *   5. only new + updated items chunk/embed/upsert
@@ -34,10 +34,10 @@
 import { Result, ResultAsync, errAsync, okAsync } from 'neverthrow';
 import type { AppError } from '../domain/errors.js';
 import type { ContentItem } from '../domain/content.js';
-import type { Graph, Room } from '../domain/graph.js';
+import type { Graph } from '../domain/graph.js';
 import { getNode } from '../domain/graph.js';
 import type { Source, SourceDescriptor, SourceRun, RoomRun } from '../domain/sources.js';
-import { emptyRun, forRoom } from '../domain/sources.js';
+import { emptyRun, isEnabled } from '../domain/sources.js';
 import type { GraphRepository } from '../infrastructure/graph-repository.js';
 import type { VectorIndex } from '../infrastructure/vector-index.js';
 import type { Embedder } from '../infrastructure/embedders.js';
@@ -121,31 +121,31 @@ export const ingestSource =
   (source: Source): ResultAsync<SourceRun, AppError> =>
     source.fetch().andThen((items) => processItems(deps, source.descriptor, items));
 
-// ─────────────────────── triggerRoom ──────────────────────
+// ─────────────────────── triggerAllSources ─────────────────
 
 /**
- * Load enabled sources for a room and run each one. Returns a
- * RoomRun aggregate even if individual sources fail — per-source
- * errors are captured on SourceRun.error so the CLI can report them
- * without aborting the whole batch.
+ * V5 (Phase 24): load every enabled source and run it. Returns a
+ * RoomRun aggregate (the shape is retained for back-compat with the
+ * daemon's tick reporting); the `room` field on the aggregate is
+ * omitted because the room dimension no longer exists.
+ *
+ * Per-source errors are captured on SourceRun.error so the CLI can
+ * report them without aborting the whole batch.
  */
-export const triggerRoom =
+export const triggerAllSources =
   (deps: IngestDeps) =>
-  (room: Room): ResultAsync<RoomRun, AppError> => {
+  (): ResultAsync<RoomRun, AppError> => {
     const started_at = new Date().toISOString();
     return deps.sources
       .list()
       .mapErr((e): AppError => e)
       .andThen((all) => {
-        const descriptors = forRoom(all, room);
+        const descriptors = all.filter(isEnabled);
         const { sources: live, errors } = deps.registry.buildAll(descriptors);
 
-        // For each hydration error, synthesise a failed SourceRun so
-        // the report is truthful.
         const hydrationRuns: SourceRun[] = errors.map((e) => ({
           source_id: '<unknown>',
           kind: 'generic_rss',
-          room,
           items_seen: 0,
           items_new: 0,
           items_updated: 0,
@@ -163,13 +163,21 @@ export const triggerRoom =
             ),
           ),
         ).map((runs): RoomRun => ({
-          room,
           runs: [...hydrationRuns, ...runs],
           started_at,
           finished_at: new Date().toISOString(),
         }));
       });
   };
+
+/**
+ * @deprecated V5 — preserved alias of `triggerAllSources`. The `room`
+ * argument is ignored. Will be removed in a follow-up wave.
+ */
+export const triggerRoom =
+  (deps: IngestDeps) =>
+  (_room: string): ResultAsync<RoomRun, AppError> =>
+    triggerAllSources(deps)();
 
 // ─────────────────────── internals ────────────────────────
 
@@ -322,7 +330,6 @@ const aggregateRun = (
   return {
     source_id: descriptor.id,
     kind: descriptor.kind,
-    room: descriptor.room,
     items_seen: seen,
     items_new: newCount,
     items_updated: updated,

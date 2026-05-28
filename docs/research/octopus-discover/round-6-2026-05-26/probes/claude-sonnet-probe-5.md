@@ -8,12 +8,12 @@ CONTEXT:
 The project has gone through:
 1. Multiple ML retrieval optimization attempts (E1' rerank, E11 enrichment, listwise rerank, NDCG/MRR augmentation)
 2. Three octopus-discover synthesis rounds with empirical pushback
-3. A fundamental pivot from 'wellinformed: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
 4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
 5. The scaffolding of AkashikBench-F which validated the compounding thesis (slope -4.74e-5 on LoCoMo)
 6. Now: rebrand sweep in progress (Akashik), and need to clean up the codebase + docs of stale artifacts.
 
-WORKING DIR: /Users/saharbarak/personal/wellinformed
+WORKING DIR: /Users/saharbarak/personal/akashik
 
 QUESTIONS:
 
@@ -22,10 +22,10 @@ Q1. Looking at the project layout (src/, tests/, docs/, .planning/, scripts/, ex
 Q2. Specific things to investigate:
    - .planning/ directory — there are phase-21, phase-23 dirs, HANDOFF.md, long-term-memory-integration.md. The phase-based GSD planning workflow may be useful or may be cruft.
    - docs/research/ — multiple research docs (energy-based-contradiction-detection, beat-the-competitors-retrieval-plan, performance-prediction-matrix). Some of these may have been superseded by the pivot.
-   - src/ — there's wellinformed-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
+   - src/ — there's akashik-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
    - tests/ — many tests reflect the old framing. Tests for bench-real.test.ts (30-doc proxy), bench-standard.test.ts (synth HotpotQA). Are these still useful or superseded?
    - Markdown clutter — README.md.bak.830lines is in the working tree (a backup of an old README). docs has potential duplication.
-   - Codebase identifiers (wellinformed* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
+   - Codebase identifiers (akashik* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
 
 Q3. What docs/research artifacts should be ARCHIVED (moved to a docs/archive/ subfolder with a note) vs DELETED outright? Archive = useful historical record; delete = noise.
 
@@ -55,10 +55,10 @@ I now have enough signal. Let me write the full audit.
 
 ## Context Synopsis (what I verified from the code)
 
-- **Active product:** Akashik (OSS federated knowledge commons). Codebase still named `wellinformed` — intentional two-name period per `docs/PROJECT-PLAN-AKASHIK.md`.
+- **Active product:** Akashik (OSS federated knowledge commons). Codebase still named `akashik` — intentional two-name period per `docs/PROJECT-PLAN-AKASHIK.md`.
 - **Current state:** Phase 23.7 (Hetzner real-corpus benches + AkashikBench-F validated). Phase 24 is next (federation sweep, niche-evaporation mitigation, IPC auth hardening).
 - **Explicitly de-prioritized:** All further R@5 / LongMemEval / bge-reranker tuning (PROJECT-PLAN-AKASHIK.md §"What we're explicitly NOT doing").
-- **Architecture:** DDD, functional TypeScript, neverthrow Results, libp2p P2P, SQLite + ONNX vectors, wellinformed-rs Rust sidecar (BM25 + dense fusion).
+- **Architecture:** DDD, functional TypeScript, neverthrow Results, libp2p P2P, SQLite + ONNX vectors, akashik-rs Rust sidecar (BM25 + dense fusion).
 - **Critical finding:** `.claude-octopus/` is tracked by git but NOT in `.gitignore`.
 
 ---
@@ -67,7 +67,7 @@ I now have enough signal. Let me write the full audit.
 
 | File | Action | Reason |
 |---|---|---|
-| `README.md` | NEEDS-REWRITE | Still says "wellinformed" product framing. Must be updated to Akashik identity before Phase 25 pilot launch. |
+| `README.md` | NEEDS-REWRITE | Still says "akashik" product framing. Must be updated to Akashik identity before Phase 25 pilot launch. |
 | `README.md.bak.830lines` | DELETE | Committed backup file. Violates root-folder rule. Git history has it. |
 | `findings.md` | DELETE | Root-level working note (violates CLAUDE.md "never save to root"). Stale planning artifact. |
 | `NEXT_STEPS.md` | DELETE | Same — root-level planning scratchpad. Project plan is `docs/PROJECT-PLAN-AKASHIK.md` now. |
@@ -155,8 +155,8 @@ I now have enough signal. Let me write the full audit.
 | `docs/marketing/x-launch-posts.md` | KEEP | Phase 25 launch content. |
 | `docs/marketing/SITE-REDESIGN-SPEC.md` | NEEDS-REWRITE | Site redesign spec for Akashik. The spec may still be valid structurally but the brand is Akashik now. |
 | `docs/marketing/IMAGEGEN-FRONTEND-WEB.md` | DELETE | Looks like a stale imagegen task log dropped into docs/marketing/. Not a marketing document. |
-| `docs/marketing/BRAND-KIT.md` | NEEDS-REWRITE | Brand kit exists but assets (logos, wordmarks) all say `wellinformed`. Must be updated for Akashik before launch. |
-| `docs/assets/logo-*.svg`, `og-card.*`, `og-portrait.*` | NEEDS-REWRITE | All existing brand assets are `wellinformed` identity. Akashik rebrand requires new assets. These are stale until the rebrand PR. |
+| `docs/marketing/BRAND-KIT.md` | NEEDS-REWRITE | Brand kit exists but assets (logos, wordmarks) all say `akashik`. Must be updated for Akashik before launch. |
+| `docs/assets/logo-*.svg`, `og-card.*`, `og-portrait.*` | NEEDS-REWRITE | All existing brand assets are `akashik` identity. Akashik rebrand requires new assets. These are stale until the rebrand PR. |
 | `docs/index.html` | NEEDS-REWRITE | Landing page. Rebrand target. |
 | `docs/probe.html` | DELETE | HTML probe file in docs/ root — diagnostic artifact, not a product doc. |
 | `docs/demo.tape` | KEEP | VHS tape script for demo recording. |
@@ -177,7 +177,7 @@ I now have enough signal. Let me write the full audit.
 | `tests/bench-locomo-synth.test.ts` | KEEP | Synthetic LoCoMo bench. Valid. |
 | `tests/bench-longmemeval-synth.test.ts` | KEEP | Synthetic LongMemEval bench. Valid. |
 | `tests/bench-onnx.test.ts` | KEEP | ONNX embedder bench. Valid infrastructure test. |
-| `tests/bench-auto-forget.test.ts`, `bench-beta-calibration.test.ts`, `bench-retention-band.test.ts`, `bench-tier-promotion.test.ts`, `bench-write-gate.test.ts` | KEEP | Phase 21/23 wellinformed-specific synthetic benches. All are part of the composite score formula. |
+| `tests/bench-auto-forget.test.ts`, `bench-beta-calibration.test.ts`, `bench-retention-band.test.ts`, `bench-tier-promotion.test.ts`, `bench-write-gate.test.ts` | KEEP | Phase 21/23 akashik-specific synthetic benches. All are part of the composite score formula. |
 | `tests/llm-listwise-rerank.test.ts` | ARCHIVE/DISABLE | LLM listwise rerank is explicitly de-prioritized (PROJECT-PLAN-AKASHIK.md §"Not doing"). The code still exists in `src/domain/llm-listwise-rerank.ts` but this test is now "aspirational not tested." Either add a `.skip` with a note, or archive. Don't delete — the code may be revived post-pilot. |
 | `tests/contextual-enrich.test.ts` | KEEP | E11 contextual enrichment is in the production R@5=0.9268 path. |
 | `tests/cross-rerank.test.ts` | KEEP | Phase 21 cross-encoder rerank. Active. |
@@ -201,9 +201,9 @@ I now have enough signal. Let me write the full audit.
 | `src/domain/long-term-memory.ts` | KEEP | Phase 21, active. |
 | `src/domain/cross-rerank.ts` | KEEP | Phase 21, active. |
 | `src/application/auto-forget-tick.ts` | KEEP | Phase 21, active. |
-| `src/cli/commands/bench.ts` | KEEP | `wellinformed bench memory` driver. Phase 23. |
+| `src/cli/commands/bench.ts` | KEEP | `akashik bench memory` driver. Phase 23. |
 | `src/telegram/` (bot.ts, capture.ts, commands.ts, digest.ts) | KEEP | Telegram bridge shipped in Phase 7. Still a valid ingest path. No evidence it's been abandoned. |
-| `src/cli/commands/swarm.ts` | INVESTIGATE | `swarm` CLI command — is this the claude-flow swarm integration or a wellinformed-native feature? If it's unused glue from the octopus harness, it could be a delete candidate. |
+| `src/cli/commands/swarm.ts` | INVESTIGATE | `swarm` CLI command — is this the claude-flow swarm integration or a akashik-native feature? If it's unused glue from the octopus harness, it could be a delete candidate. |
 
 ---
 
@@ -215,8 +215,8 @@ I now have enough signal. Let me write the full audit.
 | `.claude-octopus/context/`, `.claude-octopus/quick/`, `.claude-octopus/summaries/` | GITIGNORE | Same — all subdirectories of `.claude-octopus/` are runtime state. |
 | `.claude-plugin/plugin.json` | KEEP (possibly gitignore) | Plugin manifest for Claude Code. If this is user-local config (like `.claude/settings.local.json`), gitignore it. If it's project-level config that all contributors need, keep it tracked. |
 | `.agents/skills/` (copywriting, design-taste-frontend, etc.) | KEEP (but reassess) | These are UI/design agent skills. They're tangential to the OSS-commons product but serve the marketing workstream. Low noise, low cost to keep. |
-| `.claude/skills/wellinformed/SKILL.md` | NEEDS-REWRITE | The wellinformed skill needs updating to Akashik brand. |
-| `wellinformed-rs/` | KEEP | Rust sidecar (BM25 + HNSW). Active — referenced by `rust-retrieval.ts` and has a regression test (`phase29`). |
+| `.claude/skills/akashik/SKILL.md` | NEEDS-REWRITE | The akashik skill needs updating to Akashik brand. |
+| `akashik-rs/` | KEEP | Rust sidecar (BM25 + HNSW). Active — referenced by `rust-retrieval.ts` and has a regression test (`phase29`). |
 | `vendor/graphify/` | INVESTIGATE | Python graphify sidecar from Phase 1. `.gitignore` says "Phase 1" — is the sidecar still used, or was it replaced by the TypeScript graph layer? If unused, delete. |
 | `demo/` | KEEP | Demo research corpus and screenshots. Used for the demo tape. |
 

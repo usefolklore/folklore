@@ -8,8 +8,8 @@ dependency_graph:
     - 16-01  # share-store.ts, ydoc-store.ts, ShareError
     - 16-02  # share-sync.ts — syncNodeIntoYDoc, runShareSyncTick, createShareSyncRegistry, registerShareProtocol
   provides:
-    - "wellinformed share room <name> CLI command"
-    - "wellinformed unshare <name> CLI command"
+    - "akashik share room <name> CLI command"
+    - "akashik unshare <name> CLI command"
     - "DaemonDeps.shareSync optional field"
     - "daemon loop calls runShareSyncTick per tick when libp2p is live"
     - "libp2p bootstrap in startLoop gated on peer-identity.json existence"
@@ -53,7 +53,7 @@ metrics:
 
 ## What Was Built
 
-### 1. `wellinformed share room <name>` subcommand (Task 1)
+### 1. `akashik share room <name>` subcommand (Task 1)
 
 **File:** `src/cli/commands/share.ts` — extended from 130 to 232 lines
 
@@ -68,7 +68,7 @@ metrics:
 
 **Exit codes:** 0 on success, 1 on any error (blocked, config failure, lock failure, Y.Doc failure).
 
-### 2. `wellinformed unshare <name>` command (Task 2)
+### 2. `akashik unshare <name>` command (Task 2)
 
 **File:** `src/cli/commands/unshare.ts` — 61 lines (new file)
 
@@ -76,7 +76,7 @@ metrics:
 - Reads current shared-rooms.json (identity transform via `mutateSharedRooms`) to check if room is registered
 - Idempotent: if room is not in registry, exits 0 with `'<name>' was not shared (no-op)`
 - On found: `mutateSharedRooms(path, file => removeSharedRoom(file, name))` removes the entry
-- `.ydoc` file at `~/.wellinformed/ydocs/<name>.ydoc` is **NEVER deleted** — retained for future re-share
+- `.ydoc` file at `~/.akashik/ydocs/<name>.ydoc` is **NEVER deleted** — retained for future re-share
 - Prints daemon-restart hint so user knows streams close on next tick
 
 **CLI registration:** `src/cli/index.ts` — `import { unshare }` added + `unshare,` in the commands Record.
@@ -190,7 +190,7 @@ Exactly **one** SIGTERM handler and **one** SIGINT handler registered.
 | Hash | Task | Description |
 |------|------|-------------|
 | `8e2807f` | Task 1 | feat(16-03): add 'share room <name>' subcommand with audit gate + Y.Doc seeding |
-| `95dba6f` | Task 2 | feat(16-03): add 'wellinformed unshare <name>' command + register in CLI router |
+| `95dba6f` | Task 2 | feat(16-03): add 'akashik unshare <name>' command + register in CLI router |
 | `9b1e12e` | Task 3 | feat(16-03): hook runShareSyncTick into daemon loop + libp2p bootstrap on identity presence |
 
 ---

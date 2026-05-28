@@ -1,4 +1,4 @@
-# wellinformed — natural Claude Code session, federated retrieval live.
+# akashik — natural Claude Code session, federated retrieval live.
 # Driven by demo/scene-federated.sh. Output: demo/scene-federated.gif
 
 Output demo/scene-federated.gif
@@ -17,11 +17,11 @@ Set WindowBar Colorful
 Set WindowBarSize 30
 
 Hide
-Type "cd /Users/saharbarak/personal/wellinformed"
+Type "cd /Users/saharbarak/personal/akashik"
 Enter
-Type "export WELLINFORMED_HOME=$HOME/.wellinformed.demo"
+Type "export AKASHIK_HOME=$HOME/.akashik.demo"
 Enter
-Type "export WELLINFORMED_PREFETCH_TIMEOUT_MS=15000"
+Type "export AKASHIK_PREFETCH_TIMEOUT_MS=15000"
 Enter
 Type "clear"
 Enter

@@ -15,7 +15,7 @@
 - Wire format: embedding (384-dim Float32Array from the requester's local ONNX runtime) — not raw query text. Keeps ONNX out of the inbound hot path on responding peers
 - Fan-out: parallel dial — send SearchRequest to all currently-connected peers via parallel libp2p streams, collect responses with a 2s timeout per peer. Degraded peers do not block the query
 - Result merging: requester merges local results + all peer responses into one ranked list by cosine distance, annotating each result with `_source_peer: <peerId>` (null for local results)
-- New protocol ID: `/wellinformed/search/1.0.0` — separate from `/wellinformed/share/1.0.0` so sync and search have independent stream lifecycles
+- New protocol ID: `/akashik/search/1.0.0` — separate from `/akashik/share/1.0.0` so sync and search have independent stream lifecycles
 
 **Peer Discovery Strategy**
 - mDNS enabled by default (DISC-02) — homelab/LAN case is the primary use. `@libp2p/mdns` auto-adds discovered peers to the libp2p peerStore. Disable via `config.yaml peer.mdns: false`
@@ -24,7 +24,7 @@
 - Discovered peers auto-persisted to `peers.json` with new field `discovery_method: 'manual' | 'mdns' | 'dht'` — distinguishable from manual adds in `peer list` output
 
 **MCP Tool + CLI Surface**
-- Extend existing `wellinformed ask` with `--peers` flag (matches FED-01 literal text). `ask` already does embedding + ranking; federated mode adds the fan-out step
+- Extend existing `akashik ask` with `--peers` flag (matches FED-01 literal text). `ask` already does embedding + ranking; federated mode adds the fan-out step
 - New MCP tool `federated_search(query, limit?, room?)` — separate from existing `search` so Claude has a clear choice between "my graph" vs. "my graph + peers". Results include `_source_peer` annotation. Registered as the 14th MCP tool
 - Default behavior when no peers connected: return local-only results with `peers_queried: 0` in the meta field. No hard error. Same for `ask --peers`
 - Cross-peer tunnel detection (FED-04): run existing `findTunnels` over the combined result set as a synthetic one-shot graph. Surface tunnels as a separate section in output
@@ -33,7 +33,7 @@
 - Query privacy — peers see the embedding and room filter. Embeddings are not plaintext but are correlatable. Document this trade-off explicitly in the `federated_search` tool description and in `peer status` output. Private information retrieval (PIR) is v3+
 - Inbound search authorization — peers can request any room but only rooms in the local `shared-rooms.json` respond. Non-shared rooms return an empty result set. No per-peer ACL in Phase 17 (room-level only)
 - Rate limiting — token bucket per peer: 10 requests/sec, burst 30. Configurable via `config.yaml peer.search_rate_limit`. Prevents a peer from DOSing local sqlite-vec with a fast query loop
-- Audit log — append to existing `~/.wellinformed/share-log.jsonl` with new `action: 'search_request' | 'search_response'` entries. Single log file for all P2P activity
+- Audit log — append to existing `~/.akashik/share-log.jsonl` with new `action: 'search_request' | 'search_response'` entries. Single log file for all P2P activity
 
 ### Claude's Discretion
 - Exact wire format for `SearchRequest` / `SearchResponse` (likely JSON framed via length-prefixed — same pattern as SubscribeRequest in Phase 16)
@@ -58,9 +58,9 @@
 
 | ID | Description | Research Support |
 |----|-------------|-----------------|
-| FED-01 | `wellinformed ask "query" --peers` searches across all connected peers' shared rooms | ask.ts parseArgs pattern identified; `--peers` flag branch extends existing arg loop; fan-out via `openSearchStream` per connected peer |
+| FED-01 | `akashik ask "query" --peers` searches across all connected peers' shared rooms | ask.ts parseArgs pattern identified; `--peers` flag branch extends existing arg loop; fan-out via `openSearchStream` per connected peer |
 | FED-02 | Results aggregated and re-ranked by distance across all peers | `VectorIndex.searchGlobal` returns `Match[]` with `distance`; merge is sort-by-distance over combined local+peer arrays |
-| FED-03 | Each result shows which peer it came from | `_source_peer: peerId | null` annotation added at merge time; verified against share-sync.ts provenance pattern (`_wellinformed_source_peer`) |
+| FED-03 | Each result shows which peer it came from | `_source_peer: peerId | null` annotation added at merge time; verified against share-sync.ts provenance pattern (`_akashik_source_peer`) |
 | FED-04 | Tunnel detection runs across peers — cross-peer + cross-room connections surfaced | `findTunnels` in `application/use-cases.ts` is pure over a Graph; feed it synthetic VectorRecords from merged results |
 | FED-05 | MCP tool `federated_search` lets Claude search the P2P network mid-conversation | `server.registerTool` pattern verified from server.ts; 13 tools registered → 14th is `federated_search` |
 | DISC-01 | Manual peer add via multiaddr (always works, no infrastructure needed) | Already delivered in Phase 15 via `peer-store.ts` + `peer.ts` CLI |
@@ -75,7 +75,7 @@
 
 Phase 17 delivers three interlocking features: federated search (send embedding to all connected peers, merge results), auto-discovery (mDNS on LAN, DHT wired but off), and the `federated_search` MCP tool. All three are additive to the Phase 15+16 infrastructure — the libp2p node, peer-store, and FramedStream framing pattern are reused unchanged.
 
-The search protocol mirrors the Phase 16 share protocol structurally: `node.handle('/wellinformed/search/1.0.0', handler)`, JSON first-frame (SearchRequest), then a single JSON response frame (SearchResponse). No Y.js, no CRDT, no stream loop — request/response semantics are simpler than the sync protocol. The biggest design question is whether to use short-lived one-shot streams (open → request → response → close) or reuse streams for multiple queries. Given the 2s timeout requirement and the short-lived nature of search queries, one-shot streams per query per peer are correct.
+The search protocol mirrors the Phase 16 share protocol structurally: `node.handle('/akashik/search/1.0.0', handler)`, JSON first-frame (SearchRequest), then a single JSON response frame (SearchResponse). No Y.js, no CRDT, no stream loop — request/response semantics are simpler than the sync protocol. The biggest design question is whether to use short-lived one-shot streams (open → request → response → close) or reuse streams for multiple queries. Given the 2s timeout requirement and the short-lived nature of search queries, one-shot streams per query per peer are correct.
 
 Discovery wiring is straightforward: `peerDiscovery: [mdns({ interval: 20000 })]` added to `createLibp2p` in `peer-transport.ts`, a `peer:discovery` event listener persists the peer with `discovery_method: 'mdns'` via `mutatePeers`, and optionally dials (respecting libp2p's own auto-dial when `minConnections > 0`). DHT is wired as a service with `clientMode: true` by default (no DHT serving overhead until the user opts in).
 
@@ -146,7 +146,7 @@ src/
 
 ```typescript
 // Source: Phase 16 share-sync.ts FramedStream pattern (adapted)
-export const SEARCH_PROTOCOL_ID = '/wellinformed/search/1.0.0' as const;
+export const SEARCH_PROTOCOL_ID = '/akashik/search/1.0.0' as const;
 
 // SearchRequest — first and only outbound frame
 interface SearchRequest {
@@ -287,7 +287,7 @@ const node = await createLibp2p({
   streamMuxers: [yamux()],
   peerDiscovery: cfg.mdns !== false ? [mdns({ interval: 20000 })] : [],
   services: cfg.dhtEnabled ? {
-    dht: kadDHT({ clientMode: true, protocol: '/wellinformed/kad/1.0.0' }),
+    dht: kadDHT({ clientMode: true, protocol: '/akashik/kad/1.0.0' }),
   } : {},
   connectionManager: { reconnectRetries: Infinity, reconnectRetryInterval: 2000, reconnectBackoffFactor: 2 },
 });
@@ -377,7 +377,7 @@ server.registerTool(
 
 ### Anti-Patterns to Avoid
 
-- **Reusing share streams for search:** `/wellinformed/share/1.0.0` and `/wellinformed/search/1.0.0` are separate protocols with separate lifecycles. Never multiplex search frames into the Y.js sync stream.
+- **Reusing share streams for search:** `/akashik/share/1.0.0` and `/akashik/search/1.0.0` are separate protocols with separate lifecycles. Never multiplex search frames into the Y.js sync stream.
 - **Sending raw query text over the wire:** The locked decision is to send the embedding (Float32Array → number[]). Raw text means the responding peer must run ONNX, violating the inbound hot-path constraint.
 - **Blocking on slow peers:** `Promise.race` with a 2s timeout per peer. Never `await Promise.all` without a timeout wrapper.
 - **Eager ResultAsync sequence on fan-out:** Use `Promise.all` with `.catch(() => [])` guards, not `ResultAsync.combine` (which short-circuits on first error). This is the sequenceLazy pattern applied to the search fan-out.
@@ -525,7 +525,7 @@ const node = await createLibp2p({
   peerDiscovery: cfg.mdns !== false ? [mdns({ interval: 20000 })] : [],
   services: {
     ...(cfg.dhtEnabled ? {
-      dht: kadDHT({ clientMode: true, protocol: '/wellinformed/kad/1.0.0' }),
+      dht: kadDHT({ clientMode: true, protocol: '/akashik/kad/1.0.0' }),
       identify: identify(),    // required for DHT routing table to populate
     } : {}),
   },

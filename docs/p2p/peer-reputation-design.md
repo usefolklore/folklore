@@ -18,14 +18,14 @@ A `subject-scoped federated reputation system` over a P2P retrieval network.
 Each peer records first-hand post-transaction feedback, aggregates it by
 subject, and uses it for peer selection. Six prior works the agents converged on:
 
-| Work                 | What it got right                                                    | What's wrong-fit for wellinformed                              |
+| Work                 | What it got right                                                    | What's wrong-fit for Akashik                                   |
 |----------------------|----------------------------------------------------------------------|----------------------------------------------------------------|
 | **EigenTrust** (Kamvar 2003) | Local feedback + global aggregation; explicit collusion thinking | Single global scalar; "good at libp2p" ≠ "good at lemlist"    |
 | **PeerTrust** (Xiong & Liu 2004) | Multi-factor scoring: feedback, volume, source credibility, context | Heavier than v1 needs; overfits sparse data                |
 | **PowerTrust** (Zhou & Hwang 2007) | Scalable global aggregation via power nodes              | Soft centralization cuts against room-symmetric peer model     |
 | **Beta Reputation** (Jøsang 2002) | Probability + uncertainty (sparse-data handling)         | Wants binary success/failure; we have continuous satisfaction  |
 | **Flow-based reputation** (Škorić 2016) | Combines propagation with explicit uncertainty       | Too much machinery for local-only v1                          |
-| **SybilGuard** (Yu 2008) | Graph-based identity defense                                   | Assumes social trust graph wellinformed doesn't have today    |
+| **SybilGuard** (Yu 2008) | Graph-based identity defense                                   | Assumes social trust graph Akashik doesn't have today         |
 
 **Local-only vs gossiped:**
 - **Local-only** is more defensible (Jøsang's "own experience"). Cold-starts badly.
@@ -81,10 +81,16 @@ generator. Don't put the rep math inside the scorer — keep concerns separate.
 **Subject extraction strategy** (rank by stability):
 1. **Primary** — canonical `entity_id` from `mentioned_entities` (already on
    AskHit), and from `recall.ts` resolution of the query.
-2. **Secondary** — system room key (`room:research`, `room:toolshed`).
-3. **Fallback** — embedding-cluster key. Defer to later; volatile, hard to audit.
+2. **Fallback** — embedding-cluster key. Defer to later; volatile, hard to audit.
 
-**v1 only exposes `entity:*` and `room:*` subject keys.**
+**v1 exposes `entity:*` subject keys only.**
+
+> **V5 Update (2026-05-27)** — Pre-V5 this section listed a secondary
+> `room:*` scheme. The Phase 24 rooms-deletion mandate removed the rooms
+> abstraction entirely; `room:*` keys are no longer written by the
+> reputation store, the runtime drops them on load, and `akashik
+> migrate v5` permanently flattens them on disk. See
+> `docs/architecture/V5-PROTOCOL.md`.
 
 **Aggregation function:** recency-weighted Bayesian mean.
 
@@ -104,7 +110,7 @@ penalises stale/weakly-independent evidence.
 
 ## 4. Data model
 
-`~/.wellinformed/peer-reputation.json` — local, atomic temp-write + rename
+`~/.akashik/peer-reputation.json` — local, atomic temp-write + rename
 (mirrors `peer-store.ts:138`):
 
 ```json
@@ -224,11 +230,11 @@ plausibility, **not truthfulness.**
 | 1 | Pure reputation domain module — types, evidence accumulation, decay, Bayesian math, ranking | **ADD-NOW** | `src/domain/peer-reputation.ts` (new), reuse `peer-telemetry.ts:229` |
 | 2 | Atomic versioned-JSON store | **ADD-NOW** | `src/infrastructure/peer-reputation-store.ts` (new), pattern from `peer-store.ts:138` |
 | 3 | Local update path after federated ask | **ADD-NOW** | `src/application/peer-pull-telemetry.ts:40` (extend), `src/application/update-peer-reputation.ts` (new), `src/cli/commands/ask.ts:343` (call) |
-| 4 | Subject extraction (entity-first, room-second) | **ADD-NEXT** | `src/domain/subject-key.ts` (new); reads from `mentioned_entities` already on AskHit |
+| 4 | Subject extraction (entity-only — V5; legacy room scheme dropped) | **ADD-NEXT** | `src/domain/subject-key.ts` (new); reads from `mentioned_entities` already on AskHit |
 | 5 | Use rep for **ordering only**, never filtering, with exploration floor | **ADD-NEXT** | `src/application/federated-search.ts:202` |
 | 6 | Surface in CLI + JSON: "answered by peers with rep≥X on subject Y" | **ADD-NEXT** | `src/application/peer-pull-telemetry.ts:81`, `src/infrastructure/telemetry-formatter.ts` |
-| 7 | `wellinformed peers rep [<peer-id>]` inspect command | **ADD-NEXT** | `src/cli/commands/peers-rep.ts` (new) |
-| 8 | Pull-on-demand wire protocol (signed review summaries) | **ADD-LATER** | New `/wellinformed/reputation/1.0.0` libp2p protocol |
+| 7 | `akashik peers rep [<peer-id>]` inspect command | **ADD-NEXT** | `src/cli/commands/peers-rep.ts` (new) |
+| 8 | Pull-on-demand wire protocol (signed review summaries) | **ADD-LATER** | New `/akashik/reputation/1.0.0` libp2p protocol |
 | 9 | Pubsub gossip | **SKIP** — until reviewer identity, replay handling, and imported-evidence discount exist | n/a |
 
 ---
@@ -246,7 +252,7 @@ plausibility, **not truthfulness.**
 > and easy to game.
 
 **Prerequisite:** stable subject-key hierarchy with canonical `entity_id` first
-and explicit fallback semantics. **v1 ships only `entity:*` and `room:*` keys.**
+and explicit fallback semantics. **v1 ships `entity:*` keys only (V5 update).**
 
 ### Risk 2 — Importing reputation before identity matures
 

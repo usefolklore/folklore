@@ -51,7 +51,7 @@ import { GraphError as GE } from '../domain/errors.js';
 
 /** libp2p pubsub topic for oracle questions + answers. Versioned so we
  *  can ship breaking shape changes without silent drift. */
-export const ORACLE_TOPIC = '/wellinformed/oracle/1.0.0';
+export const ORACLE_TOPIC = '/akashik/oracle/1.0.0';
 
 /** Hard cap on inbound message size — reject anything past this before
  *  even attempting JSON.parse. Same budget as the touch handler's

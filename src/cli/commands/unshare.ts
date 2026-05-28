@@ -1,61 +1,47 @@
 /**
- * `wellinformed unshare <name>` — make a room private again.
+ * `akashik unshare <peer>` — V5 peer-removal command.
  *
- * Phase 16 (SHARE-02). Removes the room from shared-rooms.json so the
- * daemon stops opening new sync streams for it. Existing streams are
- * closed when the daemon ticks next (or on daemon restart).
+ * Removes a peer from peers.json so the daemon's share-sync tick stops
+ * opening outbound streams to it. The peer's locally-imported nodes are
+ * kept in the graph (they're already on disk and harmless once cut off).
  *
- * KEEPS the .ydoc binary file at ~/.wellinformed/ydocs/<name>.ydoc so a
- * future `share room <name>` resumes from current CRDT state instead of
- * starting empty (locked decision in 16-CONTEXT.md).
+ * Per-topic unsharing does not exist in V5 — to stop sharing a specific
+ * node, mark it `private: true` via `akashik save --private`.
  */
 import { join } from 'node:path';
 import { formatError } from '../../domain/errors.js';
-import { mutateSharedRooms, removeSharedRoom } from '../../infrastructure/share-store.js';
-import { wellinformedHome } from '../runtime.js';
+import { loadPeers, mutatePeers, removePeerRecord } from '../../infrastructure/peer-store.js';
+import { akashikHome } from '../runtime.js';
 
-const sharedRoomsPath = (): string => join(wellinformedHome(), 'shared-rooms.json');
+const peersPath = (): string => join(akashikHome(), 'peers.json');
 
-const USAGE = `usage: wellinformed unshare <name>
+const USAGE = `usage: akashik unshare <peer-id>
 
-Removes a room from the public registry. Existing imported nodes are
-kept on disk and the .ydoc snapshot is retained for future re-sharing.`;
+Removes the peer from peers.json so the daemon stops syncing to it.
+Locally-imported nodes from that peer are retained.`;
 
 export const unshare = async (args: readonly string[]): Promise<number> => {
-  const name = args[0];
-  if (!name) {
-    console.error('unshare: missing <name>');
+  const peerId = args[0];
+  if (!peerId) {
+    console.error('unshare: missing <peer-id>');
     console.error(USAGE);
     return 1;
   }
-
-  // Load current registry (identity transform) to detect whether the room is
-  // currently shared, before committing a removal. This avoids a double-lock
-  // sequence — the idempotent check is done inside a single lock scope by
-  // calling mutateSharedRooms twice at the cost of one extra lock acquisition,
-  // which is acceptable (the operation is human-initiated, not in a hot path).
-  const before = await mutateSharedRooms(sharedRoomsPath(), (file) => file);
-  if (before.isErr()) {
-    console.error(`unshare: ${formatError(before.error)}`);
+  const peersResult = await loadPeers(peersPath());
+  if (peersResult.isErr()) {
+    console.error(`unshare: ${formatError(peersResult.error)}`);
     return 1;
   }
-  const wasShared = before.value.rooms.some((r) => r.name === name);
-
-  if (!wasShared) {
-    console.log(`unshare: '${name}' was not shared (no-op)`);
+  if (!peersResult.value.peers.some((p) => p.id === peerId)) {
+    console.log(`unshare: '${peerId}' is not in peers.json (no-op)`);
     return 0;
   }
-
-  const writeResult = await mutateSharedRooms(sharedRoomsPath(), (file) =>
-    removeSharedRoom(file, name),
-  );
-  if (writeResult.isErr()) {
-    console.error(`unshare: ${formatError(writeResult.error)}`);
+  const mutResult = await mutatePeers(peersPath(), (current) => removePeerRecord(current, peerId));
+  if (mutResult.isErr()) {
+    console.error(`unshare: ${formatError(mutResult.error)}`);
     return 1;
   }
-
-  console.log(`unshare '${name}': now private`);
-  console.log(`  .ydoc snapshot retained — future \`share room ${name}\` resumes from current state`);
-  console.log('  restart the daemon (wellinformed daemon stop && start) to close active sync streams for this room');
+  console.log(`unshare '${peerId}': removed from peers.json`);
+  console.log("  restart the daemon (`akashik daemon stop && start`) to close any active share streams");
   return 0;
 };

@@ -1,56 +1,53 @@
 /**
- * `wellinformed discover [--room R] [--auto]`
+ * `akashik discover [--workspace W|all] [--auto]`
  *
- * Suggest new sources for a room based on its keywords. Prints the
- * suggestions to stdout. With --auto, adds them to sources.json
- * immediately.
+ * V5 stub (Phase 24). Source-suggestion engine was room-keyword-driven;
+ * with rooms deleted, this command returns an empty suggestion list
+ * and prints a helpful deferred-feature message. The discover use
+ * case (application/discover.ts) is a stub returning [] until a
+ * replacement primitive is designed in Phase 25+.
+ *
+ * --workspace W|all is accepted for forward-compat with the read-side
+ * CLI vocabulary; it has no effect today.
  */
 
-import { join } from 'node:path';
-import { formatError } from '../../domain/errors.js';
-import { defaultRoom } from '../../domain/rooms.js';
 import { discover } from '../../application/discover.js';
-import { fileRoomsConfig } from '../../infrastructure/rooms-config.js';
 import { fileSourcesConfig } from '../../infrastructure/sources-config.js';
-import { runtimePaths } from '../runtime.js';
+import { runtimePaths, detectWorkspace } from '../runtime.js';
+import { formatError } from '../../domain/errors.js';
 
 interface ParsedArgs {
-  readonly room?: string;
+  readonly workspace?: string;
   readonly auto: boolean;
 }
 
 const parseArgs = (args: readonly string[]): ParsedArgs => {
-  let room: string | undefined;
+  let workspaceFlag: string | undefined;
+  let workspaceExplicit = false;
   let auto = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     const next = (): string => args[++i] ?? '';
-    if (a === '--room') room = next();
-    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
+    if (a === '--workspace') { workspaceFlag = next(); workspaceExplicit = true; }
+    else if (a.startsWith('--workspace=')) { workspaceFlag = a.slice('--workspace='.length); workspaceExplicit = true; }
     else if (a === '--auto') auto = true;
   }
-  return { room, auto };
+  let workspace: string | undefined;
+  if (workspaceExplicit) {
+    workspace = workspaceFlag === 'all' ? undefined : (workspaceFlag || undefined);
+  } else {
+    workspace = detectWorkspace();
+  }
+  return { workspace, auto };
 };
 
 export const discoverCmd = async (args: readonly string[]): Promise<number> => {
   const parsed = parseArgs(args);
   const paths = runtimePaths();
-  const rooms = fileRoomsConfig(join(paths.home, 'rooms.json'));
   const sources = fileSourcesConfig(paths.sources);
 
-  // Resolve room
-  let room = parsed.room;
-  if (!room) {
-    const reg = await rooms.load();
-    if (reg.isOk()) room = defaultRoom(reg.value);
-  }
-  if (!room) {
-    console.error('discover: no room specified and no default room set. use --room or run `wellinformed init`.');
-    return 1;
-  }
-
-  const deps = { rooms, sources };
-  const result = await discover(deps)(room);
+  const deps = { sources };
+  const result = await discover(deps)();
   if (result.isErr()) {
     console.error(`discover: ${formatError(result.error)}`);
     return 1;
@@ -58,31 +55,24 @@ export const discoverCmd = async (args: readonly string[]): Promise<number> => {
 
   const suggestions = result.value;
   if (suggestions.length === 0) {
-    console.log(`no new source suggestions for room '${room}'. all known feeds already registered.`);
+    console.log('discover: no suggestions.');
+    console.log('');
+    console.log('  Note: the per-room keyword discovery engine was removed in Phase 24');
+    console.log('  along with the room abstraction. A replacement (workspace-keyword');
+    console.log('  index or source-affinity graph) is deferred to Phase 25+.');
+    if (parsed.workspace) console.log(`  workspace: ${parsed.workspace}`);
+    if (parsed.auto) console.log('  (--auto is a no-op without suggestions)');
     return 0;
   }
 
-  console.log(`${suggestions.length} suggestion(s) for room '${room}':\n`);
+  // Forward-compat path — keeps the rendering shape ready for a future
+  // suggestion engine. Currently unreachable.
+  console.log(`${suggestions.length} suggestion(s):\n`);
   for (const s of suggestions) {
     console.log(`  ${s.descriptor.id} (${s.descriptor.kind})`);
     console.log(`    reason: ${s.reason}`);
     console.log(`    config: ${JSON.stringify(s.descriptor.config)}`);
     console.log('');
   }
-
-  if (parsed.auto) {
-    for (const s of suggestions) {
-      const addResult = await sources.add(s.descriptor);
-      if (addResult.isErr()) {
-        console.error(`  failed to add ${s.descriptor.id}: ${formatError(addResult.error)}`);
-      } else {
-        console.log(`  added ${s.descriptor.id}`);
-      }
-    }
-    console.log(`\n${suggestions.length} source(s) added. run 'wellinformed trigger --room ${room}' to fetch.`);
-  } else {
-    console.log(`add them with: wellinformed discover --room ${room} --auto`);
-  }
-
   return 0;
 };

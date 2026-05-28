@@ -1,5 +1,5 @@
 /**
- * Telegram bot — long-polling client for wellinformed.
+ * Telegram bot — long-polling client for akashik.
  *
  * Single-user, runs inside the daemon process. Handles:
  *   - Inbound URLs → auto-ingest into best-matching room
@@ -31,7 +31,7 @@ export const loadTelegramConfig = (raw: Record<string, unknown>): TelegramConfig
   return { bot_token: token, chat_id: chatId, enabled };
 };
 
-export interface WellinformedBot {
+export interface AkashikBot {
   readonly sendMessage: (text: string) => ResultAsync<void, GraphError>;
   readonly sendDigest: (markdown: string) => ResultAsync<void, GraphError>;
   readonly stop: () => void;
@@ -42,9 +42,9 @@ const URL_RE = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gi;
 export const startBot = (
   config: TelegramConfig,
   runtime: Runtime,
-): ResultAsync<WellinformedBot, GraphError> => {
+): ResultAsync<AkashikBot, GraphError> => {
   if (!config.enabled || !config.bot_token) {
-    return errAsync(GE.readError('telegram', 'bot not configured — run wellinformed telegram setup'));
+    return errAsync(GE.readError('telegram', 'bot not configured — run akashik telegram setup'));
   }
 
   try {

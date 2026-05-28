@@ -78,7 +78,7 @@ metrics:
 - Polls `getPeers().length >= 3` with 10s deadline
 - `Promise.allSettled` cleanup — one stop() failure cannot cascade
 - Completes in ~2.5s (well within 50s budget)
-- Skippable via `WELLINFORMED_SKIP_SLOW=1`
+- Skippable via `AKASHIK_SKIP_SLOW=1`
 
 ## Deviations from Plan
 
@@ -120,10 +120,10 @@ metrics:
 ## Test Results
 
 ```
-Phase 18 file in isolation (WELLINFORMED_SKIP_SLOW=1):
+Phase 18 file in isolation (AKASHIK_SKIP_SLOW=1):
   tests 43 | pass 43 | fail 0
 
-Phase 18 file with integration (WELLINFORMED_SKIP_SLOW=0):
+Phase 18 file with integration (AKASHIK_SKIP_SLOW=0):
   tests 44 | pass 44 | fail 0 | duration ~2.5s
 
 Full suite (npm test):

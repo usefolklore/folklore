@@ -6,7 +6,7 @@
 PROJECT IDENTITY (changed since last round)
 ================================================================
 
-The project pivoted from "wellinformed: agent-memory product" to
+The project pivoted from "akashik: agent-memory product" to
 "Akashik: federated knowledge commons for the open-source community as a whole."
 
 The mission is to give the OSS community what it has always lacked:
@@ -17,7 +17,7 @@ attributed, forever.
 
 The brand name borrows from the Akashic Records mythology, reframed
 as concrete contributor-owned infrastructure. The codebase is still
-called "wellinformed" internally.
+called "akashik" internally.
 
 ================================================================
 THE MECHANISM (the architectural insight that makes the mission credible)

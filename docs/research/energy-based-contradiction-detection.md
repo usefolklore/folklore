@@ -107,7 +107,7 @@ if (verdict.label === 'contradiction' && verdict.confidence >= opts.contradictio
 ```
 
 The fall-back path (Jaccard) stays available behind an env flag:
-`WELLINFORMED_CONTRADICTION_BACKEND=jaccard|nli`. NLI is the default
+`AKASHIK_CONTRADICTION_BACKEND=jaccard|nli`. NLI is the default
 once the model is downloaded; Jaccard is the offline-or-degraded
 fallback.
 
@@ -124,7 +124,7 @@ for months):
    surfaces two nodes from different peers with the same source URI
    but different content, that's a labelled contradiction pair (with
    the right resolution = whichever the user kept).
-2. **User feedback on `wellinformed contradictions resolve --prefer
+2. **User feedback on `akashik contradictions resolve --prefer
    peer|local`.** Each resolution is a labelled (A, B, winner) triple
    we can use for adapter fine-tuning via LoRA.
 3. **Synthetic adversarial pairs.** Generate paraphrase pairs +
@@ -226,7 +226,7 @@ When the phase opens:
    takes the NLI port + a config object + a pair, returns a typed
    verdict.
 3. Branch `auto-forget.ts:planAutoForget` on
-   `WELLINFORMED_CONTRADICTION_BACKEND` env — default `nli`, fall
+   `AKASHIK_CONTRADICTION_BACKEND` env — default `nli`, fall
    back to `jaccard` on model load failure.
 4. Write `tests/bench-contradiction-nli.test.ts` — 50 hand-labelled
    pairs covering paraphrase, negation, numerical update, and clean

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# wellinformed demo — P2P touch setup (5-peer mesh).
+# akashik demo — P2P touch setup (5-peer mesh).
 #
-# Brings up 5 wellinformed daemons on 127.0.0.1 (peer A + 4 peers
+# Brings up 5 akashik daemons on 127.0.0.1 (peer A + 4 peers
 # B/C/D/E), each in its own home with a unique research note. Peer A
-# is connected to all four — `wellinformed touch` from A pulls just
+# is connected to all four — `akashik touch` from A pulls just
 # the chunks it asks for, attributing them to the source peer.
 #
 # Lifecycle: this script SETS UP. demo/scene-touch.sh wraps it with
@@ -26,17 +26,17 @@
 
 set -euo pipefail
 
-A_HOME="${WELLINFORMED_DEMO_HOME:-$HOME/.wellinformed.demo}"
+A_HOME="${AKASHIK_DEMO_HOME:-$HOME/.akashik.demo}"
 A_PORT=4203
 
 # Parallel arrays: PEERS[i], HOMES[i], PORTS[i], LABELS[i], NOTES[i].
 PEERS=(B C D E)
 PORTS=(4204 4205 4206 4207)
 HOMES=(
-  "${WELLINFORMED_DEMO_PEER_B_HOME:-$HOME/.wellinformed.demo-peerB}"
-  "${WELLINFORMED_DEMO_PEER_C_HOME:-$HOME/.wellinformed.demo-peerC}"
-  "${WELLINFORMED_DEMO_PEER_D_HOME:-$HOME/.wellinformed.demo-peerD}"
-  "${WELLINFORMED_DEMO_PEER_E_HOME:-$HOME/.wellinformed.demo-peerE}"
+  "${AKASHIK_DEMO_PEER_B_HOME:-$HOME/.akashik.demo-peerB}"
+  "${AKASHIK_DEMO_PEER_C_HOME:-$HOME/.akashik.demo-peerC}"
+  "${AKASHIK_DEMO_PEER_D_HOME:-$HOME/.akashik.demo-peerD}"
+  "${AKASHIK_DEMO_PEER_E_HOME:-$HOME/.akashik.demo-peerE}"
 )
 # Demo-only github handles per peer (so federation surfaces a
 # recognisable identity instead of a 50-char libp2p PeerId in the
@@ -83,7 +83,7 @@ NUM_PEERS=${#PEERS[@]}
 
 CORPUS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/research-corpus" && pwd)"
 
-echo "── wellinformed P2P touch setup (5-daemon mesh) ─────────"
+echo "── akashik P2P touch setup (5-daemon mesh) ─────────"
 echo "  peer A:  $A_HOME  (libp2p :$A_PORT)"
 i=0
 while [[ $i -lt $NUM_PEERS ]]; do
@@ -111,7 +111,7 @@ EOF
 
 stop_daemon_quietly() {
   local home=$1
-  WELLINFORMED_HOME="$home" wellinformed daemon stop 2>/dev/null || true
+  AKASHIK_HOME="$home" akashik daemon stop 2>/dev/null || true
 }
 
 # ── 1. base setup for peer A ─────────────────────────────
@@ -120,8 +120,8 @@ if [[ ! -f "$A_HOME/peer-identity.json" ]]; then
   bash "$(dirname "${BASH_SOURCE[0]}")/setup.sh" >/dev/null
 fi
 write_config "$A_HOME" "$A_PORT"
-WELLINFORMED_HOME="$A_HOME" wellinformed identity init >/dev/null 2>&1 || true
-WELLINFORMED_HOME="$A_HOME" wellinformed share room research >/dev/null
+AKASHIK_HOME="$A_HOME" akashik identity init >/dev/null 2>&1 || true
+AKASHIK_HOME="$A_HOME" akashik share room research >/dev/null
 
 # Wipe any concept://* nodes synced from earlier demo runs — they
 # carry old labels (e.g. "(peer C exclusive)") that pollute the
@@ -171,20 +171,20 @@ while [[ $i -lt $NUM_PEERS ]]; do
   if [[ -d "$A_HOME/models" ]] && [[ ! -e "$h/models" ]]; then
     ln -s "$A_HOME/models" "$h/models"
   fi
-  WELLINFORMED_HOME="$h" wellinformed identity init >/dev/null
-  WELLINFORMED_HOME="$h" wellinformed save \
+  AKASHIK_HOME="$h" akashik identity init >/dev/null
+  AKASHIK_HOME="$h" akashik save \
     --room research \
     --type concept \
     --label "$label" \
     --text "$note" \
     >/dev/null
-  WELLINFORMED_HOME="$h" wellinformed save \
+  AKASHIK_HOME="$h" akashik save \
     --room research \
     --type concept \
     --label "${LABELS_2[$i]}" \
     --text "${NOTES_2[$i]}" \
     >/dev/null
-  WELLINFORMED_HOME="$h" wellinformed share room research >/dev/null
+  AKASHIK_HOME="$h" akashik share room research >/dev/null
   i=$((i + 1))
 done
 
@@ -192,12 +192,12 @@ done
 stop_daemon_quietly "$A_HOME"
 sleep 0.3
 echo "→ starting peer A daemon"
-WELLINFORMED_HOME="$A_HOME" wellinformed daemon start
+AKASHIK_HOME="$A_HOME" akashik daemon start
 
 i=0
 while [[ $i -lt $NUM_PEERS ]]; do
   echo "→ starting peer ${PEERS[$i]} daemon"
-  WELLINFORMED_HOME="${HOMES[$i]}" wellinformed daemon start
+  AKASHIK_HOME="${HOMES[$i]}" akashik daemon start
   i=$((i + 1))
 done
 
@@ -205,13 +205,13 @@ sleep 2
 
 # ── 5. peer A connects to all four peers ─────────────────
 #
-# Note: `wellinformed peer add` boots an ephemeral libp2p node to
+# Note: `akashik peer add` boots an ephemeral libp2p node to
 # perform the dial, but reads the host's config.yaml — meaning it
 # tries to bind the SAME port as the running daemon and fails with
 # EADDRINUSE. The cleanest workaround for the demo is to write
 # peers.json directly: same end state as `peer add`, no port
 # conflict, no live dial during setup.
-A_PEERID=$(WELLINFORMED_HOME="$A_HOME" wellinformed peer status 2>/dev/null | awk '/peerId/ {print $2}')
+A_PEERID=$(AKASHIK_HOME="$A_HOME" akashik peer status 2>/dev/null | awk '/peerId/ {print $2}')
 
 # Build the peers.json content for peer A.
 A_PEERS_JSON="$A_HOME/peers.json"
@@ -226,7 +226,7 @@ NOW="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
     p="${PEERS[$i]}"
     h="${HOMES[$i]}"
     port="${PORTS[$i]}"
-    pid=$(WELLINFORMED_HOME="$h" wellinformed peer status 2>/dev/null | awk '/peerId/ {print $2}')
+    pid=$(AKASHIK_HOME="$h" akashik peer status 2>/dev/null | awk '/peerId/ {print $2}')
     if [[ -z "$pid" ]]; then
       echo "[setup-p2p] could not read peerId for peer $p; abort" >&2
       exit 1
@@ -274,7 +274,7 @@ done
 
 # ── 5a. write peer-labels.json on peer A so the prompt-submit hook
 # can substitute `github:<handle>` for the libp2p PeerId in its
-# rendering. Mirrors what real `wellinformed login` would produce
+# rendering. Mirrors what real `akashik login` would produce
 # for each peer; here it's a static fixture for the demo.
 LABELS_JSON="$A_HOME/peer-labels.json"
 {
@@ -286,8 +286,8 @@ LABELS_JSON="$A_HOME/peer-labels.json"
   while [[ $i -lt $NUM_PEERS ]]; do
     h="${HOMES[$i]}"
     handle="${GITHUB_HANDLES[$i]}"
-    pid=$(WELLINFORMED_HOME="$h" wellinformed peer status 2>/dev/null | awk '/peerId/ {print $2}')
-    did=$(WELLINFORMED_HOME="$h" wellinformed identity show 2>/dev/null | awk '/user DID/ {print $3}')
+    pid=$(AKASHIK_HOME="$h" akashik peer status 2>/dev/null | awk '/peerId/ {print $2}')
+    did=$(AKASHIK_HOME="$h" akashik identity show 2>/dev/null | awk '/user DID/ {print $3}')
     did_short=$(echo "$did" | sed -E 's/^did:key:z6Mk//;s/^(.{8}).*$/\1/')
     if [[ $first -eq 0 ]]; then echo '    ,'; fi
     echo "    \"$pid\": {"
@@ -315,10 +315,10 @@ while [[ $i -lt $NUM_PEERS ]]; do
   i=$((i + 1))
 done
 sleep 1
-WELLINFORMED_HOME="$A_HOME" wellinformed daemon start
+AKASHIK_HOME="$A_HOME" akashik daemon start
 i=0
 while [[ $i -lt $NUM_PEERS ]]; do
-  WELLINFORMED_HOME="${HOMES[$i]}" wellinformed daemon start
+  AKASHIK_HOME="${HOMES[$i]}" akashik daemon start
   i=$((i + 1))
 done
 sleep 3

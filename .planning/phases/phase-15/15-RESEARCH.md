@@ -12,7 +12,7 @@
 ### Locked Decisions
 
 **Peer Identity & Key Management**
-- libp2p protobuf-encoded ed25519 keypair stored at ~/.wellinformed/peer-identity.json
+- libp2p protobuf-encoded ed25519 keypair stored at ~/.akashik/peer-identity.json
 - PeerId derived via libp2p standard (multihash of public key) for interoperability
 - Keypair auto-generated on first `peer` command (lazy, no explicit init step)
 - New `src/domain/peer.ts` for PeerId/PeerInfo/PeerRegistry types + pure validation
@@ -22,7 +22,7 @@
 - Listening port configurable via config.yaml, default 0 (OS-assigned)
 - Persistent connections with auto-reconnect (matches NET-04 requirement)
 - Minimal libp2p module set: @libp2p/tcp + @libp2p/noise + @libp2p/yamux
-- Known peers stored in `~/.wellinformed/peers.json` (separate from identity)
+- Known peers stored in `~/.akashik/peers.json` (separate from identity)
 
 **Secrets Scanner Design**
 - Scan shareable fields: label, source_uri, fetched_at
@@ -50,15 +50,15 @@ None — discussion stayed within phase scope.
 
 | ID | Description | Research Support |
 |----|-------------|-----------------|
-| PEER-01 | ed25519 keypair generated on first run, stored at ~/.wellinformed/peer-identity.json | Key generation via `generateKeyPair('Ed25519')` from `@libp2p/crypto/keys`; serialize via `.raw` (64 bytes) base64-encoded to JSON |
-| PEER-02 | `wellinformed peer add <multiaddr>` connects via js-libp2p | `node.dial(multiaddr(addr))` then `peerStore.merge(peerId, { tags: { 'keep-alive-wellinformed': { value: 50 } } })` |
-| PEER-03 | `wellinformed peer remove <id>` disconnects and removes | `node.hangUp(peerId)` then remove from peers.json |
-| PEER-04 | `wellinformed peer list` shows connected peers with status, latency, shared rooms | `node.getPeers()` + `node.getConnections()` for status |
-| PEER-05 | `wellinformed peer status` shows own identity, public key, connected peer count | `node.peerId.toString()` + `node.getPeers().length` |
+| PEER-01 | ed25519 keypair generated on first run, stored at ~/.akashik/peer-identity.json | Key generation via `generateKeyPair('Ed25519')` from `@libp2p/crypto/keys`; serialize via `.raw` (64 bytes) base64-encoded to JSON |
+| PEER-02 | `akashik peer add <multiaddr>` connects via js-libp2p | `node.dial(multiaddr(addr))` then `peerStore.merge(peerId, { tags: { 'keep-alive-akashik': { value: 50 } } })` |
+| PEER-03 | `akashik peer remove <id>` disconnects and removes | `node.hangUp(peerId)` then remove from peers.json |
+| PEER-04 | `akashik peer list` shows connected peers with status, latency, shared rooms | `node.getPeers()` + `node.getConnections()` for status |
+| PEER-05 | `akashik peer status` shows own identity, public key, connected peer count | `node.peerId.toString()` + `node.getPeers().length` |
 | SEC-01 | Secrets scanner runs on every node before sharing — detects API keys, tokens, passwords | Regex-based scanner on shareable fields; 10 compiled patterns |
 | SEC-02 | Flagged nodes are BLOCKED from sharing with a clear warning | Hard block in `scanNode()` pure function returning `Result<ShareableNode, ScanError>` |
 | SEC-03 | Shared nodes carry only id, label, room, embedding vector, source_uri, fetched_at | `ShareableNode` projection type — structural pick of `GraphNode` |
-| SEC-04 | `wellinformed share audit --room X` shows exactly what would be shared | `auditRoom()` pure function that maps nodes through `scanNode` and collects pass/block |
+| SEC-04 | `akashik share audit --room X` shows exactly what would be shared | `auditRoom()` pure function that maps nodes through `scanNode` and collects pass/block |
 | SEC-05 | All P2P traffic encrypted via libp2p Noise protocol | `@libp2p/noise` as `connectionEncrypters: [noise()]` — handled natively by the handshake |
 | SEC-06 | Peer authentication via ed25519 signature verification | Handled natively by Noise handshake — no extra code needed; PeerId IS the public key multihash |
 </phase_requirements>
@@ -143,7 +143,7 @@ src/
     │   └── share.ts       # share audit subcommand (new)
     └── index.ts           # register peer + share commands (extend existing)
 
-~/.wellinformed/
+~/.akashik/
 ├── peer-identity.json     # { privateKeyB64: string, peerId: string, createdAt: string }
 └── peers.json             # { peers: PeerRecord[] }
 ```
@@ -251,7 +251,7 @@ export const createNode = (
 
 ### Pattern 3: Peer Add — Dial + Tag + Persist
 
-**What:** `peer add <multiaddr>` dials the remote, tags it `keep-alive-wellinformed` for auto-reconnect, derives and persists the PeerId.
+**What:** `peer add <multiaddr>` dials the remote, tags it `keep-alive-akashik` for auto-reconnect, derives and persists the PeerId.
 
 **When to use:** `peer add` command only.
 
@@ -270,7 +270,7 @@ export const dialAndTag = (
       const peerId = conn.remotePeer;
       await node.peerStore.merge(peerId, {
         multiaddrs: [ma],
-        tags: { 'keep-alive-wellinformed': { value: 50 } },
+        tags: { 'keep-alive-akashik': { value: 50 } },
       });
       return peerId.toString();
     })(),
@@ -521,7 +521,7 @@ const ma = multiaddr('/ip4/192.168.1.10/tcp/9001');
 const conn = await node.dial(ma);
 await node.peerStore.merge(conn.remotePeer, {
   multiaddrs: [ma],
-  tags: { 'keep-alive-wellinformed': { value: 50 } },
+  tags: { 'keep-alive-akashik': { value: 50 } },
 });
 ```
 
