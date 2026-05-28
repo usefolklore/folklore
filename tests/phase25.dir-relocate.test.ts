@@ -36,6 +36,28 @@ const withEnv = <T>(env: Record<string, string>, fn: () => T): T => {
   }
 };
 
+test('relocate: legacy contains only the RELOCATED.txt breadcrumb → noop (idempotent re-run)', () => {
+  const root = tmpRoot();
+  try {
+    const legacy = join(root, '.wellinformed');
+    const target = join(root, '.akashik');
+    mkdirSync(legacy, { recursive: true });
+    writeFileSync(join(legacy, 'RELOCATED.txt'), 'previous relocate breadcrumb');
+    // Target with data (the migrated home). Without the idempotency fix
+    // this would trip the "both have data" abort.
+    mkdirSync(target, { recursive: true });
+    writeFileSync(join(target, 'graph.json'), '{"nodes":[]}');
+
+    const r = withEnv({ AKASHIK_LEGACY_HOME: legacy, AKASHIK_HOME: target }, () => relocateDir());
+    assert.equal(r.kind, 'noop', `must noop on breadcrumb-only legacy: ${r.message}`);
+    assert.match(r.message, /already drained/i);
+    // Target data must be untouched.
+    assert.ok(existsSync(join(target, 'graph.json')));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('relocate: legacy absent → noop', () => {
   const root = tmpRoot();
   try {

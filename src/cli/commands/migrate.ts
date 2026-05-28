@@ -197,20 +197,34 @@ const removeIfExists = (path: string): boolean => {
   try { unlinkSync(path); return true; } catch { return false; }
 };
 
-const confirmBackupOverwrite = (path: string): boolean => {
+const confirmBackupOverwrite = (path: string, graphPath?: string): boolean => {
   if (!existsSync(path)) return true;
+  // Post-rollback idempotency: if graph.json is bit-equal to the
+  // existing backup, the overwrite is a no-op write of identical
+  // content — safe to proceed without losing any state.
+  if (graphPath && existsSync(graphPath)) {
+    try {
+      const a = readFileSync(graphPath);
+      const b = readFileSync(path);
+      if (a.length === b.length && a.equals(b)) return true;
+    } catch { /* fall through to refuse */ }
+  }
   console.error(`migrate: ${path} already exists from a prior run.`);
-  console.error(`migrate: refusing to overwrite. Remove or move it aside, then retry.`);
+  console.error(`migrate: refusing to overwrite (it differs from current graph.json).`);
+  console.error(`migrate: remove or move it aside, then retry.`);
   return false;
 };
 
-/** Is the directory empty (or just a stale .DS_Store)? Used to decide
- *  whether a target like ~/.akashik/ counts as a real "would clobber"
- *  conflict or is safe to consume. */
+/** Is the directory empty (or just stale dotfiles + a post-relocate
+ *  breadcrumb)? Used to decide whether a path like ~/.akashik/ counts
+ *  as a real "would clobber" conflict or is safe to consume, and also
+ *  whether the legacy path is just a left-over breadcrumb from a prior
+ *  successful relocate (idempotency on re-runs). */
 const isDirEffectivelyEmpty = (path: string): boolean => {
   if (!existsSync(path)) return true;
   try {
-    const entries = readdirSync(path).filter((e) => e !== '.DS_Store');
+    const noise = new Set(['.DS_Store', 'RELOCATED.txt']);
+    const entries = readdirSync(path).filter((e) => !noise.has(e));
     return entries.length === 0;
   } catch { return false; }
 };
@@ -247,6 +261,13 @@ const relocateDir = (): RelocateOutcome => {
     }
   } catch (e) {
     return { kind: 'aborted', message: `failed to stat ${legacy}: ${(e as Error).message}` };
+  }
+
+  // Idempotency: if the legacy path is just a breadcrumb left behind
+  // by a previous successful relocate, treat as noop. Avoids the
+  // false-positive "both legacy + target have data" abort on re-runs.
+  if (isDirEffectivelyEmpty(legacy)) {
+    return { kind: 'noop', message: `Legacy ${legacy} already drained (breadcrumb only) — skipping dir relocate.` };
   }
 
   // Safety: refuse to relocate while a legacy daemon holds the pidfile.
@@ -355,7 +376,7 @@ const runMigrate = (): number => {
   if (existsSync(paths.roomsJson)) console.log(`Reading ${paths.roomsJson}... present.`);
   if (existsSync(paths.sharedRoomsJson)) console.log(`Reading ${paths.sharedRoomsJson}... present.`);
 
-  if (!confirmBackupOverwrite(paths.backup)) return 1;
+  if (!confirmBackupOverwrite(paths.backup, paths.graph)) return 1;
   try { copyFileSync(paths.graph, paths.backup); }
   catch (e) {
     console.error(`migrate: backup failed: ${(e as Error).message}`);
@@ -488,7 +509,7 @@ const runStampGithub = (): number => {
   }
 
   // Reuse the v4-backup slot — same atomicity guarantees as runMigrate.
-  if (!confirmBackupOverwrite(paths.backup)) return 1;
+  if (!confirmBackupOverwrite(paths.backup, paths.graph)) return 1;
   try { copyFileSync(paths.graph, paths.backup); }
   catch (e) {
     console.error(`migrate --stamp-github: backup failed: ${(e as Error).message}`);
