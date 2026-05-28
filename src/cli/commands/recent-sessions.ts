@@ -1,7 +1,7 @@
 /**
- * `wellinformed recent-sessions` — Phase 20 CLI surface.
+ * `akashik recent-sessions` — Phase 20 CLI surface.
  *
- * Queries ~/.wellinformed/graph.json for nodes in the `sessions` room,
+ * Queries ~/.akashik/graph.json for nodes in the `sessions` room,
  * groups them by session_id, aggregates per-session rollups, and prints
  * either a human-readable table or JSON.
  *
@@ -16,7 +16,6 @@
  */
 
 import { formatError } from '../../domain/errors.js';
-import { nodesInRoom } from '../../domain/graph.js';
 import { fileGraphRepository } from '../../infrastructure/graph-repository.js';
 import { runtimePaths } from '../runtime.js';
 import type { GraphNode } from '../../domain/graph.js';
@@ -187,7 +186,13 @@ export const recentSessions = async (args: readonly string[]): Promise<number> =
   }
 
   const graph = graphRes.value;
-  const sessionNodes = nodesInRoom(graph, 'sessions');
+  // V5 (Phase 24): the 'sessions' pseudo-room is gone — session nodes
+  // are identified by their source_uri scheme `claude_sessions:` set
+  // by the claude-sessions ingest adapter.
+  const sessionNodes = graph.json.nodes.filter((n) => {
+    const uri = typeof n.source_uri === 'string' ? n.source_uri : '';
+    return uri.startsWith('claude_sessions:');
+  });
   const cutoffMs = Date.now() - flags.hours * 60 * 60 * 1000;
   const rollups = rollupSessions(sessionNodes, cutoffMs, flags.project).slice(
     0,
@@ -201,7 +206,7 @@ export const recentSessions = async (args: readonly string[]): Promise<number> =
 
   if (rollups.length === 0) {
     console.log(
-      'no recent sessions indexed. run `wellinformed daemon start` so the claude-sessions adapter can populate the graph.',
+      'no recent sessions indexed. run `akashik daemon start` so the claude-sessions adapter can populate the graph.',
     );
     return 0;
   }

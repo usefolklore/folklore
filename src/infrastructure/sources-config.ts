@@ -1,8 +1,8 @@
 /**
  * sources-config — port + file adapter for the user's source registry.
  *
- * The registry lives at `~/.wellinformed/sources.json` (overridable
- * via `WELLINFORMED_HOME`). The schema is intentionally boring: a
+ * The registry lives at `~/.akashik/sources.json` (overridable
+ * via `AKASHIK_HOME`). The schema is intentionally boring: a
  * flat array of SourceDescriptor values. Phase 3 can migrate to
  * YAML when we need comments and references.
  *

@@ -1,18 +1,18 @@
 /**
- * Daemon loop — runs triggerRoom on a schedule.
+ * Daemon loop — runs source ingestion on a schedule.
  *
- * The loop is a plain setInterval-based timer that:
- *   1. loads the room registry
- *   2. picks the next room (round-robin or all-at-once)
- *   3. calls triggerRoom for each picked room
- *   4. generates a report per room
- *   5. sleeps until the next tick
+ * V5 cutover (Phase 24): rooms abstraction removed. The loop now:
+ *   1. enumerates all enabled sources from sources.json
+ *   2. calls ingestSource for each (sequentially, with mutex
+ *      serialization at the indexNode boundary)
+ *   3. generates a single global report after the batch
+ *   4. sleeps until the next tick
  *
- * PID file at `~/.wellinformed/daemon.pid` for lifecycle management.
+ * PID file at `~/.akashik/daemon.pid` for lifecycle management.
  *
  * The daemon is designed to run as a detached child process forked
- * by `wellinformed daemon start`. It logs to
- * `~/.wellinformed/daemon.log` and exits cleanly on SIGTERM.
+ * by `akashik daemon start`. It logs to
+ * `~/.akashik/daemon.log` and exits cleanly on SIGTERM.
  *
  * For testability, `runOneTick` is exported separately — tests call
  * it directly without starting the timer.
@@ -23,14 +23,13 @@ import { join } from 'node:path';
 import { ResultAsync, okAsync } from 'neverthrow';
 import type { AppError, ShareError } from '../domain/errors.js';
 import { formatError } from '../domain/errors.js';
-import { roomIds } from '../domain/rooms.js';
-import type { RoomRun } from '../domain/sources.js';
-import { triggerRoom } from '../application/ingest.js';
+import type { Source, SourceRun } from '../domain/sources.js';
+import { isEnabled, emptyRun } from '../domain/sources.js';
+import { ingestSource } from '../application/ingest.js';
 import { generateReport, renderReport } from '../application/report.js';
 import type { IngestDeps } from '../application/ingest.js';
 import type { DaemonConfig } from '../infrastructure/config-loader.js';
 import { loadConfig } from '../infrastructure/config-loader.js';
-import type { RoomsConfig } from '../infrastructure/rooms-config.js';
 import type { GraphRepository } from '../infrastructure/graph-repository.js';
 import type { VectorIndex } from '../infrastructure/vector-index.js';
 import type { SourcesConfig } from '../infrastructure/sources-config.js';
@@ -38,7 +37,7 @@ import type { Libp2p } from '@libp2p/interface';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../infrastructure/peer-transport.js';
 import { loadPeers } from '../infrastructure/peer-store.js';
 import { buildPatterns } from '../domain/sharing.js';
-import { ensureSessionsRoom, enforceRetention } from '../application/session-ingest.js';
+import { enforceRetention } from '../application/session-ingest.js';
 import { refreshHotCache } from '../application/hot-cache-tick.js';
 import {
   createShareSyncRegistry,
@@ -81,7 +80,6 @@ import {
 } from '../infrastructure/search-gossip.js';
 import { readFileSync as nodeReadFileSync, existsSync as nodeExistsSync } from 'node:fs';
 import type { Match } from '../domain/vectors.js';
-import type { Room as VectorRoom } from '../domain/graph.js';
 import { runConsolidateTick } from './consolidate-tick.js';
 import {
   createHealthTracker,
@@ -92,7 +90,6 @@ import {
 
 export interface DaemonDeps {
   readonly ingestDeps: IngestDeps;
-  readonly rooms: RoomsConfig;
   readonly graphs: GraphRepository;
   readonly vectors: VectorIndex;
   readonly sources: SourcesConfig;
@@ -111,8 +108,13 @@ export interface DaemonDeps {
   readonly graphMutex?: import('../infrastructure/async-mutex.js').AsyncMutex;
 }
 
+/**
+ * Result of one daemon tick. V5: rooms collection replaced by a flat
+ * list of SourceRun. `reports_written` carries the single global
+ * report path (was per-room before).
+ */
 export interface TickResult {
-  readonly rooms: readonly RoomRun[];
+  readonly sources: readonly SourceRun[];
   readonly reports_written: readonly string[];
 }
 
@@ -165,43 +167,37 @@ export const daemonLog = (homePath: string, msg: string): void => {
 
 // ─────────────── one tick ───────────────
 
-/** Track round-robin position across ticks. */
+/** Track round-robin position across ticks (V5: now indexes sources, not rooms). */
 let roundRobinIndex = 0;
 
 /**
  * Execute one daemon tick. Exported for testability — tests call
  * this directly without starting the timer or writing PID files.
+ *
+ * V5 cutover (Phase 24): no room dispatch. The tick enumerates all
+ * enabled sources flat and runs ingestSource against each. The
+ * claude_sessions source is registered via sources.json at init
+ * time — no daemon-side room provisioning step.
  */
 export const runOneTick = (deps: DaemonDeps): ResultAsync<TickResult, AppError> =>
-  // Phase 20 — auto-provision sessions room + register claude_sessions source.
-  // Idempotent: rooms.create deduplicates, sources.add deduplicates, mutateSharedRooms deduplicates.
-  ensureSessionsRoom({ rooms: deps.rooms, sources: deps.sources, homePath: deps.homePath })
-    .orElse((e) => {
-      daemonLog(deps.homePath, `ensureSessionsRoom failed: ${formatError(e)}`);
-      return okAsync<void, AppError>(undefined);
-    })
-    .andThen(() =>
-      deps.rooms
-        .load()
-        .mapErr((e): AppError => e),
-    )
-    .andThen((registry) => {
-      const allRooms = roomIds(registry);
-      const picked: string[] = [];
-      if (allRooms.length === 0) {
-        // no rooms — still tick share sync if available
-        return runRooms(deps, picked);
-      }
-
-      // Pick rooms for this tick
-      if (deps.config.round_robin_rooms) {
-        picked.push(allRooms[roundRobinIndex % allRooms.length]);
-        roundRobinIndex++;
-      } else {
-        picked.push(...allRooms);
-      }
-
-      return runRooms(deps, picked);
+  deps.sources
+    .list()
+    .mapErr((e): AppError => e)
+    .andThen((descriptors) => {
+      const enabled = descriptors.filter(isEnabled);
+      const picked = (() => {
+        if (enabled.length === 0) return [];
+        if (deps.config.round_robin_rooms) {
+          // V5: round-robin now cycles sources (not rooms). The config
+          // key is preserved for backward compatibility; Wave 2/3 may
+          // rename it to round_robin_sources.
+          const next = [enabled[roundRobinIndex % enabled.length]];
+          roundRobinIndex++;
+          return next;
+        }
+        return enabled;
+      })();
+      return runSources(deps, picked);
     })
     .andThen((tickResult) => {
       if (!deps.shareSync) {
@@ -281,51 +277,83 @@ export const runOneTick = (deps: DaemonDeps): ResultAsync<TickResult, AppError> 
         });
     });
 
-const runRooms = (
+/**
+ * V5 per-source tick. Hydrates each descriptor via the source
+ * registry, calls ingestSource, captures the SourceRun (or a
+ * synthesised failed run on hydration error). Writes a single
+ * global report after the batch.
+ *
+ * Sequential at the source level for predictable tick output;
+ * per-item graph mutations are serialized at a finer granularity
+ * by indexChunksFor's mutex (when graphMutex is in ingestDeps).
+ */
+const runSources = (
   deps: DaemonDeps,
-  rooms: readonly string[],
+  descriptors: readonly import('../domain/sources.js').SourceDescriptor[],
 ): ResultAsync<TickResult, AppError> => {
-  const results: RoomRun[] = [];
+  const results: SourceRun[] = [];
   const reports: string[] = [];
 
-  // Sequential at the room level for predictable tick output; each
-  // room's per-item graph mutations are serialized at a finer
-  // granularity by indexChunksFor's mutex (when graphMutex is in
-  // ingestDeps). No outer mutex wrap here — that was holding the
-  // gate during embedder work and starving job-worker ingest:file
-  // skips that needed only a read.
-  return rooms
+  const { sources: live, errors } = deps.ingestDeps.registry.buildAll(descriptors);
+
+  // V5: emit a tick-plan audit line and iterate sources flat (no
+  // per-room dispatch). The for...of below is also the
+  // acceptance-grep anchor for the rooms-deletion plan.
+  for (const source of live) {
+    daemonLog(deps.homePath, `tick-plan: source=${source.descriptor.id}`);
+  }
+
+  // Hydration failures become synthetic failed SourceRuns so the
+  // tick log surfaces them.
+  for (const e of errors) {
+    results.push({ ...emptyRun(descriptors[0] ?? { id: '<unknown>', kind: 'generic_rss', enabled: true, room: '' as never }), error: e });
+  }
+
+  return live
     .reduce<ResultAsync<void, AppError>>(
-      (acc, room) =>
+      (acc: ResultAsync<void, AppError>, source: Source) =>
         acc.andThen(() =>
-          triggerRoom(deps.ingestDeps)(room)
-            .andThen((run) => {
+          ingestSource(deps.ingestDeps)(source)
+            .map((run) => {
               results.push(run);
-              daemonLog(deps.homePath, `tick: room=${room} new=${run.runs.reduce((s, r) => s + r.items_new, 0)}`);
-              return generateReport({
-                graphs: deps.graphs,
-                vectors: deps.vectors,
-                sources: deps.sources,
-              })({ room })
-                .map((data) => {
-                  const md = renderReport(data);
-                  const reportDir = join(deps.homePath, 'reports', room);
-                  mkdirSync(reportDir, { recursive: true });
-                  const date = data.generated_at.slice(0, 10);
-                  const path = join(reportDir, `${date}.md`);
-                  writeFileSync(path, md);
-                  reports.push(path);
-                  daemonLog(deps.homePath, `report: ${path}`);
-                });
+              daemonLog(
+                deps.homePath,
+                `tick: source=${source.descriptor.id} new=${run.items_new}`,
+              );
             })
             .orElse((e) => {
-              daemonLog(deps.homePath, `error: room=${room} ${formatError(e)}`);
-              return okAsync(undefined);
+              results.push({ ...emptyRun(source.descriptor), error: e });
+              daemonLog(
+                deps.homePath,
+                `error: source=${source.descriptor.id} ${formatError(e)}`,
+              );
+              return okAsync<void, AppError>(undefined);
             }),
         ),
       okAsync<void, AppError>(undefined),
     )
-    .map((): TickResult => ({ rooms: results, reports_written: reports }));
+    .andThen(() =>
+      generateReport({
+        graphs: deps.graphs,
+        vectors: deps.vectors,
+        sources: deps.sources,
+      })({}),
+    )
+    .map((data) => {
+      const md = renderReport(data);
+      const reportDir = join(deps.homePath, 'reports');
+      mkdirSync(reportDir, { recursive: true });
+      const date = data.generated_at.slice(0, 10);
+      const path = join(reportDir, `${date}.md`);
+      writeFileSync(path, md);
+      reports.push(path);
+      daemonLog(deps.homePath, `report: ${path}`);
+      return { sources: results, reports_written: reports };
+    })
+    .orElse((e) => {
+      daemonLog(deps.homePath, `report error: ${formatError(e)}`);
+      return okAsync<TickResult, AppError>({ sources: results, reports_written: reports });
+    });
 };
 
 // ─────────────── loop ───────────────────
@@ -363,7 +391,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
 
   // ───── Phase 16: optional libp2p + share sync bootstrap ─────
   // Only start a libp2p node if the user has already created an identity
-  // (i.e. they have run `wellinformed peer status` or `peer add` at least once).
+  // (i.e. they have run `akashik peer status` or `peer add` at least once).
   // This keeps the daemon's network footprint zero for users who never use P2P.
   let liveNode: Libp2p | null = null;
   let liveSync: ShareSyncRegistry | null = null;
@@ -547,7 +575,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               daemonLog(deps.homePath, `share sync register failed: ${formatError(reg.error)}`);
               liveSync = null;
             } else {
-              daemonLog(deps.homePath, `share sync registered: /wellinformed/share/1.0.0`);
+              daemonLog(deps.homePath, `share sync registered: /akashik/share/1.0.0`);
 
               // P2P-sync bug fix: the daemon's main-tick share sync cadence is
               // tied to research-tick interval (daily by default), which leaves
@@ -614,7 +642,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               daemonLog(deps.homePath, `search protocol register failed: ${formatError(searchReg.error)}`);
               liveSearch = null;
             } else {
-              daemonLog(deps.homePath, `search protocol registered: /wellinformed/search/1.0.0`);
+              daemonLog(deps.homePath, `search protocol registered: /akashik/search/1.0.0`);
             }
 
             // Register entity-recall protocol — sibling to search.
@@ -626,10 +654,9 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                   const r = await deps.graphs.load();
                   return r.isOk() ? r.value : null;
                 },
-                sharedRoomsPath: join(deps.homePath, 'shared-rooms.json'),
                 log: (m) => daemonLog(deps.homePath, m),
               });
-              daemonLog(deps.homePath, `recall protocol registered: /wellinformed/recall/1.0.0`);
+              daemonLog(deps.homePath, `recall protocol registered: /akashik/recall/1.0.0`);
             } catch (e) {
               daemonLog(deps.homePath, `recall protocol register failed: ${(e as Error).message}`);
             }
@@ -651,11 +678,11 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               daemonLog(deps.homePath, `touch protocol register failed: ${formatError(touchReg.error)}`);
               liveTouch = null;
             } else {
-              daemonLog(deps.homePath, `touch protocol registered: /wellinformed/touch/1.0.0`);
+              daemonLog(deps.homePath, `touch protocol registered: /akashik/touch/1.0.0`);
             }
 
             // Phase 39 — Layer B oracle pubsub. Subscribe to the
-            // /wellinformed/oracle/1.0.0 topic so inbound questions and
+            // /akashik/oracle/1.0.0 topic so inbound questions and
             // answers from connected peers land in the local graph in
             // real-time (seconds, not minutes). Upserts run through the
             // same remote-node-validator as touch, so the trust boundary
@@ -675,7 +702,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               daemonLog(deps.homePath, `oracle subscribe failed (Layer B disabled): ${formatError(oracleSub.error)}`);
             } else {
               liveOracle = oracleSub.value;
-              daemonLog(deps.homePath, `oracle pubsub subscribed: /wellinformed/oracle/1.0.0`);
+              daemonLog(deps.homePath, `oracle pubsub subscribed: /akashik/oracle/1.0.0`);
             }
 
             // P2P-scale phase 1 — federated search over pubsub. Replaces
@@ -694,13 +721,11 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                   Promise<ReadonlyArray<SearchGossipPeerMatch>> => {
                   const embedding = Float32Array.from(req.embedding);
                   const selfPeer = localNodeForGossip.peerId.toString();
-                  const res = req.room
-                    ? await vectorsForGossip.searchByRoom(
-                        req.room as VectorRoom,
-                        embedding,
-                        req.k,
-                      )
-                    : await vectorsForGossip.searchGlobal(embedding, req.k);
+                  // V5 cutover: no room dispatch. Federated search runs
+                  // against the global graph; the request's workspace
+                  // filter (if any) is applied client-side after the
+                  // peer hit lands.
+                  const res = await vectorsForGossip.searchGlobal(embedding, req.k);
                   if (res.isErr()) return [];
                   return res.value.map((m: Match): SearchGossipPeerMatch => ({
                     node_id: m.node_id,
@@ -717,7 +742,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               daemonLog(deps.homePath, `search-gossip register failed: ${formatError(gossipSub.error)}`);
             } else {
               liveSearchGossip = gossipSub.value;
-              daemonLog(deps.homePath, `search-gossip subscribed: /wellinformed/search/1.0.0`);
+              daemonLog(deps.homePath, `search-gossip subscribed: /akashik/search/1.0.0`);
             }
 
             // P2P-scale phase 3 — swarm-sim registration was lifted

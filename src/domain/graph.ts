@@ -1,7 +1,7 @@
 /**
- * Pure domain model for the wellinformed knowledge graph.
+ * Pure domain model for the akashik knowledge graph.
  *
- * This module owns the vocabulary (Node, Edge, Graph, Room, Wing) and
+ * This module owns the vocabulary (Node, Edge, Graph, Wing) and
  * the pure transformations over it. No I/O, no mutation, no throws —
  * every operation that can fail returns a `Result<Graph, GraphError>`.
  *
@@ -19,8 +19,6 @@
  *   traversal.
  * - BFS/DFS/shortestPath are expressed as pure functions that take a
  *   Graph + options and return a sub-graph.
- * - Room filtering is a predicate passed down to traversal, not a
- *   parallel code path.
  */
 
 import { Result, err, ok } from 'neverthrow';
@@ -29,8 +27,16 @@ import { GraphError } from './errors.js';
 // ─────────────────────── types ────────────────────────────
 
 export type NodeId = string;
-export type Room = string;
 export type Wing = string;
+/**
+ * @deprecated V5 (Phase 24) — rooms were deleted. This alias remains
+ * solely so legacy call sites compile during the wave-3 rollout. Treat
+ * any value of this type as a free-form string with no domain meaning
+ * (workspace/private flags replaced the room primitive). New code MUST
+ * NOT introduce new uses; all references should disappear after the
+ * wave-3 surgical edits.
+ */
+export type Room = string;
 
 /** graphify-required node fields. */
 export interface GraphifyNodeCore {
@@ -40,17 +46,48 @@ export interface GraphifyNodeCore {
   readonly source_file: string;
 }
 
-/** wellinformed-added optional fields. Declared in graphify.validate.OPTIONAL_NODE_FIELDS. */
-export interface WellinformedNodeFields {
-  readonly room?: Room;
+/** akashik-added optional fields. Declared in graphify.validate.OPTIONAL_NODE_FIELDS. */
+export interface AkashikNodeFields {
   readonly wing?: Wing;
   readonly source_uri?: string;
   readonly fetched_at?: string;
   readonly embedding_id?: string;
+  /** Optional workspace tag — populated from cwd's git toplevel basename at write time.
+   *  LOCAL-ONLY. Never enters federation wire envelope. */
+  readonly workspace?: string;
+  /**
+   * Sharing gate. True = never federates. Defaults to false at write time.
+   *
+   * V5 (Phase 24): optional at the type level so existing source
+   * adapters (claude_sessions, generic_rss, codebase, …) can be
+   * surgically edited in later waves without forcing a synchronous
+   * sweep of every node-construction site. The persistence layer
+   * (graph repository → indexNode) stamps `private: false` whenever
+   * the field is absent, preserving the "explicit at the boundary"
+   * intent of the original schema.
+   */
+  readonly private?: boolean;
+  /**
+   * GitHub identity of the author at write time. Optional pending
+   * Phase 26 (GitHub-as-primary identity); the field is reserved so
+   * future write sites and federation envelopes can key on a single
+   * canonical user identity without re-bumping the schema. Reads the
+   * `accounts.github.handle` from ~/.akashik/linked-accounts.json
+   * at write time when `akashik login` has been run.
+   *
+   * IMPORTANT: Phase 26 will:
+   *   1. Stamp this field at every write site (save, source adapters,
+   *      consolidation, etc.)
+   *   2. Add a write-time gate that refuses unsigned nodes
+   *   3. Migrate existing nodes via `migrate v5 --stamp-github`
+   * Until then, the field is unset on existing nodes and treated as
+   * "unknown author" by readers.
+   */
+  readonly github_user?: string;
 }
 
 /** A single graph node. Arbitrary extra keys are preserved through round-trip. */
-export type GraphNode = GraphifyNodeCore & WellinformedNodeFields & Readonly<Record<string, unknown>>;
+export type GraphNode = GraphifyNodeCore & AkashikNodeFields & Readonly<Record<string, unknown>>;
 
 /** A single graph edge. Undirected. */
 export interface GraphEdge {
@@ -131,8 +168,6 @@ export interface Subgraph {
 /** Options for traversal queries. */
 export interface TraversalOptions {
   readonly depth?: number;
-  /** if present, only nodes in this room are eligible. */
-  readonly room?: Room;
 }
 
 // ─────────────────────── constants ────────────────────────
@@ -208,10 +243,17 @@ export const size = (g: Graph): { nodes: number; edges: number } => ({
 
 export const getNode = (g: Graph, id: NodeId): GraphNode | undefined => g.nodeById.get(id);
 
-export const hasNode = (g: Graph, id: NodeId): boolean => g.nodeById.has(id);
+/**
+ * @deprecated V5 (Phase 24) — rooms were deleted. Filters on the
+ * legacy `room` extension field that may still round-trip on v4 graph
+ * data. Returns an empty list when no node carries the field. New code
+ * MUST NOT use this helper; switch to source_uri-prefix filters,
+ * workspace tags, or other domain-specific predicates.
+ */
+export const nodesInRoom = (g: Graph, room: string): readonly GraphNode[] =>
+  g.json.nodes.filter((n) => (n as { room?: unknown }).room === room);
 
-export const nodesInRoom = (g: Graph, room: Room): readonly GraphNode[] =>
-  g.json.nodes.filter((n) => n.room === room);
+export const hasNode = (g: Graph, id: NodeId): boolean => g.nodeById.has(id);
 
 export const neighbors = (g: Graph, id: NodeId): readonly GraphNode[] => {
   const adj = g.adjacency.get(id);
@@ -229,11 +271,10 @@ export const neighbors = (g: Graph, id: NodeId): readonly GraphNode[] => {
 /** Breadth-first traversal from a set of starting nodes. */
 export const bfs = (g: Graph, start: readonly NodeId[], opts: TraversalOptions = {}): Subgraph => {
   const depth = opts.depth ?? 3;
-  const allow = roomFilter(g, opts.room);
   const visited = new Set<NodeId>();
   const frontier: NodeId[] = [];
   for (const s of start) {
-    if (g.nodeById.has(s) && allow(s)) {
+    if (g.nodeById.has(s)) {
       visited.add(s);
       frontier.push(s);
     }
@@ -245,7 +286,7 @@ export const bfs = (g: Graph, start: readonly NodeId[], opts: TraversalOptions =
       const adj = g.adjacency.get(nid);
       if (!adj) continue;
       for (const m of adj) {
-        if (visited.has(m) || !allow(m)) continue;
+        if (visited.has(m)) continue;
         visited.add(m);
         next.push(m);
       }
@@ -259,12 +300,11 @@ export const bfs = (g: Graph, start: readonly NodeId[], opts: TraversalOptions =
 /** Depth-first traversal from a set of starting nodes. */
 export const dfs = (g: Graph, start: readonly NodeId[], opts: TraversalOptions = {}): Subgraph => {
   const depth = opts.depth ?? 3;
-  const allow = roomFilter(g, opts.room);
   const visited = new Set<NodeId>();
   const stack: Array<[NodeId, number]> = [];
   for (let i = start.length - 1; i >= 0; i--) {
     const s = start[i];
-    if (g.nodeById.has(s) && allow(s)) stack.push([s, 0]);
+    if (g.nodeById.has(s)) stack.push([s, 0]);
   }
   while (stack.length > 0) {
     const [nid, d] = stack.pop()!;
@@ -273,7 +313,7 @@ export const dfs = (g: Graph, start: readonly NodeId[], opts: TraversalOptions =
     const adj = g.adjacency.get(nid);
     if (!adj) continue;
     for (const m of adj) {
-      if (visited.has(m) || !allow(m)) continue;
+      if (visited.has(m)) continue;
       stack.push([m, d + 1]);
     }
   }
@@ -426,13 +466,6 @@ const fromJsonUnchecked = (json: GraphJson): Graph => {
     edgesByRelSource,
   });
 };
-
-const roomFilter =
-  (g: Graph, room: Room | undefined): ((id: NodeId) => boolean) =>
-  (id) => {
-    if (!room) return true;
-    return g.nodeById.get(id)?.room === room;
-  };
 
 const subgraph = (g: Graph, nodeIds: ReadonlySet<NodeId>): Subgraph => {
   const nodes: GraphNode[] = [];

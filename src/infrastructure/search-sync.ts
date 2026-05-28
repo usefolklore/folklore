@@ -1,13 +1,23 @@
 /**
  * Search sync — one-shot request/response federated search over a libp2p custom protocol.
  *
- * Phase 17 core. Registers /wellinformed/search/1.0.0 on a libp2p node.
- * Unlike share-sync.ts this is read-only: no Y.js docs, no CRDT mutations,
- * no REMOTE_ORIGIN needed, no debounce timers.
+ * Phase 17 core; V5 wire-protocol cutover Phase 24-03. Registers
+ * /akashik/search/1.0.0 on a libp2p node. Read-only: no Y.js docs,
+ * no CRDT mutations, no REMOTE_ORIGIN needed, no debounce timers.
  *
- * CRITICAL invariants — every reviewer must check these:
- *   1. SEARCH_PROTOCOL_ID is '/wellinformed/search/1.0.0' — separate from
- *      '/wellinformed/share/1.0.0' so sync and search have independent stream
+ * V5 INVARIANTS (Phase 24 — ROOMS-DEL-05):
+ *   - The `room` field is GONE from SearchRequest / SearchResponse / PeerMatch.
+ *     Read-side workspace pre-filtering happens at the CALLER, not on the wire.
+ *   - Every inbound envelope MUST carry `protocol_version: 5`. A V4 envelope
+ *     (any envelope that still has a `room` field, OR any envelope missing
+ *     `protocol_version: 5`) is rejected with SearchProtocolMismatch.
+ *   - The libp2p protocol-path string stays at `/akashik/search/1.0.0` —
+ *     V5 is enforced at the envelope layer, not via a new libp2p protocol id.
+ *     Pre-V5 peers get envelope-parse rejection, not "protocol not handled."
+ *
+ * EXISTING INVARIANTS — every reviewer must check these:
+ *   1. SEARCH_PROTOCOL_ID is '/akashik/search/1.0.0' — separate from
+ *      '/akashik/share/1.0.0' so sync and search have independent stream
  *      lifecycles (CONTEXT.md locked decision).
  *
  *   2. FramedStream is COPIED from share-sync.ts, NOT imported. Search and share
@@ -24,14 +34,10 @@
  *      flatten. Every consumer of frameIter receives a plain Uint8Array (Pitfall 4).
  *
  *   5. Rate limiter Map memory leak (Pitfall 7, 17-RESEARCH.md): evictIdle() is
- *      called on EVERY consume() call. A standalone timer is fragile; inline
- *      pruning ensures eviction runs whenever the bucket is used.
+ *      called on EVERY consume() call. The bucket key is peerId ONLY in V5
+ *      (was `${peerId}:${room}` pre-V5 — flattened in Wave 0 reputation work).
  *
- *   6. Inbound authorization: only rooms listed in local shared-rooms.json respond.
- *      Non-shared rooms return an empty match set with error:'unauthorized'.
- *      No per-peer ACL in Phase 17 — room-level only (CONTEXT.md).
- *
- *   7. Audit log: every inbound search request and outbound response is appended
+ *   6. Audit log: every inbound search request and outbound response is appended
  *      to share-log.jsonl (same file as share-sync.ts per CONTEXT.md decision).
  */
 import * as lp from 'it-length-prefixed';
@@ -45,12 +51,12 @@ import { SearchError as SEARCH_ERR } from '../domain/errors.js';
 import type { VectorIndex } from './vector-index.js';
 import type { Match, Vector } from '../domain/vectors.js';
 import { DEFAULT_DIM } from '../domain/vectors.js';
-import type { Room } from '../domain/graph.js';
-import { loadSharedRooms } from './share-store.js';
 
 // ─────────────────────── constants ────────────────────────────────────────────
 
-export const SEARCH_PROTOCOL_ID = '/wellinformed/search/1.0.0' as const;
+export const SEARCH_PROTOCOL_ID = '/akashik/search/1.0.0' as const;
+/** V5 protocol-version literal carried on every envelope. */
+export const SEARCH_PROTOCOL_VERSION = 5 as const;
 const MAX_INBOUND_STREAMS = 32;
 /** Per-peer outbound timeout — locked from CONTEXT.md (2s). */
 const PER_PEER_TIMEOUT_MS = 2000;
@@ -102,39 +108,50 @@ const makeFramedStream = (stream: Stream): FramedStream => {
   };
 };
 
-// ─────────────────────── wire format ──────────────────────────────────────────
+// ─────────────────────── wire format (V5) ─────────────────────────────────────
 
 /**
- * Outbound search request.
+ * Outbound search request — V5 envelope.
+ *
  * embedding is number[] (JSON-safe) — reconstructed as Float32Array on inbound
  * (Pitfall 3 from 17-RESEARCH.md: acceptable precision loss at 6th-7th decimal).
+ *
+ * V5: no `room` field. Workspace pre-filter is applied LOCAL-ONLY at the
+ * caller's read site (Wave 3) and never enters the wire envelope.
  */
 export interface SearchRequest {
   readonly type: 'search';
+  readonly protocol_version: 5;
   readonly embedding: number[];   // JSON-safe — reconstructed as Float32Array on inbound
-  readonly room?: string;
   readonly k: number;
 }
 
 /**
  * A match result annotated with peer provenance.
  * _source_peer: null = local result; string = remote peer PeerId.
+ *
+ * V5: no `room` field (room was Phase 17 vintage; V5 nodes carry workspace LOCAL only).
  */
-export interface PeerMatch extends Match {
+export interface PeerMatch {
+  readonly node_id: string;
+  readonly wing?: string;
+  readonly distance: number;
   readonly label?: string;         // optional: responding peer includes if available
   readonly source_uri?: string;
   readonly _source_peer: string | null;  // null = local, peerId string = remote
 }
 
 /**
- * Inbound search response from a remote peer.
+ * Inbound search response from a remote peer — V5 envelope.
+ *
  * matches omit _source_peer (peer doesn't know its own id).
  * error field is set on failure cases — caller receives empty matches.
  */
 export interface SearchResponse {
   readonly type: 'search_response';
+  readonly protocol_version: 5;
   readonly matches: ReadonlyArray<Omit<PeerMatch, '_source_peer'>>;
-  readonly error?: 'dimension_mismatch' | 'unauthorized' | 'rate_limited' | 'protocol';
+  readonly error?: 'dimension_mismatch' | 'rate_limited' | 'protocol' | 'protocol_mismatch';
 }
 
 // ─────────────────────── token bucket rate limiter ────────────────────────────
@@ -167,6 +184,8 @@ export interface RateLimiter {
  *
  * Tokens refill at ratePerSec tokens/second up to burst capacity.
  * A new peer starts with a full burst bucket.
+ *
+ * V5: bucket key is peerId ONLY (was `${peerId}:${room}` pre-V5).
  *
  * PITFALL LOCK (Pitfall 7): evictIdle() is called inside consume() on every
  * request. A standalone timer is fragile — inline pruning bounds Map growth
@@ -217,13 +236,15 @@ export const createRateLimiter = (
 /**
  * Search audit log entry. Appended to share-log.jsonl (same file as
  * share-sync.ts per CONTEXT.md decision — single log for all P2P activity).
+ *
+ * V5: no `room` field. The log entry has always been peer-keyed; the
+ * room dimension on the request was the only place room used to surface here.
  */
 interface SearchLogEntry {
   readonly timestamp: string;
   readonly peer: string;
-  readonly room?: string;
   readonly action: 'search_request' | 'search_response';
-  readonly outcome: 'allowed' | 'unauthorized' | 'rate_limited' | 'dimension_mismatch' | 'error';
+  readonly outcome: 'allowed' | 'rate_limited' | 'dimension_mismatch' | 'protocol_mismatch' | 'error';
   readonly k?: number;
   readonly resultCount?: number;
 }
@@ -241,22 +262,24 @@ const appendSearchLog = async (logPath: string, entry: SearchLogEntry): Promise<
 
 interface SearchHandlerDeps {
   readonly vectorIndex: VectorIndex;
-  readonly sharedRoomsPath: string;
   readonly logPath: string;
   readonly rateLimiter: RateLimiter;
   readonly expectedDim: number;   // DEFAULT_DIM from vectors.ts
 }
 
 /**
- * Handle one inbound search stream.
+ * Handle one inbound search stream — V5 protocol.
  *
  * Protocol (one-shot request/response):
  *   1. Read one length-prefixed JSON frame (SearchRequest)
- *   2. Rate-limit check (token bucket per peerId)
- *   3. Dimension guard (req.embedding.length === 384)
- *   4. Room authorization (room must be in local shared-rooms.json)
+ *   2. V5 protocol guard:
+ *        - reject any envelope with a `room` field (pre-V5 / V4 envelope)
+ *        - reject any envelope without protocol_version === 5
+ *   3. Rate-limit check (token bucket per peerId)
+ *   4. Dimension guard (req.embedding.length === 384)
  *   5. Reconstruct Float32Array from number[] (Pitfall 3)
- *   6. Query vectorIndex.searchByRoom or union-of-shared-rooms global search
+ *   6. Query vectorIndex.searchGlobal — the per-node `private: boolean` filter
+ *      runs INSIDE the vector index (Wave 2/3). Room-level auth gate is gone.
  *   7. Write one length-prefixed JSON frame (SearchResponse)
  *   8. Append audit log entry
  *   9. Close stream
@@ -274,6 +297,7 @@ const handleSearchRequest = async (
 
     // Parse request (JSON over length-prefixed frame)
     let req: SearchRequest;
+    let rawDecoded: Record<string, unknown>;
     try {
       const parsed = JSON.parse(new TextDecoder().decode(first.value)) as unknown;
       if (
@@ -284,20 +308,75 @@ const handleSearchRequest = async (
       ) {
         throw new Error('malformed SearchRequest');
       }
+      rawDecoded = parsed as Record<string, unknown>;
       req = parsed as SearchRequest;
     } catch {
-      const errResp: SearchResponse = { type: 'search_response', matches: [], error: 'protocol' };
+      const errResp: SearchResponse = {
+        type: 'search_response',
+        protocol_version: SEARCH_PROTOCOL_VERSION,
+        matches: [],
+        error: 'protocol',
+      };
       await fs.write(new TextEncoder().encode(JSON.stringify(errResp)));
+      fs.close();
+      return;
+    }
+
+    // V5 protocol guard — reject pre-V5 (V4) envelopes BEFORE any other work.
+    // A V4 envelope is identified by either:
+    //   (a) presence of the deleted `room` field, OR
+    //   (b) absence of `protocol_version === 5`.
+    if (rawDecoded.room !== undefined) {
+      const mismatchMsg = `peer at ${remotePeerId} sent V4 SearchRequest with \`room\` field. This peer is on V5; the \`room\` field is removed. See docs/architecture/V5-PROTOCOL.md.`;
+      const errResp: SearchResponse = {
+        type: 'search_response',
+        protocol_version: SEARCH_PROTOCOL_VERSION,
+        matches: [],
+        error: 'protocol_mismatch',
+      };
+      await fs.write(new TextEncoder().encode(JSON.stringify(errResp)));
+      void appendSearchLog(deps.logPath, {
+        timestamp: new Date().toISOString(),
+        peer: remotePeerId,
+        action: 'search_request',
+        outcome: 'protocol_mismatch',
+      });
+      process.stderr.write(`akashik: ${mismatchMsg}\n`);
+      fs.close();
+      return;
+    }
+    if (rawDecoded.protocol_version !== SEARCH_PROTOCOL_VERSION) {
+      const got = JSON.stringify(rawDecoded.protocol_version);
+      const mismatchMsg = `peer at ${remotePeerId} sent unknown protocol_version=${got}; this peer speaks V5 only.`;
+      const errResp: SearchResponse = {
+        type: 'search_response',
+        protocol_version: SEARCH_PROTOCOL_VERSION,
+        matches: [],
+        error: 'protocol_mismatch',
+      };
+      await fs.write(new TextEncoder().encode(JSON.stringify(errResp)));
+      void appendSearchLog(deps.logPath, {
+        timestamp: new Date().toISOString(),
+        peer: remotePeerId,
+        action: 'search_request',
+        outcome: 'protocol_mismatch',
+      });
+      process.stderr.write(`akashik: ${mismatchMsg}\n`);
       fs.close();
       return;
     }
 
     // Rate limit check (Pitfall 7 — evictIdle runs inside consume)
     if (!deps.rateLimiter.consume(remotePeerId)) {
-      const errResp: SearchResponse = { type: 'search_response', matches: [], error: 'rate_limited' };
+      const errResp: SearchResponse = {
+        type: 'search_response',
+        protocol_version: SEARCH_PROTOCOL_VERSION,
+        matches: [],
+        error: 'rate_limited',
+      };
       await fs.write(new TextEncoder().encode(JSON.stringify(errResp)));
       void appendSearchLog(deps.logPath, {
-        timestamp: new Date().toISOString(), peer: remotePeerId, room: req.room,
+        timestamp: new Date().toISOString(), peer: remotePeerId,
         action: 'search_request', outcome: 'rate_limited', k: req.k,
       });
       fs.close();
@@ -306,74 +385,49 @@ const handleSearchRequest = async (
 
     // Dimension guard (Pitfall 3 mitigation — check length before Float32Array construction)
     if (req.embedding.length !== deps.expectedDim) {
-      const errResp: SearchResponse = { type: 'search_response', matches: [], error: 'dimension_mismatch' };
+      const errResp: SearchResponse = {
+        type: 'search_response',
+        protocol_version: SEARCH_PROTOCOL_VERSION,
+        matches: [],
+        error: 'dimension_mismatch',
+      };
       await fs.write(new TextEncoder().encode(JSON.stringify(errResp)));
       void appendSearchLog(deps.logPath, {
-        timestamp: new Date().toISOString(), peer: remotePeerId, room: req.room,
+        timestamp: new Date().toISOString(), peer: remotePeerId,
         action: 'search_request', outcome: 'dimension_mismatch', k: req.k,
       });
       fs.close();
       return;
     }
 
-    // Room authorization — only respond to rooms listed in shared-rooms.json
-    if (req.room !== undefined) {
-      const sharedRes = await loadSharedRooms(deps.sharedRoomsPath);
-      if (sharedRes.isErr() || !sharedRes.value.rooms.some((r) => r.name === req.room)) {
-        const errResp: SearchResponse = { type: 'search_response', matches: [], error: 'unauthorized' };
-        await fs.write(new TextEncoder().encode(JSON.stringify(errResp)));
-        void appendSearchLog(deps.logPath, {
-          timestamp: new Date().toISOString(), peer: remotePeerId, room: req.room,
-          action: 'search_request', outcome: 'unauthorized', k: req.k,
-        });
-        fs.close();
-        return;
-      }
-    }
-
     // Log the allowed search_request BEFORE running the query
     void appendSearchLog(deps.logPath, {
-      timestamp: new Date().toISOString(), peer: remotePeerId, room: req.room,
+      timestamp: new Date().toISOString(), peer: remotePeerId,
       action: 'search_request', outcome: 'allowed', k: req.k,
     });
 
     // Reconstruct Float32Array from JSON number[] (Pitfall 3 — acceptable precision loss)
     const embedding: Vector = new Float32Array(req.embedding);
 
-    // Global queries are ALSO room-restricted: only vectors whose room is in
-    // shared-rooms.json may leak out. For safety, an unconstrained global
-    // query is converted to the union of shared rooms. If none are shared,
-    // return empty matches.
-    let matches: readonly Match[] = [];
-    if (req.room) {
-      const r = await deps.vectorIndex.searchByRoom(req.room as Room, embedding, req.k);
-      matches = r.isOk() ? r.value : [];
-    } else {
-      const sharedRes = await loadSharedRooms(deps.sharedRoomsPath);
-      if (sharedRes.isOk() && sharedRes.value.rooms.length > 0) {
-        // For each shared room, run searchByRoom and merge. Keep top-k by distance.
-        const all: Match[] = [];
-        for (const r of sharedRes.value.rooms) {
-          const res = await deps.vectorIndex.searchByRoom(r.name as Room, embedding, req.k);
-          if (res.isOk()) all.push(...res.value);
-        }
-        matches = all.sort((a, b) => a.distance - b.distance).slice(0, req.k);
-      }
-      // else: no shared rooms → empty matches (not an error; normal case for fresh install)
-    }
+    // V5: global query only. The per-node `private: boolean` gate runs INSIDE
+    // the vector index implementation (Wave 2/3) — the wire layer no longer
+    // needs to consult a shared-rooms registry. Workspace pre-filter is a
+    // LOCAL read concern and never crosses the wire.
+    const r = await deps.vectorIndex.searchGlobal(embedding, req.k);
+    const matches: readonly Match[] = r.isOk() ? r.value : [];
 
     const response: SearchResponse = {
       type: 'search_response',
+      protocol_version: SEARCH_PROTOCOL_VERSION,
       matches: matches.map((m) => ({
         node_id: m.node_id,
-        room: m.room,
         wing: m.wing,
         distance: m.distance,
       })),
     };
     await fs.write(new TextEncoder().encode(JSON.stringify(response)));
     void appendSearchLog(deps.logPath, {
-      timestamp: new Date().toISOString(), peer: remotePeerId, room: req.room,
+      timestamp: new Date().toISOString(), peer: remotePeerId,
       action: 'search_response', outcome: 'allowed', k: req.k, resultCount: matches.length,
     });
   } finally {
@@ -391,6 +445,8 @@ export interface SearchRegistry {
 /**
  * Create a SearchRegistry. Holds the node reference and all handler deps.
  * Call registerSearchProtocol(registry) to begin accepting inbound search streams.
+ *
+ * V5: no sharedRoomsPath — the room-level authorization registry was removed in Wave 1a.
  */
 export const createSearchRegistry = (
   node: Libp2p,
@@ -402,7 +458,6 @@ export const createSearchRegistry = (
   node,
   deps: {
     vectorIndex,
-    sharedRoomsPath: join(homePath, 'shared-rooms.json'),
     logPath: join(homePath, 'share-log.jsonl'),
     rateLimiter: createRateLimiter(ratePerSec, burst),
     expectedDim: DEFAULT_DIM,
@@ -410,7 +465,7 @@ export const createSearchRegistry = (
 });
 
 /**
- * Register the /wellinformed/search/1.0.0 protocol on the libp2p node.
+ * Register the /akashik/search/1.0.0 protocol on the libp2p node.
  * Idempotent — unhandles any prior registration before re-registering.
  * Mirrors the registerShareProtocol shape from share-sync.ts.
  */
@@ -434,7 +489,7 @@ export const registerSearchProtocol = (
   );
 
 /**
- * Unregister the /wellinformed/search/1.0.0 protocol.
+ * Unregister the /akashik/search/1.0.0 protocol.
  * Search streams are one-shot (no persistent registry state to clean up).
  */
 export const unregisterSearchProtocol = (
@@ -448,19 +503,20 @@ export const unregisterSearchProtocol = (
 // ─────────────────────── outbound helper ──────────────────────────────────────
 
 /**
- * Open a one-shot search stream to a single peer.
+ * Open a one-shot search stream to a single peer — V5 protocol.
  *
- * Dials SEARCH_PROTOCOL_ID, writes one JSON frame (SearchRequest),
- * reads one JSON frame (SearchResponse), closes. Returns PeerMatch[] with
- * _source_peer annotated as peerIdStr.
+ * Dials SEARCH_PROTOCOL_ID, writes one JSON frame (SearchRequest with
+ * protocol_version: 5), reads one JSON frame (SearchResponse), closes.
+ * Returns PeerMatch[] with _source_peer annotated as peerIdStr.
  *
  * Per-peer timeout is NOT applied here — the caller (federated-search.ts)
  * wraps each openSearchStream call in a Promise.race with a 2000ms timeout
  * per the PER_PEER_TIMEOUT_MS constant (CONTEXT.md locked).
  *
- * On any peer error (protocol, rate_limited, dimension_mismatch, unauthorized),
+ * On any peer error (protocol, protocol_mismatch, rate_limited, dimension_mismatch),
  * returns [] and logs a warning — the fan-out logic treats this as a degraded
- * peer and continues with the rest of the fan-out.
+ * peer and continues with the rest of the fan-out. A protocol_mismatch error
+ * is logged with extra prominence so operators notice version skew quickly.
  */
 export const openSearchStream = (
   node: Libp2p,
@@ -473,24 +529,29 @@ export const openSearchStream = (
       const stream = await node.dialProtocol(pid, SEARCH_PROTOCOL_ID);
       const fs = makeFramedStream(stream);
       try {
-        // Write one frame — JSON SearchRequest (embedding already Array.from()'d by caller)
+        // Write one frame — JSON SearchRequest (V5 envelope, protocol_version: 5).
+        // Caller is responsible for ensuring req.protocol_version === 5; we assert
+        // it here as a final fence so no V4-shaped envelope can leave this peer.
+        if (req.protocol_version !== SEARCH_PROTOCOL_VERSION) {
+          throw new Error(
+            `refusing to send V${String(req.protocol_version)} envelope — this peer speaks V5 only`,
+          );
+        }
         await fs.write(new TextEncoder().encode(JSON.stringify(req)));
         const iter = fs.frameIter();
         const frame = await iter.next();
         if (frame.done || !frame.value) return [];
         const resp = JSON.parse(new TextDecoder().decode(frame.value)) as SearchResponse;
         if (resp.error) {
-          // Peer returned an error code — propagate as empty matches.
-          // The fan-out logic in federated-search.ts treats this as a degraded peer.
-          process.stderr.write(
-            `wellinformed: peer ${peerIdStr} search error: ${resp.error}\n`,
-          );
+          const prefix = resp.error === 'protocol_mismatch'
+            ? `akashik: PROTOCOL MISMATCH — peer ${peerIdStr} did not accept our V5 SearchRequest (got: ${resp.error}). Upgrade the remote peer or check docs/architecture/V5-PROTOCOL.md.`
+            : `akashik: peer ${peerIdStr} search error: ${resp.error}`;
+          process.stderr.write(`${prefix}\n`);
           return [];
         }
         // Annotate each match with _source_peer
         return resp.matches.map((m): PeerMatch => ({
           node_id: m.node_id,
-          room: m.room,
           wing: m.wing,
           distance: m.distance,
           _source_peer: peerIdStr,

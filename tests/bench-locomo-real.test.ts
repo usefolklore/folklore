@@ -15,12 +15,12 @@
  * retrieval-only dimension.
  *
  * Per LoCoMo convention, `evidence` is a list of `"D<session>:<turn>"`
- * strings. We collapse to the set of source SESSIONS — wellinformed
+ * strings. We collapse to the set of source SESSIONS — akashik
  * indexes one node per session, not per turn, so session-level
  * evidence is the right granularity.
  *
  * Optional LLM extractor (env-gated, off by default):
- *   WELLINFORMED_BENCH_LLM_EXTRACTOR=1 swaps the containment metric
+ *   AKASHIK_BENCH_LLM_EXTRACTOR=1 swaps the containment metric
  *   for a real Ollama Phi-4-mini extracted answer scored via
  *   SQuAD-style F1. Wired here as a stub — the extractor itself is a
  *   Phase 23.8 follow-up. With the flag off (default) we report the
@@ -28,7 +28,7 @@
  *
  * Environment contract:
  *
- *   WELLINFORMED_BENCH_PUBLIC_REAL=1
+ *   AKASHIK_BENCH_PUBLIC_REAL=1
  *     Master gate; off by default.
  *
  *   LOCOMO_DIR=/path/to/locomo
@@ -38,7 +38,7 @@
  *         git clone https://github.com/snap-research/locomo $LOCOMO_DIR/repo
  *         cp $LOCOMO_DIR/repo/data/locomo10.json $LOCOMO_DIR/
  *
- *   WELLINFORMED_BENCH_OUT=/path/to/report.jsonl   (optional)
+ *   AKASHIK_BENCH_OUT=/path/to/report.jsonl   (optional)
  *     Composite-runner sink.
  *
  * Embedder: real Xenova all-MiniLM-L6-v2 (no fixture).
@@ -53,7 +53,7 @@ import { test } from 'node:test';
 import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
 import { xenovaEmbedder, batchingEmbedder } from '../src/infrastructure/embedders.js';
-import { indexNode, searchByRoom } from '../src/application/use-cases.js';
+import { indexNode, searchGlobal } from '../src/application/use-cases.js';
 import { llmExtractorFromEnv } from '../src/infrastructure/llm-extractor.js';
 import { squadF1, squadExactMatch } from '../src/domain/llm-extractor.js';
 import { rerankMatches } from '../src/domain/cross-rerank.js';
@@ -219,8 +219,8 @@ const harmonicMean = (a: number, b: number): number => {
 // ─────────────── runner ─────────────
 
 test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 1000 }, async (t) => {
-  if (process.env.WELLINFORMED_BENCH_PUBLIC_REAL !== '1') {
-    t.skip('WELLINFORMED_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
+  if (process.env.AKASHIK_BENCH_PUBLIC_REAL !== '1') {
+    t.skip('AKASHIK_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
     return;
   }
   const dir = process.env.LOCOMO_DIR;
@@ -233,10 +233,10 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
     t.skip(`missing ${filePath} — see suite header for download instructions`);
     return;
   }
-  const useLlmExtractor = process.env.WELLINFORMED_BENCH_LLM_EXTRACTOR === '1';
+  const useLlmExtractor = process.env.AKASHIK_BENCH_LLM_EXTRACTOR === '1';
   const extractor = useLlmExtractor ? llmExtractorFromEnv() : null;
   if (useLlmExtractor && extractor === null) {
-    t.skip('WELLINFORMED_BENCH_LLM_EXTRACTOR=1 but no extractor resolvable from env (set WELLINFORMED_OLLAMA_URL or WELLINFORMED_BENCH_LLM_EXTRACTOR_FIXTURE=1)');
+    t.skip('AKASHIK_BENCH_LLM_EXTRACTOR=1 but no extractor resolvable from env (set AKASHIK_OLLAMA_URL or AKASHIK_BENCH_LLM_EXTRACTOR_FIXTURE=1)');
     return;
   }
   if (extractor) {
@@ -257,19 +257,19 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
   // candidate window so the cross-encoder can reshape the top-3.
   const reranker = crossEncoderFromEnv();
   const listwiseScorer = listwiseScorerFromEnv();
-  const RERANK_HEAD = Number(process.env.WELLINFORMED_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
+  const RERANK_HEAD = Number(process.env.AKASHIK_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
   // Phase 23.13 — LoCoMo recall ladder. Always over-retrieve to KMAX
   // so we can compute evidence-recall at K=3 / 10 / 30 / 50 from one
   // pass, mirroring the LME-S T1 diagnostic. If R@30 ≈ R@3 the rerank
   // ceiling is structurally low (gold not in pool); if R@30 jumps
   // materially above R@3, there's recall headroom worth chasing.
   const RECALL_KS = [3, 10, 30, 50] as const;
-  const KMAX = Number(process.env.WELLINFORMED_BENCH_LOCOMO_KMAX ?? 50);
+  const KMAX = Number(process.env.AKASHIK_BENCH_LOCOMO_KMAX ?? 50);
   const overRetrieveK = Math.max(KMAX, (reranker || listwiseScorer) ? RERANK_HEAD : K);
   if (listwiseScorer) {
     console.log(`  LLM-listwise rerank ON · model=${listwiseScorer.model} · over-retrieve k=${overRetrieveK} → listwise head=${RERANK_HEAD} → final K=${K}`);
   } else if (reranker) {
-    console.log(`  cross-encoder rerank ON · model=${process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
+    console.log(`  cross-encoder rerank ON · model=${process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
   }
 
   // E11 (Phase 23.9): rule-based contextual enrichment — write-path.
@@ -338,12 +338,10 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
             file_type: 'document',
             source_file: s.nodeId,
             source_uri: `session://${s.nodeId}`,
-            room: ROOM,
             summary: s.summary.slice(0, 400),
             fetched_at: s.fetchedAt,
           },
           text: indexedText,
-          room: ROOM,
         });
         if (r.isErr()) throw new Error(`index ${s.nodeId}: ${JSON.stringify(r.error)}`);
       }
@@ -352,8 +350,7 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
 
       for (let qIdx = 0; qIdx < factualQa.length; qIdx++) {
         const q = factualQa[qIdx];
-        const r0 = await searchByRoom({ graphs, vectors, embedder })({
-          room: ROOM,
+        const r0 = await searchGlobal({ graphs, vectors, embedder })({
           text: q.question,
           k: overRetrieveK,
         });
@@ -412,8 +409,8 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
         // arrive every ~70 questions which is too coarse when each
         // question costs 5-30 s; this logs every N questions so live
         // tailing on Hetzner / Mac shows the bench breathing.
-        // Tunable via `WELLINFORMED_BENCH_PROGRESS_EVERY_N` (default 25).
-        const PROGRESS_EVERY_N = Number(process.env.WELLINFORMED_BENCH_PROGRESS_EVERY_N ?? 25);
+        // Tunable via `AKASHIK_BENCH_PROGRESS_EVERY_N` (default 25).
+        const PROGRESS_EVERY_N = Number(process.env.AKASHIK_BENCH_PROGRESS_EVERY_N ?? 25);
         if (totalQ % PROGRESS_EVERY_N === 0) {
           const r3 = sumEvHitsK[3] / totalQ;
           const ndcg3 = sumNdcgK[3] / totalQ;
@@ -471,7 +468,7 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
   // compute harmonic-mean dimension — that's the contract for the
   // composite runner across machines without an LLM available. The
   // SQuAD-F1 / EM are reported alongside for mem0-comparable numbers
-  // when the extractor was wired in (`WELLINFORMED_BENCH_LLM_EXTRACTOR=1`).
+  // when the extractor was wired in (`AKASHIK_BENCH_LLM_EXTRACTOR=1`).
   const extractorMetrics: Record<string, number> = extractor
     ? {
         squadF1: meanSquadF1,
@@ -533,11 +530,11 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
     },
     perQuery,
     elapsedMs,
-    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.WELLINFORMED_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix, scoring on raw text)' : 'off'}. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
+    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix, scoring on raw text)' : 'off'}. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
   };
 
-  if (process.env.WELLINFORMED_BENCH_OUT) {
-    appendFileSync(process.env.WELLINFORMED_BENCH_OUT, JSON.stringify(report) + '\n');
+  if (process.env.AKASHIK_BENCH_OUT) {
+    appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
   }
 
   console.log(`bench locomo-real: dimension=${dimensionScore.toFixed(4)} (evidence-recall=${evidenceRecall.toFixed(3)}, containment=${meanContainment.toFixed(3)}) over ${totalQ} questions in ${(elapsedMs / 1000).toFixed(1)}s`);
@@ -562,7 +559,7 @@ test('bench: real LoCoMo factual harmonic-mean F1', { timeout: 24 * 60 * 60 * 10
   // and our K=3 retrieval can't fit them all. mem0's 92.5 composite
   // uses an LLM judge over LoCoMo's accuracy split, NOT this
   // retrieval-only dimension — direct comparison waits for the
-  // WELLINFORMED_BENCH_LLM_EXTRACTOR=1 path (squadF1 metric, reported
+  // AKASHIK_BENCH_LLM_EXTRACTOR=1 path (squadF1 metric, reported
   // alongside but NOT used as the floor here).
   // Floor set 7pp below measured baseline; tighten if pipeline
   // improvements push it higher.

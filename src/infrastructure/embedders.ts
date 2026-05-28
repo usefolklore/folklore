@@ -146,7 +146,7 @@ export const xenovaEmbedder = (opts: XenovaOptions = {}): Embedder => {
 /**
  * Options for the Rust subprocess embedder — Phase 24 of v2.1.
  *
- * Spawns the `wellinformed-rs/target/release/embed_server` binary on
+ * Spawns the `akashik-rs/target/release/embed_server` binary on
  * first use and streams embedding requests through its stdio JSON-RPC
  * protocol. Exists because Xenova/bge-base-en-v1.5 is a measured-
  * defective ONNX conversion (-11 NDCG@10 on BEIR SciFact vs published);
@@ -163,8 +163,8 @@ export interface RustSubprocessOptions {
   readonly dim: number;
   /**
    * Path to the embed_server binary. Defaults to the repo-local
-   * `wellinformed-rs/target/release/embed_server`; override via
-   * `$WELLINFORMED_RUST_BIN` env var or this option.
+   * `akashik-rs/target/release/embed_server`; override via
+   * `$AKASHIK_RUST_BIN` env var or this option.
    */
   readonly binaryPath?: string;
   /** Treat texts as queries (embed with query prefix). */
@@ -199,13 +199,13 @@ interface RustResponse {
 export const rustSubprocessEmbedder = (opts: RustSubprocessOptions): Embedder => {
   const binaryPath =
     opts.binaryPath ??
-    process.env.WELLINFORMED_RUST_BIN ??
-    // Default path assumes the repo layout: wellinformed-rs is a sibling
+    process.env.AKASHIK_RUST_BIN ??
+    // Default path assumes the repo layout: akashik-rs is a sibling
     // of src/. Resolve relative to this file's directory.
     (() => {
       const here = dirname(fileURLToPath(import.meta.url));
       // dist/infrastructure/embedders.js → dist/infrastructure → ../.. → repo root
-      return join(here, '..', '..', 'wellinformed-rs', 'target', 'release', 'embed_server');
+      return join(here, '..', '..', 'akashik-rs', 'target', 'release', 'embed_server');
     })();
 
   let child: ChildProcessWithoutNullStreams | null = null;
@@ -330,7 +330,7 @@ export const rustSubprocessEmbedder = (opts: RustSubprocessOptions): Embedder =>
  *
  * Wraps any Embedder so that individual `.embed(text)` calls queue up
  * and flush as a single `embedBatch()` call against the underlying
- * encoder. Measured gain on the live wellinformed stack (bench-embed-
+ * encoder. Measured gain on the live akashik stack (bench-embed-
  * throughput.mjs on bge-base): serial 1-text embeds = 8.56 docs/sec,
  * batched 32-text = 26.56 docs/sec → 3.1× from coalescing. The
  * per-request overhead lives on the Rust subprocess protocol path;

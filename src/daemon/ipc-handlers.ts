@@ -93,7 +93,7 @@ const parseAskArgs = (args: readonly string[]): AskArgs | string => {
     else if (a === '--peers') return 'IPC does not delegate --peers (libp2p needs a fresh node)';
     else if (!a.startsWith('-')) query = query ? `${query} ${a}` : a;
   }
-  if (!query) return 'missing query — usage: wellinformed ask "your question" [--room R] [--k N] [--json]';
+  if (!query) return 'missing query — usage: akashik ask "your question" [--room R] [--k N] [--json]';
   return { query, room, k, json };
 };
 
@@ -146,7 +146,7 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     vectors: runtime.vectors,
     embedder: runtime.embedder,
     entityRegistry: runtime.entityRegistry,
-  })({ query: parsed.query, room: parsed.room, k: parsed.k });
+  })({ query: parsed.query, k: parsed.k });
 
   if (result.isErr()) {
     return { stdout: '', stderr: `ask: ${formatError(result.error)}\n`, exit: 1 };
@@ -157,7 +157,7 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     const hits = r.search_hits.map((h) => ({
       id: h.node_id,
       label: h.label,
-      room: h.room ?? null,
+      workspace: h.workspace ?? null,
       distance: Number(h.distance.toFixed(4)),
       source_uri: h.source_uri ?? null,
       summary: typeof h.summary === 'string' ? h.summary.slice(0, 400) : null,
@@ -167,7 +167,6 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
     }));
     const payload: Record<string, unknown> = {
       query: r.query,
-      room: r.room ?? null,
       hits,
       reranked: r.reranked,
       // Agent contract — completeness/decision so callers can
@@ -206,7 +205,7 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
 
   // Human-readable rendering
   if (r.search_hits.length === 0 && !r.resolved_entity) {
-    const stdout = 'no results found. try a broader query or run `wellinformed trigger` to index content first.\n';
+    const stdout = 'no results found. try a broader query or run `akashik trigger` to index content first.\n';
     cache.set(cacheKey, stdout);
     if (queryVec) l2.set(queryVec, stdout);
     return { stdout, exit: 0 };
@@ -220,31 +219,30 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
   // sense." This composition is the visible answer.
   if (r.resolved_entity && r.recall_result && r.recall_result.hits.length > 0) {
     const e = r.resolved_entity;
-    lines.push(`# wellinformed: "${r.query}" matches entity ${e.id}`);
+    lines.push(`# akashik: "${r.query}" matches entity ${e.id}`);
     lines.push(`type: ${e.type} | aliases: ${e.aliases.join(', ')} | mentions: ${r.recall_result.total}`);
     lines.push('');
     lines.push(`## entity recall (top ${r.recall_result.hits.length})`);
     for (const h of r.recall_result.hits) {
-      const room = h.room ?? '-';
+      const ws = h.workspace ?? '-';
       const ageStr =
         h.age_days === undefined ? ''
         : h.age_days < 1 ? ' · today'
         : h.age_days < 14 ? ` · ${Math.round(h.age_days)}d`
         : h.age_days < 90 ? ` · ${Math.round(h.age_days / 7)}w`
         : ` · ${Math.round(h.age_days / 30)}mo`;
-      lines.push(`  - ${h.label} [${room}${ageStr}] surface: "${h.surface}"`);
+      lines.push(`  - ${h.label} [${ws}${ageStr}] surface: "${h.surface}"`);
     }
     lines.push('');
   }
 
   if (r.search_hits.length > 0) {
     lines.push('## semantic search results');
-    if (r.room) lines.push(`room: ${r.room}`);
     if (r.reranked) lines.push('ranked by: relevance × recency-decay');
     lines.push('');
     for (const h of r.search_hits) {
       lines.push(`### ${h.label}`);
-      lines.push(`distance: ${h.distance.toFixed(3)} | room: ${h.room ?? '-'}`);
+      lines.push(`distance: ${h.distance.toFixed(3)} | workspace: ${h.workspace ?? '-'}`);
       if (h.source_uri) lines.push(`source: ${h.source_uri}`);
       if (h.mentioned_entities.length > 0) {
         const ents = h.mentioned_entities.slice(0, 5).map((e) => e.label).join(', ');
@@ -277,7 +275,7 @@ const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
 
 /**
  * Returns the L1 query cache stats as a JSON line. The CLI surface
- * (wellinformed cache-stats) prints this for operators monitoring
+ * (akashik cache-stats) prints this for operators monitoring
  * cache effectiveness on real workloads.
  */
 const cacheStatsHandler: IpcHandler<Runtime> = async (_args, _runtime): Promise<HandlerResult> => {
@@ -338,7 +336,7 @@ const statsHandler: IpcHandler<Runtime> = async (_args, runtime): Promise<Handle
 // ─────────────── jobs handlers ───────────────
 
 /**
- * `wellinformed jobs submit <kind> <...args>` over IPC.
+ * `akashik jobs submit <kind> <...args>` over IPC.
  *
  * Args shape:
  *   submit ingest:room <room>
@@ -347,7 +345,7 @@ const statsHandler: IpcHandler<Runtime> = async (_args, runtime): Promise<Handle
  *
  * The queue captured in the closure is the daemon-owned singleton.
  * Returns the assigned job id on stdout (one line, no trailing brace
- * spam — keeps `wellinformed this | xargs` style scripting easy).
+ * spam — keeps `akashik this | xargs` style scripting easy).
  */
 const submitJobHandler = (queue: JobQueue): IpcHandler<Runtime> =>
   async (args): Promise<HandlerResult> => {
@@ -438,7 +436,7 @@ const jobsClearHandler = (queue: JobQueue): IpcHandler<Runtime> =>
  * JSON. Read-only, no parameters. Wired in step C of the multi-LLM
  * round-2 architecture review (production readiness — observability).
  *
- *   $ wellinformed metrics
+ *   $ akashik metrics
  *   {"counters":{"ask.calls":42,…},"gauges":{"queue.queued":3,…},
  *    "histograms":{"ask.latency.ms":{"p50":18.2,"p95":140.3,…}},…}
  */
@@ -465,7 +463,7 @@ export const buildIpcHandlers = (queue?: JobQueue): Map<string, IpcHandler<Runti
 /**
  * List of CLI subcommands the client-side shim should attempt to
  * delegate over IPC. Must stay in sync with the keys in
- * buildIpcHandlers(). Used by bin/wellinformed.js to know whether to
+ * buildIpcHandlers(). Used by bin/akashik.js to know whether to
  * try the socket before spawning.
  */
 export const IPC_DELEGATABLE_COMMANDS: ReadonlySet<string> = new Set([

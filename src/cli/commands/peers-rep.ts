@@ -1,5 +1,5 @@
 /**
- * `wellinformed peers rep [<peer-id>] [--subject <key>] [--json]`
+ * `akashik peers rep [<peer-id>] [--subject <key>] [--json]`
  *
  * Inspect the local peer-reputation database. Two surfaces:
  *
@@ -15,7 +15,7 @@
  *     lemlist?\").
  *
  * Output: human table by default, `--json` for programmatic
- * consumers (CI tooling, the future `wellinformed audit export`).
+ * consumers (CI tooling, the future `akashik audit export`).
  */
 
 import { homedir } from 'node:os';
@@ -30,8 +30,8 @@ import {
 } from '../../domain/peer-reputation.js';
 import { loadOrCreateIdentity } from '../../infrastructure/peer-transport.js';
 
-const wellinformedHomeDir = (): string =>
-  process.env.WELLINFORMED_HOME ?? join(homedir(), '.wellinformed');
+const akashikHomeDir = (): string =>
+  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
 
 interface ParsedArgs {
   readonly peerId?: string;
@@ -129,7 +129,7 @@ const renderAllJson = (rows: readonly PeerRow[]): void => {
 
 const renderAllHuman = (rows: readonly PeerRow[]): void => {
   if (rows.length === 0) {
-    console.log('no peer reputation data yet — needs at least one federated ask with `wellinformed ask --peers`.');
+    console.log('no peer reputation data yet — needs at least one federated ask with `akashik ask --peers`.');
     return;
   }
   console.log(`peer reputation — ${rows.length} peer${rows.length === 1 ? '' : 's'} known`);
@@ -198,7 +198,7 @@ const ageBadge = (iso: string): string => {
 
 // ─────────────── usage + entry ────────────
 
-const USAGE = `usage: wellinformed peers rep [<peer-id>] [--subject <key>] [--json]
+const USAGE = `usage: akashik peers rep [<peer-id>] [--subject <key>] [--json]
 
   default                        list every peer + top-3 subjects
   <peer-id>                      drill into one peer
@@ -211,7 +211,7 @@ export const peersRep = async (args: readonly string[]): Promise<number> => {
     return 0;
   }
   const parsed = parseArgs(args);
-  const home = wellinformedHomeDir();
+  const home = akashikHomeDir();
 
   // Need the local peer id to load the file (it's in the header).
   // Use the libp2p identity for that — same one buildPeerPullTelemetry

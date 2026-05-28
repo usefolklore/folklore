@@ -3,7 +3,7 @@
  *
  * Replaces the per-peer dialProtocol fan-out in federated-search.ts
  * with a single publish + collect. Cuts the dominant cost of
- * `wellinformed ask --peers` from O(peers × dial_handshake_ms) to
+ * `akashik ask --peers` from O(peers × dial_handshake_ms) to
  * O(propagation_ms + collector_window_ms).
  *
  * Mirrors oracle-gossip.ts pattern: floodsub today, gossipsub when
@@ -11,23 +11,26 @@
  *
  * Topic layout:
  *
- *   /wellinformed/search/1.0.0           — request topic
- *   /wellinformed/search-resp/1.0.0      — response topic
+ *   /akashik/search/1.0.0           — request topic
+ *   /akashik/search-resp/1.0.0      — response topic
  *
  *   Two topics so a responder never sees its own response and so
  *   askers can subscribe-to-responses without re-processing every
  *   request that flies past.
  *
- * Request shape (JSON over the topic):
+ * Request shape (V5 — JSON over the topic):
  *
  *   {
  *     "type": "search-req",
  *     "request_id": "<uuid>",
  *     "embedding": [...],
- *     "room": "research" | null,
  *     "k": 5,
  *     "issued_at": "2026-05-11T..."
  *   }
+ *
+ * V5 cutover: the `room` field is gone. Federation is workspace-agnostic;
+ * any per-workspace pre-filter happens at the asker's read site after the
+ * responses arrive.
  *
  * Response shape:
  *
@@ -53,7 +56,7 @@
  *   here — this module just emits raw responses ordered by arrival.
  *
  * Bounds:
- *   - MAX_REQUEST_BYTES   16 KiB  (embedding + envelope, room: null is the worst case)
+ *   - MAX_REQUEST_BYTES   16 KiB  (embedding + envelope)
  *   - MAX_RESPONSE_BYTES  256 KiB (k=20 matches × ~12 KiB worst case)
  *   - DEFAULT_WINDOW_MS   200    (covers floodsub propagation at 50-node mesh; gossipsub will need ~80)
  */
@@ -69,8 +72,8 @@ import type { Match } from '../domain/vectors.js';
 
 // ─────────────────────── constants ────────────────────────
 
-export const SEARCH_REQ_TOPIC = '/wellinformed/search/1.0.0' as const;
-export const SEARCH_RESP_TOPIC = '/wellinformed/search-resp/1.0.0' as const;
+export const SEARCH_REQ_TOPIC = '/akashik/search/1.0.0' as const;
+export const SEARCH_RESP_TOPIC = '/akashik/search-resp/1.0.0' as const;
 
 const MAX_REQUEST_BYTES = 16 * 1024;
 const MAX_RESPONSE_BYTES = 256 * 1024;
@@ -82,7 +85,6 @@ export interface SearchGossipRequest {
   readonly type: 'search-req';
   readonly request_id: string;
   readonly embedding: readonly number[];
-  readonly room: string | null;
   readonly k: number;
   readonly issued_at: string;
 }
@@ -223,7 +225,7 @@ export const registerSearchGossipResponder = (
 // ─────────────────────── swarm-sim responder ──────────────
 //
 // Phase 3 of the P2P scale plan: when a daemon has a swarm corpus
-// loaded (~/.wellinformed/swarm-corpus.jsonl), it ALSO publishes
+// loaded (~/.akashik/swarm-corpus.jsonl), it ALSO publishes
 // synthetic responses on behalf of virtual peers from that corpus.
 // Each virtual peer that owns a top-relevance hit gets its OWN
 // SearchGossipResponse published to the response topic.
@@ -238,7 +240,6 @@ export const registerSearchGossipResponder = (
 
 export interface SwarmCorpusPeerHit {
   readonly node_id: string;
-  readonly room: string;
   readonly distance: number;
   readonly peer_id: string;
   /** Optional summary that bypasses auto-pull and goes straight
@@ -304,7 +305,9 @@ export const registerSwarmSimResponder = (
         for (const [peerId, peerHits] of byPeer.entries()) {
           const matches: SearchGossipPeerMatch[] = peerHits.map((h) => ({
             node_id: h.node_id,
-            room: h.room,
+            // `room` field on Match is a vestigial V4 carrier — pass empty
+            // string until the domain Match type is narrowed in 24-09.
+            room: '',
             // wing is part of the real Match type — synthesize a
             // sensible default so the asker's typecheck passes.
             wing: 'main' as unknown as Match['wing'],
@@ -376,7 +379,6 @@ export interface AskGossipResult {
 export const askGossip = (
   node: Libp2p,
   embedding: Float32Array,
-  room: string | null,
   k: number,
   opts: AskGossipOptions = {},
 ): ResultAsync<AskGossipResult, GraphError> => {
@@ -442,7 +444,6 @@ export const askGossip = (
         type: 'search-req',
         request_id: requestId,
         embedding: Array.from(embedding),
-        room,
         k,
         issued_at: new Date().toISOString(),
       };

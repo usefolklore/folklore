@@ -1,7 +1,7 @@
 /**
  * Recall sync — federated entity recall over libp2p.
  *
- * Sibling protocol to /wellinformed/search/1.0.0. The architectural
+ * Sibling protocol to /akashik/search/1.0.0. The architectural
  * review (data + solution architects, both converged) said: ship
  * recall as its OWN protocol. Reasons:
  *
@@ -9,18 +9,20 @@
  *     embedding number[384]).
  *   - Lifecycle independence — separate rate limit, separate ACL
  *     decisions later.
- *   - Mirrors how /wellinformed/touch/1.0.0 sits next to /search.
+ *   - Mirrors how /akashik/touch/1.0.0 sits next to /search.
  *
- * Privacy boundary:
+ * Privacy boundary (V5):
  *   - Sender ships a CANONICAL entity_id (e.g. 'entity:product:lemlist').
  *     The slug function in src/domain/entity.ts is deterministic,
  *     so two peers that both registered "Lemlist" arrive at the
  *     same id without exchanging aliases.
- *   - Receiver applies the share-store gate: only `mentions` edges
- *     whose chunk lives in a shareable room respond.
+ *   - Receiver applies the per-node sharing gate: only `mentions`
+ *     edges whose source chunk has `node.private === false` are
+ *     surfaced. The legacy shared-rooms gate is gone — Plan 06
+ *     replaced it with the node-level private flag (binary).
  *   - The `surface` text on a mention edge is user prose ("lemlist
  *     is overpriced") — never transmitted. Only the chunk's
- *     metadata (label, source_uri, room, age_days) crosses.
+ *     metadata (label, source_uri, age_days) crosses.
  *
  * Pure transport. The fan-out orchestration lives in
  * application/federated-recall.ts; this file is libp2p-only.
@@ -34,20 +36,19 @@ import { peerIdFromString } from '@libp2p/peer-id';
 import type { Graph, GraphEdge, GraphNode } from '../domain/graph.js';
 import { edgesByRelationAndTarget } from '../domain/graph.js';
 import { SearchError as SEARCH_ERR, type SearchError } from '../domain/errors.js';
-import { loadSharedRooms } from './share-store.js';
 
 // ─────────────── constants ────────────────
 
-export const RECALL_PROTOCOL_ID = '/wellinformed/recall/1.0.0' as const;
+export const RECALL_PROTOCOL_ID = '/akashik/recall/1.0.0' as const;
 const PER_PEER_TIMEOUT_MS = 2000;
 const MAX_INBOUND_STREAMS = 16;
 const MAX_LIMIT = 50;
 /**
- * Hard cap on inbound frame size in bytes. A RecallRequest is small
- * (entity_id ≤ 256 chars + room ≤ 128 + integer limit + JSON
- * overhead — typically <1 KB). 4 KB leaves slack without giving an
- * attacker room to push a 10 MB JSON.parse at the responder. Caught
- * by the multi-LLM review.
+ * Hard cap on inbound frame size in bytes. A V5 RecallRequest is
+ * small (entity_id ≤ 256 chars + integer limit + JSON overhead —
+ * typically <1 KB). 4 KB leaves slack without giving an attacker
+ * room to push a 10 MB JSON.parse at the responder. Caught by the
+ * multi-LLM review.
  */
 const MAX_INBOUND_FRAME_BYTES = 4096;
 /**
@@ -65,13 +66,11 @@ const RATE_IDLE_EVICT_MS = 5 * 60 * 1000;
 export interface RecallRequest {
   readonly type: 'recall';
   readonly entity_id: string;
-  readonly room?: string;
   readonly limit: number;
 }
 
 export interface RecallPeerHit {
   readonly node_id: string;
-  readonly room?: string;
   readonly label: string;
   readonly source_uri?: string;
   readonly fetched_at?: string;
@@ -87,7 +86,8 @@ export interface RecallResponse {
 
 export interface RecallError {
   readonly type: 'recall_err';
-  readonly reason: 'unknown_entity' | 'unauthorized_room' | 'rate_limited' | 'invalid_request';
+  // V5: 'unauthorized_room' retired with the rooms abstraction.
+  readonly reason: 'unknown_entity' | 'unauthorized' | 'rate_limited' | 'invalid_request';
 }
 
 type RecallWire = RecallResponse | RecallError;
@@ -124,8 +124,6 @@ const readFrame = async <T>(stream: Stream, maxBytes: number): Promise<T | null>
 export interface RecallResponderDeps {
   /** Loaded graph snapshot — passed by the daemon's request handler. */
   readonly graph: Graph;
-  /** Path to shared-rooms.json for the share-store gate. */
-  readonly sharedRoomsPath: string;
   /** ms-since-epoch for age computation. */
   readonly now: () => number;
 }
@@ -227,7 +225,7 @@ const buildHit = (
   edge: GraphEdge,
   graph: Graph,
   nowMs: number,
-): RecallPeerHit | null => {
+): { hit: RecallPeerHit; node: GraphNode } | null => {
   const node: GraphNode | undefined = graph.nodeById.get(edge.source);
   if (!node) return null;
   // Don't transmit chunk body content or local filesystem paths —
@@ -241,18 +239,24 @@ const buildHit = (
     ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
     : undefined;
   return {
-    node_id: sanitiseNodeId(node.id),
-    room: node.room,
-    label: sanitiseLabel(node.label),
-    source_uri: sanitiseSourceUri(node.source_uri),
-    fetched_at: fetchedAt,
-    age_days: ageDays,
+    hit: {
+      node_id: sanitiseNodeId(node.id),
+      label: sanitiseLabel(node.label),
+      source_uri: sanitiseSourceUri(node.source_uri),
+      fetched_at: fetchedAt,
+      age_days: ageDays,
+    },
+    node,
   };
 };
 
 /**
  * Answer a single inbound recall. Used by the protocol handler on
  * the daemon side.
+ *
+ * V5 gate: every hit's source node must have `private === false`.
+ * The pre-V5 shared-rooms.json authorization registry is gone —
+ * sharing is a per-node attribute (see Plan 06 share-sync.ts).
  */
 export const answerRecall = async (
   req: RecallRequest,
@@ -262,20 +266,6 @@ export const answerRecall = async (
     return { type: 'recall_err', reason: 'invalid_request' };
   }
   const limit = Math.min(Math.max(1, req.limit ?? 20), MAX_LIMIT);
-
-  // Share-store gate — only respond with chunks in shared rooms.
-  const sharedRes = await loadSharedRooms(deps.sharedRoomsPath);
-  if (sharedRes.isErr()) {
-    return { type: 'recall_err', reason: 'unauthorized_room' };
-  }
-  const shareableRooms = new Set(
-    sharedRes.value.rooms
-      .filter((r) => r.shareable !== false)
-      .map((r) => r.name),
-  );
-  if (req.room && !shareableRooms.has(req.room)) {
-    return { type: 'recall_err', reason: 'unauthorized_room' };
-  }
 
   // Walk inbound mentions edges via the indexed accessor.
   const edges = edgesByRelationAndTarget(deps.graph, 'mentions', req.entity_id);
@@ -288,32 +278,27 @@ export const answerRecall = async (
     };
   }
 
-  // Build hits AFTER the share-store gate. Two privacy fixes the
-  // multi-LLM review caught:
+  // Build hits THEN apply the V5 sharing gate (node.private === false).
   //
-  // 1. mention_count must reflect ONLY hits that pass the room
-  //    filter. The previous version incremented a running counter
-  //    over every edge before filtering, then returned that as
-  //    `mention_count` — leaking private-room mention volume to
-  //    peers asking about a public entity (codex BLOCKER on
-  //    recall-sync.ts:145).
+  // Privacy invariants preserved from V4:
   //
-  // 2. Nodes with `room` undefined must NOT pass the gate. The
-  //    previous predicate `if (hit.room && !sharable) continue`
-  //    short-circuited on falsy rooms and let metadata through.
-  //    Now we require `hit.room` AND `shareable.has(hit.room)`
-  //    explicitly (codex HIGH on recall-sync.ts:178).
+  // 1. mention_count reflects ONLY hits that pass the privacy gate —
+  //    leaking total mention volume of private chunks to peers would
+  //    be a side-channel.
+  //
+  // 2. Nodes without an explicit `private: false` are NOT surfaced.
+  //    This is the inverse of the legacy `!hit.room && drop` rule:
+  //    only nodes that explicitly opted in to sharing (private:false)
+  //    can be returned. Nodes with `private` missing/undefined are
+  //    treated as private by default — defence in depth.
   const now = deps.now();
   const hits: RecallPeerHit[] = [];
   for (const e of edges) {
-    const hit = buildHit(e, deps.graph, now);
-    if (!hit) continue;
-    // Gate every hit: must have a room, must be in the shareable
-    // set, and must match req.room when the asker filtered by room.
-    if (!hit.room) continue;
-    if (!shareableRooms.has(hit.room)) continue;
-    if (req.room && hit.room !== req.room) continue;
-    hits.push(hit);
+    const built = buildHit(e, deps.graph, now);
+    if (!built) continue;
+    // V5 sharing gate — only public nodes propagate.
+    if (built.node.private !== false) continue;
+    hits.push(built.hit);
   }
   // Sort by recency desc, then trim to the asker's limit.
   hits.sort((a, b) =>
@@ -393,7 +378,6 @@ export interface RecallRegistryDeps {
   readonly node: Libp2p;
   /** Live graph getter — re-fetched per request so updates flow. */
   readonly getGraph: () => Promise<Graph | null>;
-  readonly sharedRoomsPath: string;
   /** Optional logger; default no-op. */
   readonly log?: (msg: string) => void;
 }
@@ -430,12 +414,6 @@ export const registerRecallProtocol = (deps: RecallRegistryDeps): void => {
           stream.close();
           return;
         }
-        if (req.room !== undefined && (typeof req.room !== 'string' || req.room.length > 128)) {
-          await writeFrame(stream, { type: 'recall_err', reason: 'invalid_request' });
-          stream.close();
-          return;
-        }
-
         const graph = await deps.getGraph();
         if (!graph) {
           // Responder-side transient state — graph file isn't loaded
@@ -451,7 +429,6 @@ export const registerRecallProtocol = (deps: RecallRegistryDeps): void => {
         }
         const resp = await answerRecall(req, {
           graph,
-          sharedRoomsPath: deps.sharedRoomsPath,
           now: () => Date.now(),
         });
         await writeFrame(stream, resp);

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Full BEIR benchmark runner — downloads any BEIR v1 dataset by name and runs
-// the canonical retrieval metrics on wellinformed's ONNX + sqlite-vec stack.
+// the canonical retrieval metrics on akashik's ONNX + sqlite-vec stack.
 //
 // Usage: node scripts/bench-beir.mjs <dataset-name>
 // Examples:
@@ -34,7 +34,7 @@ const QUERY_PREFIX = getArg('--query-prefix') ?? '';
 const BATCH_SIZE = parseInt(getArg('--batch') ?? '32', 10);
 const K = 10;
 
-const CACHE_ROOT = join(homedir(), '.wellinformed', 'bench');
+const CACHE_ROOT = join(homedir(), '.akashik', 'bench');
 // Cache dir includes model slug so different runs don't collide
 const MODEL_SLUG = MODEL.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
 const CACHE_DIR = join(CACHE_ROOT, `${DATASET}__${MODEL_SLUG}`);
@@ -46,7 +46,7 @@ const QRELS_TSV = join(DATASET_DIR, DATASET, 'qrels', 'test.tsv');
 const DATASET_URL = `https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/${DATASET}.zip`;
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log(` wellinformed — BEIR ${DATASET.toUpperCase()} Benchmark`);
+console.log(` akashik — BEIR ${DATASET.toUpperCase()} Benchmark`);
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(` Dataset: BeIR/${DATASET} (BEIR v1, test split)`);
 console.log(` Model:   ${MODEL} (${DIM} dim)`);

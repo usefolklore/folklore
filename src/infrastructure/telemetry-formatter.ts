@@ -2,14 +2,14 @@
  * Render PeerPullTelemetry as a compact ASCII block suitable for:
  *   - Claude Code PreToolUse hook `additionalContext`
  *   - MCP tool response strings (Codex / Gemini / opencode etc.)
- *   - CLI tail output after `wellinformed ask --peers`
+ *   - CLI tail output after `akashik ask --peers`
  *
  * Pure function. Deterministic. No I/O.
  */
 
 import type { PeerPullTelemetry } from '../domain/peer-telemetry.js';
 
-const HR_TOP    = '─── wellinformed peer pull ─────────────────────────────────';
+const HR_TOP    = '─── akashik peer pull ─────────────────────────────────';
 const HR_BOTTOM = '─────────────────────────────────────────────────────────────';
 
 const formatBytes = (n: number): string => {

@@ -1,5 +1,5 @@
 /**
- * `wellinformed jobs <sub>` — inspect the daemon's background queue.
+ * `akashik jobs <sub>` — inspect the daemon's background queue.
  *
  *   list         show queued + running + recent terminal jobs
  *   list --json  same, JSON
@@ -20,7 +20,7 @@ import { isRunning } from '../../daemon/loop.js';
 import { ipcCallJson, ipcCallLines } from '../ipc-client.js';
 import type { Job } from '../../domain/job.js';
 
-const USAGE = `usage: wellinformed jobs <sub>
+const USAGE = `usage: akashik jobs <sub>
 
   list [--json] [--live]   show queued + running + recent terminal
   watch                    refresh list every second (Ctrl-C to exit)
@@ -29,7 +29,7 @@ const USAGE = `usage: wellinformed jobs <sub>
 const checkDaemon = (): number | null => {
   const paths = runtimePaths();
   if (!existsSync(paths.home) || !isRunning(paths.home)) {
-    console.error('jobs: daemon is not running. start it with `wellinformed daemon start`.');
+    console.error('jobs: daemon is not running. start it with `akashik daemon start`.');
     return 1;
   }
   return null;
@@ -57,7 +57,7 @@ const watch = async (): Promise<number> => {
     const data = await ipcCallJson<{ jobs: Job[] }>('jobs-list', ['--json']);
     if (!data) return;
     process.stdout.write('\x1b[2J\x1b[H');
-    process.stdout.write(`wellinformed jobs — ${new Date().toISOString()}\n\n`);
+    process.stdout.write(`akashik jobs — ${new Date().toISOString()}\n\n`);
     if (data.jobs.length === 0) {
       process.stdout.write('  (no jobs)\n');
       return;

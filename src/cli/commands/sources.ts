@@ -1,5 +1,5 @@
 /**
- * `wellinformed sources <sub>` — manage the ~/.wellinformed/sources.json
+ * `akashik sources <sub>` — manage the ~/.akashik/sources.json
  * registry.
  *
  * Subcommands:
@@ -11,7 +11,7 @@
  *   enable <id>
  *
  * Example:
- *   wellinformed sources add hn-embeddings \
+ *   akashik sources add hn-embeddings \
  *     --kind hn_algolia --room fundraise \
  *     --config '{"query":"embeddings","max_items":10}'
  */
@@ -34,7 +34,7 @@ interface AddArgs {
 }
 
 const parseAddArgs = (args: readonly string[]): AddArgs | string => {
-  if (args.length === 0) return 'missing <id> — usage: wellinformed sources add <id> --kind K --room R --config {json}';
+  if (args.length === 0) return 'missing <id> — usage: akashik sources add <id> --kind K --room R --config {json}';
   const id = args[0];
   let kind: string | undefined;
   let room: string | undefined;
@@ -82,14 +82,14 @@ const list = async (): Promise<number> => {
   }
   const all = result.value;
   if (all.length === 0) {
-    console.log('no sources configured. try `wellinformed sources add` to create one.');
+    console.log('no sources configured. try `akashik sources add` to create one.');
     return 0;
   }
   console.log('id                              kind            room            enabled  config');
   for (const d of all) {
     const enabled = d.enabled === false ? 'no ' : 'yes';
     const configStr = JSON.stringify(d.config);
-    const line = `${d.id.padEnd(31)} ${d.kind.padEnd(15)} ${d.room.padEnd(15)} ${enabled}      ${configStr}`;
+    const line = `${d.id.padEnd(31)} ${d.kind.padEnd(15)} ${(d.room ?? '-').padEnd(15)} ${enabled}      ${configStr}`;
     console.log(line);
   }
   return 0;

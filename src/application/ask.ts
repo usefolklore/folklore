@@ -2,29 +2,16 @@
  * `ask` use case — composes vector search + entity recall +
  * recency rerank into one unified result envelope.
  *
- * The architectural decision (per the data + solution architects'
- * review): *the policy of when to combine semantic search with
- * entity recall belongs in the application layer*. CLI / IPC / MCP
- * each become thin renderers of this AskResult shape rather than
- * each making their own composition decisions.
+ * V5 (Phase 24): workspace-agnostic. The CLI layer applies workspace
+ * pre-filter on the returned AskResult; this layer queries the whole
+ * graph and returns workspace metadata on each hit so callers can
+ * filter at the boundary.
  *
- * Composition policy (v1):
- *
- *   1. Always run vector search (existing path — searchByRoom or
- *      searchGlobal, with k * RERANK_OVERFETCH when the room has
- *      a recency policy).
- *   2. ALSO try to resolve the raw query as an entity alias.
- *      When it hits — single-word brand names like "lemlist" or
- *      multi-word aliases like "claude code" — run `recall()` in
- *      parallel.
- *   3. Enrich every search hit with the entities it mentions
- *      (outbound `mentions` edges via the inbound-edge index).
- *      The renderer can show "this chunk mentions: lemlist,
- *      bge-base, sqlite-vec" alongside each result.
- *
- * Pure composition: no I/O orchestration beyond what the underlying
- * use cases already do. The mutex on writes doesn't apply here
- * (read-only path).
+ * Composition policy:
+ *   1. Always run global vector search (room-scoped search is gone).
+ *   2. ALSO try to resolve the raw query as an entity alias; if it hits,
+ *      run `recall()` to surface every chunk mentioning that entity.
+ *   3. Enrich every search hit with the entities it mentions.
  */
 
 import { ResultAsync, errAsync, okAsync, type Result, ok } from 'neverthrow';
@@ -41,10 +28,15 @@ import {
   empty as emptyGraph,
 } from '../domain/graph.js';
 import { type Match, multiRrfFuse } from '../domain/vectors.js';
-import { rerankByRecency, halfLifeForRoom } from '../domain/recency-rerank.js';
+import { rerankByRecency } from '../domain/recency-rerank.js';
 import { pprRerank } from '../domain/graph-rerank.js';
+import { rerankMatches, type CrossEncoderScorer } from '../domain/cross-rerank.js';
+import { crossEncoderFromEnv } from '../infrastructure/cross-encoder.js';
+
+// Module-scope reranker — resolved once at first import from env.
+const crossReranker: CrossEncoderScorer | null = crossEncoderFromEnv();
 import { metrics } from '../domain/metrics.js';
-import { searchByRoom, searchGlobal } from './use-cases.js';
+import { searchGlobal } from './use-cases.js';
 import { recall, type RecallResult } from './recall.js';
 import {
   computeSatisfaction,
@@ -52,27 +44,22 @@ import {
   type EnrichedMatch,
   type SatisfactionScore,
 } from '../domain/peer-telemetry.js';
-import { isSystemRoomName, TOOLSHED, RESEARCH, ORACLE } from '../domain/system-rooms.js';
 
 // ─────────────── result shape ─────────────
 
 /**
- * A single search hit, enriched. Keeps the chunk's own metadata
- * AND a list of entities the chunk references (so the renderer
- * can show "mentions: lemlist, bge-base" alongside each hit).
+ * A single search hit, enriched. Carries the chunk's workspace tag
+ * (V5) so the CLI can apply a workspace pre-filter at the boundary.
  */
 export interface AskHit {
   readonly node_id: string;
-  readonly room?: string;
+  readonly workspace?: string;
   readonly label: string;
   readonly distance: number;
   readonly source_uri?: string;
   readonly summary?: string;
   readonly fetched_at?: string;
   readonly age_days?: number;
-  /** Entities this chunk mentions, joined from the registry on
-   * read. Empty when no entity layer is wired (mentionsExtractor
-   * was undefined during ingest). */
   readonly mentioned_entities: readonly {
     readonly id: string;
     readonly label: string;
@@ -82,46 +69,12 @@ export interface AskHit {
 
 export interface AskResult {
   readonly query: string;
-  readonly room?: string;
   readonly k: number;
-  /**
-   * Vector-search hits, recency-reranked when the room has a
-   * half-life policy. Always populated (may be empty).
-   */
   readonly search_hits: readonly AskHit[];
-  /**
-   * Resolved entity for the raw query, if one matched a registered
-   * alias. When present, `recall_result` is populated too.
-   */
   readonly resolved_entity?: Entity;
-  /**
-   * Entity recall — every chunk that mentions the resolved entity,
-   * across every room, ranked by recency × decay. Independent of
-   * `search_hits` (different ranking, different cardinality).
-   */
   readonly recall_result?: RecallResult;
-  /**
-   * Whether recency rerank actually fired on the search side.
-   * Renderers print "ranked by: relevance × recency-decay" when true.
-   */
   readonly reranked: boolean;
-  /**
-   * Completeness score computed over the merged search + recall
-   * evidence. The agent contract — Claude / Codex / etc. read this
-   * to decide whether to fall through to WebSearch.
-   *
-   *   ≥ 0.85  →  use_memory
-   *   ≥ 0.65  →  verify_one_source
-   *   ≥ 0.40  →  search_required
-   *   <  0.40 →  ask_user
-   */
   readonly satisfaction: SatisfactionScore;
-  /**
-   * Recommended next action for the agent. Stable string set —
-   * see AgentDecision in domain/peer-telemetry.ts. v2 will overlay
-   * task-risk + coverage-map signals; v1 is pure threshold over
-   * satisfaction.score.
-   */
   readonly decision: AgentDecision;
 }
 
@@ -138,52 +91,17 @@ export interface AskDeps {
 
 export interface AskParams {
   readonly query: string;
-  readonly room?: string;
   readonly k: number;
 }
 
 // ─────────────── helpers ──────────────────
 
-/** Overfetch factor when the room has a recency-decay policy.
- * Search returns k * factor; rerank promotes age-favored hits;
- * we slice to k. Single source of truth (was duplicated in CLI
- * and IPC). */
+/** Overfetch factor when applying recency rerank — search returns
+ * k * factor; rerank promotes age-favored hits; we slice to k. */
 const RERANK_OVERFETCH = 4;
 
-/** Per-room stale-window in days — same windows the recency rerank
- * uses. Drives the `freshness` component of the satisfaction score
- * (a hit older than its window penalises freshness). */
-const staleWindowFor = (room: string | undefined): number | undefined => {
-  if (!room) return undefined;
-  if (room === TOOLSHED.name) return TOOLSHED.staleAfterDays;
-  if (room === RESEARCH.name) return RESEARCH.staleAfterDays;
-  if (room === ORACLE.name) return ORACLE.staleAfterDays;
-  if (isSystemRoomName(room)) return undefined;
-  return undefined; // user rooms have no canonical window; scorer falls back to 14d
-};
-
 /**
- * Pick the agent action from satisfaction.score using v1 thresholds.
- * Stable surface — the same set used in peer-pull-telemetry's
- * federated path. Single source so future tuning lands in one place.
- *
- * SHALLOW-EVIDENCE DEMOTION (codex review M1 + M2):
- *
- *   - When the only evidence is exact-recall (recall hits, no vector
- *     match), distance is synthesised as 0 and retrieval saturates to
- *     1.0 by construction — not by quality. Recall hits are EVIDENCE
- *     ("this entity is mentioned here"), not ANSWERS ("here is the
- *     answer"). Such a result set must NOT auto-trigger `use_memory`.
- *
- *   - When fewer than 4 of the 5 scorer components are observable
- *     (signature unobserved + consensus on the local-only carve-out),
- *     the score collapses to retrieval+freshness+provenance — three
- *     signals isn't enough completeness evidence to bypass a sanity
- *     check. Demote `use_memory` to `verify_one_source` in this
- *     case so the agent reads at least one source before answering.
- *
- * Lower tiers (`verify_one_source`, `search_required`, `ask_user`) are
- * unaffected — they already imply the agent will look at sources.
+ * Pick the agent action from satisfaction.score.
  */
 const pickDecision = (
   s: SatisfactionScore,
@@ -196,49 +114,32 @@ const pickDecision = (
   return 'ask_user';
 };
 
-/**
- * Convert an AskHit into the EnrichedMatch shape the satisfaction
- * scorer expects. Source-peer is null (local-only path); also-from
- * is empty.
- */
 const toEnriched = (h: AskHit, fetchedAt?: string): EnrichedMatch => ({
   node_id: h.node_id,
-  room: h.room ?? '',
   distance: h.distance,
   source_peer: null,
   also_from_peers: [],
   source_uri: h.source_uri,
   fetched_at: fetchedAt ?? h.fetched_at,
   age_days: h.age_days,
-  stale_after_days: staleWindowFor(h.room),
+  stale_after_days: undefined,
   has_signature: undefined,
 });
 
-/**
- * Convert a recall hit (no distance — every recall hit is exact-
- * match on the entity) to an EnrichedMatch. Synthesises distance=0
- * so `retrieval_quality` reflects the exact match, not a missing
- * field.
- */
 const recallHitToEnriched = (
   h: RecallResult['hits'][number],
 ): EnrichedMatch => ({
   node_id: h.node_id,
-  room: h.room ?? '',
   distance: 0,
   source_peer: null,
   also_from_peers: [],
   source_uri: h.source_uri,
   fetched_at: h.fetched_at,
   age_days: h.age_days,
-  stale_after_days: staleWindowFor(h.room),
+  stale_after_days: undefined,
   has_signature: undefined,
 });
 
-/** Extract entity refs from a single chunk by walking outbound
- * `mentions` edges via the indexed accessor. Joins the registry
- * to get the canonical label + type. Empty when the chunk has no
- * mentions or the registry doesn't know the target. */
 const enrichMentions = (
   graph: Graph,
   nodeId: string,
@@ -271,12 +172,13 @@ const buildHit = (
     ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
     : undefined;
   const summary = typeof node?.summary === 'string' ? (node.summary as string) : undefined;
+  const workspace = typeof node?.workspace === 'string' ? node.workspace : undefined;
   return {
     node_id: m.node_id,
-    room: node?.room,
+    workspace,
     label: node?.label ?? m.node_id,
     distance: m.distance,
-    source_uri: node?.source_uri ?? node?.source_file,
+    source_uri: node?.source_uri ?? (typeof node?.source_file === 'string' ? node.source_file as string : undefined),
     summary,
     fetched_at: fetchedAt,
     age_days: ageDays,
@@ -289,20 +191,12 @@ const buildHit = (
 export const ask =
   (deps: AskDeps) =>
   (params: AskParams): ResultAsync<AskResult, AppError> => {
-    // Latency histogram + call counter — populated regardless of error
-    // outcome so a failing-but-fast path is still visible.
     const t0 = performance.now();
     metrics.counter('ask.calls').inc();
 
-    // Rerank may fire even on a global search whose results land in
-    // recency-tracked rooms (gemini synthesis HIGH on ask.ts:267).
-    // For room-scoped searches we know up front; for global, we
-    // overfetch unconditionally and let the inner `anyRerank` decide
-    // whether to actually rerank. Trim happens at slice(0, k).
-    const willRerank = params.room
-      ? halfLifeForRoom(params.room) !== undefined
-      : true;
-    const fetchK = willRerank ? params.k * RERANK_OVERFETCH : params.k;
+    // V5: always overfetch for the rerank stage. The recency rerank
+    // is now uniform-half-life (14d global) — apply it for every query.
+    const fetchK = params.k * RERANK_OVERFETCH;
 
     const useDeps = {
       graphs: deps.graphs,
@@ -311,12 +205,6 @@ export const ask =
     };
 
     // 0. Early entity resolution.
-    //
-    //   `recall.ts` accepts both a canonical id and a free-form alias;
-    //   we mirror that here so a caller passing `entity:product:lemlist`
-    //   doesn't silently skip the entity-aware code paths (codex review
-    //   asymmetry). Wrapped in try/catch — alternate registry
-    //   implementations could throw (codex HIGH).
     let resolvedEntity: Entity | undefined;
     try {
       const trimmed = params.query.trim();
@@ -327,19 +215,11 @@ export const ask =
       resolvedEntity = undefined;
     }
 
-    // 0.5 ALIAS-BASED QUERY EXPANSION (free graph-RAG signal).
-    //
-    //   When the raw query resolves to a registered entity, fan out
-    //   parallel sub-queries on the entity's aliases ("lemlist",
-    //   "Lemlist", "lemlist.com", "@lemlist") and RRF-fuse the result
-    //   lists. This catches chunks where the surface form differs from
-    //   what the user typed — e.g. user types "lemlist" but the chunk
-    //   says "Lemlist Inc." Costs at most ALIAS_QUERY_CAP extra embed
-    //   + vector calls; only fires on the entity-resolution path.
+    // 0.5 ALIAS-BASED QUERY EXPANSION.
     const queryTexts: string[] = [params.query];
     if (resolvedEntity && resolvedEntity.aliases.length > 0) {
       const seen = new Set<string>([params.query.trim().toLowerCase()]);
-      const ALIAS_QUERY_CAP = 3; // total queries ≤ 4 (canonical + 3 aliases)
+      const ALIAS_QUERY_CAP = 3;
       for (const a of resolvedEntity.aliases) {
         if (queryTexts.length >= 1 + ALIAS_QUERY_CAP) break;
         const lo = a.trim().toLowerCase();
@@ -349,103 +229,50 @@ export const ask =
       }
     }
 
-    // 1. Vector search — single query in the common case, parallel +
-    // RRF-fused when alias expansion fired.
+    // 1. Vector search — global, no room scope (V5).
     const searchRes: ResultAsync<readonly Match[], AppError> =
       queryTexts.length === 1
-        ? (params.room
-            ? searchByRoom(useDeps)({ room: params.room, text: params.query, k: fetchK })
-            : searchGlobal(useDeps)({ text: params.query, k: fetchK }))
+        ? searchGlobal(useDeps)({ text: params.query, k: fetchK })
         : ResultAsync.combine(
             queryTexts.map((text) =>
-              params.room
-                ? searchByRoom(useDeps)({ room: params.room, text, k: fetchK })
-                : searchGlobal(useDeps)({ text, k: fetchK }),
+              searchGlobal(useDeps)({ text, k: fetchK }),
             ),
           ).map((lists): readonly Match[] => multiRrfFuse(lists, 60));
 
     const result = searchRes.andThen((matches) =>
-      // 2. Single graph load — used for hit enrichment AND the
-      // recall path (entities live in the same Graph).
-      //
-      // GRACEFUL DEGRADATION: when the graph load fails we used to
-      // abort the whole ask, breaking the "satisfaction signal on
-      // every path" contract (codex review HIGH on ask.ts:283).
-      // Now we return the search hits without mention enrichment
-      // and synthesise low-confidence satisfaction so the agent
-      // still gets `decision: search_required`.
       deps.graphs
         .load()
-        .orElse((): ResultAsync<Graph, AppError> => {
-          // Fall through with an empty graph — search results stay
-          // intact, recall can't fire (no edges), satisfaction
-          // scores low → decision: search_required (or ask_user).
-          // Use the typed `emptyGraph()` factory rather than a
-          // structural `as Graph` cast (gemini synthesis MED on
-          // ask.ts:295 — the cast hid drift if Graph's shape ever
-          // gains fields).
-          return okAsync(emptyGraph());
-        })
+        .orElse((): ResultAsync<Graph, AppError> => okAsync(emptyGraph()))
         .andThen((graph) => {
           const nowMs = Date.now();
 
-          // 2.5 GRAPH-AWARE RERANK (HippoRAG-2 / personalised PageRank).
-          //
-          // The bi-encoder gives us "is this chunk *similar* to the
-          // query?" — `pprRerank` adds "is this chunk *structurally
-          // central* among the chunks the query is about?" via a
-          // 1-hop walk over `mentions` + `next_chunk` edges seeded by
-          // the candidate set. Two chunks that co-mention the same
-          // entity boost each other; a chunk that mentions an entity
-          // referenced by 5 other top-K candidates climbs.
-          //
-          // Pure: input matches → output matches with rewritten
-          // `distance` field. Falls through unchanged when graph has
-          // no usable edges (empty-graph fallback path) or the PPR
-          // run errors. Default β=0.5 matches HippoRAG-2's reported
-          // sweet spot; the eval harness can ablate.
-          const pprRes = pprRerank(graph, matches);
-          const ranked: readonly Match[] = pprRes.isOk() ? pprRes.value : matches;
+          const docTextOf = (m: Match): string | undefined => {
+            const n = getNode(graph, m.node_id);
+            const label = typeof n?.label === 'string' ? n.label : '';
+            const summary = typeof n?.summary === 'string' ? n.summary : '';
+            const combined = summary ? `${label}\n${summary}` : label;
+            return combined.length > 0 ? combined : undefined;
+          };
+          const xMatchesRes: ResultAsync<readonly Match[], AppError> =
+            crossReranker !== null
+              ? rerankMatches(params.query, matches, docTextOf, crossReranker)
+                  .mapErr((e): AppError => e)
+                  .orElse((): ResultAsync<readonly Match[], AppError> => okAsync(matches))
+              : okAsync(matches);
 
-          // 3. Build search hits with mention enrichment
+          return xMatchesRes.andThen((xMatches) => {
+          const pprRes = pprRerank(graph, xMatches);
+          const ranked: readonly Match[] = pprRes.isOk() ? pprRes.value : xMatches;
+
           const enriched = ranked.map((m) => buildHit(m, graph, deps.entityRegistry, nowMs));
 
-          // 4. Apply rerank when ANY hit's room has a policy
-          const anyRerank = enriched.some(
-            (h) => halfLifeForRoom(h.room) !== undefined,
-          );
-          // rerankByRecency takes RankableMatch — our AskHit has the
-          // right shape (node_id, room, distance, age_days)
-          const reranked = anyRerank ? rerankByRecencyAdapter(enriched) : enriched;
+          // V5: uniform global half-life — always rerank.
+          const reranked = rerankByRecencyAdapter(enriched);
           const search_hits = reranked.slice(0, params.k);
 
-          // (entity resolution + alias-based query expansion already
-          // ran above — `resolvedEntity` is in scope from the outer
-          // closure.)
-
-          // Helper — compute satisfaction over the merged evidence
-          // (search hits + recall hits when present). Single scorer,
-          // single decision, surfaced on every AskResult so the
-          // smart-hook / CLI / IPC / MCP all expose the same agent
-          // contract: should the agent fall through to WebSearch?
           const buildSatisfaction = (
             recallHits: readonly RecallResult['hits'][number][] = [],
           ): { satisfaction: SatisfactionScore; decision: AgentDecision } => {
-            // RANKING ORDER (codex review H1 — ask.ts:317):
-            //
-            //   `computeSatisfaction` derives retrieval quality from the
-            //   top-3 results. Exact recall hits (alias match → recall)
-            //   are higher-confidence than semantic neighbours by
-            //   construction, so they go FIRST in the merged evidence
-            //   set. Otherwise a 3-hit vector return could drown out an
-            //   exact "lemlist" alias match.
-            //
-            // DEDUPE BY node_id (gemini synthesis HIGH on ask.ts:341):
-            //
-            //   A single chunk can surface in BOTH search_hits (vector
-            //   neighbour) AND recallHits (mentions the resolved
-            //   entity). Without dedupe the top-3 retrieval slice
-            //   double-counts that node, inflating the score.
             const merged: EnrichedMatch[] = [
               ...recallHits.map(recallHitToEnriched),
               ...search_hits.map((h) => toEnriched(h)),
@@ -458,10 +285,6 @@ export const ask =
               enrichedAll.push(m);
             }
             const satisfaction = computeSatisfaction(enrichedAll);
-            // Shallow evidence: the only matches are recall hits with
-            // no corroborating vector search. distance=0 is synthetic,
-            // so retrieval saturates by construction — agent must
-            // verify rather than trust the score.
             const shallowEvidence = search_hits.length === 0 && recallHits.length > 0;
             return {
               satisfaction,
@@ -473,30 +296,26 @@ export const ask =
             const { satisfaction, decision } = buildSatisfaction();
             return okAsync<AskResult, AppError>({
               query: params.query,
-              room: params.room,
               k: params.k,
               search_hits,
-              reranked: anyRerank,
+              reranked: true,
               satisfaction,
               decision,
             });
           }
 
-          // 6. Recall — runs against the same loaded graph; no
-          // second I/O round-trip.
           const recallRes = recall(
             { registry: deps.entityRegistry, graph },
-            { query: resolvedEntity.id, limit: params.k, room: params.room },
+            { query: resolvedEntity.id, limit: params.k },
           );
           if (recallRes.isErr()) {
             const { satisfaction, decision } = buildSatisfaction();
             return okAsync<AskResult, AppError>({
               query: params.query,
-              room: params.room,
               k: params.k,
               search_hits,
               resolved_entity: resolvedEntity,
-              reranked: anyRerank,
+              reranked: true,
               satisfaction,
               decision,
             });
@@ -504,21 +323,18 @@ export const ask =
           const { satisfaction, decision } = buildSatisfaction(recallRes.value.hits);
           return okAsync<AskResult, AppError>({
             query: params.query,
-            room: params.room,
             k: params.k,
             search_hits,
             resolved_entity: resolvedEntity,
             recall_result: recallRes.value,
-            reranked: anyRerank,
+            reranked: true,
             satisfaction,
             decision,
+          });
           });
         }),
     );
 
-    // Latency + outcome metrics — applied via map/mapErr so both
-    // success and error paths record a sample. The histogram is
-    // bounded; high-volume hot path is safe.
     return result
       .map((r) => {
         metrics.histogram('ask.latency.ms').observe(performance.now() - t0);
@@ -532,10 +348,6 @@ export const ask =
       });
   };
 
-// Adapter — `rerankByRecency` wants a slim RankableMatch shape; our
-// AskHit has the same fields plus extras so it conforms structurally.
-// (Was named `rerankByRecession` — typo, not a different algorithm.
-// Renamed per claude-sonnet review.)
 const rerankByRecencyAdapter = (hits: readonly AskHit[]): readonly AskHit[] =>
   rerankByRecency(hits) as readonly AskHit[];
 

@@ -1,5 +1,5 @@
 /**
- * `wellinformed sessions <sub>` — Claude session ingestion lifecycle.
+ * `akashik sessions <sub>` — Claude session ingestion lifecycle.
  *
  * Subcommands:
  *   reingest         — wipe sessions-state.json + re-trigger the sessions
@@ -11,10 +11,10 @@
  *
  * The reingest path:
  *   1. Acquire the cross-process write lock (same as consolidate does)
- *   2. Delete ~/.wellinformed/sessions-state.json
- *   3. Print next-step guidance (`trigger --room sessions` re-walks from
- *      offset 0; the source file `claude-sessions-default` was auto-
- *      provisioned by ensureSessionsRoom on first daemon boot)
+ *   2. Delete ~/.akashik/sessions-state.json
+ *   3. Print next-step guidance (`trigger` re-walks every JSONL from
+ *      offset 0; the `claude_sessions` source is auto-provisioned on
+ *      first daemon boot)
  *
  * We intentionally do NOT kick off the trigger here — it's a long-
  * running ingest, better run explicitly so the operator sees progress.
@@ -24,9 +24,9 @@ import { existsSync, unlinkSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { formatError } from '../../domain/errors.js';
 import { acquireLock } from '../../infrastructure/process-lock.js';
-import { wellinformedHome } from '../runtime.js';
+import { akashikHome } from '../runtime.js';
 
-const sessionsStatePath = (): string => join(wellinformedHome(), 'sessions-state.json');
+const sessionsStatePath = (): string => join(akashikHome(), 'sessions-state.json');
 
 const reingest = async (args: readonly string[]): Promise<number> => {
   const force = args.includes('--force') || args.includes('-y');
@@ -34,7 +34,7 @@ const reingest = async (args: readonly string[]): Promise<number> => {
 
   if (!existsSync(statePath)) {
     console.log('sessions-state.json not present — nothing to reset.');
-    console.log('  next run of `wellinformed trigger --room sessions` will re-ingest from offset 0.');
+    console.log('  next run of `akashik trigger` will re-ingest from offset 0.');
     return 0;
   }
 
@@ -42,13 +42,13 @@ const reingest = async (args: readonly string[]): Promise<number> => {
     const stat = statSync(statePath);
     console.error(`sessions reingest: about to DELETE ${statePath} (${stat.size} bytes).`);
     console.error(`  this forces a full re-walk of ~/.claude/projects/**/*.jsonl on the next`);
-    console.error(`  'wellinformed trigger --room sessions' (can re-create thousands of nodes).`);
+    console.error(`  'akashik trigger' (can re-create thousands of nodes).`);
     console.error(``);
     console.error(`  pass --force (or -y) to actually delete the state file.`);
     return 1;
   }
 
-  const lockRes = await acquireLock(wellinformedHome(), {
+  const lockRes = await acquireLock(akashikHome(), {
     owner: 'sessions-reingest',
     waitMs: 30_000,
     pollIntervalMs: 250,
@@ -69,11 +69,11 @@ const reingest = async (args: readonly string[]): Promise<number> => {
     console.log(`✓ deleted ${statePath}`);
     console.log('');
     console.log('Next step:');
-    console.log('  wellinformed trigger --room sessions');
+    console.log('  akashik trigger');
     console.log('');
     console.log('That will re-walk every JSONL under ~/.claude/projects/ from offset 0.');
-    console.log('Existing consolidated_memory nodes in the sessions room are preserved;');
-    console.log('raw entries get re-ingested alongside with fresh vectors.');
+    console.log('Existing consolidated_memory nodes are preserved; raw entries get');
+    console.log('re-ingested alongside with fresh vectors.');
     return 0;
   } finally {
     await lock.release();
@@ -112,7 +112,7 @@ const status = async (): Promise<number> => {
 };
 
 const help = (): number => {
-  console.log('usage: wellinformed sessions <sub>');
+  console.log('usage: akashik sessions <sub>');
   console.log('');
   console.log('  reingest [--force|-y]   Delete sessions-state.json (full re-walk on next trigger)');
   console.log('  status                  Show state cursor position + file count');
@@ -120,7 +120,7 @@ const help = (): number => {
   console.log('');
   console.log('Use reingest to recover after a destructive `consolidate --prune` that');
   console.log('removed raw session entries you want back. Source JSONLs at');
-  console.log('~/.claude/projects/**/*.jsonl are never touched by wellinformed — a fresh');
+  console.log('~/.claude/projects/**/*.jsonl are never touched by akashik — a fresh');
   console.log('trigger re-creates every graph node deterministically.');
   return 0;
 };

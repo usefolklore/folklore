@@ -1,3 +1,9 @@
+// V5: room dimension removed; benchmark scoring logic deferred to Phase 25 (AkashikBench-F redesign).
+//
+// Niche-evaporation was the room-membership metric this simulator used to
+// surface in V4. With rooms gone, the metric has no domain to compute
+// against — see `simulateNicheEvaporation` below for the deferred-OK stub.
+
 /**
  * Phase 24 (Akashik) — federation simulator (pure domain).
  *
@@ -412,6 +418,29 @@ export const propagationHalfLife = (
     : halfLives[mid];
   return { median, everReached: halfLives.length, never };
 };
+
+/**
+ * Niche-evaporation metric — DEFERRED to Phase 25 (AkashikBench-F
+ * redesign). The original V4 implementation measured how quickly a
+ * topical room's signal evaporated as its hosting peers churned
+ * offline. With the room dimension removed in V5, the metric has no
+ * domain to compute against.
+ *
+ * This stub keeps the export surface stable so any external callers
+ * compile and receive an explicit "deferred" marker. The semantics
+ * will be redesigned in Phase 25 around per-document propagation
+ * dynamics (similar in spirit to `propagationHalfLife`) without
+ * appealing to a room-membership axis.
+ */
+export const simulateNicheEvaporation = (): {
+  readonly ratio: number;
+  readonly deferred: boolean;
+  readonly reason: string;
+} => ({
+  ratio: 0,
+  deferred: true,
+  reason: 'Phase 25 will redesign without room dimension',
+});
 
 /**
  * Cumulative resolve-source breakdown — how many queries were

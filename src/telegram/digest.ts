@@ -6,10 +6,10 @@
  */
 
 import type { RoomRun } from '../domain/sources.js';
-import type { WellinformedBot } from './bot.js';
+import type { AkashikBot } from './bot.js';
 
 export const sendDigest = async (
-  bot: WellinformedBot,
+  bot: AkashikBot,
   runs: readonly RoomRun[],
   topN = 3,
 ): Promise<void> => {

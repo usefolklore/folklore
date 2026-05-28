@@ -1,6 +1,6 @@
 /**
  * Background job — pure data shape consumed by the daemon's job queue
- * and the `wellinformed jobs` CLI surface. The queue itself + the
+ * and the `akashik jobs` CLI surface. The queue itself + the
  * runner live under src/daemon/. This file is the lingua franca.
  *
  * Lifecycle: queued → running → (done | failed)
@@ -61,11 +61,11 @@ export interface IngestSessionPayload {
 }
 
 /**
- * Project ingest — what `wellinformed this` actually wants. Runs the
+ * Project ingest — what `akashik this` actually wants. Runs the
  * four ephemeral codebase descriptors (codebase, package_deps,
  * git_submodules, git_log) for a (room, root) pair. The descriptors
  * are NOT persisted to sources.json — they're rebuilt each time
- * from the room+root inputs, mirroring `wellinformed index`.
+ * from the room+root inputs, mirroring `akashik index`.
  */
 export interface IngestProjectPayload {
   readonly kind: 'ingest:project';

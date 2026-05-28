@@ -33,7 +33,7 @@ const makeNode = (overrides: Partial<GraphNode> = {}): GraphNode => ({
   label: 'Clean test node',
   file_type: 'document',
   source_file: '/tmp/test.md',
-  room: 'test-room',
+  private: false,
   ...overrides,
 });
 
@@ -210,11 +210,10 @@ describe('SEC-03: ShareableNode excludes internal fields', () => {
     assert.ok(!keys.includes('source_file'), 'ShareableNode must not have source_file');
   });
 
-  test('scanNode ok result carries expected safe fields', () => {
+  test('scanNode ok result carries expected safe fields (V5: no room)', () => {
     const node = makeNode({
       id: 'safe-2',
       label: 'test node',
-      room: 'r1',
       source_uri: 'https://example.com',
       fetched_at: '2026-01-01T00:00:00Z',
       embedding_id: 'emb-1',
@@ -224,10 +223,11 @@ describe('SEC-03: ShareableNode excludes internal fields', () => {
     const v = result.value;
     assert.equal(v.id, 'safe-2');
     assert.equal(v.label, 'test node');
-    assert.equal(v.room, 'r1');
     assert.equal(v.source_uri, 'https://example.com');
     assert.equal(v.fetched_at, '2026-01-01T00:00:00Z');
     assert.equal(v.embedding_id, 'emb-1');
+    // V5 Phase 24: ShareableNode has no `room` field
+    assert.ok(!('room' in v), 'V5 ShareableNode must not expose room');
   });
 });
 
@@ -521,7 +521,7 @@ describe('Regression: regex lastIndex must be reset between scanNode calls', () 
 
 // ─────────────────────── Scan scope expansion (SEC-01 hardening) ──────────
 
-describe('Scan scope: id, room, and embedding_id are also scanned', () => {
+describe('Scan scope: id and embedding_id are also scanned (V5: room dropped from scan scope)', () => {
   test('secret in id field is detected and blocked', () => {
     const node = makeNode({
       id: 'sk-abcdefghij1234567890xx',
@@ -535,16 +535,8 @@ describe('Scan scope: id, room, and embedding_id are also scanned', () => {
     );
   });
 
-  test('secret in room field is detected and blocked', () => {
-    const node = makeNode({
-      id: 'safe-1',
-      label: 'normal',
-      room: TEST_GHP,
-    });
-    const result = scanNode(node, patterns);
-    assert.ok(result.isErr(), 'secret in room must be blocked');
-    assert.ok(result.error.matches.some((m) => m.field === 'room'));
-  });
+  // V5 (Phase 24): room field removed from GraphNode + ShareableNode.
+  // SCANNABLE_FIELDS no longer includes room, so this test is obsolete.
 
   test('secret in embedding_id field is detected and blocked', () => {
     const node = makeNode({

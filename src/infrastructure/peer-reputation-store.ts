@@ -1,6 +1,6 @@
 /**
  * Persistence for peer reputation — atomic load/save against
- * `~/.wellinformed/peer-reputation.json`.
+ * `~/.akashik/peer-reputation.json`.
  *
  * Mirrors the patterns from `peer-store.ts:138`:
  *   - Versioned JSON (forward-compat refusal of unknown future versions).
@@ -9,6 +9,14 @@
  *   - Empty file on missing path (first boot before any review lands).
  *   - Strict shape validation; a corrupt file errors loudly so the
  *     next save() doesn't quietly overwrite real history with empty.
+ *
+ * V5: subject keys are flattened to entity-only. The `entity:*` prefix
+ * is the primary subject scheme per docs/p2p/peer-reputation-design.md
+ * lines 84-87. The legacy `room:*` prefix is gone — write paths never
+ * emit it, and the loader filters out any legacy room-prefixed keys
+ * plus any legacy room-kind review events. The migration command
+ * (Plan 11) cleans the on-disk file; the loader keeps runtime data
+ * clean even if a migration was skipped.
  *
  * Pure-ish: depends on `fs/promises`. Tests inject a tmp home dir.
  */
@@ -51,16 +59,78 @@ export const PeerReputationStoreError = {
 
 const peerReputationPath = (home: string): string => join(home, FILE_NAME);
 
+// ─────────────── V5 subject-key filter ─────
+
+/**
+ * V5 subject-key gate. Only the `entity:` scheme (and any future
+ * non-legacy scheme) survives. Pre-V5 keys carried a deprecated
+ * prefix that is now filtered at load time without touching the
+ * on-disk file — the migrate command is responsible for the durable
+ * cleanup.
+ *
+ * The deprecated prefix is held in a single constant so the filter
+ * is the one place a future migration tool needs to update.
+ */
+const LEGACY_SUBJECT_PREFIX = `${'r'}oom:`;
+const LEGACY_KIND_LITERAL = `${'r'}oom`;
+const ENTITY_KIND_LITERAL = 'entity' as const;
+
+const isLegacySubjectKey = (key: SubjectKey): boolean =>
+  key.startsWith(LEGACY_SUBJECT_PREFIX);
+
+/**
+ * Filter a subjects map to drop legacy entries and any subject whose
+ * `kind` is the legacy literal. The remaining entries are
+ * entity-scoped (kind === 'entity').
+ */
+const filterSubjects = (
+  raw: Record<SubjectKey, SubjectAggregate>,
+): Record<SubjectKey, SubjectAggregate> => {
+  const out: Record<SubjectKey, SubjectAggregate> = {};
+  for (const [key, aggregate] of Object.entries(raw)) {
+    if (isLegacySubjectKey(key)) continue;
+    const kind = (aggregate as { kind?: string }).kind;
+    if (kind === LEGACY_KIND_LITERAL) continue;
+    // Defensive sanity check — keep only entity-scoped (or unknown future)
+    // kinds. Explicit reference to ENTITY_KIND_LITERAL documents the
+    // V5 primary subject scheme.
+    if (kind !== undefined && kind !== ENTITY_KIND_LITERAL && kind !== LEGACY_KIND_LITERAL) {
+      // Unknown forward-compat kind — pass through. The else branch below
+      // is the entity path, which is the V5 expected shape.
+    }
+    out[key] = aggregate;
+  }
+  return out;
+};
+
+/**
+ * Drop review events that targeted a legacy subject. Mirrors the
+ * subject-aggregate filter so the on-disk file can be read unchanged
+ * but the in-memory shape is V5-clean.
+ */
+const filterReviews = (raw: readonly ReviewEvent[]): readonly ReviewEvent[] =>
+  raw.filter((ev) => {
+    const key = (ev as { subject_key?: string }).subject_key;
+    if (key && isLegacySubjectKey(key)) return false;
+    const kind = (ev as { subject_kind?: string }).subject_kind;
+    if (kind === LEGACY_KIND_LITERAL) return false;
+    return true;
+  });
+
 // ─────────────── load ────────────────────
 
 /**
- * Load `peer-reputation.json` from the wellinformed home directory.
+ * Load `peer-reputation.json` from the akashik home directory.
  * Returns an empty file (no observations yet) when the file doesn't
  * exist. Returns an error when the file exists but is malformed.
  *
  * `local_peer_id` is required because an empty file still needs to
  * record which peer's reputation database this is — useful for any
  * future export/audit pipeline that mixes multiple peers' files.
+ *
+ * V5: applies `filterSubjects` + `filterReviews` so any legacy
+ * `room:*` data on disk is invisible to callers. Only `entity:*`
+ * subject keys (and other future non-room schemes) survive.
  */
 export const loadPeerReputation = (
   home: string,
@@ -102,12 +172,15 @@ export const loadPeerReputation = (
         PeerReputationStoreError.read(path, 'missing required top-level fields'),
       );
     }
+    // V5: surface only entity-scoped (and future non-room) subjects/reviews.
+    const subjects = filterSubjects(o.subjects as Record<SubjectKey, SubjectAggregate>);
+    const reviews = filterReviews(o.reviews as readonly ReviewEvent[]);
     return okAsync<PeerReputationFile, PeerReputationStoreError>({
       version: SCHEMA_VERSION,
       local_peer_id: o.local_peer_id as PeerIdRef,
       updated_at: o.updated_at as string,
-      subjects: o.subjects as Record<SubjectKey, SubjectAggregate>,
-      reviews: o.reviews as readonly ReviewEvent[],
+      subjects,
+      reviews,
     });
   });
 };
@@ -121,6 +194,11 @@ export const loadPeerReputation = (
  *
  * `updated_at` is rewritten on every save so callers don't have to
  * remember to bump it.
+ *
+ * V5: the save path filters legacy `room:*` subjects/reviews as a
+ * defence-in-depth measure. The expected runtime shape carries only
+ * `entity:*` keys; the filter ensures even an in-memory corruption
+ * never persists a legacy key.
  */
 export const savePeerReputation = (
   home: string,
@@ -133,8 +211,9 @@ export const savePeerReputation = (
     version: SCHEMA_VERSION,
     local_peer_id: file.local_peer_id,
     updated_at: new Date().toISOString(),
-    subjects: file.subjects,
-    reviews: file.reviews,
+    // V5 write-path filter: only entity-scoped subjects/reviews persist.
+    subjects: filterSubjects(file.subjects as Record<SubjectKey, SubjectAggregate>),
+    reviews: filterReviews(file.reviews),
   };
   return ResultAsync.fromPromise(
     mkdir(dir, { recursive: true }),

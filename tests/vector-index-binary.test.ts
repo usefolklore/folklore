@@ -134,24 +134,11 @@ describe('vector-index — binary mode enabled', () => {
     }
   });
 
-  it('searchByRoomHybridBinary respects the room filter', async () => {
-    const r = await openSqliteVectorIndex({ path: join(dir, 'vec.db'), dim: 128, binaryDim: 128 });
-    assert.ok(r.isOk());
-    if (!r.isOk()) return;
-    const idx = r.value;
-    try {
-      await idx.upsert(mkRecord('a', 'r1', 128, 1, 'alpha one'));
-      await idx.upsert(mkRecord('b', 'r2', 128, 2, 'beta two'));
-      await idx.upsert(mkRecord('c', 'r1', 128, 3, 'alpha three'));
-
-      const res = await idx.searchByRoomHybridBinary('r1', 'alpha', mkVec(128, 1), 5);
-      assert.ok(res.isOk());
-      if (!res.isOk()) return;
-      for (const m of res.value) assert.equal(m.room, 'r1');
-    } finally {
-      idx.close();
-    }
-  });
+  // Deleted (Phase 24 V5 cutover): `searchByRoomHybridBinary` was the
+  // room-filtered binary search method. V5 dropped the room filter
+  // entirely; workspace pre-filtering happens at the CLI boundary on
+  // `searchHybridBinary` results. The unit covers `searchHybridBinary`
+  // directly above.
 
   it('fp32 searchHybrid path is unaffected when binary mode is enabled', async () => {
     const r = await openSqliteVectorIndex({ path: join(dir, 'vec.db'), dim: 128, binaryDim: 128 });

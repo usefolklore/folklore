@@ -221,15 +221,16 @@ describe('Phase 17: domain/errors — SearchError exhaustiveness (Pitfall 5)', (
     );
   });
 
-  it('D12b (Pitfall 5): formatError handles all 5 SearchError cases exhaustively', () => {
-    // These 5 switch cases prevent TypeScript from flagging an implicit 'never' branch.
+  it('D12b (Pitfall 5, V5 update): formatError handles all 5 SearchError cases exhaustively', () => {
+    // V5 cutover: SearchUnauthorized (room-authorization gate) was
+    // replaced with SearchProtocolMismatch (V4 envelope sent to V5 peer).
     assert.ok(
       src.includes("'SearchDimensionMismatch'"),
       "formatError must handle 'SearchDimensionMismatch'",
     );
     assert.ok(
-      src.includes("'SearchUnauthorized'"),
-      "formatError must handle 'SearchUnauthorized'",
+      src.includes("'SearchProtocolMismatch'"),
+      "formatError must handle 'SearchProtocolMismatch' (V5 replacement for SearchUnauthorized)",
     );
     assert.ok(
       src.includes("'SearchRateLimited'"),

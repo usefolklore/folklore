@@ -1,5 +1,5 @@
 /**
- * `wellinformed telegram <sub>`
+ * `akashik telegram <sub>`
  *
  *   setup     — guide user through BotFather token creation
  *   test      — send a test message to verify the bot works
@@ -15,7 +15,7 @@ import { defaultRuntime, runtimePaths } from '../runtime.js';
 
 const setup = async (): Promise<number> => {
   console.log(`
-wellinformed telegram setup
+akashik telegram setup
 
 1. Open Telegram and message @BotFather
 2. Send /newbot and follow the prompts
@@ -55,7 +55,7 @@ wellinformed telegram setup
   }
   writeFileSync(configPath, config);
   console.log(`\nSaved to ${configPath}`);
-  console.log('Run `wellinformed telegram test` to verify.');
+  console.log('Run `akashik telegram test` to verify.');
   return 0;
 };
 
@@ -63,7 +63,7 @@ const test = async (): Promise<number> => {
   const paths = runtimePaths();
   const configPath = join(paths.home, 'config.yaml');
   if (!existsSync(configPath)) {
-    console.error('No config.yaml found. Run `wellinformed telegram setup` first.');
+    console.error('No config.yaml found. Run `akashik telegram setup` first.');
     return 1;
   }
 
@@ -71,7 +71,7 @@ const test = async (): Promise<number> => {
   const raw = parse(readFileSync(configPath, 'utf8')) ?? {};
   const tgConfig = loadTelegramConfig(raw);
   if (!tgConfig) {
-    console.error('Telegram not configured. Run `wellinformed telegram setup`.');
+    console.error('Telegram not configured. Run `akashik telegram setup`.');
     return 1;
   }
 
@@ -88,7 +88,7 @@ const test = async (): Promise<number> => {
     return 1;
   }
 
-  const result = await bot.value.sendMessage('wellinformed bot is working. Send a URL to ingest or type a command.');
+  const result = await bot.value.sendMessage('akashik bot is working. Send a URL to ingest or type a command.');
   bot.value.stop();
   rt.value.close();
 
@@ -105,7 +105,7 @@ const startForeground = async (): Promise<number> => {
   const paths = runtimePaths();
   const configPath = join(paths.home, 'config.yaml');
   if (!existsSync(configPath)) {
-    console.error('No config.yaml. Run `wellinformed telegram setup`.');
+    console.error('No config.yaml. Run `akashik telegram setup`.');
     return 1;
   }
 

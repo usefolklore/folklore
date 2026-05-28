@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * wellinformed CLI — subcommand router.
+ * akashik CLI — subcommand router.
  *
  * Phase 0: doctor, version, help.
  * Phase 1: (runtime checks extended in doctor).
  * Phase 2: trigger, sources.
- * Future phases add: init, room, daemon, discover, telegram, report, ask, mcp.
+ * Future phases add: init, daemon, discover, telegram, report, ask, mcp.
  */
 
 import { doctor } from './commands/doctor.js';
@@ -15,7 +15,6 @@ import { trigger } from './commands/trigger.js';
 import { sources } from './commands/sources.js';
 import { mcp } from './commands/mcp.js';
 import { init } from './commands/init.js';
-import { room } from './commands/room.js';
 import { ask } from './commands/ask.js';
 import { report } from './commands/report.js';
 import { daemon } from './commands/daemon.js';
@@ -54,6 +53,9 @@ import { metricsCmd } from './commands/metrics.js';
 import { login } from './commands/login.js';
 import { peersRep } from './commands/peers-rep.js';
 import { swarm } from './commands/swarm.js';
+import { gc } from './commands/gc.js';
+import { bench } from './commands/bench.js';
+import { migrateCommand } from './commands/migrate.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -69,7 +71,6 @@ const commands: Record<string, CommandFn> = {
   sources,
   mcp,
   init,
-  room,
   ask,
   report,
   daemon,
@@ -107,13 +108,16 @@ const commands: Record<string, CommandFn> = {
   metrics: metricsCmd,
   login,
   swarm,
-  // Plural-form alias: `wellinformed peers rep …` works as well as
-  // `wellinformed peer rep …`. The subcommand dispatcher handles both.
+  gc,
+  bench,
+  'migrate': migrateCommand,
+  // Plural-form alias: `akashik peers rep …` works as well as
+  // `akashik peer rep …`. The subcommand dispatcher handles both.
   peers: async (args: string[]): Promise<number> => {
     const [sub, ...rest] = args;
     if (sub === 'rep') return peersRep(rest);
     console.error('peers: only `rep` is implemented today (more coming).');
-    console.error('  usage: wellinformed peers rep [<peer-id>] [--subject <key>] [--json]');
+    console.error('  usage: akashik peers rep [<peer-id>] [--subject <key>] [--json]');
     return sub ? 1 : 1;
   },
 };
@@ -131,18 +135,18 @@ async function main(): Promise<number> {
     return (await handler(rest)) ?? 0;
   }
   if (futureCommands.has(cmd)) {
-    console.error(`wellinformed: '${cmd}' is recognized but not yet implemented (Phase 0 scaffold).`);
+    console.error(`akashik: '${cmd}' is recognized but not yet implemented (Phase 0 scaffold).`);
     console.error(`               see the roadmap — it lands in a later phase.`);
     return 2;
   }
-  console.error(`wellinformed: unknown command '${cmd}'. run 'wellinformed help'.`);
+  console.error(`akashik: unknown command '${cmd}'. run 'akashik help'.`);
   return 1;
 }
 
 main()
   .then((code) => process.exit(code))
   .catch((err) => {
-    console.error('wellinformed: fatal error');
+    console.error('akashik: fatal error');
     console.error(err);
     process.exit(1);
   });

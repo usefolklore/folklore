@@ -1,44 +1,49 @@
 /**
- * `wellinformed lint [--room R] [--json]`
+ * `akashik lint [--json]`
  *
  * Scan the graph for hygiene issues and print a report. Non-zero exit
  * if any findings — so the command can be wired into `npm test`-style
  * gates later.
  *
- * Categories and P2P-specific checks are documented in the domain
- * module `src/domain/graph-lint.ts`.
+ * V5 (Phase 24): the shared-rooms.json consistency check is gone
+ * (rooms deleted). The lint pass now focuses on:
+ *
+ *   - private-flag consistency (every node should have `private`
+ *     stamped as a boolean — `undefined` is a v4-migration smell)
+ *   - workspace-tag sanity (slugs only — no whitespace/uppercase)
+ *   - secret-pattern smoke check via the existing buildPatterns set
  */
 
 import { join } from 'node:path';
 import { runtimePaths } from '../runtime.js';
 import { fileGraphRepository } from '../../infrastructure/graph-repository.js';
-import { loadSharedRooms } from '../../infrastructure/share-store.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
 import { buildPatterns } from '../../domain/sharing.js';
 import { lintGraph, type LintReport, type LintOptions } from '../../domain/graph-lint.js';
 import { formatError } from '../../domain/errors.js';
 
 interface LintArgs {
-  readonly room?: string;
   readonly json: boolean;
 }
 
 const parseArgs = (rest: readonly string[]): LintArgs | string => {
-  let room: string | undefined;
   let json = false;
   for (let i = 0; i < rest.length; i++) {
     const f = rest[i];
-    if (f === '--room') { room = rest[++i]; continue; }
     if (f === '--json') { json = true; continue; }
+    if (f === '--room' || f.startsWith('--room=')) {
+      console.error('lint: --room is removed in V5 (ignored).');
+      if (f === '--room') i++;
+      continue;
+    }
     return `lint: unknown flag '${f}'`;
   }
-  return { room, json };
+  return { json };
 };
 
-const renderText = (r: LintReport, room?: string): string => {
+const renderText = (r: LintReport): string => {
   const lines: string[] = [];
-  const scope = room ? `room '${room}'` : 'whole graph';
-  lines.push(`lint: ${scope} — ${r.total_nodes} nodes, ${r.total_edges} edges`);
+  lines.push(`lint: whole graph — ${r.total_nodes} nodes, ${r.total_edges} edges`);
   if (r.findings.length === 0) {
     lines.push('lint: clean — no findings');
     return lines.join('\n');
@@ -75,18 +80,11 @@ export const lint = async (rest: readonly string[]): Promise<number> => {
     return 1;
   }
 
-  const sharedRoomsRes = await loadSharedRooms(join(paths.home, 'shared-rooms.json'));
-  const sharedRooms = sharedRoomsRes.isOk()
-    ? new Set(sharedRoomsRes.value.rooms.map((r) => r.name))
-    : new Set<string>();
-
   const cfgRes = await loadConfig(join(paths.home, 'config.yaml'));
   const extras = cfgRes.isOk() ? cfgRes.value.security.secrets_patterns : [];
   const patterns = buildPatterns(extras);
 
   const opts: LintOptions = {
-    room: parsed.room,
-    shared_rooms: sharedRooms,
     secret_patterns: patterns,
   };
   const report = lintGraph(graphRes.value, opts);
@@ -100,7 +98,7 @@ export const lint = async (rest: readonly string[]): Promise<number> => {
     };
     console.log(JSON.stringify(jsonReport, null, 2));
   } else {
-    console.log(renderText(report, parsed.room));
+    console.log(renderText(report));
   }
 
   return report.findings.length > 0 ? 2 : 0;

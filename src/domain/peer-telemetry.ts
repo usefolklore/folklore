@@ -1,5 +1,5 @@
 /**
- * Peer-pull telemetry — the record emitted every time wellinformed
+ * Peer-pull telemetry — the record emitted every time akashik
  * answers a query that touches peers, surfaced into the agent session
  * (Claude Code / Codex / Gemini / opencode / any MCP host).
  *
@@ -19,7 +19,10 @@
  */
 export interface EnrichedMatch {
   readonly node_id: string;
-  readonly room: string;
+  /** V5 (Phase 24): retained as optional for backwards-compat with
+   * legacy callers (telemetry display, audit logs). New callers should
+   * not set this; sharing/federation are no longer room-keyed. */
+  readonly room?: string;
   readonly distance: number;
   /** null = local, peerId string = arrived from this peer */
   readonly source_peer: string | null;

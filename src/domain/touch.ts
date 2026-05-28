@@ -29,7 +29,7 @@
 import type { GraphNode } from './graph.js';
 
 /** Protocol id registered on the libp2p node. */
-export const TOUCH_PROTOCOL_ID = '/wellinformed/touch/1.0.0' as const;
+export const TOUCH_PROTOCOL_ID = '/akashik/touch/1.0.0' as const;
 
 /**
  * Defense-in-depth cap on the number of nodes returned in a single touch.
@@ -49,24 +49,28 @@ export const TOUCH_DEFAULT_RATE_PER_SEC = 1 as const;
 export const TOUCH_DEFAULT_BURST = 3 as const;
 
 /**
- * Initiator → responder.
- * `room` is required (no "give me every room you have" wildcard — a
- * single wildcard response could blow TOUCH_MAX_NODES in one shot).
+ * Initiator → responder — V5 envelope (Phase 24-03, ROOMS-DEL-05).
+ *
+ * Pre-V5 carried a `room: string` field that selected which room's nodes the
+ * responder would return. V5 dropped rooms entirely; the touch primitive now
+ * means "give me your N freshest non-private nodes." TOUCH_MAX_NODES still
+ * caps the response so a single touch can't blow memory.
  */
 export interface TouchRequest {
   readonly type: 'touch';
-  readonly room: string;
+  readonly protocol_version: 5;
   /** Optional client-supplied max — responder's own cap still applies. */
   readonly max_nodes?: number;
 }
 
 /**
- * Responder → initiator. On a successful exchange the responder populates
- * `nodes` with the redacted subset; on any refusal path it populates
- * `error` and leaves nodes as an empty array.
+ * Responder → initiator — V5 envelope. On a successful exchange the responder
+ * populates `nodes` with the redacted, non-private subset; on any refusal path
+ * it populates `error` and leaves nodes as an empty array.
  */
 export interface TouchResponse {
   readonly type: 'touch-response';
+  readonly protocol_version: 5;
   /** Empty when `error` is set. */
   readonly nodes: readonly GraphNode[];
   /** Count of redactions applied across all nodes — audit evidence. */
@@ -75,13 +79,13 @@ export interface TouchResponse {
 }
 
 export type TouchResponseError =
-  | 'room-not-shared'
   | 'rate-limited'
-  | 'room-too-large'
+  | 'too-large'
+  | 'protocol-mismatch'
   | 'internal-error';
 
 export const isTouchResponseError = (e: unknown): e is TouchResponseError =>
-  e === 'room-not-shared' ||
   e === 'rate-limited' ||
-  e === 'room-too-large' ||
+  e === 'too-large' ||
+  e === 'protocol-mismatch' ||
   e === 'internal-error';

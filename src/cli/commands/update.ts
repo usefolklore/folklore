@@ -1,5 +1,5 @@
 /**
- * `wellinformed update <sub>` — auto-update CLI surface.
+ * `akashik update <sub>` — auto-update CLI surface.
  *
  *   configure --did <did:key:z...> --url <manifest URL> [--channel stable] [--interval 86400]
  *   check                                check now (verifies signature)
@@ -13,7 +13,7 @@
  *      verifies the Ed25519 signature against the pinned DID, gates the
  *      upgrade decision (newer than current + meets min_supported_version)
  *   3. if `upgrade_eligible: true`, the operator's package manager handles
- *      the install (npm update -g wellinformed, brew upgrade, etc.) — the
+ *      the install (npm update -g akashik, brew upgrade, etc.) — the
  *      CLI prints the recommended command
  *
  * Why no built-in installer in v3.0: see the rationale in
@@ -24,7 +24,7 @@ import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { formatError } from '../../domain/errors.js';
 import { configureUpdates, loadUpdateConfig, loadUpdateState, checkForUpdate } from '../../application/update-checker.js';
-import { wellinformedHome } from '../runtime.js';
+import { akashikHome } from '../runtime.js';
 
 const currentVersion = (): string => {
   // Read from package.json — single source of truth.
@@ -47,9 +47,9 @@ const configure = async (rest: readonly string[]): Promise<number> => {
   const url = getArg(rest, '--url');
   if (!did || !url) {
     console.error('update configure: missing --did and/or --url');
-    console.error('  example: wellinformed update configure \\');
+    console.error('  example: akashik update configure \\');
     console.error('             --did did:key:z6Mk... \\');
-    console.error('             --url https://releases.wellinformed.dev/latest.json');
+    console.error('             --url https://releases.akashik.dev/latest.json');
     return 1;
   }
   if (!did.startsWith('did:key:z')) {
@@ -62,7 +62,7 @@ const configure = async (rest: readonly string[]): Promise<number> => {
     console.error(`update configure: --interval must be ≥ 60 seconds, got '${interval}'`);
     return 1;
   }
-  const r = await configureUpdates(wellinformedHome(), {
+  const r = await configureUpdates(akashikHome(), {
     project_did: did as unknown as import('../../domain/release.js').DID,
     manifest_url: url,
     check_interval_seconds: interval,
@@ -77,7 +77,7 @@ const configure = async (rest: readonly string[]): Promise<number> => {
   console.log(`  manifest URL:        ${url}`);
   console.log(`  channel:             ${channel}`);
   console.log(`  check interval:      ${interval}s`);
-  console.log(`  auto-check:          disabled (run 'wellinformed update enable-auto' to turn on)`);
+  console.log(`  auto-check:          disabled (run 'akashik update enable-auto' to turn on)`);
   return 0;
 };
 
@@ -85,7 +85,7 @@ const check = async (): Promise<number> => {
   const v = currentVersion();
   console.log(`current version: ${v}`);
   console.log('checking...');
-  const r = await checkForUpdate(wellinformedHome(), v);
+  const r = await checkForUpdate(akashikHome(), v);
   if (r.isErr()) {
     console.error(`update check: ${formatError(r.error)}`);
     return 1;
@@ -110,7 +110,7 @@ const check = async (): Promise<number> => {
   console.log(res.notes ?? '(no release notes)');
   console.log('');
   console.log('To install:');
-  console.log(`  npm update -g wellinformed   # if installed via npm`);
+  console.log(`  npm update -g akashik   # if installed via npm`);
   console.log(`  # or download tarball + verify sha256:`);
   console.log(`  curl -fsSL ${res.manifest!.tarball_url} -o /tmp/welly.tgz`);
   console.log(`  echo '${res.manifest!.tarball_sha256}  /tmp/welly.tgz' | shasum -a 256 -c -`);
@@ -118,16 +118,16 @@ const check = async (): Promise<number> => {
 };
 
 const status = async (): Promise<number> => {
-  const cfg = await loadUpdateConfig(wellinformedHome());
+  const cfg = await loadUpdateConfig(akashikHome());
   if (cfg.isErr()) {
     console.error(`update status: ${formatError(cfg.error)}`);
     return 1;
   }
   if (!cfg.value) {
-    console.log('not configured (run `wellinformed update configure --did ... --url ...`)');
+    console.log('not configured (run `akashik update configure --did ... --url ...`)');
     return 0;
   }
-  const state = await loadUpdateState(wellinformedHome());
+  const state = await loadUpdateState(akashikHome());
   if (state.isErr()) {
     console.error(`update status: ${formatError(state.error)}`);
     return 1;
@@ -144,20 +144,20 @@ const status = async (): Promise<number> => {
 };
 
 const setAuto = async (enabled: boolean): Promise<number> => {
-  const cfg = await loadUpdateConfig(wellinformedHome());
+  const cfg = await loadUpdateConfig(akashikHome());
   if (cfg.isErr()) { console.error(`${formatError(cfg.error)}`); return 1; }
   if (!cfg.value) {
-    console.error('not configured. run: wellinformed update configure --did ... --url ...');
+    console.error('not configured. run: akashik update configure --did ... --url ...');
     return 1;
   }
-  const r = await configureUpdates(wellinformedHome(), { ...cfg.value, auto_check_enabled: enabled });
+  const r = await configureUpdates(akashikHome(), { ...cfg.value, auto_check_enabled: enabled });
   if (r.isErr()) { console.error(`${formatError(r.error)}`); return 1; }
   console.log(`auto-check ${enabled ? 'enabled' : 'disabled'}.`);
   return 0;
 };
 
 const help = (): number => {
-  console.log('usage: wellinformed update <sub>');
+  console.log('usage: akashik update <sub>');
   console.log('');
   console.log('  configure --did <did:key> --url <url> [--channel stable] [--interval 86400]');
   console.log('  check               fetch manifest, verify signature under pinned DID');

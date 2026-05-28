@@ -1,4 +1,4 @@
 [submodule "vendor/graphify"]
 	path = vendor/graphify
 	url = https://github.com/saharbarak/graphify.git
-	branch = wellinformed
+	branch = akashik

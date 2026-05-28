@@ -1,11 +1,10 @@
 /**
- * `wellinformed trigger [--room <room>] [--sync]` — run an ingest pass.
+ * `akashik trigger [--sync]` — run an ingest pass against every
+ * enabled source.
  *
- * Default: when the daemon is running, submit an `ingest:room` job
- * per matching room and return immediately (the worker drains the
- * queue serially in the background). When the daemon is not running,
- * fall back to in-process synchronous ingest. `--sync` forces inline
- * mode regardless of daemon state.
+ * V5 (Phase 24): no --room flag. Trigger runs ALL enabled sources
+ * flat. Daemon-submit mode submits a single `ingest:all` job; sync
+ * mode iterates sources serially via triggerAllSources.
  *
  * On success: exit 0. On any fatal error: exit 1. Per-source errors
  * are shown in the report and do NOT abort the batch.
@@ -13,32 +12,28 @@
 
 import { formatError } from '../../domain/errors.js';
 import type { RoomRun, SourceRun } from '../../domain/sources.js';
-import { triggerRoom } from '../../application/ingest.js';
+import { triggerAllSources } from '../../application/ingest.js';
 import { defaultRuntime, runtimePaths } from '../runtime.js';
 import { isRunning } from '../../daemon/loop.js';
 import { ipcCallLines } from '../ipc-client.js';
-import { fileSourcesConfig } from '../../infrastructure/sources-config.js';
 
 interface ParsedArgs {
-  readonly room?: string;
   readonly sync: boolean;
 }
 
 const parseArgs = (args: readonly string[]): ParsedArgs => {
-  let room: string | undefined;
   let sync = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
-    if (a === '--room' && i + 1 < args.length) {
-      room = args[i + 1];
-      i++;
-    } else if (a.startsWith('--room=')) {
-      room = a.slice('--room='.length);
-    } else if (a === '--sync' || a === '--foreground') {
-      sync = true;
+    if (a === '--sync' || a === '--foreground') sync = true;
+    // --room is silently accepted-and-ignored for back-compat with
+    // legacy hooks/scripts; emit a warning so users update their wrappers.
+    else if (a === '--room' || a.startsWith('--room=')) {
+      console.error('trigger: --room is removed in V5 (ignored). All sources run together.');
+      if (a === '--room') i++; // consume the value
     }
   }
-  return { room, sync };
+  return { sync };
 };
 
 const renderRun = (run: SourceRun): string => {
@@ -48,64 +43,33 @@ const renderRun = (run: SourceRun): string => {
   return base;
 };
 
-const renderRoomRun = (room: RoomRun): string => {
-  const lines = [`room=${room.room}  sources=${room.runs.length}`];
-  for (const r of room.runs) lines.push(renderRun(r));
+const renderTickRun = (tick: RoomRun): string => {
+  const lines = [`sources=${tick.runs.length}`];
+  for (const r of tick.runs) lines.push(renderRun(r));
   return lines.join('\n');
 };
 
-/**
- * Resolve the room list. When --room is set, that's the only one;
- * otherwise read sources.json (no sqlite-vec / ONNX needed) and pull
- * distinct rooms. Avoids paying the runtime cold-open just to
- * enumerate rooms in daemon-submit mode.
- */
-const resolveRooms = async (parsed: ParsedArgs): Promise<readonly string[] | string> => {
-  if (parsed.room) return [parsed.room];
-  const paths = runtimePaths();
-  const cfg = fileSourcesConfig(paths.sources);
-  const list = await cfg.list();
-  if (list.isErr()) return formatError(list.error);
-  const rooms = Array.from(new Set(list.value.map((d) => d.room)));
-  return rooms;
-};
-
-const submitToDaemon = async (rooms: readonly string[]): Promise<number> => {
-  if (rooms.length === 0) {
-    console.log('trigger: no sources configured — use `wellinformed sources add` to seed one.');
-    return 0;
+const submitToDaemon = async (): Promise<number> => {
+  const out = await ipcCallLines('submit-job', ['ingest:all']);
+  if (out === null) {
+    console.error('trigger: failed to submit ingest:all');
+    return 1;
   }
-  let failed = 0;
-  for (const room of rooms) {
-    const out = await ipcCallLines('submit-job', ['ingest:room', room]);
-    if (out === null) {
-      console.error(`trigger: failed to submit ingest:room ${room}`);
-      failed++;
-      continue;
-    }
-    const id = out.trim();
-    console.log(`  queued  ${id}  ingest:room ${room}`);
-  }
-  console.log(`\n${rooms.length - failed} job(s) queued — track with: wellinformed jobs watch`);
-  return failed > 0 ? 1 : 0;
+  const id = out.trim();
+  console.log(`  queued  ${id}  ingest:all`);
+  console.log('\n1 job queued — track with: akashik jobs watch');
+  return 0;
 };
 
 export const trigger = async (args: readonly string[]): Promise<number> => {
   const parsed = parseArgs(args);
 
-  // Daemon-submit path — preferred when the daemon is running and
-  // the caller didn't ask for --sync. The user sees their command
-  // return immediately; the worker drains in the background.
+  // Daemon-submit path — preferred when daemon is running.
   if (!parsed.sync && isRunning(runtimePaths().home)) {
-    const rooms = await resolveRooms(parsed);
-    if (typeof rooms === 'string') {
-      console.error(`trigger: ${rooms}`);
-      return 1;
-    }
-    return submitToDaemon(rooms);
+    return submitToDaemon();
   }
 
-  // Sync path — original behaviour. Pays sqlite-vec / ONNX cold-open.
+  // Sync path — pays sqlite-vec / ONNX cold-open.
   const rt = await defaultRuntime();
   if (rt.isErr()) {
     console.error(`trigger: ${formatError(rt.error)}`);
@@ -114,35 +78,18 @@ export const trigger = async (args: readonly string[]): Promise<number> => {
   const runtime = rt.value;
 
   try {
-    // Load the full descriptor list once. If --room is provided,
-    // only that room runs; otherwise iterate every distinct room in
-    // the sources config.
-    const listed = await runtime.sources.list();
-    if (listed.isErr()) {
-      console.error(`trigger: ${formatError(listed.error)}`);
+    const result = await triggerAllSources(runtime.ingestDeps)();
+    if (result.isErr()) {
+      console.error(`trigger: ${formatError(result.error)}`);
       return 1;
     }
-    const rooms = parsed.room
-      ? [parsed.room]
-      : Array.from(new Set(listed.value.map((d) => d.room)));
-
-    if (rooms.length === 0) {
-      console.log('trigger: no sources configured — use `wellinformed sources add` to seed one.');
+    const tick = result.value;
+    if (tick.runs.length === 0) {
+      console.log('trigger: no sources configured — use `akashik sources add` to seed one.');
       return 0;
     }
-
-    let hadError = false;
-    for (const room of rooms) {
-      const result = await triggerRoom(runtime.ingestDeps)(room);
-      if (result.isErr()) {
-        hadError = true;
-        console.error(`trigger: room=${room} — ${formatError(result.error)}`);
-        continue;
-      }
-      console.log(renderRoomRun(result.value));
-      if (result.value.runs.some((r) => r.error !== undefined)) hadError = true;
-    }
-
+    console.log(renderTickRun(tick));
+    const hadError = tick.runs.some((r) => r.error !== undefined);
     return hadError ? 1 : 0;
   } finally {
     runtime.close();

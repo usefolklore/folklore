@@ -34,14 +34,14 @@ export type SharePolicyMode = 'soft' | 'strict';
 /**
  * Read mode from env. Default is soft (backward compatible — existing
  * peers without signing keep working). Set
- *   WELLINFORMED_REQUIRE_SIGNED_NODES=1
+ *   AKASHIK_REQUIRE_SIGNED_NODES=1
  * to enforce strict mode (only SignedShareableNode survives, plain
  * unsigned drops with a metric + log).
  */
 export const sharePolicyModeFromEnv = (
   env: NodeJS.ProcessEnv = process.env,
 ): SharePolicyMode => {
-  const v = env.WELLINFORMED_REQUIRE_SIGNED_NODES;
+  const v = env.AKASHIK_REQUIRE_SIGNED_NODES;
   return v === '1' || v === 'true' ? 'strict' : 'soft';
 };
 
@@ -123,9 +123,17 @@ export const classifyInboundShare = (
   value: unknown,
   mode: SharePolicyMode,
   verifiedAt?: string,
+  /**
+   * Phase 26 — when supplied, the verifier pins the envelope's
+   * `payload.github_user` to this value. The caller (share-sync's
+   * inbound observer) looks up the expected handle from
+   * peer-labels.json by the sending peer-id. Pass `undefined` to
+   * skip the binding (peer is unlabelled — graceful degrade).
+   */
+  expectedGithubUser?: string,
 ): ClassifiedShare => {
   if (isSignedEnvelope(value)) {
-    const verified = verifyShareableNode(value, { verifiedAt });
+    const verified = verifyShareableNode(value, { verifiedAt, expectedGithubUser });
     if (verified.isErr()) {
       const e = verified.error;
       const reason =
@@ -133,6 +141,8 @@ export const classifyInboundShare = (
           ? `identity_error:${e.cause.type}`
           : e.type === 'ShareEnvelopeAuthorMismatch'
           ? `author_mismatch:${e.expected}!=${e.actual}`
+          : e.type === 'ShareEnvelopeGithubMismatch'
+          ? `github_mismatch:${e.expected}!=${e.actual ?? '<missing>'}`
           : `invalid:${e.reason}`;
       return { verdict: 'signed_invalid', reason };
     }

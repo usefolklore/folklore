@@ -1,5 +1,5 @@
 /**
- * `wellinformed eval <queries.jsonl> [--room R] [--k 10] [--json]`
+ * `akashik eval <queries.jsonl> [--k 10] [--json]`
  *
  * Retrieval-quality eval harness. Reads a JSONL file of labelled
  * queries, runs the application's `ask` use case, and computes the
@@ -16,12 +16,11 @@
  *
  * Input shape (JSONL — one record per line):
  *
- *   {"query": "lemlist", "expected_node_ids": ["chunk-a", "chunk-b"], "room": "research"}
+ *   {"query": "lemlist", "expected_node_ids": ["chunk-a", "chunk-b"]}
  *
  * Fields:
  *   - `query`              required string
  *   - `expected_node_ids`  required string[] — gold-standard relevant nodes
- *   - `room`               optional — passes through to ask({ room })
  *
  * Default output: human-readable summary on stdout. `--json` emits
  * one JSON object with per-query results + aggregates so a CI
@@ -38,7 +37,6 @@ import { defaultRuntime } from '../runtime.js';
 
 interface ParsedArgs {
   readonly file: string;
-  readonly room?: string;
   readonly k: number;
   readonly json: boolean;
   readonly limit?: number;
@@ -46,16 +44,13 @@ interface ParsedArgs {
 
 const parseArgs = (args: readonly string[]): ParsedArgs | string => {
   let file = '';
-  let room: string | undefined;
   let k = 10;
   let json = false;
   let limit: number | undefined;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     const next = (): string => args[++i] ?? '';
-    if (a === '--room') room = next();
-    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
-    else if (a === '--k' || a === '-k') k = parseInt(next(), 10) || 10;
+    if (a === '--k' || a === '-k') k = parseInt(next(), 10) || 10;
     else if (a.startsWith('--k=')) k = parseInt(a.slice('--k='.length), 10) || 10;
     else if (a === '--limit') limit = parseInt(next(), 10);
     else if (a.startsWith('--limit=')) limit = parseInt(a.slice('--limit='.length), 10);
@@ -63,11 +58,11 @@ const parseArgs = (args: readonly string[]): ParsedArgs | string => {
     else if (!a.startsWith('-')) file = a;
   }
   if (!file) {
-    return 'missing queries file — usage: wellinformed eval <queries.jsonl> [--room R] [--k 10] [--limit N] [--json]';
+    return 'missing queries file — usage: akashik eval <queries.jsonl> [--k 10] [--limit N] [--json]';
   }
   if (!existsSync(file)) return `eval: queries file not found: ${file}`;
   if (k < 1 || k > 100) return `eval: --k must be in [1, 100], got ${k}`;
-  return { file, room, k, json, limit };
+  return { file, k, json, limit };
 };
 
 // ─────────────── eval record shape ────────
@@ -75,7 +70,6 @@ const parseArgs = (args: readonly string[]): ParsedArgs | string => {
 interface EvalQuery {
   readonly query: string;
   readonly expected_node_ids: readonly string[];
-  readonly room?: string;
 }
 
 const parseLine = (raw: string, lineNo: number): EvalQuery | string => {
@@ -102,12 +96,9 @@ const parseLine = (raw: string, lineNo: number): EvalQuery | string => {
       return `line ${lineNo}: 'expected_node_ids' must contain non-empty strings`;
     }
   }
-  const room =
-    typeof o.room === 'string' && o.room.length > 0 ? o.room : undefined;
   return {
     query: o.query,
     expected_node_ids: o.expected_node_ids as readonly string[],
-    room,
   };
 };
 
@@ -115,7 +106,6 @@ const parseLine = (raw: string, lineNo: number): EvalQuery | string => {
 
 interface QueryResult {
   readonly query: string;
-  readonly room?: string;
   readonly retrieved: readonly string[];
   readonly expected: readonly string[];
   readonly recall_at_k: number;
@@ -214,7 +204,6 @@ export const evalCmd = async (args: readonly string[]): Promise<number> => {
       const t0 = performance.now();
       const r = await askFn({
         query: q.query,
-        room: q.room ?? parsed.room,
         k: parsed.k,
       });
       const t1 = performance.now();
@@ -226,7 +215,6 @@ export const evalCmd = async (args: readonly string[]): Promise<number> => {
       const relevant = new Set(q.expected_node_ids);
       results.push({
         query: q.query,
-        room: q.room ?? parsed.room,
         retrieved,
         expected: q.expected_node_ids,
         recall_at_k: recallAtK(retrieved, relevant, parsed.k),

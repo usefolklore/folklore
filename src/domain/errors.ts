@@ -1,5 +1,5 @@
 /**
- * Domain errors for the wellinformed knowledge graph.
+ * Domain errors for the akashik knowledge graph.
  *
  * Every error is a tagged union member with a `type` discriminator plus
  * enough context for a caller to render a useful message. No `Error`
@@ -175,27 +175,32 @@ export const ShareError = {
 // ─────────────────────── SearchError ──────────────────────
 
 /**
- * Errors from the federated search bounded context (Phase 17).
+ * Errors from the federated search bounded context (Phase 17, V5 cutover Phase 24).
  *
- * - SearchDimensionMismatch — inbound embedding length != 384 (local model dim)
- * - SearchUnauthorized      — peer requested a room not in local shared-rooms.json
- * - SearchRateLimited       — peer exceeded token bucket (10 req/s, burst 30)
- * - SearchProtocolError     — libp2p stream/dial/frame decode failure
- * - SearchTimeout           — per-peer 2s deadline exceeded during outbound fan-out
+ * - SearchDimensionMismatch  — inbound embedding length != 384 (local model dim)
+ * - SearchRateLimited        — peer exceeded token bucket (10 req/s, burst 30)
+ * - SearchProtocolError      — libp2p stream/dial/frame decode failure
+ * - SearchTimeout            — per-peer 2s deadline exceeded during outbound fan-out
+ * - SearchProtocolMismatch   — V5: peer sent a pre-V5 envelope (e.g. `room` field or
+ *                              missing `protocol_version: 5`). Hard cutover — see
+ *                              docs/architecture/V5-PROTOCOL.md.
+ *
+ * SearchUnauthorized was removed in V5 — room-level authorization no longer exists;
+ * the per-node `private: boolean` gate replaces it (ROOMS-DEL-03 / ROOMS-DEL-05).
  */
 export type SearchError =
   | { readonly type: 'SearchDimensionMismatch'; readonly expected: number; readonly got: number }
-  | { readonly type: 'SearchUnauthorized';      readonly peer: string; readonly room: string }
   | { readonly type: 'SearchRateLimited';       readonly peer: string }
   | { readonly type: 'SearchProtocolError';     readonly peer: string; readonly message: string }
-  | { readonly type: 'SearchTimeout';           readonly peer: string; readonly elapsedMs: number };
+  | { readonly type: 'SearchTimeout';           readonly peer: string; readonly elapsedMs: number }
+  | { readonly type: 'SearchProtocolMismatch';  readonly message: string };
 
 export const SearchError = {
   dimensionMismatch: (expected: number, got: number): SearchError => ({ type: 'SearchDimensionMismatch', expected, got }),
-  unauthorized:      (peer: string, room: string): SearchError    => ({ type: 'SearchUnauthorized', peer, room }),
   rateLimited:       (peer: string): SearchError                  => ({ type: 'SearchRateLimited', peer }),
   protocolError:     (peer: string, message: string): SearchError => ({ type: 'SearchProtocolError', peer, message }),
   timeout:           (peer: string, elapsedMs: number): SearchError => ({ type: 'SearchTimeout', peer, elapsedMs }),
+  protocolMismatch:  (message: string): SearchError               => ({ type: 'SearchProtocolMismatch', message }),
 } as const;
 
 // ─────────────────────── CodebaseError ───────────────────
@@ -269,7 +274,7 @@ export const NetError = {
  * Split by failure surface:
  *   - SessionFileReadError   — reading a *.jsonl transcript from ~/.claude/projects
  *   - SessionJsonlParseError — one line of a transcript failed JSON.parse (partial write, corruption)
- *   - SessionStateFileError  — ~/.wellinformed/sessions-state.json read/write/parse failure
+ *   - SessionStateFileError  — ~/.akashik/sessions-state.json read/write/parse failure
  *   - SessionRetentionError  — retention pruning pass failed (graph repo write error during delete)
  *   - SessionIngestError     — upstream application-layer ingest for a session node failed
  */
@@ -370,7 +375,29 @@ export const ConsolidationError = {
   invalidParameter:  (field: string, message: string): ConsolidationError => ({ type: 'ConsolidationInvalidParameter', field, message }),
 } as const;
 
-export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError | TouchError | IdentityError | ConsolidationError;
+// ─────────────────────── RerankError (Phase 21 — cross-encoder rerank) ─
+
+/**
+ * Errors from the cross-encoder reranker.
+ *
+ * Cross-encoder is the last-mile precision pass on top of the Phase 23
+ * dense+BM25+RRF hybrid. Lazy-loaded ONNX model via @xenova/transformers.
+ * Module is fail-open by design — the call site falls through to the
+ * non-reranked candidate list when this errors. These variants exist for
+ * telemetry and audit, not for caller branching.
+ */
+export type RerankError =
+  | { readonly type: 'RerankModelLoad';   readonly model: string; readonly message: string }
+  | { readonly type: 'RerankInference';   readonly message: string }
+  | { readonly type: 'RerankDisabled' };
+
+export const RerankError = {
+  modelLoad: (model: string, message: string): RerankError => ({ type: 'RerankModelLoad', model, message }),
+  inference: (message: string): RerankError => ({ type: 'RerankInference', message }),
+  disabled:  (): RerankError => ({ type: 'RerankDisabled' }),
+} as const;
+
+export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError | TouchError | IdentityError | ConsolidationError | RerankError;
 
 /** Render a tagged error as a one-line human-readable string. */
 export const formatError = (e: AppError): string => {
@@ -439,14 +466,14 @@ export const formatError = (e: AppError): string => {
       return `share store write error at ${e.path}: ${e.message}`;
     case 'SearchDimensionMismatch':
       return `search dimension mismatch: expected ${e.expected}, got ${e.got}`;
-    case 'SearchUnauthorized':
-      return `search unauthorized: peer ${e.peer} requested unshared room '${e.room}'`;
     case 'SearchRateLimited':
       return `search rate limited for peer ${e.peer}`;
     case 'SearchProtocolError':
       return `search protocol error with peer ${e.peer}: ${e.message}`;
     case 'SearchTimeout':
       return `search timeout for peer ${e.peer} after ${e.elapsedMs}ms`;
+    case 'SearchProtocolMismatch':
+      return `search protocol mismatch: ${e.message}`;
     case 'TouchRoomNotShared':
       return `touch: peer ${e.peer} does not share room '${e.room}'`;
     case 'TouchProtocolError':
@@ -513,6 +540,12 @@ export const formatError = (e: AppError): string => {
       return `consolidation: vector dim mismatch at index ${e.at}: expected ${e.expected}, got ${e.got}`;
     case 'ConsolidationInvalidParameter':
       return `consolidation: invalid parameter '${e.field}' — ${e.message}`;
+    case 'RerankModelLoad':
+      return `rerank model load failed (${e.model}): ${e.message}`;
+    case 'RerankInference':
+      return `rerank inference failed: ${e.message}`;
+    case 'RerankDisabled':
+      return `rerank disabled (AKASHIK_RERANK is not set)`;
   }
 };
 
@@ -537,21 +570,21 @@ export const hintFor = (e: AppError): string | null => {
       // Most common cause on first run: graph.json doesn't exist yet.
       // The path-bearing message already shows ENOENT.
       return /ENOENT|no such file/i.test(e.message)
-        ? 'fix: run `wellinformed trigger` to populate the graph (this is normal on first run).'
-        : 'fix: run `wellinformed doctor --fix` and check the file is readable.';
+        ? 'fix: run `akashik trigger` to populate the graph (this is normal on first run).'
+        : 'fix: run `akashik doctor --fix` and check the file is readable.';
     case 'GraphParseError':
-      return `fix: graph file is corrupted at ${e.path}. Restore from backup or move it aside and run \`wellinformed trigger\` to rebuild.`;
+      return `fix: graph file is corrupted at ${e.path}. Restore from backup or move it aside and run \`akashik trigger\` to rebuild.`;
     case 'GraphWriteError':
-      return 'fix: check disk space and that no other wellinformed process is holding the write lock (`wellinformed doctor`).';
+      return 'fix: check disk space and that no other akashik process is holding the write lock (`akashik doctor`).';
 
     // ─── vectors / embedder ───────────────────
     case 'VectorOpenError':
-      return 'fix: run `wellinformed doctor --fix` to reset the sqlite-vec store, or check the file permissions on `~/.wellinformed/vectors.db`.';
+      return 'fix: run `akashik doctor --fix` to reset the sqlite-vec store, or check the file permissions on `~/.akashik/vectors.db`.';
     case 'ModelLoadError':
       // The model is fetched lazily on first embed (~90 MB for
       // all-MiniLM-L6-v2). Either the cache is missing or the
       // download failed.
-      return 'fix: check network access; the embedder downloads ~90 MB on first use. Re-run `wellinformed doctor` to retry, or set `WELLINFORMED_MODEL_CACHE` to a writable directory.';
+      return 'fix: check network access; the embedder downloads ~90 MB on first use. Re-run `akashik doctor` to retry, or set `AKASHIK_MODEL_CACHE` to a writable directory.';
 
     // ─── peer / network ───────────────────────
     case 'PeerDialError':
@@ -565,28 +598,28 @@ export const hintFor = (e: AppError): string | null => {
       if (/ECONNREFUSED/i.test(e.message)) {
         return 'fix: remote port refused the connection. The peer may be offline or listening on a different address.';
       }
-      return 'fix: re-check the multiaddr; for diagnostics run `wellinformed peer list`.';
+      return 'fix: re-check the multiaddr; for diagnostics run `akashik peer list`.';
 
     case 'PeerIdentityReadError':
     case 'PeerIdentityParseError':
-      return 'fix: run `wellinformed identity init` to (re)create the peer identity, or `wellinformed identity import <hex>` to restore.';
+      return 'fix: run `akashik identity init` to (re)create the peer identity, or `akashik identity import <hex>` to restore.';
 
     // ─── share / privacy ──────────────────────
     case 'SecretDetected':
       // SecretDetected is the user's most-confusing error: an opaque
       // node id and a list of pattern names with no path forward.
       // Hint points at the two real fixes.
-      return `fix: the node was BLOCKED before reaching the network — your secret is safe locally. Either remove the credential from the source content, or move it to a non-shared room. Inspect the node with \`wellinformed get-node ${e.nodeId}\`.`;
+      return `fix: the node was BLOCKED before reaching the network — your secret is safe locally. Either remove the credential from the source content, or move it to a non-shared room. Inspect the node with \`akashik get-node ${e.nodeId}\`.`;
 
     case 'ShareAuditBlocked':
-      return `fix: review flagged nodes with \`wellinformed lint --room ${e.room}\` and either remove the secrets or unshare the room.`;
+      return `fix: review flagged nodes with \`akashik lint --room ${e.room}\` and either remove the secrets or unshare the room.`;
 
     // ─── identity / signing ───────────────────
     case 'IdentityKeyGenerationError':
-      return 'fix: run `wellinformed identity init` to create your DID, or `wellinformed onboard` to run the full setup wizard.';
+      return 'fix: run `akashik identity init` to create your DID, or `akashik onboard` to run the full setup wizard.';
     case 'IdentityBadSignatureError':
     case 'IdentityDeviceAuthorizationError':
-      return 'fix: the identity chain failed to verify. If this is your own identity, `wellinformed identity rotate` regenerates the device key under your existing DID.';
+      return 'fix: the identity chain failed to verify. If this is your own identity, `akashik identity rotate` regenerates the device key under your existing DID.';
 
     // Default: no actionable suffix.
     default:
@@ -599,8 +632,8 @@ export const hintFor = (e: AppError): string | null => {
  * `hintFor` newline-suffix. Most CLI callsites should use this rather
  * than calling the two helpers separately.
  *
- *   ask: graph read error at ~/.wellinformed/graph.json: ENOENT
- *     → fix: run `wellinformed trigger` to populate the graph (this is normal on first run).
+ *   ask: graph read error at ~/.akashik/graph.json: ENOENT
+ *     → fix: run `akashik trigger` to populate the graph (this is normal on first run).
  *
  * Returns just the formatted error when there is no hint.
  */

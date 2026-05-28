@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# wellinformed bootstrap — sets up the per-user runtime dir, creates a
+# akashik bootstrap — sets up the per-user runtime dir, creates a
 # Python venv for the graphify sidecar, and installs graphify in editable
 # mode from the vendor/graphify submodule.
 #
@@ -21,13 +21,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 GRAPHIFY_DIR="$REPO_ROOT/vendor/graphify"
 
-WELL_DIR="${WELLINFORMED_HOME:-$HOME/.wellinformed}"
+WELL_DIR="${AKASHIK_HOME:-$HOME/.akashik}"
 VENV_DIR="$WELL_DIR/venv"
 STATE_FILE="$WELL_DIR/bootstrap.state.json"
 
-log()  { printf '[wellinformed] %s\n' "$*"; }
-warn() { printf '[wellinformed] WARN %s\n' "$*" >&2; }
-die()  { printf '[wellinformed] FATAL %s\n' "$*" >&2; exit "${2:-1}"; }
+log()  { printf '[akashik] %s\n' "$*"; }
+warn() { printf '[akashik] WARN %s\n' "$*" >&2; }
+die()  { printf '[akashik] FATAL %s\n' "$*" >&2; exit "${2:-1}"; }
 
 # 1. pick a python3 >= 3.10. probe newest→oldest minor, then fall back to
 # generic python3 if it happens to satisfy the minimum. macOS ships python3.9
@@ -65,7 +65,7 @@ log "runtime dir $WELL_DIR"
 VENV_PY="$VENV_DIR/bin/python"
 # if a venv exists but was built with the wrong (too-old) host python, blow
 # it away. this is the one destructive action in the script and it only
-# targets ~/.wellinformed/venv which is per-user cache.
+# targets ~/.akashik/venv which is per-user cache.
 if [ -f "$VENV_PY" ]; then
   existing_ver="$($VENV_PY -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null || echo 0.0)"
   existing_minor="${existing_ver##*.}"
@@ -115,7 +115,7 @@ state = {
 }
 with open(state_file, "w") as f:
     json.dump(state, f, indent=2)
-print(f"[wellinformed] state written to {state_file}")
+print(f"[akashik] state written to {state_file}")
 PY
 
-log "bootstrap OK — run 'wellinformed doctor' to verify the full stack"
+log "bootstrap OK — run 'akashik doctor' to verify the full stack"

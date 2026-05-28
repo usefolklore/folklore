@@ -13,8 +13,8 @@ COPY . .
 RUN npm run build
 RUN bash scripts/bootstrap.sh
 
-ENV WELLINFORMED_HOME=/data
+ENV AKASHIK_HOME=/data
 VOLUME /data
 
-ENTRYPOINT ["node", "bin/wellinformed.js"]
+ENTRYPOINT ["node", "bin/akashik.js"]
 CMD ["daemon", "start"]

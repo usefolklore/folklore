@@ -369,7 +369,7 @@ const runIndex = (
       if (parseErrors > 0) {
         // Surface a short sample to stderr — indexing continues, user gets the diagnostic
         process.stderr.write(
-          `wellinformed codebase: ${parseErrors} file(s) skipped due to parse errors (e.g. ${parseErrorSamples.join(', ')})\n`,
+          `akashik codebase: ${parseErrors} file(s) skipped due to parse errors (e.g. ${parseErrorSamples.join(', ')})\n`,
         );
       }
 

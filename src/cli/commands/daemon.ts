@@ -1,5 +1,5 @@
 /**
- * `wellinformed daemon <sub>` — background research daemon.
+ * `akashik daemon <sub>` — background research daemon.
  *
  *   start   — fork a detached child that runs the daemon loop
  *   stop    — send SIGTERM to the PID in daemon.pid
@@ -129,7 +129,7 @@ const run = async (): Promise<number> => {
   });
   if (lockRes.isErr()) {
     console.error(`daemon: ${formatError(lockRes.error)}`);
-    console.error(`  another wellinformed process is already mutating. retry in a moment.`);
+    console.error(`  another akashik process is already mutating. retry in a moment.`);
     return 1;
   }
   const writeLock = lockRes.value;
@@ -167,7 +167,7 @@ const run = async (): Promise<number> => {
     },
   });
 
-  // Phase 41 — file-watcher (registered roots from `wellinformed this`)
+  // Phase 41 — file-watcher (registered roots from `akashik this`)
   // and Claude session-watcher. Both submit ingest jobs to the queue
   // on file events; debounced so editor save bursts collapse.
   const watchers = startFileWatchers({
@@ -180,7 +180,7 @@ const run = async (): Promise<number> => {
   // the tick loop in the same process so read-only commands like `ask`
   // can reuse the warmed Runtime (sqlite-vec open + ONNX model loaded)
   // instead of paying ~240 ms of cold-start per invocation. Socket at
-  // $WELLINFORMED_HOME/daemon.sock, 0600.
+  // $AKASHIK_HOME/daemon.sock, 0600.
   const ipc = await startIpcServer({
     homeDir: paths.home,
     ctx: rt.value,
@@ -192,7 +192,7 @@ const run = async (): Promise<number> => {
   // Pre-warm the embedder so the first IPC `ask` isn't the one that
   // eats the 200 ms ONNX load. Best-effort — on failure we just log,
   // the first real query will warm it lazily.
-  void rt.value.embedder.embed('wellinformed daemon warm').then(
+  void rt.value.embedder.embed('akashik daemon warm').then(
     (r) => {
       if (r.isErr()) console.error(`daemon: embedder pre-warm failed: ${formatError(r.error)}`);
     },
@@ -201,7 +201,6 @@ const run = async (): Promise<number> => {
 
   const loop: LoopHandle = await startLoop({
     ingestDeps: rt.value.ingestDeps,
-    rooms: rt.value.rooms,
     graphs: rt.value.graphs,
     vectors: rt.value.vectors,
     sources: rt.value.sources,

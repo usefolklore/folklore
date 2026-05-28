@@ -9,7 +9,7 @@
  * through the production `searchHybrid` port with the Rust
  * subprocess embedder, assert NDCG@10 >= 0.70.
  *
- * This test is opt-in via `WELLINFORMED_RUST_BIN` env var or a
+ * This test is opt-in via `AKASHIK_RUST_BIN` env var or a
  * platform-default path, because the Rust binary is not yet bundled
  * with the npm package (Phase 24 ships the adapter, Phase 30 will
  * handle prebuilt distribution). Tests that can't find the binary
@@ -84,11 +84,11 @@ const ndcgAtK = (
 
 const repoBinaryPath = (): string => {
   const here = dirname(fileURLToPath(import.meta.url));
-  return join(here, '..', 'wellinformed-rs', 'target', 'release', 'embed_server');
+  return join(here, '..', 'akashik-rs', 'target', 'release', 'embed_server');
 };
 
 const rustBinaryAvailable = (): string | null => {
-  const candidate = process.env.WELLINFORMED_RUST_BIN ?? repoBinaryPath();
+  const candidate = process.env.AKASHIK_RUST_BIN ?? repoBinaryPath();
   return existsSync(candidate) ? candidate : null;
 };
 
@@ -96,7 +96,7 @@ test('phase-29: Rust embedder end-to-end retrieval quality gate on fixture', asy
   const binary = rustBinaryAvailable();
   if (!binary) {
     t.skip(
-      'wellinformed-rs embed_server binary not built — build with `cargo build --release --manifest-path wellinformed-rs/Cargo.toml` or set WELLINFORMED_RUST_BIN',
+      'akashik-rs embed_server binary not built — build with `cargo build --release --manifest-path akashik-rs/Cargo.toml` or set AKASHIK_RUST_BIN',
     );
     return;
   }

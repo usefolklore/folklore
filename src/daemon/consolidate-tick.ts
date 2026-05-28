@@ -79,7 +79,7 @@ export const shouldRunConsolidate = (
  * processes. Records the run start in the state file so the next tick
  * doesn't re-trigger. Returns the number of children spawned.
  *
- * Children inherit WELLINFORMED_HOME so they hit the same graph.
+ * Children inherit AKASHIK_HOME so they hit the same graph.
  * Each child acquires its own write lock — if the daemon's lock
  * conflicts (it shouldn't, but stale-recovery handles edge cases),
  * the child errors out cleanly.
@@ -118,7 +118,7 @@ export const runConsolidateTick = (
       const child = spawn(process.execPath, args, {
         detached: true,
         stdio: 'ignore',
-        env: { ...process.env, WELLINFORMED_HOME: homeDir },
+        env: { ...process.env, AKASHIK_HOME: homeDir },
       });
       child.unref();
       log(`consolidate-tick: spawned room=${room} pid=${child.pid}`);
