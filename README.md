@@ -100,6 +100,45 @@ The query checks your local graph, then federates to every connected peer in you
 
 ---
 
+## Plugs into the harness you already use
+
+You don't change how you work. Once akashik is installed and your daemon is running, every research-shaped tool call your harness wants to make — `WebSearch`, `WebFetch`, an arXiv pull, a Read against a path it's never read — is intercepted first. The harness asks akashik before it asks the web.
+
+| Harness | How it wires in |
+|---|---|
+| **Claude Code** | `akashik claude install` — wires `PreToolUse` + `PostToolUse` + `SessionStart` hooks and adds a CLAUDE.md system-prompt section. One command. |
+| **Codex / Gemini / Hermes / OpenClaw** | Register `akashik mcp start` as an MCP tool server. Once wired, the harness's own tool-routing layer prefers akashik for any query-shaped call. |
+| **Anything else with a PreToolUse hook** | Same pattern as Claude Code — `akashik-smart-hook.cjs` is reusable; point your harness's `PreToolUse` config at it. |
+
+After that, the web is the *fallback*, not the default. The local + federated graph is the first hop, every time, automatically. You don't have to remember to use akashik; akashik remembers for you.
+
+---
+
+## What "satisfactory" means
+
+The harness only falls through to the web when the graph couldn't satisfy the query — and "satisfy" is concrete, not a vibes call. Three conditions, all enforced at the hook layer:
+
+| Knob | Default | Meaning |
+|---|---|---|
+| `satisfaction_score` | ≥ **0.85** | After hybrid retrieval (BM25 + vec + RRF) + cross-encoder rerank + graph PPR rerank, the top result's satisfaction score must clear this floor. |
+| `min_hits` | ≥ **2** | At least two graph hits in the answer set. A single brittle hit doesn't override the web check. |
+| `decision` | = `use_memory` | The agent-decision layer (which weighs satisfaction, hit count, and shallow-evidence heuristics) must affirmatively land on "answer from memory" — not "answer-but-verify" or "search web". |
+
+When all three hold, the hook **denies** the harness's `WebSearch` / `WebFetch` call and the graph hits get injected into the model's context as if the web call had returned them. When any one fails, the web call proceeds — and the result lands in your graph signed by you, so the next contributor who asks something similar pulls it from your peer instead of paying for the same fetch.
+
+Per-project tunables:
+
+```bash
+export AKASHIK_DENY_WEBSEARCH=1        # opt in to the deny pathway (off by default)
+export AKASHIK_DENY_THRESHOLD=0.85     # satisfaction floor
+export AKASHIK_DENY_MIN_HITS=2         # minimum hits to allow the deny
+export AKASHIK_PREFETCH_PEERS=0        # local-only — skip federated fan-out
+```
+
+Only `WebSearch` and `WebFetch` are deniable. Local tools (`Read`, `Glob`, `Grep`) are never blocked — they're cheap and there's nothing to gain from stopping them. The deny pathway is opt-in because false positives (graph says "I have it" when it doesn't) cost more than a redundant fetch; you turn it on per-project once you trust your graph's coverage of the domain.
+
+---
+
 ## Architecture pillars
 
 - **No central server. Ever.** Every peer talks directly to every other peer. There's no service to be acquired, deprecated, or rate-limited. If your VPS goes down, every other peer still answers. If the project ends, you still own your graph. There is no fallback to a vendor — only to other people running the same protocol.
