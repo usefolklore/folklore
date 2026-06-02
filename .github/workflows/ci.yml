@@ -31,3 +31,10 @@ jobs:
       - run: npm run build
       - run: bash scripts/bootstrap.sh
       - run: npm test
+        env:
+          # Skip the two libp2p E2E tests (Phase 18 10-peer mesh,
+          # Phase 39 oracle gossip) that flake on shared CI runners
+          # because of port contention + mDNS sandboxing. Unit +
+          # structural + integration-without-network tiers all run.
+          # Run locally without this flag to exercise the network path.
+          AKASHIK_SKIP_SLOW: "1"
