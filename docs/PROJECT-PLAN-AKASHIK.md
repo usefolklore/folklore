@@ -1,13 +1,27 @@
 # Akashik — project plan
 
-This is the engineering+launch plan for the next 30-60 days, anchored
-in the Round 5 octopus-discover recommendation (verbatim: "next
-engineering month on AkashikBench-F and federation routing; next
-marketing month on a 100-person pilot in the local-AI / agent-tooling
-OSS ecosystem"). The product has pivoted from "agent-memory product"
-to "federated knowledge commons for the open-source community" and
-the brand is now Akashik — the codebase is still `akashik` and
-will remain so during the two-name period. The architecture
+> **Snapshot — 2026-05-26.** Kept as the historical statement of
+> intent at the start of the v5.0 cycle. Some items below have
+> shipped (rooms abstraction removed; rebrand to `akashik` complete;
+> GitHub-as-primary identity wired with envelope pinning) and the
+> "Phase 24/25" numbering in this doc refers to calendar months of
+> work, not the engineering phase numbers used in the commit history.
+> Read it as direction, not as a current task list.
+>
+> **Terminology note.** The body below was written before the rooms
+> abstraction was deleted. Read every mention of "room" as
+> approximately "workspace tag + per-node `private: bool` gate" —
+> the two V5 primitives that replaced it. The `--room` flag, the
+> shared-rooms registry, and per-room rate-limiting / metrics no
+> longer exist; their analogues are `--workspace` for the read-side
+> filter and `--private` for the sharing gate.
+
+This is the engineering+launch plan for the v5.0 cycle, anchored
+in the smallest-viable launch recommendation: "next engineering
+cycle on AkashikBench-F and federation routing; next marketing
+cycle on a 100-person pilot in the local-AI / agent-tooling OSS
+ecosystem". The product is positioned as a "federated knowledge
+commons for the open-source community". The architecture
 ([how-akashik-works.md](./marketing/how-akashik-works.md)) is the
 credibility anchor for the mission; AkashikBench-F is the only
 instrument that can falsify or validate the compounding thesis
@@ -24,11 +38,9 @@ and produced positive signal on the LoCoMo factual subset:
 simulated horizon. This is in-simulator only — a pure boolean-set
 abstraction over real retrieval — so it validates dynamics, not
 end-to-end retrieval quality. Real-pilot validation is pending.
-Codebase is still named `akashik`; brand is Akashik; the
-rename PR is a separate workstream queued behind launch. LongMemEval-S
-R@5 = 0.9268 (with E11 enrichment), LoCoMo R@10 = 0.725 (with E11);
-the local read-path is at its practical ceiling and further per-peer
-retrieval tuning is explicitly de-prioritised below.
+LongMemEval-S R@5 = 0.9268 (with E11 enrichment), LoCoMo R@10 = 0.725
+(with E11); the local read-path is at its practical ceiling and further
+per-peer retrieval tuning is explicitly de-prioritised below.
 
 ## Phase 24 — Federation infrastructure (next engineering month)
 
