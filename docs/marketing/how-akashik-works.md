@@ -46,7 +46,7 @@ the network does work.** That compound is the entire mission.
                                     │
                                     ▼
    ─── STEP 2 ─────────────────────────────────────────────────
-       Fan out to connected PEERS in A's shared rooms
+       Fan out to every connected PEER in A's peers.json
        Each peer answers with "two cents" — whatever they've
        saved or previously researched that matches.
        Results merge via RRF into a candidate set.
@@ -70,7 +70,8 @@ the network does work.** That compound is the entire mission.
    ─── STEP 4 ─────────────────────────────────────────────────
        Result is SIGNED BY A and saved to A's local graph
        A becomes the "ambitioned" curator of this knowledge.
-       Provenance: A's DID, timestamp, source URLs, room.
+       Provenance: A's DID, A's verified GitHub handle, source
+       URLs, timestamp, optional workspace tag.
    ────────────────────────────────────────────────────────────
                                     │
                                     ▼
@@ -108,18 +109,19 @@ particular piece of knowledge for the network.
 This matters for four reasons:
 
 1. **Provenance lives where the work happened.** The reader who
-   queries A's research six months later sees A's DID, A's room,
-   the date, the source — not a faceless "Akashik says". Knowledge
-   has authors.
+   queries A's research six months later sees A's DID, A's
+   verified GitHub handle, the date, the source — not a faceless
+   "Akashik says". Knowledge has authors.
 2. **Cost lives where the curiosity was.** A paid the network
    roundtrip + the web fetch. B, C, D who query later pay
    nothing. The "ambitioned" framing is the natural answer to
    "who pays for the compounding?" — the curious user pays once,
    the community benefits forever.
 3. **Trust is graph-traversable.** If you don't trust the
-   research, you can follow the chain: who curated it, who they
-   are, what room they're in, what they linked to. There's no
-   "trust the platform" because there's no platform.
+   research, you can follow the chain: who curated it, what
+   GitHub identity they're attested under, which sources they
+   grounded on. There's no "trust the platform" because there's
+   no platform.
 4. **Curiosity drives the network's working set.** The faster a
    topic gets queried, the more peers end up with it cached. The
    network's hot data is exactly what the community is currently
@@ -147,10 +149,11 @@ Two notes:
 - This is fine and arguably *good*. Multiple independent curations
   of the same topic strengthen the record (more provenance, more
   perspectives).
-- Mitigations exist for popular topics: peers can opt into
-  caching anything that crosses a "frequently queried" threshold
-  in their room. The default is "cache only what I asked for";
-  the opt-in is "also cache the room's hot items".
+- Mitigations exist for popular topics: a future rarity-aware
+  replication pass weights fan-out toward niche artifacts so they
+  survive when their sole holder goes offline. The default stays
+  "cache only what I asked for"; the opt-in is "also cache the
+  network's high-traffic items."
 
 This is identical to the property every decentralized system has:
 **availability follows participation**. Akashik doesn't pretend
@@ -167,7 +170,7 @@ node. All three are wrong for the OSS community as a whole:
 |---|---|
 | Central server (Notion, Slack, "team memory" SaaS) | Vendor owns the data; pricing/privacy changes can lock you out; doesn't scale to community-of-millions ownership |
 | Full-graph replication on every node | Disk cost compounds linearly with community size; new joiners face a multi-GB-to-multi-TB sync; trivially DoS-able by spam contributions |
-| Per-room private CRDTs (Roam-style multiplayer) | Closed by default; doesn't compound across rooms; no path to community-wide commons |
+| Per-workspace closed multiplayer (Roam-style) | Closed by default; doesn't compound across teams; no path to community-wide commons |
 
 Akashik's **"each peer holds only what it has asked for or
 contributed"** model neatly avoids all three. The community's
@@ -193,16 +196,12 @@ R(T, t) ≤ Q(T, t)
 ```
 
 (R grows by 1 each time a previously-uncached peer asks about T
-and pulls it.) The interesting property:
-
-```
-expected_time_to_answer(T)  ~  1 / R(T, t)
-```
-
-The more peers cache `T`, the faster the next query lands. And
-`R(T, t)` is **monotonically non-decreasing** under the
-mechanism — it only grows. Knowledge that's been
-researched anywhere in the network gets faster to retrieve
+and pulls it.) And `R(T, t)` is **monotonically non-decreasing**
+under the mechanism — it only grows. Once one peer in the network
+has done the research, the cost of the same question for every
+future asker collapses toward the federation round-trip cost: no
+web fetch, no re-embed, no re-reading. Knowledge that's been
+researched anywhere in the network is cheaper to retrieve
 everywhere.
 
 This is the compounding. It's not a marketing claim; it's a
@@ -210,12 +209,17 @@ property of the architecture.
 
 ## Privacy: who sees what
 
+Sharing is a per-node decision, not a per-channel one. Every node
+you save carries a `private: bool` flag — `false` means "available
+to peers that ask"; `true` means "stays on this machine, never
+federated, no exception".
+
 | Type of data | Who sees it |
 |---|---|
-| Your local contributions in a public room | Anyone federated in that room can pull on query |
-| Your local contributions in a private room | Only peers you've explicitly shared the room with |
+| Nodes you saved with the default (public) | Any peer in your `peers.json` that queries something matching can pull it |
+| Nodes you saved with `--private` | Only you. Never enters the federation wire, ever |
 | Your queries | Local to you; the federation sees only what you choose to fan out |
-| Web research you did to satisfy your own query | Saved locally; shared via your peer ID with the room you queried from |
+| Web research you did to satisfy your own query | Saved locally; shared with peers via your normal federation path (unless `--private`) |
 | Anything you never saved or researched | Doesn't exist on your peer; nothing to leak |
 
 The default is **privacy-by-construction**: a peer literally
