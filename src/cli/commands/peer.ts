@@ -2,10 +2,13 @@
  * `akashik peer <sub>` — manage P2P peer connections.
  *
  * Subcommands:
- *   add <multiaddr>   connect to a remote peer and persist to peers.json
- *   remove <id>       remove a peer from peers.json
- *   list              show known peers (stored only — live status/latency in Phase 18)
- *   status            show own PeerId, public key, and known peer count
+ *   add <multiaddr>          connect to a remote peer and persist to peers.json
+ *   remove <id>              remove a peer from peers.json
+ *   list                     show known peers (stored only — live status/latency in Phase 18)
+ *   status                   show own PeerId, public key, and known peer count
+ *   label <id> <github>      register the expected GitHub handle for a peer
+ *                            (Phase 26 — drives envelope-pin in share-sync)
+ *   unlabel <id>              remove the github label for a peer
  */
 
 import { join } from 'node:path';
@@ -23,10 +26,17 @@ import {
   removePeerRecord,
 } from '../../infrastructure/peer-store.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
+import {
+  loadPeerLabels,
+  lookupGithub,
+  setPeerLabel,
+  removePeerLabel,
+} from '../../infrastructure/peer-labels.js';
 import { akashikHome } from '../runtime.js';
 
 const identityPath = (): string => join(akashikHome(), 'peer-identity.json');
 const peersPath = (): string => join(akashikHome(), 'peers.json');
+const peerLabelsPath = (): string => join(akashikHome(), 'peer-labels.json');
 const configPath = (): string => join(akashikHome(), 'config.yaml');
 
 // ─────────────────────── subcommands ──────────────────────
@@ -143,12 +153,16 @@ const list = async (rest: readonly string[]): Promise<number> => {
     return 1;
   }
   const { peers } = peersResult.value;
+  // Phase 26 — pull github mapping from peer-labels.json so the list
+  // surfaces identity binding alongside the multiaddr.
+  const labels = loadPeerLabels(peerLabelsPath());
 
   if (jsonOutput) {
     // Machine-readable output for agent consumption (Phase 16+)
     // Phase 17: discovery_method field added — undefined rendered as 'manual' for legacy peers
     // Phase 18: health field added — always 'unknown' in CLI (tracker lives in daemon
     //   process memory; Phase 19+ will expose it via MCP tool or daemon IPC).
+    // Phase 26: github field added — pulled from peer-labels.json; null when unlabelled.
     console.log(
       JSON.stringify(
         {
@@ -158,6 +172,7 @@ const list = async (rest: readonly string[]): Promise<number> => {
             addrs: p.addrs,
             addedAt: p.addedAt,
             label: p.label,
+            github: lookupGithub(labels, p.id) ?? null,
             discovery_method: p.discovery_method ?? 'manual',
             health: 'unknown',  // populated via daemon IPC/MCP in Phase 19+
           })),
@@ -175,7 +190,8 @@ const list = async (rest: readonly string[]): Promise<number> => {
   }
   console.log(`known peers (${peers.length}):\n`);
   for (const p of peers) {
-    console.log(`  ${p.id}`);
+    const gh = lookupGithub(labels, p.id);
+    console.log(`  ${p.id}${gh ? `  @${gh}` : ''}`);
     for (const a of p.addrs) {
       console.log(`    addr: ${a}`);
     }
@@ -184,6 +200,11 @@ const list = async (rest: readonly string[]): Promise<number> => {
     // Phase 18: health is tracked in-memory in the daemon; CLI shows 'unknown'
     // until Phase 19+ daemon IPC or MCP tool exposes the live health state.
     console.log(`    health:    unknown`);
+    if (gh) {
+      console.log(`    github:    @${gh} (envelope-pinned)`);
+    } else {
+      console.log(`    github:    — (unlabelled; run \`akashik peer label ${p.id.slice(0, 12)}… @handle\`)`);
+    }
     if (p.label) console.log(`    label:     ${p.label}`);
     console.log('');
   }
@@ -211,28 +232,99 @@ const status = async (): Promise<number> => {
   return 0;
 };
 
+// ─────────────────────── label / unlabel ─────────────────
+
+/**
+ * `akashik peer label <peer-id> <github-handle>` — registers the
+ * expected GitHub handle for a peer (Phase 26). share-sync looks up
+ * this mapping when it receives a signed envelope from <peer-id> and
+ * rejects the envelope if payload.github_user doesn't match.
+ *
+ * Without a label, the peer's nodes still flow — verifier degrades
+ * gracefully (no pin). Adding a label tightens the binding.
+ */
+const label = async (rest: readonly string[]): Promise<number> => {
+  const positional = rest.filter((a) => !a.startsWith('--'));
+  if (positional.length < 2) {
+    console.error('peer label: usage: akashik peer label <peer-id> <github-handle> [--note "free text"]');
+    return 1;
+  }
+  const [peerId, githubRaw] = positional;
+  const github = githubRaw.startsWith('@') ? githubRaw.slice(1) : githubRaw;
+  // Optional --note "..." — picked up from the original rest, not
+  // the positional-filtered list, so the value (which may legitimately
+  // start with a letter) doesn't get mistaken for a peer-id.
+  let note: string | undefined;
+  for (let i = 0; i < rest.length; i++) {
+    if (rest[i] === '--note') { note = rest[i + 1]; break; }
+    if (rest[i].startsWith('--note=')) { note = rest[i].slice('--note='.length); break; }
+  }
+
+  try {
+    setPeerLabel(peerLabelsPath(), peerId, {
+      github,
+      ...(note ? { note } : {}),
+    });
+  } catch (e) {
+    console.error(`peer label: failed to persist: ${(e as Error).message}`);
+    return 1;
+  }
+  console.log(`✓ labelled ${peerId.slice(0, 16)}… → @${github}${note ? ` (note: ${note})` : ''}`);
+  console.log(`  share-sync will now pin every signed envelope from this peer`);
+  console.log(`  to payload.github_user === "${github}" (mismatch → reject).`);
+  return 0;
+};
+
+const unlabel = async (rest: readonly string[]): Promise<number> => {
+  const positional = rest.filter((a) => !a.startsWith('--'));
+  if (positional.length < 1) {
+    console.error('peer unlabel: usage: akashik peer unlabel <peer-id>');
+    return 1;
+  }
+  const [peerId] = positional;
+  let removed: boolean;
+  try {
+    removed = removePeerLabel(peerLabelsPath(), peerId);
+  } catch (e) {
+    console.error(`peer unlabel: failed: ${(e as Error).message}`);
+    return 1;
+  }
+  if (removed) {
+    console.log(`✓ removed label for ${peerId.slice(0, 16)}…`);
+    console.log(`  share-sync will no longer pin envelopes from this peer.`);
+  } else {
+    console.log(`peer unlabel: ${peerId.slice(0, 16)}… was not labelled (nothing to do)`);
+  }
+  return 0;
+};
+
 // ─────────────────────── usage ────────────────────────────
 
-const USAGE = `usage: akashik peer <add|remove|list|status>
+const USAGE = `usage: akashik peer <add|remove|list|status|label|unlabel|rep>
 
 subcommands:
-  add <multiaddr>   connect to a remote peer
-  remove <id>       disconnect and remove a known peer
-  list [--json]     show all known peers (stored — live status in Phase 18)
-  status            show own identity and peer count
-  rep [<peer-id>]   inspect peer reputation (subjects × scores)
-                    --subject <key>       rank peers on one subject
-                    --json                machine-readable output`;
+  add <multiaddr>          connect to a remote peer
+  remove <id>              disconnect and remove a known peer
+  list [--json]            show all known peers (stored — live status in Phase 18)
+  status                   show own identity and peer count
+  label <id> <github>      register expected GitHub handle (Phase 26 envelope pin)
+                           --note "free text"   optional human-readable annotation
+  unlabel <id>             remove the github label for a peer
+  rep [<peer-id>]          inspect peer reputation (subjects × scores)
+                           --subject <key>      rank peers on one subject
+                           --json               machine-readable output`;
 
 // ─────────────────────── entry ────────────────────────────
 
 export const peer = async (args: string[]): Promise<number> => {
   const [sub, ...rest] = args;
   switch (sub) {
-    case 'add':    return add(rest);
-    case 'remove': return remove(rest);
-    case 'list':   return list(rest);
-    case 'status': return status();
+    case 'add':     return add(rest);
+    case 'remove':  return remove(rest);
+    case 'list':    return list(rest);
+    case 'status':  return status();
+    case 'label':   return label(rest);
+    case 'unlabel': return unlabel(rest);
     case 'rep': {
       const { peersRep } = await import('./peers-rep.js');
       return peersRep(rest);

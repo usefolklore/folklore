@@ -29,6 +29,7 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
+import { atomicWriteSync } from './atomic-write.js';
 
 const VERSION = 1 as const;
 
@@ -80,4 +81,44 @@ export const lookupGithub = (
 ): string | undefined => {
   const entry = labels.peers[peerId];
   return entry?.github;
+};
+
+// ─────────────── mutators ─────────
+
+/**
+ * Upsert a peer label. Atomic write — tmp+rename so a SIGKILL
+ * mid-write never leaves a half-written JSON that the next boot
+ * silently rolls back to "no labels".
+ *
+ * Existing fields on the entry are preserved: passing only `github`
+ * keeps any `note` already on the record (and vice versa). To wipe
+ * an entry entirely use `removePeerLabel` instead.
+ */
+export const setPeerLabel = (
+  path: string,
+  peerId: string,
+  patch: Partial<PeerLabelEntry>,
+): void => {
+  const current = loadPeerLabels(path);
+  const existing = current.peers[peerId] ?? {};
+  const merged: PeerLabelEntry = { ...existing, ...patch };
+  const next: PeerLabelsFile = {
+    version: 1,
+    peers: { ...current.peers, [peerId]: merged },
+  };
+  atomicWriteSync(path, JSON.stringify(next, null, 2));
+};
+
+/**
+ * Remove a peer's label record entirely. No-op when the peer wasn't
+ * labelled. Atomic write same as setPeerLabel.
+ */
+export const removePeerLabel = (path: string, peerId: string): boolean => {
+  const current = loadPeerLabels(path);
+  if (!(peerId in current.peers)) return false;
+  const next = { ...current.peers };
+  delete next[peerId];
+  const file: PeerLabelsFile = { version: 1, peers: next };
+  atomicWriteSync(path, JSON.stringify(file, null, 2));
+  return true;
 };
