@@ -23,7 +23,7 @@ The name borrows from the mythological **Akashic Records** — the perfect refer
 When you ask Akashik something, the system runs through five steps:
 
 1. **Local first.** Query your own peer's graph. Hit? Return. Zero network cost.
-2. **Federation on miss.** Fan out across every connected peer in `peers.json` — no room scoping, no topology partitioning. Peers are optionally rank-ordered by reputation so high-quality responders get the fan-out budget first; everyone else stays in rotation. Each peer answers with whatever they've already saved or researched. Results merge via reciprocal-rank fusion.
+2. **Federation on miss.** Someone in your network has probably already read the paper, debugged the error, or written the note you're asking about. Instead of paying token + time cost to re-research what already exists nearby, akashik asks your peers. Whatever they've curated flows back signed by them, with their sources attached — you inherit their work in milliseconds. The bigger your network, the less you ever pay to learn what someone else has already learned.
 3. **Web on second miss.** If the federation can't answer with confidence, the harness performs `WebSearch` / `WebFetch` / arXiv pull on *your* machine — the only time the network reaches outward.
 4. **Save locally, signed.** The result lands in your local graph, attested by your DID (Ed25519) and the GitHub handle you linked at `akashik login`. You are now the curator of that knowledge: provenance, workspace tag, timestamp, `github_user`, source URLs all attached.
 5. **Transfer on next ask.** When another contributor asks something similar later, federation fan-out reaches your peer, your research transfers to them with original attribution, and they pay nothing for the hour you spent.
