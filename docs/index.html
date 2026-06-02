@@ -25,77 +25,218 @@
   <link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230c0c14"/><g stroke="%2334d399" stroke-width="1.3" opacity="0.55" fill="none"><line x1="32" y1="12" x2="14" y2="24"/><line x1="32" y1="12" x2="50" y2="24"/><line x1="14" y1="24" x2="14" y2="40"/><line x1="50" y1="24" x2="50" y2="40"/><line x1="14" y1="40" x2="32" y2="52"/><line x1="50" y1="40" x2="32" y2="52"/><line x1="32" y1="12" x2="32" y2="52"/><line x1="14" y1="24" x2="50" y2="40"/><line x1="50" y1="24" x2="14" y2="40"/></g><g fill="%230c0c14" stroke="%2334d399" stroke-width="1.6"><circle cx="32" cy="12" r="3.6"/><circle cx="14" cy="24" r="3.6"/><circle cx="50" cy="24" r="3.6"/><circle cx="14" cy="40" r="3.6"/><circle cx="50" cy="40" r="3.6"/><circle cx="32" cy="52" r="3.6"/></g><circle cx="32" cy="32" r="7.5" fill="%2334d399"/><circle cx="32" cy="32" r="10.5" fill="none" stroke="%2334d399" stroke-width="0.9" opacity="0.55"/></svg>' />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..800,30..100,0..1&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
     /* ───── reset + tokens ───── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      /* Palette — desaturated, single accent family. No purple/blue. */
-      --ink-900: #0c0c14;          /* dark base — never pure black */
-      --ink-800: #14141f;
-      --ink-700: #1c1c28;
-      --ink-500: #3a3a4a;
-      --paper: #f7f4ec;            /* warm off-white for light chapters */
-      --paper-elev: #ffffff;
-      --paper-ink: #161619;        /* dark text on paper */
-      --paper-mute: #5b5b63;
-      --ink-mute: #a4a4af;
-      --accent: #34d399;           /* single accent — emerald, ~69% sat */
-      --accent-warm: #d9a255;      /* amber for data annotations only */
-      --accent-dim: rgba(52, 211, 153, 0.14);
-      --border-dark: rgba(255, 255, 255, 0.08);
-      --border-light: rgba(22, 22, 25, 0.09);
+      /* ────────────────────────────────────────────────────────────────
+         Codex palette — parchment-primary, deep-leaf emerald accent,
+         ochre marginalia. Dark "chapter" sections still use the ink
+         scale so they read as stage-shift, not theme-fight.
+         ──────────────────────────────────────────────────────────── */
 
-      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      /* Parchment surfaces (primary) */
+      --paper:        #f3ecd8;       /* aged parchment, warm + slightly green */
+      --paper-elev:   #faf3df;       /* fresher page for cards / elev-2 */
+      --paper-deep:   #e8dfc4;       /* sunk panel / well */
+      --paper-ink:    #1e1a14;       /* deep sepia-black for body */
+      --paper-mute:   #5a5141;       /* secondary text on paper */
+      --paper-line:   rgba(30, 26, 20, 0.12);   /* hairlines on paper */
+      --paper-line-soft: rgba(30, 26, 20, 0.06);
+
+      /* Ink scale (kept for dark chapters) */
+      --ink-900:      #0c0c14;
+      --ink-800:      #14141f;
+      --ink-700:      #1c1c28;
+      --ink-500:      #3a3a4a;
+      --ink-mute:     #a4a4af;
+      --border-dark:  rgba(255, 255, 255, 0.08);
+      --border-light: rgba(30, 26, 20, 0.12);
+
+      /* Accent — deep emerald that reads as botanical ink on parchment,
+         plus an ochre/ambered ink for marginalia and chrome flourishes. */
+      --accent:       #1f6f4f;       /* deep-leaf emerald — AA on paper */
+      --accent-bright:#34d399;       /* brighter emerald for dark sections */
+      --accent-dim:   rgba(31, 111, 79, 0.10);
+      --ochre:        #9c6f1c;       /* amber-ink for hex feeds + marginalia */
+      --ochre-dim:    rgba(156, 111, 28, 0.18);
+      --vermilion:    #a8401a;       /* rubric red for occasional emphasis */
+
+      /* Easing, layout */
+      --ease:  cubic-bezier(0.16, 1, 0.3, 1);
       --max-w: 1280px;
 
+      /* Type stack — Fraunces serif for codex headings + numerics;
+         Outfit for humane body; JetBrains Mono for hex chrome + code.
+         --display stays Outfit for body backwards-compat; --serif is
+         the editorial codex face applied selectively to headings. */
+      --serif:   'Fraunces', 'EB Garamond', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
       --display: 'Outfit', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-      --mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+      --mono:    'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
     }
 
     html { scroll-behavior: smooth; }
 
     body {
       font-family: var(--display);
-      background: var(--ink-900);
-      color: #e8e8ed;
+      background: var(--paper);
+      color: var(--paper-ink);
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
-      line-height: 1.5;
+      line-height: 1.55;
       overflow-x: hidden;
     }
 
-    /* Grain — fixed, pointer-events-none, no repaint on scroll */
+    /* Parchment fibre — fixed grain on the paper sections. Tinted with
+       the ochre to read as aged stock, not a generic photo noise. */
     body::before {
       content: '';
       position: fixed;
       inset: 0;
-      background-image: radial-gradient(rgba(255,255,255,0.018) 1px, transparent 1px);
-      background-size: 24px 24px;
+      background-image:
+        radial-gradient(rgba(156, 111, 28, 0.045) 1px, transparent 1px),
+        radial-gradient(rgba(30, 26, 20, 0.018) 1px, transparent 1px);
+      background-size: 18px 18px, 36px 36px;
+      background-position: 0 0, 9px 9px;
       pointer-events: none;
       z-index: 1;
+      mix-blend-mode: multiply;
     }
 
-    ::selection { background: var(--accent-dim); color: var(--accent); }
+    ::selection { background: var(--ochre-dim); color: var(--paper-ink); }
 
     /* ───── shared type ───── */
     h1, h2, h3, h4 {
-      font-family: var(--display);
-      font-weight: 600;
-      letter-spacing: -0.022em;
-      line-height: 1.05;
+      font-family: var(--serif);
+      font-weight: 500;
+      letter-spacing: -0.012em;
+      line-height: 1.08;
+      font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 0;
     }
+    h1 { font-weight: 600; }
+    em { font-style: italic; font-variation-settings: "opsz" 36, "SOFT" 80, "WONK" 1; }
     .mono { font-family: var(--mono); }
-    .hush { color: var(--ink-mute); }
+    .hush { color: var(--paper-mute); }
     .tag {
       font-family: var(--mono);
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 500;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: var(--accent);
+      color: var(--ochre);
     }
+
+    /* ─────────────────────────────────────────────────────────────
+       Hex feeds — two fixed vertical strips on the page edges,
+       slowly drifting columns of monospaced hash material. Borges'
+       Library of Babel meets a forensic terminal. pointer-events:
+       none, GPU-only animation (transform), zero scroll cost.
+       Hidden under 1024px so the page collapses cleanly on mobile.
+       ───────────────────────────────────────────────────────────── */
+    .hex-feed {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      width: 14ch;
+      pointer-events: none;
+      z-index: 2;
+      overflow: hidden;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      line-height: 1.95;
+      color: var(--ochre);
+      opacity: 0.42;
+      letter-spacing: 0.06em;
+      mix-blend-mode: multiply;
+    }
+    .hex-feed.left  { left: 0;  padding: 0.4rem 0.7rem 0.4rem 0.95rem; text-align: left; }
+    .hex-feed.right { right: 0; padding: 0.4rem 0.95rem 0.4rem 0.7rem; text-align: right; }
+    .hex-feed::before,
+    .hex-feed::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      height: 6rem;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .hex-feed::before { top: 0;    background: linear-gradient(to bottom, var(--paper), transparent); }
+    .hex-feed::after  { bottom: 0; background: linear-gradient(to top,    var(--paper), transparent); }
+    .hex-feed .hex-roll {
+      display: block;
+      will-change: transform;
+      animation: hex-roll 60s linear infinite;
+    }
+    .hex-feed.right .hex-roll {
+      animation-duration: 78s;
+      animation-direction: reverse;
+    }
+    @keyframes hex-roll {
+      from { transform: translate3d(0, 0, 0); }
+      to   { transform: translate3d(0, -50%, 0); }
+    }
+    @media (max-width: 1024px) { .hex-feed { display: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .hex-feed .hex-roll { animation: none; }
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       Codex section marker — sits at the top of each major section.
+       `§ 0N · NAME` in the mono face, ochre, with ASCII flank lines
+       that fade to the section colour. Reads like a chapter spine
+       on an indexed library page.
+       ───────────────────────────────────────────────────────────── */
+    .codex-mark {
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      gap: 0.8rem;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ochre);
+      margin-bottom: 1.6rem;
+      padding-top: 0.2rem;
+    }
+    .codex-mark .sect { color: var(--paper-ink); }
+    .codex-mark .name { color: var(--paper-mute); }
+    .codex-mark .rule {
+      height: 0;
+      border-top: 1px dashed var(--paper-line);
+    }
+    section.dark .codex-mark .sect { color: #f0eadf; }
+    section.dark .codex-mark .name { color: #c8c1b5; }
+    section.dark .codex-mark .rule { border-top-color: rgba(243, 236, 216, 0.18); }
+
+    /* Codex divider — full-row ASCII filigree between major beats. */
+    .codex-rule {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      color: var(--ochre);
+      opacity: 0.62;
+      white-space: nowrap;
+      overflow: hidden;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    /* Hero codex mark sits ABOVE the h1 — smaller, tighter rhythm */
+    .codex-mark.hero-codex {
+      margin-bottom: 1.2rem;
+      font-size: 0.62rem;
+    }
+
+    /* h1.accent span — the brand emerald flourish. On dark sections
+       it pops to bright; on parchment it's the deep-leaf var. */
+    section.dark .accent { color: var(--accent-bright); }
+    section.paper .accent, section.light .accent { color: var(--accent); }
 
     a { color: inherit; text-decoration: none; transition: color 0.3s var(--ease); }
     a:hover { color: var(--accent); }
@@ -116,13 +257,28 @@
       padding: clamp(4rem, 10vw, 8rem) 0;
       position: relative;
     }
-    section.light {
+    /* Default is parchment now; light is an alias kept for back-compat */
+    section.light, section.paper {
       background: var(--paper);
       color: var(--paper-ink);
     }
-    section.light .hush { color: var(--paper-mute); }
-    section.light .tag { color: #0f6a46; }
-    section.light ::selection { background: rgba(15, 106, 70, 0.18); color: #0f6a46; }
+    section.light .hush, section.paper .hush { color: var(--paper-mute); }
+    section.light .tag, section.paper .tag { color: var(--ochre); }
+    section.light ::selection, section.paper ::selection {
+      background: var(--ochre-dim);
+      color: var(--paper-ink);
+    }
+    /* Dark "chapter" sections — explicit opt-in. Inverts grain too. */
+    section.dark {
+      background: var(--ink-900);
+      color: #ece6d4;
+    }
+    section.dark .hush { color: var(--ink-mute); }
+    section.dark .tag  { color: var(--accent-bright); }
+    section.dark ::selection {
+      background: rgba(52, 211, 153, 0.18);
+      color: var(--accent-bright);
+    }
 
     /* ───── top nav — floating "liquid glass" pill ─────
        Detached from the viewport edge so the page reads as a stage,
@@ -1964,6 +2120,17 @@
 </head>
 <body>
 
+  <!-- ───────────── HEX FEEDS — codex chrome, two fixed columns ─────────────
+       Slowly drifting hashes that read as the indexing ledger of an
+       always-on library. pointer-events:none, GPU-only transforms,
+       hidden under 1024px (single-column mobile collapse). ───── -->
+  <div class="hex-feed left"  aria-hidden="true">
+    <span class="hex-roll" id="hex-roll-left"></span>
+  </div>
+  <div class="hex-feed right" aria-hidden="true">
+    <span class="hex-roll" id="hex-roll-right"></span>
+  </div>
+
   <!-- ───────────── NAV — floating glass pill with live status ───────────── -->
   <nav class="nav" id="site-nav" aria-label="primary">
     <div class="nav-shell">
@@ -1987,12 +2154,17 @@
     </div>
   </nav>
 
-  <!-- ───────────── HERO (light-on-dark) ───────────── -->
-  <section>
+  <!-- ───────────── HERO — § 00 · COVER (dark chapter) ───────────── -->
+  <section class="dark">
     <div class="shell">
       <div class="hero">
 
         <div>
+          <div class="codex-mark hero-codex">
+            <span class="sect">§ 00</span>
+            <span class="name">COVER · AKASHIK RECORDS, vol. I</span>
+            <span class="rule"></span>
+          </div>
           <h1>
             The globally accumulating <span class="accent">knowledge network</span>.
           </h1>
@@ -2101,9 +2273,14 @@
   <!-- ═════════════════════════════════════════════════════════════════
        ASK THE NETWORK (#try) — fullscreen 3D graph + bottom-center askbar
        ═════════════════════════════════════════════════════════════════ -->
-  <section id="try" class="try-section">
+  <section id="try" class="try-section dark">
     <div class="try-graph-canvas" id="try-graph-canvas" aria-label="Live akashik knowledge-graph view"></div>
     <div class="try-overlay-top">
+      <div class="codex-mark">
+        <span class="sect">§ 02</span>
+        <span class="name">EXEMPLAR · QUERY THE NETWORK</span>
+        <span class="rule"></span>
+      </div>
       <h2>Ask the network.</h2>
       <p class="try-sub mono">
         live peers &middot; cited chunks &middot; subsecond
@@ -2141,11 +2318,15 @@
        Background: dark + subtle dotted grid
        CTA: closing wire-up code block
        ═════════════════════════════════════════════════════════════════ -->
-  <section id="how" class="how-section">
+  <section id="how" class="how-section dark">
     <div class="shell">
       <header data-reveal>
+        <div class="codex-mark">
+          <span class="sect">§ 03</span>
+          <span class="name">MECHANISM · THE COMPOUNDING LOOP</span>
+          <span class="rule"></span>
+        </div>
         <h2>How akashik hooks into your workflow.</h2>
-        
       </header>
 
       <ol class="how-steps">
@@ -2186,8 +2367,13 @@ akashik claude install
 <!-- ───────────── CHAPTER 4 — the benchmark (light) ───────────── -->
   <section class="light" id="bench">
     <div class="shell">
-      <h2 data-reveal style="font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: -0.03em; line-height: 1.06; margin: 0.6rem 0 1rem;">
-        <span style="color:#0f6a46; font-style: italic;">75.22%</span> NDCG@10 on BEIR SciFact. Reproducible.
+      <div class="codex-mark" data-reveal>
+        <span class="sect">§ 04</span>
+        <span class="name">EMPIRICA · RETRIEVAL FOLIO</span>
+        <span class="rule"></span>
+      </div>
+      <h2 data-reveal style="font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: -0.012em; line-height: 1.06; margin: 0.6rem 0 1rem;">
+        <span style="color: var(--accent); font-style: italic;">75.22%</span> NDCG@10 on BEIR SciFact. Reproducible.
       </h2>
       <p data-reveal style="max-width: 56ch; color: var(--paper-mute); font-size: 1.02rem; line-height: 1.55; margin-bottom: 2.6rem;">
         Full BEIR SciFact: 5,183 docs, 300 queries. No LLM judging an LLM. CPU-only, 11&nbsp;ms median. One command to reproduce.
@@ -2230,6 +2416,11 @@ akashik claude install
   <!-- ───────────── status quo (light) ───────────── -->
   <section class="light" id="silo">
     <div class="shell">
+      <div class="codex-mark" data-reveal>
+        <span class="sect">§ 05</span>
+        <span class="name">CONTRAVENTION · WHY EVERY OTHER MEMORY IS A SILO</span>
+        <span class="rule"></span>
+      </div>
       <div class="chap">
         <div>
           <h2 data-reveal style="--d: 1">
@@ -2283,9 +2474,14 @@ akashik claude install
   </section>
 
   <!-- ───────────── CHAPTER 01 — the thesis (dark) ───────────── -->
-  <section id="manifesto">
+  <section id="manifesto" class="dark">
     <div class="shell">
-      <h2 data-reveal style="font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: -0.03em; line-height: 1.06; margin: 0.6rem 0 1.4rem; max-width: 24ch;">
+      <div class="codex-mark" data-reveal>
+        <span class="sect">§ 06</span>
+        <span class="name">MANIFEST · THE NEXT CHAPTER</span>
+        <span class="rule"></span>
+      </div>
+      <h2 data-reveal style="font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: -0.012em; line-height: 1.06; margin: 0.6rem 0 1.4rem; max-width: 24ch;">
         Giant platforms didn't invent the internet. They won a chapter of it.
       </h2>
       <figure data-reveal style="margin: 1.6rem 0 2rem; max-width: 1100px;">
@@ -2305,9 +2501,14 @@ akashik claude install
        Composition anchor: Centered statement
        Background: cinematic palette gradient
        ═════════════════════════════════════════════════════════════════ -->
-  <section id="finale-new" class="finale-new">
+  <section id="finale-new" class="finale-new dark">
     <div class="shell">
       <div class="finale-inner" data-reveal>
+        <div class="codex-mark" style="justify-content: center; max-width: 460px; margin-left: auto; margin-right: auto;">
+          <span class="sect">§ FIN</span>
+          <span class="name">EXPLICIT</span>
+          <span class="rule"></span>
+        </div>
         <h2 class="finale-h2">
           The network gets smarter every time someone new joins.
         </h2>
@@ -3572,6 +3773,59 @@ $ akashik init</code></pre>
           if (!timer) timer = setInterval(loadCounters, POLL_MS);
         }
       });
+    })();
+  </script>
+
+  <!-- ───────────── codex chrome: seed both hex feeds with mock ledger ─────────────
+       Generates a deterministic stream of 16-char hex hashes annotated
+       with quasi-source tokens (a DID prefix, a workspace slug, a
+       fetched-at suffix). Content is duplicated inside .hex-roll so
+       the translate3d(-50%) keyframe loops seamlessly. ───── -->
+  <script>
+    (function () {
+      const left  = document.getElementById('hex-roll-left');
+      const right = document.getElementById('hex-roll-right');
+      if (!left || !right) return;
+
+      const HEX = '0123456789abcdef';
+      const rand = (n) => {
+        let s = '';
+        for (let i = 0; i < n; i++) s += HEX[(Math.random() * 16) | 0];
+        return s;
+      };
+
+      // Library-of-Babel adjacent tokens — a leaf reference, a peer
+      // identity prefix, a fetched-at marker. Reads as a real ledger
+      // tail, not a vibes string.
+      const REF_PREFIX = ['leaf', 'arxiv', 'ietf', 'rfc', 'paper', 'thread', 'commit', 'chunk', 'cite', 'fold'];
+      const PEER_PREFIX = ['did:key:z6Mk', 'did:key:z6Ld', 'peer:zM', 'peer:zT', 'peer:zH'];
+      const linesPerStrip = 220;
+
+      function makeLine() {
+        const r = Math.random();
+        if (r < 0.35) {
+          return rand(16);
+        } else if (r < 0.65) {
+          return REF_PREFIX[(Math.random() * REF_PREFIX.length) | 0] + ':' + rand(12);
+        } else if (r < 0.85) {
+          return PEER_PREFIX[(Math.random() * PEER_PREFIX.length) | 0] + rand(8);
+        } else {
+          return '0x' + rand(14);
+        }
+      }
+
+      function makeBlock(n) {
+        let out = '';
+        for (let i = 0; i < n; i++) out += makeLine() + '\n';
+        return out;
+      }
+
+      // Duplicate inside the .hex-roll so the keyframe's translate3d(-50%)
+      // produces an unbroken loop.
+      const blockA = makeBlock(linesPerStrip);
+      const blockB = makeBlock(linesPerStrip);
+      left.textContent  = blockA + blockA;
+      right.textContent = blockB + blockB;
     })();
   </script>
 
