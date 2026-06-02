@@ -189,9 +189,9 @@
     }
 
     /* live status pill — center column on wide, hidden on mobile.
-       The breathing dot signals "the network is up", the mono numbers
-       prove subsecond p50, and the room slugs name the always-on
-       system rooms. */
+       The breathing dot signals "the network is up", the mono
+       numbers prove subsecond p50, and the third slot shows the
+       verified GitHub identity that's signing every answer. */
     .nav-status {
       display: inline-flex;
       align-items: center;
@@ -1978,7 +1978,7 @@
           <span class="sep">·</span>
           <span><span class="num" data-stat="latency">11</span>&nbsp;ms&nbsp;p50</span>
           <span class="sep">·</span>
-          <span>research / toolshed</span>
+          <span>signed by <em>@SaharBarak</em></span>
         </div>
         <a class="nav-cta" href="https://github.com/SaharBarak/akashik" rel="noopener">
           SaharBarak/akashik
@@ -2510,12 +2510,14 @@ $ akashik init</code></pre>
   </script>
 
   <!-- ───────────── hero side-by-side step reveal — two-phase scenarios ─────────────
-       Phase A: graph hit is fresh (<room.stale window). Akashik answers
-                instantly from cache. Three-step reveal on the right.
-       Phase B: graph hit is stale (>room.stale). Akashik falls back to
-                a single web_fetch, writes the fresh chunks back to the
-                research room (so every peer benefits next time), and answers.
-                Five-step reveal on the right — still <2s, still ~380 tokens.
+       Phase A: graph hit is fresh (within the stale-after window).
+                Akashik answers instantly from cache. Three-step
+                reveal on the right.
+       Phase B: graph hit is stale. Akashik falls back to a single
+                web_fetch, writes the fresh chunks back to the
+                local graph (so every peer benefits next time), and
+                answers. Five-step reveal on the right — still <2s,
+                still ~380 tokens.
        ───────────────────────────────────────────────────────────────────── -->
   <script>
     (() => {
@@ -2580,7 +2582,7 @@ $ akashik init</code></pre>
             prompt: '> etcd watch-progress notification semantics in 3.6?',
             hit:    '◆ akashik: 14 ms · 1 cached chunk · age 31d · STALE (> 7d)',
             fetch:  '↪ falling back to research — web_fetch(github.com/etcd-io/etcd/issues/15220)',
-            enrich: '✓ saved → research room · 2 new chunks · 3 peers updated',
+            enrich: '✓ saved to your graph · 2 new chunks · 3 peers updated',
             out:    '"3.6 streams progress every 10s by default; opt-in via WatchOptions.ProgressNotify."',
             time:   '1.4s elapsed',
             tok:    '380 tokens',
@@ -3046,7 +3048,7 @@ $ akashik init</code></pre>
         if (form) form.addEventListener('submit', (e) => e.preventDefault());
 
         // Niche, real-world technical questions a senior engineer fights with.
-        // Each scenario sources its answer from a specific akashik room.
+        // Each scenario is attributed to the GitHub-verified peer who curated it.
         const scenarios = [
           {
             q: 'Postgres B-tree index bloat — when does HOT actually save you?',
@@ -3055,7 +3057,7 @@ $ akashik init</code></pre>
             latencyMs: 142,
             answer: 'HOT (Heap-Only Tuples) skips index entries when the updated columns aren\'t indexed AND the new tuple fits on the same page. So narrow updates on indexed columns or page-overflow updates still bloat the index — VACUUM doesn\'t reclaim B-tree pages, only REINDEX does.',
             cite: 'paper:postgres-hot-2008 · 2 peers',
-            room: 'research',
+            author: '@pg-internals',
             domains: [
               { topic: 'postgres', score: 0.96 },
               { topic: 'index-bloat', score: 0.89 },
@@ -3071,7 +3073,7 @@ $ akashik init</code></pre>
             latencyMs: 96,
             answer: 'Three knobs: route-segment revalidate (time-based), tags via fetch({ next: { tags } }) revalidated by revalidateTag, and full-route invalidation by revalidatePath. Mutations in Server Actions can cascade revalidations via these tags. The default is cached forever.',
             cite: 'react.dev/RSC + nextjs.org/docs/caching · 3 peers',
-            room: 'git-repo:vercel/next.js',
+            author: '@vercel-maintainer',
             domains: [
               { topic: 'react', score: 0.93 },
               { topic: 'RSC', score: 0.91 },
@@ -3087,7 +3089,7 @@ $ akashik init</code></pre>
             latencyMs: 118,
             answer: 'spawn submits the future to the runtime\'s injection queue; a free worker thread steals it and polls. Inside that worker, sub-tasks live in a per-worker LIFO queue, with periodic global re-balancing. spawn_blocking moves CPU-bound work to a separate threadpool to avoid starving the I/O reactor.',
             cite: 'tokio.rs/blog/2019-10-scheduler · 2 peers',
-            room: 'git-repo:tokio-rs/tokio',
+            author: '@tokio-maintainer',
             domains: [
               { topic: 'tokio', score: 0.95 },
               { topic: 'work-stealing', score: 0.88 },
@@ -3103,7 +3105,7 @@ $ akashik init</code></pre>
             latencyMs: 88,
             answer: 'Radar evaluates rules in priority order; the first match wins (block / review / allow). Custom rules can compare risk_score to constants, list lookups, or velocity counters. Combine with Stripe-managed rules by setting your custom rule\'s priority lower than the built-in fraud-block threshold.',
             cite: 'stripe.com/docs/radar/rules · 2 peers',
-            room: 'git-repo:stripe/stripe-node',
+            author: '@stripe-radar',
             domains: [
               { topic: 'stripe', score: 0.94 },
               { topic: 'radar', score: 0.91 },
@@ -3119,7 +3121,7 @@ $ akashik init</code></pre>
             latencyMs: 134,
             answer: 'Yjs uses a YATA-derived sequence CRDT: deletes mark items as deleted but keep their structural slot (so concurrent inserts after a deleted item still resolve). Automerge keeps explicit tombstones in the op log; document size grows with edit history until you compact via Automerge.save().',
             cite: 'docs.yjs.dev + automerge.org/docs · 2 peers',
-            room: 'research',
+            author: '@crdt-research',
             domains: [
               { topic: 'CRDT', score: 0.92 },
               { topic: 'yjs', score: 0.88 },
@@ -3277,7 +3279,7 @@ $ akashik init</code></pre>
             '<div class="ans-text">' + s.answer + '</div>' +
             '<div class="ans-meta">' +
               '<span class="ans-cite">cited &middot; ' + s.cite + '</span>' +
-              '<span class="ans-room">room: <em>' + s.room + '</em></span>' +
+              '<span class="ans-room">signed by <em>' + s.author + '</em></span>' +
             '</div>' +
             '<div class="ans-commit">' +
               '<b>added to your knowledge graph</b>' +
