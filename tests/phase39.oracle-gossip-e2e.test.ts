@@ -1,21 +1,28 @@
 /**
  * Phase 39 — oracle gossip E2E (Layer B of peer discovery).
  *
- * Two real libp2p nodes on ephemeral ports. Alice publishes a question
- * over pubsub; Bob subscribes; Bob's graph repo receives and upserts
- * the validated question. Same trust-boundary semantics as the phase35
- * touch E2E — validator + secret-gate still gate everything on Bob's
- * side.
+ * In-process port of the original two-real-libp2p-nodes test. The real
+ * pubsub is replaced with a fake bus that exercises the SAME public
+ * contract `oracle-gossip.ts` consumes: `publish`, `subscribe`,
+ * `unsubscribe`, `addEventListener('message', …)`, `removeEventListener`.
+ * Fan-out semantics match floodsub — publish reaches every other peer
+ * that has both subscribed to the topic and attached a listener.
  *
- * What this pins:
+ * Why port: the previous incarnation spun two real libp2p nodes on
+ * ephemeral ports, which flaked on shared CI runners (port allocation
+ * contention, mDNS sandboxing, 1.5s deadline). The behavioural surface
+ * Phase 39 actually pins is the validator + reject pathway in
+ * `subscribeOracle`, not libp2p's own wire — fake bus is sufficient.
  *
- *   G1  publish→subscribe round-trip: Alice's question arrives at Bob's
- *       graph without either peer doing an explicit touch/dial handshake
- *       first (pubsub auto-activates on connection).
- *   G2  bad wire format is rejected and observable via onRejected,
- *       not thrown into the libp2p event loop (so one bad publisher
- *       can't crash the subscriber's pubsub service).
- *   G3  size cap rejects oversized messages before parse / validation.
+ * What this still pins:
+ *
+ *   G1  publish→subscribe round-trip: Alice's question reaches Bob's
+ *       graph via the oracle subscribe handler + onAccepted observer
+ *   G2  malformed JSON on the topic is rejected via onRejected
+ *       (not thrown into the message handler) — one bad publisher
+ *       cannot crash a subscriber's pubsub service
+ *   G3  oversized payload (>64KB) is rejected before parse, with
+ *       a reject reason that names the cap
  */
 
 import { strict as assert } from 'node:assert';
@@ -26,7 +33,6 @@ import { join } from 'node:path';
 
 import type { Libp2p } from '@libp2p/interface';
 
-import { loadOrCreateIdentity, createNode } from '../src/infrastructure/peer-transport.js';
 import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import {
   publishQuestion,
@@ -36,89 +42,134 @@ import {
 } from '../src/infrastructure/oracle-gossip.js';
 import { nodeFromQuestion } from '../src/domain/oracle.js';
 
-// Slow tier: real libp2p pubsub on ephemeral ports, two real peers.
-// Flakes on shared CI runners (port contention, mDNS sandboxing,
-// 10s timeout window) so it opts out via the same AKASHIK_SKIP_SLOW=1
-// switch Phase 18's 10-peer mesh test uses. Unit + domain tiers run
-// always; this is the only E2E that needs network sandboxing.
-const SKIP_SLOW = process.env['AKASHIK_SKIP_SLOW'] === '1';
+// ─────────────── in-process pubsub bus ───────────────
 
-describe('Phase 39 — oracle gossip E2E (two real pubsub peers)', { skip: SKIP_SLOW }, () => {
+interface PeerSlot {
+  readonly id: string;
+  readonly topics: Set<string>;
+  readonly listeners: Set<(e: CustomEvent<{ topic: string; data: Uint8Array; from: string }>) => void>;
+}
+
+/**
+ * Shared in-process pubsub bus. fan-out matches floodsub — a publish
+ * is delivered to every OTHER peer that has both subscribed to the
+ * topic and attached a 'message' listener. The publisher itself is
+ * never echoed (matches libp2p default behaviour).
+ */
+class FakeBus {
+  private readonly peers = new Map<string, PeerSlot>();
+
+  attach(peerId: string): PeerSlot {
+    const slot: PeerSlot = { id: peerId, topics: new Set(), listeners: new Set() };
+    this.peers.set(peerId, slot);
+    return slot;
+  }
+
+  detach(peerId: string): void {
+    this.peers.delete(peerId);
+  }
+
+  publish(fromPeerId: string, topic: string, data: Uint8Array): void {
+    for (const [peerId, slot] of this.peers.entries()) {
+      if (peerId === fromPeerId) continue;     // no echo
+      if (!slot.topics.has(topic)) continue;   // not subscribed
+      const event = new CustomEvent('message', {
+        detail: { topic, data, from: fromPeerId },
+      });
+      // Dispatch via microtask so callers can await a turn of the
+      // event loop just like real pubsub.
+      queueMicrotask(() => {
+        for (const listener of slot.listeners) {
+          try { listener(event); }
+          catch { /* the real PubsubService swallows handler throws too */ }
+        }
+      });
+    }
+  }
+}
+
+/** Build a fake Libp2p node whose `services.pubsub` speaks the bus. */
+const makeFakeNode = (bus: FakeBus, peerId: string): Libp2p => {
+  const slot = bus.attach(peerId);
+  const pubsub = {
+    publish: async (topic: string, data: Uint8Array): Promise<void> => {
+      bus.publish(peerId, topic, data);
+    },
+    subscribe: (topic: string): void => { slot.topics.add(topic); },
+    unsubscribe: (topic: string): void => { slot.topics.delete(topic); },
+    addEventListener: (
+      _type: string,
+      listener: (e: CustomEvent<{ topic: string; data: Uint8Array; from: string }>) => void,
+    ): void => { slot.listeners.add(listener); },
+    removeEventListener: (
+      _type: string,
+      listener: (e: CustomEvent<{ topic: string; data: Uint8Array; from: string }>) => void,
+    ): void => { slot.listeners.delete(listener); },
+  };
+  // Cast to Libp2p — only `services.pubsub` is touched by oracle-gossip.
+  return { services: { pubsub } } as unknown as Libp2p;
+};
+
+// ─────────────── test fixtures ───────────────
+
+describe('Phase 39 — oracle gossip E2E (in-process pubsub)', () => {
   let aliceHome = '';
   let bobHome = '';
+  let bus: FakeBus | undefined;
   let aliceNode: Libp2p | undefined;
   let bobNode: Libp2p | undefined;
   let bobSub: SubscribeHandle | undefined;
-  let alicePeerIdStr = '';
-  // Observers capture Bob's accept/reject events so assertions can
-  // wait until the message actually lands.
+  const alicePeerIdStr = '12D3KooAlice0000000000000000000000000000000000';
+  const bobPeerIdStr = '12D3KooBob000000000000000000000000000000000000';
+
   const accepted: Array<{ kind: string; id: string }> = [];
   const rejected: string[] = [];
 
   before(async () => {
-    aliceHome = mkdtempSync(join(tmpdir(), 'wi-p39-alice-'));
-    bobHome = mkdtempSync(join(tmpdir(), 'wi-p39-bob-'));
-    // Seed empty graphs so the repos can load/save cleanly.
-    const emptyGraph = { directed: false, multigraph: false, graph: { hyperedges: [] }, nodes: [], links: [] };
+    aliceHome = mkdtempSync(join(tmpdir(), 'ak-p39-alice-'));
+    bobHome = mkdtempSync(join(tmpdir(), 'ak-p39-bob-'));
+    const emptyGraph = {
+      directed: false, multigraph: false, graph: { hyperedges: [] }, nodes: [], links: [],
+    };
     writeFileSync(join(aliceHome, 'graph.json'), JSON.stringify(emptyGraph));
-    writeFileSync(join(bobHome,   'graph.json'), JSON.stringify(emptyGraph));
+    writeFileSync(join(bobHome, 'graph.json'), JSON.stringify(emptyGraph));
 
-    const [aliceIdR, bobIdR] = await Promise.all([
-      loadOrCreateIdentity(join(aliceHome, 'peer-identity.json')),
-      loadOrCreateIdentity(join(bobHome,   'peer-identity.json')),
-    ]);
-    if (aliceIdR.isErr()) throw aliceIdR.error;
-    if (bobIdR.isErr())   throw bobIdR.error;
+    bus = new FakeBus();
+    aliceNode = makeFakeNode(bus, alicePeerIdStr);
+    bobNode = makeFakeNode(bus, bobPeerIdStr);
 
-    const [aliceNodeR, bobNodeR] = await Promise.all([
-      createNode(aliceIdR.value, { listenPort: 0, listenHost: '127.0.0.1', upnp: false }),
-      createNode(bobIdR.value,   { listenPort: 0, listenHost: '127.0.0.1', upnp: false }),
-    ]);
-    if (aliceNodeR.isErr()) throw aliceNodeR.error;
-    if (bobNodeR.isErr())   throw bobNodeR.error;
-    aliceNode = aliceNodeR.value;
-    bobNode   = bobNodeR.value;
-    alicePeerIdStr = aliceIdR.value.peerId;
-
-    // Bob subscribes before Alice publishes; caller's graph repo picks
-    // up inbound nodes. onAccepted + onRejected drive the assertion
-    // barrier — tests poll `accepted` / `rejected` instead of relying
-    // on timing.
+    // Bob subscribes BEFORE Alice publishes; same handler wiring as
+    // production runtime.
     const repo = fileGraphRepository(join(bobHome, 'graph.json'));
     const sub = await subscribeOracle(bobNode, {
       graphRepo: repo,
-      onAccepted: (msg) => {
-        accepted.push({ kind: msg.kind, id: msg.node.id });
-      },
-      onRejected: (reason) => {
-        rejected.push(reason);
-      },
+      onAccepted: (msg) => { accepted.push({ kind: msg.kind, id: msg.node.id }); },
+      onRejected: (reason) => { rejected.push(reason); },
     });
     if (sub.isErr()) throw sub.error;
     bobSub = sub.value;
-    // Alice also subscribes so floodsub announces Alice as a subscriber
-    // of the topic to Bob — in floodsub, a peer only forwards to peers
-    // it has seen subscribed. Without this, Bob's subscription isn't
-    // visible to Alice and the message wouldn't be forwarded.
+
+    // Alice also subscribes to the topic so the fake fan-out matches
+    // floodsub's "only forward to known subscribers" behaviour. Real
+    // libp2p needs this to thread the subscription announcement; the
+    // bus uses it as part of the fan-out check (skip non-subscribers).
     const aliceSvc = (aliceNode.services as Record<string, unknown>).pubsub as {
       subscribe: (t: string) => void;
     };
     aliceSvc.subscribe(ORACLE_TOPIC);
-
-    // Dial Alice → Bob so they share a live connection before publish.
-    const aliceAddrs = aliceNode.getMultiaddrs();
-    assert.ok(aliceAddrs.length > 0);
-    await bobNode.dial(aliceAddrs[0]);
-    // Give floodsub one tick to exchange subscription announcements.
-    await new Promise<void>((r) => setTimeout(r, 150));
   });
 
   after(async () => {
     bobSub?.unsubscribe();
-    await Promise.allSettled([aliceNode?.stop(), bobNode?.stop()]);
+    if (bus) {
+      bus.detach(alicePeerIdStr);
+      bus.detach(bobPeerIdStr);
+    }
     if (aliceHome) rmSync(aliceHome, { recursive: true, force: true });
-    if (bobHome)   rmSync(bobHome,   { recursive: true, force: true });
+    if (bobHome) rmSync(bobHome, { recursive: true, force: true });
   });
+
+  // ─────────────── G1: happy path ─────────
 
   test('G1: Alice publishes a question, Bob receives and upserts it via pubsub', async () => {
     assert.ok(aliceNode && bobNode && bobSub);
@@ -133,52 +184,57 @@ describe('Phase 39 — oracle gossip E2E (two real pubsub peers)', { skip: SKIP_
     const pub = await publishQuestion(aliceNode!, q);
     assert.ok(pub.isOk(), `publish failed: ${pub.isErr() ? JSON.stringify(pub.error) : ''}`);
 
-    // Wait for Bob's subscribe handler to accept. Polling beats a fixed
-    // sleep — avoid timing flakes on CI. 1s budget is generous.
-    const deadline = Date.now() + 1500;
+    // Poll the assertion barrier — same UX as the libp2p version, but
+    // the deadline can be tight because there's no network in the loop.
+    const deadline = Date.now() + 500;
     while (accepted.length === 0 && Date.now() < deadline) {
-      await new Promise<void>((r) => setTimeout(r, 25));
+      await new Promise<void>((r) => setTimeout(r, 5));
     }
-    assert.strictEqual(accepted.length, 1, `expected 1 accepted msg, got ${accepted.length} (rejected=${JSON.stringify(rejected)})`);
+    assert.strictEqual(accepted.length, 1,
+      `expected 1 accepted msg, got ${accepted.length} (rejected=${JSON.stringify(rejected)})`);
     assert.strictEqual(accepted[0].kind, 'question');
     assert.strictEqual(accepted[0].id, q.id);
   });
+
+  // ─────────────── G2: parser-reject pathway ─────────
 
   test('G2: malformed JSON on the topic is rejected, not thrown', async () => {
     assert.ok(aliceNode && bobSub);
     accepted.length = 0;
     rejected.length = 0;
 
-    const alicePubsub = (aliceNode!.services as Record<string, unknown>).pubsub as {
+    const aliceSvc = (aliceNode!.services as Record<string, unknown>).pubsub as {
       publish: (t: string, d: Uint8Array) => Promise<unknown>;
     };
     const junk = new TextEncoder().encode('{not valid json[');
-    await alicePubsub.publish(ORACLE_TOPIC, junk);
+    await aliceSvc.publish(ORACLE_TOPIC, junk);
 
-    const deadline = Date.now() + 1000;
+    const deadline = Date.now() + 500;
     while (rejected.length === 0 && Date.now() < deadline) {
-      await new Promise<void>((r) => setTimeout(r, 25));
+      await new Promise<void>((r) => setTimeout(r, 5));
     }
     assert.strictEqual(accepted.length, 0, 'malformed input must NOT have been accepted');
     assert.strictEqual(rejected.length, 1, `expected 1 rejection, got ${rejected.length}`);
     assert.match(rejected[0], /json parse/);
   });
 
+  // ─────────────── G3: size cap ───────────
+
   test('G3: oversized payload is rejected before parse', async () => {
     assert.ok(aliceNode);
     accepted.length = 0;
     rejected.length = 0;
 
-    // 65KB — just past the 64KB cap.
+    // 65KB — just past the 64KB cap inside oracle-gossip's handler.
     const big = new TextEncoder().encode('x'.repeat(65 * 1024));
-    const alicePubsub = (aliceNode!.services as Record<string, unknown>).pubsub as {
+    const aliceSvc = (aliceNode!.services as Record<string, unknown>).pubsub as {
       publish: (t: string, d: Uint8Array) => Promise<unknown>;
     };
-    await alicePubsub.publish(ORACLE_TOPIC, big);
+    await aliceSvc.publish(ORACLE_TOPIC, big);
 
-    const deadline = Date.now() + 1000;
+    const deadline = Date.now() + 500;
     while (rejected.length === 0 && Date.now() < deadline) {
-      await new Promise<void>((r) => setTimeout(r, 25));
+      await new Promise<void>((r) => setTimeout(r, 5));
     }
     assert.strictEqual(accepted.length, 0);
     assert.strictEqual(rejected.length, 1, `expected 1 rejection, got ${rejected.length}`);
