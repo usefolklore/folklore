@@ -155,7 +155,12 @@ describe('ipc — request/response', () => {
     const events: Array<{ cmd: string; argsLen: number; ms: number }> = [];
     const handlers = new Map<string, IpcHandler<{}>>();
     handlers.set('probe', async () => {
-      await new Promise((r) => setTimeout(r, 10));
+      // Sleep long enough that timer granularity slop (~1ms on some
+      // Linux CI runners) can't push the observed elapsed time
+      // below the floor and flake the assertion. The intent is
+      // "onCommand captured a non-zero ms correlated with the
+      // handler duration" — exact precision isn't being tested.
+      await new Promise((r) => setTimeout(r, 25));
       return { stdout: 'ok', exit: 0 };
     });
     const server = await startIpcServer({
@@ -169,7 +174,9 @@ describe('ipc — request/response', () => {
       assert.equal(events.length, 1);
       assert.equal(events[0].cmd, 'probe');
       assert.equal(events[0].argsLen, 2);
-      assert.ok(events[0].ms >= 10, `ms should be ≥10, got ${events[0].ms}`);
+      // ≥ 15 ms = 25 ms sleep − 10 ms slop budget. Generous, but the
+      // assertion's job is "non-trivial elapsed time", not "exact 25".
+      assert.ok(events[0].ms >= 15, `ms should be ≥15, got ${events[0].ms}`);
     } finally {
       await server.stop();
     }
