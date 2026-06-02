@@ -23,9 +23,9 @@ The name borrows from the mythological **Akashic Records** — the perfect refer
 When you ask Akashik something, the system runs through five steps:
 
 1. **Local first.** Query your own peer's graph. Hit? Return. Zero network cost.
-2. **Federation on miss.** Fan out to the peers you share rooms with. Each answers with whatever they've already saved or researched. Results merge via reciprocal-rank fusion.
+2. **Federation on miss.** Fan out across every connected peer in `peers.json` — no room scoping, no topology partitioning. Peers are optionally rank-ordered by reputation so high-quality responders get the fan-out budget first; everyone else stays in rotation. Each peer answers with whatever they've already saved or researched. Results merge via reciprocal-rank fusion.
 3. **Web on second miss.** If the federation can't answer with confidence, the harness performs `WebSearch` / `WebFetch` / arXiv pull on *your* machine — the only time the network reaches outward.
-4. **Save locally, signed.** The result lands in your local graph, attested by your DID (Ed25519). You are now the "ambitioned" curator of that knowledge: provenance, room, timestamp, source URLs all attached.
+4. **Save locally, signed.** The result lands in your local graph, attested by your DID (Ed25519) and the GitHub handle you linked at `akashik login`. You are now the curator of that knowledge: provenance, workspace tag, timestamp, `github_user`, source URLs all attached.
 5. **Transfer on next ask.** When another contributor asks something similar later, federation fan-out reaches your peer, your research transfers to them with original attribution, and they pay nothing for the hour you spent.
 
 Stated formally, for any topic `T` and time `t`:
@@ -90,8 +90,9 @@ akashik daemon start
 Save what teaches you:
 
 ```bash
-akashik save https://arxiv.org/abs/2406.16678 --room research
-akashik save ./notes/cuda-oom-debug.md --room toolshed
+akashik save https://arxiv.org/abs/2406.16678
+akashik save ./notes/cuda-oom-debug.md --private
+akashik save ./notes/launch-plan.md --workspace launch-2026
 ```
 
 Query the record:
@@ -100,7 +101,7 @@ Query the record:
 akashik ask "how does mxbai-rerank compare to cross-encoder on long contexts?"
 ```
 
-The query checks your local graph, then federates to peers you share rooms with, then falls back to web research only if neither can answer. The web result lands in your local graph signed by you — the next contributor who asks something similar pulls it from your peer with full attribution.
+The query checks your local graph, then federates to every connected peer in your `peers.json`, then falls back to web research only if neither can answer. The web result lands in your local graph signed by you — the next contributor who asks something similar pulls it from your peer with full attribution.
 
 **Federate. Compound. Continue.**
 
@@ -108,8 +109,8 @@ The query checks your local graph, then federates to peers you share rooms with,
 
 ## Architecture pillars
 
-- **P2P federation over libp2p.** No central server, no vendor data lock-in. Each peer advertises the rooms it participates in; queries fan out via gossip with bounded timeouts. Lineage per the Round 5 synthesis: *Freenet-style demand-shaped lazy replication with cache-fill on miss*, applied to attributed semantic memory.
-- **Ed25519-signed contributions with DIDs.** Every record carries the curator's decentralized identifier, room, source URLs, and timestamp. Trust is graph-traversable: follow the chain, see who curated, when, and why. Lineage: AT Protocol's signed-attribution layer applied to research memory rather than social posts.
+- **P2P federation over libp2p.** No central server, no vendor data lock-in. Every connected peer in your `peers.json` is asked on a miss; responses are bounded by a per-peer timeout (default 2s) and capped fan-out. Lineage per the Round 5 synthesis: *Freenet-style demand-shaped lazy replication with cache-fill on miss*, applied to attributed semantic memory.
+- **Ed25519-signed contributions with DIDs + GitHub identity.** Every record carries the curator's decentralized identifier, their verified GitHub handle (`github_user`), an optional workspace tag, source URLs, and timestamp. Trust is graph-traversable: follow the chain, see who curated, when, and why. Federation envelopes can pin the claimed GitHub handle against a per-peer mapping (`peer-labels.json`) so a peer can't claim someone else's identity on signed nodes. Lineage: AT Protocol's signed-attribution layer applied to research memory rather than social posts.
 - **Commodity hardware.** Xenova ONNX embeddings (384-dim, all-MiniLM-L6-v2), sqlite-vec for vector search, sql.js for cross-platform persistence. A $7/mo VPS, a laptop, or a Raspberry Pi runs a full peer. Reproducible from public sources.
 
 The full synthesis frames Akashik as compositionally novel with prior-art math: *"Freenet-style demand-shaped replication applied to attributed semantic research memory, with AT Protocol-style DID signatures."*
