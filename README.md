@@ -25,14 +25,10 @@ When you ask Akashik something, the system runs through five steps:
 1. **Local first.** Query your own peer's graph. Hit? Return. Zero network cost.
 2. **Federation on miss.** Someone in your network has probably already read the paper, debugged the error, or written the note you're asking about. Instead of paying token + time cost to re-research what already exists nearby, akashik asks your peers. Whatever they've curated flows back signed by them, with their sources attached — you inherit their work in milliseconds. The bigger your network, the less you ever pay to learn what someone else has already learned.
 3. **Web on second miss.** If the federation can't answer with confidence, the harness performs `WebSearch` / `WebFetch` / arXiv pull on *your* machine — the only time the network reaches outward.
-4. **Save locally, signed.** The result lands in your local graph, attested by your DID (Ed25519) and the GitHub handle you linked at `akashik login`. You are now the curator of that knowledge: provenance, workspace tag, timestamp, `github_user`, source URLs all attached.
+4. **Save locally, signed.** The result lands in your local graph, signed by you — your cryptographic identity and your verified GitHub handle, both attached. The source URLs you grounded on, the time you saved it, the project you saved it for — all there. You're now the keeper of that knowledge; anyone in your network who asks something similar later sees the answer came from you and can follow your sources.
 5. **Transfer on next ask.** When another contributor asks something similar later, federation fan-out reaches your peer, your research transfers to them with original attribution, and they pay nothing for the hour you spent.
 
-Stated formally, for any topic `T` and time `t`:
-
-- `R(T, t)` = number of peers currently holding a cached answer for `T`
-- `R(T, t)` is **monotonically non-decreasing** under the mechanism — it only grows
-- `expected_time_to_answer(T) ~ 1 / R(T, t)`
+Stated formally, for any topic `T` and time `t`, let `R(T, t)` be the number of peers currently holding a cached answer for `T`. Under this mechanism `R(T, t)` is **monotonically non-decreasing** — it only grows. Once one peer in the network has done the research, the cost of the same question for every future asker collapses toward the federation round-trip cost.
 
 Compounding is not a marketing claim; it is a property of the architecture. Each peer holds only what it has asked for or contributed — there is no global graph, no central server, and disk cost on every peer scales with that peer's own curiosity rather than with the community's total contribution volume.
 
@@ -42,7 +38,7 @@ Full architecture: [`docs/marketing/how-akashik-works.md`](docs/marketing/how-ak
 
 ## Empirical validation — AkashikBench-F
 
-The Round 5 octopus-discover synthesis identified one benchmark capable of falsifying the federated-commons thesis: a federation-level simulator measuring `web_fallback_rate(t)` over a realistic peer network with offline churn. We built it. First run, on the LoCoMo factual subset:
+There's one benchmark capable of falsifying the federated-commons thesis: a federation-level simulator measuring `web_fallback_rate(t)` over a realistic peer network with offline churn. We built it. First run, on the LoCoMo factual subset:
 
 | Parameter | Value |
 |---|---|
@@ -63,7 +59,7 @@ Results:
 | Federation resolution | 21.3% | Pulled from another peer |
 | Web fallback | 4.5% | Outbound only when federation couldn't answer |
 
-**These are simulator numbers, not pilot numbers.** v1 abstracts away per-peer retrieval quality (those are measured separately by the LongMemEval / LoCoMo / BEIR benches in `tests/`) and treats "does peer N hold doc D" as boolean. v2 plugs real retrieval in. The real-pilot validation lives in the 30-day local-AI / agent-tooling ecosystem launch plan — see [`docs/research/octopus-discover/round-5-2026-05-26/`](docs/research/octopus-discover/round-5-2026-05-26/) for the full synthesis.
+**These are simulator numbers, not pilot numbers.** v1 abstracts away per-peer retrieval quality (those are measured separately by the LongMemEval / LoCoMo / BEIR benches in `tests/`) and treats "does peer N hold doc D" as boolean. v2 plugs real retrieval in. The real-pilot validation is the 100-peer ecosystem rollout queued for the next milestone.
 
 Bench source: [`tests/bench-akashik-federation.test.ts`](tests/bench-akashik-federation.test.ts).
 
@@ -71,13 +67,10 @@ Bench source: [`tests/bench-akashik-federation.test.ts`](tests/bench-akashik-fed
 
 ## Quickstart
 
-> The npm package and CLI binary are still named `akashik` during the two-name period. The brand-marketing name is **Akashik**; a coordinated rename of package + repo + DNS is queued behind the public launch. Examples below show both forms.
-
 Install:
 
 ```bash
 npm install -g akashik
-# (will become: npm install -g akashik)
 ```
 
 Run your first peer:
@@ -109,24 +102,21 @@ The query checks your local graph, then federates to every connected peer in you
 
 ## Architecture pillars
 
-- **P2P federation over libp2p.** No central server, no vendor data lock-in. Every connected peer in your `peers.json` is asked on a miss; responses are bounded by a per-peer timeout (default 2s) and capped fan-out. Lineage per the Round 5 synthesis: *Freenet-style demand-shaped lazy replication with cache-fill on miss*, applied to attributed semantic memory.
-- **Ed25519-signed contributions with DIDs + GitHub identity.** Every record carries the curator's decentralized identifier, their verified GitHub handle (`github_user`), an optional workspace tag, source URLs, and timestamp. Trust is graph-traversable: follow the chain, see who curated, when, and why. Federation envelopes can pin the claimed GitHub handle against a per-peer mapping (`peer-labels.json`) so a peer can't claim someone else's identity on signed nodes. Lineage: AT Protocol's signed-attribution layer applied to research memory rather than social posts.
-- **Commodity hardware.** Xenova ONNX embeddings (384-dim, all-MiniLM-L6-v2), sqlite-vec for vector search, sql.js for cross-platform persistence. A $7/mo VPS, a laptop, or a Raspberry Pi runs a full peer. Reproducible from public sources.
-
-The full synthesis frames Akashik as compositionally novel with prior-art math: *"Freenet-style demand-shaped replication applied to attributed semantic research memory, with AT Protocol-style DID signatures."*
+- **No central server. Ever.** Every peer talks directly to every other peer. There's no service to be acquired, deprecated, or rate-limited. If your VPS goes down, every other peer still answers. If the project ends, you still own your graph. There is no fallback to a vendor — only to other people running the same protocol.
+- **Every answer carries a provenance chain you can audit.** Each record is signed by its curator's cryptographic identity AND their verified GitHub handle. You can trace any claim back to the person who curated it, the sources they grounded on, and the moment they did. No more anonymous Stack Overflow answers that may or may not be hallucinated — every contribution is attributable to a real, named human.
+- **Runs on what you already have.** CPU-only embeddings, a single small open-source model, no GPU, no API keys, no proprietary dependencies. A $7/mo VPS, a laptop, or a Raspberry Pi runs a full peer. Reproducible from public sources.
 
 ---
 
 ## What's next
 
-Active workstreams (planning doc forthcoming at [`docs/PROJECT-PLAN-AKASHIK.md`](docs/PROJECT-PLAN-AKASHIK.md)):
+Active workstreams (planning doc: [`docs/PROJECT-PLAN-AKASHIK.md`](docs/PROJECT-PLAN-AKASHIK.md)):
 
-- **AkashikBench-F v2** — real per-peer retrieval (not boolean), measure compounding under genuine retrieval-quality variance.
-- **100-peer pilot in the local-AI / agent-tooling ecosystem** — seed contributors to `llama.cpp + ollama`, `vllm-project/vllm`, and `aider` with 50-80 canonical artifacts. Publish the real `web_fallback_rate` curve after 30 days.
-- **Codebase rename** — coordinated `akashik → akashik` migration across npm, GitHub, DNS.
-- **Read-only public peer endpoint** — "Browse the record" entry point for newcomers, no login required.
-- **GDPR Article 17 tombstones** — reconciling immutable provenance with right-to-erasure via signed deletion records.
-- **Rarity-aware replication quotas** — LOCKSS-style protection against niche-content evaporation; BitTorrent rarest-first weighting on federation fan-out.
+- **AkashikBench-F v2** — replace the boolean "does peer N hold doc D" abstraction with real per-peer retrieval. Measure how the compounding curve bends under genuine retrieval-quality variance.
+- **100-peer pilot in the local-AI / agent-tooling ecosystem** — seed contributors around `llama.cpp + ollama`, `vllm-project/vllm`, and `aider` with 50-80 canonical artifacts. Publish the real `web_fallback_rate` curve after 30 days of real traffic.
+- **Read-only public peer endpoint.** A "Browse the record" entry point for newcomers — no install, no login, just see what the network has learned so far.
+- **GDPR Article 17 tombstones.** Reconcile immutable provenance with the right to be forgotten via signed deletion records — the chain still verifies, the content is gone.
+- **Rarity-aware replication.** Protect niche knowledge from evaporating when its sole holder goes offline; weight federation fan-out toward rare artifacts so they survive.
 
 ---
 
@@ -142,7 +132,7 @@ Open an issue, fork the repo, or DM the maintainer. The project is in flux and t
 
 ## Status
 
-Pre-launch. Simulator-validated, retrieval-benchmarked, pilot pending. Two-name period in effect (`akashik` in code, `Akashik` in marketing). Public protocol spec lands with the rename.
+Pre-launch. Simulator-validated, retrieval-benchmarked, pilot pending. Public protocol spec lands with the launch.
 
 ## License
 
