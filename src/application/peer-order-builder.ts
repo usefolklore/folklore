@@ -162,7 +162,15 @@ export const buildOrderFromFile = (
     // Epsilon-greedy: with probability EXPLORATION_EPSILON, swap the
     // top-of-list with a random peer (could be unknown). Gives
     // newcomers a chance to surface before the rep system has data.
-    if (sorted.length > 1 && randomFn() < EXPLORATION_EPSILON) {
+    //
+    // Skip when every peer is unranked — there's no "exploit vs
+    // explore" trade-off to make, just an input list with no signal.
+    // Firing the swap here was the source of intermittent
+    // `empty rep file returns the input order unchanged` failures
+    // (~5% of CI runs) — Math.random() < EPSILON would occasionally
+    // permute the input and break the unit-test contract.
+    const anyRanked = [...ranks.values()].some((r) => r !== null);
+    if (anyRanked && sorted.length > 1 && randomFn() < EXPLORATION_EPSILON) {
       const j = Math.floor(randomFn() * sorted.length);
       if (j > 0 && j < sorted.length) {
         const swap = sorted[j];
