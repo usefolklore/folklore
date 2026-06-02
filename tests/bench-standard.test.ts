@@ -119,7 +119,14 @@ const mrr = (retrieved: string[], relevant: Set<string>): number => {
 
 // ─────────── benchmark ───────────
 
-test('BEIR/HotPotQA-style: multi-hop retrieval with real ONNX embeddings', async () => {
+test('BEIR/HotPotQA-style: multi-hop retrieval with real ONNX embeddings', async (t) => {
+  // Opt-in: downloads ~25MB ONNX model from Hugging Face. Same gate
+  // as bench-scifact-real / bench-locomo-real / bench-longmemeval-real
+  // so CI never hits the network and never flakes on a CDN blip.
+  if (process.env.AKASHIK_BENCH_PUBLIC_REAL !== '1') {
+    t.skip('AKASHIK_BENCH_PUBLIC_REAL not set — skipping real ONNX model download');
+    return;
+  }
   const tmp = mkdtempSync(join(tmpdir(), 'wi-beir-'));
   try {
     const graphs = fileGraphRepository(join(tmp, 'graph.json'));
