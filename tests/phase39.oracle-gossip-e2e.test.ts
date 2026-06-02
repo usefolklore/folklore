@@ -36,7 +36,14 @@ import {
 } from '../src/infrastructure/oracle-gossip.js';
 import { nodeFromQuestion } from '../src/domain/oracle.js';
 
-describe('Phase 39 — oracle gossip E2E (two real pubsub peers)', () => {
+// Slow tier: real libp2p pubsub on ephemeral ports, two real peers.
+// Flakes on shared CI runners (port contention, mDNS sandboxing,
+// 10s timeout window) so it opts out via the same AKASHIK_SKIP_SLOW=1
+// switch Phase 18's 10-peer mesh test uses. Unit + domain tiers run
+// always; this is the only E2E that needs network sandboxing.
+const SKIP_SLOW = process.env['AKASHIK_SKIP_SLOW'] === '1';
+
+describe('Phase 39 — oracle gossip E2E (two real pubsub peers)', { skip: SKIP_SLOW }, () => {
   let aliceHome = '';
   let bobHome = '';
   let aliceNode: Libp2p | undefined;
