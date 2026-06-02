@@ -63,7 +63,14 @@ const pctl = (arr: number[], p: number) => { const s = [...arr].sort((a, b) => a
 
 // ─────────── benchmark ───────────
 
-test('onnx-bench: real all-MiniLM-L6-v2 IR metrics', async () => {
+test('onnx-bench: real all-MiniLM-L6-v2 IR metrics', async (t) => {
+  // Opt-in: downloads ~25MB ONNX model from Hugging Face. Same gate
+  // as bench-scifact-real / bench-locomo-real / bench-longmemeval-real
+  // so CI never hits the network and never flakes on a CDN blip.
+  if (process.env.AKASHIK_BENCH_PUBLIC_REAL !== '1') {
+    t.skip('AKASHIK_BENCH_PUBLIC_REAL not set — skipping real ONNX model download');
+    return;
+  }
   const tmp = mkdtempSync(join(tmpdir(), 'wi-onnx-'));
   try {
     const graphs = fileGraphRepository(join(tmp, 'graph.json'));
