@@ -508,9 +508,13 @@ const runStampGithub = (): number => {
     return 0;
   }
 
-  // Reuse the v4-backup slot — same atomicity guarantees as runMigrate.
-  if (!confirmBackupOverwrite(paths.backup, paths.graph)) return 1;
-  try { copyFileSync(paths.graph, paths.backup); }
+  // Stamp-github writes its OWN backup so the V4 rollback target
+  // (graph.v4-backup.json) is preserved. Using paths.backup here
+  // would clobber the V4 snapshot with a V5-shaped graph and break
+  // `migrate v5 --rollback`.
+  const stampBackup = join(paths.home, 'graph.pre-stamp-backup.json');
+  if (!confirmBackupOverwrite(stampBackup, paths.graph)) return 1;
+  try { copyFileSync(paths.graph, stampBackup); }
   catch (e) {
     console.error(`migrate --stamp-github: backup failed: ${(e as Error).message}`);
     return 1;
@@ -523,7 +527,7 @@ const runStampGithub = (): number => {
   }
   console.log(`  ✓ Stamped github_user="${handle}" on ${stamped} node(s)`);
   if (preserved > 0) console.log(`  ✓ Preserved existing github_user on ${preserved} node(s)`);
-  console.log(`  ✓ Backed up pre-stamp graph to ${basename(paths.backup)}`);
+  console.log(`  ✓ Backed up pre-stamp graph to ${basename(stampBackup)}`);
   return 0;
 };
 

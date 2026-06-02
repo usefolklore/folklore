@@ -181,8 +181,8 @@ test('phase-26: --stamp-github back-fills nodes missing the field', () => {
     for (const n of graph.nodes) {
       assert.equal(n.github_user, 'SaharBarak', `node ${n.id} must be stamped`);
     }
-    assert.ok(existsSync(join(home, 'graph.v4-backup.json')),
-      'backup must be written before the stamp');
+    assert.ok(existsSync(join(home, 'graph.pre-stamp-backup.json')),
+      'stamp-github writes its own backup; must not clobber graph.v4-backup.json');
   } finally {
     rmSync(home, { recursive: true, force: true });
   }
