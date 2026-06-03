@@ -18,27 +18,11 @@ The name borrows from the mythological **Akashic Records** — the perfect refer
 
 ---
 
-## How it works — the compounding loop
-
-When you ask Akashik something, the system runs through five steps:
-
-1. **Local first.** Query your own peer's graph. Hit? Return. Zero network cost.
-2. **Federation on miss.** Someone in your network has probably already read the paper, debugged the error, or written the note you're asking about. Instead of paying token + time cost to re-research what already exists nearby, akashik asks your peers. Whatever they've curated flows back signed by them, with their sources attached — you inherit their work in milliseconds. The bigger your network, the less you ever pay to learn what someone else has already learned.
-3. **Web on second miss.** If the federation can't answer satisfactorily (see [§ What "satisfactory" means](#what-satisfactory-means) for the exact contract), the harness performs `WebSearch` / `WebFetch` / arXiv pull on *your* machine — the only time the network reaches outward.
-4. **Save locally, signed.** The result lands in your local graph, signed by you — your cryptographic identity and your verified GitHub handle, both attached. The source URLs you grounded on, the time you saved it, the project you saved it for — all there. You're now the keeper of that knowledge; anyone in your network who asks something similar later sees the answer came from you and can follow your sources.
-5. **Transfer on next ask.** When another contributor asks something similar later, federation fan-out reaches your peer, your research transfers to them with original attribution, and they pay nothing for the hour you spent.
-
-Stated formally, for any topic `T` and time `t`, let `R(T, t)` be the number of peers currently holding a cached answer for `T`. Under this mechanism `R(T, t)` is **monotonically non-decreasing** — it only grows. Once one peer in the network has done the research, the cost of the same question for every future asker collapses toward the federation round-trip cost.
-
-Compounding is not a marketing claim; it is a property of the architecture. Each peer holds only what it has asked for or contributed — there is no global graph, no central server, and disk cost on every peer scales with that peer's own curiosity rather than with the community's total contribution volume.
-
-Full architecture: [`docs/marketing/how-akashik-works.md`](docs/marketing/how-akashik-works.md).
-
----
-
 ## Empirical validation — AkashikBench-F
 
-There's one benchmark capable of falsifying the federated-commons thesis: a federation-level simulator measuring `web_fallback_rate(t)` over a realistic peer network with offline churn. We built it. First run, on the LoCoMo factual subset:
+For any topic `T` and time `t`, let `R(T, t)` be the number of peers currently holding a cached answer for `T`. Under akashik's mechanism `R(T, t)` is **monotonically non-decreasing** — it only grows. Once one peer in the network has done the research, the cost of the same question for every future asker collapses toward the federation round-trip cost. Compounding is a property of the architecture, not a marketing claim. Each peer holds only what it has asked for or contributed — there is no global graph, no central server, and disk cost on every peer scales with that peer's own curiosity rather than with the community's total contribution volume.
+
+There's one benchmark capable of falsifying this thesis: a federation-level simulator measuring `web_fallback_rate(t)` over a realistic peer network with offline churn. We built it. First run, on the LoCoMo factual subset:
 
 | Parameter | Value |
 |---|---|
@@ -61,7 +45,7 @@ Results:
 
 **These are simulator numbers, not pilot numbers.** v1 abstracts away per-peer retrieval quality (those are measured separately by the LongMemEval / LoCoMo / BEIR benches in `tests/`) and treats "does peer N hold doc D" as boolean. v2 plugs real retrieval in. The real-pilot validation is the 100-peer ecosystem rollout queued for the next milestone.
 
-Bench source: [`tests/bench-akashik-federation.test.ts`](tests/bench-akashik-federation.test.ts).
+Bench source: [`tests/bench-akashik-federation.test.ts`](tests/bench-akashik-federation.test.ts). Full architecture: [`docs/marketing/how-akashik-works.md`](docs/marketing/how-akashik-works.md).
 
 ---
 
