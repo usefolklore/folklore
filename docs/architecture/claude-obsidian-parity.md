@@ -1,5 +1,12 @@
 # claude-obsidian Parity Audit
 
+> **Snapshot — pre-V5 audit.** This parity comparison was written
+> when "rooms" were a federation primitive. V5 removed rooms; the
+> per-`--room` proposals below map to V5 `--workspace <slug>` +
+> `--private` flags. The structural insight (claude-obsidian is
+> a single-user wiki; akashik is a multi-peer commons) is the
+> still-relevant takeaway.
+
 Source: **AgriciDaniel/claude-obsidian** @ commit 2026-04-16 (1,417 stars). Karpathy LLM-wiki pattern. 10 skills, single-user single-vault.
 
 ## What they have, we don't

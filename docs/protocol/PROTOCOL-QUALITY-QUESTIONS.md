@@ -1,5 +1,17 @@
 # Protocol Quality Questions
 
+> **Snapshot — partly pre-V5 thinking surface.** Some "room"-keyed
+> questions below were written when rooms were the federation primitive
+> and are now structurally moot (V5 removed rooms; sharing is per-node
+> `private: bool`, with optional `workspace` tags for read-side
+> filtering — see [`../architecture/V5-PROTOCOL.md`](../architecture/V5-PROTOCOL.md)).
+> The protocol-quality / agent-trust questions themselves — what makes
+> a hit "satisfactory enough to deny WebSearch", the calibration of the
+> 0.85 threshold, the failure modes — are still open. The shipped
+> answer for the deny pathway is in the README's `What "satisfactory"
+> means` section and the [`satisfaction-scoring.md`](../p2p/satisfaction-scoring.md)
+> reference doc.
+
 This document is intentionally unresolved. It is a thinking surface for the
 parts of Akashik that decide whether peer knowledge is good enough for an
 agent to trust, cite, or use instead of doing a live search.

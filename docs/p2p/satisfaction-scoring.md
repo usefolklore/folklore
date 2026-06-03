@@ -25,7 +25,7 @@ components only — unobserved signals don't get a default 0.5 prior
 | Component | Measures | Formula | Observed when |
 |---|---|---|---|
 | `retrieval` | semantic closeness of the top hits | mean of `(1 − distance)` over top-3, clamped to [0, 1] | any results |
-| `freshness` | within the room's stale-window | `count(age_days ≤ stale_after_days) / count(age_days known)` (research: 7d, toolshed: 30d) | ≥1 hit has `age_days` |
+| `freshness` | within the source's stale-window | `count(age_days ≤ stale_after_days) / count(age_days known)` (web research: 7d, codebase: 30d) | ≥1 hit has `age_days` |
 | `provenance` | citable | `count(has source_uri AND fetched_at) / total` | any results |
 | `consensus` | distinct origins agree | `1.0` if ≥2 distinct origins; `0.5` if remote + single origin; `1.0` if all-local (single-origin user corpus is fine by definition) | any results |
 | `signature` | did:key envelope verified | `count(has_signature == true) / count(has_signature known)` | ≥1 hit reports `has_signature` |
@@ -123,7 +123,7 @@ in the full contract block).
   signed-envelope verification at the touch boundary is still
   Phase-21 work. The scorer is wired for it; it just rarely fires
   today.
-- The `freshness` window per room is hand-set
-  (`docs/architecture/V4-PROTOCOL.md` §rooms). A learning loop that
-  tunes the window per-room from observed retrieval quality is on
-  the roadmap; the current settings are conservative defaults.
+- The `freshness` window is hand-set per source family (web research:
+  7d, codebase: 30d). A learning loop that tunes the window per-source
+  from observed retrieval quality is on the roadmap; the current
+  settings are conservative defaults.

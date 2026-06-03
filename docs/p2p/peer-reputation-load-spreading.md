@@ -197,9 +197,9 @@ local update path to credit `_akashik_source_peer` chains).
 
 ### 6. Pre-replication on join — solving cold-start for new peers
 
-**What it does.** When peer F joins a room, it requests "popular subjects in
-the last 30 days" from connected peers. Each connected peer responds with
-their top-K subjects + the highest-confidence chunk for each. F pre-loads
+**What it does.** When peer F first connects to the network, it requests "popular
+subjects in the last 30 days" from connected peers. Each connected peer responds
+with their top-K subjects + the highest-confidence chunk for each. F pre-loads
 that into its local graph.
 
 **Why this matters for load.** Without it, F enters the network knowing

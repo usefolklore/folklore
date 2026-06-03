@@ -47,11 +47,11 @@ Scope: the attack surface exposed once an Akashik node accepts data from **untru
 
 ### AS-4 — Secret exfiltration via unredacted OWN nodes (HIGH, mitigated)
 
-**Vector.** A researcher pastes an OpenAI key into a note, marks their room public, a peer touches the room, the peer now has the key.
+**Vector.** A researcher pastes an OpenAI key into a note, saves it without `--private` (the public default), a peer queries the matching topic, the peer now has the key.
 
 **Status.** Mitigated by `secret-gate.ts::redactNode` — the touch responder runs every outbound node through 14 built-in patterns (openai-key, github-token, aws-key-id, etc.) plus user-configured extras from `config.yaml::security.secrets_patterns`. Matches are replaced with `[REDACTED:<pattern-name>]` in place.
 
-**Residual risk.** Patterns are heuristic. Novel key formats (Anthropic `sk-ant-...` is not built-in — add it), API secrets embedded in URLs, or secrets encoded as base64 will not match. The gate is a defence in depth, not a guarantee. Users should still run `share audit` before publishing and treat every shared room as already-leaked.
+**Residual risk.** Patterns are heuristic. Novel key formats (Anthropic `sk-ant-...` is not built-in — add it), API secrets embedded in URLs, or secrets encoded as base64 will not match. The gate is a defence in depth, not a guarantee. Users should still run `share audit` before publishing and treat every public node as already-leaked.
 
 ### AS-5 — Embedding-vector leakage (MEDIUM, mitigated)
 

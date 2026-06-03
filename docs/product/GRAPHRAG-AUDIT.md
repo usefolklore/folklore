@@ -1,5 +1,14 @@
 # GraphRAG audit — Akashik against 2025/2026 SOTA
 
+> **Snapshot — pre-V5 audit.** The "virtual room membership" + "per-room
+> freshness window" claims in §2 + §3 below were V4 architectural
+> distinctives. V5 removed rooms entirely; the post-V5 equivalents are
+> source-family tagging (web vs codebase) and per-node `private: bool` +
+> `workspace` tags. The high-level audit posture (P2P federation over
+> centralized index, DID + GitHub identity, signature verification per
+> node, satisfaction breakpoint over similarity top-k) is unchanged
+> and remains current.
+
 ## 1. State of the art (2025-2026)
 
 Consensus across the field has hardened around three pillars: an entity-relation graph built by LLM extraction over chunks; community detection plus LLM summarization at multiple hierarchical levels for "global" reasoning; and hybrid retrieval that fuses BM25/sparse, dense embeddings, and graph traversal at query time. Microsoft's [GraphRAG](https://arxiv.org/abs/2404.16130) defined the canonical local/global split. The 2025 follow-ups push two directions at once: (a) cheaper indexing — [LazyGraphRAG](https://www.microsoft.com/en-us/research/blog/graphrag-improving-global-search-via-dynamic-community-selection/) cuts indexing cost to ~0.1% of full GraphRAG by deferring summarization to query time and dynamically selecting communities; (b) better multi-hop precision — [HippoRAG 2](https://www.marktechpost.com/2025/03/03/hipporag-2-advancing-long-term-memory-and-contextual-retrieval-in-large-language-models/) uses Personalized PageRank over a triple graph and beats GraphRAG, RAPTOR, and LightRAG on both indexing cost and multi-hop QA.
