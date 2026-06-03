@@ -2,7 +2,9 @@
 
 **Federated knowledge commons for the open-source community.**
 
-Akashik is a peer-to-peer knowledge graph protocol where every researcher, maintainer, and engineer adds their reading and reasoning, and where every newcomer can query what the community has already learned before re-treading the same path. Each contribution is Ed25519-signed, locally owned, and federated only on demand — so the network's working set grows by what its contributors are actually curious about, not by what a central planner decided to ingest.
+A peer-to-peer knowledge graph protocol. Every contribution is signed by its curator's verified GitHub identity, locally owned, and federated on demand. The network's working set grows by what its contributors are curious about — not by what a central planner decided to ingest.
+
+> Web-search fallback rate, in simulator: **17% → 1%** over 2,000 steps. Once one peer in the network has done the work, nobody in the network pays for it again. — [§ Empirical validation](#empirical-validation--akashikbench-f)
 
 ---
 

@@ -1,25 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="akashik mark">
-  <title>akashik — 6-peer mesh mark</title>
-  <rect width="64" height="64" rx="14" fill="#0c0c14"/>
-  <g stroke="#34d399" stroke-width="1.3" opacity="0.55" fill="none" stroke-linecap="round">
-    <line x1="32" y1="12" x2="14" y2="24"/>
-    <line x1="32" y1="12" x2="50" y2="24"/>
-    <line x1="14" y1="24" x2="14" y2="40"/>
-    <line x1="50" y1="24" x2="50" y2="40"/>
-    <line x1="14" y1="40" x2="32" y2="52"/>
-    <line x1="50" y1="40" x2="32" y2="52"/>
-    <line x1="32" y1="12" x2="32" y2="52"/>
-    <line x1="14" y1="24" x2="50" y2="40"/>
-    <line x1="50" y1="24" x2="14" y2="40"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="akashik mark — recto sigil">
+  <title>akashik — recto sigil</title>
+  <desc>Codex seal: dashed ochre ring with four indexing ticks at the cardinals, parchment field, illuminated serif A in deep emerald, mono section sign beneath.</desc>
+
+  <!-- Parchment tile (round-rect 14 to match the favicon convention) -->
+  <rect width="64" height="64" rx="14" fill="#f3ecd8"/>
+
+  <!-- Four hex/index ticks at N, E, S, W — extend slightly past the outer ring -->
+  <g stroke="#9c6f1c" stroke-width="1.4" stroke-linecap="round" opacity="0.85">
+    <line x1="32" y1="0.6"  x2="32" y2="3.6"/>
+    <line x1="63.4" y1="32" x2="60.4" y2="32"/>
+    <line x1="32" y1="63.4" x2="32" y2="60.4"/>
+    <line x1="0.6" y1="32"  x2="3.6" y2="32"/>
   </g>
-  <g fill="#0c0c14" stroke="#34d399" stroke-width="1.6">
-    <circle cx="32" cy="12" r="3.6"/>
-    <circle cx="14" cy="24" r="3.6"/>
-    <circle cx="50" cy="24" r="3.6"/>
-    <circle cx="14" cy="40" r="3.6"/>
-    <circle cx="50" cy="40" r="3.6"/>
-    <circle cx="32" cy="52" r="3.6"/>
+
+  <!-- Outer dashed ring — ochre marginalia -->
+  <circle cx="32" cy="32" r="29" fill="none" stroke="#9c6f1c"
+          stroke-width="1" stroke-dasharray="3 2.5" opacity="0.9"/>
+
+  <!-- Inner whisper ring — quiet boundary inside the seal -->
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#9c6f1c"
+          stroke-width="0.45" opacity="0.35"/>
+
+  <!-- Illuminated initial A — bracketed serif, deep-leaf emerald.
+       Drawn as paths so it renders identically without the Fraunces
+       webfont loaded. Apex at (32, 13), feet at (20, 49) and (44, 49). -->
+  <g fill="#1f6f4f">
+    <!-- Left main stroke (with foot serif) -->
+    <path d="M 30.4 13 L 33.6 13 L 23.8 47 L 20 49 L 18.3 47 L 28.8 18 Z"/>
+    <!-- Right main stroke (with foot serif) -->
+    <path d="M 30.4 13 L 33.6 13 L 44.2 47 L 45.7 49 L 41.9 49 L 35.1 25 Z"/>
+    <!-- Crossbar -->
+    <path d="M 25.5 33 L 38.5 33 L 39.1 35.4 L 24.9 35.4 Z"/>
   </g>
-  <circle cx="32" cy="32" r="7.5" fill="#34d399"/>
-  <circle cx="32" cy="32" r="10.5" fill="none" stroke="#34d399" stroke-width="0.9" opacity="0.55"/>
+
+  <!-- Apex serif — tiny horizontal cap at the top of the A -->
+  <rect x="29.2" y="12" width="5.6" height="1.6" fill="#1f6f4f"/>
+
+  <!-- Section sign beneath the A — mono ochre, the codex marker -->
+  <text x="32" y="58.4" text-anchor="middle"
+        font-family="'JetBrains Mono','SF Mono',ui-monospace,monospace"
+        font-size="7.2" font-weight="500" fill="#9c6f1c">§</text>
 </svg>
