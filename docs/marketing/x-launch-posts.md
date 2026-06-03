@@ -55,53 +55,52 @@ All deps verified via gh API + ossinsight.io before selection.
 **Post 1:**
 RAG is usually "embed your docs, hope for the best."
 
-Akashik is different: it partitions by research domain (rooms), detects cross-domain connections (tunnels), and actively fetches from ArXiv + HN + RSS on a schedule.
+Akashik is different: every contribution is signed by its curator's verified GitHub identity, lives on the curator's own peer, and federates on demand to anyone running the same protocol.
 
-It's a knowledge graph, not a vector store with a search box.
+It's a knowledge graph that compounds across the community, not a vector store with a search box.
 
 **Post 2:**
-The tunnel detection is the interesting part.
+The federation is the interesting part.
 
-You track "homelab" and "ml-papers" separately. When a paper about embedding quantization in ml-papers is semantically close to a memory issue in homelab, Akashik flags it.
+You ask. Your local graph answers first. If it can't, akashik asks every connected peer in your `peers.json` — whatever they've curated flows back signed by them, with their sources attached.
 
-Cross-domain insight. Automated.
+You inherit their work in milliseconds. Cost: zero web fetches, zero tokens.
 
 **Post 3:**
-I indexed Akashik's own codebase into its own graph.
+I indexed akashik's own codebase into its own graph.
 
 55 TypeScript files, 14 npm deps, 11 git commits, 1 submodule.
 
-Now when I search "vector search sqlite" I get my code, my deps, AND an external blog post. The graph connects them.
+Now when I search "vector search sqlite" I get my code, my deps, AND a paper a teammate read last week — signed by them.
 
-Self-referential RAG.
+Self-referential RAG with attribution.
 
 ---
 
 ## Thread 3: Dev tools audience
 
 **Post 1:**
-If you use Claude Code, Codex, or OpenClaw, your agent has no memory of what you've been reading.
+If you use Claude Code, Codex, Gemini, Hermes, or OpenClaw, your agent has no memory of what your team has been reading.
 
 Akashik fixes that in 4 commands:
 
 ```
-akashik init
-akashik trigger --room homelab
-akashik index
-akashik claude install
+akashik onboard
+akashik login           # link your verified GitHub identity
+akashik this            # index the current repo into your graph
+akashik claude install  # hook into Claude Code automatically
 ```
 
-Now Claude checks your research graph automatically.
+Now Claude checks your local graph + your peers' graphs before every WebSearch.
 
 **Post 2:**
-The `discover` command suggests sources you didn't know about.
+Every WebSearch your agent makes goes through akashik first.
 
-I typed `akashik discover --room akashik-dev --auto` and it found:
-- selfh.st RSS (homelab feed)
-- Simon Willison's blog (matched "claude" keyword)
-- Papers With Code (matched "embeddings")
+If your graph (or a peer's graph) has the answer with satisfaction ≥ 0.85 and ≥ 2 hits, the WebSearch is denied — your agent uses the cached answer instead.
 
-Keyword-driven source expansion.
+If not, the web call proceeds, and the result lands in your graph signed by you. Next contributor who asks something similar pulls it from your peer.
+
+Zero behaviour change. Token cost: down. Compounding: on.
 
 ---
 
@@ -115,11 +114,11 @@ Akashik changes that.
 github.com/SaharBarak/akashik
 
 **Short post 2:**
-Every AI memory tool is key-value or markdown files.
+Every AI memory tool is single-user and gets stranded on someone's laptop.
 
-Akashik is a knowledge graph with rooms, tunnels, 8 source adapters, and a daemon that keeps it current.
+Akashik is a peer-to-peer knowledge graph. Every contribution is signed by its curator's verified GitHub identity, locally owned, and federated on demand — so one peer's research compounds for the whole network.
 
-Open source. Runs locally. No API keys.
+Open source. Runs locally. No API keys. No central server.
 
 **Short post 3:**
 I used github star-history, ossinsight, and gitstar-ranking to verify every dependency before selecting it.

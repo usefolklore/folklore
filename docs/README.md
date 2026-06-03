@@ -38,7 +38,7 @@ Locked design decisions.
 
 Everything federation-layer.
 
-- [`P2P-VISION.md`](p2p/P2P-VISION.md) — federation, identity, room sharing.
+- [`P2P-VISION.md`](p2p/P2P-VISION.md) — federation + identity vision (pre-V5 snapshot; the V5 federation model is in [`V5-PROTOCOL.md`](architecture/V5-PROTOCOL.md)).
 - [`p2p-threat-model.md`](p2p/p2p-threat-model.md) — adversary classes, mitigations.
 - [`peer-reputation-design.md`](p2p/peer-reputation-design.md) — reputation scoring system.
 - [`peer-reputation-load-spreading.md`](p2p/peer-reputation-load-spreading.md) — load-spreading via reputation epsilon-greedy.

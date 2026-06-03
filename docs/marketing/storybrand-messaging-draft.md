@@ -115,9 +115,10 @@ The Akashic Records reference is an undertone, not a costume.
    the community is curious about. See [how Akashik
    works](./how-akashik-works.md) for the architecture.
 2. **Every contribution is cryptographically signed** —
-   Ed25519-attested decentralized identifiers (DIDs). Knowledge
-   compounds *with provenance*: every record in the federation
-   carries the curator's signature, room, source URLs, and
+   Ed25519-attested decentralized identifiers (DIDs), bound to
+   the curator's verified GitHub identity. Knowledge compounds
+   *with provenance*: every record in the federation carries the
+   curator's signature, their GitHub handle, source URLs, and
    timestamp. The community sees who figured out what, and
    when — forever, without "trust the platform" being part of
    the contract.
@@ -163,8 +164,8 @@ The Akashic Records reference is an undertone, not a costume.
 
 **Transitional CTA (free resource concept):**
 > **Browse the record** — see what the community has already
-> contributed, signed and attributed. (Public peers expose
-> read-only browse-by-room.)
+> contributed, signed and attributed. (Public peers expose a
+> read-only browse endpoint — no install, no login.)
 
 **Button placement strategy:**
 - Direct CTA appears 3× on the homepage:
@@ -382,20 +383,6 @@ mechanism doc.
 > architecture →
 
 ---
-
-## Codebase ↔ brand-name reality
-
-The codebase, npm package, and existing GitHub repo are still
-called `akashik` as of this writing. The brand-marketing
-name is **Akashik**. Two-name period is normal during a rebrand;
-the package will be renamed before public launch. Until then:
-
-- Marketing materials, the website, social, and press: **Akashik**
-- Code, packages, repo URLs, internal docs (CLAUDE.md, HANDOFF.md,
-  PROJECT.md, source code): **akashik** (for now)
-- Migration plan to rename `akashik → akashik` in the
-  codebase is a separate workstream — likely a single coordinated
-  rename PR + npm package alias + DNS + GitHub repo redirect.
 
 ## Evolution of positioning across the three framing passes
 

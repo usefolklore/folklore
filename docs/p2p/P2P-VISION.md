@@ -1,5 +1,15 @@
 # P2P Knowledge Graph — Akashik v2.0 Vision
 
+> **Snapshot — v2.0 (pre-V5).** This vision doc was written when
+> rooms were the federation primitive. The federation model has
+> since shipped (V5 — see [`../architecture/V5-PROTOCOL.md`](../architecture/V5-PROTOCOL.md))
+> with `workspace?: string` (read-side, local-only) + per-node
+> `private: boolean` (sharing gate) replacing rooms entirely.
+> Treat every "room" below as roughly "workspace tag + private
+> flag" — the conceptual shape (peers, federation, mesh discovery,
+> attribution) survives; the room vocabulary doesn't. Kept as a
+> historical record of how the vision was framed before V5.
+
 ## The Idea
 
 Every developer running Akashik has a local knowledge graph. Right now these graphs are isolated — your homelab research doesn't connect to mine.

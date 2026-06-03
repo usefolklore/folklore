@@ -1,5 +1,14 @@
 # Akashik — positioning (v2.1)
 
+> **Snapshot — v2.1 (pre-V5).** This positioning draft was written
+> when "room" was still a federation primitive. Read every "room"
+> below as roughly "workspace tag + per-node `private: bool`" — the
+> V5 primitives that replaced the abstraction. The mission framing
+> (federated knowledge commons, signed by curator, federation as
+> differentiator) survives untouched; the mechanism vocabulary is
+> what changed. The current canonical messaging lives in the repo
+> README; this file is kept as the historical positioning brief.
+
 **Audience:** open-source developers who believe the VC-funded "AI
 memory" product category is structurally unsustainable — and that the
 only path forward is peers running the same tool and sharing what they

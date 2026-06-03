@@ -1,5 +1,14 @@
 # Akashik — Roadmap
 
+> **Snapshot — pre-V5 roadmap.** Written when "rooms" partitioned
+> knowledge and "tunnels" surfaced cross-domain connections. Both
+> primitives were removed in V5 — the federation model is now
+> peer-to-peer fan-out across `peers.json` with per-node `private`
+> + per-node `workspace` tag (see [`../architecture/V5-PROTOCOL.md`](../architecture/V5-PROTOCOL.md)).
+> Current product positioning lives in the repo README; the
+> active planning doc is [`../PROJECT-PLAN-AKASHIK.md`](../PROJECT-PLAN-AKASHIK.md).
+> This file is kept as the original roadmap intent.
+
 ## Vision
 
 A Claude Code plugin that turns a research daemon + daily Telegram scroll into a queryable, embeddings-backed knowledge graph. Rooms partition knowledge by domain (homelab, fundraise, etc.). Tunnels surface surprising cross-domain connections.
