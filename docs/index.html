@@ -2421,30 +2421,12 @@ akashik claude install
         <h3 style="font-family: var(--serif); font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: -0.012em; line-height: 1.12; margin: 0 0 0.8rem; max-width: 24ch;">
           Web fallback fell from <span style="color: var(--accent); font-style: italic;">17%</span> to <span style="color: var(--accent); font-style: italic;">1%</span> in 2,000 simulated steps.
         </h3>
-        <p style="max-width: 60ch; color: var(--paper-mute); font-size: 1.02rem; line-height: 1.55; margin-bottom: 1.8rem;">
-          AkashikBench-F simulates a 10-peer network with 20% offline churn and a Zipfian query distribution over the LoCoMo factual subset. The compounding slope is −4.74e-5: the curve bends downward. Once one peer in the network has done the research, the cost of the same question for every future asker collapses toward the federation round-trip.
+        <p style="max-width: 62ch; color: var(--paper-mute); font-size: 1.02rem; line-height: 1.6; margin-bottom: 1.2rem;">
+          AkashikBench-F simulates a 10-peer network with 20% offline churn and a Zipfian query distribution over the LoCoMo factual subset. By step 2,000, 95.5% of queries resolved without touching the web (the rest split 74.2% / 21.3% between the asker's own peer and the network). The compounding slope is &minus;4.74e&minus;5 &mdash; the curve bends downward. Once one peer in the network has done the research, the cost of the same question for every future asker collapses toward the federation round-trip.
         </p>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; max-width: 720px; border-top: 1px dashed var(--paper-line); border-bottom: 1px dashed var(--paper-line);">
-          <div style="padding: 1.2rem 1rem; border-right: 1px dashed var(--paper-line);">
-            <div class="mono" style="color: var(--ochre); font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 0.4rem;">local</div>
-            <div style="font-family: var(--serif); font-size: 1.6rem; line-height: 1; margin-bottom: 0.2rem;">74.2<span style="font-size: 0.9rem; color: var(--paper-mute);">%</span></div>
-            <div style="font-size: 0.78rem; color: var(--paper-mute); line-height: 1.3;">answered by your own peer</div>
-          </div>
-          <div style="padding: 1.2rem 1rem; border-right: 1px dashed var(--paper-line);">
-            <div class="mono" style="color: var(--ochre); font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 0.4rem;">federation</div>
-            <div style="font-family: var(--serif); font-size: 1.6rem; line-height: 1; margin-bottom: 0.2rem;">21.3<span style="font-size: 0.9rem; color: var(--paper-mute);">%</span></div>
-            <div style="font-size: 0.78rem; color: var(--paper-mute); line-height: 1.3;">pulled from another peer</div>
-          </div>
-          <div style="padding: 1.2rem 1rem;">
-            <div class="mono" style="color: var(--ochre); font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 0.4rem;">web fallback</div>
-            <div style="font-family: var(--serif); font-size: 1.6rem; line-height: 1; margin-bottom: 0.2rem; color: var(--vermilion);">4.5<span style="font-size: 0.9rem; color: var(--paper-mute);">%</span></div>
-            <div style="font-size: 0.78rem; color: var(--paper-mute); line-height: 1.3;">outbound only when neither could</div>
-          </div>
-        </div>
-
         <p class="mono" style="font-size: 0.72rem; color: var(--paper-mute); margin-top: 1.4rem; max-width: 60ch; line-height: 1.6;">
-          honest caveat &middot; v1 of the bench abstracts per-peer retrieval as boolean ("does peer N hold doc D"). Real-pilot validation is the 100-peer rollout queued next. Bench source: <a href="https://github.com/SaharBarak/akashik/blob/main/tests/bench-akashik-federation.test.ts" style="color: var(--ochre); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;">tests/bench-akashik-federation.test.ts</a>.
+          honest caveat &middot; the bench seeds peers with disjoint shards, so the local-vs-federation split above is a property of the simulation, not a promise. A fresh user's local rate is 0%; the brand claim is the downward bend, not any particular cell. v2 plugs real retrieval in; real-pilot validation is the 100-peer rollout queued next. Bench source: <a href="https://github.com/SaharBarak/akashik/blob/main/tests/bench-akashik-federation.test.ts" style="color: var(--ochre); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;">tests/bench-akashik-federation.test.ts</a>.
         </p>
       </div>
     </div>
