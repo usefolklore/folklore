@@ -2375,8 +2375,11 @@ akashik claude install
       <h2 data-reveal style="font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: -0.012em; line-height: 1.06; margin: 0.6rem 0 1rem;">
         <span style="color: var(--accent); font-style: italic;">75.22%</span> NDCG@10 on BEIR SciFact. Reproducible.
       </h2>
-      <p data-reveal style="max-width: 56ch; color: var(--paper-mute); font-size: 1.02rem; line-height: 1.55; margin-bottom: 2.6rem;">
+      <p data-reveal style="max-width: 56ch; color: var(--paper-mute); font-size: 1.02rem; line-height: 1.55; margin-bottom: 0.4rem;">
         Full BEIR SciFact: 5,183 docs, 300 queries. No LLM judging an LLM. CPU-only, 11&nbsp;ms median. One command to reproduce.
+      </p>
+      <p data-reveal class="mono" style="max-width: 56ch; color: var(--ochre); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 2.2rem;">
+        retrieval quality &middot; where akashik sits in the field
       </p>
       <div class="bench-bars" data-reveal style="display: grid; gap: 0.6rem; max-width: 720px;">
         <div class="bench-row" style="display: grid; grid-template-columns: 220px 1fr 60px; gap: 1rem; align-items: center; font-family: var(--mono); font-size: 0.9rem;">
@@ -2406,6 +2409,41 @@ akashik claude install
         </div>
       </div>
       <pre data-reveal style="margin-top: 2rem; background: var(--ink-900); color: #e8e8ed; padding: 1rem 1.2rem; border-radius: 8px; font-family: var(--mono); font-size: 0.85rem; max-width: 720px; overflow-x: auto;"><code>$ akashik bench beir-scifact   # one command, full reproduce</code></pre>
+
+      <!-- ───────── federation evidence — the brand-narrative anchor ───────── -->
+      <div data-reveal style="margin-top: 4.4rem; padding-top: 2.4rem; border-top: 1px dashed var(--paper-line);">
+        <p class="mono" style="color: var(--ochre); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.8rem;">
+          federation compounding &middot; the brand thesis, measured
+        </p>
+        <h3 style="font-family: var(--serif); font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: -0.012em; line-height: 1.12; margin: 0 0 0.8rem; max-width: 24ch;">
+          Web fallback fell from <span style="color: var(--accent); font-style: italic;">17%</span> to <span style="color: var(--accent); font-style: italic;">1%</span> in 2,000 simulated steps.
+        </h3>
+        <p style="max-width: 60ch; color: var(--paper-mute); font-size: 1.02rem; line-height: 1.55; margin-bottom: 1.8rem;">
+          AkashikBench-F simulates a 10-peer network with 20% offline churn and a Zipfian query distribution over the LoCoMo factual subset. The compounding slope is −4.74e-5: the curve bends downward. Once one peer in the network has done the research, the cost of the same question for every future asker collapses toward the federation round-trip.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; max-width: 720px; border-top: 1px dashed var(--paper-line); border-bottom: 1px dashed var(--paper-line);">
+          <div style="padding: 1.2rem 1rem; border-right: 1px dashed var(--paper-line);">
+            <div class="mono" style="color: var(--ochre); font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 0.4rem;">local</div>
+            <div style="font-family: var(--serif); font-size: 1.6rem; line-height: 1; margin-bottom: 0.2rem;">74.2<span style="font-size: 0.9rem; color: var(--paper-mute);">%</span></div>
+            <div style="font-size: 0.78rem; color: var(--paper-mute); line-height: 1.3;">answered by your own peer</div>
+          </div>
+          <div style="padding: 1.2rem 1rem; border-right: 1px dashed var(--paper-line);">
+            <div class="mono" style="color: var(--ochre); font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 0.4rem;">federation</div>
+            <div style="font-family: var(--serif); font-size: 1.6rem; line-height: 1; margin-bottom: 0.2rem;">21.3<span style="font-size: 0.9rem; color: var(--paper-mute);">%</span></div>
+            <div style="font-size: 0.78rem; color: var(--paper-mute); line-height: 1.3;">pulled from another peer</div>
+          </div>
+          <div style="padding: 1.2rem 1rem;">
+            <div class="mono" style="color: var(--ochre); font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 0.4rem;">web fallback</div>
+            <div style="font-family: var(--serif); font-size: 1.6rem; line-height: 1; margin-bottom: 0.2rem; color: var(--vermilion);">4.5<span style="font-size: 0.9rem; color: var(--paper-mute);">%</span></div>
+            <div style="font-size: 0.78rem; color: var(--paper-mute); line-height: 1.3;">outbound only when neither could</div>
+          </div>
+        </div>
+
+        <p class="mono" style="font-size: 0.72rem; color: var(--paper-mute); margin-top: 1.4rem; max-width: 60ch; line-height: 1.6;">
+          honest caveat &middot; v1 of the bench abstracts per-peer retrieval as boolean ("does peer N hold doc D"). Real-pilot validation is the 100-peer rollout queued next. Bench source: <a href="https://github.com/SaharBarak/akashik/blob/main/tests/bench-akashik-federation.test.ts" style="color: var(--ochre); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;">tests/bench-akashik-federation.test.ts</a>.
+        </p>
+      </div>
     </div>
   </section>
 
