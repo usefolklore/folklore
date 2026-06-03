@@ -24,7 +24,7 @@ When you ask Akashik something, the system runs through five steps:
 
 1. **Local first.** Query your own peer's graph. Hit? Return. Zero network cost.
 2. **Federation on miss.** Someone in your network has probably already read the paper, debugged the error, or written the note you're asking about. Instead of paying token + time cost to re-research what already exists nearby, akashik asks your peers. Whatever they've curated flows back signed by them, with their sources attached — you inherit their work in milliseconds. The bigger your network, the less you ever pay to learn what someone else has already learned.
-3. **Web on second miss.** If the federation can't answer with confidence, the harness performs `WebSearch` / `WebFetch` / arXiv pull on *your* machine — the only time the network reaches outward.
+3. **Web on second miss.** If the federation can't answer satisfactorily (see [§ What "satisfactory" means](#what-satisfactory-means) for the exact contract), the harness performs `WebSearch` / `WebFetch` / arXiv pull on *your* machine — the only time the network reaches outward.
 4. **Save locally, signed.** The result lands in your local graph, signed by you — your cryptographic identity and your verified GitHub handle, both attached. The source URLs you grounded on, the time you saved it, the project you saved it for — all there. You're now the keeper of that knowledge; anyone in your network who asks something similar later sees the answer came from you and can follow your sources.
 5. **Transfer on next ask.** When another contributor asks something similar later, federation fan-out reaches your peer, your research transfers to them with original attribution, and they pay nothing for the hour you spent.
 
@@ -93,8 +93,6 @@ Query the record:
 ```bash
 akashik ask "how does mxbai-rerank compare to cross-encoder on long contexts?"
 ```
-
-The query checks your local graph, then federates to every connected peer in your `peers.json`, then falls back to web research only if neither can answer. The web result lands in your local graph signed by you — the next contributor who asks something similar pulls it from your peer with full attribution.
 
 **Federate. Compound. Continue.**
 
