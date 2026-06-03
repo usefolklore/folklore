@@ -1,43 +1,68 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="akashik mark — recto sigil">
-  <title>akashik — recto sigil</title>
-  <desc>Codex seal: dashed ochre ring with four indexing ticks at the cardinals, parchment field, illuminated serif A in deep emerald, mono section sign beneath.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="akashik mark — sigillum">
+  <title>akashik — sigillum</title>
+  <desc>An old codex shown head-on, slight 3/4 tilt revealing the spine, with the akashik mystic sigil illuminated in ochre on a sepia-ink cover. The glyph is custom-drawn — a vertical stem with a bindu dot, a chandrabindu crescent, a horizontal stricture, and a descending volute — reading as a mystic mark without claiming any specific lineage.</desc>
 
-  <!-- Parchment tile (round-rect 14 to match the favicon convention) -->
+  <!-- Parchment ground (round-rect to match the favicon convention) -->
   <rect width="64" height="64" rx="14" fill="#f3ecd8"/>
 
-  <!-- Four hex/index ticks at N, E, S, W — extend slightly past the outer ring -->
-  <g stroke="#9c6f1c" stroke-width="1.4" stroke-linecap="round" opacity="0.85">
-    <line x1="32" y1="0.6"  x2="32" y2="3.6"/>
-    <line x1="63.4" y1="32" x2="60.4" y2="32"/>
-    <line x1="32" y1="63.4" x2="32" y2="60.4"/>
-    <line x1="0.6" y1="32"  x2="3.6" y2="32"/>
+  <!-- Cardinal index ticks at N / E / S / W — codex registration -->
+  <g stroke="#9c6f1c" stroke-width="1.2" stroke-linecap="round" opacity="0.7">
+    <line x1="32" y1="1.4" x2="32" y2="3.6"/>
+    <line x1="62.6" y1="32" x2="60.4" y2="32"/>
+    <line x1="32" y1="62.6" x2="32" y2="60.4"/>
+    <line x1="1.4" y1="32" x2="3.6" y2="32"/>
   </g>
 
-  <!-- Outer dashed ring — ochre marginalia -->
-  <circle cx="32" cy="32" r="29" fill="none" stroke="#9c6f1c"
-          stroke-width="1" stroke-dasharray="3 2.5" opacity="0.9"/>
+  <!-- Page block on the right edge (glimpse of the foredge) -->
+  <path d="M 50 11 L 53 13 L 53 53 L 50 53 Z" fill="#e8dfc4" stroke="#9c6f1c" stroke-width="0.4" opacity="0.85"/>
 
-  <!-- Inner whisper ring — quiet boundary inside the seal -->
-  <circle cx="32" cy="32" r="26" fill="none" stroke="#9c6f1c"
-          stroke-width="0.45" opacity="0.35"/>
+  <!-- Top page edge — thin cream sliver above the cover -->
+  <path d="M 13 9 L 53 9 L 50 11 L 11 11 Z" fill="#faf3df" stroke="#9c6f1c" stroke-width="0.4" opacity="0.85"/>
 
-  <!-- Illuminated initial A — bracketed serif, deep-leaf emerald.
-       Drawn as paths so it renders identically without the Fraunces
-       webfont loaded. Apex at (32, 13), feet at (20, 49) and (44, 49). -->
-  <g fill="#1f6f4f">
-    <!-- Left main stroke (with foot serif) -->
-    <path d="M 30.4 13 L 33.6 13 L 23.8 47 L 20 49 L 18.3 47 L 28.8 18 Z"/>
-    <!-- Right main stroke (with foot serif) -->
-    <path d="M 30.4 13 L 33.6 13 L 44.2 47 L 45.7 49 L 41.9 49 L 35.1 25 Z"/>
-    <!-- Crossbar -->
-    <path d="M 25.5 33 L 38.5 33 L 39.1 35.4 L 24.9 35.4 Z"/>
+  <!-- Spine — darker than the cover, 3/4 tilt -->
+  <path d="M 8 12 L 11 11 L 11 53 L 8 52 Z" fill="#0a0a14"/>
+
+  <!-- Main cover — deep sepia-ink with subtle warm tone -->
+  <path d="M 11 11 L 50 11 L 50 53 L 11 53 Z" fill="#1e1a14"/>
+
+  <!-- Spine raised bands — codex ridges (3) -->
+  <g stroke="#9c6f1c" stroke-width="0.5" opacity="0.85">
+    <line x1="8" y1="22" x2="11" y2="22"/>
+    <line x1="8" y1="32" x2="11" y2="32"/>
+    <line x1="8" y1="42" x2="11" y2="42"/>
   </g>
 
-  <!-- Apex serif — tiny horizontal cap at the top of the A -->
-  <rect x="29.2" y="12" width="5.6" height="1.6" fill="#1f6f4f"/>
+  <!-- Inner cartouche — dashed ornament defining the glyph field -->
+  <rect x="15.5" y="15.5" width="30" height="33" rx="2" fill="none"
+        stroke="#9c6f1c" stroke-width="0.6" stroke-dasharray="2 1.4" opacity="0.7"/>
 
-  <!-- Section sign beneath the A — mono ochre, the codex marker -->
-  <text x="32" y="58.4" text-anchor="middle"
-        font-family="'JetBrains Mono','SF Mono',ui-monospace,monospace"
-        font-size="7.2" font-weight="500" fill="#9c6f1c">§</text>
+  <!-- Tiny gilt corner flourishes on the cartouche -->
+  <g stroke="#9c6f1c" stroke-width="0.55" fill="none" opacity="0.85">
+    <path d="M 15.5 18.5 L 15.5 15.5 L 18.5 15.5"/>
+    <path d="M 42.5 15.5 L 45.5 15.5 L 45.5 18.5"/>
+    <path d="M 15.5 45.5 L 15.5 48.5 L 18.5 48.5"/>
+    <path d="M 42.5 48.5 L 45.5 48.5 L 45.5 45.5"/>
+  </g>
+
+  <!-- Mystic sigil — illuminated in ochre on the cover.
+       Composition: bindu (dot) above a chandrabindu (open crescent),
+       above a horizontal stricture, above the main volute body,
+       trailing a downward curl. Reads as a mystic glyph at a glance
+       without claiming any specific cultural script. -->
+  <g fill="#9c6f1c">
+    <!-- Bindu — sacred dot at the apex -->
+    <circle cx="30.5" cy="20.4" r="1.2"/>
+    <!-- Chandrabindu — open crescent beneath the bindu -->
+    <path d="M 27.6 23.3 Q 30.5 21.6 33.4 23.3" fill="none"
+          stroke="#9c6f1c" stroke-width="1.1" stroke-linecap="round"/>
+    <!-- Horizontal stricture — the line beneath -->
+    <path d="M 24.6 26.5 L 36.4 26.5" stroke="#9c6f1c"
+          stroke-width="1.2" stroke-linecap="round"/>
+    <!-- Volute body — main stylized curve, S-like descent -->
+    <path d="M 23.8 29 Q 36 29 36 33.5 Q 36 36 31 36 Q 26 36 26 38.4 Q 26 41 31 41 Q 36 41 36 43.6 Q 36 46.3 30 46.6"
+          fill="none" stroke="#9c6f1c" stroke-width="1.7" stroke-linecap="round"/>
+    <!-- Trailing volute — the descending curl off the right side -->
+    <path d="M 36 34.5 Q 40 35.8 40.6 39 Q 41 41.8 38.6 42"
+          fill="none" stroke="#9c6f1c" stroke-width="1.2" stroke-linecap="round"/>
+  </g>
 </svg>

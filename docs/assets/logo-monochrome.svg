@@ -13,37 +13,66 @@
     </style>
   </defs>
 
-  <!-- Recto sigil — monochrome variant -->
-  <g transform="translate(0,0)" fill="none" stroke="currentColor" color="#1e1a14"
-     stroke-linecap="round">
+  <!-- Sigillum — codex variant, single ink (currentColor) -->
+  <g color="#1e1a14" stroke-linecap="round">
 
+    <!-- Tile border -->
     <rect x="0.6" y="0.6" width="62.8" height="62.8" rx="13.4"
-          fill="none" stroke-width="1.1"/>
+          fill="none" stroke="currentColor" stroke-width="1.1"/>
 
-    <g stroke-width="1.4">
+    <!-- Cardinal ticks -->
+    <g stroke="currentColor" stroke-width="1.4" fill="none">
       <line x1="32" y1="3.5"  x2="32" y2="6.5"/>
       <line x1="60.5" y1="32" x2="57.5" y2="32"/>
       <line x1="32" y1="60.5" x2="32" y2="57.5"/>
       <line x1="3.5" y1="32"  x2="6.5" y2="32"/>
     </g>
 
-    <circle cx="32" cy="32" r="27" fill="none"
-            stroke-width="1" stroke-dasharray="3 2.5"/>
-    <circle cx="32" cy="32" r="24" fill="none"
-            stroke-width="0.45" opacity="0.35"/>
+    <!-- Page block (right glimpse) — hatched in stroke -->
+    <path d="M 50 11 L 53 13 L 53 53 L 50 53 Z" fill="none"
+          stroke="currentColor" stroke-width="0.55" opacity="0.85"/>
 
-    <!-- Illuminated A — filled with currentColor, no stroke -->
-    <g fill="currentColor" stroke="none">
-      <path d="M 30.4 14 L 33.6 14 L 23.8 46 L 20 48 L 18.3 46 L 28.8 19 Z"/>
-      <path d="M 30.4 14 L 33.6 14 L 44.2 46 L 45.7 48 L 41.9 48 L 35.1 26 Z"/>
-      <path d="M 25.5 33 L 38.5 33 L 39.1 35.4 L 24.9 35.4 Z"/>
-      <rect x="29.2" y="13" width="5.6" height="1.6"/>
+    <!-- Top edge sliver -->
+    <path d="M 13 9 L 53 9 L 50 11 L 11 11 Z" fill="none"
+          stroke="currentColor" stroke-width="0.55" opacity="0.85"/>
+
+    <!-- Spine block -->
+    <path d="M 8 12 L 11 11 L 11 53 L 8 52 Z" fill="currentColor"/>
+
+    <!-- Cover block — outlined only in monochrome (no fill) so the
+         glyph reads against the page surface -->
+    <path d="M 11 11 L 50 11 L 50 53 L 11 53 Z" fill="none"
+          stroke="currentColor" stroke-width="0.9"/>
+
+    <!-- Spine raised bands -->
+    <g stroke="currentColor" stroke-width="0.5" opacity="0.8">
+      <line x1="8" y1="22" x2="11" y2="22"/>
+      <line x1="8" y1="32" x2="11" y2="32"/>
+      <line x1="8" y1="42" x2="11" y2="42"/>
     </g>
 
-    <text x="32" y="57.4" text-anchor="middle"
-          font-family="'JetBrains Mono','SF Mono',ui-monospace,monospace"
-          font-size="7.2" font-weight="500" fill="currentColor"
-          opacity="0.7" stroke="none">§</text>
+    <!-- Inner cartouche -->
+    <rect x="15.5" y="15.5" width="30" height="33" rx="2" fill="none"
+          stroke="currentColor" stroke-width="0.55" stroke-dasharray="2 1.4" opacity="0.7"/>
+
+    <!-- Gilt corner flourishes (monochrome strokes) -->
+    <g stroke="currentColor" stroke-width="0.55" fill="none" opacity="0.85">
+      <path d="M 15.5 18.5 L 15.5 15.5 L 18.5 15.5"/>
+      <path d="M 42.5 15.5 L 45.5 15.5 L 45.5 18.5"/>
+      <path d="M 15.5 45.5 L 15.5 48.5 L 18.5 48.5"/>
+      <path d="M 42.5 48.5 L 45.5 48.5 L 45.5 45.5"/>
+    </g>
+
+    <!-- Mystic sigil — currentColor strokes/fill, same geometry as colour mark -->
+    <circle cx="30.5" cy="20.4" r="1.2" fill="currentColor"/>
+    <path d="M 27.6 23.3 Q 30.5 21.6 33.4 23.3" fill="none"
+          stroke="currentColor" stroke-width="1.1"/>
+    <path d="M 24.6 26.5 L 36.4 26.5" stroke="currentColor"
+          stroke-width="1.2" fill="none"/>
+    <path d="M 23.8 29 Q 36 29 36 33.5 Q 36 36 31 36 Q 26 36 26 38.4 Q 26 41 31 41 Q 36 41 36 43.6 Q 36 46.3 30 46.6"
+          fill="none" stroke="currentColor" stroke-width="1.7"/>
+    <path d="M 36 34.5 Q 40 35.8 40.6 39 Q 41 41.8 38.6 42"
+          fill="none" stroke="currentColor" stroke-width="1.2"/>
   </g>
 
   <text x="80" y="43" class="wm-text">akashik</text>
