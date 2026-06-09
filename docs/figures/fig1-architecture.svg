@@ -5,33 +5,33 @@
       <path d="M0,0 L7,3 L0,6 Z" fill="#333"/>
     </marker>
     <marker id="ahc" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
-      <path d="M0,0 L7,3 L0,6 Z" fill="#8a6233"/>
+      <path d="M0,0 L7,3 L0,6 Z" fill="#111111"/>
     </marker>
   </defs>
   <g font-size="11.5" fill="#1a1a1a" text-anchor="middle">
     <!-- main line y~96 -->
-    <rect x="16"  y="70" width="116" height="52" rx="5" fill="#f3f0e8" stroke="#333"/>
+    <rect x="16"  y="70" width="116" height="52" rx="5" fill="#f4f4f4" stroke="#333"/>
     <text x="74" y="91">Harness call</text><text x="74" y="107" font-size="10" fill="#555">WebSearch / WebFetch</text>
 
-    <rect x="160" y="70" width="92" height="52" rx="5" fill="#f3f0e8" stroke="#333"/>
+    <rect x="160" y="70" width="92" height="52" rx="5" fill="#f4f4f4" stroke="#333"/>
     <text x="206" y="92">PreToolUse</text><text x="206" y="108">hook</text>
 
-    <rect x="280" y="70" width="140" height="52" rx="5" fill="#f3f0e8" stroke="#333"/>
+    <rect x="280" y="70" width="140" height="52" rx="5" fill="#f4f4f4" stroke="#333"/>
     <text x="350" y="91">local graph +</text><text x="350" y="107">peers.json fan-out</text>
 
-    <rect x="448" y="62" width="150" height="68" rx="5" fill="#faf3e6" stroke="#8a6233" stroke-width="1.6"/>
-    <text x="523" y="84" fill="#8a6233" font-weight="bold">satisfaction gate</text>
-    <text x="523" y="100" font-size="10" fill="#6a5638">&#8805;0.85 &#183; &#8805;2 hits</text>
-    <text x="523" y="114" font-size="10" fill="#6a5638">&#183; use_memory</text>
+    <rect x="448" y="62" width="150" height="68" rx="5" fill="#f0f0f0" stroke="#111111" stroke-width="1.6"/>
+    <text x="523" y="84" fill="#111111" font-weight="bold">satisfaction gate</text>
+    <text x="523" y="100" font-size="10" fill="#444444">&#8805;0.85 &#183; &#8805;2 hits</text>
+    <text x="523" y="114" font-size="10" fill="#444444">&#183; use_memory</text>
 
-    <rect x="626" y="70" width="84" height="52" rx="5" fill="#eef6f0" stroke="#1f6f4f"/>
+    <rect x="626" y="70" width="84" height="52" rx="5" fill="#f0f0f0" stroke="#555555"/>
     <text x="668" y="90" font-size="10">inject signed</text><text x="668" y="104" font-size="10">peer context</text>
 
     <!-- web fallback branch -->
-    <rect x="448" y="232" width="150" height="50" rx="5" fill="#f3f0e8" stroke="#333"/>
+    <rect x="448" y="232" width="150" height="50" rx="5" fill="#f4f4f4" stroke="#333"/>
     <text x="523" y="262">web fetch (fallback)</text>
 
-    <rect x="280" y="232" width="140" height="50" rx="5" fill="#f3f0e8" stroke="#333"/>
+    <rect x="280" y="232" width="140" height="50" rx="5" fill="#f4f4f4" stroke="#333"/>
     <text x="350" y="254">sign + disseminate</text><text x="350" y="270" font-size="10" fill="#555">save-back to network</text>
   </g>
 
@@ -42,14 +42,14 @@
     <line x1="420" y1="96" x2="446" y2="96"/>
   </g>
   <!-- pass arrow (copper) -->
-  <line x1="598" y1="96" x2="624" y2="96" stroke="#8a6233" stroke-width="1.6" marker-end="url(#ahc)"/>
-  <text x="611" y="60" font-size="10" fill="#1f6f4f" text-anchor="middle">pass</text>
+  <line x1="598" y1="96" x2="624" y2="96" stroke="#111111" stroke-width="1.6" marker-end="url(#ahc)"/>
+  <text x="611" y="60" font-size="10" fill="#555555" text-anchor="middle">pass</text>
   <!-- fail arrow down -->
   <line x1="523" y1="130" x2="523" y2="230" stroke="#333" stroke-width="1.4" marker-end="url(#ah)"/>
-  <text x="535" y="185" font-size="10" fill="#a8401a">fail / miss</text>
+  <text x="535" y="185" font-size="10" fill="#111111">fail / miss</text>
   <!-- web -> sign -->
   <line x1="448" y1="257" x2="422" y2="257" stroke="#333" stroke-width="1.4" marker-end="url(#ah)"/>
   <!-- sign -> back up to query (save-back loop) -->
-  <path d="M280,257 C 200,257 200,96 278,96" stroke="#1f6f4f" stroke-width="1.4" fill="none" stroke-dasharray="4 3" marker-end="url(#ah)"/>
-  <text x="150" y="180" font-size="10" fill="#1f6f4f" text-anchor="middle">R(T,t) grows</text>
+  <path d="M280,257 C 200,257 200,96 278,96" stroke="#555555" stroke-width="1.4" fill="none" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+  <text x="150" y="180" font-size="10" fill="#555555" text-anchor="middle">R(T,t) grows</text>
 </svg>

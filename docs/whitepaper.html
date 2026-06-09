@@ -6,117 +6,126 @@
 <title>Akashik: A Cooperative Compounding-Inference Protocol</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
 <script>
   window.MathJax = {
     tex: { displayMath: [['\\[','\\]'], ['$$','$$']], inlineMath: [['\\(','\\)']] },
-    svg: { fontCache: 'global', scale: 0.95 },
+    svg: { fontCache: 'global', scale: 0.92 },
     startup: { typeset: true }
   };
 </script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 <style>
-  :root {
-    --ink:#16130e; --mute:#4a4640; --faint:#8c857a;
-    --line:#d9d4c8; --line2:#ebe7dd;
-    --accent:#8a6233; --rule:#222;
-  }
   * { box-sizing:border-box; }
   html { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   body {
-    font-family:'Source Serif 4', Georgia, 'Times New Roman', serif;
-    color:var(--ink); background:#ffffff;
-    font-size:10.5pt; line-height:1.5;
+    font-family:'STIX Two Text', Georgia, 'Times New Roman', serif;
+    color:#000; background:#fff;
+    font-size:10.5pt; line-height:1.42;
     margin:0; padding:0;
-    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    text-rendering:optimizeLegibility;
   }
-  .paper { max-width:43rem; margin:0 auto; padding:2.6rem 2.2rem 3rem; }
+  .paper { max-width:43rem; margin:0 auto; padding:2.6rem 2rem 3rem; }
 
-  /* title block */
-  h1 {
-    font-family:'Source Sans 3', sans-serif; font-weight:700;
-    font-size:21pt; line-height:1.12; letter-spacing:-0.01em;
-    margin:0 0 0.35rem; color:var(--ink);
+  /* ---- title block (centered) ---- */
+  .titleblock { text-align:center; margin:0 0 1.1rem; }
+  .titleblock h1 {
+    font-family:'STIX Two Text', serif; font-weight:700;
+    font-size:18.5pt; line-height:1.14; letter-spacing:0;
+    margin:0 0 0.4rem;
   }
-  h1 + p { color:var(--mute); font-size:11.5pt; margin:0 0 0.2rem; }
-  .paper > p:nth-of-type(2) { color:var(--faint); font-family:'Source Sans 3',sans-serif; font-size:9pt; margin-bottom:0.4rem; }
+  .titleblock p { margin:0.1rem 0; text-indent:0; text-align:center; }
+  .titleblock p:first-of-type { font-size:11pt; font-style:italic; }
+  .titleblock p:first-of-type strong { font-weight:400; }
+  .titleblock p:last-of-type { font-size:9pt; color:#333; }
 
-  /* sections */
+  /* ---- abstract (set apart, narrower, smaller) ---- */
+  .abstract { margin:0.4rem 1.6em 0.6rem; font-size:9.6pt; line-height:1.4; }
+  .abstract h2 {
+    text-align:center; border:none; margin:0 0 0.4rem; padding:0;
+    font-size:10.5pt; font-weight:700; font-variant:small-caps; letter-spacing:0.04em;
+  }
+  .abstract p { text-indent:0; text-align:justify; hyphens:auto; margin:0 0 0.4rem; }
+  .abstract p:last-of-type { font-size:9.2pt; } /* keywords */
+
+  /* ---- numbered section headings (serif bold, LaTeX-article style) ---- */
   h2 {
-    font-family:'Source Sans 3', sans-serif; font-weight:700;
-    font-size:13.5pt; letter-spacing:-0.005em;
-    margin:1.9rem 0 0.55rem; padding-top:0.65rem;
-    border-top:1px solid var(--line); color:var(--ink);
+    font-family:'STIX Two Text', serif; font-weight:700;
+    font-size:12.5pt; margin:1.5rem 0 0.4rem; color:#000;
     page-break-after:avoid;
   }
   h3 {
-    font-family:'Source Sans 3', sans-serif; font-weight:600;
-    font-size:11pt; margin:1.15rem 0 0.4rem; color:var(--accent);
+    font-family:'STIX Two Text', serif; font-weight:600; font-style:italic;
+    font-size:11pt; margin:1rem 0 0.3rem; color:#000;
     page-break-after:avoid;
   }
-  p { margin:0 0 0.62rem; text-align:justify; hyphens:auto; -webkit-hyphens:auto; }
-  strong { font-weight:700; }
-  em { font-style:italic; }
-  a { color:var(--accent); text-decoration:none; }
 
-  code {
-    font-family:'Source Code Pro', ui-monospace, monospace; font-size:0.88em;
-    background:#f4f1ea; padding:0.06em 0.3em; border-radius:3px;
-  }
+  /* ---- body paragraphs: first-line indent, no gaps ---- */
+  p { margin:0; text-indent:1.5em; text-align:justify; hyphens:auto; -webkit-hyphens:auto; }
+  h1 + p, h2 + p, h3 + p, blockquote p, li p, td p { text-indent:0; }
+  strong { font-weight:700; } em { font-style:italic; }
+  a { color:#000; text-decoration:none; }
+  a[href^="http"] { text-decoration:underline; text-decoration-thickness:0.5px; text-underline-offset:1.5px; }
+
+  /* ---- code ---- */
+  code { font-family:'Source Code Pro', ui-monospace, monospace; font-size:0.86em; }
   pre {
-    background:#f7f5ef; border:1px solid var(--line2); border-radius:4px;
-    padding:0.7rem 0.9rem; overflow-x:auto;
-    font-family:'Source Code Pro', monospace; font-size:0.84em; line-height:1.5;
-    page-break-inside:avoid; text-align:left;
+    background:#f6f6f6; border:1px solid #ddd; border-radius:2px;
+    padding:0.65rem 0.85rem; overflow-x:auto;
+    font-family:'Source Code Pro', monospace; font-size:0.82em; line-height:1.45;
+    page-break-inside:avoid; text-align:left; margin:0.6rem 0;
   }
-  pre code { background:none; padding:0; }
+  pre code { font-size:1em; }
 
-  blockquote {
-    margin:0.7rem 0; padding:0.3rem 0 0.3rem 1rem;
-    border-left:2.5px solid var(--accent); color:var(--mute); font-style:italic;
-  }
+  blockquote { margin:0.6rem 1.4em; padding:0; font-style:italic; }
   blockquote p { text-align:left; }
 
-  /* lists */
-  ul,ol { margin:0 0 0.62rem; padding-left:1.4rem; }
-  li { margin:0.18rem 0; text-align:justify; hyphens:auto; }
+  /* ---- lists ---- */
+  ul,ol { margin:0.3rem 0 0.5rem; padding-left:1.5em; }
+  li { margin:0.12rem 0; text-align:justify; hyphens:auto; }
 
-  /* tables */
-  table { border-collapse:collapse; width:100%; margin:0.9rem 0; font-size:0.9em; page-break-inside:avoid; }
-  th,td { border:1px solid var(--line); padding:0.32rem 0.55rem; text-align:left; vertical-align:top; }
-  th { background:#f4f1ea; font-weight:700; font-family:'Source Sans 3',sans-serif; }
-
-  /* figures */
-  figure { margin:1.1rem 0 1.2rem; text-align:center; page-break-inside:avoid; }
-  figure img { max-width:100%; height:auto; border:1px solid var(--line2); border-radius:3px; background:#fff; }
-  figcaption {
-    font-family:'Source Sans 3', sans-serif; font-size:8.6pt; line-height:1.45;
-    color:var(--mute); text-align:left; margin:0.5rem auto 0; max-width:90%;
+  /* ---- booktabs-style tables ---- */
+  table {
+    border-collapse:collapse; margin:0.8rem auto; font-size:9pt;
+    border-top:1.3px solid #000; border-bottom:1.3px solid #000;
+    page-break-inside:avoid; min-width:60%;
   }
-  figcaption strong { color:var(--ink); }
+  thead th { border-bottom:1px solid #000; }
+  th,td { border:none; padding:0.3rem 0.7rem; text-align:left; vertical-align:top; }
+  th { font-weight:700; }
 
-  hr { border:0; border-top:1px solid var(--line); margin:1.7rem 0; }
+  /* ---- figures (B&W, centered, academic caption) ---- */
+  figure { margin:1rem auto 1.1rem; text-align:center; page-break-inside:avoid; }
+  figure img { max-width:86%; height:auto; }
+  figcaption {
+    font-size:8.6pt; line-height:1.4; color:#000;
+    text-align:justify; margin:0.45rem auto 0; max-width:86%; hyphens:auto;
+  }
+  figcaption strong { font-weight:700; }
 
-  /* keywords + abstract emphasis */
-  .paper h2:first-of-type { border-top:none; }
-  mjx-container[display="true"] { margin:0.7rem 0 !important; page-break-inside:avoid; }
+  hr { border:0; border-top:0.6px solid #000; margin:1rem 0; }
 
-  @page { margin:18mm 16mm; size:A4; }
+  mjx-container[display="true"] { margin:0.6rem 0 !important; page-break-inside:avoid; }
+
+  /* ---- print: gutters ---- */
+  @page { size:A4; margin:22mm 25mm; }
   @media print {
     .paper { padding:0; max-width:none; }
-    a { color:var(--ink); }
+    pre { background:#f6f6f6 !important; }
   }
 </style>
 </head>
 <body>
 <div class="paper">
-<h1>Akashik: A Cooperative Compounding-Inference Protocol</h1>
+<div class="titleblock"><h1>Akashik: A Cooperative Compounding-Inference Protocol</h1>
 <p><strong>A peer-to-peer knowledge layer where research compounds across the network.</strong></p>
 <p>Version 0.1 (pre-launch draft) · MIT-licensed protocol</p>
+</div>
 <hr>
-<h2>Abstract</h2>
+<div class="abstract"><h2>Abstract</h2>
 <p>Large language model agents continuously re-derive the same answers. The same paper is read, the same regression is debugged, and the same retrieval is billed per token thousands of times daily across the open-source community, with each result discarded when the session ends. Akashik is a peer-to-peer protocol designed to make that inference work compound rather than evaporate. Each peer maintains a local graph-RAG over its own code, research, and past sessions; queries fan out to connected peers before reaching the paid web; and every record is signed with a cryptographic identity bound to a verified GitHub handle. We formalize the central claim, &quot;we compound on inference,&quot; as a monotonicity property over R(T,t), the number of peers holding a resolved answer for topic T at time t. The claim is grounded in established cache theory: pooled cooperative capacity under Mandelbrot-Zipf demand, evaluated with Che&#39;s LRU approximation, raises the network&#39;s hit-rate ceiling and collapses the marginal cost of resolving a topic after the first peer pays for it. A 10-peer federation simulator shows the web-fallback rate falling from 17% to 1% over 2,000 steps. We show, however, that this v1 result treats per-peer retrieval as a boolean, which makes part of the decay true by construction rather than an empirical discovery; we therefore present it as a demonstration, not evidence, and specify the v2 experiment, a semantic-satisfaction-threshold sweep, that makes the claim genuinely falsifiable. This paper presents the full system architecture, a formal compounding model, a security architecture and threat model centered on provenance-attested retrieval against context poisoning, the empirical results to date with their limitations, and the open problems that remain.</p>
 <p><strong>Keywords:</strong> peer-to-peer retrieval, retrieval-augmented generation, cooperative cache theory, federated knowledge, cryptographic provenance, RAG poisoning, trust calibration.</p>
+</div>
 <hr>
 <h2>1. Introduction</h2>
 <h3>1.1 The redundant-inference problem</h3>

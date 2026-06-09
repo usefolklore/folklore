@@ -24,13 +24,13 @@
     <text x="680" y="378">2000</text>
   </g>
   <!-- decay curve -->
-  <polyline fill="none" stroke="#8a6233" stroke-width="2.2"
+  <polyline fill="none" stroke="#111111" stroke-width="2.2"
     points="80,57.8 155,179.2 230,248.5 305,288.5 380,311.5 455,324.6 530,332.1 605,336.4 680,338.8"/>
   <!-- endpoints -->
-  <circle cx="80"  cy="57.8"  r="4" fill="#a8401a"/>
-  <circle cx="680" cy="338.8" r="4" fill="#8a6233"/>
-  <text x="92"  y="54"  fill="#a8401a" font-size="12" font-weight="bold">17%</text>
-  <text x="668" y="330" fill="#8a6233" font-size="12" font-weight="bold" text-anchor="end">1%</text>
+  <circle cx="80"  cy="57.8"  r="4" fill="#111111"/>
+  <circle cx="680" cy="338.8" r="4" fill="#111111"/>
+  <text x="92"  y="54"  fill="#111111" font-size="12" font-weight="bold">17%</text>
+  <text x="668" y="330" fill="#111111" font-size="12" font-weight="bold" text-anchor="end">1%</text>
   <!-- axis labels -->
   <text x="380" y="404" fill="#222" font-size="12" text-anchor="middle">simulation step (t)</text>
   <text x="26" y="200" fill="#222" font-size="12" text-anchor="middle" transform="rotate(-90 26 200)">web-fallback rate</text>

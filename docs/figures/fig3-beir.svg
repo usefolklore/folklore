@@ -18,14 +18,14 @@
     <text x="72" y="64">0.8</text>
   </g>
   <!-- bars -->
-  <rect x="105" y="77.9"  width="70" height="282.1" fill="#8a6233"/>
-  <rect x="225" y="141"   width="70" height="219"   fill="#b9b1a1"/>
-  <rect x="345" y="194.6" width="70" height="165.4" fill="#b9b1a1"/>
-  <rect x="465" y="241.9" width="70" height="118.1" fill="#b9b1a1"/>
-  <rect x="585" y="259.5" width="70" height="100.5" fill="#b9b1a1"/>
+  <rect x="105" y="77.9"  width="70" height="282.1" fill="#111111"/>
+  <rect x="225" y="141"   width="70" height="219"   fill="#cccccc"/>
+  <rect x="345" y="194.6" width="70" height="165.4" fill="#cccccc"/>
+  <rect x="465" y="241.9" width="70" height="118.1" fill="#cccccc"/>
+  <rect x="585" y="259.5" width="70" height="100.5" fill="#cccccc"/>
   <!-- value labels -->
   <g font-size="12" text-anchor="middle">
-    <text x="140" y="70"  fill="#8a6233" font-weight="bold">0.7522</text>
+    <text x="140" y="70"  fill="#111111" font-weight="bold">0.7522</text>
     <text x="260" y="133" fill="#555">0.5840</text>
     <text x="380" y="187" fill="#555">0.4410</text>
     <text x="500" y="234" fill="#555">0.3150</text>
