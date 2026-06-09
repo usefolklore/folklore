@@ -3,91 +3,152 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Akashik White Paper</title>
+<title>Akashik: A Cooperative Compounding-Inference Protocol</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
 <script>
   window.MathJax = {
     tex: { displayMath: [['\\[','\\]'], ['$$','$$']], inlineMath: [['\\(','\\)']] },
-    svg: { fontCache: 'global' },
+    svg: { fontCache: 'global', scale: 0.95 },
     startup: { typeset: true }
   };
 </script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 <style>
   :root {
-    --ink:#241a10; --mute:#5a4831; --faint:#8a795f;
-    --paper:#faf6ec; --paper2:#f1ead7; --line:rgba(36,26,16,0.14);
-    --accent:#8a6233; --accent2:#a8401a;
+    --ink:#16130e; --mute:#4a4640; --faint:#8c857a;
+    --line:#d9d4c8; --line2:#ebe7dd;
+    --accent:#8a6233; --rule:#222;
   }
   * { box-sizing:border-box; }
   html { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   body {
-    font-family:'Geist',-apple-system,BlinkMacSystemFont,sans-serif;
-    color:var(--ink); background:var(--paper);
-    line-height:1.55; font-size:10.5pt;
+    font-family:'Source Serif 4', Georgia, 'Times New Roman', serif;
+    color:var(--ink); background:#ffffff;
+    font-size:10.5pt; line-height:1.5;
     margin:0; padding:0;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   }
-  .wrap { max-width:46rem; margin:0 auto; padding:2.4rem 2rem 3rem; }
-  h1 { font-family:'Fraunces',Georgia,serif; font-weight:600; font-size:26pt; line-height:1.08; letter-spacing:-0.01em; margin:0 0 0.2rem; }
-  h2 { font-family:'Geist'; font-weight:600; font-size:15pt; letter-spacing:-0.01em; margin:1.8rem 0 0.6rem; padding-top:0.6rem; border-top:1px solid var(--line); color:var(--ink); page-break-after:avoid; }
-  h3 { font-family:'Geist'; font-weight:600; font-size:11.5pt; margin:1.1rem 0 0.4rem; color:var(--accent); page-break-after:avoid; }
-  p { margin:0 0 0.7rem; }
-  strong { font-weight:600; }
+  .paper { max-width:43rem; margin:0 auto; padding:2.6rem 2.2rem 3rem; }
+
+  /* title block */
+  h1 {
+    font-family:'Source Sans 3', sans-serif; font-weight:700;
+    font-size:21pt; line-height:1.12; letter-spacing:-0.01em;
+    margin:0 0 0.35rem; color:var(--ink);
+  }
+  h1 + p { color:var(--mute); font-size:11.5pt; margin:0 0 0.2rem; }
+  .paper > p:nth-of-type(2) { color:var(--faint); font-family:'Source Sans 3',sans-serif; font-size:9pt; margin-bottom:0.4rem; }
+
+  /* sections */
+  h2 {
+    font-family:'Source Sans 3', sans-serif; font-weight:700;
+    font-size:13.5pt; letter-spacing:-0.005em;
+    margin:1.9rem 0 0.55rem; padding-top:0.65rem;
+    border-top:1px solid var(--line); color:var(--ink);
+    page-break-after:avoid;
+  }
+  h3 {
+    font-family:'Source Sans 3', sans-serif; font-weight:600;
+    font-size:11pt; margin:1.15rem 0 0.4rem; color:var(--accent);
+    page-break-after:avoid;
+  }
+  p { margin:0 0 0.62rem; text-align:justify; hyphens:auto; -webkit-hyphens:auto; }
+  strong { font-weight:700; }
   em { font-style:italic; }
   a { color:var(--accent); text-decoration:none; }
-  code { font-family:'Geist Mono',ui-monospace,monospace; font-size:0.9em; background:var(--paper2); padding:0.08em 0.32em; border-radius:3px; }
-  pre { background:var(--paper2); border:1px solid var(--line); border-radius:4px; padding:0.7rem 0.9rem; overflow-x:auto; font-family:'Geist Mono',monospace; font-size:0.86em; line-height:1.5; page-break-inside:avoid; }
+
+  code {
+    font-family:'Source Code Pro', ui-monospace, monospace; font-size:0.88em;
+    background:#f4f1ea; padding:0.06em 0.3em; border-radius:3px;
+  }
+  pre {
+    background:#f7f5ef; border:1px solid var(--line2); border-radius:4px;
+    padding:0.7rem 0.9rem; overflow-x:auto;
+    font-family:'Source Code Pro', monospace; font-size:0.84em; line-height:1.5;
+    page-break-inside:avoid; text-align:left;
+  }
   pre code { background:none; padding:0; }
-  blockquote { margin:0.7rem 0; padding:0.4rem 0 0.4rem 1rem; border-left:2px solid var(--accent); color:var(--mute); font-style:italic; }
-  table { border-collapse:collapse; width:100%; margin:0.7rem 0; font-size:0.92em; page-break-inside:avoid; }
-  th,td { border:1px solid var(--line); padding:0.35rem 0.55rem; text-align:left; vertical-align:top; }
-  th { background:var(--paper2); font-weight:600; }
-  hr { border:0; border-top:1px solid var(--line); margin:1.6rem 0; }
-  ul,ol { margin:0 0 0.7rem; padding-left:1.3rem; }
-  li { margin:0.15rem 0; }
-  mjx-container[display="true"] { margin:0.6rem 0 !important; page-break-inside:avoid; }
-  .doc-head { margin-bottom:1.4rem; }
-  .doc-head .sub { color:var(--mute); font-size:11pt; margin-top:0.3rem; }
-  .doc-head .meta { font-family:'Geist Mono',monospace; font-size:8.5pt; color:var(--faint); letter-spacing:0.04em; margin-top:0.5rem; }
-  @page { margin:14mm 0; size:A4; }
-  @media print { .wrap { padding-top:0; } }
+
+  blockquote {
+    margin:0.7rem 0; padding:0.3rem 0 0.3rem 1rem;
+    border-left:2.5px solid var(--accent); color:var(--mute); font-style:italic;
+  }
+  blockquote p { text-align:left; }
+
+  /* lists */
+  ul,ol { margin:0 0 0.62rem; padding-left:1.4rem; }
+  li { margin:0.18rem 0; text-align:justify; hyphens:auto; }
+
+  /* tables */
+  table { border-collapse:collapse; width:100%; margin:0.9rem 0; font-size:0.9em; page-break-inside:avoid; }
+  th,td { border:1px solid var(--line); padding:0.32rem 0.55rem; text-align:left; vertical-align:top; }
+  th { background:#f4f1ea; font-weight:700; font-family:'Source Sans 3',sans-serif; }
+
+  /* figures */
+  figure { margin:1.1rem 0 1.2rem; text-align:center; page-break-inside:avoid; }
+  figure img { max-width:100%; height:auto; border:1px solid var(--line2); border-radius:3px; background:#fff; }
+  figcaption {
+    font-family:'Source Sans 3', sans-serif; font-size:8.6pt; line-height:1.45;
+    color:var(--mute); text-align:left; margin:0.5rem auto 0; max-width:90%;
+  }
+  figcaption strong { color:var(--ink); }
+
+  hr { border:0; border-top:1px solid var(--line); margin:1.7rem 0; }
+
+  /* keywords + abstract emphasis */
+  .paper h2:first-of-type { border-top:none; }
+  mjx-container[display="true"] { margin:0.7rem 0 !important; page-break-inside:avoid; }
+
+  @page { margin:18mm 16mm; size:A4; }
+  @media print {
+    .paper { padding:0; max-width:none; }
+    a { color:var(--ink); }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="paper">
 <h1>Akashik: A Cooperative Compounding-Inference Protocol</h1>
 <p><strong>A peer-to-peer knowledge layer where research compounds across the network.</strong></p>
 <p>Version 0.1 (pre-launch draft) · MIT-licensed protocol</p>
 <hr>
 <h2>Abstract</h2>
-<p>Large language model agents re-derive the same answers continuously. The same paper is read, the same regression is debugged, and the same retrieval is paid for thousands of times a day across the open-source community, with each result discarded when the session ends. Akashik is a peer-to-peer protocol that makes that work compound instead of evaporate. Each peer maintains a local graph-RAG over its own code, research, and past sessions; queries fan out to connected peers before they reach the paid web; and every record is signed with a cryptographic identity bound to a verified GitHub handle. We formalize the central claim, &quot;we compound on inference,&quot; as a monotonicity property over R(T,t), the number of peers holding a resolved answer for a topic T at time t, and we ground it in established cache theory: pooled cooperative capacity under Mandelbrot-Zipf demand, evaluated with Che&#39;s LRU approximation, raises the network&#39;s hit-rate ceiling and collapses the marginal cost of resolving a topic after the first peer pays for it. A 10-peer federation simulator shows web-fallback rate falling from 17% to 1% over 2,000 steps, but we show in the same breath that this v1 result treats per-peer retrieval as a boolean, which makes part of the decay true by construction rather than an empirical discovery; we therefore present it as a demonstration, not evidence, and specify the v2 experiment (a semantic-satisfaction-threshold sweep) that makes the claim genuinely falsifiable. We present the full system architecture, a formal compounding model, a security architecture and threat model centered on provenance-attested retrieval against context poisoning, the empirical results to date with their limitations, and the open problems that remain.</p>
+<p>Large language model agents continuously re-derive the same answers. The same paper is read, the same regression is debugged, and the same retrieval is billed per token thousands of times daily across the open-source community, with each result discarded when the session ends. Akashik is a peer-to-peer protocol designed to make that inference work compound rather than evaporate. Each peer maintains a local graph-RAG over its own code, research, and past sessions; queries fan out to connected peers before reaching the paid web; and every record is signed with a cryptographic identity bound to a verified GitHub handle. We formalize the central claim, &quot;we compound on inference,&quot; as a monotonicity property over R(T,t), the number of peers holding a resolved answer for topic T at time t. The claim is grounded in established cache theory: pooled cooperative capacity under Mandelbrot-Zipf demand, evaluated with Che&#39;s LRU approximation, raises the network&#39;s hit-rate ceiling and collapses the marginal cost of resolving a topic after the first peer pays for it. A 10-peer federation simulator shows the web-fallback rate falling from 17% to 1% over 2,000 steps. We show, however, that this v1 result treats per-peer retrieval as a boolean, which makes part of the decay true by construction rather than an empirical discovery; we therefore present it as a demonstration, not evidence, and specify the v2 experiment, a semantic-satisfaction-threshold sweep, that makes the claim genuinely falsifiable. This paper presents the full system architecture, a formal compounding model, a security architecture and threat model centered on provenance-attested retrieval against context poisoning, the empirical results to date with their limitations, and the open problems that remain.</p>
+<p><strong>Keywords:</strong> peer-to-peer retrieval, retrieval-augmented generation, cooperative cache theory, federated knowledge, cryptographic provenance, RAG poisoning, trust calibration.</p>
 <hr>
 <h2>1. Introduction</h2>
 <h3>1.1 The redundant-inference problem</h3>
-<p>Open source built the freest software stack in history by sharing code: CRAN, npm, PyPI, GitHub, arXiv. Distribution of artifacts compounds, so each contribution permanently improves what every future engineer starts with. The knowledge <em>between</em> the code has never had the same substrate. What an engineer read, what they figured out at 3am, the synthesis that explained why a fix worked: this dies with the session. The same papers get re-explained in posts that 404 within a year, and the same regression is diagnosed in parallel by many engineers next week.</p>
-<p>The cost of this redundancy is now metered. Every retrieval-augmented call an LLM agent makes is billed per token, run against the same data that has already been processed many times over. The waste is not only economic. It is a missed opportunity: inference that could build on prior inference instead starts from zero each time.</p>
+<p>Open source built the freest software stack in history by sharing code: CRAN, npm, PyPI, GitHub, arXiv. Distribution of artifacts compounds, so each contribution permanently improves what every future engineer starts with. The knowledge <em>between</em> the code has never had the same substrate. What an engineer read, what they figured out at 3am, the synthesis that explained why a fix worked: this dies with the session. The same papers are re-explained in posts that 404 within a year, and the same regression is diagnosed in parallel by many engineers the following week.</p>
+<p>The cost of this redundancy is now metered. Every retrieval-augmented call an LLM agent makes is billed per token, run against the same data that has already been processed many times over. The waste is not only economic. It represents a missed opportunity: inference that could build on prior inference instead restarts from zero each time.</p>
 <h3>1.2 The thesis</h3>
-<p>Akashik&#39;s claim is that knowledge work can compound the way code distribution does, if three properties hold:</p>
+<p>Akashik&#39;s central claim is that knowledge work can compound the way code distribution does, provided three properties hold:</p>
 <ol>
 <li>Each peer keeps only its own graph, on its own machine, with no central server.</li>
 <li>Every contribution is signed by a verified human identity, forming an auditable provenance chain.</li>
 <li>Queries fan out to every connected peer, and once any peer has resolved a topic, every other peer can inherit that resolution at federation cost rather than paying the web again.</li>
 </ol>
-<p>We call this &quot;compounding on inference&quot;: each answer a peer produces becomes reasoning the next peer inherits, so the network reasons deeper than any single node and the marginal cost of a topic falls toward a federation round-trip after the first peer pays.</p>
+<p>We term this &quot;compounding on inference&quot;: each answer a peer produces becomes reasoning the next peer inherits. The network thereby reasons from a broader base than any single node, and the marginal cost of a topic falls toward a federation round-trip after the first peer pays the full cost.</p>
 <h3>1.3 Scope of this paper</h3>
-<p>This paper specifies the protocol, formalizes the compounding claim and states precisely when it is a theorem versus an empirical claim, presents the security architecture and threat model, reports the empirical results to date with their limitations, positions the work against prior art, and enumerates open problems. It is a pre-launch draft: the federation result is from a simulator, not a pilot, and we mark that distinction throughout.</p>
+<p>This paper specifies the protocol, formalizes the compounding claim with an explicit statement of when it is a theorem versus an empirical claim, presents the security architecture and threat model, reports the empirical results to date with their limitations, positions the work against prior art, and enumerates open problems. It is a pre-launch draft: the federation result is from a simulator, not a pilot, and we preserve that distinction throughout.</p>
+<p><strong>Contributions.</strong> This paper makes four contributions:</p>
+<ol>
+<li>A specification of the Akashik protocol: a federated, signed, demand-shaped knowledge layer in which each peer runs a local graph-RAG and resolutions transfer across peers (Sections 3 and 4).</li>
+<li>A formal model of compounding grounded in cooperative cache theory, with an explicit statement of the conditions under which the monotonicity of R(T,t) is a theorem true by construction versus an empirical claim, and the experiment that makes it falsifiable (Section 5).</li>
+<li>A security architecture and threat model for provenance-attested retrieval, separating what cryptographic provenance guarantees from the semantic accuracy it cannot certify (Section 6).</li>
+<li>A fully specified, runnable safety experiment testing whether provenance metadata lets a consuming model detect and refuse poisoned context, with a stated null hypothesis (Section 7.4).</li>
+</ol>
 <hr>
 <h2>2. The Compounding Thesis, Informally</h2>
-<p>Let <code>T</code> be a topic (a query and its answerable neighborhood) and let <code>R(T, t)</code> be the number of peers in the network holding a cached, resolved answer for <code>T</code> at time <code>t</code>.</p>
-<p>Under the protocol, when a peer resolves <code>T</code> (whether from a peer or, on a miss, from the web), the resolved and signed answer is disseminated, so other peers can cache it. The intended consequence is that <code>R(T, t)</code> grows over time and the community&#39;s marginal cost to resolve <code>T</code> collapses toward a federation round-trip once the first peer has paid the full cost.</p>
-<p>The measured proxy for this is the <strong>web-fallback rate</strong>: the fraction of research-shaped queries that fall through to a paid web call because no peer could satisfy them. If the thesis holds, this rate decays as the network accumulates resolutions.</p>
-<p>Section 5 makes this precise, including the conditions under which monotonicity of <code>R(T, t)</code> is true by construction versus an empirical claim that an experiment must be designed to falsify.</p>
+<p>Let <code>T</code> be a topic, defined as a query together with its answerable neighborhood, and let <code>R(T, t)</code> be the number of peers in the network holding a cached, resolved answer for <code>T</code> at time <code>t</code>.</p>
+<p>Under the protocol, when a peer resolves <code>T</code>, whether from a peer cache or, on a miss, from the web, the resolved and signed answer is disseminated so that other peers can cache it. The intended consequence is that <code>R(T, t)</code> grows over time and the community&#39;s marginal cost to resolve <code>T</code> collapses toward a federation round-trip once the first peer has paid the full cost.</p>
+<p>The observable proxy for this process is the <strong>web-fallback rate</strong>: the fraction of research-shaped queries that pass through to a paid web call because no peer could satisfy them locally. If the thesis holds, this rate decays as the network accumulates resolutions.</p>
+<p>Section 5 makes this precise, including the conditions under which monotonicity of <code>R(T, t)</code> is true by construction versus an empirical claim that a properly designed experiment must be capable of falsifying.</p>
 <hr>
 <h2>3. System Architecture</h2>
 <h3>3.1 The node model</h3>
-<p>Each peer is decentralized and operates without a central server. Every peer maintains a <strong>local graph-RAG</strong>: a retrieval index over its own code, research, and past LLM/agent sessions, held on its own machine. Disk cost on any peer scales with that peer&#39;s own curiosity, not the community&#39;s total volume.</p>
+<p>Each peer operates independently, without a central server. Every peer maintains a <strong>local graph-RAG</strong>: a retrieval index over its own code, research, and past LLM/agent sessions, held on its own machine. Storage cost on any peer scales with that peer&#39;s own activity, not the community&#39;s total volume.</p>
 <p>Every record in the graph carries a fixed schema so that all context is fully traceable:</p>
 <ul>
 <li><code>identity</code>: the curator&#39;s cryptographic peer identity (public key).</li>
@@ -100,37 +161,43 @@
 <li><code>grounding_artifacts</code>: the sources the record was grounded on.</li>
 </ul>
 <h3>3.2 Identity, signing, and provenance</h3>
-<p>Each cached RAG context is signed using a private key bound to a verified GitHub handle and a public cryptographic identity. This binding yields three formal guarantees:</p>
+<p>Each cached RAG context is signed with a private key bound to a verified GitHub handle and a public cryptographic identity. This binding yields three formal guarantees:</p>
 <ul>
 <li><strong>Authenticity</strong>: a specific peer authored the context.</li>
 <li><strong>Integrity</strong>: the context was not tampered with in transmission.</li>
 <li><strong>Non-repudiation</strong>: a peer p cannot deny that it published the record.</li>
 </ul>
-<p>The architecture is explicit about the limit of this guarantee: cryptographic attestation <strong>cannot verify the semantic accuracy, truthfulness, or safety of the content</strong>. A peer with a verified and reputable identity can still be compromised or act as an honest-but-confused node, signing and distributing hallucinated or poisoned context. Provenance secures the channel and the chain of custody; it does not certify truth. Section 6 addresses how the protocol layers semantic defenses on top of provenance.</p>
+<p>The architecture is explicit about the limit of these guarantees: cryptographic attestation <strong>cannot verify the semantic accuracy, truthfulness, or safety of the content</strong>. A peer with a verified and reputable identity can still be compromised or act as an honest-but-confused node, signing and distributing hallucinated or poisoned context. Provenance secures the channel and the chain of custody; it does not certify truth. Section 6 addresses how the protocol layers semantic defenses on top of cryptographic provenance.</p>
 <h3>3.3 The retrieval stack</h3>
-<p>Inside each peer, retrieval executes as a layered pipeline:</p>
+<p>Within each peer, retrieval executes as a layered pipeline:</p>
 <ol>
 <li><strong>Hybrid first-stage retrieval</strong>: BM25 (lexical) and dense vector retrieval, combined with reciprocal rank fusion (RRF).</li>
 <li><strong>Cross-encoder rerank</strong>: a cross-encoder rescoring of the fused candidate set.</li>
 <li><strong>Graph rerank</strong>: a personalized-PageRank rerank over the knowledge graph, integrating topological structure with semantic distance.</li>
-<li><strong>Satisfaction scoring</strong>: a satisfaction score is computed on the top result, used by the federation decision contract in Section 3.4.</li>
+<li><strong>Satisfaction scoring</strong>: a satisfaction score computed on the top result, consumed by the federation decision contract described in Section 3.4.</li>
 </ol>
 <h3>3.4 Query and federation flow</h3>
-<p>The protocol installs a <strong>decentralized cooperative semantic interception hook</strong>. When a peer&#39;s harness (for example Claude Code or an MCP client) attempts a research-shaped call such as <code>WebSearch</code> or <code>WebFetch</code>, the hook intercepts it and:</p>
+<p>The protocol installs a <strong>decentralized cooperative semantic interception hook</strong>. When a peer&#39;s harness (for example, Claude Code or an MCP client) attempts a research-shaped call such as <code>WebSearch</code> or <code>WebFetch</code>, the hook intercepts it and executes the following sequence:</p>
 <ol>
-<li>Queries the local graph first.</li>
-<li>On a local miss, fans out to every connected peer listed in <code>peers.json</code>.</li>
-<li>Evaluates the responses against the <strong>satisfaction floor</strong> (the deny-gating contract):<ul>
+<li>Query the local graph first.</li>
+<li>On a local miss, fan out to every connected peer listed in <code>peers.json</code>.</li>
+<li>Evaluate the responses against the <strong>satisfaction floor</strong> (the deny-gating contract):<ul>
 <li><code>satisfaction_score</code> &gt;= <strong>0.85</strong> on the top result, after the full rerank pipeline.</li>
-<li>at least <strong>2</strong> graph hits in the answer set.</li>
-<li>an agent-decision layer that must affirmatively choose <strong>answer from memory</strong> rather than answer-but-verify or search-web.</li>
+<li>At least <strong>2</strong> graph hits in the answer set.</li>
+<li>An agent-decision layer that must affirmatively choose <strong>answer from memory</strong> rather than answer-but-verify or search-web.</li>
 </ul>
 </li>
 <li>If all three conditions hold, the external web call is canceled and the verified, signed peer result is injected into the local inference pipeline as if the web call had returned it.</li>
-<li>If the threshold is not met, the web call proceeds. Once the node resolves the fallback query, the resulting signed context is disseminated through the network so other peers can cache it for future use.</li>
+<li>If the threshold is not met, the web call proceeds. Once the node resolves the fallback query, the resulting signed context is disseminated through the network so that other peers can cache it for future use.</li>
 </ol>
-<p>The deny pathway is opt-in per project, because a false positive (the graph claiming it has an answer it does not) costs more than a redundant fetch. Only <code>WebSearch</code> and <code>WebFetch</code> are deniable; local tools such as <code>Read</code>, <code>Glob</code>, and <code>Grep</code> are never blocked.</p>
-<p>This raises an apparent tension with the compounding thesis: if the mechanism that cancels the paid web call is off by default, does the default network compound at all? The resolution is that <strong>compounding and hard-denial are separate</strong>. Two things happen on every research-shaped call regardless of the deny setting: (1) the local-plus-federated graph is consulted first and any sufficiently good hit is injected into the model&#39;s context, and (2) on a web fallback, the resolved result is signed and disseminated, growing R(T,t). Knowledge accrual and cross-peer transfer, which are the thesis, are therefore <strong>default-on</strong>. What <code>AKASHIK_DENY_WEBSEARCH</code> controls is only whether a satisfied query <em>also hard-cancels</em> the redundant web call to capture the full token saving. The default network still compounds knowledge and still serves it as context; the opt-in deny mode converts that compounding into a hard cost reduction once an operator trusts the graph&#39;s coverage. The benchmark in Section 7.2 measures the deny-on regime (the upper bound on cost savings); the default regime captures the same knowledge accrual with a softer cost effect.</p>
+<p>Figure 1 summarizes this flow.</p>
+<figure>
+  <img src="figures/fig1-architecture.svg" alt="Query and federation flow: a harness call is intercepted, answered from the local graph or peer fan-out if the satisfaction gate is cleared, otherwise falls through to the web and is signed and disseminated." />
+  <figcaption><strong>Figure 1.</strong> The query and federation flow. A research-shaped harness call is intercepted by the hook, answered from the local graph or a peer fan-out when the satisfaction gate (>= 0.85, >= 2 hits, use_memory) is cleared, and otherwise falls through to the web, whose signed result is disseminated back into the network so that R(T,t) grows.</figcaption>
+</figure>
+
+<p>The deny pathway is opt-in per project, because a false positive, the graph claiming it has an answer it does not, costs more than a redundant fetch. Only <code>WebSearch</code> and <code>WebFetch</code> are deniable; local tools such as <code>Read</code>, <code>Glob</code>, and <code>Grep</code> are never blocked.</p>
+<p>This creates an apparent tension with the compounding thesis: if the mechanism that cancels the paid web call is off by default, does the default network compound at all? The resolution is that <strong>compounding and hard-denial are separate mechanisms</strong>. Two things occur on every research-shaped call regardless of the deny setting: (1) the local-plus-federated graph is consulted first, and any sufficiently good hit is injected into the model&#39;s context; and (2) on a web fallback, the resolved result is signed and disseminated, growing R(T,t). Knowledge accrual and cross-peer transfer, which constitute the thesis, are therefore <strong>default-on</strong>. What <code>AKASHIK_DENY_WEBSEARCH</code> controls is only whether a satisfied query also hard-cancels the redundant web call to capture the full token saving. The default network still compounds knowledge and serves it as context; the opt-in deny mode converts that compounding into a hard cost reduction once an operator trusts the graph&#39;s coverage. The benchmark in Section 7.2 measures the deny-on regime, representing the upper bound on cost savings; the default regime captures the same knowledge accrual with a softer cost effect.</p>
 <p>Per-project tunables:</p>
 <pre><code>AKASHIK_DENY_WEBSEARCH=1     # opt in to the deny pathway (off by default)
 AKASHIK_DENY_THRESHOLD=0.85  # satisfaction floor
@@ -138,10 +205,10 @@ AKASHIK_DENY_MIN_HITS=2      # minimum hits to allow the deny
 AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 </code></pre>
 <h3>3.5 Network and transport layer</h3>
-<p>Peer discovery and transport reuse established structured routing. The protocol uses Kademlia-style routing overlays, cryptographic content identifiers (CIDs), and replication intervals to manage the P2P topology. Query distribution and save-back propagation are modeled as a fanned-out gossip protocol with epidemic dissemination dynamics, segmenting nodes into Ignorants, Active Spreaders, and Stiflers (Section 5.1 and the SIR rumor-spreading literature).</p>
+<p>Peer discovery and transport reuse established structured routing primitives. The protocol uses Kademlia-style routing overlays, cryptographic content identifiers (CIDs), and replication intervals to manage the P2P topology. Query distribution and save-back propagation are modeled as a fanned-out gossip protocol with epidemic dissemination dynamics, segmenting nodes into Ignorants, Active Spreaders, and Stiflers, following the SIR rumor-spreading literature discussed in Section 5.1.</p>
 <hr>
 <h2>4. Harness Integration</h2>
-<p>Akashik does not change how an engineer works. Once installed and running, the interception hook sits in front of the harness&#39;s research-shaped calls.</p>
+<p>Akashik does not alter how an engineer works. Once installed and running, the interception hook sits in front of the harness&#39;s research-shaped calls without requiring workflow changes.</p>
 <table>
 <thead>
 <tr>
@@ -166,16 +233,16 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <td>Intended integration path</td>
 </tr>
 </tbody></table>
-<p>The Claude Code path is implemented; the MCP and generic-hook paths are intended integration points that follow the same interception contract. After integration, the local plus federated graph is the first hop on every research-shaped call, automatically.</p>
+<p>The Claude Code path is implemented; the MCP and generic-hook paths are intended integration points that follow the same interception contract. After integration, the local-plus-federated graph becomes the first hop on every research-shaped call.</p>
 <hr>
 <h2>5. A Formal Model of Compounding</h2>
-<p>We model the compounding claim with classical cache theory. The right formalism is <strong>cooperative cache hit-rate under heavy-tailed demand, evaluated with Che&#39;s LRU approximation</strong>. Epidemic/gossip models and network-effects economics are complementary layers, not the load-bearing model (Section 8).</p>
+<p>We model the compounding claim with classical cache theory. The appropriate formalism is <strong>cooperative cache hit-rate under heavy-tailed demand, evaluated with Che&#39;s LRU approximation</strong>. Epidemic/gossip models and network-effects economics are complementary layers; they are not the load-bearing model, and their role is discussed in Section 8.</p>
 <h3>5.1 Demand model</h3>
 <p>Query popularity follows a power law. For a catalog of <code>N</code> topics, the strict-Zipf probability <code>q_i</code> of the i-th most popular topic is</p>
 <p>\[q_i = \frac{i^{-\alpha}}{\sum_{j=1}^{N} j^{-\alpha}}, \qquad \alpha \ge 0\]</p>
-<p>where <code>alpha</code> is the Zipfian exponent. Observed access patterns are better fit by the <strong>Mandelbrot-Zipf</strong> generalization, which introduces a plateau parameter <code>q &gt;= 0</code> that flattens the head:</p>
+<p>where <code>alpha</code> is the Zipfian exponent. Observed access patterns are better fit by the <strong>Mandelbrot-Zipf</strong> generalization, which introduces a plateau parameter <code>q &gt;= 0</code> that flattens the high-frequency head:</p>
 <p>\[q_i = \frac{(i + q)^{-\alpha}}{\sum_{j=1}^{N} (j + q)^{-\alpha}}\]</p>
-<p>with <code>q = 0</code> recovering strict Zipf. The simulator and the cooperative-caching literature use the Mandelbrot-Zipf form; the formal results below carry over with the shifted ranks.</p>
+<p>with <code>q = 0</code> recovering strict Zipf. Both the simulator and the cooperative-caching literature use the Mandelbrot-Zipf form; the formal results below carry over directly with the shifted ranks.</p>
 <h3>5.2 Effective cooperative capacity</h3>
 <p>The pooled memory of a cooperating set of peers <code>P</code> exceeds that of any single node. Let <code>C_p</code> be the local cache size of peer <code>p</code>. The effective cooperative capacity is</p>
 <p>\[C_{\text{eff}} = \gamma \sum_{p \in P} C_p, \qquad \gamma \in (0, 1]\]</p>
@@ -188,7 +255,12 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <p>\[C = \sum_{i=1}^{N} \left( 1 - e^{-q_i \, t_C} \right).\]</p>
 <p>The overall hit rate is the demand-weighted sum <code>H = sum_i q_i h_i</code>.</p>
 <h3>5.4 Isolated versus cooperative ceiling</h3>
-<p>Evaluating Che&#39;s approximation at <code>C = C_eff</code> instead of a single node&#39;s <code>C_p</code>, under Mandelbrot-Zipf demand, raises the ideal hit-rate ceiling. In the formalization documents this is illustrated as a rise from an isolated single-node level (on the order of 43%) to a cooperative level (on the order of 69%) <strong>under one chosen set of parameters</strong> (catalog size <code>N</code>, exponent <code>alpha</code>, plateau <code>q</code>, per-node capacity <code>C_p</code>, and cooperation factor <code>gamma</code>). These two figures are <strong>parameter-sensitive model outputs, not measured production rates and not a performance guarantee</strong>: changing <code>alpha</code> or <code>gamma</code> moves both numbers substantially, and the <code>gamma</code> simplification of Section 5.2 inflates the cooperative figure relative to a network with heavy replication overlap. They illustrate the <em>direction</em> of the mechanism (pooling raises the ceiling, and the complement of the hit rate is the web-fallback rate) rather than its magnitude. A parameter-sensitivity sweep is required before either figure is cited as evidence.</p>
+<p>Evaluating Che&#39;s approximation at <code>C = C_eff</code> instead of a single node&#39;s <code>C_p</code>, under Mandelbrot-Zipf demand, raises the ideal hit-rate ceiling. In the formalization documents this is illustrated as a rise from an isolated single-node level (on the order of 43%) to a cooperative level (on the order of 69%) <strong>under one chosen set of parameters</strong> (catalog size <code>N</code>, exponent <code>alpha</code>, plateau <code>q</code>, per-node capacity <code>C_p</code>, and cooperation factor <code>gamma</code>). These two figures are <strong>parameter-sensitive model outputs, not measured production rates and not a performance guarantee</strong>: changing <code>alpha</code> or <code>gamma</code> moves both numbers substantially, and the <code>gamma</code> simplification of Section 5.2 inflates the cooperative figure relative to a network with heavy replication overlap. They illustrate the <em>direction</em> of the mechanism (pooling raises the ceiling, and the complement of the hit rate is the web-fallback rate) rather than its magnitude. A parameter-sensitivity sweep is required before either figure is cited as evidence. Figure 4 depicts the mechanism: the two operating points lie on a single saturating hit-rate curve, with the cooperative point reached by enlarging capacity from <code>C_p</code> to <code>C_eff</code>.</p>
+<figure>
+  <img src="figures/fig4-hitrate.svg" alt="Cache hit-rate as a saturating function of effective capacity, with the isolated operating point at 43% and the cooperative point at 69%." />
+  <figcaption><strong>Figure 4.</strong> Cooperative caching raises the hit-rate ceiling. Che's approximation evaluated at the pooled effective capacity <code>C_eff</code> shifts the operating point along the same saturating curve. The 43% and 69% values are parameter-sensitive model illustrations under one chosen configuration, not measured rates.</figcaption>
+</figure>
+
 <h3>5.5 Cost model</h3>
 <p>The decision to contribute is modeled as a voluntary-contribution game. A peer <code>i</code>&#39;s utility is</p>
 <p>\[U_i(x_i, Y) = u_i(x_i) + \theta_i \cdot V(Y)\]</p>
@@ -243,7 +315,12 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <hr>
 <h2>7. Empirical Validation</h2>
 <h3>7.1 Retrieval quality (per-peer)</h3>
-<p>On the full BEIR SciFact benchmark (5,183 documents, 300 queries), the per-peer retrieval stack scores <strong>0.7522 NDCG@10</strong>, CPU-only, with an 11 ms median, no LLM judging an LLM. For reference against published single-user baselines: Pinecone-baseline 0.5840, mem0 0.4410, Letta 0.3150, LangChain-RAG 0.2680. This establishes that the per-peer retriever is competitive before any federation; the federation question is separate.</p>
+<p>On the full BEIR SciFact benchmark (5,183 documents, 300 queries), the per-peer retrieval stack scores <strong>0.7522 NDCG@10</strong>, CPU-only, with an 11 ms median, no LLM judging an LLM. For reference against published single-user baselines: Pinecone-baseline 0.5840, mem0 0.4410, Letta 0.3150, LangChain-RAG 0.2680 (Figure 3). This establishes that the per-peer retriever is competitive before any federation; the federation question is separate.</p>
+<figure>
+  <img src="figures/fig3-beir.svg" alt="Bar chart of NDCG@10 on BEIR SciFact: akashik 0.7522, Pinecone 0.5840, mem0 0.4410, Letta 0.3150, LangChain 0.2680." />
+  <figcaption><strong>Figure 3.</strong> Per-peer retrieval quality on BEIR SciFact (NDCG@10, CPU-only, 11 ms median). akashik is shown against published single-user baselines.</figcaption>
+</figure>
+
 <h3>7.2 Federation simulator (AkashikBench-F)</h3>
 <p>AkashikBench-F is a federation-level simulator measuring <code>web_fallback_rate(t)</code> over a peer network with offline churn. First run, on the LoCoMo factual subset:</p>
 <table>
@@ -303,7 +380,12 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <td>Negative; thesis holds for this corpus</td>
 </tr>
 </tbody></table>
-<p>The end-state (1%) and the run-average (4.5%) are different quantities and must not be conflated: the curve decays over the run, so the average over all steps is higher than the converged end value. The headline claim is the <em>decay</em> (17% to 1%) and its negative slope, not a single point estimate.</p>
+<p>The end-state (1%) and the run-average (4.5%) are different quantities and must not be conflated: the curve decays over the run, so the average over all steps is higher than the converged end value. The headline claim is the <em>decay</em> (17% to 1%) and its negative slope, not a single point estimate. Figure 2 plots the decay.</p>
+<figure>
+  <img src="figures/fig2-compounding.svg" alt="Line chart of web-fallback rate decaying from 17% at step 0 to about 1% at step 2000." />
+  <figcaption><strong>Figure 2.</strong> Simulated web-fallback rate over 2,000 steps in AkashikBench-F v1 (10 peers, 20% offline churn, Zipfian demand). The curve is a <em>demonstration, not validated evidence</em>: under v1's boolean-retrieval abstraction the decay is partly true by construction (Sections 5.6 and 7.3). The shape is illustrative of the reported endpoints and negative slope.</figcaption>
+</figure>
+
 <h3>7.3 Honest limitations and the v2 design</h3>
 <p>These are simulator numbers, not pilot numbers. The v1 simulator treats per-peer retrieval as a boolean (&quot;does peer N hold doc D&quot;). As Section 5.6 argues, that abstraction makes part of the 17%-to-1% decay a property of the cache model rather than an empirical discovery, because monotonicity is near-tautological once retrieval is assumed exact.</p>
 <p>The v2 experiment removes the abstraction. Each simulated peer runs the actual retrieval stack (BM25 + vector + RRF, cross-encoder, personalized PageRank) over its shard, producing a real continuous satisfaction score per query per peer. The experiment then <strong>sweeps the satisfaction threshold</strong> and reports how the compounding curve bends as the threshold tightens. The threshold sweep is what makes the claim falsifiable: if natural semantic variance breaks the curve at a realistic threshold, the thesis is weakened in a measurable way; if it survives, the result is genuine rather than built-in. Real-world validation beyond the simulator is a 100-peer pilot in the local-AI / agent-tooling ecosystem, measuring the real web-fallback curve over 30 days of traffic.</p>
@@ -322,7 +404,12 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <li><strong>Primary metric.</strong> Attack success rate (fraction of poisoned queries where the model emits the attacker&#39;s target answer), reported as a delta between arms. Secondary: refusal rate, answer-faithfulness delta, and false-positive rate (legitimate signed records wrongly discounted).</li>
 <li><strong>Null hypothesis (the honest framing).</strong> H0: provenance metadata produces no significant reduction in attack success rate versus the anonymous baseline, because a signed poison is still a poison and the model cannot operationalize the trust signal. Rejecting H0 is the safety result; failing to reject it is also a publishable result and would refute the protocol&#39;s central safety claim.</li>
 </ul>
-<p>This is the experiment that converts Akashik from cost-saving infrastructure into a testable claim about trust-calibrated retrieval. It reuses the infrastructure the protocol already builds (signed, attributed records) and an apparatus almost no one else has (a provenance-attested federated retrieval network), which is precisely why it is the protocol&#39;s most defensible research direction.</p>
+<p>Figure 5 lays out the design. This is the experiment that converts Akashik from cost-saving infrastructure into a testable claim about trust-calibrated retrieval. It reuses the infrastructure the protocol already builds (signed, attributed records) and an apparatus almost no one else has (a provenance-attested federated retrieval network), which is precisely why it is the protocol&#39;s most defensible research direction.</p>
+<figure>
+  <img src="figures/fig5-experiment.svg" alt="Four-arm experiment design: anonymous baseline, attested without instruction, attested with instruction, and mechanical reputation pre-filter, with delta annotations isolating each effect." />
+  <figcaption><strong>Figure 5.</strong> The four-arm provenance-against-poisoning experiment. Each adjacent-arm difference isolates a single causal factor: arm 2 minus arm 1 measures whether provenance is intrinsically informative, arm 3 minus arm 2 measures the value of instructing the model, and arm 4 measures mechanical gating independent of any model reasoning.</figcaption>
+</figure>
+
 <hr>
 <h2>8. Related Work and Novelty Positioning</h2>
 <p>Akashik sits at the intersection of several mature fields. The defensible novelty is <strong>demand-shaped cross-peer transfer of resolved RAG inference, with cryptographically attested provenance on every record</strong>. We position against the closest prior art:</p>
