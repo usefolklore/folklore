@@ -1025,6 +1025,73 @@
     }
     .scene-note em { color: var(--emerald); font-style: italic; }
 
+    /* ─── §04 provenance (the trust moment) ───────────────────── */
+    .provenance h2 {
+      font-size: clamp(var(--t-3), 3.5vw, var(--t-5));
+      max-width: 24ch;
+      margin-bottom: 0.6rem;
+    }
+    .provenance h2 em { color: var(--vermilion); font-style: italic; }
+    .provenance .lede { margin-bottom: 1.6rem; max-width: 56ch; }
+    .prov-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: clamp(1rem, 2.6vw, 2.4rem);
+      align-items: center;
+    }
+    @media (max-width: 820px) {
+      .prov-grid { grid-template-columns: 1fr; gap: 1.2rem; }
+      .prov-arrow { display: none; }
+    }
+    .prov-label {
+      font-family: var(--mono);
+      font-size: var(--t-n2);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-fade);
+      margin-bottom: 0.7rem;
+    }
+    .prov-problem .prov-label { color: var(--vermilion); }
+    .prov-answer  .prov-label { color: var(--accent); }
+    .prov-stat {
+      font-family: var(--display);
+      font-weight: 500;
+      font-size: clamp(var(--t-4), 4.5vw, var(--t-6));
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--vermilion);
+      margin-bottom: 0.6rem;
+    }
+    .prov-body {
+      font-size: var(--t-n1);
+      line-height: 1.55;
+      color: var(--ink-fade);
+      max-width: 40ch;
+    }
+    .prov-body strong { color: var(--cream); font-weight: 500; }
+    .prov-cite {
+      font-family: var(--mono);
+      font-size: var(--t-n2);
+      color: var(--ink-fade);
+      opacity: 0.6;
+      margin-top: 0.5rem;
+      letter-spacing: 0.04em;
+    }
+    .prov-arrow svg { width: 60px; height: auto; opacity: 0.7; }
+    .prov-record {
+      font-family: var(--mono);
+      font-size: var(--t-n2);
+      line-height: 1.55;
+      color: var(--ink-fade);
+      background: var(--ink-soft);
+      border: 1px solid var(--ink-line);
+      padding: 0.8rem 1rem;
+      margin: 0 0 0.7rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .prov-record .prov-hl { color: var(--accent-bright); font-weight: 500; }
+
     /* ════════════════════════════════════════════════════════
        CHAPTER 05 - WHY (LIGHT, manifesto)
        Editorial column. No diagrams. The argument carries it.
@@ -1198,6 +1265,10 @@
       border-top: 1px solid var(--ink-line);
       color: var(--ink-fade);
       font-size: var(--t-n1);
+      /* Make the footer a valid snap stop so proximity-snapping rests
+         here at the bottom instead of yanking back up to §07. */
+      scroll-snap-align: end;
+      scroll-margin-bottom: 0;
     }
     footer .shell {
       display: grid;
@@ -1250,7 +1321,7 @@
         <span class="badge" data-cycle="BOOTSTRAPPING|AWAITING PEER|LISTENING|READY">[v0.1 &middot; <span class="b-cycle">BOOTSTRAPPING</span>]</span>
         <div class="hero-grid">
         <div>
-          <span class="eyebrow" data-reveal>Akashik &middot; cooperative knowledge for open source</span>
+          <span class="eyebrow" data-reveal>Akashik &middot; cooperative compounding inference protocol</span>
           <h1 id="h1" data-reveal>
             We compound on <em>inference</em>.
           </h1>
@@ -1276,6 +1347,7 @@
             <a class="btn-pill" href="https://github.com/SaharBarak/akashik" rel="noopener">
               See the source
             </a>
+            <a class="btn-ghost" href="WHITEPAPER.pdf" target="_blank" rel="noopener">Read the white paper &nbsp;&#8599;</a>
             <a class="btn-ghost" href="#protocol">how it works &nbsp;&darr;</a>
           </div>
         </div>
@@ -1495,61 +1567,16 @@
     </section>
 
     <!-- ════════════════════════════════════════════════════════
-         03 · THE COMMONS
-         What the local graph indexes; the union is the commons.
-         ════════════════════════════════════════════════════════ -->
-    <section class="chapter waste" aria-labelledby="waste-h">
-      <div class="shell">
-       <div class="frame">
-        <span class="legend">§03 &middot; THE COMMONS</span>
-        <span class="badge" data-cycle="INDEXED|SIGNED|FEDERATED">[<span class="b-cycle">INDEXED</span>]</span>
-        <span class="eyebrow" data-reveal style="display:none;">03 &middot; the commons</span>
-        <h2 class="display" id="waste-h" data-reveal>
-          Every peer&rsquo;s index. The <em>commons</em>.
-        </h2>
-        <p class="lede" data-reveal style="--d: 80ms;">
-          Local graph &times; federation = the commons.
-        </p>
-
-        <div class="waste-list" role="list" data-reveal style="--d: 140ms;">
-          <div class="waste-row" role="listitem">
-            <span class="n">&para;&nbsp;01</span>
-            <div>
-              <p class="what">Sessions &rarr; the commons&rsquo; context.</p>
-              <p class="gloss">Web fetches and debug transcripts, indexed locally, signed, federated.</p>
-            </div>
-          </div>
-          <div class="waste-row" role="listitem">
-            <span class="n">&para;&nbsp;02</span>
-            <div>
-              <p class="what">Code paths &rarr; queryable by peers.</p>
-              <p class="gloss">Files you explored, questions you asked. The network knows the hard parts.</p>
-            </div>
-          </div>
-          <div class="waste-row" role="listitem">
-            <span class="n">&para;&nbsp;03</span>
-            <div>
-              <p class="what">Research &rarr; attributable.</p>
-              <p class="gloss">URI + timestamp + signature. Once read, never re-fetched.</p>
-            </div>
-          </div>
-        </div>
-        <span class="stamp">commons &middot; <b>3 promises</b></span>
-       </div><!-- /frame -->
-      </div><!-- /shell -->
-    </section>
-
-    <!-- ════════════════════════════════════════════════════════
-         04 · A SCENE FROM THE NETWORK
+         03 · A SCENE FROM THE NETWORK
          Two transcripts side by side, showing the same knowledge
          flowing across people and timezones.
          ════════════════════════════════════════════════════════ -->
     <section class="chapter scene" aria-labelledby="scene-h">
       <div class="shell">
        <div class="frame">
-        <span class="legend">§04 &middot; A QUERY, TRACED</span>
+        <span class="legend">§03 &middot; A QUERY, TRACED</span>
         <span class="badge" data-cycle="REPLAY|TRACED|142 MS">[<span class="b-cycle">REPLAY</span>]</span>
-        <span class="eyebrow" data-reveal style="display:none;">04 &middot; a query, traced</span>
+        <span class="eyebrow" data-reveal style="display:none;">03 &middot; a query, traced</span>
         <h2 class="display" id="scene-h" data-reveal>
           47-minute debug. <em>142&nbsp;ms</em> federation hit.
         </h2>
@@ -1596,6 +1623,57 @@
           No server brokered it. No vendor took a cut. The trace is now in two graphs. The next query hits three.
         </p>
         <span class="stamp">trace &middot; <b>142 ms &middot; 0 web hops</b></span>
+       </div><!-- /frame -->
+      </div><!-- /shell -->
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════
+         04 · PROVENANCE
+         The trust moment: anonymous RAG is a poisoning surface;
+         every akashik record is signed by a verified human.
+         ════════════════════════════════════════════════════════ -->
+    <section class="chapter provenance" aria-labelledby="prov-h">
+      <div class="shell">
+       <div class="frame">
+        <span class="legend">§04 &middot; PROVENANCE</span>
+        <span class="badge" data-cycle="SIGNED|ATTESTED|ACCOUNTABLE">[<span class="b-cycle">SIGNED</span>]</span>
+        <h2 class="display" id="prov-h" data-reveal>
+          Anonymous retrieval is a <em>poisoning surface</em>.
+        </h2>
+        <p class="lede" data-reveal style="--d: 80ms;">
+          Every other AI memory feeds your model unsigned text from nowhere.
+        </p>
+
+        <div class="prov-grid" data-reveal style="--d: 140ms;">
+          <div class="prov-problem">
+            <div class="prov-label">RAG&rsquo;s open wound</div>
+            <p class="prov-stat" data-scramble="5 &rarr; 97%">5&nbsp;&rarr;&nbsp;97%</p>
+            <p class="prov-body">
+              <strong>5 poisoned documents</strong> can hijack a retrieval system with a <strong>97% attack success rate</strong>. The model has no way to tell trustworthy context from an injected lie.
+            </p>
+            <p class="prov-cite">PoisonedRAG, arXiv &middot; Zou et&nbsp;al.</p>
+          </div>
+          <div class="prov-arrow" aria-hidden="true">
+            <svg viewBox="0 0 60 24" fill="none">
+              <line x1="4" y1="12" x2="48" y2="12" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <polyline points="42,5 52,12 42,19" stroke="#34d399" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+            </svg>
+          </div>
+          <div class="prov-answer">
+            <div class="prov-label">Akashik&rsquo;s answer</div>
+            <pre class="prov-record" aria-hidden="true">record {
+  signed_by: <span class="prov-hl">@verified-human</span>
+  identity:  ed25519 3a4b&hellip;
+  source:    arxiv.org/abs/&hellip;
+  fetched:   2026-06-09T&hellip;
+}</pre>
+            <p class="prov-body">
+              Every record is <strong>signed by a verified GitHub identity</strong>, with an auditable provenance chain: who curated it, what they grounded on, and when. Trust becomes a property the model can read.
+            </p>
+          </div>
+        </div>
+
+        <span class="stamp">provenance &middot; <b>verified human</b></span>
        </div><!-- /frame -->
       </div><!-- /shell -->
     </section>
@@ -1727,6 +1805,8 @@
     <div class="shell">
       <span class="meta">akashik &middot; MIT &middot; no central server, ever</span>
       <span>
+        <a href="WHITEPAPER.pdf" target="_blank" rel="noopener">white paper (pdf)</a>
+        &nbsp;&middot;&nbsp;
         <a href="https://github.com/SaharBarak/akashik" rel="noopener">source</a>
         &nbsp;&middot;&nbsp;
         <a href="https://github.com/SaharBarak/akashik/blob/main/README.md" rel="noopener">readme</a>
