@@ -198,6 +198,14 @@
       margin: 0.2rem 0 0.55rem;
       opacity: 0.85;
     }
+    /* real micro-charts in the proof cells (replace ascii sparklines) */
+    .spark-svg {
+      display: block;
+      width: 100%;
+      max-width: 220px;
+      height: auto;
+      margin: 0.4rem 0 0.6rem;
+    }
 
     /* ─────────────────────────────────────────────────────
        SCRAMBLE - the proof-stat numbers run through random
@@ -1025,6 +1033,12 @@
     }
     .scene-note em { color: var(--emerald); font-style: italic; }
 
+    /* query-flow pipeline (§03) - the mechanism the panes demonstrate */
+    .flow-wrap { width: 100%; margin: 0.1rem 0 0.9rem; }
+    .flow-svg { width: 100%; max-width: 720px; height: auto; display: block; }
+    .scene .lede { margin-bottom: 0.8rem; }
+    @media (max-width: 760px) { .flow-wrap { display: none; } }
+
     /* ─── §04 provenance (the trust moment) ───────────────────── */
     .provenance h2 {
       font-size: clamp(var(--t-3), 3.5vw, var(--t-5));
@@ -1113,6 +1127,34 @@
       .why-visual { display: none; }   /* drop the cascade on narrow screens */
     }
     .why-visual { display: flex; justify-content: center; }
+
+    /* compounding curve - draws itself on scroll-reveal */
+    .curve-wrap { width: 100%; max-width: 460px; }
+    .curve-chart { width: 100%; height: auto; }
+    .curve-line {
+      stroke-dasharray: 460;
+      stroke-dashoffset: 460;
+    }
+    .curve-wrap.is-in .curve-line {
+      animation: curve-draw 1.9s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    .curve-dot, .curve-lbl { opacity: 0; }
+    .curve-wrap.is-in .curve-dot,
+    .curve-wrap.is-in .curve-lbl {
+      animation: curve-fade 0.5s ease forwards;
+    }
+    .curve-wrap.is-in .d0,
+    .curve-wrap.is-in .curve-lbl:first-of-type { animation-delay: 0.35s; }
+    .curve-wrap.is-in .d1 { animation-delay: 1.7s; }
+    @keyframes curve-draw { to { stroke-dashoffset: 0; } }
+    @keyframes curve-fade { to { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      .curve-line { stroke-dashoffset: 0; }
+      .curve-dot, .curve-lbl { opacity: 1; }
+      .curve-wrap.is-in .curve-line,
+      .curve-wrap.is-in .curve-dot,
+      .curve-wrap.is-in .curve-lbl { animation: none; }
+    }
     .why-prose {
       max-width: 62ch;
       font-family: var(--display);
@@ -1584,6 +1626,39 @@
           One peer pays the cost. The network gets the answer.
         </p>
 
+        <!-- query-flow pipeline: the mechanism the two panes demonstrate -->
+        <div class="flow-wrap" data-reveal style="--d: 110ms;" aria-hidden="true">
+          <svg class="flow-svg" viewBox="0 0 720 96">
+            <defs>
+              <marker id="fa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--ink-fade)"/></marker>
+              <marker id="fac" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--accent)"/></marker>
+            </defs>
+            <g font-family="var(--mono)" font-size="9.5" text-anchor="middle">
+              <!-- main row -->
+              <rect x="6"   y="18" width="62"  height="28" rx="4" fill="var(--ink-soft)" stroke="var(--ink-line)"/><text x="37"  y="36" fill="var(--cream)">query</text>
+              <rect x="92"  y="18" width="92"  height="28" rx="4" fill="var(--ink-soft)" stroke="var(--ink-line)"/><text x="138" y="36" fill="var(--cream)">local graph</text>
+              <rect x="208" y="18" width="98"  height="28" rx="4" fill="var(--ink-soft)" stroke="var(--ink-line)"/><text x="257" y="36" fill="var(--cream)">peers.json</text>
+              <rect x="330" y="14" width="112" height="36" rx="4" fill="var(--ink-soft)" stroke="var(--accent)" stroke-width="1.5"/><text x="386" y="30" fill="var(--accent)" font-weight="600">satisfaction</text><text x="386" y="42" fill="var(--accent)" font-size="8">gate &#8805;0.85</text>
+              <rect x="466" y="18" width="116" height="28" rx="4" fill="var(--ink-soft)" stroke="var(--accent-bright)"/><text x="524" y="36" fill="var(--accent-bright)">inject signed</text>
+              <!-- main arrows -->
+              <g stroke="var(--ink-fade)" stroke-width="1.3" fill="none" marker-end="url(#fa)">
+                <line x1="68"  y1="32" x2="90"  y2="32"/>
+                <line x1="184" y1="32" x2="206" y2="32"/>
+                <line x1="306" y1="32" x2="328" y2="32"/>
+              </g>
+              <line x1="442" y1="32" x2="464" y2="32" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#fac)"/>
+              <text x="453" y="14" fill="var(--accent-bright)" font-size="8">pass</text>
+              <!-- fail branch -->
+              <line x1="386" y1="50" x2="386" y2="66" stroke="var(--ink-fade)" stroke-width="1.3" marker-end="url(#fa)"/>
+              <text x="404" y="62" fill="var(--vermilion)" font-size="8" text-anchor="start">fail</text>
+              <rect x="296" y="68" width="200" height="24" rx="4" fill="var(--ink-soft)" stroke="var(--ink-line)"/><text x="396" y="84" fill="var(--cream)">web fetch &#8594; sign &#43; save-back</text>
+              <!-- save-back loop -->
+              <path d="M296,80 C 240,80 240,32 206,32" stroke="var(--accent)" stroke-width="1.2" fill="none" stroke-dasharray="4 3" marker-end="url(#fac)"/>
+              <text x="150" y="60" fill="var(--accent)" font-size="8">R(T,t) grows</text>
+            </g>
+          </svg>
+        </div>
+
         <div class="scene-pair" data-reveal style="--d: 140ms;">
           <article class="scene-pane">
             <div class="stamp"><span class="dot"></span>tue 03:14 &middot; berlin</div>
@@ -1692,26 +1767,67 @@
           Infer once. The network <em>reasons from there</em>.
         </h2>
 
-        <div class="why-prose">
-          <blockquote class="why-pull" data-reveal style="--d: 80ms;">
-            Faster, more complete, way cheaper. After peer one.
-          </blockquote>
+        <div class="why-grid">
+          <div class="why-prose">
+            <blockquote class="why-pull" data-reveal style="--d: 80ms;">
+              Faster, more complete, way cheaper. After peer one.
+            </blockquote>
 
-          <p data-reveal style="--d: 160ms;">
-            <strong>Faster:</strong> ~140&nbsp;ms vs. 1&ndash;2&nbsp;s for a paid fetch.
-          </p>
+            <p data-reveal style="--d: 160ms;">
+              <strong>Faster:</strong> ~140&nbsp;ms vs. 1&ndash;2&nbsp;s for a paid fetch.
+            </p>
 
-          <p data-reveal style="--d: 220ms;">
-            <strong>More complete:</strong> the peer returns the trace, the sources, the dead-ends. Reasoning to build on, not re-derive.
-          </p>
+            <p data-reveal style="--d: 220ms;">
+              <strong>More complete:</strong> the peer returns the trace, the sources, the dead-ends. Reasoning to build on, not re-derive.
+            </p>
 
-          <p data-reveal style="--d: 280ms;">
-            <strong>Way cheaper:</strong> 17%&nbsp;&rarr;&nbsp;1% web-fallback. &gt;90% of paid fetches vanish.
-          </p>
+            <p data-reveal style="--d: 280ms;">
+              <strong>Way cheaper:</strong> 17%&nbsp;&rarr;&nbsp;1% web-fallback. &gt;90% of paid fetches vanish.
+            </p>
 
-          <p class="mono" style="font-size: var(--t-n1); color: var(--cream-mute); margin-top: 1rem;" data-reveal style="--d: 340ms;">
-            # R(T,&thinsp;t) monotonically non-decreasing.
-          </p>
+            <p class="mono" style="font-size: var(--t-n1); color: var(--cream-mute); margin-top: 1rem;" data-reveal style="--d: 340ms;">
+              # R(T,&thinsp;t) monotonically non-decreasing.
+            </p>
+          </div>
+
+          <!-- the compounding curve: web-fallback bending 17% to 1%.
+               Draws itself on scroll-reveal. Simulated, v1. -->
+          <div class="why-visual curve-wrap" data-reveal style="--d: 200ms;">
+            <svg class="curve-chart" viewBox="0 0 420 270" aria-hidden="true">
+              <!-- gridlines -->
+              <g stroke="var(--cream-line)" stroke-width="1">
+                <line x1="44" y1="56.7"  x2="400" y2="56.7"/>
+                <line x1="44" y1="111.1" x2="400" y2="111.1"/>
+                <line x1="44" y1="165.6" x2="400" y2="165.6"/>
+                <line x1="44" y1="220"   x2="400" y2="220"/>
+              </g>
+              <!-- axes -->
+              <line x1="44" y1="24" x2="44" y2="220" stroke="var(--cream-mute)" stroke-width="1"/>
+              <line x1="44" y1="220" x2="400" y2="220" stroke="var(--cream-mute)" stroke-width="1"/>
+              <!-- y labels -->
+              <g fill="var(--cream-mute)" font-family="var(--mono)" font-size="9" text-anchor="end">
+                <text x="38" y="223">0%</text>
+                <text x="38" y="169">5%</text>
+                <text x="38" y="114">10%</text>
+                <text x="38" y="60">15%</text>
+              </g>
+              <!-- x labels -->
+              <g fill="var(--cream-mute)" font-family="var(--mono)" font-size="9" text-anchor="middle">
+                <text x="44"  y="236">0</text>
+                <text x="222" y="236">1000</text>
+                <text x="400" y="236">2000</text>
+              </g>
+              <!-- decay curve (draws on reveal) -->
+              <polyline class="curve-line" fill="none" stroke="var(--accent-deep)" stroke-width="2.4"
+                stroke-linecap="round" stroke-linejoin="round"
+                points="44,34.9 88.5,109.3 133,151.7 177.5,176.2 222,190.3 266.5,198.3 311,202.9 355.5,205.5 400,207"/>
+              <circle class="curve-dot d0" cx="44"  cy="34.9" r="3.4" fill="var(--accent-deep)"/>
+              <circle class="curve-dot d1" cx="400" cy="207"  r="3.4" fill="var(--accent-deep)"/>
+              <text class="curve-lbl" x="54"  y="32"  fill="var(--accent-deep)" font-family="var(--mono)" font-size="11" font-weight="600">17%</text>
+              <text class="curve-lbl" x="392" y="200" fill="var(--accent-deep)" font-family="var(--mono)" font-size="11" font-weight="600" text-anchor="end">1%</text>
+              <text x="222" y="258" fill="var(--cream-mute)" font-family="var(--mono)" font-size="9" text-anchor="middle"># web-fallback rate &middot; simulated &middot; v1</text>
+            </svg>
+          </div>
         </div>
         <span class="stamp">compounding &middot; <b>monotonic</b></span>
        </div><!-- /frame -->
@@ -1736,20 +1852,42 @@
           <div class="proof-cell">
             <div class="proof-name">FASTER &middot; LATENCY</div>
             <p class="proof-stat" data-scramble="~140 ms">~140&nbsp;ms</p>
-            <pre class="ascii-spark" aria-hidden="true">▁▂▁▁▂▁▁▁▂▁ federation
-████████▆▄ web fetch</pre>
+            <svg class="spark-svg" viewBox="0 0 220 56" aria-hidden="true">
+              <text x="0" y="16" fill="var(--ink-fade)" font-family="var(--mono)" font-size="8.5">federation</text>
+              <rect x="62" y="9" width="14" height="9" fill="var(--accent)"/>
+              <text x="82" y="16" fill="var(--accent)" font-family="var(--mono)" font-size="8.5">~140 ms</text>
+              <text x="0" y="42" fill="var(--ink-fade)" font-family="var(--mono)" font-size="8.5">web fetch</text>
+              <rect x="62" y="35" width="140" height="9" fill="var(--ink-fade)" opacity="0.4"/>
+              <text x="208" y="42" fill="var(--ink-fade)" font-family="var(--mono)" font-size="8.5" text-anchor="end">1&ndash;2 s</text>
+            </svg>
             <p class="proof-body">~10&times; faster, every time after the first.</p>
           </div>
           <div class="proof-cell">
             <div class="proof-name">MORE COMPLETE &middot; RETRIEVAL</div>
             <p class="proof-stat" data-scramble="0.7522">0.7522</p>
-            <pre class="ascii-spark" aria-hidden="true">▇▆▅▃▂▁ akashik &middot; Pinecone &middot; mem0 &middot; Letta &middot; LC-RAG</pre>
-            <p class="proof-body">NDCG@10 &middot; BEIR SciFact &middot; CPU-only.</p>
+            <svg class="spark-svg" viewBox="0 0 220 56" aria-hidden="true">
+              <line x1="0" y1="48" x2="220" y2="48" stroke="var(--ink-line)" stroke-width="1"/>
+              <rect x="8"   y="10.4" width="28" height="37.6" fill="var(--accent)"/>
+              <rect x="50"  y="18.8" width="28" height="29.2" fill="var(--ink-fade)" opacity="0.4"/>
+              <rect x="92"  y="25.9" width="28" height="22.1" fill="var(--ink-fade)" opacity="0.4"/>
+              <rect x="134" y="32.2" width="28" height="15.8" fill="var(--ink-fade)" opacity="0.4"/>
+              <rect x="176" y="34.6" width="28" height="13.4" fill="var(--ink-fade)" opacity="0.4"/>
+              <text x="22" y="56" fill="var(--accent)" font-family="var(--mono)" font-size="8" text-anchor="middle">akashik</text>
+            </svg>
+            <p class="proof-body">NDCG@10 &middot; BEIR SciFact &middot; CPU-only. akashik vs Pinecone, mem0, Letta, LangChain.</p>
           </div>
           <div class="proof-cell">
             <div class="proof-name">WAY CHEAPER &middot; COST</div>
             <p class="proof-stat" data-scramble="17%→1%">17%<span class="arrow">&rarr;</span>1%</p>
-            <pre class="ascii-spark" aria-hidden="true">█▇▆▅▄▄▃▃▂▂▁▁_______</pre>
+            <svg class="spark-svg" viewBox="0 0 220 56" aria-hidden="true">
+              <line x1="6" y1="46" x2="200" y2="46" stroke="var(--ink-line)" stroke-width="1"/>
+              <polyline fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                points="6,8.2 30.25,23.4 54.5,32.1 78.75,37.1 103,39.9 151.5,42.5 200,43.4"/>
+              <circle cx="6"   cy="8.2"  r="2.6" fill="var(--accent)"/>
+              <circle cx="200" cy="43.4" r="2.6" fill="var(--accent)"/>
+              <text x="14"  y="9"  fill="var(--accent)" font-family="var(--mono)" font-size="8.5" font-weight="600">17%</text>
+              <text x="194" y="38" fill="var(--accent)" font-family="var(--mono)" font-size="8.5" font-weight="600" text-anchor="end">1%</text>
+            </svg>
             <p class="proof-body">2,000 steps &middot; &gt;95% of paid fetches vanish.</p>
           </div>
         </div>
