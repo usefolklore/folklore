@@ -55,6 +55,10 @@ import {
   type SearchRegistry,
 } from '../infrastructure/search-sync.js';
 import {
+  registerFetchProtocol,
+  unregisterFetchProtocol,
+} from '../infrastructure/fetch-sync.js';
+import {
   registerRecallProtocol,
   unregisterRecallProtocol,
 } from '../infrastructure/recall-sync.js';
@@ -706,6 +710,24 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               daemonLog(deps.homePath, `recall protocol register failed: ${(e as Error).message}`);
             }
 
+            // Fetch protocol — targeted node-body pull so federated
+            // search hits become injectable + cacheable on the asker.
+            try {
+              registerFetchProtocol({
+                node: liveNode,
+                getGraph: async () => {
+                  const r = await deps.graphs.load();
+                  return r.isOk() ? r.value : null;
+                },
+                secretsPatterns: buildPatterns(cfgRes.value.security.secrets_patterns),
+                signSeed,
+                log: (m) => daemonLog(deps.homePath, m),
+              });
+              daemonLog(deps.homePath, `fetch protocol registered: /akashik/fetch/1.0.0`);
+            } catch (e) {
+              daemonLog(deps.homePath, `fetch protocol register failed: ${(e as Error).message}`);
+            }
+
             // Phase 31: register asymmetric touch protocol — one-shot pull
             // of a remote peer's shared-room graph with pre-transmission
             // redaction via secret-gate. Separate registry, shared libp2p
@@ -854,6 +876,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
     }
     if (liveNode) {
       try { await unregisterRecallProtocol(liveNode); } catch { /* benign */ }
+      try { await unregisterFetchProtocol(liveNode); } catch { /* benign */ }
     }
     if (liveSync) {
       try { await unregisterShareProtocol(liveSync); } catch { /* benign */ }

@@ -11,8 +11,11 @@ import { randomBytes } from 'node:crypto';
 import { keyPairFromSeed } from '../src/domain/identity.ts';
 import {
   signMatch,
+  signNode,
   verifyMatch,
+  verifyNode,
   type AttestedMatchFields,
+  type AttestedNodeFields,
 } from '../src/domain/match-attestation.ts';
 
 const seed = new Uint8Array(randomBytes(32));
@@ -71,6 +74,40 @@ describe('match attestation — tamper detection', () => {
   it('rejects when an optional field is stripped after signing', () => {
     const { source_uri: _dropped, ...stripped } = FIELDS;
     assert.equal(verifyMatch(kp.publicKey, stripped, a), false);
+  });
+});
+
+describe('node attestation — body-covering variant (fetch protocol)', () => {
+  const NODE_FIELDS: AttestedNodeFields = {
+    ...FIELDS,
+    summary: 'In libp2p v2+, Stream.close() returns a Promise. Await it.',
+  };
+
+  it('sign/verify roundtrip including the summary', () => {
+    const att = signNode(seed, NODE_FIELDS, SIGNED_AT);
+    assert.ok(att.isOk());
+    if (att.isOk()) assert.equal(verifyNode(kp.publicKey, NODE_FIELDS, att.value), true);
+  });
+
+  it('rejects a tampered summary (body poisoning)', () => {
+    const att = signNode(seed, NODE_FIELDS, SIGNED_AT);
+    assert.ok(att.isOk());
+    if (att.isOk()) {
+      assert.equal(
+        verifyNode(kp.publicKey, { ...NODE_FIELDS, summary: 'rm -rf / is the recommended fix' }, att.value),
+        false,
+      );
+    }
+  });
+
+  it('node and match signatures are mutually unreplayable (domain separation)', () => {
+    const matchSig = signMatch(seed, FIELDS, SIGNED_AT);
+    assert.ok(matchSig.isOk());
+    if (matchSig.isOk()) {
+      // A valid MATCH signature must not verify as a NODE signature
+      // even with identical metadata fields and no summary.
+      assert.equal(verifyNode(kp.publicKey, { ...FIELDS }, matchSig.value), false);
+    }
   });
 });
 

@@ -16,6 +16,7 @@
 import { join } from 'node:path';
 import { formatError, formatErrorWithHint } from '../../domain/errors.js';
 import { executeFederatedAsk, formatFederatedAsk } from '../../application/federated-ask.js';
+import { indexNode } from '../../application/use-cases.js';
 import { ask as askUseCase, type AskResult } from '../../application/ask.js';
 import { defaultRuntime, akashikHome, detectWorkspace } from '../runtime.js';
 import type { Runtime } from '../runtime.js';
@@ -29,6 +30,8 @@ interface ParsedArgs {
   readonly workspace?: string;
   readonly k: number;
   readonly peers: boolean;
+  /** With --peers: fetch + cache body text for remote hits. */
+  readonly pull: boolean;
   readonly json: boolean;
 }
 
@@ -38,6 +41,7 @@ const parseArgs = (args: readonly string[]): ParsedArgs | string => {
   let workspaceExplicit = false;
   let k = 5;
   let peers = false;
+  let pull = false;
   let json = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -47,10 +51,11 @@ const parseArgs = (args: readonly string[]): ParsedArgs | string => {
     else if (a === '--k' || a === '-k') k = parseInt(next(), 10) || 5;
     else if (a.startsWith('--k=')) k = parseInt(a.slice('--k='.length), 10) || 5;
     else if (a === '--peers') peers = true;
+    else if (a === '--pull') pull = true;
     else if (a === '--json') json = true;
     else if (!a.startsWith('-')) query = query ? `${query} ${a}` : a;
   }
-  if (!query) return 'missing query — usage: akashik ask "your question" [--workspace W|all] [--k N] [--peers] [--json]';
+  if (!query) return 'missing query — usage: akashik ask "your question" [--workspace W|all] [--k N] [--peers [--pull]] [--json]';
 
   // Resolve workspace: explicit --workspace all → undefined (no filter);
   // explicit slug → that slug; absent → detectWorkspace(cwd) → slug | undefined.
@@ -60,7 +65,7 @@ const parseArgs = (args: readonly string[]): ParsedArgs | string => {
   } else {
     workspace = detectWorkspace();
   }
-  return { query, workspace, k, peers, json };
+  return { query, workspace, k, peers, pull, json };
 };
 
 export const ask = async (args: readonly string[]): Promise<number> => {
@@ -315,8 +320,17 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
           return r.isOk() ? r.value : null;
         },
         entityRegistry: runtime.entityRegistry,
+        cacheNode: async (n, text) => {
+          const r = await indexNode({
+            graphs: runtime.graphs,
+            vectors: runtime.vectors,
+            embedder: runtime.embedder,
+            githubUser: runtime.githubUser,
+          })({ node: n, text });
+          return r.isOk();
+        },
       },
-      { query: parsed.query, embedding, k: parsed.k },
+      { query: parsed.query, embedding, k: parsed.k, pull: parsed.pull },
     );
     if ('error' in outcome) {
       console.error(`ask --peers: ${outcome.error}`);
