@@ -50,7 +50,7 @@ const tail = async (rest: readonly string[]): Promise<number> => {
 const exportCmd = async (rest: readonly string[]): Promise<number> => {
   const target = rest[0];
   if (!target) {
-    console.error('logs export: missing <path>. usage: akashik logs export ./welly-debug.ndjson.gz');
+    console.error('logs export: missing <path>. usage: akashik logs export ./akashik-debug.ndjson.gz');
     return 1;
   }
   const r = await exportBundle(logPaths(akashikHome()));
