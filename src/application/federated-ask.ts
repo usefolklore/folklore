@@ -157,6 +157,7 @@ export const formatFederatedAsk = (
         age_days: ageDays,
         source_peer: m._source_peer ?? 'local',
         also_from_peers: m._also_from_peers ?? [],
+        sig_valid: m._sig_valid ?? null,
       };
     });
     return JSON.stringify({
@@ -192,7 +193,8 @@ export const formatFederatedAsk = (
         m._also_from_peers && m._also_from_peers.length > 0
           ? ` (also: ${m._also_from_peers.join(', ')})`
           : '';
-      lines.push(`source_peer: ${peerLabel}${alsoFrom}`);
+      const sig = m._sig_valid === true ? ' [signed ✓]' : m._sig_valid === false ? ' [SIGNATURE INVALID]' : '';
+      lines.push(`source_peer: ${peerLabel}${alsoFrom}${sig}`);
       const ws = typeof graphNode?.workspace === 'string' ? graphNode.workspace : '-';
       const fetchedAt = (typeof graphNode?.fetched_at === 'string' ? graphNode.fetched_at : undefined) ?? m.fetched_at;
       const ageMs = fetchedAt ? Date.now() - Date.parse(fetchedAt) : NaN;

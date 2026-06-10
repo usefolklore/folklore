@@ -87,10 +87,10 @@ export const buildPeerPullTelemetry = (
       fetched_at: fetchedAt,
       age_days: ageInDays(fetchedAt, now),
       stale_after_days: DEFAULT_STALE_AFTER_DAYS,
-      // has_signature surfaces in v4.x when the share envelope verifier
-      // exposes per-node verdicts; left undefined here so the scorer
-      // treats signature as 'unknown' (0.5 component contribution).
-      has_signature: undefined,
+      // Per-match Ed25519 attestation verdict from the federated
+      // merge: true = verified against the responder's peer key,
+      // false = claimed but invalid, undefined = unsigned/local.
+      has_signature: m._sig_valid,
     };
   });
 
