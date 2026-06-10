@@ -48,3 +48,6 @@ findings.md
 
 # Private Fellows-application strategy (never publish - lives in public docs/ dir)
 docs/FELLOWS-RESTEER.md
+docs/FELLOWS-EVAL-SPEC.md
+# Fellows eval working dir — results, charts, frozen query sets, poisoned corpora
+eval/out/
