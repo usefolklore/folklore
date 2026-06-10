@@ -98,3 +98,48 @@ export const verifyMatch = (
   if (!sig) return false;
   return verifyBytes(publicKey, canonicalBytes(fields, attestation.signed_at), sig);
 };
+
+// ─────────── node-level attestation (fetch protocol) ───────────
+//
+// The fetch protocol transfers BODY text, so the signature must cover
+// it — a separate domain separator keeps node signatures and match
+// signatures mutually unreplayable.
+
+const NODE_DOMAIN = 'akashik-node:v1:';
+
+export interface AttestedNodeFields extends AttestedMatchFields {
+  readonly summary?: string;
+}
+
+const canonicalNodeBytes = (f: AttestedNodeFields, signedAt: string): Uint8Array =>
+  new TextEncoder().encode(
+    NODE_DOMAIN +
+      JSON.stringify({
+        fetched_at: f.fetched_at ?? null,
+        label: f.label ?? null,
+        node_id: f.node_id,
+        signed_at: signedAt,
+        source_uri: f.source_uri ?? null,
+        summary: f.summary ?? null,
+      }),
+  );
+
+export const signNode = (
+  privateKeySeed: Uint8Array,
+  fields: AttestedNodeFields,
+  signedAt: string,
+): Result<MatchAttestation, IdentityError> =>
+  signBytes(privateKeySeed, canonicalNodeBytes(fields, signedAt)).map((sig) => ({
+    signature_hex: toHex(sig),
+    signed_at: signedAt,
+  }));
+
+export const verifyNode = (
+  publicKey: Uint8Array,
+  fields: AttestedNodeFields,
+  attestation: MatchAttestation,
+): boolean => {
+  const sig = fromHex(attestation.signature_hex);
+  if (!sig) return false;
+  return verifyBytes(publicKey, canonicalNodeBytes(fields, attestation.signed_at), sig);
+};

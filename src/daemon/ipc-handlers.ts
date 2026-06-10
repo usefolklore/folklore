@@ -24,6 +24,7 @@ import type { HandlerResult, IpcHandler } from './ipc.js';
 import { formatError } from '../domain/errors.js';
 import { ask } from '../application/ask.js';
 import { executeFederatedAsk, formatFederatedAsk } from '../application/federated-ask.js';
+import { indexNode as indexNodeUseCase } from '../application/use-cases.js';
 import { queryCache, type QueryCache } from '../domain/query-cache.js';
 import { semanticCache, type SemanticCache } from '../domain/semantic-cache.js';
 import type { JobQueue } from './job-queue.js';
@@ -80,6 +81,7 @@ interface AskArgs {
   readonly k: number;
   readonly json: boolean;
   readonly peers: boolean;
+  readonly pull: boolean;
 }
 
 /**
@@ -103,6 +105,7 @@ const parseAskArgs = (args: readonly string[]): AskArgs | string | typeof FALLBA
   let k = 5;
   let json = false;
   let peers = false;
+  let pull = false;
   let workspaceSeen = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -113,6 +116,7 @@ const parseAskArgs = (args: readonly string[]): AskArgs | string | typeof FALLBA
     else if (a.startsWith('--k=')) k = parseInt(a.slice('--k='.length), 10) || 5;
     else if (a === '--json') json = true;
     else if (a === '--peers') peers = true;
+    else if (a === '--pull') pull = true;
     else if (a === '--workspace') { workspaceSeen = true; next(); }
     else if (a.startsWith('--workspace=')) workspaceSeen = true;
     else if (a.startsWith('-')) {
@@ -127,8 +131,8 @@ const parseAskArgs = (args: readonly string[]): AskArgs | string | typeof FALLBA
   // --peers is servable in-daemon. A LOCAL ask with --workspace
   // depends on the CLIENT's cwd, which IPC does not carry → full CLI.
   if (!peers && workspaceSeen) return FALLBACK;
-  if (!query) return 'missing query — usage: akashik ask "your question" [--k N] [--json] [--peers]';
-  return { query, room, k, json, peers };
+  if (!query) return 'missing query — usage: akashik ask "your question" [--k N] [--json] [--peers [--pull]]';
+  return { query, room, k, json, peers, pull };
 };
 
 const makeAskHandler = (federation?: FederationRef): IpcHandler<Runtime> => async (args, runtime) => {
@@ -161,8 +165,17 @@ const makeAskHandler = (federation?: FederationRef): IpcHandler<Runtime> => asyn
           return r.isOk() ? r.value : null;
         },
         entityRegistry: runtime.entityRegistry,
+        cacheNode: async (n, text) => {
+          const r = await indexNodeUseCase({
+            graphs: runtime.graphs,
+            vectors: runtime.vectors,
+            embedder: runtime.embedder,
+            githubUser: runtime.githubUser,
+          })({ node: n, text });
+          return r.isOk();
+        },
       },
-      { query: parsed.query, embedding: embRes.value, k: parsed.k },
+      { query: parsed.query, embedding: embRes.value, k: parsed.k, pull: parsed.pull },
     );
     if ('error' in outcome) {
       return { stdout: '', stderr: `ask --peers: ${outcome.error}\n`, exit: 1 };

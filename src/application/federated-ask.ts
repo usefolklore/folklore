@@ -16,8 +16,11 @@
 
 import { join } from 'node:path';
 import type { Libp2p } from '@libp2p/interface';
-import type { Graph } from '../domain/graph.js';
+import type { Graph, GraphNode } from '../domain/graph.js';
 import { getNode } from '../domain/graph.js';
+import { verifyNode } from '../domain/match-attestation.js';
+import { openFetchStream, MAX_FETCH_IDS, type FetchedNode } from '../infrastructure/fetch-sync.js';
+import { publicKeyFromPeerId } from '../infrastructure/peer-transport.js';
 import type { Vector } from '../domain/vectors.js';
 import type { VectorIndex } from '../infrastructure/vector-index.js';
 import type { EntityRegistry } from '../infrastructure/entity-registry.js';
@@ -39,18 +42,41 @@ export interface FederatedAskDeps {
   readonly vectorIndex: VectorIndex;
   readonly loadGraph: () => Promise<Graph | null>;
   readonly entityRegistry: EntityRegistry;
+  /**
+   * Caching seam for pulled node bodies (the compounding loop:
+   * pulled once, local forever). Receives an import-shaped GraphNode
+   * plus the embed text; returns true when cached. Absent = pulled
+   * bodies are displayed but not cached.
+   */
+  readonly cacheNode?: (node: GraphNode, text: string) => Promise<boolean>;
 }
 
 export interface FederatedAskParams {
   readonly query: string;
   readonly embedding: Vector;
   readonly k: number;
+  /** Fetch body text for remote hits over /akashik/fetch/1.0.0. */
+  readonly pull?: boolean;
+}
+
+/** A remote hit's body, pulled + verified + (maybe) cached. */
+export interface PulledNode {
+  readonly node_id: string;
+  readonly label?: string;
+  readonly summary?: string;
+  readonly source_uri?: string;
+  readonly fetched_at?: string;
+  readonly source_peer: string;
+  /** Node-attestation verdict — same semantics as match _sig_valid. */
+  readonly sig_valid?: boolean;
+  readonly cached: boolean;
 }
 
 export interface FederatedAskOutcome {
   readonly result: FederatedSearchResult;
   readonly telemetry: PeerPullTelemetry;
   readonly graph: Graph;
+  readonly pulled?: readonly PulledNode[];
 }
 
 /**
@@ -121,7 +147,96 @@ export const executeFederatedAsk = async (
     })();
   }
 
-  return { result, telemetry, graph };
+  const pulled = params.pull
+    ? await pullRemoteBodies(deps, graph, result)
+    : undefined;
+
+  return { result, telemetry, graph, pulled };
+};
+
+/**
+ * Fetch body text for remote hits the local graph does not hold,
+ * verify each node's attestation, and cache verified-or-unsigned
+ * bodies locally (claimed-but-invalid is never cached). Grouped per
+ * source peer, capped at MAX_FETCH_IDS total — fetch is targeted.
+ */
+const pullRemoteBodies = async (
+  deps: FederatedAskDeps,
+  graph: Graph,
+  result: FederatedSearchResult,
+): Promise<readonly PulledNode[]> => {
+  const wanted = result.matches
+    .filter((m) => m._source_peer !== null && !getNode(graph, m.node_id))
+    .slice(0, MAX_FETCH_IDS);
+  if (wanted.length === 0) return [];
+
+  const byPeer = new Map<string, string[]>();
+  for (const m of wanted) {
+    const arr = byPeer.get(m._source_peer as string) ?? [];
+    arr.push(m.node_id);
+    byPeer.set(m._source_peer as string, arr);
+  }
+
+  const pulled: PulledNode[] = [];
+  await Promise.all(
+    Array.from(byPeer.entries()).map(async ([peer, ids]) => {
+      const res = await openFetchStream(deps.node, peer, ids);
+      if (res.isErr() || !res.value || res.value.type !== 'fetch_ok') return;
+      const pub = publicKeyFromPeerId(peer);
+      for (const n of res.value.nodes) {
+        const sigValid = verdictFor(pub, n);
+        const cached = sigValid !== false && deps.cacheNode
+          ? await cacheFetched(deps.cacheNode, peer, n)
+          : false;
+        pulled.push({
+          node_id: n.node_id,
+          label: n.label,
+          summary: n.summary,
+          source_uri: n.source_uri,
+          fetched_at: n.fetched_at,
+          source_peer: peer,
+          sig_valid: sigValid,
+          cached,
+        });
+      }
+    }),
+  );
+  return pulled;
+};
+
+const verdictFor = (pub: Uint8Array | null, n: FetchedNode): boolean | undefined => {
+  if (!n.attestation) return undefined;
+  if (!pub) return false;
+  return verifyNode(
+    pub,
+    { node_id: n.node_id, label: n.label, source_uri: n.source_uri, fetched_at: n.fetched_at, summary: n.summary },
+    n.attestation,
+  );
+};
+
+/** Import-shaped node, mirroring share-sync's buildImportedNode. */
+const cacheFetched = async (
+  cacheNode: NonNullable<FederatedAskDeps['cacheNode']>,
+  peer: string,
+  n: FetchedNode,
+): Promise<boolean> => {
+  const node = {
+    id: n.node_id,
+    label: n.label ?? n.node_id,
+    file_type: 'document',
+    source_file: `peer:${peer}`,
+    private: false,
+    source_uri: n.source_uri,
+    fetched_at: n.fetched_at,
+    summary: n.summary,
+    _akashik_source_peer: peer,
+  } as GraphNode;
+  const text = n.summary ? `${node.label}\n\n${n.summary}` : node.label;
+  try {
+    return await cacheNode(node, text);
+  } catch {
+    return false;
+  }
 };
 
 /**
@@ -167,6 +282,7 @@ export const formatFederatedAsk = (
       peers_timed_out: result.peers_timed_out,
       peers_errored: result.peers_errored,
       hits,
+      ...(outcome.pulled ? { pulled: outcome.pulled } : {}),
       _telemetry: telemetry,
       _telemetry_block: formatTelemetryBlock(telemetry),
     });
@@ -202,6 +318,23 @@ export const formatFederatedAsk = (
       lines.push(`distance: ${m.distance.toFixed(3)} | workspace: ${ws}${age}`);
       const srcUri = graphNode?.source_uri ?? m.source_uri;
       if (srcUri) lines.push(`source: ${srcUri}`);
+      lines.push('');
+    }
+  }
+
+  if (outcome.pulled && outcome.pulled.length > 0) {
+    lines.push(`# pulled bodies (${outcome.pulled.length})`);
+    lines.push('');
+    for (const p of outcome.pulled) {
+      const sig = p.sig_valid === true ? ' [signed ✓]' : p.sig_valid === false ? ' [SIGNATURE INVALID — not cached]' : '';
+      const cached = p.cached ? ' (cached locally)' : '';
+      lines.push(`## ${p.label ?? p.node_id}${sig}${cached}`);
+      lines.push(`from: ${p.source_peer}`);
+      if (p.source_uri) lines.push(`source: ${p.source_uri}`);
+      if (p.summary) {
+        lines.push('');
+        lines.push(p.summary);
+      }
       lines.push('');
     }
   }
