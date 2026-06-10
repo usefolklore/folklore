@@ -66,7 +66,7 @@ import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 import type { Room } from '../src/domain/graph.js';
 import type { Match } from '../src/domain/vectors.js';
 
-const ROOM = 'locomo' as Room;
+const _ROOM = 'locomo' as Room;
 const DIM = 384;
 const K = 3;
 const FACTUAL_CATEGORIES = new Set([1, 2, 3]);

@@ -13,11 +13,11 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { okAsync, errAsync, ResultAsync } from 'neverthrow';
+import { okAsync, errAsync } from 'neverthrow';
 
 import { indexNode, type UseCaseDeps } from '../src/application/use-cases.js';
 import { empty as emptyGraph, type Graph, type GraphNode } from '../src/domain/graph.js';

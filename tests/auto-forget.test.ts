@@ -18,7 +18,6 @@ import { test } from 'node:test';
 import { okAsync, ResultAsync } from 'neverthrow';
 import {
   planAutoForget,
-  type AutoForgetConfig,
 } from '../src/domain/auto-forget.js';
 import { runAutoForgetTick } from '../src/application/auto-forget-tick.js';
 import { empty as emptyGraph, fromJson, type GraphJson } from '../src/domain/graph.js';

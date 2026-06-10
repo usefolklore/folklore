@@ -79,7 +79,7 @@ const acquireLock = async (lockPath: string): Promise<void> => {
         continue;
       }
       if (Date.now() >= deadline) {
-        throw new Error(`timed out waiting for peers.json lock after ${LOCK_MAX_WAIT_MS}ms`);
+        throw new Error(`timed out waiting for peers.json lock after ${LOCK_MAX_WAIT_MS}ms`, { cause: e });
       }
       await sleep(LOCK_RETRY_DELAY_MS);
     }

@@ -98,7 +98,7 @@ test('phase-26 E2E: public node with github_user flows A → B intact', async ()
 
 test('phase-26 E2E: collectShareable filters private:true out of the share pool', () => {
   // Mimic two nodes in the local graph — one public, one private.
-  let g = emptyGraph();
+  const g = emptyGraph();
   const pub = makeNode('pub-1', { isPrivate: false, github: 'SaharBarak' });
   const priv = makeNode('priv-1', { isPrivate: true, github: 'SaharBarak' });
   // Use the graph's own upsertNode through a fresh empty graph.

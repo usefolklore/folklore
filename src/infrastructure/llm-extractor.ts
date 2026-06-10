@@ -52,7 +52,7 @@ export const ollamaLlmExtractor = (
       }).map((raw) => {
         // Some small models prefix with "Answer:" or echo the marker —
         // strip leading "Answer:", quotes, and the literal heading.
-        let out = raw.replace(/^[\s\-]*answer\s*:\s*/i, '');
+        let out = raw.replace(/^[\s-]*answer\s*:\s*/i, '');
         out = out.replace(/^---\s*answer\s*---\s*/i, '');
         out = out.replace(/^["'`]+|["'`]+$/g, '');
         return out.trim();

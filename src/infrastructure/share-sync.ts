@@ -66,7 +66,7 @@ const makeFramedStream = (stream: Stream): FramedStream => {
   };
   return {
     write: async (data) => {
-      for await (const chunk of lp.encode([data])) stream.send(chunk);
+      for (const chunk of lp.encode([data])) stream.send(chunk);
     },
     frameIter,
     close: () => { try { void stream.close(); } catch { /* benign */ } },

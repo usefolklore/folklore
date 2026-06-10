@@ -16,7 +16,7 @@
  *
  * Runner: node --import tsx --test tests/phase18.production-net.test.ts
  */
-import { test, describe, before, after } from 'node:test';
+import { test, describe } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { mkdtemp, readFile } from 'node:fs/promises';
@@ -25,7 +25,6 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 
 import * as Y from 'yjs';
-import type { Libp2p } from '@libp2p/interface';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (p: string): string => readFileSync(join(ROOT, p), 'utf8');

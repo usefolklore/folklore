@@ -63,7 +63,7 @@ import { indexNode, searchGlobal } from '../src/application/use-cases.js';
 import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 import type { Room } from '../src/domain/graph.js';
 
-const ROOM = 'locomo' as Room;
+const _ROOM = 'locomo' as Room;
 const DIM = 384;
 
 // ─────────────── synthetic 4-persona × 6-month corpus ─────────────
@@ -75,7 +75,7 @@ interface Session {
   readonly summary: string;
 }
 
-const PERSONAS = ['Alice', 'Bob', 'Cara', 'Dan'] as const;
+const _PERSONAS = ['Alice', 'Bob', 'Cara', 'Dan'] as const;
 
 /**
  * 40 sessions, ~10 per persona, spread across 180 days.

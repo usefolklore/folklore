@@ -17,7 +17,7 @@ import { okAsync } from 'neverthrow';
 import { runFederatedSearch } from '../src/application/federated-search.js';
 import type { Libp2p } from '@libp2p/interface';
 import type { VectorIndex } from '../src/infrastructure/vector-index.js';
-import type { Vector, VectorRecord, Match } from '../src/domain/vectors.js';
+import type { VectorRecord, Match } from '../src/domain/vectors.js';
 import type { PeerMatch, SearchRequest } from '../src/infrastructure/search-sync.js';
 import type { SearchError } from '../src/domain/errors.js';
 import { ResultAsync } from 'neverthrow';

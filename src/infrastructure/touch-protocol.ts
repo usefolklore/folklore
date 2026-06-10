@@ -69,7 +69,7 @@ const makeFramedStream = (stream: Stream): FramedStream => {
   };
   return {
     write: async (data): Promise<void> => {
-      for await (const chunk of lp.encode([data])) {
+      for (const chunk of lp.encode([data])) {
         stream.send(chunk);
       }
     },
@@ -305,7 +305,7 @@ export const openTouchStream = (
         try {
           resp = JSON.parse(decoder.decode(frame.value), unsafeReviver) as TouchResponse;
         } catch (e) {
-          throw new Error(`malformed-response: ${(e as Error).message}`);
+          throw new Error(`malformed-response: ${(e as Error).message}`, { cause: e });
         }
         if (!resp || typeof resp !== 'object' || resp.type !== 'touch-response') {
           throw new Error('malformed-response: wrong shape');

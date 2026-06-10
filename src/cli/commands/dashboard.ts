@@ -11,7 +11,7 @@
  * Graph data served via /api/graph endpoint. Search via /api/search.
  */
 
-import { createServer } from 'node:http';
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { formatError } from '../../domain/errors.js';
 import { defaultRuntime } from '../runtime.js';
 
@@ -220,7 +220,7 @@ export const dashboard = async (args: readonly string[]): Promise<number> => {
 
   const html = dashboardHtml(port);
 
-  const server = createServer(async (req, res) => {
+  const handleRequest = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const url = new URL(req.url ?? '/', `http://localhost:${port}`);
 
     if (url.pathname === '/api/graph') {
@@ -253,6 +253,12 @@ export const dashboard = async (args: readonly string[]): Promise<number> => {
     // Serve dashboard HTML
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(html);
+  };
+
+  const server = createServer((req, res) => {
+    handleRequest(req, res).catch(() => {
+      try { res.writeHead(500); res.end('error'); } catch { /* socket gone */ }
+    });
   });
 
   server.listen(port, () => {

@@ -104,7 +104,10 @@ export const startIpcServer = async <C>(
   const server: Server = createServer((socket: Socket) => {
     socket.on('error', (e) => onError(`ipc: socket error: ${e.message}`));
     const rl = createInterface({ input: socket });
-    rl.on('line', async (line) => {
+    // Named async handler + void-wrapped registration: every await in
+    // the body is try/caught, so the promise cannot reject — the
+    // wrapper just keeps the EventEmitter contract synchronous.
+    const onLine = async (line: string): Promise<void> => {
       if (!line.trim()) return;
 
       let req: IpcRequest;
@@ -124,7 +127,7 @@ export const startIpcServer = async <C>(
           stderr: IPC_FALLBACK_SENTINEL,
           exit: 255,
         };
-        try { socket.write(JSON.stringify(resp) + '\n'); } catch {}
+        try { socket.write(JSON.stringify(resp) + '\n'); } catch { /* peer gone */ }
         return;
       }
 
@@ -138,7 +141,7 @@ export const startIpcServer = async <C>(
           stderr: result.stderr,
           exit: result.exit,
         };
-        try { socket.write(JSON.stringify(resp) + '\n'); } catch {}
+        try { socket.write(JSON.stringify(resp) + '\n'); } catch { /* peer gone */ }
         onCommand(req.cmd, req.args.length, Date.now() - t0);
       } catch (e) {
         const resp: IpcResponse = {
@@ -147,9 +150,10 @@ export const startIpcServer = async <C>(
           stderr: `ipc handler '${req.cmd}': ${(e as Error).message}`,
           exit: 1,
         };
-        try { socket.write(JSON.stringify(resp) + '\n'); } catch {}
+        try { socket.write(JSON.stringify(resp) + '\n'); } catch { /* peer gone */ }
       }
-    });
+    };
+    rl.on('line', (line) => { void onLine(line); });
   });
 
   await new Promise<void>((resolve, reject) => {
@@ -170,7 +174,7 @@ export const startIpcServer = async <C>(
         stopped = true;
         server.close(() => {
           if (existsSync(path)) {
-            try { unlinkSync(path); } catch {}
+            try { unlinkSync(path); } catch { /* already removed */ }
           }
           resolve();
         });
@@ -203,7 +207,7 @@ export const sendIpcRequest = (
     const done = (r: IpcResponse | null): void => {
       if (settled) return;
       settled = true;
-      try { socket.destroy(); } catch {}
+      try { socket.destroy(); } catch { /* already closed */ }
       resolve(r);
     };
     const timer = setTimeout(() => done(null), timeoutMs);

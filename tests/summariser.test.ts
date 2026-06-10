@@ -13,7 +13,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { okAsync, ResultAsync } from 'neverthrow';
+import { okAsync } from 'neverthrow';
 import {
   fixtureSummariser,
   ollamaSummariser,

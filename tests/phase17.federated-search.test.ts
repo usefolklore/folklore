@@ -13,7 +13,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
-import { okAsync, errAsync, ResultAsync } from 'neverthrow';
+import { okAsync, ResultAsync } from 'neverthrow';
 
 import { runFederatedSearch } from '../src/application/federated-search.js';
 import { createRateLimiter } from '../src/infrastructure/search-sync.js';

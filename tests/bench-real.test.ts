@@ -20,7 +20,6 @@ import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
 import { fixtureEmbedder } from '../src/infrastructure/embedders.js';
 import { indexNode, searchGlobal } from '../src/application/use-cases.js';
-import { sparse } from '../src/domain/vectors.js';
 import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 
 // ─────────── corpus with ground truth ───────────

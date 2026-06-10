@@ -96,7 +96,8 @@ type RecallWire = RecallResponse | RecallError;
 
 const writeFrame = async (stream: Stream, payload: object): Promise<void> => {
   const bytes = new TextEncoder().encode(JSON.stringify(payload));
-  for await (const chunk of lp.encode([bytes])) {
+  // lp.encode over an in-memory array is a synchronous iterable.
+  for (const chunk of lp.encode([bytes])) {
     stream.send(chunk);
   }
 };
@@ -394,7 +395,7 @@ export const registerRecallProtocol = (deps: RecallRegistryDeps): void => {
         // path; a chatty peer mustn't be able to keep them busy.
         if (!consumeToken(peerIdStr, Date.now())) {
           await writeFrame(stream, { type: 'recall_err', reason: 'rate_limited' });
-          stream.close();
+          await stream.close();
           return;
         }
 
@@ -404,14 +405,14 @@ export const registerRecallProtocol = (deps: RecallRegistryDeps): void => {
             type: 'recall_err',
             reason: 'invalid_request',
           });
-          stream.close();
+          await stream.close();
           return;
         }
         // Cheap input validation — entity_id + room caps. Stops a
         // peer from forcing an enormous-string graph traversal.
         if (typeof req.entity_id !== 'string' || req.entity_id.length === 0 || req.entity_id.length > 256) {
           await writeFrame(stream, { type: 'recall_err', reason: 'invalid_request' });
-          stream.close();
+          await stream.close();
           return;
         }
         const graph = await deps.getGraph();
@@ -424,7 +425,7 @@ export const registerRecallProtocol = (deps: RecallRegistryDeps): void => {
           // and naturally retries on a later request (claude-sonnet
           // sub-agent HIGH-3).
           log(`recall responder ← peer=${peerIdStr.slice(0, 12)} graph_unloaded`);
-          stream.close();
+          await stream.close();
           return;
         }
         const resp = await answerRecall(req, {
@@ -438,7 +439,7 @@ export const registerRecallProtocol = (deps: RecallRegistryDeps): void => {
       } catch (e) {
         log(`recall responder error: ${(e as Error).message}`);
       } finally {
-        try { stream.close(); } catch { /* benign */ }
+        await stream.close().catch(() => { /* benign */ });
       }
     },
     { maxInboundStreams: MAX_INBOUND_STREAMS },
@@ -494,7 +495,7 @@ export const openRecallStream = (
         );
         return resp;
       } finally {
-        try { stream.close(); } catch { /* benign */ }
+        await stream.close().catch(() => { /* benign */ });
       }
     })(),
     (e) => SEARCH_ERR.protocolError('local', (e as Error).message),

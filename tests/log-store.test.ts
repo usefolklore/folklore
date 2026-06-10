@@ -13,7 +13,7 @@
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtemp, rm, writeFile, readFile, utimes } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, utimes } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
