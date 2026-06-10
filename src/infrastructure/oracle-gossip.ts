@@ -76,12 +76,15 @@ const decoder = new TextDecoder();
  *  registers under node.services.pubsub. Keeps us from importing the
  *  full FloodSub class and lets us swap to gossipsub later by changing
  *  just the service registration in peer-transport.ts. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PubsubService = {
   readonly publish: (topic: string, data: Uint8Array) => Promise<unknown>;
   readonly subscribe: (topic: string) => void;
   readonly unsubscribe: (topic: string) => void;
+  // `any` keeps typed CustomEvent handlers assignable (contravariant
+  // param position — `unknown` would reject every concrete listener).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   readonly addEventListener: (type: string, listener: (e: any) => void) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   readonly removeEventListener: (type: string, listener: (e: any) => void) => void;
 };
 

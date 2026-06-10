@@ -262,7 +262,7 @@ export const parseListwiseResponse = (raw: string, validIds: ReadonlySet<string>
   const tokens = segment
     .replace(/^[\s\-*]+/, '')
     .split(/[,\n;]|\s>\s|\s+then\s+|->/i)
-    .map((t) => t.trim().replace(/^["'\[\(]+|["'\]\)]+$/g, '').replace(/^\d+\.\s*/, '').trim())
+    .map((t) => t.trim().replace(/^["'[(]+|["'\])]+$/g, '').replace(/^\d+\.\s*/, '').trim())
     .filter((t) => t.length > 0);
 
   const out: string[] = [];

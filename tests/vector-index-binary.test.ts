@@ -234,26 +234,21 @@ describe('vector-index — binary-only mode (v4.1)', () => {
     assert.ok(r.isOk());
     if (!r.isOk()) return;
     const idx = r.value;
-    try {
-      await idx.upsert(mkRecord('a', 'r1', 128, 7, 'binary-only doc'));
+    await idx.upsert(mkRecord('a', 'r1', 128, 7, 'binary-only doc'));
 
-      // Close the writer first so we can open a fresh reader without WAL contention
-      idx.close();
+    // Close the writer first so we can open a fresh reader without WAL contention
+    idx.close();
 
-      const db = new Better(dbPath, { readonly: true, fileMustExist: true });
-      sqliteVec.load(db);
-      const meta = db.prepare('SELECT raw_bin FROM vec_meta WHERE node_id = ?').get('a') as { raw_bin: Buffer };
-      assert.ok(meta.raw_bin);
-      assert.equal(meta.raw_bin.length, 16, 'binary-128 = 16 bytes');
+    const db = new Better(dbPath, { readonly: true, fileMustExist: true });
+    sqliteVec.load(db);
+    const meta = db.prepare('SELECT raw_bin FROM vec_meta WHERE node_id = ?').get('a') as { raw_bin: Buffer };
+    assert.ok(meta.raw_bin);
+    assert.equal(meta.raw_bin.length, 16, 'binary-128 = 16 bytes');
 
-      // vec_nodes should NOT have a row for this rowid (binary-only skipped fp32)
-      const vec = db.prepare('SELECT COUNT(*) AS n FROM vec_nodes').get() as { n: number };
-      assert.equal(vec.n, 0, 'binary-only must skip fp32 vec0 write entirely');
-      db.close();
-    } catch (e) {
-      // Surface the underlying error if assertions failed for non-assertion reasons
-      throw e;
-    }
+    // vec_nodes should NOT have a row for this rowid (binary-only skipped fp32)
+    const vec = db.prepare('SELECT COUNT(*) AS n FROM vec_nodes').get() as { n: number };
+    assert.equal(vec.n, 0, 'binary-only must skip fp32 vec0 write entirely');
+    db.close();
   });
 
   it('binaryOnly without binaryDim is silently coerced off', async () => {

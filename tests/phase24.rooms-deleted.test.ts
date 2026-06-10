@@ -20,7 +20,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import {
   mkdtempSync, rmSync, writeFileSync, existsSync, readFileSync,
-  mkdirSync, cpSync, statSync,
+  mkdirSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -198,7 +198,7 @@ describe('Phase 24 — storage files (ROOMS-DEL-02, ROOMS-DEL-03)', () => {
   });
 
   test('No live import of deleted room modules across src/', () => {
-    let out = '';
+    let out: string;
     try {
       out = execFileSync('grep', [
         '-rnE',
@@ -214,7 +214,7 @@ describe('Phase 24 — storage files (ROOMS-DEL-02, ROOMS-DEL-03)', () => {
   });
 
   test('No live code path opens rooms.json (migrate + doctor V4-warning paths excepted)', () => {
-    let out = '';
+    let out: string;
     try {
       out = execFileSync('grep', ['-rn', 'rooms.json', 'src/'], {
         cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
@@ -234,7 +234,7 @@ describe('Phase 24 — storage files (ROOMS-DEL-02, ROOMS-DEL-03)', () => {
   });
 
   test('No live code path opens shared-rooms.json (migrate + doctor V4-warning paths excepted)', () => {
-    let out = '';
+    let out: string;
     try {
       out = execFileSync('grep', ['-rn', 'shared-rooms.json', 'src/'], {
         cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
@@ -671,7 +671,7 @@ describe('Phase 24 — cross-cutting integrity', () => {
   });
 
   test('share-store, system-rooms, rooms, rooms-config are not findable by static analysis', () => {
-    let out = '';
+    let out: string;
     try {
       out = execFileSync('grep', [
         '-rlE',

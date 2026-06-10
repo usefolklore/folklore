@@ -54,7 +54,7 @@ export interface LlmExtractor {
 export const normalizeAnswer = (s: string): string => {
   if (typeof s !== 'string') return '';
   const lower = s.toLowerCase();
-  const noPunct = lower.replace(/[.,!?;:'"()\[\]{}\-_/\\|`~@#$%^&*+=<>]/g, ' ');
+  const noPunct = lower.replace(/[.,!?;:'"()[\]{}\-_/\\|`~@#$%^&*+=<>]/g, ' ');
   const noArticles = noPunct.replace(/\b(a|an|the)\b/g, ' ');
   return noArticles.replace(/\s+/g, ' ').trim();
 };

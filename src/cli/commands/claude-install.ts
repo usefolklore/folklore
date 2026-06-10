@@ -53,7 +53,6 @@ const OWNED_SCRIPT_NAMES = [
 // Back-compat alias kept for test suites that grep this module's source
 // for the string 'HOOK_SCRIPT_NAME'. Still true semantically — the legacy
 // hook script is the original "the hook script" until v2.1 split it out.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const HOOK_SCRIPT_NAME = LEGACY_HOOK_NAME;
 void HOOK_SCRIPT_NAME;
 

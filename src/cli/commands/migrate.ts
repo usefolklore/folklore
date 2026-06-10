@@ -423,7 +423,7 @@ const runRollback = (): number => {
     return 1;
   }
 
-  let nodeCount = 0;
+  let nodeCount: number;
   try {
     const raw = JSON.parse(readFileSync(paths.backup, 'utf8')) as RawGraph;
     nodeCount = Array.isArray(raw.nodes) ? raw.nodes.length : 0;

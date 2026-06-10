@@ -33,7 +33,7 @@ import type { PeersFile } from '../src/infrastructure/peer-store.js';
 
 const SRC_PEER_TRANSPORT = 'src/infrastructure/peer-transport.ts';
 const SRC_ERRORS = 'src/domain/errors.ts';
-const CONTEXT_MD = '.planning/phases/phase-17/17-CONTEXT.md';
+const CONTEXT_MD = '.planning/milestones/v2.0-phases/phase-17/17-CONTEXT.md';
 
 // ─────────────────────── DISC-02: mDNS wiring + Pitfall 1 + 2 ────────────────
 

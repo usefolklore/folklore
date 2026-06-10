@@ -98,8 +98,9 @@ const makeFramedStream = (stream: Stream): FramedStream => {
 
   return {
     write: async (data: Uint8Array): Promise<void> => {
-      // lp.encode([data]) yields one length-prefixed Uint8ArrayList chunk.
-      for await (const chunk of lp.encode([data])) {
+      // lp.encode([data]) yields one length-prefixed Uint8ArrayList chunk
+      // (synchronous iterable — the source is an in-memory array).
+      for (const chunk of lp.encode([data])) {
         stream.send(chunk);
       }
     },

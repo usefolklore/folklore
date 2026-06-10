@@ -234,11 +234,11 @@ export const runFederationSim = (corpus: SimCorpus, config: SimConfig): SimResul
     // 3. asker = uniform random online peer
     const asker = online[Math.floor(rng() * online.length)];
 
-    // 4. local lookup
-    let source: ResolveSource = 'local';
+    // 4. local lookup — every branch below assigns source/goldFound.
+    let source: ResolveSource;
     let servingPeer: string | undefined = asker.id;
-    let goldFound = false;
-    let askerLearned: string[] = [];
+    let goldFound: boolean;
+    const askerLearned: string[] = [];
 
     const localHit = q.goldDocs.find((d) => asker.docs.has(d));
     if (localHit !== undefined) {

@@ -43,7 +43,7 @@ import { recallAtK, reciprocalRank } from '../src/domain/eval-metrics.js';
 import type { BenchSuiteReport } from '../src/domain/bench-types.js';
 import type { Room } from '../src/domain/graph.js';
 
-const ROOM = 'sessions' as Room;
+const _ROOM = 'sessions' as Room;
 const DIM = 384;
 
 // ─────────────── synthetic fixture ─────────────

@@ -762,9 +762,10 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
   // Run immediately on start
   await runOneTick(tickDeps);
 
-  // Then schedule
-  const interval = setInterval(async () => {
-    await runOneTick(tickDeps);
+  // Then schedule. runOneTick handles its own failures (Result-based
+  // internals); void keeps the timer callback synchronous.
+  const interval = setInterval(() => {
+    void runOneTick(tickDeps);
   }, deps.config.interval_seconds * 1000);
   // Allow the supervisor to drive process lifetime — we don't pin the
   // event loop on this timer.

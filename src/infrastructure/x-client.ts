@@ -11,7 +11,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { createServer } from 'node:http';
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { ResultAsync } from 'neverthrow';
 import { TwitterApi } from 'twitter-api-v2';
 import type { GraphError } from '../domain/errors.js';
@@ -72,7 +72,7 @@ const authenticate = async (cfg: XClientConfig): Promise<StoredToken> => {
 
   // Wait for OAuth callback
   return new Promise<StoredToken>((resolve, reject) => {
-    const server = createServer(async (req, res) => {
+    const handleCallback = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
       const reqUrl = new URL(req.url ?? '', `http://localhost:8787`);
       const code = reqUrl.searchParams.get('code');
       const returnedState = reqUrl.searchParams.get('state');
@@ -109,6 +109,12 @@ const authenticate = async (cfg: XClientConfig): Promise<StoredToken> => {
         server.close();
         reject(e);
       }
+    };
+
+    const server = createServer((req, res) => {
+      // Rejections inside the handler already settle the outer
+      // promise; this catch only covers pre-try throws (URL parse).
+      handleCallback(req, res).catch(reject);
     });
 
     server.listen(8787, () => {

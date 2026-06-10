@@ -224,7 +224,7 @@ function checkV5SchemaReadiness(): Check {
   }
 
   let v4HitCount = 0;
-  let sampleSize = 0;
+  let sampleSize: number;
   try {
     const parsed = JSON.parse(readFileSync(graphPath, 'utf8')) as { nodes?: unknown[] };
     const nodes = Array.isArray(parsed.nodes) ? parsed.nodes : [];

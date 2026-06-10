@@ -1,0 +1,12 @@
+{
+  // Lint-only project: widens the build tsconfig to cover tests/ so
+  // type-aware ESLint rules can see them. Never used by `tsc` builds —
+  // the build stays scoped to src/ via tsconfig.json.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["src/**/*", "tests/**/*", "eslint.config.mjs"],
+  "exclude": ["node_modules", "dist", "vendor"]
+}

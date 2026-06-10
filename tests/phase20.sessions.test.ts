@@ -358,7 +358,6 @@ describe('Phase 20 — claude-sessions adapter structural (Pitfalls 1, 2, 3)', (
     // The call site is outside the for loop — verify by checking it is NOT
     // adjacent to 'for (const file' in the same block
     const callIdx = SRC.lastIndexOf('mutateSessionsState(');
-    const forIdx = SRC.lastIndexOf('for (const file', callIdx);
     // The last mutateSessionsState call should come after the for loop closes
     assert.ok(callIdx > -1, 'mutateSessionsState call site required');
   });

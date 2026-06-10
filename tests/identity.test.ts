@@ -34,7 +34,7 @@ import {
   ED25519_SIGNATURE_LENGTH,
   __INTERNAL__,
 } from '../src/domain/identity.ts';
-import type { SignedEnvelope, DID } from '../src/domain/identity.ts';
+import type { SignedEnvelope } from '../src/domain/identity.ts';
 
 // ─────────────────────── test vector: decode→encode stability ─────
 

@@ -25,7 +25,6 @@ import {
   ensureIdentity,
   exportRecoveryMnemonic,
   importRecoveryAuto,
-  importRecoveryHex,
 } from '../src/application/identity-lifecycle.ts';
 
 let home: string;

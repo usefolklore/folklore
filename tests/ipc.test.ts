@@ -21,7 +21,6 @@ import {
   startIpcServer,
   sendIpcRequest,
   socketPath,
-  IPC_FALLBACK_SENTINEL,
   type IpcHandler,
 } from '../src/daemon/ipc.ts';
 
@@ -37,7 +36,7 @@ afterEach(async () => {
 
 describe('ipc — server lifecycle', () => {
   it('starts + stops cleanly, removes socket file', async () => {
-    const handlers = new Map<string, IpcHandler<{}>>();
+    const handlers = new Map<string, IpcHandler<Record<string, never>>>();
     handlers.set('ping', async () => ({ stdout: 'pong', exit: 0 }));
     const server = await startIpcServer({ homeDir: home, ctx: {}, handlers });
     assert.ok(existsSync(server.path), 'socket file should exist after start');
@@ -54,7 +53,7 @@ describe('ipc — server lifecycle', () => {
     await writeFile(staleSock, '');
     assert.ok(existsSync(staleSock));
 
-    const handlers = new Map<string, IpcHandler<{}>>();
+    const handlers = new Map<string, IpcHandler<Record<string, never>>>();
     handlers.set('ping', async () => ({ stdout: 'pong', exit: 0 }));
     const server = await startIpcServer({ homeDir: home, ctx: {}, handlers });
     try {
@@ -65,7 +64,7 @@ describe('ipc — server lifecycle', () => {
   });
 
   it('POSIX: socket is 0600', { skip: process.platform === 'win32' }, async () => {
-    const handlers = new Map<string, IpcHandler<{}>>();
+    const handlers = new Map<string, IpcHandler<Record<string, never>>>();
     handlers.set('noop', async () => ({ stdout: '', exit: 0 }));
     const server = await startIpcServer({ homeDir: home, ctx: {}, handlers });
     try {
@@ -97,7 +96,7 @@ describe('ipc — request/response', () => {
   });
 
   it('unregistered command returns null (treated as fallback by client)', async () => {
-    const handlers = new Map<string, IpcHandler<{}>>();
+    const handlers = new Map<string, IpcHandler<Record<string, never>>>();
     handlers.set('known', async () => ({ stdout: '', exit: 0 }));
     const server = await startIpcServer({ homeDir: home, ctx: {}, handlers });
     try {
@@ -110,7 +109,7 @@ describe('ipc — request/response', () => {
   });
 
   it('handler throw produces exit=1 + stderr, server keeps serving', async () => {
-    const handlers = new Map<string, IpcHandler<{}>>();
+    const handlers = new Map<string, IpcHandler<Record<string, never>>>();
     handlers.set('boom', async () => { throw new Error('intentional'); });
     handlers.set('ok', async () => ({ stdout: 'fine', exit: 0 }));
     const server = await startIpcServer({ homeDir: home, ctx: {}, handlers });
@@ -129,7 +128,7 @@ describe('ipc — request/response', () => {
   });
 
   it('concurrent requests all complete', async () => {
-    const handlers = new Map<string, IpcHandler<{}>>();
+    const handlers = new Map<string, IpcHandler<Record<string, never>>>();
     handlers.set('echo', async (args) => ({ stdout: args.join(','), exit: 0 }));
     const server = await startIpcServer({ homeDir: home, ctx: {}, handlers });
     try {
@@ -153,7 +152,7 @@ describe('ipc — request/response', () => {
 
   it('emits onCommand observability hook with timing', async () => {
     const events: Array<{ cmd: string; argsLen: number; ms: number }> = [];
-    const handlers = new Map<string, IpcHandler<{}>>();
+    const handlers = new Map<string, IpcHandler<Record<string, never>>>();
     handlers.set('probe', async () => {
       // Sleep long enough that timer granularity slop (~1ms on some
       // Linux CI runners) can't push the observed elapsed time
