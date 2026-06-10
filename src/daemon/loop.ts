@@ -410,6 +410,16 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
   let liveSwarmSim: SearchGossipResponderHandle | null = null; // P2P-scale phase 3
   let liveHealthTracker: HealthTracker | null = null; // Phase 18
   const identityPath = join(deps.homePath, 'peer-identity.json');
+  if (!existsSync(identityPath)) {
+    // Deliberate: zero network footprint until the user opts into P2P.
+    // But say so — a silent skip reads as a broken daemon when a user
+    // starts the daemon first and runs `peer status` second (the
+    // identity then exists, but libp2p only starts on the NEXT boot).
+    daemonLog(
+      deps.homePath,
+      'p2p disabled: no peer identity yet. Run `akashik peer status` (creates one), then `akashik daemon stop && akashik daemon start`.',
+    );
+  }
   if (existsSync(identityPath)) {
     try {
       const cfgPath = join(deps.homePath, 'config.yaml');
