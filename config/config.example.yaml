@@ -33,33 +33,6 @@ rooms:
     min_cluster_size: 3          # need ≥3 similar nodes across rooms to form a tunnel
     similarity_threshold: 0.80
 
-telegram:
-  enabled: false
-  bot_token: ""                  # @BotFather
-  chat_id: ""                    # your numeric user id (get from @userinfobot)
-
-  outbound:
-    # Phase 7a — daemon digests
-    digest_after_iteration: true
-    one_message_per_room: true
-    include_top_n: 3
-
-  capture:
-    # Phase 7b — forward-anything ingestion
-    enabled: true
-    max_depth: 2                 # how far to follow references when "digging deeper"
-    follow_arxiv: true
-    follow_github: true
-    follow_generic_urls: true
-    ocr_images: true             # OCR screenshots from your daily scroll
-    vision_fallback: true        # use Claude vision if OCR yields too little text
-    ambiguous_room_prompt: true  # ask you interactively if classification is ambiguous
-
-  inbound_commands:
-    # Phase 7c — query from your phone
-    enabled: true
-    allowed: ["ask", "report", "trigger", "status", "rooms", "pending"]
-
 sources:
   # Phase 3 — shared registry. Room-specific overrides can live under rooms/<room>/sources.yaml
   enabled:

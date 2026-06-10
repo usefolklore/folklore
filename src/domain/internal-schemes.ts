@@ -28,6 +28,9 @@ export const OPAQUE_INTERNAL_PREFIXES = [
   'hn:',
   'rss:',
   'websearch:',
+  // Legacy: the telegram capture surface was removed, but existing graphs
+  // still hold telegram-sourced nodes — keep the prefix so the validator
+  // treats them as opaque instead of trying to URL()-parse them.
   'telegram:',
   // Toolshed-surface schemes (system room: toolshed)
   'git:',
