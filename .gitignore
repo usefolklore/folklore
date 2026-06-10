@@ -49,6 +49,7 @@ findings.md
 # Private Fellows-application strategy (never publish - lives in public docs/ dir)
 docs/FELLOWS-RESTEER.md
 docs/FELLOWS-EVAL-SPEC.md
+docs/FELLOWS-FRAMING.md
 # Fellows eval — private differentiator until submission; un-ignore at submit
 scripts/fellows-eval/
 eval/
