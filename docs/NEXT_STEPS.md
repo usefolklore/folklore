@@ -1,5 +1,10 @@
 # akashik Next Steps
 
+> **Snapshot.** Engineering priorities from the agent-memory framing,
+> moved out of the repo root. Current direction lives in
+> `docs/PROJECT-PLAN-AKASHIK.md`; the P1–P7 items below remain valid
+> engineering work but read them against that plan, not as the roadmap.
+
 This is the execution README for getting akashik closer to SOTA as a
 local-first agent memory system.
 
