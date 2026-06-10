@@ -55,6 +55,7 @@ import type { Graph } from '../domain/graph.js';
 import { getNode } from '../domain/graph.js';
 import { redactNode } from '../domain/secret-gate.js';
 import { buildPatterns } from '../domain/sharing.js';
+import { signMatch, type MatchAttestation } from '../domain/match-attestation.js';
 import { sanitiseSourceUri } from './recall-sync.js';
 
 type PatternSet = ReturnType<typeof buildPatterns>;
@@ -74,6 +75,21 @@ export interface MatchMeta {
  * line. Labels run through the same secrets gate touch-protocol uses;
  * source_uri through the same local-path sanitiser recall-sync uses.
  */
+/**
+ * Build the optional `attestation` spread for an outbound match.
+ * No seed (or signing failure) → empty object, match ships unsigned —
+ * a responder must never fail a search because signing failed.
+ */
+export const attestMatch = (
+  signSeed: Uint8Array | undefined,
+  fields: { readonly node_id: string } & MatchMeta,
+  signedAt: string,
+): { attestation?: MatchAttestation } => {
+  if (!signSeed) return {};
+  const r = signMatch(signSeed, fields, signedAt);
+  return r.isOk() ? { attestation: r.value } : {};
+};
+
 export const enrichMatchMeta = (
   graph: Graph | null,
   patterns: PatternSet | undefined,
@@ -180,6 +196,10 @@ export interface PeerMatch {
   /** ISO timestamp the responding peer fetched/saved the node — drives
    *  the asker's freshness scoring. Absent = unknown age (stale). */
   readonly fetched_at?: string;
+  /** Detached Ed25519 attestation over the transmitted metadata,
+   *  signed with the responder's peer key (match-attestation.ts).
+   *  Absent = peer predates signing or chose not to sign. */
+  readonly attestation?: MatchAttestation;
   readonly _source_peer: string | null;  // null = local, peerId string = remote
 }
 
@@ -314,6 +334,9 @@ interface SearchHandlerDeps {
   /** Secrets patterns applied to outbound labels (same gate touch
    *  uses before transmission). */
   readonly secretsPatterns?: PatternSet;
+  /** 32-byte Ed25519 seed (peer key) for per-match attestation.
+   *  Absent = matches ship unsigned (asker scores them accordingly). */
+  readonly signSeed?: Uint8Array;
 }
 
 /**
@@ -471,15 +494,22 @@ const handleSearchRequest = async (
     // unusable (0 fresh, 0 sources) and tells the agent to ignore it.
     const graph = deps.getGraph ? await deps.getGraph() : null;
 
+    const signedAt = new Date().toISOString();
     const response: SearchResponse = {
       type: 'search_response',
       protocol_version: SEARCH_PROTOCOL_VERSION,
-      matches: matches.map((m) => ({
-        node_id: m.node_id,
-        wing: m.wing,
-        distance: m.distance,
-        ...enrichMatchMeta(graph, deps.secretsPatterns, m.node_id),
-      })),
+      matches: matches.map((m) => {
+        const meta = enrichMatchMeta(graph, deps.secretsPatterns, m.node_id);
+        return {
+          node_id: m.node_id,
+          wing: m.wing,
+          distance: m.distance,
+          ...meta,
+          // Sign the metadata AS TRANSMITTED (post-redaction, post-
+          // sanitise) so the asker verifies exactly what it received.
+          ...attestMatch(deps.signSeed, { node_id: m.node_id, ...meta }, signedAt),
+        };
+      }),
     };
     await fs.write(new TextEncoder().encode(JSON.stringify(response)));
     void appendSearchLog(deps.logPath, {
@@ -512,6 +542,7 @@ export const createSearchRegistry = (
   burst: number,
   getGraph?: () => Promise<Graph | null>,
   extraSecretPatterns?: ReadonlyArray<{ readonly name: string; readonly pattern: string }>,
+  signSeed?: Uint8Array,
 ): SearchRegistry => ({
   node,
   deps: {
@@ -523,6 +554,7 @@ export const createSearchRegistry = (
     // Built-ins always apply; config extras compose on top — same
     // construction touch-protocol uses.
     secretsPatterns: getGraph ? buildPatterns(extraSecretPatterns ?? []) : undefined,
+    signSeed,
   },
 });
 
@@ -619,6 +651,7 @@ export const openSearchStream = (
           label: m.label,
           source_uri: m.source_uri,
           fetched_at: m.fetched_at,
+          attestation: m.attestation,
           _source_peer: peerIdStr,
         }));
       } finally {

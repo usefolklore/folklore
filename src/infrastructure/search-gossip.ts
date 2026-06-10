@@ -69,6 +69,7 @@ import type { Message } from '@libp2p/floodsub';
 import type { GraphError } from '../domain/errors.js';
 import { GraphError as GE } from '../domain/errors.js';
 import type { Match } from '../domain/vectors.js';
+import type { MatchAttestation } from '../domain/match-attestation.js';
 
 // ─────────────────────── constants ────────────────────────
 
@@ -95,6 +96,8 @@ export interface SearchGossipPeerMatch extends Match {
   readonly label?: string;
   readonly source_uri?: string;
   readonly fetched_at?: string;
+  /** Per-match Ed25519 attestation (see domain/match-attestation.ts). */
+  readonly attestation?: MatchAttestation;
 }
 
 export interface SearchGossipResponse {

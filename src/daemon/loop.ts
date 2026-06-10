@@ -47,6 +47,7 @@ import {
   type ShareSyncRegistry,
 } from '../infrastructure/share-sync.js';
 import {
+  attestMatch,
   createSearchRegistry,
   enrichMatchMeta,
   registerSearchProtocol,
@@ -665,6 +666,9 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
             // Phase 17: register federated search protocol alongside share protocol.
             // Uses the SAME live libp2p node — separate protocol lifecycles per CONTEXT.md
             // locked decision, but one libp2p node hosts both. Independent of share success.
+            // 32-byte seed for per-match attestation — the peer key's
+            // raw layout is [0..32) seed, [32..64) public key.
+            const signSeed = idRes.value.privateKey.raw.slice(0, 32);
             liveSearch = createSearchRegistry(
               liveNode,
               deps.homePath,
@@ -676,6 +680,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                 return r.isOk() ? r.value : null;
               },
               cfgRes.value.security.secrets_patterns,
+              signSeed,
             );
             const searchReg = await registerSearchProtocol(liveSearch);
             if (searchReg.isErr()) {
@@ -773,14 +778,19 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                   const graphRes = await deps.graphs.load();
                   const gossipGraph = graphRes.isOk() ? graphRes.value : null;
                   const gossipPatterns = buildPatterns(cfgRes.value.security.secrets_patterns);
-                  return res.value.map((m: Match): SearchGossipPeerMatch => ({
-                    node_id: m.node_id,
-                    room: m.room,
-                    wing: m.wing,
-                    distance: m.distance,
-                    ...enrichMatchMeta(gossipGraph, gossipPatterns, m.node_id),
-                    _source_peer: selfPeer,
-                  }));
+                  const signedAt = new Date().toISOString();
+                  return res.value.map((m: Match): SearchGossipPeerMatch => {
+                    const meta = enrichMatchMeta(gossipGraph, gossipPatterns, m.node_id);
+                    return {
+                      node_id: m.node_id,
+                      room: m.room,
+                      wing: m.wing,
+                      distance: m.distance,
+                      ...meta,
+                      ...attestMatch(signSeed, { node_id: m.node_id, ...meta }, signedAt),
+                      _source_peer: selfPeer,
+                    };
+                  });
                 },
               },
               (msg) => daemonLog(deps.homePath, msg),

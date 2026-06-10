@@ -10,7 +10,7 @@
  * `unmarshalEd25519PrivateKey`) — verified against installed types.
  */
 import { generateKeyPair, privateKeyFromRaw } from '@libp2p/crypto/keys';
-import { peerIdFromPrivateKey } from '@libp2p/peer-id';
+import { peerIdFromPrivateKey, peerIdFromString } from '@libp2p/peer-id';
 import type { Ed25519PrivateKey, Libp2p } from '@libp2p/interface';
 import type { PeerInfo } from '@libp2p/interface';
 import { createLibp2p } from 'libp2p';
@@ -402,6 +402,23 @@ export const hangUpPeer = (
     })(),
     (e) => PE.transportError((e as Error).message),
   );
+
+/**
+ * Extract the 32-byte Ed25519 public key embedded in a peer id
+ * string. Ed25519 peer ids carry the key inline — no key exchange
+ * needed to verify a peer's match attestations. Returns null for
+ * malformed ids or non-Ed25519 key types (RSA/secp peer ids hash the
+ * key instead of embedding it).
+ */
+export const publicKeyFromPeerId = (peerIdStr: string): Uint8Array | null => {
+  try {
+    const pid = peerIdFromString(peerIdStr);
+    const raw = pid.publicKey?.raw;
+    return raw && raw.length === 32 ? raw : null;
+  } catch {
+    return null;
+  }
+};
 
 /** Basic node status: own PeerId, listening addresses, connected peer count. */
 export interface NodeStatus {

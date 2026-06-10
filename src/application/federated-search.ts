@@ -36,6 +36,28 @@ import { findTunnels as findTunnelsPure } from '../domain/vectors.js';
 import type { PeerMatch, SearchRequest } from '../infrastructure/search-sync.js';
 import { openSearchStream, SEARCH_PROTOCOL_VERSION } from '../infrastructure/search-sync.js';
 import { askGossip } from '../infrastructure/search-gossip.js';
+import { publicKeyFromPeerId } from '../infrastructure/peer-transport.js';
+import { verifyMatch } from '../domain/match-attestation.js';
+
+/**
+ * Asker-side attestation verdict for one wire match.
+ * undefined = unsigned; false = claimed-but-invalid (treat as worse
+ * than unsigned — the peer either tampered or signed sloppily).
+ * Public keys come straight out of Ed25519 peer ids.
+ */
+const verifyMatchAttestation = (
+  peerId: string,
+  pm: Pick<PeerMatch, 'node_id' | 'label' | 'source_uri' | 'fetched_at' | 'attestation'>,
+): boolean | undefined => {
+  if (!pm.attestation) return undefined;
+  const pub = publicKeyFromPeerId(peerId);
+  if (!pub) return false;
+  return verifyMatch(
+    pub,
+    { node_id: pm.node_id, label: pm.label, source_uri: pm.source_uri, fetched_at: pm.fetched_at },
+    pm.attestation,
+  );
+};
 
 // ─────────────────────── output types ─────────────────────────────────────────
 
@@ -60,6 +82,14 @@ export interface FederatedMatch {
   readonly label?: string;
   readonly source_uri?: string;
   readonly fetched_at?: string;
+  /**
+   * Attestation verdict, asker-side. true = the peer's Ed25519
+   * signature over the transmitted metadata verified against the key
+   * in its peer id; false = a signature was claimed but did NOT
+   * verify (tamper / wrong key — worse than absent); undefined =
+   * unsigned (peer predates signing) or local hit.
+   */
+  readonly _sig_valid?: boolean;
   readonly _source_peer: string | null;
   readonly _also_from_peers?: readonly string[];
 }
@@ -464,6 +494,7 @@ export const runFederatedSearch = async (
           label: pm.label,
           source_uri: pm.source_uri,
           fetched_at: pm.fetched_at,
+          _sig_valid: verifyMatchAttestation(outcome.peerId, pm),
           _source_peer: outcome.peerId,
         });
       } else {
