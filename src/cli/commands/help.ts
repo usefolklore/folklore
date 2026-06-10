@@ -1,36 +1,74 @@
 /**
  * help — prints CLI usage.
+ *
+ * Every command registered in src/cli/index.ts appears here, grouped
+ * by what a user is trying to do. tests/help-coverage gate keeps this
+ * in sync with the router — add a command there, document it here.
  */
 
 const HELP = `
-akashik — knowledge graph + research daemon Claude Code plugin
+akashik — P2P agent memory: local knowledge graph + federated retrieval
 
 usage:
   akashik <command> [options]
 
-commands:
+getting started:
   onboard [--yes]         first-run installer — daemon, hooks, identity
-  login                   link a verified GitHub identity to your DID (OAuth)
-  this [me|everyone]      index the current folder; 'everyone' shares it on P2P
-  recall <name>           entity-first lookup across the graph
-  entity add|list|remove  manage the canonical entity registry
   doctor [--fix]          check runtime prerequisites (and bootstrap with --fix)
-  version                 print version
-  help                    this message
-  init                    register external content sources (RSS / ArXiv / HN)
-  trigger                 fetch and index content from enabled sources
-  sources <sub>           list | add | remove | enable | disable
-  ask "<query>"           semantic search + context output
-  eval <queries.jsonl>    retrieval quality eval — recall@k, NDCG@k, MRR
-  metrics                 daemon counters/gauges/histograms snapshot (JSON)
-  report                  generate a knowledge graph report
-  index                   index the project codebase, deps, submodules, git history
-  daemon <sub>            start | stop | status — background research daemon
-  discover                suggest new sources (--auto to add)
-  publish auth|tweet|thread|launch|preview  post to X/Twitter (OAuth 2.0)
+  login                   link a verified GitHub identity to your DID (OAuth)
   claude install|uninstall  make Claude Code use the graph automatically (hook + CLAUDE.md)
-  mcp start               run the MCP server (Claude Code auto-spawns this)
   migrate v5              upgrade ~/.akashik/ from V4 (rooms) to V5 (workspace+private)
+  update                  check for a signed release manifest + upgrade instructions
+
+ask + save (daily loop):
+  ask "<query>"           semantic search + context output (--peers = federated)
+  save --label X --text Y file a typed node (--type synthesis|concept|decision, --private)
+  recall <name>           entity-first lookup across the graph (+ connected peers)
+  hot                     today's working set — recently touched nodes
+  this [me|everyone]      index the current folder; 'everyone' shares it on P2P
+  entity add|list|remove  manage the canonical entity registry
+
+federation (P2P):
+  peer <sub>              add | remove | list | status | label — manage peers
+  share <peer-id>         share every non-private node with a peer (secrets-gated)
+  unshare <peer-id>       revoke a prior share
+  touch <peer-id>         one-shot pull of a peer's shared graph (redacted)
+  oracle <sub>            bulletin board — ask/answer questions across the swarm
+  swarm <sub>             swarm-sim corpus tools (virtual peer responders)
+  identity                show DID + key material status
+
+ingest + index:
+  init                    register external content sources (RSS / ArXiv / HN)
+  sources <sub>           list | add | remove | enable | disable
+  trigger                 fetch and index content from enabled sources
+  discover                suggest new sources (--auto to add)
+  discover-loop           continuous discovery agent
+  index                   index the project codebase, deps, submodules, git history
+  codebase <sub>          structured code-graph queries (tree-sitter index)
+  sessions                ingest Claude Code session transcripts
+  recent-sessions         list recently captured sessions
+
+daemon + ops:
+  daemon start|stop|status  background research daemon (IPC fast path + libp2p)
+  jobs <sub>              background job queue — list | clear
+  logs <sub>              daemon log inspection + export bundle
+  metrics                 daemon counters/gauges/histograms snapshot (JSON)
+  cache-stats             L1/L2 query cache hit rates
+  gc                      prune dead vectors + compact stores
+  lint                    validate graph invariants
+  consolidate run <ws>    episodic→semantic consolidation pass
+  eval <queries.jsonl>    retrieval quality eval — recall@k, NDCG@k, MRR
+  bench <sub>             retrieval + latency benchmarks
+
+output + publishing:
+  report                  generate a knowledge graph report
+  viz                     render the graph to a static visualization
+  dashboard [--port N]    browser dashboard (search, workspaces, inspector)
+  export                  export the graph to an Obsidian vault
+  publish auth|tweet|thread|launch|preview  post to X/Twitter (OAuth 2.0)
+  mcp start               run the MCP server (Claude Code auto-spawns this)
+
+  version | help
 `.trimStart();
 
 export function printHelp(_args: string[]): number {

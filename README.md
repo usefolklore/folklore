@@ -82,22 +82,23 @@ npm install -g akashik
 Run your first peer:
 
 ```bash
-akashik init
-akashik daemon start
+akashik onboard        # daemon, hooks, identity in one pass
 ```
 
 Save what teaches you:
 
 ```bash
-akashik save https://arxiv.org/abs/2406.16678
-akashik save ./notes/cuda-oom-debug.md --private
-akashik save ./notes/launch-plan.md --workspace launch-2026
+akashik save --type synthesis --label "mxbai-rerank on long contexts" \
+  --text "Cross-encoder wins under 512 tokens; mxbai-rerank degrades slower past 2k."
+akashik save --label "cuda oom debug" --text "$(cat ./notes/cuda-oom-debug.md)" --private
+akashik this           # or index the whole folder you are standing in
 ```
 
-Query the network:
+Connect to a peer and query the network:
 
 ```bash
-akashik ask "how does mxbai-rerank compare to cross-encoder on long contexts?"
+akashik peer add /ip4/203.0.113.7/tcp/4001/p2p/12D3KooW...   # from their `akashik peer status`
+akashik ask "how does mxbai-rerank compare to cross-encoder on long contexts?" --peers
 ```
 
 **Federate. Compound. Continue.**
