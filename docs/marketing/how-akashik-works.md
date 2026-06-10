@@ -237,5 +237,5 @@ before contributing. No login. No account. Just a peer URL.
 ## See also
 
 - [`storybrand-messaging-draft.md`](./storybrand-messaging-draft.md) — Brand messaging that this mechanism credibility-anchors.
-- `docs/research/beat-the-competitors-retrieval-plan.md` — The retrieval-quality work that backs each peer's individual lookups.
+- [`../product/BENCHMARKS.md`](../product/BENCHMARKS.md) — The retrieval-quality work that backs each peer's individual lookups.
 - The protocol spec (TBD — link when the public spec lands).

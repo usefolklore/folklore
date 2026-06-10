@@ -5,8 +5,8 @@
  * embedding so the bi-encoder's vector includes date / participant /
  * session-id signal in the same fixed prefix shape every time. Targets
  * the `multi-session` and `temporal-reasoning` weak spots on
- * LongMemEval-S (10pp + 13pp headroom respectively per the loss
- * analysis in docs/research/beat-the-competitors-retrieval-plan.md).
+ * LongMemEval-S (10pp + 13pp headroom respectively per the Phase 21-23
+ * loss analysis; see docs/research/sota-retrieval-synthesis.md).
  *
  * Write-path intervention — pays its cost at index time, costs nothing
  * at query time. Compounds with E1' (cross-encoder rerank), E2/E3
