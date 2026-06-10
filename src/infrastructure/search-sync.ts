@@ -51,6 +51,44 @@ import { SearchError as SEARCH_ERR } from '../domain/errors.js';
 import type { VectorIndex } from './vector-index.js';
 import type { Match, Vector } from '../domain/vectors.js';
 import { DEFAULT_DIM } from '../domain/vectors.js';
+import type { Graph } from '../domain/graph.js';
+import { getNode } from '../domain/graph.js';
+import { redactNode } from '../domain/secret-gate.js';
+import { buildPatterns } from '../domain/sharing.js';
+import { sanitiseSourceUri } from './recall-sync.js';
+
+type PatternSet = ReturnType<typeof buildPatterns>;
+
+/** Optional provenance metadata a responder attaches to a match. */
+export interface MatchMeta {
+  readonly label?: string;
+  readonly source_uri?: string;
+  readonly fetched_at?: string;
+}
+
+/**
+ * Look up a matched node and project the transmittable metadata.
+ * Shared by the dial responder (this file) and the gossip responder
+ * (daemon/loop.ts). Per-node `private` is re-checked here as
+ * defense-in-depth — the index already gates, the wire is the last
+ * line. Labels run through the same secrets gate touch-protocol uses;
+ * source_uri through the same local-path sanitiser recall-sync uses.
+ */
+export const enrichMatchMeta = (
+  graph: Graph | null,
+  patterns: PatternSet | undefined,
+  nodeId: string,
+): MatchMeta => {
+  if (!graph) return {};
+  const node = getNode(graph, nodeId);
+  if (!node || node.private === true) return {};
+  const label = patterns ? redactNode(node, patterns).node.label : node.label;
+  return {
+    label,
+    source_uri: sanitiseSourceUri(node.source_uri),
+    fetched_at: node.fetched_at,
+  };
+};
 
 // ─────────────────────── constants ────────────────────────────────────────────
 
@@ -139,6 +177,9 @@ export interface PeerMatch {
   readonly distance: number;
   readonly label?: string;         // optional: responding peer includes if available
   readonly source_uri?: string;
+  /** ISO timestamp the responding peer fetched/saved the node — drives
+   *  the asker's freshness scoring. Absent = unknown age (stale). */
+  readonly fetched_at?: string;
   readonly _source_peer: string | null;  // null = local, peerId string = remote
 }
 
@@ -266,6 +307,13 @@ interface SearchHandlerDeps {
   readonly logPath: string;
   readonly rateLimiter: RateLimiter;
   readonly expectedDim: number;   // DEFAULT_DIM from vectors.ts
+  /** Graph accessor for match enrichment (label / source_uri /
+   *  fetched_at). Optional — without it, matches ship id+distance
+   *  only and the asker scores them as provenance-free. */
+  readonly getGraph?: () => Promise<Graph | null>;
+  /** Secrets patterns applied to outbound labels (same gate touch
+   *  uses before transmission). */
+  readonly secretsPatterns?: PatternSet;
 }
 
 /**
@@ -417,6 +465,12 @@ const handleSearchRequest = async (
     const r = await deps.vectorIndex.searchGlobal(embedding, req.k);
     const matches: readonly Match[] = r.isOk() ? r.value : [];
 
+    // Enrich matches with label / source_uri / fetched_at so the asker
+    // can score freshness + provenance. Without these the asker's
+    // satisfaction contract correctly treats every federated hit as
+    // unusable (0 fresh, 0 sources) and tells the agent to ignore it.
+    const graph = deps.getGraph ? await deps.getGraph() : null;
+
     const response: SearchResponse = {
       type: 'search_response',
       protocol_version: SEARCH_PROTOCOL_VERSION,
@@ -424,6 +478,7 @@ const handleSearchRequest = async (
         node_id: m.node_id,
         wing: m.wing,
         distance: m.distance,
+        ...enrichMatchMeta(graph, deps.secretsPatterns, m.node_id),
       })),
     };
     await fs.write(new TextEncoder().encode(JSON.stringify(response)));
@@ -455,6 +510,8 @@ export const createSearchRegistry = (
   vectorIndex: VectorIndex,
   ratePerSec: number,
   burst: number,
+  getGraph?: () => Promise<Graph | null>,
+  extraSecretPatterns?: ReadonlyArray<{ readonly name: string; readonly pattern: string }>,
 ): SearchRegistry => ({
   node,
   deps: {
@@ -462,6 +519,10 @@ export const createSearchRegistry = (
     logPath: join(homePath, 'share-log.jsonl'),
     rateLimiter: createRateLimiter(ratePerSec, burst),
     expectedDim: DEFAULT_DIM,
+    getGraph,
+    // Built-ins always apply; config extras compose on top — same
+    // construction touch-protocol uses.
+    secretsPatterns: getGraph ? buildPatterns(extraSecretPatterns ?? []) : undefined,
   },
 });
 
@@ -555,6 +616,9 @@ export const openSearchStream = (
           node_id: m.node_id,
           wing: m.wing,
           distance: m.distance,
+          label: m.label,
+          source_uri: m.source_uri,
+          fetched_at: m.fetched_at,
           _source_peer: peerIdStr,
         }));
       } finally {

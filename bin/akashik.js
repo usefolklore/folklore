@@ -92,6 +92,10 @@ const attemptIpcDelegation = (cmd, args) =>
     socket.on('error', () => { clearTimeout(timer); done(null); });
 
     const rl = createInterface({ input: socket });
+    // readline re-emits stream errors; without this handler a stale
+    // daemon.sock (ECONNREFUSED) crashes the CLI instead of falling
+    // back to the slow path.
+    rl.on('error', () => { clearTimeout(timer); done(null); });
     rl.on('line', (line) => {
       clearTimeout(timer);
       try {

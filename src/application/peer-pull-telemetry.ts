@@ -57,14 +57,21 @@ export const buildPeerPullTelemetry = (
 
   const enriched: EnrichedMatch[] = result.matches.map((m) => {
     const node = getNode(graph, m.node_id);
+    // Remote hits aren't in the local graph — fall back to the
+    // wire-carried metadata the responding peer shipped. Without this,
+    // every federated hit scored as provenance-free (0 fresh, 0
+    // sources) and the satisfaction contract told agents to ignore
+    // the results they just fetched.
     const fetchedAt =
-      node && typeof node.fetched_at === 'string' ? node.fetched_at : undefined;
+      node && typeof node.fetched_at === 'string'
+        ? node.fetched_at
+        : m.fetched_at;
     const sourceUri =
       node && typeof node.source_uri === 'string'
         ? node.source_uri
         : node && typeof node.source_file === 'string'
           ? node.source_file
-          : undefined;
+          : m.source_uri;
     return {
       node_id: m.node_id,
       // EnrichedMatch.room is structural metadata for the scorer's consensus

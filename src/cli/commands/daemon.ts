@@ -8,7 +8,8 @@
 
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { formatError } from '../../domain/errors.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
 import { isRunning, readPid, removePid, startLoop, daemonLog, type LoopHandle } from '../../daemon/loop.js';
@@ -28,10 +29,14 @@ const start = async (): Promise<number> => {
     return 0;
   }
 
-  // Fork a detached child that runs the daemon loop
+  // Fork a detached child that runs the daemon loop. The entry is
+  // resolved relative to THIS compiled module (dist/cli/commands/
+  // daemon.js → dist/cli/index.js), never process.cwd() — a globally
+  // installed CLI is invoked from arbitrary directories.
+  const cliEntry = join(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');
   const child = spawn(
     process.execPath,
-    [join(process.cwd(), 'dist', 'cli', 'index.js'), 'daemon', '_run'],
+    [cliEntry, 'daemon', '_run'],
     {
       detached: true,
       stdio: 'ignore',

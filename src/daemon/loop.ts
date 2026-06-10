@@ -48,6 +48,7 @@ import {
 } from '../infrastructure/share-sync.js';
 import {
   createSearchRegistry,
+  enrichMatchMeta,
   registerSearchProtocol,
   unregisterSearchProtocol,
   type SearchRegistry,
@@ -427,6 +428,21 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
           } else {
             liveNode = nodeRes.value;
 
+            // Surface dialable addresses — without this, a peer on
+            // another machine has no way to learn what to `peer add`.
+            // Logged AND persisted so `akashik peer status` can print
+            // them while the daemon runs.
+            const listenAddrs = liveNode.getMultiaddrs().map((a) => a.toString());
+            for (const addr of listenAddrs) {
+              daemonLog(deps.homePath, `p2p listening: ${addr}`);
+            }
+            try {
+              writeFileSync(
+                join(deps.homePath, 'p2p-addrs.json'),
+                JSON.stringify({ peer_id: idRes.value.peerId.toString(), addrs: listenAddrs, written_at: new Date().toISOString() }, null, 2),
+              );
+            } catch { /* non-fatal — log already has the addrs */ }
+
             // P2P-scale phase 3 — swarm-sim responder. Lifted out
             // of the share-sync block so it fires the moment libp2p
             // is up, regardless of peer connectivity. If a swarm
@@ -636,6 +652,11 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               deps.vectors,
               cfgRes.value.peer.search_rate_limit.rate_per_sec,
               cfgRes.value.peer.search_rate_limit.burst,
+              async () => {
+                const r = await deps.graphs.load();
+                return r.isOk() ? r.value : null;
+              },
+              cfgRes.value.security.secrets_patterns,
             );
             const searchReg = await registerSearchProtocol(liveSearch);
             if (searchReg.isErr()) {
@@ -727,11 +748,18 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                   // peer hit lands.
                   const res = await vectorsForGossip.searchGlobal(embedding, req.k);
                   if (res.isErr()) return [];
+                  // Same provenance enrichment as the dial responder —
+                  // label/source_uri/fetched_at drive the asker's
+                  // freshness + satisfaction scoring.
+                  const graphRes = await deps.graphs.load();
+                  const gossipGraph = graphRes.isOk() ? graphRes.value : null;
+                  const gossipPatterns = buildPatterns(cfgRes.value.security.secrets_patterns);
                   return res.value.map((m: Match): SearchGossipPeerMatch => ({
                     node_id: m.node_id,
                     room: m.room,
                     wing: m.wing,
                     distance: m.distance,
+                    ...enrichMatchMeta(gossipGraph, gossipPatterns, m.node_id),
                     _source_peer: selfPeer,
                   }));
                 },
