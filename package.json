@@ -1,7 +1,7 @@
 {
   "name": "akashik",
   "version": "5.0.0",
-  "description": "OSS P2P agent memory — DID-authored cryptographic envelopes, 48× compressed vectors, 33× faster cached queries via daemon IPC + native Rust client, episodic→semantic consolidation worker, cross-model embedding bridge. CPU-local, zero GPU, zero SaaS. v4 Agent Brain.",
+  "description": "OSS P2P agent memory — DID-authored cryptographic envelopes, 48× compressed vectors, 33× faster cached queries via daemon IPC + native Rust client, episodic→semantic consolidation worker, cross-model embedding bridge. CPU-local, zero GPU, zero SaaS.",
   "type": "module",
   "bin": {
     "akashik": "./bin/akashik.js"
@@ -30,8 +30,7 @@
     "research-agent",
     "mcp",
     "embeddings",
-    "semantic-search",
-    "telegram-bot"
+    "semantic-search"
   ],
   "license": "MIT",
   "devDependencies": {

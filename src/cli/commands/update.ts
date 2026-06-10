@@ -112,8 +112,8 @@ const check = async (): Promise<number> => {
   console.log('To install:');
   console.log(`  npm update -g akashik   # if installed via npm`);
   console.log(`  # or download tarball + verify sha256:`);
-  console.log(`  curl -fsSL ${res.manifest!.tarball_url} -o /tmp/welly.tgz`);
-  console.log(`  echo '${res.manifest!.tarball_sha256}  /tmp/welly.tgz' | shasum -a 256 -c -`);
+  console.log(`  curl -fsSL ${res.manifest!.tarball_url} -o /tmp/akashik.tgz`);
+  console.log(`  echo '${res.manifest!.tarball_sha256}  /tmp/akashik.tgz' | shasum -a 256 -c -`);
   return 0;
 };
 

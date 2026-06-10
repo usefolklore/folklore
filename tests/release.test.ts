@@ -134,7 +134,7 @@ describe('release — verifyManifest', () => {
       version: '3.1.0',
       channel: 'stable',
       released_at: '2026-04-17T00:00:00.000Z',
-      tarball_url: 'https://example.com/welly-3.1.0.tgz',
+      tarball_url: 'https://example.com/akashik-3.1.0.tgz',
       tarball_sha256: 'a'.repeat(64),
       notes: 'P2P memory protocol v3.1',
       project_did: project.identity.did,

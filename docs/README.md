@@ -62,4 +62,4 @@ External-facing copy and design.
 
 ## assets
 
-`logo.png/svg`, `banner.png/svg`, `memory-stack.png/svg`, `welly-idle.png`, `demo.gif/tape`, `index.html`, `probe.html`, and the `assets/`, `comps/`, `demo/`, `research/` subdirectories.
+`logo.png/svg`, `banner.png/svg`, `memory-stack.png/svg`, `demo.gif/tape`, `index.html`, `probe.html`, and the `assets/`, `comps/`, `demo/`, `logos/`, `research/` subdirectories.
