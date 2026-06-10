@@ -55,6 +55,11 @@ export interface FederatedMatch {
   readonly node_id: string;
   readonly wing?: string;
   readonly distance: number;
+  /** Wire-carried metadata from the responding peer (absent on local
+   *  hits — the caller reads those from its own graph). */
+  readonly label?: string;
+  readonly source_uri?: string;
+  readonly fetched_at?: string;
   readonly _source_peer: string | null;
   readonly _also_from_peers?: readonly string[];
 }
@@ -456,6 +461,9 @@ export const runFederatedSearch = async (
           node_id: pm.node_id,
           wing: pm.wing,
           distance: pm.distance,
+          label: pm.label,
+          source_uri: pm.source_uri,
+          fetched_at: pm.fetched_at,
           _source_peer: outcome.peerId,
         });
       } else {

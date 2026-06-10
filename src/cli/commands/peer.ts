@@ -11,6 +11,7 @@
  *   unlabel <id>              remove the github label for a peer
  */
 
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { formatError } from '../../domain/errors.js';
 import { isMultiaddrShaped } from '../../domain/peer.js';
@@ -52,12 +53,13 @@ const add = async (rest: readonly string[]): Promise<number> => {
     return 1;
   }
 
+  // Config validated for early failure, but the ephemeral node below
+  // deliberately ignores peer.port (daemon-only — see createNode note).
   const configResult = await loadConfig(configPath());
   if (configResult.isErr()) {
     console.error(`peer add: ${formatError(configResult.error)}`);
     return 1;
   }
-  const cfg = configResult.value;
 
   const idResult = await loadOrCreateIdentity(identityPath());
   if (idResult.isErr()) {
@@ -65,9 +67,12 @@ const add = async (rest: readonly string[]): Promise<number> => {
     return 1;
   }
 
+  // Ephemeral dial-only node: ALWAYS port 0. The configured peer.port
+  // belongs to the daemon's listener — binding it here collides with
+  // a running daemon (EADDRINUSE) and bricks `peer add`.
   const nodeResult = await createNode(idResult.value, {
-    listenPort: cfg.peer.port,
-    listenHost: cfg.peer.listen_host,
+    listenPort: 0,
+    listenHost: '127.0.0.1',
   });
   if (nodeResult.isErr()) {
     console.error(`peer add: ${formatError(nodeResult.error)}`);
@@ -229,6 +234,20 @@ const status = async (): Promise<number> => {
   console.log(`  peerId:      ${identity.peerId}`);
   console.log(`  public key:  ${publicKeyB64}`);
   console.log(`  known peers: ${peerCount}`);
+
+  // Daemon-published listen addresses (written on libp2p startup).
+  // This is what another machine pastes into `akashik peer add`.
+  try {
+    const raw = JSON.parse(readFileSync(join(akashikHome(), 'p2p-addrs.json'), 'utf8')) as { addrs?: string[] };
+    const addrs = Array.isArray(raw.addrs) ? raw.addrs : [];
+    if (addrs.length > 0) {
+      console.log('  listen addrs (daemon):');
+      for (const a of addrs) {
+        // getMultiaddrs() may already carry the /p2p/<id> suffix.
+        console.log(`    ${a.includes('/p2p/') ? a : `${a}/p2p/${identity.peerId}`}`);
+      }
+    }
+  } catch { /* daemon not running with p2p, or pre-upgrade — omit */ }
   return 0;
 };
 

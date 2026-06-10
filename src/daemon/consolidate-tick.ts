@@ -28,7 +28,13 @@
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { ConsolidateConfig } from '../infrastructure/config-loader.js';
+
+// Compiled location: dist/daemon/consolidate-tick.js → the CLI entry
+// is a sibling tree, NOT relative to process.cwd() (a globally
+// installed CLI runs from any directory).
+const CLI_ENTRY = join(dirname(fileURLToPath(import.meta.url)), '..', 'cli', 'index.js');
 
 interface LastRunState {
   readonly version: 1;
@@ -106,7 +112,7 @@ export const runConsolidateTick = (
     }
 
     const args = [
-      join(process.cwd(), 'dist', 'cli', 'index.js'),
+      CLI_ENTRY,
       'consolidate', 'run', room,
       '--threshold', String(cfg.similarity_threshold),
       '--min-size', String(cfg.min_size),

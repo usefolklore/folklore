@@ -375,17 +375,21 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
       const nowMs = Date.now();
       const hits = result.matches.map((m) => {
         const graphNode = getNode(graph.value, m.node_id);
-        const fetchedAt = typeof graphNode?.fetched_at === 'string' ? graphNode.fetched_at : null;
+        // Remote hits aren't in the local graph — fall back to the
+        // wire-carried metadata the responding peer shipped.
+        const fetchedAt = typeof graphNode?.fetched_at === 'string'
+          ? graphNode.fetched_at
+          : (m.fetched_at ?? null);
         const fetchedMs = fetchedAt ? Date.parse(fetchedAt) : NaN;
         const ageDays = Number.isFinite(fetchedMs)
           ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
           : null;
         return {
           id: m.node_id,
-          label: graphNode?.label ?? null,
+          label: graphNode?.label ?? m.label ?? null,
           workspace: graphNode?.workspace ?? null,
           distance: Number(m.distance.toFixed(4)),
-          source_uri: graphNode?.source_uri ?? graphNode?.source_file ?? null,
+          source_uri: graphNode?.source_uri ?? graphNode?.source_file ?? m.source_uri ?? null,
           summary: typeof graphNode?.summary === 'string' ? (graphNode.summary as string).slice(0, 400) : null,
           fetched_at: fetchedAt,
           age_days: ageDays,
@@ -418,8 +422,9 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
     } else {
       for (const m of result.matches) {
         const graphNode = getNode(graph.value, m.node_id);
-        const label = graphNode?.label ?? m.node_id;
+        const label = graphNode?.label ?? m.label ?? m.node_id;
         console.log(`## ${label}`);
+        if (!graphNode && m.label) console.log(`id: ${m.node_id}`);
         const peerLabel = m._source_peer ?? 'local';
         const alsoFrom =
           m._also_from_peers && m._also_from_peers.length > 0
@@ -427,8 +432,12 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
             : '';
         console.log(`source_peer: ${peerLabel}${alsoFrom}`);
         const ws = typeof graphNode?.workspace === 'string' ? graphNode.workspace : '-';
-        console.log(`distance: ${m.distance.toFixed(3)} | workspace: ${ws}`);
-        if (graphNode?.source_uri) console.log(`source: ${graphNode.source_uri}`);
+        const fetchedAt = (typeof graphNode?.fetched_at === 'string' ? graphNode.fetched_at : undefined) ?? m.fetched_at;
+        const ageMs = fetchedAt ? Date.now() - Date.parse(fetchedAt) : NaN;
+        const age = Number.isFinite(ageMs) ? ` | age: ${Math.max(0, Math.round(ageMs / 86_400_000))}d` : '';
+        console.log(`distance: ${m.distance.toFixed(3)} | workspace: ${ws}${age}`);
+        const srcUri = graphNode?.source_uri ?? m.source_uri;
+        if (srcUri) console.log(`source: ${srcUri}`);
         console.log('');
       }
     }

@@ -91,6 +91,10 @@ export interface SearchGossipRequest {
 
 export interface SearchGossipPeerMatch extends Match {
   readonly _source_peer: string;
+  /** Optional provenance metadata (see search-sync.enrichMatchMeta). */
+  readonly label?: string;
+  readonly source_uri?: string;
+  readonly fetched_at?: string;
 }
 
 export interface SearchGossipResponse {

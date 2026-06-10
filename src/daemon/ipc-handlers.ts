@@ -17,6 +17,7 @@
  */
 
 import type { Runtime } from '../cli/runtime.js';
+import { IPC_FALLBACK_SENTINEL } from './ipc.js';
 import type { HandlerResult, IpcHandler } from './ipc.js';
 import { formatError } from '../domain/errors.js';
 import { ask } from '../application/ask.js';
@@ -77,7 +78,11 @@ interface AskArgs {
   readonly json: boolean;
 }
 
-const parseAskArgs = (args: readonly string[]): AskArgs | string => {
+/** Sentinel return: the daemon cannot serve this argv shape — the
+ *  shim must fall through to the full CLI (slow path). */
+const FALLBACK = Symbol('ipc-fallback');
+
+const parseAskArgs = (args: readonly string[]): AskArgs | string | typeof FALLBACK => {
   let query = '';
   let room: string | undefined;
   let k = 5;
@@ -90,15 +95,25 @@ const parseAskArgs = (args: readonly string[]): AskArgs | string => {
     else if (a === '--k' || a === '-k') k = parseInt(next(), 10) || 5;
     else if (a.startsWith('--k=')) k = parseInt(a.slice('--k='.length), 10) || 5;
     else if (a === '--json') json = true;
-    else if (a === '--peers') return 'IPC does not delegate --peers (libp2p needs a fresh node)';
-    else if (!a.startsWith('-')) query = query ? `${query} ${a}` : a;
+    else if (a.startsWith('-')) {
+      // --peers (needs a fresh libp2p node), --workspace (depends on
+      // the CLIENT's cwd, which IPC does not carry), or any flag this
+      // parser predates: do NOT guess — punt to the full CLI. Before
+      // this, `--workspace all` was silently folded into the query
+      // text and the filter dropped.
+      return FALLBACK;
+    }
+    else query = query ? `${query} ${a}` : a;
   }
-  if (!query) return 'missing query — usage: akashik ask "your question" [--room R] [--k N] [--json]';
+  if (!query) return 'missing query — usage: akashik ask "your question" [--k N] [--json]';
   return { query, room, k, json };
 };
 
 const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
   const parsed = parseAskArgs(args);
+  if (parsed === FALLBACK) {
+    return { stdout: '', stderr: IPC_FALLBACK_SENTINEL, exit: 255 };
+  }
   if (typeof parsed === 'string') {
     return { stdout: '', stderr: `ask: ${parsed}\n`, exit: 1 };
   }

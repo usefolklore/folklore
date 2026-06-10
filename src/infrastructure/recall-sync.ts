@@ -164,7 +164,7 @@ const isLocalPath = (s: string): boolean => {
   );
 };
 
-const sanitiseSourceUri = (raw: unknown): string | undefined => {
+export const sanitiseSourceUri = (raw: unknown): string | undefined => {
   if (typeof raw !== 'string' || raw.length === 0) return undefined;
   const lower = raw.toLowerCase();
   return SAFE_URI_PREFIXES.some((p) => lower.startsWith(p)) ? raw : undefined;
