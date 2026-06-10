@@ -107,6 +107,13 @@ export interface DaemonDeps {
    * behaviour for tests that don't share a Runtime with a worker).
    */
   readonly graphMutex?: import('../infrastructure/async-mutex.js').AsyncMutex;
+  /**
+   * Fired once the live libp2p node is listening. The daemon
+   * supervisor uses this to late-bind the node into the IPC ask
+   * handler so `ask --peers` runs on the already-connected node
+   * instead of falling back to a full CLI spawn.
+   */
+  readonly onFederationReady?: (node: Libp2p) => void;
 }
 
 /**
@@ -442,6 +449,8 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                 JSON.stringify({ peer_id: idRes.value.peerId.toString(), addrs: listenAddrs, written_at: new Date().toISOString() }, null, 2),
               );
             } catch { /* non-fatal — log already has the addrs */ }
+
+            try { deps.onFederationReady?.(liveNode); } catch { /* observer must not break startup */ }
 
             // P2P-scale phase 3 — swarm-sim responder. Lifted out
             // of the share-sync block so it fires the moment libp2p
