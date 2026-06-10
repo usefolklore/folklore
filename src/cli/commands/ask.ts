@@ -15,18 +15,11 @@
 
 import { join } from 'node:path';
 import { formatError, formatErrorWithHint } from '../../domain/errors.js';
-import { ensureIdentity } from '../../application/identity-lifecycle.js';
-import { updatePeerReputation } from '../../application/update-peer-reputation.js';
-import { buildReputationPeerOrder } from '../../application/peer-order-builder.js';
-import { getNode } from '../../domain/graph.js';
-import { runFederatedSearch } from '../../application/federated-search.js';
-import { buildPeerPullTelemetry } from '../../application/peer-pull-telemetry.js';
-import { formatTelemetryBlock } from '../../infrastructure/telemetry-formatter.js';
+import { executeFederatedAsk, formatFederatedAsk } from '../../application/federated-ask.js';
 import { ask as askUseCase, type AskResult } from '../../application/ask.js';
 import { defaultRuntime, akashikHome, detectWorkspace } from '../runtime.js';
 import type { Runtime } from '../runtime.js';
-import { loadOrCreateIdentity, createNode, dialAndTag } from '../../infrastructure/peer-transport.js';
-import { loadPeers } from '../../infrastructure/peer-store.js';
+import { loadOrCreateIdentity, createNode } from '../../infrastructure/peer-transport.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
 
 interface ParsedArgs {
@@ -310,140 +303,26 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
   const node = nodeRes.value;
 
   try {
-    const peersRes = await loadPeers(peersPath);
-    if (peersRes.isOk()) {
-      await Promise.all(
-        peersRes.value.peers.map(async (p) => {
-          for (const addr of p.addrs) {
-            try {
-              await dialAndTag(node, addr);
-              break;
-            } catch {
-              /* try next addr */
-            }
-          }
-        }),
-      );
-    }
-
-    const peerOrderRes = await buildReputationPeerOrder({
-      home: akashikHome(),
-      localPeerId: idRes.value.peerId,
-      query: parsed.query,
-      registry: runtime.entityRegistry,
-    });
-    const peerOrder = peerOrderRes.isOk() ? peerOrderRes.value : undefined;
-
-    const result = await runFederatedSearch(
-      { node, vectorIndex: runtime.vectors },
+    // Shared executor — same code path the daemon's IPC handler runs
+    // on its live node (src/application/federated-ask.ts).
+    const outcome = await executeFederatedAsk(
       {
-        embedding, k: parsed.k, text: parsed.query, peerOrder,
-        skipTunnels: true,
+        home: akashikHome(),
+        node,
+        vectorIndex: runtime.vectors,
+        loadGraph: async () => {
+          const r = await runtime.graphs.load();
+          return r.isOk() ? r.value : null;
+        },
+        entityRegistry: runtime.entityRegistry,
       },
+      { query: parsed.query, embedding, k: parsed.k },
     );
-
-    const graph = await runtime.graphs.load();
-    if (graph.isErr()) {
-      console.error(`ask --peers: ${formatError(graph.error)}`);
+    if ('error' in outcome) {
+      console.error(`ask --peers: ${outcome.error}`);
       return 1;
     }
-
-    const telemetry = buildPeerPullTelemetry({
-      query: parsed.query,
-      result,
-      graph: graph.value,
-    });
-
-    if (result.peers_responded > 0) {
-      void (async () => {
-        try {
-          const id = await ensureIdentity(akashikHome());
-          if (id.isErr()) return;
-          await updatePeerReputation({
-            satisfaction_score: telemetry.satisfaction.score,
-            result,
-            graph: graph.value,
-            reviewer_did: id.value.user.did,
-            local_peer_id: idRes.value.peerId,
-            home: akashikHome(),
-          });
-        } catch { /* benign — rep is observability, not state */ }
-      })();
-    }
-
-    if (parsed.json) {
-      const nowMs = Date.now();
-      const hits = result.matches.map((m) => {
-        const graphNode = getNode(graph.value, m.node_id);
-        // Remote hits aren't in the local graph — fall back to the
-        // wire-carried metadata the responding peer shipped.
-        const fetchedAt = typeof graphNode?.fetched_at === 'string'
-          ? graphNode.fetched_at
-          : (m.fetched_at ?? null);
-        const fetchedMs = fetchedAt ? Date.parse(fetchedAt) : NaN;
-        const ageDays = Number.isFinite(fetchedMs)
-          ? Number(((nowMs - fetchedMs) / 86_400_000).toFixed(2))
-          : null;
-        return {
-          id: m.node_id,
-          label: graphNode?.label ?? m.label ?? null,
-          workspace: graphNode?.workspace ?? null,
-          distance: Number(m.distance.toFixed(4)),
-          source_uri: graphNode?.source_uri ?? graphNode?.source_file ?? m.source_uri ?? null,
-          summary: typeof graphNode?.summary === 'string' ? (graphNode.summary as string).slice(0, 400) : null,
-          fetched_at: fetchedAt,
-          age_days: ageDays,
-          source_peer: m._source_peer ?? 'local',
-          also_from_peers: m._also_from_peers ?? [],
-        };
-      });
-      console.log(JSON.stringify({
-        query: parsed.query,
-        peers_queried: result.peers_queried,
-        peers_responded: result.peers_responded,
-        peers_timed_out: result.peers_timed_out,
-        peers_errored: result.peers_errored,
-        hits,
-        _telemetry: telemetry,
-        _telemetry_block: formatTelemetryBlock(telemetry),
-      }));
-      return 0;
-    }
-
-    console.log(`# akashik federated results for: ${parsed.query}`);
-    console.log(`peers_queried: ${result.peers_queried}`);
-    console.log(`peers_responded: ${result.peers_responded}`);
-    if (result.peers_timed_out > 0) console.log(`peers_timed_out: ${result.peers_timed_out}`);
-    if (result.peers_errored > 0) console.log(`peers_errored: ${result.peers_errored}`);
-    console.log('');
-
-    if (result.matches.length === 0) {
-      console.log('no results from local or connected peers.');
-    } else {
-      for (const m of result.matches) {
-        const graphNode = getNode(graph.value, m.node_id);
-        const label = graphNode?.label ?? m.label ?? m.node_id;
-        console.log(`## ${label}`);
-        if (!graphNode && m.label) console.log(`id: ${m.node_id}`);
-        const peerLabel = m._source_peer ?? 'local';
-        const alsoFrom =
-          m._also_from_peers && m._also_from_peers.length > 0
-            ? ` (also: ${m._also_from_peers.join(', ')})`
-            : '';
-        console.log(`source_peer: ${peerLabel}${alsoFrom}`);
-        const ws = typeof graphNode?.workspace === 'string' ? graphNode.workspace : '-';
-        const fetchedAt = (typeof graphNode?.fetched_at === 'string' ? graphNode.fetched_at : undefined) ?? m.fetched_at;
-        const ageMs = fetchedAt ? Date.now() - Date.parse(fetchedAt) : NaN;
-        const age = Number.isFinite(ageMs) ? ` | age: ${Math.max(0, Math.round(ageMs / 86_400_000))}d` : '';
-        console.log(`distance: ${m.distance.toFixed(3)} | workspace: ${ws}${age}`);
-        const srcUri = graphNode?.source_uri ?? m.source_uri;
-        if (srcUri) console.log(`source: ${srcUri}`);
-        console.log('');
-      }
-    }
-
-    console.log(formatTelemetryBlock(telemetry));
-
+    console.log(formatFederatedAsk(parsed.query, outcome, parsed.json));
     return 0;
   } finally {
     try {

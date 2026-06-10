@@ -16,11 +16,14 @@
  *     v4.0. Read-only queries route through IPC.
  */
 
+import type { Libp2p } from '@libp2p/interface';
 import type { Runtime } from '../cli/runtime.js';
+import { akashikHome } from '../cli/runtime.js';
 import { IPC_FALLBACK_SENTINEL } from './ipc.js';
 import type { HandlerResult, IpcHandler } from './ipc.js';
 import { formatError } from '../domain/errors.js';
 import { ask } from '../application/ask.js';
+import { executeFederatedAsk, formatFederatedAsk } from '../application/federated-ask.js';
 import { queryCache, type QueryCache } from '../domain/query-cache.js';
 import { semanticCache, type SemanticCache } from '../domain/semantic-cache.js';
 import type { JobQueue } from './job-queue.js';
@@ -76,6 +79,18 @@ interface AskArgs {
   readonly room?: string;
   readonly k: number;
   readonly json: boolean;
+  readonly peers: boolean;
+}
+
+/**
+ * Late-binding holder for the daemon's live libp2p node. IPC handlers
+ * are built BEFORE the loop brings libp2p up; the loop fills this in
+ * once the node is listening. null = federation unavailable (no
+ * identity, libp2p failed, or pre-startup) → handler punts to the
+ * full CLI via the fallback sentinel.
+ */
+export interface FederationRef {
+  current: Libp2p | null;
 }
 
 /** Sentinel return: the daemon cannot serve this argv shape — the
@@ -87,6 +102,8 @@ const parseAskArgs = (args: readonly string[]): AskArgs | string | typeof FALLBA
   let room: string | undefined;
   let k = 5;
   let json = false;
+  let peers = false;
+  let workspaceSeen = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     const next = (): string => args[++i] ?? '';
@@ -95,27 +112,62 @@ const parseAskArgs = (args: readonly string[]): AskArgs | string | typeof FALLBA
     else if (a === '--k' || a === '-k') k = parseInt(next(), 10) || 5;
     else if (a.startsWith('--k=')) k = parseInt(a.slice('--k='.length), 10) || 5;
     else if (a === '--json') json = true;
+    else if (a === '--peers') peers = true;
+    else if (a === '--workspace') { workspaceSeen = true; next(); }
+    else if (a.startsWith('--workspace=')) workspaceSeen = true;
     else if (a.startsWith('-')) {
-      // --peers (needs a fresh libp2p node), --workspace (depends on
-      // the CLIENT's cwd, which IPC does not carry), or any flag this
-      // parser predates: do NOT guess — punt to the full CLI. Before
-      // this, `--workspace all` was silently folded into the query
-      // text and the filter dropped.
+      // Any flag this parser predates: do NOT guess — punt to the
+      // full CLI. Before this, `--workspace all` was silently folded
+      // into the query text and the filter dropped.
       return FALLBACK;
     }
     else query = query ? `${query} ${a}` : a;
   }
-  if (!query) return 'missing query — usage: akashik ask "your question" [--k N] [--json]';
-  return { query, room, k, json };
+  // The federated path ignores workspace (matching the CLI), so
+  // --peers is servable in-daemon. A LOCAL ask with --workspace
+  // depends on the CLIENT's cwd, which IPC does not carry → full CLI.
+  if (!peers && workspaceSeen) return FALLBACK;
+  if (!query) return 'missing query — usage: akashik ask "your question" [--k N] [--json] [--peers]';
+  return { query, room, k, json, peers };
 };
 
-const askHandler: IpcHandler<Runtime> = async (args, runtime) => {
+const makeAskHandler = (federation?: FederationRef): IpcHandler<Runtime> => async (args, runtime) => {
   const parsed = parseAskArgs(args);
   if (parsed === FALLBACK) {
     return { stdout: '', stderr: IPC_FALLBACK_SENTINEL, exit: 255 };
   }
   if (typeof parsed === 'string') {
     return { stdout: '', stderr: `ask: ${parsed}\n`, exit: 1 };
+  }
+
+  // Federated ask on the daemon's LIVE libp2p node — already
+  // connected to peers, so the query pays only the protocol window
+  // instead of ~800ms of per-query process + p2p bootstrap. Network
+  // state changes between calls: never L1/L2-cached.
+  if (parsed.peers) {
+    const node = federation?.current ?? null;
+    if (!node) return { stdout: '', stderr: IPC_FALLBACK_SENTINEL, exit: 255 };
+    const embRes = await runtime.embedder.embed(parsed.query);
+    if (embRes.isErr()) {
+      return { stdout: '', stderr: `ask: ${formatError(embRes.error)}\n`, exit: 1 };
+    }
+    const outcome = await executeFederatedAsk(
+      {
+        home: akashikHome(),
+        node,
+        vectorIndex: runtime.vectors,
+        loadGraph: async () => {
+          const r = await runtime.graphs.load();
+          return r.isOk() ? r.value : null;
+        },
+        entityRegistry: runtime.entityRegistry,
+      },
+      { query: parsed.query, embedding: embRes.value, k: parsed.k },
+    );
+    if ('error' in outcome) {
+      return { stdout: '', stderr: `ask --peers: ${outcome.error}\n`, exit: 1 };
+    }
+    return { stdout: formatFederatedAsk(parsed.query, outcome, parsed.json) + '\n', exit: 0 };
   }
 
   // Phase 5 — L1 (hash-keyed) cache lookup. Hit returns immediately.
@@ -461,9 +513,9 @@ const metricsHandler: IpcHandler<Runtime> =
     return { stdout: JSON.stringify(snap) + '\n', exit: 0 };
   };
 
-export const buildIpcHandlers = (queue?: JobQueue): Map<string, IpcHandler<Runtime>> => {
+export const buildIpcHandlers = (queue?: JobQueue, federation?: FederationRef): Map<string, IpcHandler<Runtime>> => {
   const h = new Map<string, IpcHandler<Runtime>>();
-  h.set('ask', askHandler);
+  h.set('ask', makeAskHandler(federation));
   h.set('stats', statsHandler);
   h.set('cache-stats', cacheStatsHandler);
   h.set('metrics', metricsHandler);

@@ -15,7 +15,7 @@ import { loadConfig } from '../../infrastructure/config-loader.js';
 import { isRunning, readPid, removePid, startLoop, daemonLog, type LoopHandle } from '../../daemon/loop.js';
 import { defaultRuntime, runtimePaths } from '../runtime.js';
 import { startIpcServer } from '../../daemon/ipc.js';
-import { buildIpcHandlers } from '../../daemon/ipc-handlers.js';
+import { buildIpcHandlers, type FederationRef } from '../../daemon/ipc-handlers.js';
 import { acquireLock } from '../../infrastructure/process-lock.js';
 import { startJobQueue } from '../../daemon/job-queue.js';
 import { buildJobRunner } from '../../daemon/job-runner.js';
@@ -186,10 +186,14 @@ const run = async (): Promise<number> => {
   // can reuse the warmed Runtime (sqlite-vec open + ONNX model loaded)
   // instead of paying ~240 ms of cold-start per invocation. Socket at
   // $AKASHIK_HOME/daemon.sock, 0600.
+  // Late-binding federation holder — filled by the loop once libp2p
+  // is listening, read by the IPC ask handler for `ask --peers`.
+  const federation: FederationRef = { current: null };
+
   const ipc = await startIpcServer({
     homeDir: paths.home,
     ctx: rt.value,
-    handlers: buildIpcHandlers(jobQueue),
+    handlers: buildIpcHandlers(jobQueue, federation),
     onError: (m) => console.error(`daemon ipc: ${m}`),
   });
   console.log(`daemon: ipc listening on ${ipc.path}`);
@@ -214,6 +218,7 @@ const run = async (): Promise<number> => {
     // Same mutex instance the job worker uses — closes the
     // tick-vs-worker lost-update race on graph.json.
     graphMutex: rt.value.graphMutex,
+    onFederationReady: (node) => { federation.current = node; },
   });
 
   // SINGLE-OWNER SHUTDOWN (multi-LLM round-2 review).
