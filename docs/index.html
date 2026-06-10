@@ -419,12 +419,12 @@
       letter-spacing: -0.022em;
       line-height: 1.06;
     }
+    /* Emphasis is COLOUR only, in the SAME Geist Mono face as the heading.
+       No second font, so words keep normal spacing and read like text. */
     .display em {
-      font-family: var(--serif);
-      font-style: italic;
-      font-weight: 500;
+      font-style: normal;
+      font-weight: inherit;
       color: var(--emerald);
-      font-variation-settings: "opsz" 60, "SOFT" 80, "WONK" 1;
     }
     .chapter.light .display em { color: var(--emerald-deep); }
 
@@ -475,6 +475,14 @@
     @media (prefers-reduced-motion: reduce) {
       [data-reveal] { opacity: 1; transform: none; transition: none; }
     }
+    /* Manifesto reveals are deliberately slower and rise a little further,
+       so each paragraph takes its time settling in - an unhurried,
+       editorial cadence rather than a quick UI pop. */
+    .manifesto [data-reveal] {
+      transform: translate3d(0, 16px, 0);
+      transition: opacity 1.15s var(--ease), transform 1.15s var(--ease);
+    }
+    .manifesto [data-reveal].in { transform: translate3d(0, 0, 0); }
 
     /* ────────────────────────────────────────────────────────
        NAV
@@ -497,8 +505,9 @@
       border-bottom-color: var(--ink-line);
       box-shadow: 0 14px 36px -20px rgba(0, 0, 0, 0.55);
     }
-    .nav.scrolled .nav-inner { padding-top: 0.7rem; padding-bottom: 0.7rem; }
-    .nav-inner { transition: padding 0.4s ease; }
+    /* Nav height stays CONSTANT on scroll - only the surface (bg, blur,
+       border, shadow) changes. Resizing the sticky nav as a section
+       pinned to the top made the layout reflow and the scroll jump. */
     .nav-inner {
       max-width: var(--max-w);
       margin: 0 auto;
@@ -688,7 +697,15 @@
     /* ════════════════════════════════════════════════════════
        HERO - the thesis, stated.
        ════════════════════════════════════════════════════════ */
-    .hero { padding-top: clamp(2rem, 4vw, 3.4rem); padding-bottom: clamp(2rem, 4vw, 3.4rem); }
+    .hero {
+      padding-top: clamp(2rem, 4vw, 3.4rem);
+      padding-bottom: clamp(2rem, 4vw, 3.4rem);
+      /* grow if the works-with marquee pushes past one viewport instead
+         of clipping it under the chapter's overflow:hidden. */
+      height: auto;
+      min-height: 100svh;
+      overflow: visible;
+    }
     .hero-grid {
       display: grid;
       grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
@@ -709,11 +726,9 @@
       margin-bottom: 1.1rem;
     }
     .hero h1 em {
-      font-family: var(--serif);
-      font-style: italic;
+      font-style: normal;
+      font-weight: inherit;
       color: var(--emerald);
-      font-weight: 500;
-      font-variation-settings: "opsz" 60, "SOFT" 80, "WONK" 1;
     }
 
     /* HERO = APEX. It is the masthead, not a framed content section:
@@ -723,7 +738,10 @@
       border: none;
       box-shadow: none;
       background: none;
-      padding: calc(56px + 1.2rem) 0 1.4rem;
+      /* the .chapter already reserves nav clearance and centers content;
+         the frame adds no extra top pad, so the masthead sits centered
+         instead of pushed far down the viewport. */
+      padding: 0;
     }
     .hero .legend,
     .hero .badge,
@@ -871,11 +889,22 @@
        a prelude and a serif-italic coda. Reads like an inscribed
        plaque - the WHY before everything else.
        ════════════════════════════════════════════════════════ */
-    .manifesto { background: var(--ink); }
+    .manifesto {
+      background: var(--ink);
+      /* The manifesto is text-heavy; let it grow past one viewport so the
+         spaced paragraphs are never clipped (the rest of the sections stay
+         capped at 100svh). justify-content:flex-start so a tall column
+         reads top-down instead of being centre-clipped. */
+      height: auto;
+      min-height: 100svh;
+      overflow: visible;
+      justify-content: flex-start;
+      padding-bottom: clamp(3rem, 6vw, 5rem);
+    }
     .manifesto .frame {
-      text-align: center;
-      padding: 1.2rem clamp(1.2rem, 2.6vw, 2rem);
-      gap: 0.7rem;
+      text-align: left;
+      padding: clamp(1.6rem, 3vw, 2.4rem) clamp(1.2rem, 2.6vw, 2rem);
+      gap: 1.2rem;
     }
     /* Authorial prose - flowing mono paragraphs in a centered column,
        left-aligned for readability. Emphasized words (Akashic Record,
@@ -883,26 +912,60 @@
        editorial register one expects from a manifesto. */
     .manifesto-prose {
       font-family: var(--mono);
-      font-size: clamp(0.78rem, 1.05vw, 0.95rem);
-      line-height: 1.5;
+      font-size: clamp(0.92rem, 1.15vw, 1.08rem);
+      line-height: 1.72;
       color: var(--cream);
-      max-width: 60ch;
-      margin: 0.2rem auto 0.4rem;
+      max-width: 62ch;
+      margin: 0.4rem 0 0.6rem;
       text-align: left;
     }
     .manifesto-prose p {
-      margin-bottom: 0.55rem;
+      margin-bottom: 1.45rem;
+    }
+    /* gray -> white "read-along" fill (no per-paragraph size/weight
+       changes - every paragraph is the SAME mono face, size, weight). Each paragraph starts dim; once it
+       reveals, a bright front sweeps left-to-right (slightly diagonal, so
+       it tracks reading direction), brightening the column in reading
+       order. Accent <em> words keep their colour. Falls back to solid
+       cream where background-clip:text or motion is unavailable, so the
+       text is never left stuck gray. */
+    @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+      @media (prefers-reduced-motion: no-preference) {
+        .manifesto-prose p {
+          color: transparent;
+          background-image: linear-gradient(100deg,
+            var(--cream) 0%, var(--cream) 40%,
+            var(--cream-mute) 58%, var(--cream-mute) 100%);
+          background-size: 250% 100%;
+          background-position: 100% 0;
+          background-repeat: no-repeat;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .manifesto-prose p.in {
+          animation: read-fill 2.4s var(--ease) forwards;
+          animation-delay: calc(var(--d, 0ms) + 280ms);
+        }
+        .manifesto-prose p em {
+          -webkit-text-fill-color: var(--accent-bright);
+          color: var(--accent-bright);
+        }
+        @keyframes read-fill { to { background-position: 0 0; } }
+      }
     }
     .manifesto-prose p:last-child {
       margin-bottom: 0;
     }
+    /* emphasis stays in the SAME mono face, size and weight as the prose -
+       a colour shift only, so the paragraph reads as one consistent voice
+       (no serif, no italic, no size or weight change). */
     .manifesto-prose em {
-      font-family: var(--serif);
-      font-style: italic;
+      font-family: var(--mono);
+      font-style: normal;
+      font-weight: inherit;
       color: var(--accent-bright);
-      font-weight: 500;
-      font-variation-settings: "opsz" 36, "SOFT" 80, "WONK" 1;
-      letter-spacing: 0.005em;
+      letter-spacing: inherit;
     }
     /* Named adversary - Google, etc. - rendered as a small-caps mono
        tag in vermilion. Reads as a cited foe, not a link. */
@@ -914,26 +977,25 @@
       letter-spacing: 0.04em;
     }
     .manifesto-coda {
-      font-family: var(--serif);
+      font-family: var(--mono);
       font-style: italic;
       font-size: clamp(var(--t-1), 1.4vw, var(--t-2));
       line-height: 1.35;
       color: var(--accent-bright);
-      margin: 0.2rem auto 0;
-      max-width: 38ch;
-      font-variation-settings: "opsz" 36, "SOFT" 80, "WONK" 1;
+      margin: 0.6rem 0 0;
+      max-width: 42ch;
     }
     /* Closing flourish - the Akashic Record naming, dimmed to a
        whisper. The atmospheric frame, now the last breath, not the
        opening note. */
     .manifesto-epigraph {
-      font-family: var(--serif);
+      font-family: var(--mono);
       font-style: italic;
       font-size: var(--t-n1);
       line-height: 1.4;
       color: var(--ink-fade);
       opacity: 0.7;
-      margin: 0.5rem auto 0;
+      margin: 1rem 0 0;
       max-width: 42ch;
     }
     .manifesto-epigraph em {
@@ -1282,7 +1344,7 @@
       color: var(--emerald-deep);
     }
     .why-pull {
-      font-family: var(--serif);
+      font-family: var(--mono);
       font-style: italic;
       font-size: clamp(var(--t-2), 2.2vw, var(--t-3));
       line-height: 1.3;
@@ -1291,7 +1353,6 @@
       padding-left: 1.1rem;
       max-width: 32ch;
       margin: 0 0 1.2rem;
-      font-variation-settings: "opsz" 60, "SOFT" 80, "WONK" 1;
     }
 
     /* ════════════════════════════════════════════════════════
@@ -1377,9 +1438,16 @@
        CHAPTER 07 - JOIN (DARK closing)
        Direct, urgent, ungarnished.
        ════════════════════════════════════════════════════════ */
-    .join { text-align: center; }
+    .join {
+      text-align: center;
+      /* let the closing section grow if the harness strip pushes it past
+         one viewport, instead of clipping content under overflow:hidden. */
+      height: auto;
+      min-height: 100svh;
+      overflow: visible;
+    }
     /* last section: generous padding so it does not feel cramped */
-    .join .frame { padding: calc(56px + 2.4rem) clamp(1.4rem, 3vw, 2.6rem) 2.8rem; gap: 1.1rem; }
+    .join .frame { padding: clamp(2rem, 4vw, 3rem) clamp(1.4rem, 3vw, 2.6rem) 2.8rem; gap: 1.1rem; }
     .join h2 {
       font-size: clamp(var(--t-3), 4vw, var(--t-6));
       max-width: 22ch;
@@ -1408,10 +1476,84 @@
     }
     .join-coda {
       font-family: var(--mono);
-      font-size: var(--t-n1);
-      letter-spacing: 0.32em;
-      text-transform: uppercase;
+      font-size: clamp(var(--t-0), 1.6vw, var(--t-2));
+      letter-spacing: -0.01em;
+      color: var(--cream-mute);
+      margin-top: 0.5rem;
+    }
+    /* colour-only emphasis, same mono face as the rest of the slogan. */
+    .join-coda em {
+      font-style: normal;
+      font-weight: inherit;
       color: var(--emerald);
+    }
+
+    /* hero harness marquee - a "works with" logo/wordmark strip that
+       scrolls continuously across the foot of the hero. Edge-masked so
+       names fade in/out at the rails; pauses on hover; static under
+       reduced-motion. Wordmarks (not raster logos) keep it crisp and
+       on-brand with the mono system. */
+    .hero-harness {
+      display: flex;
+      align-items: center;
+      gap: clamp(0.8rem, 1.6vw, 1.4rem);
+      width: 100%;
+      margin-top: clamp(1.6rem, 3.4vw, 2.6rem);
+      padding-top: clamp(1.2rem, 2.4vw, 1.8rem);
+      border-top: 1px solid var(--ink-line);
+    }
+    .hh-label {
+      font-family: var(--mono);
+      font-size: var(--t-n2);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-fade);
+      white-space: nowrap;
+      flex: none;
+    }
+    .hh-viewport {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%);
+    }
+    .hh-track {
+      display: flex;
+      width: max-content;
+      gap: clamp(1.8rem, 3.4vw, 3rem);
+      animation: hh-marquee 34s linear infinite;
+      will-change: transform;
+    }
+    .hh-viewport:hover .hh-track { animation-play-state: paused; }
+    /* each item: real brand SVG tinted to one brand tone via mask-image
+       (so the whole strip is a uniform monochrome logo wall) plus its
+       wordmark. Self-hosted in docs/logos. */
+    .hw-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--mono);
+      font-size: var(--t-n1);
+      letter-spacing: 0.01em;
+      color: var(--cream-mute);
+      white-space: nowrap;
+    }
+    .hw-mark {
+      width: 1.25rem;
+      height: 1.25rem;
+      flex: none;
+      /* each logo tinted to its own brand colour (set per item) */
+      background-color: var(--tint, var(--cream-mute));
+      -webkit-mask: var(--logo) center / contain no-repeat;
+      mask: var(--logo) center / contain no-repeat;
+    }
+    @keyframes hh-marquee { to { transform: translate3d(-50%, 0, 0); } }
+    @media (prefers-reduced-motion: reduce) {
+      .hh-track { animation: none; }
+    }
+    @media (max-width: 920px) {
+      .hero-harness { flex-direction: column; align-items: flex-start; gap: 0.7rem; }
     }
 
     /* ════════════════════════════════════════════════════════
@@ -1736,6 +1878,18 @@
           </div>
         </div>
         </div><!-- /hero-grid -->
+
+        <!-- works-with marquee: harnesses akashik plugs into, scrolling
+             continuously. List rendered twice for a seamless -50% loop. -->
+        <div class="hero-harness" data-reveal style="--d: 320ms;" aria-label="works with your harness">
+          <span class="hh-label">Works with</span>
+          <div class="hh-viewport">
+            <div class="hh-track">
+              <span class="hw-item"><i class="hw-mark" style="--logo:url(logos/claude.svg);--tint:#D97757"></i>Claude&nbsp;Code</span><span class="hw-item"><i class="hw-mark" style="--logo:url(logos/chatgpt.svg);--tint:#10A37F"></i>ChatGPT</span><span class="hw-item"><i class="hw-mark" style="--logo:url(logos/gemini.svg);--tint:#4285F4"></i>Gemini</span><span class="hw-item"><i class="hw-mark" style="--logo:url(logos/copilot.svg);--tint:#C9CCD1"></i>Copilot</span><span class="hw-item"><i class="hw-mark" style="--logo:url(logos/ollama.svg);--tint:#EBE0C4"></i>Ollama</span><span class="hw-item"><i class="hw-mark" style="--logo:url(logos/warp.svg);--tint:#01A4FF"></i>Warp</span><span class="hw-item"><i class="hw-mark" style="--logo:url(logos/raycast.svg);--tint:#FF6363"></i>Raycast</span><span class="hw-item"><i class="hw-mark" style="--logo:url(logos/jetbrains.svg);--tint:#FF45A1"></i>JetBrains</span><span class="hw-item"><i class="hw-mark" style="--logo:url(logos/perplexity.svg);--tint:#20B8CD"></i>Perplexity</span>
+              <span class="hw-item" aria-hidden="true"><i class="hw-mark" style="--logo:url(logos/claude.svg);--tint:#D97757"></i>Claude&nbsp;Code</span><span class="hw-item" aria-hidden="true"><i class="hw-mark" style="--logo:url(logos/chatgpt.svg);--tint:#10A37F"></i>ChatGPT</span><span class="hw-item" aria-hidden="true"><i class="hw-mark" style="--logo:url(logos/gemini.svg);--tint:#4285F4"></i>Gemini</span><span class="hw-item" aria-hidden="true"><i class="hw-mark" style="--logo:url(logos/copilot.svg);--tint:#C9CCD1"></i>Copilot</span><span class="hw-item" aria-hidden="true"><i class="hw-mark" style="--logo:url(logos/ollama.svg);--tint:#EBE0C4"></i>Ollama</span><span class="hw-item" aria-hidden="true"><i class="hw-mark" style="--logo:url(logos/warp.svg);--tint:#01A4FF"></i>Warp</span><span class="hw-item" aria-hidden="true"><i class="hw-mark" style="--logo:url(logos/raycast.svg);--tint:#FF6363"></i>Raycast</span><span class="hw-item" aria-hidden="true"><i class="hw-mark" style="--logo:url(logos/jetbrains.svg);--tint:#FF45A1"></i>JetBrains</span><span class="hw-item" aria-hidden="true"><i class="hw-mark" style="--logo:url(logos/perplexity.svg);--tint:#20B8CD"></i>Perplexity</span>
+            </div>
+          </div>
+        </div>
         <span class="stamp">akashik &middot; <b>cooperative knowledge</b></span>
        </div><!-- /frame -->
       </div><!-- /shell -->
@@ -1756,11 +1910,11 @@
             We <em>compound on inference</em>. Each peer supplies the network with reasoning it has already done, so the next peer infers from there, not from zero. Knowledge builds on knowledge. The network reasons deeper than any node alone, and nobody starts from square one.
           </p>
 
-          <p data-reveal style="--d: 120ms;">
+          <p data-reveal style="--d: 320ms;">
             A cooperative knowledge protocol. Each peer keeps only its own graph: what it has read, debugged, fetched, signed. It queries the graphs of every other peer.
           </p>
 
-          <p data-reveal style="--d: 220ms;">
+          <p data-reveal style="--d: 640ms;">
             Knowledge that used to take minutes now arrives in <em>milliseconds</em>. Off the grid. On the commons.
           </p>
 
@@ -1768,17 +1922,17 @@
             This is the next advancement in <em>human knowledge and consciousness</em>: working together to reach better, deeper, fuller understanding. Never in the history of mankind has cooperation between minds been this <em>seamless</em>.
           </p>
 
-          <p data-reveal style="--d: 420ms;">
+          <p data-reveal style="--d: 320ms;">
             And the more the network is asked, the more certain it grows. Every query enriches both graphs: the asker&rsquo;s and the answerer&rsquo;s. Compounding inference is compounding confidence.
           </p>
         </div>
 
-        <p class="manifesto-coda" data-reveal style="--d: 520ms;">
+        <p class="manifesto-coda" data-reveal style="--d: 220ms;">
           Welcome to the next generation of the web.<br/>
           The cooperative web.
         </p>
 
-        <p class="manifesto-epigraph" data-reveal style="--d: 620ms;">
+        <p class="manifesto-epigraph" data-reveal style="--d: 440ms;">
           Why &ldquo;akashik&rdquo;? <em>Google it.</em>
         </p>
 
@@ -2243,12 +2397,12 @@
           <span class="mono"># peer init requires local configuration until public bootstrap nodes launch.</span>
         </p>
 
-        <div class="join-ctas" data-reveal style="--d: 200ms;">
+        <div class="join-ctas" data-reveal style="--d: 220ms;">
           <a class="btn-pill magnetic" href="https://github.com/SaharBarak/akashik" rel="noopener">See the source</a>
           <a class="btn-ghost" href="https://github.com/SaharBarak/akashik#quickstart" rel="noopener">quickstart &nbsp;&rarr;</a>
         </div>
 
-        <p class="join-coda" data-reveal style="--d: 260ms;">Federate &middot; Compound &middot; Continue</p>
+        <p class="join-coda" data-reveal style="--d: 280ms;">Infer once. <em>Compound forever.</em></p>
         <span class="stamp">akashik &middot; <b>MIT</b></span>
        </div><!-- /frame -->
       </div><!-- /shell -->
