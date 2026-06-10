@@ -550,18 +550,26 @@
       letter-spacing: var(--ls-body);
       text-align: left;
     }
-    .star .ph  { color: var(--accent-bright); font-weight: 500; }   /* peer handle */
-    .star .nd  { color: var(--accent); }                            /* peer node glyph */
+    .star .ph  { color: var(--accent-bright); font-weight: 500;     /* peer handle */
+                 transition: color 0.25s ease, background 0.25s ease, opacity 0.25s ease; }
+    .star .nd  { color: var(--accent);                              /* peer node glyph */
+                 transition: color 0.25s ease, opacity 0.25s ease; }
     .star .pn  { color: var(--ink-fade); opacity: 0.6; }            /* node count · latency */
+    .star .pn b { font-weight: 500; color: inherit; transition: color 0.3s ease; }
+    .star .pn b.bump { color: var(--accent-bright); }
     .star .ctr { color: var(--cream); font-weight: 500; }           /* your graph */
-    .star .ed  { color: var(--ink-fade); }                          /* edges */
-    /* edges pulse in opposite-corner waves - a query fanning out */
-    .star .e1, .star .e4 { animation: edge-pulse 2.8s ease-in-out infinite; }
-    .star .e2, .star .e3 { animation: edge-pulse 2.8s ease-in-out infinite; animation-delay: 1.4s; }
-    @keyframes edge-pulse {
-      0%, 100% { opacity: 0.22; }
-      50%      { opacity: 0.6;  }
-    }
+    /* Edges idle dim. The JS choreography lights them segment-by-
+       segment so the query visibly TRAVELS center→peers (.lit,
+       copper) and the answer travels back peer→center (.ret, cream).
+       Each edge is 3 spans; data-s = distance from center. */
+    .star .ed  { color: var(--ink-fade); opacity: 0.25;
+                 transition: color 0.16s ease, opacity 0.16s ease; }
+    .star .ed.lit { opacity: 1; color: var(--accent-bright); }
+    .star .ed.ret { opacity: 1; color: var(--cream); }
+    /* the peer that answers flips to inverse video; the rest recede */
+    .star .ph.peer-hit { color: var(--ink); background: var(--accent-bright); }
+    .star .nd.peer-hit { color: var(--accent-bright); }
+    .star .peer-dim { opacity: 0.3; }
     .star .cur {
       display: inline-block;
       width: 1ch;
@@ -581,12 +589,22 @@
       color: var(--accent);
       letter-spacing: var(--ls-body);
       margin-bottom: 0.25rem;
+      min-height: 1.5em;
+    }
+    /* the narration line - one short sentence per phase of the query
+       lifecycle, swapped via the same scramble effect as the badges. */
+    .star-foot .star-phase {
+      color: var(--cream);
+      letter-spacing: var(--ls-body);
+      margin-bottom: 0.3rem;
+      min-height: 1.5em;
     }
     .star-foot .star-stat { color: var(--ink-fade); letter-spacing: var(--ls-body); }
     .star-foot .star-stat b { color: var(--cream); font-weight: 500; }
     .star-foot .dim { opacity: 0.5; text-transform: uppercase; letter-spacing: var(--ls-micro); }
     @media (prefers-reduced-motion: reduce) {
-      .star .e1, .star .e2, .star .e3, .star .e4, .star .cur { animation: none; opacity: 0.4; }
+      .star .ed { opacity: 0.45; }
+      .star .cur { animation: none; }
     }
 
     /* ─── inference-depth cascade (§05 visual) ────────────────
@@ -1854,26 +1872,29 @@
           </div>
         </div>
 
-        <!-- Dataful ASCII network monitor. The star is the protocol's
+        <!-- Choreographed query lifecycle. The star is the protocol's
              live view: your graph at center, peers around it with
-             handles, node counts, and latencies; edges pulse as
-             queries fan out; a cycling query line + live stats below.
-             A preview of a running network, clearly instrumented. -->
+             handles, node counts, and latencies. A JS state machine
+             (see "hero star choreography" below) plays the loop:
+             ask → fan out to all peers → one peer hits → answer
+             travels back → saved, node count ticks up. The narration
+             line below the star names each phase as it happens. -->
         <div class="hero-diagram" aria-hidden="true" data-reveal style="--d: 280ms;">
           <div class="star-wrap">
-<pre class="star"><span class="ph">@vllm-ops</span> <span class="nd">◍</span><span class="pn"> 1.2k·9ms</span>            <span class="pn">2.1k·11ms </span><span class="nd">◍</span> <span class="ph">@pg-int</span>
-<span class="ed e1">            ╲</span>                          <span class="ed e2">╱</span>
-<span class="ed e1">             ╲</span>                        <span class="ed e2">╱</span>
-<span class="ed e1">              ╲</span>                      <span class="ed e2">╱</span>
-               <span class="ctr">▣ YOUR GRAPH</span><span class="cur">&nbsp;</span>
-               <span class="pn">1,204 nodes</span>
-<span class="ed e3">              ╱</span>                      <span class="ed e4">╲</span>
-<span class="ed e3">             ╱</span>                        <span class="ed e4">╲</span>
-<span class="ed e3">            ╱</span>                          <span class="ed e4">╲</span>
-<span class="ph">@ollama</span> <span class="nd">◍</span><span class="pn"> 590·22ms</span>            <span class="pn">980·8ms </span><span class="nd">◍</span> <span class="ph">@cuda-trace</span></pre>
+<pre class="star" id="star"><span class="ph" data-peer="1">@vllm-ops</span> <span class="nd" data-peernd="1">◍</span><span class="pn"> 1.2k·9ms</span>            <span class="pn">2.1k·11ms </span><span class="nd" data-peernd="2">◍</span> <span class="ph" data-peer="2">@pg-int</span>
+<span class="ed" data-e="1" data-s="2">            ╲</span>                          <span class="ed" data-e="2" data-s="2">╱</span>
+<span class="ed" data-e="1" data-s="1">             ╲</span>                        <span class="ed" data-e="2" data-s="1">╱</span>
+<span class="ed" data-e="1" data-s="0">              ╲</span>                      <span class="ed" data-e="2" data-s="0">╱</span>
+               <span class="ctr">▣ YOUR GRAPH</span>
+               <span class="pn"><b id="star-nodes">1,204</b> nodes</span>
+<span class="ed" data-e="3" data-s="0">              ╱</span>                      <span class="ed" data-e="4" data-s="0">╲</span>
+<span class="ed" data-e="3" data-s="1">             ╱</span>                        <span class="ed" data-e="4" data-s="1">╲</span>
+<span class="ed" data-e="3" data-s="2">            ╱</span>                          <span class="ed" data-e="4" data-s="2">╲</span>
+<span class="ph" data-peer="3">@ollama</span> <span class="nd" data-peernd="3">◍</span><span class="pn"> 590·22ms</span>            <span class="pn">980·8ms </span><span class="nd" data-peernd="4">◍</span> <span class="ph" data-peer="4">@cuda-trace</span></pre>
             <div class="star-foot">
-              <p class="star-q">▸ <span class="qcycle" data-cycle='"vllm long-ctx OOM" · hit @vllm-ops · 9ms|"pg autovacuum delay" · hit @pg-int · 11ms|"mxbai vs cross-enc" · hit @cuda-trace · 8ms|"nix flake eval OOM" · 6 peers · 142ms'><span class="b-cycle">"vllm long-ctx OOM" · hit @vllm-ops · 9ms</span></span></p>
-              <p class="star-stat">peers <b>6</b> · nodes <b>6,433</b> · p50 <b>142ms</b> · certainty <b>▆▇</b> · <span class="dim">preview</span></p>
+              <p class="star-q">▸ <span id="star-ask">ask "vllm long-ctx OOM"</span><span class="cur">&nbsp;</span></p>
+              <p class="star-phase" id="star-phase">your graph answers first — peers answer what it can't</p>
+              <p class="star-stat">peers <b>6</b> · nodes <b id="star-net">6,433</b> · p50 <b>142ms</b> · <span class="dim">preview</span></p>
             </div>
           </div>
         </div>
@@ -2650,6 +2671,110 @@
           });
         }
       }
+
+      // ─── hero star choreography ──────────────────────────
+      // The hero diagram plays the protocol's core loop as a scene:
+      //   01 you ask → 02 local miss, fan out → 03 a peer already
+      //   has it → 04 answer travels back → 05 saved, count ticks.
+      // Edges light segment-by-segment (data-s = distance from
+      // center) so the query visibly travels OUT and the answer
+      // visibly travels BACK. One scenario per ~7s, then the next.
+      (function () {
+        const star = document.getElementById('star');
+        const askEl = document.getElementById('star-ask');
+        const phaseEl = document.getElementById('star-phase');
+        const nodesEl = document.getElementById('star-nodes');
+        const netEl = document.getElementById('star-net');
+        if (!star || !askEl || !phaseEl) return;
+
+        const PEERS = [1, 2, 3, 4];
+        const segs = (e) => Array.from(star.querySelectorAll(`.ed[data-e="${e}"]`))
+          .sort((a, b) => Number(a.dataset.s) - Number(b.dataset.s));
+        const handle = (p) => star.querySelector(`.ph[data-peer="${p}"]`);
+        const glyph = (p) => star.querySelector(`.nd[data-peernd="${p}"]`);
+
+        // each query matches the answering peer's specialty + latency
+        const SCENARIOS = [
+          { q: '"vllm long-ctx OOM"',     peer: 1, name: '@vllm-ops',   ms: 9  },
+          { q: '"pg autovacuum stalls"',  peer: 2, name: '@pg-int',     ms: 11 },
+          { q: '"ollama rope scaling"',   peer: 3, name: '@ollama',     ms: 22 },
+          { q: '"mxbai vs cross-enc"',    peer: 4, name: '@cuda-trace', ms: 8  },
+        ];
+
+        if (reduceMotion) {
+          // static tableau: lit edges, answered peer marked, plain caption
+          star.querySelectorAll('.ed').forEach((s) => s.classList.add('lit'));
+          handle(1).classList.add('peer-hit');
+          glyph(1).classList.add('peer-hit');
+          phaseEl.textContent = 'hit @vllm-ops · 9ms · saved to your graph';
+          return;
+        }
+
+        let yourNodes = 1204;
+        let netNodes = 6433;
+        const fmt = (n) => n.toLocaleString('en-US');
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+        function clearScene() {
+          star.querySelectorAll('.ed').forEach((s) => s.classList.remove('lit', 'ret'));
+          PEERS.forEach((p) => {
+            handle(p).classList.remove('peer-hit', 'peer-dim');
+            glyph(p).classList.remove('peer-hit', 'peer-dim');
+          });
+        }
+
+        async function runScene(sc) {
+          clearScene();
+
+          scrambleSwap(phaseEl, '01 · you ask', 320);
+          scrambleSwap(askEl, 'ask ' + sc.q, 520);
+          await sleep(1100);
+
+          scrambleSwap(phaseEl, '02 · not local — fan out to 4 peers', 320);
+          for (let s = 0; s < 3; s++) {
+            PEERS.forEach((p) => segs(p)[s].classList.add('lit'));
+            await sleep(150);
+          }
+          await sleep(500);
+
+          scrambleSwap(phaseEl, `03 · ${sc.name} already paid for this answer`, 320);
+          PEERS.forEach((p) => {
+            const hit = p === sc.peer;
+            handle(p).classList.toggle('peer-hit', hit);
+            glyph(p).classList.toggle('peer-hit', hit);
+            handle(p).classList.toggle('peer-dim', !hit);
+            glyph(p).classList.toggle('peer-dim', !hit);
+            if (!hit) segs(p).forEach((sg) => sg.classList.remove('lit'));
+          });
+          await sleep(1200);
+
+          scrambleSwap(phaseEl, `04 · answer back, signed · ${sc.ms}ms`, 320);
+          const back = segs(sc.peer);
+          for (let s = 2; s >= 0; s--) {
+            back[s].classList.add('ret');
+            await sleep(150);
+          }
+          await sleep(700);
+
+          yourNodes += 1;
+          netNodes += 1;
+          nodesEl.textContent = fmt(yourNodes);
+          if (netEl) netEl.textContent = fmt(netNodes);
+          nodesEl.classList.add('bump');
+          setTimeout(() => nodesEl.classList.remove('bump'), 900);
+          scrambleSwap(phaseEl, '05 · saved — no one pays for this twice', 320);
+          await sleep(2400);
+        }
+
+        (async function loop() {
+          await sleep(1200);
+          let i = 0;
+          for (;;) {
+            await runScene(SCENARIOS[i]);
+            i = (i + 1) % SCENARIOS.length;
+          }
+        })();
+      })();
     })();
   </script>
 </body>
