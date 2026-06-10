@@ -38,6 +38,8 @@ Thumbs.db
 .claude-octopus/
 .agents/
 .claude-plugin/
+# …except the plugin manifest — it ships in the npm package (see package.json "files")
+!.claude-plugin/plugin.json
 
 # editor / IDE drafts and backups
 *.bak
