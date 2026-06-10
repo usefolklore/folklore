@@ -5,7 +5,7 @@
  * Phase 0: doctor, version, help.
  * Phase 1: (runtime checks extended in doctor).
  * Phase 2: trigger, sources.
- * Future phases add: init, daemon, discover, telegram, report, ask, mcp.
+ * Future phases add: init, daemon, discover, report, ask, mcp.
  */
 
 import { doctor } from './commands/doctor.js';
@@ -23,7 +23,6 @@ import { indexProject } from './commands/index-project.js';
 import { claudeInstall } from './commands/claude-install.js';
 import { discoverLoopCmd } from './commands/discover-loop.js';
 import { publish } from './commands/publish.js';
-import { telegram } from './commands/telegram.js';
 import { viz } from './commands/viz.js';
 import { exportObsidian } from './commands/export-obsidian.js';
 import { dashboard } from './commands/dashboard.js';
@@ -79,7 +78,6 @@ const commands: Record<string, CommandFn> = {
   claude: claudeInstall,
   'discover-loop': discoverLoopCmd,
   publish,
-  telegram,
   viz,
   export: exportObsidian,
   dashboard,

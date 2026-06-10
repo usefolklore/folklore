@@ -28,7 +28,6 @@ commands:
   daemon <sub>            start | stop | status — background research daemon
   discover                suggest new sources (--auto to add)
   publish auth|tweet|thread|launch|preview  post to X/Twitter (OAuth 2.0)
-  telegram setup|test|start  Telegram bot (inbound capture + commands + digests)
   claude install|uninstall  make Claude Code use the graph automatically (hook + CLAUDE.md)
   mcp start               run the MCP server (Claude Code auto-spawns this)
   migrate v5              upgrade ~/.akashik/ from V4 (rooms) to V5 (workspace+private)
