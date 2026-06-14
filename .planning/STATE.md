@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-14T22:03:24.124Z"
+last_updated: "2026-06-14T22:07:08.356Z"
 progress:
   total_phases: 7
   completed_phases: 0
@@ -23,7 +23,7 @@ See: .planning/PROJECT.md (updated 2026-06-15)
 ## Current Position
 
 Phase: 25 (Cleanup & Repo Restructure) — EXECUTING
-Plan: 3 of 5 (25-01 complete: claude-flow cruft stripped from CLAUDE.md/settings.json/.mcp.json, Folklore hooks documented; CLEAN-01/02/03/06 satisfied. 25-02 complete: retrieval module layout documented; CLEAN-04 satisfied)
+Plan: 3 of 5 complete (25-01: claude-flow cruft stripped from CLAUDE.md/settings.json/.mcp.json, Folklore hooks documented; CLEAN-01/02/03/06 satisfied. 25-02: retrieval module layout documented; CLEAN-04 satisfied. 25-03: 29 standalone benchmark runners consolidated under bench/ with repro README, docs repointed; CLEAN-05 satisfied)
 
 ### v3.0 Phase Map
 
@@ -88,3 +88,4 @@ Plan: 3 of 5 (25-01 complete: claude-flow cruft stripped from CLAUDE.md/settings
 - CLEAN-04 (25-02): satisfied "documented module layout" with an authoritative map (docs/architecture/RETRIEVAL-MODULES.md) + in-tree index (src/infrastructure/README.md) rather than physically moving source files — a file reshuffle would force an import rewrite across ~80 test files, endangering the zero-regression bar for no behavioral gain.
 - CLEAN-01/02/03/06 (25-01): the new CLAUDE.md does NOT re-list the generic-good behavioural rules from the deleted claude-flow block — the authoritative conventions live in PROJECT.md + STATE.md "Architecture invariants", so CLAUDE.md just points there. statusLine was collapsed to the single helper that exists on disk (ak-statusline.cjs). CLEAN-06 documented by recording the removed 3-tier router and pointing to the real hw-detect rerank hardware-tier picker in .claude/README.md.
 - SECURITY follow-up (25-01): untracked-but-present .claude/settings.local.json holds a live HCLOUD_TOKEN + stale claude-flow enabledMcpjsonServers entry. Gitignored (won't ship) but token should be rotated before public launch.
+- CLEAN-05 (25-03): 29 standalone benchmark runners moved scripts/ → bench/ (24 via git mv preserving history, 5 untracked via mv+add) with a copy-paste repro README. No import edits needed — scripts/ and bench/ are repo-root siblings so `../dist/` resolves identically (verified by smoke import + full 942-test pass). Frozen docs/research/octopus-discover/ audit captures left unedited (dated historical records, not live repro paths).

@@ -13,7 +13,7 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 - [x] **CLEAN-02**: claude-flow `.claude/` hooks and skills not used by Folklore removed; Folklore's own hooks kept and documented
 - [x] **CLEAN-03**: claude-flow MCP / swarm / hive-mind references removed from config and docs
 - [x] **CLEAN-04**: ML/embedding + retrieval code organized into a clean, documented module layout (embedders, hybrid retrieval pipeline)
-- [ ] **CLEAN-05**: benchmark code (FolkloreBench-F, BEIR/LoCoMo/LongMemEval) consolidated under a documented `bench/` structure with reproduction commands
+- [x] **CLEAN-05**: benchmark code (FolkloreBench-F, BEIR/LoCoMo/LongMemEval) consolidated under a documented `bench/` structure with reproduction commands
 - [x] **CLEAN-06**: 3-tier model-routing config cleaned and documented (or removed if unused)
 
 ### Repository structure
@@ -63,7 +63,7 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 | CLEAN-02 | Phase 25 | Complete |
 | CLEAN-03 | Phase 25 | Complete |
 | CLEAN-04 | Phase 25 | Complete |
-| CLEAN-05 | Phase 25 | Pending |
+| CLEAN-05 | Phase 25 | Complete |
 | CLEAN-06 | Phase 25 | Complete |
 | REPO-01 | Phase 25 | Pending |
 | REPO-02 | Phase 25 | Pending |
