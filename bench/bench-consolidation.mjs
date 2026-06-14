@@ -53,7 +53,7 @@ const MAX_SIZE = getArg('--max-size', '100');
 const MODEL = getArg('--model', 'qwen2.5:1.5b');
 const SKIP_RUN = has('--skip-run');
 
-const wiHome = () => process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
+const wiHome = () => process.env.FOLKLORE_HOME ?? join(homedir(), '.folklore');
 const graphPath = () => join(wiHome(), 'graph.json');
 
 const loadGraph = () => {

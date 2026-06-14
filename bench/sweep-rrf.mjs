@@ -6,7 +6,7 @@
  * alpha) cell that maximizes NDCG@10 on a held-out fold and report
  * lift vs the Phase 25 baseline (k=60, α=0.5 = symmetric RRF).
  *
- * Data: ~/.akashik/bench/scifact__rust-via-ts__bge-base/vectors.db
+ * Data: ~/.folklore/bench/scifact__rust-via-ts__bge-base/vectors.db
  *       (corpus 5,183 × 768 + FTS5 already indexed)
  * Embedder: Rust subprocess (matches Phase 25 production path)
  *
@@ -33,7 +33,7 @@ import * as sqliteVec from 'sqlite-vec';
 
 import { rustSubprocessEmbedder } from '../dist/infrastructure/embedders.js';
 
-const CACHE_DIR = join(homedir(), '.akashik', 'bench');
+const CACHE_DIR = join(homedir(), '.folklore', 'bench');
 const DATASET = 'scifact';
 const DB_PATH = join(CACHE_DIR, 'scifact__rust-via-ts__bge-base', 'vectors.db');
 const DATASET_DIR = join(CACHE_DIR, DATASET, DATASET);
@@ -49,7 +49,7 @@ const TOP_N = 100;
 const TRAIN_FOLD_SIZE = 50;
 
 console.log('━'.repeat(60));
-console.log(' akashik — RRF k + α sweep on cached SciFact');
+console.log(' folklore — RRF k + α sweep on cached SciFact');
 console.log('━'.repeat(60));
 console.log(` Baseline: k=60, α=0.50 → 75.22% NDCG@10 (Phase 25)`);
 console.log(` Sweep:    k ∈ {${K_GRID.join(',')}} × α ∈ {${ALPHA_GRID.join(',')}}`);
