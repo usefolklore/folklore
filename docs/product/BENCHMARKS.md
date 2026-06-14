@@ -1,6 +1,6 @@
 # Benchmarks — full BEIR v1, Phase 25 SOTA + 13 documented null attacks
 
-Real retrieval quality measured against canonical BEIR datasets using Akashik's runtime pipeline. All numbers directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
+Real retrieval quality measured against canonical BEIR datasets using Folklore's runtime pipeline. All numbers directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════╗
@@ -18,6 +18,56 @@ Real retrieval quality measured against canonical BEIR datasets using Akashik's 
 ╚═══════════════════════════════════════════════════════════════════════╝
 ```
 
+## Value model — compounding graph transfer, not summaries
+
+Folklore's economic claim is not "a peer returns a summary." The valuable
+unit is a bounded graph transplant: nodes, edges, bodies, and provenance
+move from the peer that already paid the research cost into the local
+graph. The model then retrieves a compact working set locally instead of
+searching the web again.
+
+Run:
+
+```bash
+node bench/bench-compounding.mjs
+node bench/bench-subgraph-transfer.mjs
+node bench/bench-value-model.mjs
+```
+
+### Quantitative questions
+
+| User question | Benchmark | Current measured answer | Grade |
+|---|---|---:|---|
+| What quantitative advantage does cooperative graph transfer create? | 64-peer, 200k-query compounding stream | **9.13x fewer paid web trips**; 200,000 -> 21,902 | strong simulator evidence |
+| How much model-token input is saved? | demand economics with subgraph transfer | **77.1% saved**; 1.600B -> 365.9M modeled input tokens | grounded model |
+| Does the measured local graph support the token story? | real `~/.folklore/graph.json` 1-hop transfer sample | **63.3% saved** across related asks; **2.73x fewer** input tokens | real graph measurement |
+| How much context moves per hit? | bounded subgraph payload sample | **3.9 nodes / 2.9 edges** avg; p50 **1.3 KiB**, p90 **9.3 KiB** | real graph measurement |
+| Can a lighter model work better with trusted graph context? | Haiku displaced-poison matrix, Opus judge | flip-ASR **58.9% -> 2.4%**; **24.8x lower** | strong same-model safety result |
+| Does natural `ask` already deflect web reliably? | actual `folklore ask --json` natural-question benchmark | **5.0%** grounded success, **0.0%** web deflection | gap, not a claim |
+
+### Website-safe claims
+
+- Cooperative graph transfer made the same 200k-query stream **9.13x
+  cheaper** in paid web trips, with end-of-stream marginal web cost down
+  to **8.5%**.
+- Subgraph transfer reduced modeled model-input tokens by **77.1%** in
+  the demand benchmark.
+- On the measured local graph, graph transfer plus local retrieval saved
+  **63.3%** of model input tokens across the related-query neighborhood.
+- A remote hit imports graph context, not a summary: **3.9 nodes and 2.9
+  edges** on average from the live graph.
+- With provenance-ranked graph context, Haiku's poison flip-ASR drops
+  from **58.9% to 2.4%**.
+
+### Claims not allowed yet
+
+- Do not claim natural user-question web deflection until the read path
+  is fixed; the current benchmark is a negative result.
+- Do not claim "Haiku+protocol beats Opus alone" until the Opus
+  displaced-poison head-to-head is complete.
+- Do not claim production P2P churn/availability proof until the
+  two-daemon subgraph-transfer smoke is run.
+
 ### Phase 25 detail — where 75.22% lands on the leaderboard
 
 | Model | Params | SciFact NDCG@10 | Runtime |
@@ -26,7 +76,7 @@ Real retrieval quality measured against canonical BEIR datasets using Akashik's 
 | all-MiniLM-L6-v2 (v1 baseline) | 23M | 64.82% | CPU |
 | nomic-embed-text-v1.5 (dense) | 137M | 70.36% | CPU |
 | bge-base-en-v1.5 (dense) | 110M | 74.04% | CPU |
-| **Akashik Phase 25 (hybrid + Rust)** | **137M** | **75.22%** | **CPU, 11ms p50** |
+| **Folklore Phase 25 (hybrid + Rust)** | **137M** | **75.22%** | **CPU, 11ms p50** |
 | monoT5-3B reranker on top | 3B | 76.70% | **GPU** |
 | InRanker-3B (monoT5-distilled) | 3B | 78.31% | **GPU** |
 
@@ -50,29 +100,29 @@ Real retrieval quality measured against canonical BEIR datasets using Akashik's 
 | Round 3 V3 | qrel rejudge V3 (gpt-oss:20b) | +2.53 | **κ=0.7053 PASSES gate** — 2.8% qrel FN rate measured |
 | Round 5 | InRanker-base stacked on hybrid top-50 | **−13.72** | in-domain training not enough — strong hybrid + pointwise rerank destroys precision |
 
-Every null is accompanied by a reproduction script in [`scripts/`](scripts/) and a mechanistic explanation in [`.planning/BENCH-v2.md`](.planning/BENCH-v2.md). **Documented null > hypothetical positive.**
+Every null is accompanied by a reproduction script in [`bench/`](../../bench/) and a mechanistic explanation in [`.planning/BENCH-v2.md`](.planning/BENCH-v2.md). **Documented null > hypothetical positive.**
 
 ### Reproduce
 
 ```bash
 # Phase 25 headline — requires Rust sidecar built
-cd akashik-rs && cargo build --release && cd ..
-AKASHIK_RUST_BIN=$(pwd)/akashik-rs/target/release/embed_server \
-  node scripts/bench-beir-rust.mjs scifact --model bge-base
+cd folklore-rs && cargo build --release && cd ..
+FOLKLORE_RUST_BIN=$(pwd)/folklore-rs/target/release/embed_server \
+  node bench/bench-beir-rust.mjs scifact --model bge-base
 
 # Wave 2 (pure Node, no Rust)
-node scripts/bench-beir-sota.mjs scifact --hybrid
+node bench/bench-beir-sota.mjs scifact --hybrid
 
 # Wave 3 / reranker null — reproduces the −1.92pt regression
-node scripts/bench-beir-sota.mjs scifact --hybrid --rerank
+node bench/bench-beir-sota.mjs scifact --hybrid --rerank
 
 # Wave 4 / room routing null — requires CQADupStack
-node scripts/bench-room-routing.mjs \
-  --datasets-dir ~/.akashik/bench/cqadupstack/cqadupstack \
+node bench/bench-room-routing.mjs \
+  --datasets-dir ~/.folklore/bench/cqadupstack/cqadupstack \
   --rooms mathematica,webmasters,gaming
 
 # Calibrated qrel rejudge — requires Ollama + gpt-oss:20b
-node scripts/qrel-rejudge.mjs 100 20
+node bench/qrel-rejudge.mjs 100 20
 ```
 
 See [`.planning/BENCH-v2.md`](.planning/BENCH-v2.md) for the full attack archive (root-cause analysis, per-query bucket distributions, specialist post-mortems across 4 agent rounds) and [`.planning/BENCH-COMPETITORS.md`](.planning/BENCH-COMPETITORS.md) for verified competitor landscape (mem0, Graphiti/Zep, Letta, Mastra, Engram, cognee, memobase, Honcho, MemPalace, mcp-memory-service).
@@ -123,7 +173,7 @@ Functional DDD. Every fallible op returns `Result<T, E>`. No classes in domain/a
 12. Phase 38 — **Oracle bulletin board** (Layer A: questions + answers via touch + CRDT, 5 MCP tools)
 13. Phase 39 — **Oracle gossip** (Layer B: real-time pubsub via @libp2p/floodsub, daemon subscribes on boot)
 14. Phase 21–22 — Long-term memory tiers (episodic/semantic/procedural), Bayesian reliability, write-time gate, auto-forget
-15. Phase 23 — **Unified memory bench** (`akashik bench memory`): 8 suites scoring 9 dimensions, composite **0.8597** on real public corpora (Phase 23.7 — Hetzner, 2026-05-20). Synthetic-fallback composite is 0.9107.
+15. Phase 23 — **Unified memory bench** (`folklore bench memory`): 8 suites scoring 9 dimensions, composite **0.8597** on real public corpora (Phase 23.7 — Hetzner, 2026-05-20). Synthetic-fallback composite is 0.9107.
 
 </details>
 
@@ -133,13 +183,13 @@ Functional DDD. Every fallible op returns `Result<T, E>`. No classes in domain/a
 
 The long-term memory work shipped in Phase 21/22 (tier vocabulary, Beta(α,β)
 reliability counters, write-time gating, auto-forget) needed a benchmark
-that's stricter than any single public suite. Phase 23 ships `akashik
+that's stricter than any single public suite. Phase 23 ships `folklore
 bench memory` — a runner that scores 9 dimensions across 8 suites and
 emits a single composite score.
 
 Run it:
 ```bash
-akashik bench memory --json
+folklore bench memory --json
 ```
 
 ### Composite — measured 2026-05-20 (Phase 23.6.1 — scorer fix)
@@ -181,7 +231,7 @@ This is honest retrieval-only scoring. Per-persona breakdown of the current run 
 | Cara | 0.881 | 0.857 |
 | Dan | 0.948 | 0.875 |
 
-LLM-extractor mode (`AKASHIK_BENCH_LLM_EXTRACTOR=1`) — opt-in upgrade that swaps containment for a real Ollama Phi-4-mini extracted-answer scored via SQuAD F1 against gold — is the next ratchet (Phase 23.7).
+LLM-extractor mode (`FOLKLORE_BENCH_LLM_EXTRACTOR=1`) — opt-in upgrade that swaps containment for a real Ollama Phi-4-mini extracted-answer scored via SQuAD F1 against gold — is the next ratchet (Phase 23.7).
 
 ### Why each suite exists
 
@@ -194,7 +244,7 @@ Three families:
 - `longmemeval-synth` — 20-session × 20-query synthetic conversational fixture covering the 5 LongMemEval-S abilities: information extraction, multi-session reasoning, temporal reasoning, knowledge updates, abstention. Real LongMemEval-S oracle adapter (500q, ~115k tokens/Q, 3 GB HF dataset) pending Phase 23.7+.
 - `locomo-synth` — 4-persona × 40-session × 6-month synthetic conversational corpus covering LoCoMo's long-horizon factual recall + temporal/causal reasoning axes. 30 queries with declared evidence-session ground truth; dimension scored on evidence-session retrieval recall (retrieval-only, no answer extractor). Real LoCoMo + extractor pending Phase 23.7+.
 
-**B. Akashik-specific synthetic suites — five gap axes no public benchmark covers:**
+**B. Folklore-specific synthetic suites — five gap axes no public benchmark covers:**
 
 | Axis | Why no public benchmark | What this suite stresses |
 |---|---|---|
@@ -235,14 +285,14 @@ The benchmark structure was synthesised against a 30+-paper survey covering memo
 | mem0 | BEAM 1M tokens | 64.1 | < 7K retrieval tokens |
 | MemMachine | LoCoMo (gpt-4.1-mini) | 0.9169 | |
 | GSW | EpBench-200 F1 | 0.850 | ≥10pp over next-best RAG |
-| **Akashik** (synth fallback) | unified composite | **0.9107** | 9 dimensions, no LLM judge |
-| **Akashik** (Hetzner, Phase 23.7 real public corpora) | unified composite | **0.8597** | real BEIR SciFact + LongMemEval-S oracle + LoCoMo factual; synthetic in 5 of 9 dimensions |
+| **Folklore** (synth fallback) | unified composite | **0.9107** | 9 dimensions, no LLM judge |
+| **Folklore** (Hetzner, Phase 23.7 real public corpora) | unified composite | **0.8597** | real BEIR SciFact + LongMemEval-S oracle + LoCoMo factual; synthetic in 5 of 9 dimensions |
 
 Direct apples-to-apples comparisons land in Phase 23.5 when the real LongMemEval-S / LoCoMo / BEIR SciFact / HotpotQA full adapters ship. Until then the composite is comparable across our own commits as a regression ratchet, not against external systems.
 
 ## Phase 23.7 — public-real adapters (measured on Hetzner CAX11 ARM)
 
-Three real-corpus suites are now wired into the bench CLI. They share the env contract `AKASHIK_BENCH_PUBLIC_REAL=1` (master gate; off by default to keep CI fast) and each takes a dataset-directory env var. Without the gate or the dataset they `t.skip()` cleanly and the composite falls back to the synth/proxy value (registration order in `src/cli/commands/bench.ts` is `synth → real` so real overwrites synth iff real ran).
+Three real-corpus suites are now wired into the bench CLI. They share the env contract `FOLKLORE_BENCH_PUBLIC_REAL=1` (master gate; off by default to keep CI fast) and each takes a dataset-directory env var. Without the gate or the dataset they `t.skip()` cleanly and the composite falls back to the synth/proxy value (registration order in `src/cli/commands/bench.ts` is `synth → real` so real overwrites synth iff real ran).
 
 | Suite | File | Env vars | Dataset | Metric → composite key | Floor |
 |---|---|---|---|---|---:|
@@ -250,17 +300,17 @@ Three real-corpus suites are now wired into the bench CLI. They share the env co
 | `longmemeval-real` | `tests/bench-longmemeval-real.test.ts` | `LONGMEMEVAL_DIR` | LongMemEval-S oracle split (~500 q) | R@5 → `longmemevalRecall5` | 0.40 |
 | `locomo-real` | `tests/bench-locomo-real.test.ts` | `LOCOMO_DIR` | snap-research/locomo10 cats 1/2/3 | harmonic-mean dim → `locomoFactualF1` | 0.28 |
 
-Embedder for all three: real Xenova `all-MiniLM-L6-v2` (fp32, mean-pooled, 512 max_len) — no fixture, no topic vectors. The opt-in `AKASHIK_BENCH_LLM_EXTRACTOR=1` flag (Phase 23.8) wires an Ollama-backed extractor into `locomo-real` that produces an answer from the retrieved evidence and scores it with SQuAD-F1 + EM. Default model `phi3:mini`; override via `AKASHIK_BENCH_LLM_EXTRACTOR_MODEL`. SQuAD metrics are reported alongside the existing harmonic-mean dimension (which stays the composite-feeding metric — keeps the composite portable across machines without an LLM available).
+Embedder for all three: real Xenova `all-MiniLM-L6-v2` (fp32, mean-pooled, 512 max_len) — no fixture, no topic vectors. The opt-in `FOLKLORE_BENCH_LLM_EXTRACTOR=1` flag (Phase 23.8) wires an Ollama-backed extractor into `locomo-real` that produces an answer from the retrieved evidence and scores it with SQuAD-F1 + EM. Default model `phi3:mini`; override via `FOLKLORE_BENCH_LLM_EXTRACTOR_MODEL`. SQuAD metrics are reported alongside the existing harmonic-mean dimension (which stays the composite-feeding metric — keeps the composite portable across machines without an LLM available).
 
 To run on the Hetzner box (or any host with the datasets staged):
 
 ```
-AKASHIK_BENCH_PUBLIC_REAL=1 \
+FOLKLORE_BENCH_PUBLIC_REAL=1 \
   BEIR_SCIFACT_DIR=/data/scifact \
   LONGMEMEVAL_DIR=/data/longmemeval \
   LOCOMO_DIR=/data/locomo \
-  AKASHIK_BENCH_OUT=/data/run.jsonl \
-  akashik bench memory --json
+  FOLKLORE_BENCH_OUT=/data/run.jsonl \
+  folklore bench memory --json
 ```
 
 ### Measured composite — 2026-05-20, first Hetzner run
@@ -284,7 +334,7 @@ Three observations worth recording:
 
 1. **Real BEIR SciFact NDCG@10 = 0.7202** beats the 30-doc local proxy (0.6816) and lands within striking distance of the published all-MiniLM-L6-v2 baseline (~0.42) — the gap comes from our hybrid lex+vec + PPR rerank on top of the bi-encoder. SOTA via SPLADE/ColBERTv2 is ~0.75 NDCG@10; we're 5pp below SOTA with a pure CPU pipeline.
 2. **Real LongMemEval-S oracle R@5 = 0.999** is essentially at-ceiling. Oracle is the easiest split (haystack is per-question and small); the harder S / M splits with 50 / 500 distractor sessions per question are the next ratchet.
-3. **Real LoCoMo factual F1 = 0.3536 vs synth 0.864** is the brutal one — real LoCoMo has 3+ gold evidence sessions per question often, and strict-recall (`every gold tag in top-3`) is unforgiving. mem0's 92.5 LoCoMo composite uses an **LLM judge over accuracy**, not retrieval-only — directly comparable only via the Phase 23.8 SQuAD-F1 path (`AKASHIK_BENCH_LLM_EXTRACTOR=1`).
+3. **Real LoCoMo factual F1 = 0.3536 vs synth 0.864** is the brutal one — real LoCoMo has 3+ gold evidence sessions per question often, and strict-recall (`every gold tag in top-3`) is unforgiving. mem0's 92.5 LoCoMo composite uses an **LLM judge over accuracy**, not retrieval-only — directly comparable only via the Phase 23.8 SQuAD-F1 path (`FOLKLORE_BENCH_LLM_EXTRACTOR=1`).
 
 Per-suite report JSONL is captured to `/data/reports/run.log` on the box; the composite renderer in `src/cli/commands/bench.ts` regenerates the table above from those reports.
 
@@ -310,7 +360,7 @@ The 0.9202 lands within a hair of ByteRover's claimed 92.8% on the same public b
 
 #### LoCoMo with qwen2.5:1.5b SQuAD-F1 extractor (Mac M-series)
 
-`AKASHIK_BENCH_LLM_EXTRACTOR=1` + `AKASHIK_BENCH_LLM_EXTRACTOR_MODEL=qwen2.5:1.5b` on the same 699-question factual subset:
+`FOLKLORE_BENCH_LLM_EXTRACTOR=1` + `FOLKLORE_BENCH_LLM_EXTRACTOR_MODEL=qwen2.5:1.5b` on the same 699-question factual subset:
 
 | Metric | Value |
 |---|---:|
@@ -330,5 +380,4 @@ Per category (cat1=single-hop, cat2=multi-hop, cat3=temporal):
 | cat3 | 0.293 | 0.260 | 0.123 | 96 |
 
 qwen2.5:1.5b is a small model and the SQuAD-F1 metric is strict token-overlap — these numbers aren't comparable to mem0's 92.5 (LLM-as-judge over a stronger pipeline + extractor). They establish the baseline for the SQuAD-F1 axis; rerunning with `gpt-oss:20b` or `claude-haiku-4-5` would lift them meaningfully.
-
 

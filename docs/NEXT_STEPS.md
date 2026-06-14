@@ -1,11 +1,11 @@
-# akashik Next Steps
+# folklore Next Steps
 
 > **Snapshot.** Engineering priorities from the agent-memory framing,
 > moved out of the repo root. Current direction lives in
-> `docs/PROJECT-PLAN-AKASHIK.md`; the P1–P7 items below remain valid
+> `docs/PROJECT-PLAN-FOLKLORE.md`; the P1–P7 items below remain valid
 > engineering work but read them against that plan, not as the roadmap.
 
-This is the execution README for getting akashik closer to SOTA as a
+This is the execution README for getting folklore closer to SOTA as a
 local-first agent memory system.
 
 The target is not BEIR leaderboard SOTA. The repo already documents that
@@ -16,11 +16,11 @@ research.
 
 ## North Star
 
-akashik should make this demo feel inevitable:
+folklore should make this demo feel inevitable:
 
 1. Peer A researches or fixes something current.
 2. Peer B asks Claude/Codex a related task.
-3. akashik retrieves the trusted peer memory before web search.
+3. folklore retrieves the trusted peer memory before web search.
 4. The agent sees source age, room, peer attribution, and provenance.
 5. The answer is faster, cheaper, and better than local-only context.
 
@@ -87,8 +87,8 @@ first-class shipped artifact.
 
 Relevant files:
 
-- `akashik-rs/src/bin/akashik_cli.rs`
-- `bin/akashik.js`
+- `folklore-rs/src/bin/folklore_cli.rs`
+- `bin/folklore.js`
 - `package.json`
 - `scripts/bootstrap.sh`
 - `docs/V4-PROTOCOL.md`
@@ -144,7 +144,7 @@ Relevant files:
 - `src/cli/commands/consolidate.ts`
 - `src/daemon/consolidate-tick.ts`
 - `src/infrastructure/config-loader.ts`
-- `scripts/bench-consolidation.mjs`
+- `bench/bench-consolidation.mjs`
 
 Work:
 
@@ -162,12 +162,12 @@ Acceptance gate:
 ## Priority 6: Add Product-Shaped Evals
 
 BEIR is useful but incomplete for this product. The important eval is whether
-akashik changes agent behavior.
+folklore changes agent behavior.
 
 Relevant files:
 
-- `scripts/bench-beir-sota.mjs`
-- `scripts/bench-ppr-multihop.mjs`
+- `bench/bench-beir-sota.mjs`
+- `bench/bench-ppr-multihop.mjs`
 - `tests/`
 - `.planning/BENCH-v2.md`
 
@@ -231,7 +231,7 @@ Acceptance gate:
 
 ## Definition Of Done
 
-akashik is ready to claim category leadership when:
+folklore is ready to claim category leadership when:
 
 - federated search is not lower quality than local search by default policy;
 - room search has deterministic recall;

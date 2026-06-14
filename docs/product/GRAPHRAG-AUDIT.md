@@ -1,4 +1,4 @@
-# GraphRAG audit — Akashik against 2025/2026 SOTA
+# GraphRAG audit — Folklore against 2025/2026 SOTA
 
 > **Snapshot — pre-V5 audit.** The "virtual room membership" + "per-room
 > freshness window" claims in §2 + §3 below were V4 architectural
@@ -15,7 +15,7 @@ Consensus across the field has hardened around three pillars: an entity-relation
 
 Still contested: chunking strategy, whether to summarize on traversal versus pre-compute, and how to evaluate. The [GraphRAG-Bench / ICLR'26 paper](https://arxiv.org/html/2506.05690v3) finds Community-GraphRAG (Local) wins on multi-hop (HotPotQA, MultiHop-RAG) but Global hallucinates on Null queries, and vanilla RAG still beats GraphRAG on single-hop detail. [LightRAG](https://arxiv.org/abs/2410.05779) argues for cheap dual-level (entity-specific + topic-abstract) retrieval over expensive community trees. Long-conversation memory is its own axis: [LoCoMo](https://snap-research.github.io/locomo/) shows top RAG systems still trail human ceiling by ~56% on 32-session dialogues, with temporal reasoning the worst gap. Hybrid sparse+dense fusion via RRF is now the default starting point in production stacks ([NetApp on hybrid RAG](https://community.netapp.com/t5/Tech-ONTAP-Blogs/Hybrid-RAG-in-the-Real-World-Graphs-BM25-and-the-End-of-Black-Box-Retrieval/ba-p/464834)).
 
-## 2. Where Akashik aligns with best practice
+## 2. Where Folklore aligns with best practice
 
 - Entity-relation graph with embeddings: `src/domain/entity-extract.ts`, `src/domain/graph.ts`, `src/domain/vectors.ts` — same substrate as GraphRAG/HippoRAG.
 - Hybrid retrieval already on the roadmap (BM25 + dense fusion via SQLite FTS5): `.planning/SOTA-UPGRADE-PLAN.md` chunk 8, plus `src/infrastructure/rust-retrieval.ts`.
@@ -26,7 +26,7 @@ Still contested: chunking strategy, whether to summarize on traversal versus pre
 - 75.22% NDCG@10 on BEIR SciFact (`docs/BENCHMARKS.md`) — competitive with published hybrid RAG baselines and reproducible CPU-only.
 - Coverage-map output planned over top-k chunk lists (`docs/VISION.md` §Coverage map) — matches the agent-contract framing emerging in 2025/2026 literature.
 
-## 3. Where Akashik diverges intentionally
+## 3. Where Folklore diverges intentionally
 
 - **P2P federation over centralized index.** No comparable GraphRAG ships a libp2p gossip layer; we want the network effect of compounding research across peers, not a single corpus owner.
 - **Virtual room membership derived from `source_uri` scheme**, not a per-node `room` field. Keeps `toolshed` and `research` self-healing without manual curation and avoids the rigid taxonomy GraphRAG community trees impose.
@@ -38,7 +38,7 @@ Still contested: chunking strategy, whether to summarize on traversal versus pre
 ## 4. Gaps worth closing
 
 - **No claim extraction or evidence clusters yet.** Vision defines them; code doesn't. Build `src/domain/claims.ts` and an `EvidenceCluster` type — P1, M.
-- **No LoCoMo-style temporal-reasoning eval.** Add a temporal-QA harness alongside BEIR in `scripts/bench-*` — P1, M.
+- **No LoCoMo-style temporal-reasoning eval.** Add a temporal-QA harness alongside BEIR in `bench/bench-*` — P1, M.
 - **No community detection / global-summary tier.** Add a Leiden pass + on-demand summary in `src/domain/graph.ts` gated by query intent — P2, L.
 - **No formal conflict-detection across peers.** `oracle-gossip.ts` exists but does not surface contradictions per `docs/VISION.md` §Conflict. Add a contradiction scorer — P0, S→M.
 - **Multi-hop traversal precision not measured.** Add MultiHop-RAG and HotPotQA scoring runs to `.planning/BENCH-v2.md` to expose where graph traversal earns its keep — P1, S.

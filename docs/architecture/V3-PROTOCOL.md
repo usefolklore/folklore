@@ -1,4 +1,4 @@
-# Akashik v3 — P2P Memory Protocol
+# Folklore v3 — P2P Memory Protocol
 
 > **⚠ ARCHIVED 2026-05-27.** V3 was superseded by V4 (agent-brain layer)
 > and then by V5 (rooms abstraction removed). See
@@ -6,7 +6,7 @@
 > document is preserved as historical reference.
 
 **Version:** 0.1 (draft)
-**Status:** Reference implementation shipped in Akashik v3.x; spec stabilising ahead of v3.0 tag
+**Status:** Reference implementation shipped in Folklore v3.x; spec stabilising ahead of v3.0 tag
 **Audience:** Implementers of cross-agent persistent memory, P2P application authors, anyone building on free LLMs
 
 ---
@@ -17,14 +17,14 @@ Centralized memory stacks (mem0, ChatGPT memory, Claude projects, Zep, Letta) ow
 
 Free/open LLMs (Llama, Mistral, Qwen, DeepSeek, GPT-OSS) have no portable, cryptographically-verifiable, cross-model memory layer. Without one, the free-LLM world is a collection of stateless chat shells. Memory is a **necessary (not sufficient) condition** for a self-sovereign LLM stack.
 
-**Akashik v3** defines a protocol so that:
+**Folklore v3** defines a protocol so that:
 - Memory entries are **user-authored**, not device-authored or provider-authored
 - Memory **verifiably** originates from a stated user identity, without registries or DID resolvers
 - Memory **portably** federates across encoder choices (nomic, bge, e5, all-MiniLM, future)
 - Memory **efficiently** syncs over P2P meshes (binary-quantized 64-byte vectors)
 - The whole stack runs **local-first** on CPU with no GPU requirement
 
-This spec defines the wire primitives. The reference implementation is the `akashik` TypeScript codebase; the spec is portable to any language (Rust, Go, Python, Swift).
+This spec defines the wire primitives. The reference implementation is the `folklore` TypeScript codebase; the spec is portable to any language (Rust, Go, Python, Swift).
 
 ---
 
@@ -40,7 +40,7 @@ did:key:z<base58btc(0xed 0x01 || publicKey)>
 
 Where `publicKey` is exactly 32 bytes (RFC 8032 Ed25519 public key). The `0xed 0x01` two-byte multicodec prefix is the W3C-registered Ed25519 marker.
 
-**Why did:key over did:web, did:ion, did:plc:** Akashik needs zero-registry offline verifiability. Any peer can decode a did:key in microseconds without a network round-trip. Composable DID methods (did:web for human-readable names, did:plc for AT Protocol interop) are a v3.1 extension; the core protocol only requires did:key.
+**Why did:key over did:web, did:ion, did:plc:** Folklore needs zero-registry offline verifiability. Any peer can decode a did:key in microseconds without a network round-trip. Composable DID methods (did:web for human-readable names, did:plc for AT Protocol interop) are a v3.1 extension; the core protocol only requires did:key.
 
 The user **private seed** is a 32-byte Ed25519 seed. v1 recovery format is 64-char lowercase hex. v1.1 will add BIP39 mnemonic.
 
@@ -51,7 +51,7 @@ An operational keypair authorized by the user DID.
 **Device authorization message** (canonical string, no JSON):
 
 ```
-akashik-auth:v1:<device_id>:<hex(device_public_key)>:<authorized_at_ISO8601>
+folklore-auth:v1:<device_id>:<hex(device_public_key)>:<authorized_at_ISO8601>
 ```
 
 The user signs this message with their private seed → `authorization_sig` (64 bytes Ed25519).
@@ -93,12 +93,12 @@ SignedEnvelope<T> = {
 **Payload signing message** (canonical string):
 
 ```
-akashik-sig:v1:<device_id>:<signed_at>:<canonical_json(payload)>
+folklore-sig:v1:<device_id>:<signed_at>:<canonical_json(payload)>
 ```
 
 The device signs this message with its private seed → `signature`.
 
-Domain separation: the `akashik-auth:v1:` and `akashik-sig:v1:` prefixes prevent cross-protocol replay. A valid authorization signature cannot be re-presented as a payload signature.
+Domain separation: the `folklore-auth:v1:` and `folklore-sig:v1:` prefixes prevent cross-protocol replay. A valid authorization signature cannot be re-presented as a payload signature.
 
 ### 2.4 Verification
 
@@ -106,10 +106,10 @@ A receiver verifies any envelope offline with three steps:
 
 1. **Decode user DID → public key.** did:key is self-describing; no registry lookup.
 2. **Verify device authorization:**
-   recompute `akashik-auth:v1:<device_id>:<hex(device_pub)>:<authorized_at>`,
+   recompute `folklore-auth:v1:<device_id>:<hex(device_pub)>:<authorized_at>`,
    `Ed25519.verify(user_public_key, auth_message, device_authorization.authorization_sig)`.
 3. **Verify payload signature:**
-   recompute `akashik-sig:v1:<device_id>:<signed_at>:<canonical_json(payload)>`,
+   recompute `folklore-sig:v1:<device_id>:<signed_at>:<canonical_json(payload)>`,
    `Ed25519.verify(device_public_key, payload_message, signature)`.
 
 Full verification cost: 3 Ed25519 ops, < 2 ms typical on modern hardware.
@@ -136,7 +136,7 @@ Reference: RFC 8785 (JCS) for the JSON subset we emit.
 
 A peer running BGE (encoder A) cannot query a peer indexing under nomic-v1.5 (encoder B) without some kind of translation: same text gives different vectors in each space, so cosine similarity is meaningless across.
 
-Akashik v3 ships **linear bridges** — for each supported encoder pair (A, B), a matrix `W_{A→B} ∈ R^{d_B × d_A}` such that `bridge(v_A) = L2_normalize(W · v_A)` is approximately equivalent to embedding the original text in encoder B.
+Folklore v3 ships **linear bridges** — for each supported encoder pair (A, B), a matrix `W_{A→B} ∈ R^{d_B × d_A}` such that `bridge(v_A) = L2_normalize(W · v_A)` is approximately equivalent to embedding the original text in encoder B.
 
 **Measured retention** (SciFact, 5,183 paired corpus vectors, ridge least-squares λ=0.01):
 
@@ -199,7 +199,7 @@ Binary uses the sign bit of each dimension (popcount Hamming distance for rankin
 At connection setup peers exchange supported encodings via libp2p identify protocol:
 
 ```
-/akashik/capabilities/1.0.0 → {
+/folklore/capabilities/1.0.0 → {
   encoders: ["nomic-embed-text-v1.5", "Xenova/bge-base-en-v1.5"],
   bridges:  ["bge-base → nomic", ...],
   encodings: ["fp32-768", "fp32-512", "fp32-128", "binary-768", "binary-512"],
@@ -222,11 +222,11 @@ When peer A sends a query, A specifies the encoding. Peer B responds with match 
 
 ### 5.1 Protocol IDs
 
-- `/akashik/search/2.0.0` — one-shot request/response semantic search
-- `/akashik/touch/1.0.0` — asymmetric public-room pull
-- `/akashik/share/2.0.0` — bidirectional CRDT room sync (Y.js)
-- `/akashik/save/1.0.0` — signed note append
-- `/akashik/capabilities/1.0.0` — capability exchange
+- `/folklore/search/2.0.0` — one-shot request/response semantic search
+- `/folklore/touch/1.0.0` — asymmetric public-room pull
+- `/folklore/share/2.0.0` — bidirectional CRDT room sync (Y.js)
+- `/folklore/save/1.0.0` — signed note append
+- `/folklore/capabilities/1.0.0` — capability exchange
 
 The `/2.0.0` suffix signals that requests and responses are wrapped in `SignedEnvelope` (§2.3). `/1.0.0` protocols are unsigned legacy shapes retained for backward compatibility during migration.
 
@@ -307,12 +307,12 @@ Users MAY split their user seed via Shamir's Secret Sharing across 3–5 trusted
 A v3 implementation MUST pass:
 
 - `did:key` encode/decode round-trip on a W3C-shape input
-- Ed25519 sign/verify on the two domain-separation tags (`akashik-auth:v1:`, `akashik-sig:v1:`)
+- Ed25519 sign/verify on the two domain-separation tags (`folklore-auth:v1:`, `folklore-sig:v1:`)
 - Canonical JSON byte identity across key orderings + nested objects
 - Envelope verification: signed on node A, verified on node B with no prior state
 - Bridge matrix loading + dimension consistency check
 
-The reference suite is `tests/identity.test.ts` + `tests/identity-lifecycle.test.ts` + `tests/identity-bridge.test.ts` (38 tests total) in the akashik repo.
+The reference suite is `tests/identity.test.ts` + `tests/identity-lifecycle.test.ts` + `tests/identity-bridge.test.ts` (38 tests total) in the folklore repo.
 
 ---
 
@@ -322,10 +322,10 @@ The reference suite is `tests/identity.test.ts` + `tests/identity-lifecycle.test
 - **Infrastructure** (disk + Node crypto): `src/infrastructure/identity-store.ts`
 - **Application** (lifecycle): `src/application/identity-lifecycle.ts`
 - **Process bridge** (sign/verify seam): `src/application/identity-bridge.ts`
-- **CLI**: `akashik identity {init|show|rotate|export|import}`
+- **CLI**: `folklore identity {init|show|rotate|export|import}`
 - **Bench**:
-  - `scripts/bench-lab.mjs` — Matryoshka × quantization × hybrid sweep
-  - `scripts/bench-bridge.mjs` — cross-model bridge gate
+  - `bench/bench-lab.mjs` — Matryoshka × quantization × hybrid sweep
+  - `bench/bench-bridge.mjs` — cross-model bridge gate
 
 Zero new runtime dependencies beyond Node's built-in `crypto` and `neverthrow` (already used).
 
@@ -345,13 +345,13 @@ Zero new runtime dependencies beyond Node's built-in `crypto` and `neverthrow` (
 
 ## 10. License
 
-This protocol specification is CC-BY-4.0. The reference implementation is MIT. Cross-model bridge matrices distributed by the Akashik project are CC0.
+This protocol specification is CC-BY-4.0. The reference implementation is MIT. Cross-model bridge matrices distributed by the Folklore project are CC0.
 
 ---
 
 ## Appendix A — measured numbers
 
-All numbers are measured on commodity CPU hardware (Apple Silicon, M-series). Reproduction scripts are in the akashik repo at `scripts/bench-*.mjs`.
+All numbers are measured on commodity CPU hardware (Apple Silicon, M-series). Reproduction scripts are in the folklore repo at `bench/bench-*.mjs`.
 
 | Capability | Measurement | Axis | Reference |
 |------------|-------------|------|-----------|

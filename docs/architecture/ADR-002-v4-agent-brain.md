@@ -1,4 +1,4 @@
-# ADR-002 — Akashik v4 Agent Brain design decisions
+# ADR-002 — Folklore v4 Agent Brain design decisions
 
 **Status:** accepted
 **Date:** 2026-04-18
@@ -17,7 +17,7 @@ This ADR records the v4 decisions and why. Each decision was evaluated against a
 
 ## Decision 1 — Daemon IPC over Unix-domain sockets, NOT HTTP
 
-**Chosen:** Unix-domain socket at `${AKASHIK_HOME}/daemon.sock` (POSIX 0600), newline-delimited JSON request/response.
+**Chosen:** Unix-domain socket at `${FOLKLORE_HOME}/daemon.sock` (POSIX 0600), newline-delimited JSON request/response.
 
 **Alternatives:**
 - HTTP over `localhost:N` — universal but adds TCP/HTTP overhead + port-allocation pain
@@ -33,7 +33,7 @@ This ADR records the v4 decisions and why. Each decision was evaluated against a
 
 **Trade-offs accepted:**
 - Windows-incompatible. Documented; v4.1 may add a named-pipe fallback.
-- No structured types on the wire — JSON only. Acceptable because the handler registry is small and version-bumped via the protocol ID (`/akashik/search/2.0.0`).
+- No structured types on the wire — JSON only. Acceptable because the handler registry is small and version-bumped via the protocol ID (`/folklore/search/2.0.0`).
 
 **Reference**: commit `e156e23`, `src/daemon/ipc.ts`
 
@@ -44,17 +44,17 @@ This ADR records the v4 decisions and why. Each decision was evaluated against a
 **Chosen:** A `batchingEmbedder(inner, opts)` that wraps any Embedder and queues `.embed(text)` calls for batch flushing. Default-on in `defaultRuntime()`.
 
 **Alternatives:**
-- Server-side coalescing in `akashik-rs/src/bin/embed_server.rs` (tokio + async channel + thread pool). High effort, requires a Rust async refactor.
+- Server-side coalescing in `folklore-rs/src/bin/embed_server.rs` (tokio + async channel + thread pool). High effort, requires a Rust async refactor.
 - Refactor every callsite to use `embedBatch()` directly. Touches dozens of files; brittle to future code drift.
 - Per-call hint flag (`coalesce: true`). API noise; opt-in is the wrong default.
 
 **Why client-side decorator:**
 - **Single change, unbounded callers benefit** — every existing `.embed()` callsite gets batching for free with no code change at the boundary.
 - **No protocol change** — the Rust server already supports `embed_batch(Vec<String>)`; the client side just batches the input before crossing the boundary.
-- **Transparent opt-out** — `AKASHIK_EMBEDDER_BATCH=off` for callers that want the legacy serial behavior.
+- **Transparent opt-out** — `FOLKLORE_EMBEDDER_BATCH=off` for callers that want the legacy serial behavior.
 - **Composable** — wraps Xenova in-process, Rust subprocess, or any future embedder uniformly.
 
-**Measured win:** 8.56 → 24.67/84.66 docs/sec (2.9–9.9×) on bge-base via Rust fastembed at N=32 (commit `92f797d`, `scripts/bench-embed-throughput.mjs`).
+**Measured win:** 8.56 → 24.67/84.66 docs/sec (2.9–9.9×) on bge-base via Rust fastembed at N=32 (commit `92f797d`, `bench/bench-embed-throughput.mjs`).
 
 **Trade-offs accepted:**
 - 20ms flush window adds latency to single-call paths. Negligible relative to ONNX forward-pass time, but noted.
@@ -66,7 +66,7 @@ This ADR records the v4 decisions and why. Each decision was evaluated against a
 
 ## Decision 3 — Binary-512 in production, NOT binary-768 or fp32-128
 
-**Chosen:** Binary-512 hybrid is the default when `AKASHIK_VECTOR_QUANTIZATION=binary-512` is set. Off by default (zero behavioral change for v3 users).
+**Chosen:** Binary-512 hybrid is the default when `FOLKLORE_VECTOR_QUANTIZATION=binary-512` is set. Off by default (zero behavioral change for v3 users).
 
 **Alternatives:**
 - Binary-768 (96 bytes) — safer (-1.10pt worst-case) but only 32× compression vs 48×
@@ -89,7 +89,7 @@ This ADR records the v4 decisions and why. Each decision was evaluated against a
 
 ## Decision 4 — Episodic-to-semantic consolidation as a CLI primitive, NOT a daemon-tick worker
 
-**Chosen:** `akashik consolidate run <room>` is an explicit CLI command, run by an operator (or a cron job, or the daemon's tick loop in v4.1). Not auto-run on a timer in v4.0.
+**Chosen:** `folklore consolidate run <room>` is an explicit CLI command, run by an operator (or a cron job, or the daemon's tick loop in v4.1). Not auto-run on a timer in v4.0.
 
 **Alternatives:**
 - Daemon-tick auto-consolidation (every N hours, every N new entries)
@@ -99,7 +99,7 @@ This ADR records the v4 decisions and why. Each decision was evaluated against a
 **Why CLI primitive first:**
 - **Operator visibility on first runs** — consolidation deletes data (with `--prune`) and bills LLM tokens. Surfacing it as an explicit invocation lets operators see exactly what's about to happen
 - **Decouples LLM choice from daemon lifecycle** — operators pick the model + parameters per run; daemon ticks would lock in a single config
-- **Easier gate measurement** — `scripts/bench-consolidation.mjs` can run the CLI directly for reproducible timing
+- **Easier gate measurement** — `bench/bench-consolidation.mjs` can run the CLI directly for reproducible timing
 - **Daemon-tick autorun is additive** — once we have v4.1 retention + write-lock + bench gates, wiring a tick is a 5-line change
 
 **Trade-offs accepted:**
@@ -135,7 +135,7 @@ This ADR records the v4 decisions and why. Each decision was evaluated against a
 
 ## Decision 6 — File-based write lock with stale-PID recovery, NOT in-memory mutex or external service
 
-**Chosen:** `${AKASHIK_HOME}/akashik.lock` — POSIX exclusive-create file with `{pid, owner, timestamp}` content. Daemon refreshes every 20s; consolidate waits up to 30s.
+**Chosen:** `${FOLKLORE_HOME}/folklore.lock` — POSIX exclusive-create file with `{pid, owner, timestamp}` content. Daemon refreshes every 20s; consolidate waits up to 30s.
 
 **Alternatives:**
 - Database-level locking (SQLite WAL already serializes writes inside a single connection; doesn't cross processes)
@@ -148,7 +148,7 @@ This ADR records the v4 decisions and why. Each decision was evaluated against a
 - **Zero external deps** — POSIX exclusive create is universal on Linux/macOS
 - **Stale-PID recovery is automatic** — `kill -0 <pid>` answers "is the holder alive"
 - **Heartbeat keeps long-running owners (daemon) in good standing** — 20s refresh against 60s stale window
-- **Operator-debuggable** — `cat ~/.akashik/akashik.lock` shows who holds it
+- **Operator-debuggable** — `cat ~/.folklore/folklore.lock` shows who holds it
 
 **Trade-offs accepted:**
 - Windows-incompatible (POSIX `kill -0`). Same caveat as Decision 1.
