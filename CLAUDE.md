@@ -1,254 +1,22 @@
-# Claude Code Configuration - RuFlo V3
-
-## Behavioral Rules (Always Enforced)
-
-- Do what has been asked; nothing more, nothing less
-- NEVER create files unless they're absolutely necessary for achieving your goal
-- ALWAYS prefer editing an existing file to creating a new one
-- NEVER proactively create documentation files (*.md) or README files unless explicitly requested
-- NEVER save working files, text/mds, or tests to the root folder
-- Never continuously check status after spawning a swarm — wait for results
-- ALWAYS read a file before editing it
-- NEVER commit secrets, credentials, or .env files
-
-## File Organization
-
-- NEVER save to root folder — use the directories below
-- Use `/src` for source code files
-- Use `/tests` for test files
-- Use `/docs` for documentation and markdown files
-- Use `/config` for configuration files
-- Use `/scripts` for utility scripts
-- Use `/examples` for example code
-
-## Project Architecture
-
-- Follow Domain-Driven Design with bounded contexts
-- Keep files under 500 lines
-- Use typed interfaces for all public APIs
-- Prefer TDD London School (mock-first) for new code
-- Use event sourcing for state changes
-- Ensure input validation at system boundaries
-
-### Project Config
-
-- **Topology**: hierarchical-mesh
-- **Max Agents**: 15
-- **Memory**: hybrid
-- **HNSW**: Enabled
-- **Neural**: Enabled
-
-## Build & Test
-
-```bash
-# Build
-npm run build
-
-# Test
-npm test
-
-# Lint
-npm run lint
-```
-
-- ALWAYS run tests after making code changes
-- ALWAYS verify build succeeds before committing
-
-## Security Rules
-
-- NEVER hardcode API keys, secrets, or credentials in source files
-- NEVER commit .env files or any file containing secrets
-- Always validate user input at system boundaries
-- Always sanitize file paths to prevent directory traversal
-- Run `npx @claude-flow/cli@latest security scan` after security-related changes
-
-## Concurrency: 1 MESSAGE = ALL RELATED OPERATIONS
-
-- All operations MUST be concurrent/parallel in a single message
-- Use Claude Code's Task tool for spawning agents, not just MCP
-- ALWAYS batch ALL todos in ONE TodoWrite call (5-10+ minimum)
-- ALWAYS spawn ALL agents in ONE message with full instructions via Task tool
-- ALWAYS batch ALL file reads/writes/edits in ONE message
-- ALWAYS batch ALL Bash commands in ONE message
-
-## Swarm Orchestration
-
-- MUST initialize the swarm using CLI tools when starting complex tasks
-- MUST spawn concurrent agents using Claude Code's Task tool
-- Never use CLI tools alone for execution — Task tool agents do the actual work
-- MUST call CLI tools AND Task tool in ONE message for complex work
-
-### 3-Tier Model Routing (ADR-026)
-
-| Tier | Handler | Latency | Cost | Use Cases |
-|------|---------|---------|------|-----------|
-| **1** | Agent Booster (WASM) | <1ms | $0 | Simple transforms (var→const, add types) — Skip LLM |
-| **2** | Haiku | ~500ms | $0.0002 | Simple tasks, low complexity (<30%) |
-| **3** | Sonnet/Opus | 2-5s | $0.003-0.015 | Complex reasoning, architecture, security (>30%) |
-
-- Always check for `[AGENT_BOOSTER_AVAILABLE]` or `[TASK_MODEL_RECOMMENDATION]` before spawning agents
-- Use Edit tool directly when `[AGENT_BOOSTER_AVAILABLE]`
-
-## Swarm Configuration & Anti-Drift
-
-- ALWAYS use hierarchical topology for coding swarms
-- Keep maxAgents at 6-8 for tight coordination
-- Use specialized strategy for clear role boundaries
-- Use `raft` consensus for hive-mind (leader maintains authoritative state)
-- Run frequent checkpoints via `post-task` hooks
-- Keep shared memory namespace for all agents
-
-```bash
-npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 8 --strategy specialized
-```
-
-## Swarm Execution Rules
-
-- ALWAYS use `run_in_background: true` for all agent Task calls
-- ALWAYS put ALL agent Task calls in ONE message for parallel execution
-- After spawning, STOP — do NOT add more tool calls or check status
-- Never poll TaskOutput or check swarm status — trust agents to return
-- When agent results arrive, review ALL results before proceeding
-
-## V3 CLI Commands
-
-### Core Commands
-
-| Command | Subcommands | Description |
-|---------|-------------|-------------|
-| `init` | 4 | Project initialization |
-| `agent` | 8 | Agent lifecycle management |
-| `swarm` | 6 | Multi-agent swarm coordination |
-| `memory` | 11 | AgentDB memory with HNSW search |
-| `task` | 6 | Task creation and lifecycle |
-| `session` | 7 | Session state management |
-| `hooks` | 17 | Self-learning hooks + 12 workers |
-| `hive-mind` | 6 | Byzantine fault-tolerant consensus |
-
-### Quick CLI Examples
-
-```bash
-npx @claude-flow/cli@latest init --wizard
-npx @claude-flow/cli@latest agent spawn -t coder --name my-coder
-npx @claude-flow/cli@latest swarm init --v3-mode
-npx @claude-flow/cli@latest memory search --query "authentication patterns"
-npx @claude-flow/cli@latest doctor --fix
-```
-
-## Available Agents (16 Roles + Custom)
-
-### Core Development
-`coder`, `reviewer`, `tester`, `planner`, `researcher`
-
-### Specialized
-`security-architect`, `security-auditor`, `memory-specialist`, `performance-engineer`
-
-### Coordination
-`hierarchical-coordinator`, `mesh-coordinator`, `adaptive-coordinator`
-
-### GitHub & Repository
-`pr-manager`, `code-review-swarm`, `issue-tracker`, `release-manager`
-
-Any string can be used as a custom agent type — these are the typed roles with specialized behavior.
-
-## Memory & Vector Search
-
-### MCP Tools (use via ToolSearch to discover)
-
-| Tool | Description |
-|------|-------------|
-| `memory_store` | Store value with ONNX 384-dim vector embedding |
-| `memory_search` | Semantic vector search by query |
-| `memory_retrieve` | Get entry by key |
-| `memory_list` | List entries in namespace |
-| `memory_delete` | Delete entry |
-| `memory_import_claude` | Import Claude Code memories into AgentDB (allProjects=true for all) |
-| `memory_search_unified` | Search across ALL namespaces (Claude + AgentDB + patterns) |
-| `memory_bridge_status` | Show bridge health, vectors, SONA, intelligence |
-
-### CLI Commands
-
-```bash
-# Store with vector embedding
-npx @claude-flow/cli@latest memory store --key "pattern-auth" --value "JWT with refresh" --namespace patterns
-
-# Semantic search
-npx @claude-flow/cli@latest memory search --query "authentication patterns"
-
-# Import all Claude Code memories into AgentDB
-node .claude/helpers/auto-memory-hook.mjs import-all
-```
-
-### Claude Code ↔ AgentDB Bridge
-
-Claude Code auto-memory files (`~/.claude/projects/*/memory/*.md`) are automatically imported into AgentDB with ONNX vector embeddings on session start. Use `memory_search_unified` to search across both stores.
-
-## Key MCP Tools (314 available — use ToolSearch to discover)
-
-### Most Used Tools
-
-| Category | Tools | What They Do |
-|----------|-------|-------------|
-| **Memory** | `memory_store`, `memory_search`, `memory_search_unified` | Store/search with ONNX vector embeddings |
-| **Claude Bridge** | `memory_import_claude`, `memory_bridge_status` | Import Claude memories into AgentDB |
-| **Swarm** | `swarm_init`, `swarm_status`, `swarm_health` | Multi-agent coordination |
-| **Agents** | `agent_spawn`, `agent_list`, `agent_status` | Agent lifecycle |
-| **Hive-Mind** | `hive-mind_init`, `hive-mind_spawn`, `hive-mind_consensus` | Byzantine/Raft consensus |
-| **Hooks** | `hooks_route`, `hooks_session-start`, `hooks_post-task` | Task routing + learning |
-| **Workers** | `hooks_worker-list`, `hooks_worker-dispatch` | 12 background workers |
-| **Security** | `aidefence_scan`, `aidefence_is_safe` | Prompt injection detection |
-| **Intelligence** | `hooks_intelligence`, `neural_status` | Pattern learning + SONA |
-
-### Swarm Capabilities
-
-- **Topologies**: hierarchical (anti-drift), mesh, ring, star, adaptive
-- **Consensus**: Raft (leader-based), Byzantine (PBFT), Gossip (eventual)
-- **Hive-Mind**: Queen-led coordination with spawn, broadcast, consensus voting, shared memory
-- **12 Background Workers**: audit, optimize, testgaps, map, deepdive, document, refactor, benchmark, ultralearn, consolidate, predict, preload
-
-### Memory Capabilities
-
-- **ONNX Embeddings**: all-MiniLM-L6-v2, 384 dimensions — real neural vectors
-- **DiskANN**: SSD-friendly vector search (8,000x faster insert than HNSW, perfect recall at 1K)
-- **sql.js**: Cross-platform SQLite (WASM, no native compilation)
-- **Claude Code Bridge**: Auto-imports MEMORY.md files into AgentDB on session start
-- **Unified Search**: `memory_search_unified` searches Claude memories + AgentDB + patterns
-- **SONA Learning**: Trajectory recording → pattern extraction → file persistence
-
-### How to Discover Tools
-
-Use ToolSearch to find specific tools:
-```
-ToolSearch("memory search")     → memory_store, memory_search, memory_search_unified
-ToolSearch("swarm")             → swarm_init, swarm_status, swarm_health, swarm_shutdown
-ToolSearch("hive consensus")    → hive-mind_consensus, hive-mind_status
-ToolSearch("+aidefence")        → aidefence_scan, aidefence_is_safe, aidefence_has_pii
-```
-
-## Quick Setup
-
-```bash
-claude mcp add claude-flow -- npx -y @claude-flow/cli@latest
-npx @claude-flow/cli@latest daemon start
-npx @claude-flow/cli@latest doctor --fix
-```
-
-## Claude Code vs MCP Tools
-
-- **Claude Code Task tool** handles execution: agents, file ops, code generation, git
-- **MCP tools** (via ToolSearch) handle coordination: swarm, memory, hooks, routing, hive-mind
-- **CLI commands** (via Bash) are the same tools with terminal output
-- Use `ToolSearch("keyword")` to discover available MCP tools
-
-## Support
-
-- Documentation: https://github.com/ruvnet/ruflo
-- Issues: https://github.com/ruvnet/ruflo/issues
-
-<!-- akashik:start -->
-
-# akashik
-akashik is a knowledge-graph-first research layer with P2P
+# Folklore — Claude Code Project Guide
+
+Folklore is a knowledge-graph-first, network-before-web research layer with P2P
+federation: your coding agent answers from your actual research and codebase, not
+its training data. This file tells Claude Code how the project's own hooks behave —
+the deny-on-confidence PreToolUse gate, the auto-save PostToolUse hook, and the
+folklore MCP tools you can call to consult memory before reaching for the web.
+
+For coding conventions — functional DDD (no classes in domain/app), `neverthrow`
+Results, ESM modules, a max of 3 new dependencies per phase, and no claude/anthropic
+git co-authors — see `.planning/PROJECT.md` and the "Architecture invariants" section
+of `.planning/STATE.md`. Those are the authoritative source; this file does not
+duplicate them. The shipped Claude Code hooks themselves are documented in
+`.claude/README.md`.
+
+<!-- folklore:start -->
+
+# folklore
+folklore is a knowledge-graph-first research layer with P2P
 federation. It is **network-before-web** by design: local tool calls
 (Read / Grep / Glob) run unaffected, but the moment you reach for
 `WebSearch` or `WebFetch`, a PreToolUse hook asks your own graph +
@@ -263,23 +31,23 @@ graph instead of the web.
 
 What this means in practice:
 - Routine prompts ("fix this typo", "rename X to Y") never touch
-  akashik — zero overhead, zero noise.
+  folklore — zero overhead, zero noise.
 - Local code exploration (Read / Grep / Glob) runs without the hook.
 - Only outbound network lookups trigger the prefetch + possible deny.
 - When you (or other peers) have already researched something, you
   pay the network cost zero additional times after the first.
 
 Tuning knobs (env in `.claude/settings.json`):
-- `AKASHIK_DENY_WEBSEARCH=1` — enable deny-on-confidence (on by
+- `FOLKLORE_DENY_WEBSEARCH=1` — enable deny-on-confidence (on by
   default in this project).
-- `AKASHIK_DENY_THRESHOLD=0.85` — confidence floor for deny.
-- `AKASHIK_DENY_MIN_HITS=2` — minimum graph hits before denying.
-- `AKASHIK_PREFETCH_PEERS=0` — force local-only (skip federated
+- `FOLKLORE_DENY_THRESHOLD=0.85` — confidence floor for deny.
+- `FOLKLORE_DENY_MIN_HITS=2` — minimum graph hits before denying.
+- `FOLKLORE_PREFETCH_PEERS=0` — force local-only (skip federated
   fan-out).
 
 ## System rooms (always-on, P2P-shared, auto-populated)
 
-Two canonical rooms every akashik peer advertises out of the box:
+Two canonical rooms every folklore peer advertises out of the box:
 
 - **`toolshed`** — codebase, skills, MCP tools, deps, git history.
   "What can this peer do." Stale-after: 30 days.
@@ -288,7 +56,7 @@ Two canonical rooms every akashik peer advertises out of the box:
 
 Membership is virtual — derived from each node's `source_uri` scheme,
 not from its `room` field. You don't need to set the room when you
-`akashik save`: a URL-sourced save lands in `research`
+`folklore save`: a URL-sourced save lands in `research`
 automatically; a codebase save lands in `toolshed`. The system rooms
 are always present in shared-rooms.json and cannot be unshared.
 
@@ -303,12 +71,12 @@ hit vs re-fetch:
 
 - If the hit is younger than the room's stale-after window, trust the
   cache. (research: <7d, toolshed: <30d.)
-- If the hit is older, prefer a fresh pull — `mcp__akashik__trigger_room`
+- If the hit is older, prefer a fresh pull — `mcp__folklore__trigger_room`
   or the original WebFetch / WebSearch — and let the auto-save hook put
   the newer version back into the graph.
 - If a hit has no `fetched_at` at all, treat it as stale of unknown age.
 
-## When to invoke akashik
+## When to invoke folklore
 
 The hook handles the **passive** lane — outbound `WebSearch` /
 `WebFetch` calls are gated by the graph automatically, you don't have
@@ -317,7 +85,7 @@ memory explicitly, before deciding whether you even need a web call:
 
 1. **Pull from memory first, web second.** For any "what did I read
    about X?", "how did we approach Y before?", "is this concept
-   already indexed?" question, call the akashik MCP tools
+   already indexed?" question, call the folklore MCP tools
    (`search`, `ask`, `get_node`, `get_neighbors`, `find_tunnels`,
    `recall`) before deciding to WebSearch. The deny-on-confidence
    hook will cancel a WebSearch you launch redundantly, but it's
@@ -328,7 +96,7 @@ memory explicitly, before deciding whether you even need a web call:
    proper permission-deny support, and cross-harness portability
    (the same MCP server speaks to Claude Code, Cursor, Cline, Gemini
    CLI, etc.). The visibility of federation is handled separately by
-   the statusline panel and the `akashik metrics bypass` audit,
+   the statusline panel and the `folklore metrics bypass` audit,
    not by routing through Bash.
 
 3. **`search` / `ask`** take a query string and optional room filter.
@@ -342,7 +110,7 @@ memory explicitly, before deciding whether you even need a web call:
 5. **`get_node` / `get_neighbors`** for graph traversal when you
    already have a node id (from a prior search hit or a citation).
 
-6. **Save synthesized insights with `akashik save --type
+6. **Save synthesized insights with `folklore save --type
    synthesis --room <room>`** after reasoning through an external
    result. The auto-save hook already filed the raw source; your
    synthesis adds the *distilled* claim alongside it. Future
@@ -352,7 +120,7 @@ memory explicitly, before deciding whether you even need a web call:
 7. **When the deny-hook overrides your WebSearch.** If you see the
    tool call denied with a graph hit injected, treat the graph data
    as the authoritative answer. If it turns out wrong or stale,
-   tune `AKASHIK_DENY_THRESHOLD` upward (0.90 / 0.95) or trigger
-   a refresh via `mcp__akashik__trigger_room` then retry.
+   tune `FOLKLORE_DENY_THRESHOLD` upward (0.90 / 0.95) or trigger
+   a refresh via `mcp__folklore__trigger_room` then retry.
 
-<!-- akashik:end -->
+<!-- folklore:end -->
