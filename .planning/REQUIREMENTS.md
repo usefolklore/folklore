@@ -18,9 +18,9 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 
 ### Repository structure
 
-- [ ] **REPO-01**: repo reorganized into a well-thought, akashikprotocol-clean layout (src domains, docs, tests, spec, site, examples)
+- [x] **REPO-01**: repo reorganized into a well-thought, akashikprotocol-clean layout (src domains, docs, tests, spec, site, examples)
 - [ ] **REPO-02**: build stays green and full test suite passes after restructure (no regressions)
-- [ ] **REPO-03**: org-ready repo boundaries defined (folklore core+cli, spec, site, .github org profile) with a documented split plan
+- [x] **REPO-03**: org-ready repo boundaries defined (folklore core+cli, spec, site, .github org profile) with a documented split plan
 
 ### Docs
 
@@ -65,9 +65,9 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 | CLEAN-04 | Phase 25 | Complete |
 | CLEAN-05 | Phase 25 | Complete |
 | CLEAN-06 | Phase 25 | Complete |
-| REPO-01 | Phase 25 | Pending |
+| REPO-01 | Phase 25 | Complete |
 | REPO-02 | Phase 25 | Pending |
-| REPO-03 | Phase 25 | Pending |
+| REPO-03 | Phase 25 | Complete |
 | DOCS-01 | Phase 26 | Pending |
 | DOCS-02 | Phase 26 | Pending |
 | DOCS-03 | Phase 26 | Pending |

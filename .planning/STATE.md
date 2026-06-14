@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-14T22:07:08.356Z"
+last_updated: "2026-06-15T22:13:22.000Z"
 progress:
   total_phases: 7
   completed_phases: 0
@@ -23,7 +23,7 @@ See: .planning/PROJECT.md (updated 2026-06-15)
 ## Current Position
 
 Phase: 25 (Cleanup & Repo Restructure) — EXECUTING
-Plan: 3 of 5 complete (25-01: claude-flow cruft stripped from CLAUDE.md/settings.json/.mcp.json, Folklore hooks documented; CLEAN-01/02/03/06 satisfied. 25-02: retrieval module layout documented; CLEAN-04 satisfied. 25-03: 29 standalone benchmark runners consolidated under bench/ with repro README, docs repointed; CLEAN-05 satisfied)
+Plan: 4 of 5 complete (25-01: claude-flow cruft stripped from CLAUDE.md/settings.json/.mcp.json, Folklore hooks documented; CLEAN-01/02/03/06 satisfied. 25-02: retrieval module layout documented; CLEAN-04 satisfied. 25-03: 29 standalone benchmark runners consolidated under bench/ with repro README, docs repointed; CLEAN-05 satisfied. 25-04: akashikprotocol-clean layout map (docs/architecture/REPO-LAYOUT.md) + spec/ and examples/ surfaces + written usefolklore org-split plan (docs/REPO-SPLIT.md) + README repo map; REPO-01/REPO-03 satisfied, zero source moves, tsc green)
 
 ### v3.0 Phase Map
 
@@ -88,4 +88,5 @@ Plan: 3 of 5 complete (25-01: claude-flow cruft stripped from CLAUDE.md/settings
 - CLEAN-04 (25-02): satisfied "documented module layout" with an authoritative map (docs/architecture/RETRIEVAL-MODULES.md) + in-tree index (src/infrastructure/README.md) rather than physically moving source files — a file reshuffle would force an import rewrite across ~80 test files, endangering the zero-regression bar for no behavioral gain.
 - CLEAN-01/02/03/06 (25-01): the new CLAUDE.md does NOT re-list the generic-good behavioural rules from the deleted claude-flow block — the authoritative conventions live in PROJECT.md + STATE.md "Architecture invariants", so CLAUDE.md just points there. statusLine was collapsed to the single helper that exists on disk (ak-statusline.cjs). CLEAN-06 documented by recording the removed 3-tier router and pointing to the real hw-detect rerank hardware-tier picker in .claude/README.md.
 - SECURITY follow-up (25-01): untracked-but-present .claude/settings.local.json holds a live HCLOUD_TOKEN + stale claude-flow enabledMcpjsonServers entry. Gitignored (won't ship) but token should be rotated before public launch.
+- REPO-01/REPO-03 (25-04): satisfied the akashikprotocol-clean layout by documenting it (docs/architecture/REPO-LAYOUT.md) and adding the two missing surfaces (spec/README.md as a thin index into docs/rfc + V5-PROTOCOL; examples/README.md with CLI commands verified against `folklore help`) rather than moving src/ — a source reshuffle would break tsconfig rootDir + ~85 test files of relative imports for zero behavioral gain (same precedent as CLEAN-04). The org split (docs/REPO-SPLIT.md) is a written plan only: physical multi-repo extraction (usefolklore core+cli/spec/site/.github) is deferred until the org exists (blocked on user); the doc records the exact git filter-repo boundaries so the split is mechanical later.
 - CLEAN-05 (25-03): 29 standalone benchmark runners moved scripts/ → bench/ (24 via git mv preserving history, 5 untracked via mv+add) with a copy-paste repro README. No import edits needed — scripts/ and bench/ are repo-root siblings so `../dist/` resolves identically (verified by smoke import + full 942-test pass). Frozen docs/research/octopus-discover/ audit captures left unedited (dated historical records, not live repro paths).

@@ -197,7 +197,7 @@ Plans:
 **Goal:** A clean, org-ready codebase with all inherited ruflo/claude-flow tooling cruft removed, ML/embedding/retrieval and benchmark code organized into documented modules, and the repo reorganized into an akashikprotocol-clean layout — with the build green and the full test suite passing.
 **Depends on:** Phase 24 (rooms deletion complete — restructure operates on the post-V5 codebase)
 **Requirements:** CLEAN-01, CLEAN-02, CLEAN-03, CLEAN-04, CLEAN-05, CLEAN-06, REPO-01, REPO-02, REPO-03
-**Plans:** 3/5 plans executed
+**Plans:** 4/5 plans executed
 
 Plans:
 - [ ] 25-01-PLAN.md — Wave 1: Strip claude-flow/ruflo from CLAUDE.md + .claude/settings.json + .mcp.json, fix statusLine, document Folklore hooks (CLEAN-01/02/03/06)
@@ -261,7 +261,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 25. Cleanup & Repo Restructure | 3/5 | In Progress|  |
+| 25. Cleanup & Repo Restructure | 4/5 | In Progress|  |
 | 26. Docs & Benchmarks | 0/TBD | Not started | - |
 | 27. Site Build-Out | 0/TBD | Not started | - |
 | 28. Merch & Meme-Agent | 0/TBD | Not started | - |
