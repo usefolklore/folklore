@@ -186,7 +186,7 @@ Plans:
 
 ## Phases
 
-- [ ] **Phase 25: Cleanup & Repo Restructure** - Strip ruflo/claude-flow cruft, tidy ML/bench code, reorganize into org-ready akashikprotocol-clean layout with green build.
+- [x] **Phase 25: Cleanup & Repo Restructure** - Strip ruflo/claude-flow cruft, tidy ML/bench code, reorganize into org-ready akashikprotocol-clean layout with green build. (completed 2026-06-14)
 - [ ] **Phase 26: Docs & Benchmarks** - BENCHMARKS page with real numbers, extended RFC set, org profile README.
 - [ ] **Phase 27: Site Build-Out** - Composition + mobile sweep, Guidebook + Platform Culture sections, real Store, Cloudflare Pages build config.
 - [ ] **Phase 28: Merch & Meme-Agent** - Real merch product designs wired into the Store, autonomous Twitter meme-agent scaffold feeding the site.
@@ -197,7 +197,7 @@ Plans:
 **Goal:** A clean, org-ready codebase with all inherited ruflo/claude-flow tooling cruft removed, ML/embedding/retrieval and benchmark code organized into documented modules, and the repo reorganized into an akashikprotocol-clean layout — with the build green and the full test suite passing.
 **Depends on:** Phase 24 (rooms deletion complete — restructure operates on the post-V5 codebase)
 **Requirements:** CLEAN-01, CLEAN-02, CLEAN-03, CLEAN-04, CLEAN-05, CLEAN-06, REPO-01, REPO-02, REPO-03
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [ ] 25-01-PLAN.md — Wave 1: Strip claude-flow/ruflo from CLAUDE.md + .claude/settings.json + .mcp.json, fix statusLine, document Folklore hooks (CLEAN-01/02/03/06)
@@ -261,7 +261,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 25. Cleanup & Repo Restructure | 4/5 | In Progress|  |
+| 25. Cleanup & Repo Restructure | 5/5 | Complete   | 2026-06-14 |
 | 26. Docs & Benchmarks | 0/TBD | Not started | - |
 | 27. Site Build-Out | 0/TBD | Not started | - |
 | 28. Merch & Meme-Agent | 0/TBD | Not started | - |
