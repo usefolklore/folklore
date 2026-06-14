@@ -1,13 +1,13 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.0
-milestone_name: Folklore Launch
-status: not_started
-last_updated: "2026-06-15T00:30:00.000Z"
+milestone: v2.0
+milestone_name: milestone
+status: unknown
+last_updated: "2026-06-15T00:00:00.000Z"
 progress:
-  total_phases: 4
+  total_phases: 11
   completed_phases: 0
-  total_plans: 0
+  total_plans: 5
   completed_plans: 0
 ---
 
@@ -18,15 +18,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15)
 
 **Core value:** Your coding agent answers from your actual research and codebase, not its training data.
-**Current focus:** v3.0 Folklore Launch — strip inherited tooling cruft, restructure the repo akashikprotocol-clean, and ship the folk-pop site, merch, and autonomous meme-agent scaffold under the usefolklore org.
+**Current focus:** Phase 25 — Cleanup & Repo Restructure
 
 ## Current Position
 
-Milestone: v3.0 Folklore Launch
-Phase: 25 (Cleanup & Repo Restructure) — NOT STARTED
-Plan: none yet
-
-Progress: [----------] 0/4 phases · 0 plans complete
+Phase: 25 (Cleanup & Repo Restructure) — EXECUTING
+Plan: 3 of 5 (25-02 complete: retrieval module layout documented; CLEAN-04 satisfied)
 
 ### v3.0 Phase Map
 
@@ -88,3 +85,4 @@ Progress: [----------] 0/4 phases · 0 plans complete
 - v3.0 phasing: foundational Cleanup & Repo Restructure (25) precedes Docs (26) → Site (27) → Merch & Agent (28), because docs reference the clean `bench/` + module layout, the site sources docs content, and merch/agent fill the site Store.
 - Meme-agent (AGENT-01) is scaffold-only this milestone: full generate → post → append-to-`/store` pipeline runs against mocked/credential-gated X access; no live X post until user supplies X API creds.
 - Store section (SITE-04) is structured for live products with link points wired but inert until $LORE launch + merch fulfilment exist (both blocked on user).
+- CLEAN-04 (25-02): satisfied "documented module layout" with an authoritative map (docs/architecture/RETRIEVAL-MODULES.md) + in-tree index (src/infrastructure/README.md) rather than physically moving source files — a file reshuffle would force an import rewrite across ~80 test files, endangering the zero-regression bar for no behavioral gain.
