@@ -92,3 +92,33 @@ Wave 2 lands within ~2 NDCG points of `bge-base-en-v1.5` (74.0) at the same para
 - DHT internet-wide peer discovery (Phase 17 scoped DHT off-by-default for safety)
 - Type-aware call graph via LSP (Phase 19 used tree-sitter syntactic parsing, leaving 70-80% of edges unresolved on bigger codebases)
 - Web dashboard for sessions room (Phase 13 dashboard predates Phase 20)
+
+## v2.x — Rooms Deletion (Phase 24) ✓
+
+**Shipped:** 2026-05-27
+
+| Phase | Name | Status |
+|-------|------|--------|
+| 24 | Delete Rooms — V5 Wire-Protocol Break | ✓ |
+
+**Last phase number:** 24
+
+Room abstraction removed entirely; `workspace?` (read-side) + `private: boolean` (sharing gate); federation wire protocol V5; 13 MCP tools. 313/313 tests pass.
+
+## v3.0 — Folklore Launch (Phases 25-28) — PLANNED
+
+**Planned:** 2026-06-15
+
+| Phase | Name | Requirements | Status |
+|-------|------|--------------|--------|
+| 25 | Cleanup & Repo Restructure | CLEAN-01..06, REPO-01..03 (9) | Not started |
+| 26 | Docs & Benchmarks | DOCS-01..03 (3) | Not started |
+| 27 | Site Build-Out | SITE-01..05 (5) | Not started |
+| 28 | Merch & Meme-Agent | MERCH-01, AGENT-01..02 (3) | Not started |
+
+**Last phase number:** 28
+**Coverage:** 20/20 v3.0 requirements mapped ✓
+
+**Goal:** Take the renamed Folklore engine public under the `usefolklore` org — clean launch-ready repo + folk-pop product surfaces (site, merch, autonomous meme-agent scaffold).
+
+**Blocked on user (NOT phased):** higgsfield animation, GitHub org creation, Cloudflare auth/domain purchase, $LORE token launch, live X posting.
