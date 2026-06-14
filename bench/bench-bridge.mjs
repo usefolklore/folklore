@@ -4,7 +4,7 @@
 // Hypothesis: a linear map W: bge → nomic lets a peer running a BGE
 // embedder retrieve documents indexed under a nomic embedder, at
 // ≥85% of the retrieval quality that nomic-native queries achieve
-// against the same corpus. If true, akashik peers can federate
+// against the same corpus. If true, folklore peers can federate
 // across heterogeneous encoder choices — the interop claim that no
 // OSS P2P memory system currently makes.
 //
@@ -44,7 +44,7 @@ const has = (f) => args.includes(f);
 
 const LAMBDA = parseFloat(getArg('--lambda', '0.01'));
 const DATASET = 'scifact';
-const CACHE_ROOT = join(homedir(), '.akashik', 'bench');
+const CACHE_ROOT = join(homedir(), '.folklore', 'bench');
 const BRIDGE_DIR = join(CACHE_ROOT, `bridge-${DATASET}`);
 const NOMIC_DB = join(CACHE_ROOT, `${DATASET}__nomic-ai-nomic-embed-text-v1-5__hybrid`, 'sota.db');
 const BGE_DB = join(CACHE_ROOT, `${DATASET}__xenova-bge-base-en-v1-5__hybrid`, 'sota.db');
@@ -58,7 +58,7 @@ const DIM = 768;
 mkdirSync(BRIDGE_DIR, { recursive: true });
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log(' akashik — cross-model embedding bridge gate');
+console.log(' folklore — cross-model embedding bridge gate');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(` Dataset:   BeIR/${DATASET} (5,183 corpus × 300 test queries)`);
 console.log(` Direction: bge → nomic (ridge least-squares, λ=${LAMBDA})`);

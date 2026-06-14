@@ -30,7 +30,7 @@ import * as sqliteVec from 'sqlite-vec';
 
 import { rustSubprocessEmbedder } from '../dist/infrastructure/embedders.js';
 
-const CACHE_DIR = join(homedir(), '.akashik', 'bench');
+const CACHE_DIR = join(homedir(), '.folklore', 'bench');
 const DB_PATH = join(CACHE_DIR, 'scifact__rust-via-ts__bge-base', 'vectors.db');
 const DATASET_DIR = join(CACHE_DIR, 'scifact', 'scifact');
 const CORPUS_JSONL = join(DATASET_DIR, 'corpus.jsonl');
@@ -46,7 +46,7 @@ const OLLAMA_MODEL = 'gpt-oss:20b';
 const OLLAMA_URL = 'http://localhost:11434';
 
 console.log('━'.repeat(60));
-console.log(' akashik — SciFact qrel rejudge V2 (few-shot + CoT)');
+console.log(' folklore — SciFact qrel rejudge V2 (few-shot + CoT)');
 console.log('━'.repeat(60));
 console.log(` Round 2 baseline:     κ = 0.418 (FAIL), FP=0, recall=36%`);
 console.log(` V2 changes:           4-shot exemplars + chain-of-thought`);

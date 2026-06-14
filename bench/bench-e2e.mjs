@@ -4,16 +4,16 @@
  * not retrieval quality (BEIR lives in bench-beir*.mjs).
  *
  * Scenarios (each timed as full CLI wall-clock, including Node boot):
- *   warm-ask    `akashik ask` with the daemon up (IPC fast path)
- *   fed-ask     `akashik ask --peers` over the real libp2p wire
- *   save        `akashik save` of a short synthesis node
+ *   warm-ask    `folklore ask` with the daemon up (IPC fast path)
+ *   fed-ask     `folklore ask --peers` over the real libp2p wire
+ *   save        `folklore save` of a short synthesis node
  *
  * Prereqs: a running daemon for `home` (and for fed-ask, at least one
  * connected peer daemon holding content).
  *
  * Usage:
- *   node scripts/bench-e2e.mjs --home /tmp/akashik-e2e/peerB \
- *     [--bin bin/akashik.js] [--n 15] [--json]
+ *   node scripts/bench-e2e.mjs --home /tmp/folklore-e2e/peerB \
+ *     [--bin bin/folklore.js] [--n 15] [--json]
  *
  * The web-fetch comparison line uses the README's 1–2s paid-fetch
  * claim as a reference band; it is NOT measured here.
@@ -31,12 +31,12 @@ const flag = (name, dflt) => {
 const has = (name) => argv.includes(`--${name}`);
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const BIN = flag('bin', join(ROOT, 'bin', 'akashik.js'));
-const HOME = flag('home', process.env.AKASHIK_HOME ?? '');
+const BIN = flag('bin', join(ROOT, 'bin', 'folklore.js'));
+const HOME = flag('home', process.env.FOLKLORE_HOME ?? '');
 const N = parseInt(flag('n', '15'), 10);
 
 if (!HOME) {
-  console.error('bench-e2e: --home <dir> (or $AKASHIK_HOME) is required');
+  console.error('bench-e2e: --home <dir> (or $FOLKLORE_HOME) is required');
   process.exit(1);
 }
 
@@ -51,7 +51,7 @@ const QUERIES = [
 const timeCli = (args) => {
   const t0 = performance.now();
   const r = spawnSync(process.execPath, [BIN, ...args], {
-    env: { ...process.env, AKASHIK_HOME: HOME },
+    env: { ...process.env, FOLKLORE_HOME: HOME },
     encoding: 'utf8',
     timeout: 30_000,
   });

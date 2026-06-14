@@ -7,7 +7,7 @@
 // the dense+hybrid baseline.
 //
 // Output: writes a contextualized corpus.jsonl in BEIR-shape directory
-// at ~/.akashik/bench/<output_dataset>/<output_dataset>/ along
+// at ~/.folklore/bench/<output_dataset>/<output_dataset>/ along
 // with symlinked queries.jsonl + qrels/test.tsv. The downstream
 // `bench-beir-rust.mjs <output_dataset> --model bge-base` then runs
 // the Phase 25 production path against the contextualized corpus.
@@ -37,7 +37,7 @@ const NO_CACHE = has('--no-cache');
 const CONCURRENCY = Math.max(1, parseInt(getArg('--concurrency', '1'), 10));
 const OLLAMA_URL = process.env.OLLAMA_URL ?? 'http://localhost:11434';
 
-const CACHE_ROOT = join(homedir(), '.akashik', 'bench');
+const CACHE_ROOT = join(homedir(), '.folklore', 'bench');
 const SRC_DIR = join(CACHE_ROOT, SRC_DATASET, SRC_DATASET);
 const OUT_DIR = join(CACHE_ROOT, OUT_DATASET, OUT_DATASET);
 const SRC_CORPUS = join(SRC_DIR, 'corpus.jsonl');
@@ -217,7 +217,7 @@ const totalElapsed = (Date.now() - start) / 1000;
 console.log(`\n✓ Wrote ${OUT_CORPUS} (${total} docs in ${(totalElapsed / 60).toFixed(1)} min)`);
 console.log('');
 console.log('Next:');
-console.log(`  AKASHIK_RUST_BIN=$(pwd)/akashik-rs/target/release/embed_server \\`);
+console.log(`  FOLKLORE_RUST_BIN=$(pwd)/folklore-rs/target/release/embed_server \\`);
 console.log(`    node scripts/bench-beir-rust.mjs ${OUT_DATASET} --model bge-base`);
 console.log('');
 console.log('Compare the result vs Phase 25 SciFact baseline (75.22% NDCG@10) to gate.');

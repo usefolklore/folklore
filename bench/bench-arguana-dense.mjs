@@ -34,7 +34,7 @@ import * as sqliteVec from 'sqlite-vec';
 
 import { rustSubprocessEmbedder } from '../dist/infrastructure/embedders.js';
 
-const CACHE_DIR = join(homedir(), '.akashik', 'bench');
+const CACHE_DIR = join(homedir(), '.folklore', 'bench');
 const DB_PATH = join(CACHE_DIR, 'arguana__rust-via-ts__bge-base', 'vectors.db');
 const DATASET_DIR = join(CACHE_DIR, 'arguana', 'arguana');
 const QUERIES_JSONL = join(DATASET_DIR, 'queries.jsonl');
@@ -43,7 +43,7 @@ const RESULTS_DIR = join(CACHE_DIR, 'arguana-dense-only');
 mkdirSync(RESULTS_DIR, { recursive: true });
 
 console.log('━'.repeat(60));
-console.log(' akashik — ArguAna dense-only re-target gate');
+console.log(' folklore — ArguAna dense-only re-target gate');
 console.log('━'.repeat(60));
 console.log(' Baseline (BENCH §2e hybrid):  43.97% NDCG@10');
 console.log(' Published nomic dense ceiling: ~50.4%');

@@ -8,7 +8,7 @@
 //   3. Dense vs hybrid (dense-truncated + BM25 RRF)
 //   4. Combined Matryoshka × binary — the P2P sync lever (bytes-per-vec)
 //
-// Inputs: existing bench sota.db files under ~/.akashik/bench/, which
+// Inputs: existing bench sota.db files under ~/.folklore/bench/, which
 // already contain vec0-stored Xenova-nomic 768-dim corpus vectors plus the
 // FTS5 BM25 index. We only re-embed the queries (~10s/dataset).
 //
@@ -40,12 +40,12 @@ const TOP_K = parseInt(getArg('--top-k', '100'), 10);
 const MODEL = 'nomic-ai/nomic-embed-text-v1.5';
 const FULL_DIM = 768;
 
-const CACHE_ROOT = join(homedir(), '.akashik', 'bench');
+const CACHE_ROOT = join(homedir(), '.folklore', 'bench');
 const LAB_OUT_DIR = join(CACHE_ROOT, 'lab');
 mkdirSync(LAB_OUT_DIR, { recursive: true });
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log(' akashik — retrieval lab');
+console.log(' folklore — retrieval lab');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(` Datasets:  ${DATASETS.join(', ')}`);
 console.log(` Dims:      ${DIMS.join(', ')}`);

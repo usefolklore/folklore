@@ -61,7 +61,7 @@ const NO_CACHE = has('--no-cache');
 const DOC_PREFIX = getArg('--doc-prefix', 'search_document: ');
 const QUERY_PREFIX = getArg('--query-prefix', 'search_query: ');
 
-const CACHE_ROOT = join(homedir(), '.akashik', 'bench');
+const CACHE_ROOT = join(homedir(), '.folklore', 'bench');
 const DATASET_DIR = join(CACHE_ROOT, DATASET);
 const MODEL_SLUG = MODEL.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
 const MRL_CACHE_DIR = join(CACHE_ROOT, `matryoshka-${DATASET}-${MODEL_SLUG}`);
@@ -78,7 +78,7 @@ mkdirSync(DATASET_DIR, { recursive: true });
 // ─── banner ──────────────────────────────────────────────────────
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log(` akashik — Matryoshka truncation gate`);
+console.log(` folklore — Matryoshka truncation gate`);
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(` Dataset:   BeIR/${DATASET} (BEIR v1, test split)`);
 console.log(` Model:     ${MODEL} (${FULL_DIM} dim full)`);
