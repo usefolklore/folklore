@@ -197,6 +197,14 @@ Plans:
 **Goal:** A clean, org-ready codebase with all inherited ruflo/claude-flow tooling cruft removed, ML/embedding/retrieval and benchmark code organized into documented modules, and the repo reorganized into an akashikprotocol-clean layout — with the build green and the full test suite passing.
 **Depends on:** Phase 24 (rooms deletion complete — restructure operates on the post-V5 codebase)
 **Requirements:** CLEAN-01, CLEAN-02, CLEAN-03, CLEAN-04, CLEAN-05, CLEAN-06, REPO-01, REPO-02, REPO-03
+**Plans:** 5 plans (3 waves)
+
+Plans:
+- [ ] 25-01-PLAN.md — Wave 1: Strip claude-flow/ruflo from CLAUDE.md + .claude/settings.json + .mcp.json, fix statusLine, document Folklore hooks (CLEAN-01/02/03/06)
+- [ ] 25-02-PLAN.md — Wave 1: Document the ML/embedding + hybrid-retrieval module layout (CLEAN-04)
+- [ ] 25-03-PLAN.md — Wave 1: Consolidate benchmark runners under bench/ via git mv + repro README, update docs paths (CLEAN-05)
+- [ ] 25-04-PLAN.md — Wave 2: akashikprotocol-clean layout doc + spec/examples surfaces + org-split plan (REPO-01/03)
+- [ ] 25-05-PLAN.md — Wave 3: Validation gate — build + lint + full test suite green, cruft-grep + site-intact evidence (REPO-02)
 **Wave decomposition (parallel-friendly):**
   - Wave A — Tooling cruft removal: CLAUDE.md ruflo/claude-flow strip (CLEAN-01), `.claude/` hooks+skills prune keeping Folklore's own (CLEAN-02), swarm/hive-mind/MCP reference removal (CLEAN-03), 3-tier routing config clean/remove (CLEAN-06). Independent of code-layout work.
   - Wave B — Code tidy: ML/embedding + hybrid retrieval module layout (CLEAN-04), benchmark consolidation under `bench/` with repro commands (CLEAN-05). Independent of Wave A.
