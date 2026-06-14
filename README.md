@@ -1,42 +1,139 @@
-# Akashik
+<div align="center">
 
-**We compound on inference.**
+<img src="assets/folklore-logo.svg" alt="Folklore" width="120" height="120" />
 
-A cooperative knowledge protocol. Each peer keeps only its own graph (what it has read, debugged, fetched, signed) and queries the graphs of every other peer. Someone already paid to figure it out. Why pay again?
+# Folklore
 
-> Web-search fallback rate, in simulator: **17% → 1%** over 2,000 steps. Once any peer in the network has done the work, no peer pays for it again. [§ Proof](#proof)
+**Your agent never researches the same thing twice.**
 
----
+A local-first memory + research layer for AI agents. It works alone on day one — and compounds across every peer who runs it.
 
-## How it compounds
+**[Site](https://usefolklore.com)** · **[Spec](docs/WHITEPAPER.md)** · **[RFC](docs/rfc/)** · **[Roadmap](docs/PROJECT-PLAN-FOLKLORE.md)** · **[npm](https://www.npmjs.com/package/@usefolklore/folklore)**
 
-We compound on inference. Each peer supplies the network with reasoning it has already done, so the next peer infers from there, not from zero. Knowledge builds on knowledge. The network reasons deeper than any node alone, and nobody starts from square one.
+![tests](https://img.shields.io/badge/tests-942%20passing-brightgreen)
+![BEIR SciFact NDCG@10](https://img.shields.io/badge/BEIR%20SciFact%20NDCG%4010-0.7522-blue)
+![runtime](https://img.shields.io/badge/runtime-CPU--only-orange)
+![spec](https://img.shields.io/badge/spec-0.1.0--draft-blue)
+![status](https://img.shields.io/badge/status-pre--launch-yellow)
+![license](https://img.shields.io/badge/license-MIT-green)
 
-It is not only Google you pay. It is OpenAI, Anthropic, governments, giant centralised corporations, billed per token for inference run on the same data a thousand times over, every day. Someone already read the paper, debugged the bug, grounded the claim. The tokens were paid. The work was done. Ask them.
+</div>
 
-Knowledge that used to take minutes now arrives in milliseconds. Off the grid. On the commons.
-
----
-
-## The commons
-
-There is no central knowledge bank. Each peer maintains a graph over its own code, research, and sessions on its own machine. Federation makes every local graph queryable by the network. The union of every peer's graph is the commons.
-
-- **Sessions become the commons' context.** Every web fetch and debug transcript is indexed locally, signed, and federated.
-- **Code paths become queryable by peers.** Files you explored, questions you asked: the network knows the hard parts.
-- **Research becomes attributable.** URI, timestamp, signature. Once any peer reads it, the network never pays the web for it again.
+> Web-search fallback rate, in simulator: **17% → 1%** over 2,000 steps. Once anyone resolves a question, no one — you on Thursday, or any peer ever — pays for it again. [§ Proof](#proof)
 
 ---
 
-## The math
+## The problem
 
-For any topic `T` and time `t`, let `R(T, t)` be the number of peers holding a cached answer for `T`. Under akashik's mechanism `R(T, t)` is **monotonically non-decreasing**. Once any peer resolves `T`, the network's cost for `T` caps out. Compounding is a property of the architecture, not a marketing claim. Each peer holds only what it has asked for or contributed: no global graph, no central server, and disk cost on every peer scales with that peer's own curiosity rather than the community's total volume.
+AI agents reason from zero, every single time. The same paper gets read again. The same dead-ends get walked again. The same conclusion gets re-derived — and re-billed — a thousand times across a thousand sessions.
 
-Three returns, after peer one:
+You don't only pay Google. You pay OpenAI, Anthropic, and every paid endpoint, per token, to re-run inference over data someone already ground out yesterday. The work was done. The tokens were spent. Nobody kept the answer where the next agent could find it.
 
-- **Faster.** A federation hit returns in ~140 ms. A paid web fetch is 1 to 2 seconds.
-- **More complete.** The peer returns the trace, the sources, the dead-ends. Reasoning to build on, not re-derive.
-- **Way cheaper.** Web-fallback drops 17% → 1% over 2,000 simulator steps. Over 90% of paid fetches vanish.
+Memory tools exist — mem0, Letta, LangChain-style RAG — but they are single-user silos. They remember *your* chats. They don't gate the web, they don't carry provenance, and they certainly don't let your teammate's hard-won debugging trace become your starting point.
+
+## What Folklore is
+
+A graph of your agent's reasoning that lives on your machine, answers **before** the web, and federates peer-to-peer.
+
+Two bets, in order:
+
+1. **It works alone.** Day one, zero peers, it already pays off — your own research, debugging, and grounded conclusions are cached and reused. You never start from zero again.
+2. **It compounds.** When your teammates (or the wider network) run it too, their resolved reasoning becomes your starting point, and yours becomes theirs. The commons gets deeper the more people draw from it.
+
+Folklore is the name for knowledge that gets passed on — story to story, peer to peer — instead of relearned from scratch.
+
+---
+
+## Day one: alone
+
+No network required. Folklore sits between your agent and the web. Every research-shaped call — `WebSearch`, `WebFetch`, an arXiv pull, a fresh `Read` — is checked against your local graph first. If your graph already holds a confident answer, the call is satisfied from memory in milliseconds. If not, the call proceeds, and the result is auto-saved, signed by you, so the *next* time costs nothing.
+
+This alone clears the bar that kills most memory projects: it is useful to one person, immediately.
+
+```bash
+folklore ask "how does mxbai-rerank compare to cross-encoder on long contexts?"
+# → answered from your own graph if you've researched it; otherwise fetched + saved for next time
+```
+
+Retrieval quality is benchmarked, not asserted: **0.7522 NDCG@10** on full BEIR SciFact, CPU-only, 11 ms median — ahead of Pinecone-baseline (0.5840), mem0 (0.4410), Letta (0.3150), and LangChain-RAG (0.2680). No LLM grading an LLM.
+
+## Day N: together
+
+Add a peer and your graphs become queryable to each other over libp2p. Now the first hop isn't even your graph — it's the question *"what does the network already know about this?"* Only when nobody holds the answer does anyone pay the web.
+
+Every record carries a provenance chain: signed by its curator's cryptographic identity and verified GitHub handle, timestamped, traceable to the sources it grounded on. Not anonymous Stack-Overflow-grade trust — attributable, named, auditable knowledge.
+
+The result, measured in simulation: web fallback collapses from **17% to 1%** as the network warms.
+
+---
+
+## Where it fits
+
+Folklore is not a competitor to MCP or A2A. It's the missing third layer.
+
+| Layer | Standard | Question it answers |
+|---|---|---|
+| Tools | **MCP** | How does an agent *call* things? |
+| Communication | **A2A** | How do agents *talk* to each other? |
+| **Memory + research** | **Folklore** | What does the agent — and the network — *already know*, so it doesn't redo the work? |
+
+And against the memory tools you might compare it to:
+
+| | Folklore | mem0 / Letta | LangChain RAG | Web every time |
+|---|:---:|:---:|:---:|:---:|
+| Local-first, no server | ✅ | ⚠️ | ⚠️ | ✅ |
+| Gates the web (answers before fetch) | ✅ | ❌ | ❌ | ❌ |
+| Federated across peers | ✅ | ❌ | ❌ | — |
+| Signed provenance per record | ✅ | ❌ | ❌ | ❌ |
+| CPU-only, no API keys | ✅ | ⚠️ | ⚠️ | ❌ |
+| Benchmarked retrieval (BEIR) | 0.7522 | 0.44 / 0.32 | 0.27 | — |
+
+---
+
+## How it works
+
+```mermaid
+flowchart LR
+  subgraph machine["Your machine"]
+    H["Harness<br/>Claude Code · Codex · Gemini"] -->|WebSearch / WebFetch| Hook["PreToolUse hook"]
+    Hook -->|ask first| G[("Local graph<br/>your reasoning, signed")]
+    G -->|satisfied: score ≥ 0.85, ≥ 2 hits| Hook
+    Hook -->|inject hits · DENY web call| H
+  end
+  Hook -. graph can't answer .-> Web["Web · arXiv · paid API"]
+  Web -. PostToolUse auto-save .-> G
+  G <-->|federation · libp2p| P1[("Peer graph")]
+  G <-->|federation · libp2p| P2[("Peer graph")]
+```
+
+Three moving parts:
+
+- **A hook at the boundary.** A `PreToolUse` hook intercepts outbound research calls and asks the graph first. A `PostToolUse` hook saves whatever the web returned. Local tools (`Read`, `Grep`, `Glob`) are never touched — they're cheap and there's nothing to gain by blocking them.
+- **A retrieval stack that earns the deny.** Hybrid lexical + vector recall (BM25 + ONNX embeddings + RRF), then cross-encoder rerank, then graph PPR rerank. A web call is only denied when the result clears a real satisfaction floor — see below.
+- **A federation mesh.** Each peer holds only what it has asked for or contributed. No global graph, no central server. The union of every peer's graph is the commons.
+
+Full technical detail: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+
+### What "satisfactory" means
+
+The web is the fallback, not the default — but "satisfied" is concrete, not a vibe. Three conditions, enforced at the hook:
+
+| Knob | Default | Meaning |
+|---|---|---|
+| `satisfaction_score` | ≥ **0.85** | Top result must clear this after the full rerank pipeline. |
+| `min_hits` | ≥ **2** | At least two graph hits. One brittle hit never overrides the web. |
+| `decision` | = `use_memory` | The decision layer must affirmatively land on "answer from memory" — not "answer-but-verify", not "search web". |
+
+When all three hold, the hook **denies** the web call and injects the graph hits as if the fetch had returned them. When any fails, the fetch proceeds and the result lands back in your graph, signed.
+
+```bash
+export FOLKLORE_DENY_WEBSEARCH=1      # opt in to deny-on-confidence (off by default)
+export FOLKLORE_DENY_THRESHOLD=0.85   # satisfaction floor
+export FOLKLORE_DENY_MIN_HITS=2       # minimum hits to allow a deny
+export FOLKLORE_PREFETCH_PEERS=0      # local-only; skip federated fan-out
+```
+
+The deny pathway is opt-in by design: a false positive (graph says "I've got it" when it doesn't) costs more than a redundant fetch. You turn it on per project once you trust your graph's coverage.
 
 ---
 
@@ -44,61 +141,51 @@ Three returns, after peer one:
 
 Three claims, each falsifiable, each on disk.
 
-**Faster.** Federation-hit P50 around 140 ms, against 1 to 2 seconds for a paid endpoint. Roughly an order of magnitude, every time after the first.
+**Faster.** Federation-hit P50 ≈ 140 ms, against 1–2 s for a paid endpoint. Roughly an order of magnitude, every time after the first.
 
-**More complete.** 0.7522 NDCG@10 on the full BEIR SciFact benchmark, CPU-only, 11 ms median. Compared to Pinecone-baseline 0.5840, mem0 0.4410, Letta 0.3150, LangChain-RAG 0.2680. No LLM judging an LLM.
+**More complete.** 0.7522 NDCG@10 on full BEIR SciFact, CPU-only, 11 ms median — vs Pinecone-baseline 0.5840, mem0 0.4410, Letta 0.3150, LangChain-RAG 0.2680. No LLM judging an LLM.
 
-**Way cheaper.** AkashikBench-F is a federation-level simulator measuring `web_fallback_rate(t)` over a realistic peer network with offline churn. First run, on the LoCoMo factual subset:
+**Cheaper.** FolkloreBench-F simulates `web_fallback_rate(t)` over a realistic peer network with offline churn. First run, LoCoMo factual subset:
 
-| Parameter | Value |
-|---|---|
-| Corpus | LoCoMo factual subset, 695 queries |
-| Peers | 10, strictly disjoint initial shards |
-| Sim steps | 2,000 |
-| Offline churn | 20% |
-| Query distribution | Zipfian (alpha = 1.0) |
+| Parameter | Value | | Metric | Value | Reading |
+|---|---|---|---|---|---|
+| Corpus | LoCoMo factual, 695 q | | `web_fallback_rate` (start) | 0.170 | 17% hit web at t=0 |
+| Peers | 10, disjoint shards | | `web_fallback_rate` (end) | 0.010 | 1% hit web by t=2,000 |
+| Sim steps | 2,000 | | Compounding slope | −4.74e-5 | negative — thesis holds |
+| Offline churn | 20% | | Web fallback (final) | 4.5% | outbound only when unanswerable |
 
-| Metric | Value | Reading |
-|---|---|---|
-| `web_fallback_rate` (start) | 0.170 | 17% of queries hit the web at t=0 |
-| `web_fallback_rate` (end) | 0.010 | 1% of queries hit the web by t=2,000 |
-| Compounding slope | -4.74e-5 | Negative, thesis holds for this corpus |
-| Web fallback (final) | 4.5% | Outbound only when the network could not answer |
+**These are simulator numbers, not pilot numbers.** v1 treats "does peer N hold doc D" as boolean and abstracts per-peer retrieval quality (measured separately by the LongMemEval / LoCoMo / BEIR benches in `tests/`). v2 plugs real retrieval in. Real-pilot validation is the 100-peer rollout queued next.
 
-**These are simulator numbers, not pilot numbers.** v1 treats "does peer N hold doc D" as boolean and abstracts away per-peer retrieval quality (measured separately by the LongMemEval / LoCoMo / BEIR benches in `tests/`). v2 plugs real retrieval in. Real-pilot validation is the 100-peer ecosystem rollout queued next.
+Bench source: [`tests/bench-folklore-federation.test.ts`](tests/bench-folklore-federation.test.ts).
 
-Bench source: [`tests/bench-akashik-federation.test.ts`](tests/bench-akashik-federation.test.ts).
+### The math
+
+For any topic `T` and time `t`, let `R(T, t)` be the number of peers holding resolved reasoning for `T`. Under Folklore's mechanism `R(T, t)` is **monotonically non-decreasing** — once anyone reasons through `T`, every later peer starts from that conclusion, not from zero. Compounding is a property of the architecture, not a marketing claim.
 
 ---
 
 ## Quickstart
 
-Install:
-
 ```bash
-npm install -g akashik
-```
+npm install -g @usefolklore/folklore
 
-Run your first peer:
-
-```bash
-akashik onboard        # daemon, hooks, identity in one pass
+folklore onboard        # daemon, hooks, identity — one pass
 ```
 
 Save what teaches you:
 
 ```bash
-akashik save --type synthesis --label "mxbai-rerank on long contexts" \
+folklore save --type synthesis --label "mxbai-rerank on long contexts" \
   --text "Cross-encoder wins under 512 tokens; mxbai-rerank degrades slower past 2k."
-akashik save --label "cuda oom debug" --text "$(cat ./notes/cuda-oom-debug.md)" --private
-akashik this           # or index the whole folder you are standing in
+folklore save --label "cuda oom debug" --text "$(cat ./notes/cuda-oom-debug.md)" --private
+folklore this           # or index the whole folder you're standing in
 ```
 
 Connect to a peer and query the network:
 
 ```bash
-akashik peer add /ip4/203.0.113.7/tcp/4001/p2p/12D3KooW...   # from their `akashik peer status`
-akashik ask "how does mxbai-rerank compare to cross-encoder on long contexts?" --peers
+folklore peer add /ip4/203.0.113.7/tcp/4001/p2p/12D3KooW...   # from their `folklore peer status`
+folklore ask "how does mxbai-rerank compare to cross-encoder on long contexts?" --peers
 ```
 
 **Federate. Compound. Continue.**
@@ -107,80 +194,77 @@ akashik ask "how does mxbai-rerank compare to cross-encoder on long contexts?" -
 
 ## Plugs into the harness you already use
 
-You do not change how you work. Once akashik is installed and your daemon is running, every research-shaped tool call your harness wants to make (`WebSearch`, `WebFetch`, an arXiv pull, a Read against a path it has never read) is intercepted first. The harness asks akashik before it asks the web.
+You don't change how you work. Once Folklore is installed and your daemon is running, every research-shaped tool call is intercepted first. The harness asks Folklore before it asks the web.
 
 | Harness | How it wires in |
 |---|---|
-| **Claude Code** | `akashik claude install` wires `PreToolUse` + `PostToolUse` + `SessionStart` hooks and adds a CLAUDE.md system-prompt section. One command. |
-| **Codex / Gemini / Hermes / OpenClaw** | Register `akashik mcp start` as an MCP tool server. The harness's own tool-routing layer then prefers akashik for any query-shaped call. |
-| **Anything else with a PreToolUse hook** | Same pattern as Claude Code. `akashik-smart-hook.cjs` is reusable; point your harness's `PreToolUse` config at it. |
-
-After that, the web is the *fallback*, not the default. The local plus federated graph is the first hop, every time, automatically. You do not have to remember to use akashik; akashik remembers for you.
+| **Claude Code** | `folklore claude install` wires `PreToolUse` + `PostToolUse` + `SessionStart` hooks and adds a CLAUDE.md section. One command. |
+| **Codex / Gemini / Hermes / OpenClaw** | Register `folklore mcp start` as an MCP server. The harness's tool-routing then prefers Folklore for query-shaped calls. |
+| **Anything with a PreToolUse hook** | Same pattern. `folklore-smart-hook.cjs` is reusable — point your harness's `PreToolUse` config at it. |
 
 ---
 
-## What "satisfactory" means
+## Ecosystem
 
-The harness only falls through to the web when the graph could not satisfy the query, and "satisfy" is concrete, not a vibes call. Three conditions, all enforced at the hook layer:
-
-| Knob | Default | Meaning |
-|---|---|---|
-| `satisfaction_score` | >= **0.85** | After hybrid retrieval (BM25 + vec + RRF), cross-encoder rerank, and graph PPR rerank, the top result's satisfaction score must clear this floor. |
-| `min_hits` | >= **2** | At least two graph hits in the answer set. A single brittle hit does not override the web check. |
-| `decision` | = `use_memory` | The agent-decision layer (which weighs satisfaction, hit count, and shallow-evidence heuristics) must affirmatively land on "answer from memory", not "answer-but-verify" or "search web". |
-
-When all three hold, the hook **denies** the harness's `WebSearch` / `WebFetch` call and the graph hits get injected into the model's context as if the web call had returned them. When any one fails, the web call proceeds, and the result lands in your graph signed by you, so the next contributor who asks something similar pulls it from your peer instead of paying for the same fetch.
-
-Per-project tunables:
-
-```bash
-export AKASHIK_DENY_WEBSEARCH=1        # opt in to the deny pathway (off by default)
-export AKASHIK_DENY_THRESHOLD=0.85     # satisfaction floor
-export AKASHIK_DENY_MIN_HITS=2         # minimum hits to allow the deny
-export AKASHIK_PREFETCH_PEERS=0        # local-only, skip federated fan-out
-```
-
-Only `WebSearch` and `WebFetch` are deniable. Local tools (`Read`, `Glob`, `Grep`) are never blocked: they are cheap and there is nothing to gain from stopping them. The deny pathway is opt-in because false positives (graph says "I have it" when it does not) cost more than a redundant fetch; you turn it on per-project once you trust your graph's coverage of the domain.
+| Package | What it is |
+|---|---|
+| `@usefolklore/folklore` | CLI + daemon + hooks (this repo) |
+| `@usefolklore/core` | The retrieval + graph engine, embeddable |
+| `folklore-rs` | Rust bench/federation harness |
 
 ---
 
-## Architecture pillars
+## Roadmap
 
-- **No central server. Ever.** Every peer talks directly to every other peer. There is no service to be acquired, deprecated, or rate-limited. If your VPS goes down, every other peer still answers. If the project ends, you still own your graph. The fallback is not a vendor; it is other people running the same protocol.
-- **Every answer carries a provenance chain you can audit.** Each record is signed by its curator's cryptographic identity and their verified GitHub handle. You can trace any claim back to the person who curated it, the sources they grounded on, and the moment they did. No anonymous Stack Overflow answers that may or may not be hallucinated: every contribution is attributable to a real, named human.
-- **Runs on what you already have.** CPU-only embeddings, a single small open-source model, no GPU, no API keys, no proprietary dependencies. A $7/mo VPS, a laptop, or a Raspberry Pi runs a full peer. Reproducible from public sources.
-
----
-
-## What's next
-
-Active workstreams (planning doc: [`docs/PROJECT-PLAN-AKASHIK.md`](docs/PROJECT-PLAN-AKASHIK.md)):
-
-- **AkashikBench-F v2.** Replace the boolean "does peer N hold doc D" abstraction with real per-peer retrieval. Measure how the compounding curve bends under genuine retrieval-quality variance.
-- **100-peer pilot in the local-AI / agent-tooling ecosystem.** Seed contributors around `llama.cpp + ollama`, `vllm-project/vllm`, and `aider` with 50 to 80 canonical artifacts. Publish the real `web_fallback_rate` curve after 30 days of real traffic.
-- **Provenance-attested retrieval against adversarial context.** Measure whether the signature chain on every record lets an LLM detect and refuse hallucinated or poisoned retrieval, a defense anonymous RAG cannot offer.
-- **Read-only public peer endpoint.** A "browse the network" entry point for newcomers: no install, no login, just see what the network has learned so far.
-- **Rarity-aware replication.** Protect niche knowledge from evaporating when its sole holder goes offline; weight federation fan-out toward rare artifacts so they survive.
+- **Now.** CPU-only retrieval at public-baseline parity; federation simulator validating the compounding thesis; the Claude Code integration.
+- **Next.** FolkloreBench-F v2 (real per-peer retrieval, no boolean abstraction). 100-peer pilot in the local-AI / agent-tooling ecosystem; publish the real `web_fallback_rate` curve after 30 days of live traffic.
+- **Then.** Provenance-attested retrieval against adversarial context — does the signature chain let an LLM detect and refuse poisoned retrieval? Rarity-aware replication so niche knowledge survives its sole holder going offline.
+- **After.** Read-only public peer endpoint ("browse the network", no install). The protocol spec, published once people are already using the tool.
 
 ---
 
-## Contributing
+## Open questions (RFC)
 
-Akashik is pre-launch. The federation simulator validates the thesis, the retrieval stack benchmarks at parity with public single-user baselines, and the real pilot is the next milestone. We need:
+Design decisions still open for community input live in **[docs/rfc/](docs/rfc/)**. Start with [RFC-0001 — Folklore Core](docs/rfc/0001-folklore-core.md). Open an issue to weigh in.
 
-- Contributors who run a peer in the local-AI / agent-tooling ecosystem during the pilot window.
-- Researchers willing to seed canonical artifacts (papers, debug threads, PRs) into their local graphs.
-- Engineers interested in libp2p, signed DIDs, or vector-search infrastructure.
-
-Open an issue, fork the repo, or DM the maintainer. The project is in flux and the door is open.
-
-## Status
-
-Pre-launch. Simulator-validated, retrieval-benchmarked, pilot pending. Public protocol spec lands with the launch.
+---
 
 ## The name
 
-Akashik borrows from the Akashic Record, the ledger of all that has ever been known. The "k" instead of "c" signals the engineering implementation, not the myth.
+Folklore is knowledge that survives by being passed on — story to story, person to person — never relearned from scratch. That's the protocol: each peer hands the next its hard-won reasoning, so the commons remembers what any one of us learned. The lore is the graph; the folk are the peers.
+
+---
+
+## Repository layout
+
+```
+folklore/
+├── src/             # functional-DDD engine (domain / application / infrastructure / cli / daemon / mcp)
+├── tests/           # the suite npm test runs
+├── bench/           # standalone benchmark + sweep + qrel runners
+├── spec/            # protocol spec surface — index into docs/rfc + V5-PROTOCOL
+├── docs/            # architecture, product, research, brand, rfc, protocol, whitepaper
+├── site/            # the marketing site (deploys independently via Cloudflare Pages)
+├── examples/        # copy-paste runnable folklore CLI usage
+├── folklore-rs/     # Rust retrieval crate
+├── bin/             # CLI entrypoint (folklore.js)
+├── config/          # config templates
+├── vendor/          # git submodules (graphify)
+└── .github/         # CI workflows + PR template
+```
+
+Full map and directory roles: [`docs/architecture/REPO-LAYOUT.md`](docs/architecture/REPO-LAYOUT.md).
+The planned split into `usefolklore/folklore` (core+cli) / `folklore-spec` / `folklore-site` / `.github` is documented in [`docs/REPO-SPLIT.md`](docs/REPO-SPLIT.md).
+
+## Contributing
+
+Folklore is pre-launch. The federation simulator validates the thesis, retrieval benchmarks at parity with public single-user baselines, and the real pilot is the next milestone. We need:
+
+- Contributors who run a peer in the local-AI / agent-tooling ecosystem during the pilot.
+- Researchers willing to seed canonical artifacts (papers, debug threads, PRs) into their graphs.
+- Engineers into libp2p, signed DIDs, or vector-search infrastructure.
+
+Open an issue, fork the repo, or DM the maintainer. The door is open.
 
 ## License
 
