@@ -189,7 +189,7 @@ Plans:
 - [x] **Phase 25: Cleanup & Repo Restructure** - Strip ruflo/claude-flow cruft, tidy ML/bench code, reorganize into org-ready akashikprotocol-clean layout with green build. (completed 2026-06-14)
 - [x] **Phase 26: Docs & Benchmarks** - BENCHMARKS page with real numbers, extended RFC set, org profile README. (completed 2026-06-15)
 - [x] **Phase 27: Site Build-Out** - Composition + mobile sweep, Guidebook + Platform Culture sections, real Store, Cloudflare Pages build config. (completed 2026-06-15)
-- [ ] **Phase 28: Merch & Meme-Agent** - Real merch product designs wired into the Store, autonomous Twitter meme-agent scaffold feeding the site.
+- [x] **Phase 28: Merch & Meme-Agent** - Real merch product designs wired into the Store, autonomous Twitter meme-agent scaffold feeding the site. (completed 2026-06-15)
 
 ## Phase Details
 
@@ -265,7 +265,7 @@ Plans:
 **Goal:** Real merch product designs derived from the folk art are wired into the Store, and an autonomous Twitter meme-agent is scaffolded end-to-end (generate → post → append to site `/store`) so it runs the moment X credentials exist, with the site consuming its output.
 **Depends on:** Phase 27 (merch fills the Store section; the agent appends to the site `/store` data file the site reads)
 **Requirements:** MERCH-01, AGENT-01, AGENT-02
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 28-01-PLAN.md — Wave 1: Merch mockup composites (tee print / sticker sheet / enamel pin) from existing art + CSS/SVG, real print specs, wired into the Store .prod cards — zero credits, zero new files (MERCH-01)
@@ -288,7 +288,7 @@ Plans:
 | 25. Cleanup & Repo Restructure | 5/5 | Complete    | 2026-06-14 |
 | 26. Docs & Benchmarks | 3/3 | Complete    | 2026-06-15 |
 | 27. Site Build-Out | 5/5 | Complete    | 2026-06-15 |
-| 28. Merch & Meme-Agent | 2/3 | In Progress|  |
+| 28. Merch & Meme-Agent | 3/3 | Complete   | 2026-06-15 |
 
 ## Phase Summary (v3.0)
 
