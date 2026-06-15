@@ -239,7 +239,18 @@ Plans:
 **Goal:** The folk-pop site is composition-tightened and mobile-clean across all sections, with a Guidebook section, a Platform Culture section, a real Store section structured for live products, and a verified-buildable Cloudflare Pages config.
 **Depends on:** Phase 26 (Guidebook/benchmarks content sourced from docs; Store structure shared with Phase 28 merch + agent)
 **Requirements:** SITE-01, SITE-02, SITE-03, SITE-04, SITE-05
-**Wave decomposition (parallel-friendly):**
+**Plans:** 5 plans
+
+Plans:
+- [ ] 27-01-PLAN.md — Wave 1: Guidebook section (install / hooks / ask / peer) in the folk-pop section system + navbar link (SITE-02)
+- [ ] 27-02-PLAN.md — Wave 2: Platform Culture section (the lore / the commons / the folk) + navbar link (SITE-03)
+- [ ] 27-03-PLAN.md — Wave 3: Real Store — product cards (tee/sticker/pin) with price placeholders + inert buy CTAs + $LORE bags.fm block w/ "not financial advice" (SITE-04)
+- [ ] 27-04-PLAN.md — Wave 4: Composition pass + 390px mobile sweep across ALL sections (incl. the three new ones), headless-screenshot verified (SITE-01)
+- [ ] 27-05-PLAN.md — Wave 1: Verify Cloudflare Pages config (wrangler.toml output=site/, _headers, no Vercel remnants, local static serve) — no deploy (SITE-05)
+
+**Sequencing note:** nearly every plan edits the single file `site/index.html`, so the index.html-editing plans are serialized one-per-wave (27-01 → 27-02 → 27-03 → 27-04) to prevent concurrent-edit collisions; 27-05 (config/verify, does NOT touch index.html) runs in Wave 1 parallel with 27-01. SITE-01 (sweep) runs LAST so the new sections are swept too.
+
+**Wave decomposition (original parallel-friendly intent — superseded by the single-file serialization above):**
   - Wave A — Content sections: Guidebook (how Folklore works / get started) (SITE-02), Platform Culture (the lore, the commons, the folk) (SITE-03). Two independent section builds.
   - Wave B — Store scaffold: real Store section structured for live products (merch + $LORE placeholders wired for later live links) (SITE-04).
   - Wave C — Composition + responsive sweep (after sections exist): composition pass + 390px mobile sweep, no overflow, clean stacking across all sections (SITE-01).
@@ -269,7 +280,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 25. Cleanup & Repo Restructure | 5/5 | Complete    | 2026-06-14 |
 | 26. Docs & Benchmarks | 3/3 | Complete    | 2026-06-15 |
-| 27. Site Build-Out | 0/TBD | Not started | - |
+| 27. Site Build-Out | 0/5 | Not started | - |
 | 28. Merch & Meme-Agent | 0/TBD | Not started | - |
 
 ## Phase Summary (v3.0)
