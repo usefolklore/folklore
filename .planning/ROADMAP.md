@@ -239,7 +239,7 @@ Plans:
 **Goal:** The folk-pop site is composition-tightened and mobile-clean across all sections, with a Guidebook section, a Platform Culture section, a real Store section structured for live products, and a verified-buildable Cloudflare Pages config.
 **Depends on:** Phase 26 (Guidebook/benchmarks content sourced from docs; Store structure shared with Phase 28 merch + agent)
 **Requirements:** SITE-01, SITE-02, SITE-03, SITE-04, SITE-05
-**Plans:** 2/5 plans executed
+**Plans:** 3/5 plans executed
 
 Plans:
 - [ ] 27-01-PLAN.md — Wave 1: Guidebook section (install / hooks / ask / peer) in the folk-pop section system + navbar link (SITE-02)
@@ -280,7 +280,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 25. Cleanup & Repo Restructure | 5/5 | Complete    | 2026-06-14 |
 | 26. Docs & Benchmarks | 3/3 | Complete    | 2026-06-15 |
-| 27. Site Build-Out | 2/5 | In Progress|  |
+| 27. Site Build-Out | 3/5 | In Progress|  |
 | 28. Merch & Meme-Agent | 0/TBD | Not started | - |
 
 ## Phase Summary (v3.0)
