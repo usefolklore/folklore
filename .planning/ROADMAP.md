@@ -187,7 +187,7 @@ Plans:
 ## Phases
 
 - [x] **Phase 25: Cleanup & Repo Restructure** - Strip ruflo/claude-flow cruft, tidy ML/bench code, reorganize into org-ready akashikprotocol-clean layout with green build. (completed 2026-06-14)
-- [ ] **Phase 26: Docs & Benchmarks** - BENCHMARKS page with real numbers, extended RFC set, org profile README.
+- [x] **Phase 26: Docs & Benchmarks** - BENCHMARKS page with real numbers, extended RFC set, org profile README. (completed 2026-06-15)
 - [ ] **Phase 27: Site Build-Out** - Composition + mobile sweep, Guidebook + Platform Culture sections, real Store, Cloudflare Pages build config.
 - [ ] **Phase 28: Merch & Meme-Agent** - Real merch product designs wired into the Store, autonomous Twitter meme-agent scaffold feeding the site.
 
@@ -220,7 +220,7 @@ Plans:
 **Goal:** Launch-grade documentation: a BENCHMARKS page presenting real, reproducible numbers; an extended and indexed RFC set; and an org profile README ready for the usefolklore org landing.
 **Depends on:** Phase 25 (docs reference the clean module + `bench/` structure and the org-ready boundaries)
 **Requirements:** DOCS-01, DOCS-02, DOCS-03
-**Plans:** 3 plans (1 wave — all three docs are independent, disjoint files → fully parallel)
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 26-01-PLAN.md — Wave 1: BENCHMARKS page — reconcile 72.30% (pure-Node hybrid headline) vs 75.22%/0.7522 (Rust sidecar, same dataset), keep failures as failures, label FolkloreBench-F 17%→1% a simulator figure, repro command behind every claim (DOCS-01)
@@ -268,7 +268,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 25. Cleanup & Repo Restructure | 5/5 | Complete    | 2026-06-14 |
-| 26. Docs & Benchmarks | 0/3 | Planned | - |
+| 26. Docs & Benchmarks | 3/3 | Complete   | 2026-06-15 |
 | 27. Site Build-Out | 0/TBD | Not started | - |
 | 28. Merch & Meme-Agent | 0/TBD | Not started | - |
 

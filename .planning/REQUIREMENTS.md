@@ -24,9 +24,9 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 
 ### Docs
 
-- [ ] **DOCS-01**: BENCHMARKS page presents real numbers (BEIR SciFact NDCG, Wave-2 hybrid, FolkloreBench-F 17%→1%) with method + repro
-- [ ] **DOCS-02**: RFC set extended as needed (RFC-0002+) and RFC index current
-- [ ] **DOCS-03**: org profile README authored (`.github/profile`) for the usefolklore org landing
+- [x] **DOCS-01**: BENCHMARKS page presents real numbers (BEIR SciFact NDCG, Wave-2 hybrid, FolkloreBench-F 17%→1%) with method + repro
+- [x] **DOCS-02**: RFC set extended as needed (RFC-0002+) and RFC index current
+- [x] **DOCS-03**: org profile README authored (`.github/profile`) for the usefolklore org landing
 
 ### Site
 
@@ -68,9 +68,9 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 | REPO-01 | Phase 25 | Complete |
 | REPO-02 | Phase 25 | Complete |
 | REPO-03 | Phase 25 | Complete |
-| DOCS-01 | Phase 26 | Pending |
-| DOCS-02 | Phase 26 | Pending |
-| DOCS-03 | Phase 26 | Pending |
+| DOCS-01 | Phase 26 | Complete |
+| DOCS-02 | Phase 26 | Complete |
+| DOCS-03 | Phase 26 | Complete |
 | SITE-01 | Phase 27 | Pending |
 | SITE-02 | Phase 27 | Pending |
 | SITE-03 | Phase 27 | Pending |

@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-14T22:20:51.527Z"
+last_updated: "2026-06-15T06:42:18Z"
 progress:
   total_phases: 7
   completed_phases: 0
@@ -18,21 +18,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15)
 
 **Core value:** Your coding agent answers from your actual research and codebase, not its training data.
-**Current focus:** Phase 26 — Docs & Benchmarks (planned, 3 plans / 1 wave)
+**Current focus:** Phase 26 — Docs & Benchmarks (in progress; 26-01 BENCHMARKS page executed, DOCS-01 satisfied)
 
 ## Current Position
 
 Phase: 25 (Cleanup & Repo Restructure) — COMPLETE (5/5 plans)
 Plan: 5 of 5 complete (25-01: claude-flow cruft stripped from CLAUDE.md/settings.json/.mcp.json, Folklore hooks documented; CLEAN-01/02/03/06 satisfied. 25-02: retrieval module layout documented; CLEAN-04 satisfied. 25-03: 29 standalone benchmark runners consolidated under bench/ with repro README, docs repointed; CLEAN-05 satisfied. 25-04: akashikprotocol-clean layout map (docs/architecture/REPO-LAYOUT.md) + spec/ and examples/ surfaces + written usefolklore org-split plan (docs/REPO-SPLIT.md) + README repo map; REPO-01/REPO-03 satisfied, zero source moves, tsc green. 25-05: validation gate — build exit 0, lint exit 0, full suite 942 pass / 0 fail (zero regressions), config-surface cruft grep clean, site untouched; REPO-02 satisfied. Evidence: 25-VALIDATION.md)
 
-Phase 26 (Docs & Benchmarks) PLANNED — 3 plans, 1 wave (all docs independent, disjoint files → fully parallel):
-- 26-01 (DOCS-01): BENCHMARKS page — reconcile 72.30% pure-Node hybrid headline vs 75.22%/0.7522 Rust-sidecar (same SciFact dataset), keep Wave-3/Wave-4 failures as failures, label FolkloreBench-F 17%→1% a SIMULATOR figure, repro command behind every claim.
-- 26-02 (DOCS-02): author RFC-0002 (deny-on-confidence gate, deployed defaults 0.85/2/off-by-default) + refresh docs/rfc/README.md index.
-- 26-03 (DOCS-03): stage usefolklore org-profile README at .github/profile/README.md (folk-pop, product-first, real numbers) + point docs/REPO-SPLIT.md at it.
+Phase 26 (Docs & Benchmarks) IN PROGRESS — 3 plans, 1 wave (all docs independent, disjoint files → fully parallel):
+- 26-01 (DOCS-01): BENCHMARKS page — DONE (commits fab1843, cff009d). Added a "Which number is the headline" block reconciling the honest pure-Node 72.30% SciFact NDCG@10 (Wave 2: nomic-embed-text-v1.5 dense + BM25 FTS5 hybrid, RRF k=60) against the optional Rust bge-base sidecar's 75.22% = the site's 0.7522 LED (same dataset, same hybrid fusion). Added a "Federation web-fallback (simulator)" block labeling the FolkloreBench-F 17%→1% web_fallback_rate as illustrative simulator output (whitepaper §7.2: demonstration, not validated evidence; partly true by construction under v1 boolean retrieval). Wave-3 reranker (−1.92) / Wave-4 routing (+0.34 null) kept as failures; repro command behind every claim, all gated behind `npm run build`. Numbers cross-checked against bench/README.md, RETRIEVAL-MODULES.md §5, and the whitepaper — nothing invented. tsc green; only docs/product/BENCHMARKS.md touched. SUMMARY: .planning/phases/26-docs-and-benchmarks/26-01-SUMMARY.md.
+- 26-02 (DOCS-02): author RFC-0002 (deny-on-confidence gate, deployed defaults 0.85/2/off-by-default) + refresh docs/rfc/README.md index. (executed in this wave — see commit log)
+- 26-03 (DOCS-03): stage usefolklore org-profile README at .github/profile/README.md (folk-pop, product-first, real numbers) + point docs/REPO-SPLIT.md at it. (executed in this wave — see commit log)
 
 Doc-only phase: no source changes, `npx tsc --noEmit` stays 0. Conventional commits, no AI co-authors.
 
-Next action: `/gsd:execute-phase 26`.
+Next action: validate Phase 26 completion (all 3 plan SUMMARYs present), then `/gsd:plan-phase 27` (Site Build-Out).
 
 ### v3.0 Phase Map
 
@@ -91,6 +91,7 @@ Next action: `/gsd:execute-phase 26`.
 
 ## Decisions (v3.0)
 
+- DOCS-01 (26-01): the single honest BENCHMARKS headline is 72.30% SciFact NDCG@10 (Wave 2 pure-Node hybrid) because it reproduces from a fresh clone with zero extra build steps and is the canonical figure in bench/README.md. The 75.22%/0.7522 figure (= the site's LED) is reconciled in prose as the SAME SciFact dataset + same hybrid RRF fusion on the optional Rust bge-base sidecar — not a separate claim. FolkloreBench-F's 17%→1% web-fallback decay is labeled a SIMULATOR figure mirroring whitepaper §7.2 ("demonstration, not validated evidence; partly true by construction under v1 boolean retrieval"). Wave-3/Wave-4 nulls kept as failures; existing ASCII box, leaderboard table, and 13-null-attacks table left intact. All numbers cross-checked against three in-repo sources; nothing invented; no source/site files touched; tsc green.
 - v3.0 phasing: foundational Cleanup & Repo Restructure (25) precedes Docs (26) → Site (27) → Merch & Agent (28), because docs reference the clean `bench/` + module layout, the site sources docs content, and merch/agent fill the site Store.
 - Meme-agent (AGENT-01) is scaffold-only this milestone: full generate → post → append-to-`/store` pipeline runs against mocked/credential-gated X access; no live X post until user supplies X API creds.
 - Store section (SITE-04) is structured for live products with link points wired but inert until $LORE launch + merch fulfilment exist (both blocked on user).
