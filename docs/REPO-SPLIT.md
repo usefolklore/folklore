@@ -31,7 +31,7 @@ a refactor.
 | `usefolklore/folklore` | **core + cli:** `src/`, `tests/`, `bench/`, `folklore-rs/`, `bin/`, `config/`, `package.json`, engine docs | The flagship npm package `@usefolklore/folklore`. Carries the `vendor/graphify` submodule. |
 | `usefolklore/folklore-spec` | **spec:** `spec/`, `docs/rfc/`, `docs/protocol/`, the versioned protocol docs (`docs/architecture/V5-PROTOCOL.md` + superseded V3/V4) | Contributor-facing protocol home. The RFC process moves here. |
 | `usefolklore/folklore-site` | **site:** `site/`, `wrangler.toml`, `site/_headers` | Deploys independently to Cloudflare Pages. |
-| `usefolklore/.github` | **org profile:** the org profile README | Authored in DOCS-03 (Phase 26). Do NOT create `.github/profile` in this repo now. |
+| `usefolklore/.github` | **org profile:** the org profile README | Staged in DOCS-03 (Phase 26) at [`.github/profile/README.md`](../.github/profile/README.md). It ships to `usefolklore/.github` as new content (no `git filter-repo` extraction needed) once the org exists. |
 
 ## Migration mechanics
 
@@ -53,7 +53,7 @@ Per repo, when the org exists:
 - Cloudflare Pages project re-points its source to this repo.
 
 ### usefolklore/.github (org profile)
-- Created fresh in Phase 26 (DOCS-03). No extraction — the profile README is new content, not lifted from here.
+- Created fresh in Phase 26 (DOCS-03). No extraction — the profile README is new content, not lifted from here. The source-of-truth content is staged at [`.github/profile/README.md`](../.github/profile/README.md); copy that file into `usefolklore/.github` (under `profile/README.md`) once the org exists. The physical push is blocked on org creation (see "Blocked on user" below).
 
 ## Cross-repo reference rewrites
 
