@@ -1,5 +1,13 @@
 [
   {
+    "id": "hf-reread",
+    "caption": "your agent, re-reading the same stack of papers for the fourth time — while the folk who already ground it out relax by the fire. read it once, tell it forever.",
+    "image": "assets/gen/meme-reread.png",
+    "alt": "folk-pop meme — a relaxed villager by the fire vs a tired robot re-reading the same books",
+    "createdAt": "2026-06-15T09:10:00.000Z",
+    "source": "higgsfield"
+  },
+  {
     "id": "seed-agent-amnesia",
     "caption": "your coding agent, every morning: \"i have never seen this codebase before in my life.\" folklore: the graph remembers so you don't re-explain.",
     "image": "assets/gen/meme-amnesia.png",
