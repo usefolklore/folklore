@@ -107,7 +107,8 @@
   .btn:hover{transform:translate(3px,3px);box-shadow:4px 4px 0 var(--ink)}
   .btn:active{transform:translate(7px,7px);box-shadow:0 0 0 var(--ink)}
   .install{margin-top:22px;font-family:var(--mono);font-size:13px;font-weight:600;border:3px solid var(--ink);
-    background:var(--paper);padding:15px 18px;display:flex;gap:12px;align-items:center;max-width:480px;box-shadow:6px 6px 0 var(--blue)}
+    background:var(--paper);padding:15px 18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;max-width:480px;
+    overflow-wrap:anywhere;box-shadow:6px 6px 0 var(--blue)}
   .install .d{color:var(--pink);font-weight:800}
   .copy{margin-left:auto;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
     background:var(--yellow);border:2px solid var(--ink);padding:6px 10px;transition:.12s}
@@ -168,7 +169,7 @@
   /* inscription */
   .insc{margin-top:30px;border:3px solid var(--ink);background:var(--ink);color:var(--paper);
     padding:28px 26px;max-width:800px;box-shadow:10px 10px 0 var(--pink)}
-  .insc pre{font-family:var(--mono);font-size:14px;font-weight:500;line-height:2.1;white-space:pre-wrap;word-break:break-word}
+  .insc pre{font-family:var(--mono);font-size:14px;font-weight:500;line-height:2.1;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
   .insc .c{color:#a99f8c;font-style:italic}.insc .p{color:var(--yellow)}
 
   /* name */
@@ -212,6 +213,18 @@
   .foot{display:flex;gap:28px;flex-wrap:wrap;align-items:center;font-family:var(--mono);font-size:14px;font-weight:600}
   .foot a{border-bottom:2px solid var(--ink);transition:.15s}.foot a:hover{color:var(--paper)}
   .foot .r{margin-left:auto;font-weight:700}
+
+  /* narrow-phone composition guards (≤480px) — surgical, type scale untouched */
+  @media(max-width:480px){
+    /* #join inscription: long tokens (libp2p multiaddr) must wrap inside the box, never clip */
+    .insc{padding:20px 16px}
+    .insc pre{font-size:12px;line-height:1.95}
+    /* proof bars: free the track from the 120px label column so it never crushes */
+    .bar{grid-template-columns:96px 1fr 50px;gap:10px;font-size:.86rem}
+    .bar .v{font-size:.82rem}
+    /* keep any full-bleed media inside the column */
+    img,video{max-width:100%}
+  }
 
   .rv{opacity:0;transform:translateY(30px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
   .rv.in{opacity:1;transform:none}
