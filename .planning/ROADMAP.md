@@ -265,7 +265,7 @@ Plans:
 **Goal:** Real merch product designs derived from the folk art are wired into the Store, and an autonomous Twitter meme-agent is scaffolded end-to-end (generate → post → append to site `/store`) so it runs the moment X credentials exist, with the site consuming its output.
 **Depends on:** Phase 27 (merch fills the Store section; the agent appends to the site `/store` data file the site reads)
 **Requirements:** MERCH-01, AGENT-01, AGENT-02
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 28-01-PLAN.md — Wave 1: Merch mockup composites (tee print / sticker sheet / enamel pin) from existing art + CSS/SVG, real print specs, wired into the Store .prod cards — zero credits, zero new files (MERCH-01)
@@ -288,7 +288,7 @@ Plans:
 | 25. Cleanup & Repo Restructure | 5/5 | Complete    | 2026-06-14 |
 | 26. Docs & Benchmarks | 3/3 | Complete    | 2026-06-15 |
 | 27. Site Build-Out | 5/5 | Complete    | 2026-06-15 |
-| 28. Merch & Meme-Agent | 1/3 | In Progress|  |
+| 28. Merch & Meme-Agent | 2/3 | In Progress|  |
 
 ## Phase Summary (v3.0)
 

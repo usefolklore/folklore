@@ -38,7 +38,7 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 
 ### Merch
 
-- [ ] **MERCH-01**: real product designs/mockups (tee, stickers, pin) derived from the folk art, wired into the Store
+- [x] **MERCH-01**: real product designs/mockups (tee, stickers, pin) derived from the folk art, wired into the Store
 
 ### Agent
 
@@ -76,7 +76,7 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 | SITE-03 | Phase 27 | Complete |
 | SITE-04 | Phase 27 | Complete |
 | SITE-05 | Phase 27 | Complete |
-| MERCH-01 | Phase 28 | Pending |
+| MERCH-01 | Phase 28 | Complete |
 | AGENT-01 | Phase 28 | Complete |
 | AGENT-02 | Phase 28 | Pending |
 
