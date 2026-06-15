@@ -94,6 +94,23 @@ node bench/bench-value-model.mjs
 - With provenance-ranked graph context, Haiku's poison flip-ASR drops
   from **58.9% to 2.4%**.
 
+### Federation web-fallback (simulator)
+
+FolkloreBench-F is a federation-level **simulator** — 10 peers, 20% offline
+churn, Zipfian demand — that measures `web_fallback_rate(t)`: the fraction of
+research-shaped queries that fall through to a paid web call because no peer
+could satisfy them locally. On its first run, the web-fallback rate decays from
+**~17%** at the start of the stream to **~1%** by the end.
+
+This is **illustrative simulator output, not a measured production result.** As
+the [whitepaper §7.2](../whitepaper.html) states plainly, under v1's
+boolean-retrieval abstraction part of that decay is *true by construction* — the
+curve is "a demonstration, not validated evidence." It runs and has the
+predicted sign and endpoints; it does **not** prove the compounding thesis until
+the v2 semantic-satisfaction-threshold sweep shows the curve survives realistic
+retrieval variance. Read the 17%→1% number as "the simulator behaves as the
+model predicts," never as "production peers cut web calls 17× in the field."
+
 ### Claims not allowed yet
 
 - Do not claim natural user-question web deflection until the read path
