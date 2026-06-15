@@ -176,16 +176,37 @@
   .name h2{max-width:none;margin:0 auto}
   .name .sig{font-family:var(--mono);font-size:14px;font-weight:600;letter-spacing:.08em;margin-top:32px;color:var(--blue)}
 
-  /* store */
-  .store{display:grid;grid-template-columns:1.4fr 1fr;gap:24px;margin-top:30px}
-  .merch{border:3px solid var(--ink);padding:36px;min-height:260px;display:flex;flex-direction:column;justify-content:space-between}
-  .merch.a{background:var(--pink);color:var(--paper);box-shadow:10px 10px 0 var(--ink)}
-  .merch.b{background:var(--blue);color:var(--paper);box-shadow:10px 10px 0 var(--ink)}
-  .merch .soon{font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
-    background:var(--yellow);color:var(--ink);border:2px solid var(--ink);padding:6px 11px;align-self:flex-start}
-  .merch .tee{font-weight:800;font-style:italic;font-size:2rem}
-  .merch p{font-size:1.02rem;font-weight:460;margin-top:10px}
-  @media(max-width:760px){.store{grid-template-columns:1fr}}
+  /* store — product-card shop */
+  .shop{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:26px;margin-top:36px}
+  .prod{border:3px solid var(--ink);background:var(--paper);padding:22px;display:flex;flex-direction:column;gap:14px}
+  .prod:nth-child(1){box-shadow:9px 9px 0 var(--pink)}
+  .prod:nth-child(2){box-shadow:9px 9px 0 var(--blue)}
+  .prod:nth-child(3){box-shadow:9px 9px 0 var(--teal)}
+  .prod .shot{border:3px solid var(--ink);overflow:hidden;line-height:0;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:var(--paper-2)}
+  .prod:nth-child(1) .shot{box-shadow:6px 6px 0 var(--pink)}
+  .prod:nth-child(2) .shot{box-shadow:6px 6px 0 var(--blue)}
+  .prod:nth-child(3) .shot{box-shadow:6px 6px 0 var(--teal)}
+  .prod .shot img{width:100%;height:100%;object-fit:cover;display:block}
+  .prod .shot.pair{gap:10px;padding:14px}
+  .prod .shot.pair img{width:48%;height:auto;border:2px solid var(--ink)}
+  .prod .soon{font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+    background:var(--yellow);color:var(--ink);border:2px solid var(--ink);padding:5px 10px;align-self:flex-start}
+  .prod h4{font-weight:800;font-style:italic;font-size:1.28rem;line-height:1.1}
+  .prod .desc{font-size:.96rem;font-weight:460;line-height:1.45;color:var(--ink);flex:1}
+  .prod .foot{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:4px}
+  .prod .price{font-family:var(--mono);font-weight:700;font-size:1.5rem;letter-spacing:-.02em}
+  .prod:nth-child(1) .price{color:var(--pink)}.prod:nth-child(2) .price{color:var(--blue)}.prod:nth-child(3) .price{color:var(--teal)}
+  .buy{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.03em;padding:11px 20px;
+    border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);background:var(--ink);color:var(--paper);cursor:not-allowed;opacity:.92}
+  .buy[aria-disabled="true"]{pointer-events:none}
+  /* $LORE block inside the shop */
+  .lore{display:grid;grid-template-columns:1.2fr .8fr;gap:clamp(32px,5vw,72px);align-items:center;
+    margin-top:56px;border:3px solid var(--ink);background:var(--paper);padding:clamp(28px,4vw,44px);box-shadow:12px 12px 0 var(--yellow)}
+  .lore h3{font-weight:800;font-size:clamp(1.5rem,2.6vw,2.2rem);line-height:1.05;margin-bottom:18px}
+  .lore .disc{font-family:var(--mono);font-size:12px;font-weight:600;opacity:.6;margin-top:20px;max-width:42ch}
+  .lore .coinwrap{display:flex;align-items:center;justify-content:center}
+  .lore .coinwrap img{width:min(84%,300px);border-radius:50%;border:3px solid var(--ink);box-shadow:14px 14px 0 var(--ink);display:block}
+  @media(max-width:760px){.lore{grid-template-columns:1fr;gap:32px}.lore .coinwrap{order:-1}}
 
   footer{border-top:3px solid var(--ink);padding:56px 0 76px;background:var(--yellow);position:relative;z-index:3}
   .foot{display:flex;gap:28px;flex-wrap:wrap;align-items:center;font-family:var(--mono);font-size:14px;font-weight:600}
@@ -444,9 +465,53 @@
   <div class="wrap">
     <div class="stamp rv">The Store</div>
     <h2 class="rv" data-d="1">wear the <span class="em-blue">commons.</span></h2>
-    <div class="store">
-      <div class="merch a rv" data-d="1"><span class="soon">Coming soon</span><div style="margin:18px 0;border:3px solid var(--ink);overflow:hidden;max-width:230px;line-height:0"><img src="assets/gen/tee.png" alt="folklore print" style="width:100%;display:block"/></div><div class="tee">"never research twice"</div><p>The mark on dark cotton. Drops to peers first.</p></div>
-      <div class="merch b rv" data-d="2"><span class="soon">Coming soon</span><div style="display:flex;gap:12px;margin:18px 0;line-height:0"><img src="assets/gen/sun.png" alt="sticker" style="width:46%;border:3px solid var(--ink)"/><img src="assets/gen/char1.png" alt="sticker" style="width:46%;border:3px solid var(--ink)"/></div><p style="margin-top:auto">Sticker packs, the enamel pin, folk-character prints. Memes by the network.</p></div>
+    <div class="rule rv"></div>
+    <p class="body rv" data-d="1">Folk-pop merch and the $LORE coin — minted by the network, for the culture. Drops to peers first.</p>
+    <div class="shop">
+      <div class="prod rv" data-d="1">
+        <span class="soon">Drops to peers first</span>
+        <div class="shot"><img src="assets/gen/tee.png" alt="Never-Research-Twice tee — folklore print on cotton"/></div>
+        <h4>Never-Research-Twice Tee</h4>
+        <p class="desc">The mark on heavyweight cotton. Hand-drawn folk-pop print, signed by the commons.</p>
+        <div class="foot">
+          <span class="price" data-price="">$&mdash;</span>
+          <!-- TODO: real product URL at fulfilment launch -->
+          <a class="buy" href="#store" data-buy="tee" aria-disabled="true" role="button">Buy</a>
+        </div>
+      </div>
+      <div class="prod rv" data-d="2">
+        <span class="soon">Drops to peers first</span>
+        <div class="shot pair" style="display:flex"><img src="assets/gen/fishflower.png" alt="folk-pop sticker — fish &amp; flower"/><img src="assets/gen/sun.png" alt="folk-pop sticker — sun"/></div>
+        <h4>Folk Sticker Pack</h4>
+        <p class="desc">A pack of die-cut folk-pop stickers — fish-flower, sun, and friends from the network's memes.</p>
+        <div class="foot">
+          <span class="price" data-price="">$&mdash;</span>
+          <!-- TODO: real product URL at fulfilment launch -->
+          <a class="buy" href="#store" data-buy="sticker-pack" aria-disabled="true" role="button">Buy</a>
+        </div>
+      </div>
+      <div class="prod rv" data-d="3">
+        <span class="soon">Drops to peers first</span>
+        <div class="shot"><img src="assets/gen/char1.png" alt="The Teller enamel pin — folk-pop character"/></div>
+        <h4>The Teller Enamel Pin</h4>
+        <p class="desc">A hard-enamel pin of the teller — the named hand that signs the lore. Wear the folk on your jacket.</p>
+        <div class="foot">
+          <span class="price" data-price="">$&mdash;</span>
+          <!-- TODO: real product URL at fulfilment launch -->
+          <a class="buy" href="#store" data-buy="enamel-pin" aria-disabled="true" role="button">Buy</a>
+        </div>
+      </div>
+    </div>
+    <div class="lore rv" data-d="1">
+      <div>
+        <h3>$LORE — minted on <span class="em-teal">bags.fm.</span></h3>
+        <p class="body" style="margin-bottom:28px">A community memecoin for the commons. Fair-launched on bags.fm. The folk hold the lore — for the culture, not the chart.</p>
+        <a class="btn btn-primary" href="https://bags.fm" style="display:inline-block">Get $LORE on bags.fm</a>
+        <p class="disc">Memecoin · for fun &amp; culture, not financial advice · contract address at launch</p>
+      </div>
+      <div class="coinwrap">
+        <img src="assets/gen/coin.png" alt="$LORE coin"/>
+      </div>
     </div>
   </div>
 </section>
@@ -466,23 +531,6 @@
       <div style="border:3px solid var(--ink);background:var(--paper);box-shadow:8px 8px 0 var(--blue);overflow:hidden"><img src="assets/gen/fishflower.png" alt="folk sticker" style="width:100%;display:block"/></div>
     </div>
     <p class="rv" data-d="2" style="font-family:var(--mono);font-size:13px;font-weight:600;margin-top:24px;opacity:.7">more minting · follow <a href="https://x.com/usefolklore" style="border-bottom:2px solid var(--ink)">@usefolklore</a></p>
-  </div>
-</section>
-
-<section id="coin">
-  <div class="wrap">
-    <div class="stamp rv">The Coin</div>
-    <div class="beat">
-      <div class="txt rv" data-d="1">
-        <h3>$LORE — minted on <span class="em-teal">bags.fm.</span></h3>
-        <p class="body" style="margin-bottom:28px">A community memecoin for the commons. Fair-launched on bags.fm. The folk hold the lore — for the culture, not the chart.</p>
-        <a class="btn btn-primary" href="https://bags.fm" style="display:inline-block">Get $LORE on bags.fm</a>
-        <p style="font-family:var(--mono);font-size:12px;font-weight:600;opacity:.6;margin-top:20px;max-width:42ch">Memecoin · for fun &amp; culture, not financial advice · contract address at launch</p>
-      </div>
-      <div class="rv" data-d="2" style="display:flex;align-items:center;justify-content:center">
-        <img src="assets/gen/coin.png" alt="$LORE coin" style="width:min(84%,360px);border-radius:50%;border:3px solid var(--ink);box-shadow:14px 14px 0 var(--ink);display:block"/>
-      </div>
-    </div>
   </div>
 </section>
 
