@@ -71,7 +71,10 @@
   .hcta:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink);background:var(--pink)}
   @media(max-width:820px){.hlinks{display:none}}
 
-  section{min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:clamp(56px,9vh,90px) 0;position:relative;overflow:hidden;scroll-snap-align:start}
+  section{min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:clamp(48px,7vh,84px) 0;position:relative;overflow:hidden;scroll-snap-align:start}
+  /* illustration plates — capped so every section fits within one viewport */
+  .plate{max-width:460px;margin:24px auto 0;border:3px solid var(--ink);line-height:0;overflow:hidden}
+  .plate img,.plate video{display:block;width:100%;max-height:32svh;object-fit:contain;background:var(--paper)}
   .stamp{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12px;font-weight:700;
     letter-spacing:.16em;text-transform:uppercase;background:var(--yellow);color:var(--ink);
     border:2px solid var(--ink);padding:7px 13px;box-shadow:4px 4px 0 var(--ink);margin-bottom:24px}
@@ -352,7 +355,7 @@
         <div style="opacity:.65">▸ if unknown — fetched once, kept</div>
       </div>
     </div>
-    <div class="rv" data-d="1" style="margin-top:52px;line-height:0"><img src="assets/gen/campfire.png" alt="a lone reader by the fire" style="width:min(100%,440px);border:3px solid var(--ink);box-shadow:14px 14px 0 var(--pink);display:block"/></div>
+    <div class="plate rv" data-d="1" style="box-shadow:10px 10px 0 var(--pink)"><img src="assets/gen/campfire.png" alt="a lone reader by the fire"/></div>
   </div>
 </section>
 
@@ -370,7 +373,7 @@
         <div style="opacity:.65">web fallback &nbsp; 17% ▸ 1%</div>
       </div>
     </div>
-    <div class="rv" data-d="1" style="margin-top:54px;border:3px solid var(--ink);box-shadow:16px 16px 0 var(--yellow);line-height:0"><video autoplay muted loop playsinline poster="assets/gen/commons.png" style="width:100%;display:block"><source src="assets/gen/commons.mp4" type="video/mp4"/></video></div>
+    <div class="plate rv" data-d="1" style="box-shadow:12px 12px 0 var(--yellow)"><video autoplay muted loop playsinline poster="assets/gen/commons.png"><source src="assets/gen/commons.mp4" type="video/mp4"/></video></div>
   </div>
 </section>
 
@@ -411,7 +414,7 @@
       <div class="il rv" data-d="1"><div class="num">iii</div><h4>Deny, or pass</h4><p>Score 0.85 with two hits or more, served from memory. Fall short, the fetch proceeds.</p></div>
       <div class="il rv" data-d="2"><div class="num">iv</div><h4>Set it down</h4><p>Whatever the web returns is filed and signed, so the next reader pays nothing.</p></div>
     </div>
-    <div class="rv" data-d="1" style="margin-top:56px;border:3px solid var(--ink);box-shadow:16px 16px 0 var(--teal);line-height:0"><video autoplay muted loop playsinline poster="assets/gen/graph.png" style="width:100%;display:block"><source src="assets/gen/graph.mp4" type="video/mp4"/></video></div>
+    <div class="plate rv" data-d="1" style="box-shadow:12px 12px 0 var(--teal)"><video autoplay muted loop playsinline poster="assets/gen/graph.png"><source src="assets/gen/graph.mp4" type="video/mp4"/></video></div>
   </div>
 </section>
 
