@@ -265,6 +265,13 @@ Plans:
 **Goal:** Real merch product designs derived from the folk art are wired into the Store, and an autonomous Twitter meme-agent is scaffolded end-to-end (generate → post → append to site `/store`) so it runs the moment X credentials exist, with the site consuming its output.
 **Depends on:** Phase 27 (merch fills the Store section; the agent appends to the site `/store` data file the site reads)
 **Requirements:** MERCH-01, AGENT-01, AGENT-02
+**Plans:** 3 plans
+
+Plans:
+- [ ] 28-01-PLAN.md — Wave 1: Merch mockup composites (tee print / sticker sheet / enamel pin) from existing art + CSS/SVG, real print specs, wired into the Store .prod cards — zero credits, zero new files (MERCH-01)
+- [ ] 28-02-PLAN.md — Wave 1: Meme-agent scaffold under src/agents/meme-agent/ — MemeEntry schema + seeded site/assets/memes.json, no-credit SVG generator (default) + optional higgsfield, generate→(gated)post→append pipeline reusing x-client, dry-run default, docs (env/run/cron) (AGENT-01)
+- [ ] 28-03-PLAN.md — Wave 2: Site #memes grid data-driven from memes.json with file:// static-card fallback; agent→site round-trip verified, no-overflow at 390px (AGENT-02)
+
 **Wave decomposition (parallel-friendly):**
   - Wave A — Merch designs: real product designs/mockups (tee, stickers, pin) from the folk art, wired into the Store (MERCH-01). Independent of agent code.
   - Wave B — Meme-agent scaffold: pipeline that generates a folk-pop meme, posts to X, and appends to site `/store` — credential-gated, runnable once X creds exist, no live posting in this milestone (AGENT-01).
@@ -281,7 +288,7 @@ Plans:
 | 25. Cleanup & Repo Restructure | 5/5 | Complete    | 2026-06-14 |
 | 26. Docs & Benchmarks | 3/3 | Complete    | 2026-06-15 |
 | 27. Site Build-Out | 5/5 | Complete    | 2026-06-15 |
-| 28. Merch & Meme-Agent | 0/TBD | Not started | - |
+| 28. Merch & Meme-Agent | 0/3 | Planned | - |
 
 ## Phase Summary (v3.0)
 
