@@ -1,0 +1,18 @@
+[
+  {
+    "id": "seed-agent-amnesia",
+    "caption": "your coding agent, every morning: \"i have never seen this codebase before in my life.\" folklore: the graph remembers so you don't re-explain.",
+    "image": "assets/gen/meme-amnesia.png",
+    "alt": "folk meme — an agent with amnesia rediscovering the same codebase",
+    "createdAt": "2026-06-15T00:00:00.000Z",
+    "source": "seed"
+  },
+  {
+    "id": "seed-coinrain",
+    "caption": "stone soup for machines: nobody pays for the same answer twice. $LORE rains on the peers who asked first.",
+    "image": "assets/gen/meme-coinrain.png",
+    "alt": "folk meme — $LORE coins raining over the network of peers",
+    "createdAt": "2026-06-15T00:00:00.000Z",
+    "source": "seed"
+  }
+]
