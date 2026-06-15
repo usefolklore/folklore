@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-15T06:46:06.484Z"
+last_updated: "2026-06-15T06:58:52.000Z"
 progress:
   total_phases: 7
   completed_phases: 0
@@ -18,9 +18,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15)
 
 **Core value:** Your coding agent answers from your actual research and codebase, not its training data.
-**Current focus:** Phase 26 — Docs & Benchmarks (in progress; 26-01 BENCHMARKS page executed, DOCS-01 satisfied)
+**Current focus:** Phase 27 — Site Build-Out (in progress; 27-01 Guidebook section executed, SITE-02 satisfied)
 
 ## Current Position
+
+Phase 27 (Site Build-Out) IN PROGRESS — 5 plans (serialized; all edit site/index.html):
+
+- 27-01 (SITE-02): Guidebook section — DONE (commit 43fa0d5). Added `<section id="guidebook">` between #join and the Name flourish presenting the four real get-started moves (install / hooks-onboard / ask / add-peer) as a 2x2 grid of numbered .il step cards reusing the Mechanism layout. Card i carries a copyable `npm install -g @usefolklore/folklore` via the existing .copy chip; cards ii–iv quote the real `folklore onboard`/`folklore ask "…"`/`folklore peer add … --peers` surface with accurate deny-on-confidence copy (gates WebSearch/WebFetch, never local Read/Grep/Glob). Navbar gains a #guidebook anchor as the first link. Folk-pop skin preserved by construction (per-child colored shadows, clamped type, misregistered heading); no new CSS framework, no new deps, hero/commons/graph videos untouched. Verified by headless Chrome at 1512px (2x2 grid renders) and 390px (single column, full-page PNG width == 390 → no horizontal overflow). SUMMARY: .planning/phases/27-site-build-out/27-01-SUMMARY.md.
+
+Phase 26 (Docs & Benchmarks) COMPLETE (3/3 plans). Phase 25 (Cleanup & Repo Restructure) COMPLETE (5/5 plans).
 
 Phase: 25 (Cleanup & Repo Restructure) — COMPLETE (5/5 plans)
 Plan: 5 of 5 complete (25-01: claude-flow cruft stripped from CLAUDE.md/settings.json/.mcp.json, Folklore hooks documented; CLEAN-01/02/03/06 satisfied. 25-02: retrieval module layout documented; CLEAN-04 satisfied. 25-03: 29 standalone benchmark runners consolidated under bench/ with repro README, docs repointed; CLEAN-05 satisfied. 25-04: akashikprotocol-clean layout map (docs/architecture/REPO-LAYOUT.md) + spec/ and examples/ surfaces + written usefolklore org-split plan (docs/REPO-SPLIT.md) + README repo map; REPO-01/REPO-03 satisfied, zero source moves, tsc green. 25-05: validation gate — build exit 0, lint exit 0, full suite 942 pass / 0 fail (zero regressions), config-surface cruft grep clean, site untouched; REPO-02 satisfied. Evidence: 25-VALIDATION.md)
@@ -33,7 +39,7 @@ Phase 26 (Docs & Benchmarks) IN PROGRESS — 3 plans, 1 wave (all docs independe
 
 Doc-only phase: no source changes, `npx tsc --noEmit` stays 0. Conventional commits, no AI co-authors.
 
-Next action: validate Phase 26 completion (all 3 plan SUMMARYs present), then `/gsd:plan-phase 27` (Site Build-Out).
+Next action: execute the remaining Phase 27 plans (27-02..27-05) — they edit the same site/index.html and are serialized, so run them in order off the 27-01 base.
 
 ### v3.0 Phase Map
 
@@ -92,6 +98,7 @@ Next action: validate Phase 26 completion (all 3 plan SUMMARYs present), then `/
 
 ## Decisions (v3.0)
 
+- SITE-02 (27-01): the Guidebook was built on the existing `.illum`/`.il` 4-card grid (the Mechanism section's layout) rather than a new component, so the per-child colored shadows + clamped type come for free and the folk-pop brand lock holds by construction. Card i reuses the hero `.install` chip (size-trimmed) to make the install command copyable through the existing `.copy` handler — no new JS, no browser storage, no new CSS framework, no new deps. All copy quotes the real CLI surface verbatim (folklore onboard/ask/peer add … --peers) with accurate deny-on-confidence wording; nothing invented. Screenshot acceptance for `.rv`-animated sections required isolating the section into a styles-inlined doc with `.rv` forced visible (the IntersectionObserver never fires in a static headless capture); 390px no-overflow verified by confirming the full-page mobile PNG width equals 390px.
 - DOCS-01 (26-01): the single honest BENCHMARKS headline is 72.30% SciFact NDCG@10 (Wave 2 pure-Node hybrid) because it reproduces from a fresh clone with zero extra build steps and is the canonical figure in bench/README.md. The 75.22%/0.7522 figure (= the site's LED) is reconciled in prose as the SAME SciFact dataset + same hybrid RRF fusion on the optional Rust bge-base sidecar — not a separate claim. FolkloreBench-F's 17%→1% web-fallback decay is labeled a SIMULATOR figure mirroring whitepaper §7.2 ("demonstration, not validated evidence; partly true by construction under v1 boolean retrieval"). Wave-3/Wave-4 nulls kept as failures; existing ASCII box, leaderboard table, and 13-null-attacks table left intact. All numbers cross-checked against three in-repo sources; nothing invented; no source/site files touched; tsc green.
 - v3.0 phasing: foundational Cleanup & Repo Restructure (25) precedes Docs (26) → Site (27) → Merch & Agent (28), because docs reference the clean `bench/` + module layout, the site sources docs content, and merch/agent fill the site Store.
 - Meme-agent (AGENT-01) is scaffold-only this milestone: full generate → post → append-to-`/store` pipeline runs against mocked/credential-gated X access; no live X post until user supplies X API creds.
