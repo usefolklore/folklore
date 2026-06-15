@@ -3,7 +3,7 @@
  *
  * Opens ~/.folklore/code-graph.db (separate from vectors.db per
  * 19-CONTEXT.md decisions — different lifecycle, rebuildable). Schema
- * v1 has 4 tables: codebases, code_nodes, code_edges, codebase_rooms.
+ * v1 has 3 tables: codebases, code_nodes, code_edges.
  *
  * Mirrors src/infrastructure/vector-index.ts openSqliteVectorIndex
  * lazy-open pattern (ResultAsync wrapping a dynamic `better-sqlite3`
@@ -39,8 +39,6 @@ export interface CodeGraphRepository {
   upsertCodebase(cb: Codebase): ResultAsync<void, CodebaseError>;
   upsertNodes(nodes: readonly CodeNode[]): ResultAsync<void, CodebaseError>;
   upsertEdges(edges: readonly CodeEdge[]): ResultAsync<void, CodebaseError>;
-  attachToRoom(codebase_id: CodebaseId, room_id: string): ResultAsync<void, CodebaseError>;
-  detachFromRoom(codebase_id: CodebaseId, room_id: string): ResultAsync<void, CodebaseError>;
   listCodebases(): ResultAsync<readonly Codebase[], CodebaseError>;
   getCodebase(id: CodebaseId): ResultAsync<Codebase | null, CodebaseError>;
   /** Return the stored content_hash for a file, or undefined if not indexed. */
@@ -52,11 +50,7 @@ export interface CodeGraphRepository {
     name_pattern?: string;
     limit?: number;
   }): ResultAsync<readonly CodeNode[], CodebaseError>;
-  /** Get rooms attached to a codebase. */
-  getRoomsForCodebase(codebase_id: CodebaseId): ResultAsync<readonly string[], CodebaseError>;
-  /** Get codebases attached to a room. */
-  getCodebasesForRoom(room_id: string): ResultAsync<readonly Codebase[], CodebaseError>;
-  /** Delete a codebase + all its nodes, edges, attachments (cascade). */
+  /** Delete a codebase + all its nodes and edges (cascade). */
   deleteCodebase(id: CodebaseId): ResultAsync<void, CodebaseError>;
   close(): void;
 }
@@ -109,13 +103,6 @@ CREATE TABLE IF NOT EXISTS code_edges (
 CREATE INDEX IF NOT EXISTS idx_code_edges_codebase ON code_edges(codebase_id);
 CREATE INDEX IF NOT EXISTS idx_code_edges_source   ON code_edges(source_id);
 CREATE INDEX IF NOT EXISTS idx_code_edges_target   ON code_edges(target_id);
-
-CREATE TABLE IF NOT EXISTS codebase_rooms (
-  codebase_id TEXT NOT NULL REFERENCES codebases(id) ON DELETE CASCADE,
-  room_id     TEXT NOT NULL,
-  attached_at TEXT NOT NULL,
-  PRIMARY KEY (codebase_id, room_id)
-);
 `;
 
 // ─────────────────────── factory ──────────────────────────
@@ -193,26 +180,10 @@ const build = (db: Database.Database): CodeGraphRepository => {
        extra_json = excluded.extra_json`,
   );
 
-  const stAttach = db.prepare(
-    `INSERT INTO codebase_rooms(codebase_id, room_id, attached_at)
-     VALUES (?, ?, ?)
-     ON CONFLICT(codebase_id, room_id) DO UPDATE SET attached_at = excluded.attached_at`,
-  );
-
-  const stDetach = db.prepare('DELETE FROM codebase_rooms WHERE codebase_id = ? AND room_id = ?');
   const stListCodebases = db.prepare('SELECT * FROM codebases ORDER BY indexed_at DESC');
   const stGetCodebase = db.prepare('SELECT * FROM codebases WHERE id = ?');
   const stGetFileHash = db.prepare(
     'SELECT content_hash FROM code_nodes WHERE codebase_id = ? AND file_path = ? LIMIT 1',
-  );
-  const stRoomsForCodebase = db.prepare(
-    'SELECT room_id FROM codebase_rooms WHERE codebase_id = ? ORDER BY attached_at',
-  );
-  const stCodebasesForRoom = db.prepare(
-    `SELECT c.* FROM codebases c
-     INNER JOIN codebase_rooms cr ON cr.codebase_id = c.id
-     WHERE cr.room_id = ?
-     ORDER BY cr.attached_at`,
   );
   const stDeleteCodebase = db.prepare('DELETE FROM codebases WHERE id = ?');
 
@@ -289,32 +260,6 @@ const build = (db: Database.Database): CodeGraphRepository => {
     }
   };
 
-  const attachToRoom = (
-    codebase_id: CodebaseId,
-    room_id: string,
-  ): ResultAsync<void, CodebaseError> => {
-    try {
-      stAttach.run(codebase_id, room_id, new Date().toISOString());
-      return okAsync(undefined);
-    } catch (e) {
-      return errAsync(
-        CodebaseError.attachFailed(codebase_id, room_id, (e as Error).message),
-      );
-    }
-  };
-
-  const detachFromRoom = (
-    codebase_id: CodebaseId,
-    room_id: string,
-  ): ResultAsync<void, CodebaseError> => {
-    try {
-      stDetach.run(codebase_id, room_id);
-      return okAsync(undefined);
-    } catch (e) {
-      return errAsync(CodebaseError.dbWriteError('codebase_rooms', (e as Error).message));
-    }
-  };
-
   const listCodebases = (): ResultAsync<readonly Codebase[], CodebaseError> => {
     try {
       const rows = stListCodebases.all() as Codebase[];
@@ -376,28 +321,6 @@ const build = (db: Database.Database): CodeGraphRepository => {
     }
   };
 
-  const getRoomsForCodebase = (
-    codebase_id: CodebaseId,
-  ): ResultAsync<readonly string[], CodebaseError> => {
-    try {
-      const rows = stRoomsForCodebase.all(codebase_id) as Array<{ room_id: string }>;
-      return okAsync(rows.map((r) => r.room_id));
-    } catch (e) {
-      return errAsync(CodebaseError.dbReadError((e as Error).message));
-    }
-  };
-
-  const getCodebasesForRoom = (
-    room_id: string,
-  ): ResultAsync<readonly Codebase[], CodebaseError> => {
-    try {
-      const rows = stCodebasesForRoom.all(room_id) as Codebase[];
-      return okAsync(rows);
-    } catch (e) {
-      return errAsync(CodebaseError.dbReadError((e as Error).message));
-    }
-  };
-
   const deleteCodebase = (id: CodebaseId): ResultAsync<void, CodebaseError> => {
     try {
       stDeleteCodebase.run(id);
@@ -415,14 +338,10 @@ const build = (db: Database.Database): CodeGraphRepository => {
     upsertCodebase,
     upsertNodes,
     upsertEdges,
-    attachToRoom,
-    detachFromRoom,
     listCodebases,
     getCodebase,
     getFileHash,
     searchNodes,
-    getRoomsForCodebase,
-    getCodebasesForRoom,
     deleteCodebase,
     close,
   };

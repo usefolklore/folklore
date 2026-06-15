@@ -6,7 +6,7 @@ daemon:
   interval_seconds: 86400        # 1 day default
   max_parallel_sources: 8
   discovery_cadence: 5           # every Nth iteration runs discovery mode
-  round_robin_rooms: true        # rotate through rooms one per iteration vs. all-at-once
+  round_robin_sources: true      # rotate through sources one per iteration vs. all-at-once
 
 embeddings:
   model: Xenova/all-MiniLM-L6-v2
@@ -20,21 +20,15 @@ graph:
   schema_version: 1
 
 vectors:
-  # sqlite-vec table shared across rooms; room is a column, not a separate DB
   path: ~/.folklore/vectors.db
 
-rooms:
-  default_room: default
-  auto_detect: true              # classify incoming items to the best-matching room
-  auto_classify_threshold: 0.70  # below this → unassigned holding room
-  unassigned_holding_room: unassigned
-  tunnels:
-    enabled: true
-    min_cluster_size: 3          # need ≥3 similar nodes across rooms to form a tunnel
-    similarity_threshold: 0.80
+tunnels:
+  enabled: true
+  min_cluster_size: 3            # need ≥3 similar nodes to form a tunnel
+  similarity_threshold: 0.80
 
 sources:
-  # Phase 3 — shared registry. Room-specific overrides can live under rooms/<room>/sources.yaml
+  # Phase 3 — shared source registry.
   enabled:
     - arxiv
     - github_trending

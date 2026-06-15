@@ -8,12 +8,6 @@
  *   reindex <id>              incremental re-index (content-hash diff)
  *   search <query> [--codebase I] [--kind K] [--limit N] [--json]
  *   remove <id>               delete codebase + all nodes + edges
- *
- * V5 (Phase 24): the `attach`/`detach <id> --room <r>` subcommands were
- * removed alongside the room primitive. The repo-layer M:N join methods
- * (attachToRoom / detachFromRoom / getRoomsForCodebase in code-graph.ts)
- * remain temporarily and are no longer reachable from the CLI; they will
- * be excised by Phase 25 alongside the brand sweep.
  */
 
 import { resolve } from 'node:path';

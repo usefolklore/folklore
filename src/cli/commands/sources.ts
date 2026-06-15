@@ -5,14 +5,14 @@
  * Subcommands:
  *
  *   list
- *   add <id> --kind <kind> --room <room> [--wing <wing>] --config <json>
+ *   add <id> --kind <kind> [--wing <wing>] --config <json>
  *   remove <id>
  *   disable <id>
  *   enable <id>
  *
  * Example:
  *   folklore sources add hn-embeddings \
- *     --kind hn_algolia --room fundraise \
+ *     --kind hn_algolia \
  *     --config '{"query":"embeddings","max_items":10}'
  */
 
@@ -28,16 +28,14 @@ const VALID_KINDS: readonly SourceKind[] = ['generic_rss', 'arxiv', 'hn_algolia'
 interface AddArgs {
   readonly id: string;
   readonly kind: SourceKind;
-  readonly room: string;
   readonly wing?: string;
   readonly config: Readonly<Record<string, unknown>>;
 }
 
 const parseAddArgs = (args: readonly string[]): AddArgs | string => {
-  if (args.length === 0) return 'missing <id> — usage: folklore sources add <id> --kind K --room R --config {json}';
+  if (args.length === 0) return 'missing <id> — usage: folklore sources add <id> --kind K --config {json}';
   const id = args[0];
   let kind: string | undefined;
-  let room: string | undefined;
   let wing: string | undefined;
   let configRaw: string | undefined;
   for (let i = 1; i < args.length; i++) {
@@ -45,15 +43,12 @@ const parseAddArgs = (args: readonly string[]): AddArgs | string => {
     const next = (): string | undefined => args[++i];
     if (a === '--kind') kind = next();
     else if (a.startsWith('--kind=')) kind = a.slice('--kind='.length);
-    else if (a === '--room') room = next();
-    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
     else if (a === '--wing') wing = next();
     else if (a.startsWith('--wing=')) wing = a.slice('--wing='.length);
     else if (a === '--config') configRaw = next();
     else if (a.startsWith('--config=')) configRaw = a.slice('--config='.length);
   }
   if (!kind) return 'missing --kind';
-  if (!room) return 'missing --room';
   if (!configRaw) return 'missing --config (JSON string)';
   if (!VALID_KINDS.includes(kind as SourceKind)) {
     return `invalid --kind '${kind}' — must be one of ${VALID_KINDS.join(', ')}`;
@@ -68,7 +63,7 @@ const parseAddArgs = (args: readonly string[]): AddArgs | string => {
   } catch (e) {
     return `--config JSON parse failed: ${(e as Error).message}`;
   }
-  return { id, kind: kind as SourceKind, room, wing, config };
+  return { id, kind: kind as SourceKind, wing, config };
 };
 
 // ─────────────────────── subcommands ──────────────────────
@@ -85,11 +80,11 @@ const list = async (): Promise<number> => {
     console.log('no sources configured. try `folklore sources add` to create one.');
     return 0;
   }
-  console.log('id                              kind            room            enabled  config');
+  console.log('id                              kind            enabled  config');
   for (const d of all) {
     const enabled = d.enabled === false ? 'no ' : 'yes';
     const configStr = JSON.stringify(d.config);
-    const line = `${d.id.padEnd(31)} ${d.kind.padEnd(15)} ${(d.room ?? '-').padEnd(15)} ${enabled}      ${configStr}`;
+    const line = `${d.id.padEnd(31)} ${d.kind.padEnd(15)} ${enabled}      ${configStr}`;
     console.log(line);
   }
   return 0;
@@ -104,7 +99,6 @@ const add = async (rest: readonly string[]): Promise<number> => {
   const descriptor: SourceDescriptor = {
     id: parsed.id,
     kind: parsed.kind,
-    room: parsed.room,
     wing: parsed.wing,
     enabled: true,
     config: parsed.config,
@@ -115,7 +109,7 @@ const add = async (rest: readonly string[]): Promise<number> => {
     console.error(`sources add: ${formatError(result.error)}`);
     return 1;
   }
-  console.log(`added ${descriptor.id} (${descriptor.kind}) → room=${descriptor.room}`);
+  console.log(`added ${descriptor.id} (${descriptor.kind})`);
   return 0;
 };
 

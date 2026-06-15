@@ -43,7 +43,6 @@ export interface BuildPeerOrderInput {
   readonly home: string;
   readonly localPeerId: PeerIdRef;
   readonly query: string;
-  readonly room?: string;
   readonly registry: EntityRegistry;
   /** Optional sliding-window load-counter; pass an empty Map until
    * the asker tracks per-peer recent-ask counts. */
@@ -57,17 +56,16 @@ export type PeerOrderFn = (peerIds: readonly string[]) => readonly string[];
 // ─────────────── subject derivation ───────
 
 /**
- * Derive candidate subject keys for a query. Entity-first
+ * Derive candidate subject keys for a query. Entity-only
  * (resolves the trimmed query against the registry, accepts both a
- * canonical id and an alias). Falls back to the room subject when no
- * entity matches OR alongside the entity match for breadth.
+ * canonical id and an alias). V5: the `room:` subject scheme was
+ * removed with the rooms abstraction.
  *
  * Returns [] when the registry can't surface anything — peerOrder
  * will then reduce to "no rep signal", same as a fresh install.
  */
 const deriveQuerySubjects = (
   query: string,
-  room: string | undefined,
   registry: EntityRegistry,
 ): SubjectKey[] => {
   const out: SubjectKey[] = [];
@@ -81,17 +79,8 @@ const deriveQuerySubjects = (
       if (ent) out.push(ent.id);
     } catch {
       // Registry implementations may throw on edge cases — see codex
-      // round-2 review on ask.ts. Don't propagate; the room fallback
-      // below still gives us a signal.
+      // round-2 review on ask.ts. Don't propagate.
     }
-  }
-
-  // Room:* — always emitted when a room is known. Round-4 review
-  // changed extractPerPeerSubjects to always emit room (not just as
-  // fallback); the asker side mirrors that so subject keys match
-  // up between the credit path and the ranking path.
-  if (room && room.length > 0) {
-    out.push(`room:${room}`);
   }
 
   return out;
@@ -122,7 +111,7 @@ export const buildOrderFromFile = (
   file: PeerReputationFile,
   input: Omit<BuildPeerOrderInput, 'home' | 'localPeerId'>,
 ): PeerOrderFn => {
-  const subjects = deriveQuerySubjects(input.query, input.room, input.registry);
+  const subjects = deriveQuerySubjects(input.query, input.registry);
   const recent = input.recentAsksPerPeer ?? new Map<PeerIdRef, number>();
   const randomFn = input.randomFn ?? Math.random;
   const now = new Date().toISOString();
@@ -133,8 +122,7 @@ export const buildOrderFromFile = (
 
     // For each peer, take the MAX rank across the candidate subjects.
     // This gives a lemlist-expert peer the high rank when the query
-    // resolves to entity:product:lemlist, AND the same peer still
-    // ranks if the query only matched on `room:research`.
+    // resolves to entity:product:lemlist.
     const ranks = new Map<string, number | null>();
     for (const peerId of peerIds) {
       let best: number | null = null;

@@ -74,12 +74,6 @@ export const buildPeerPullTelemetry = (
           : m.source_uri;
     return {
       node_id: m.node_id,
-      // EnrichedMatch.room is structural metadata for the scorer's consensus
-      // diagnostics — V5 has no room, so we pass an empty string. The scorer
-      // does not branch on the value (only on source_peer), so this preserves
-      // back-compat with the shared EnrichedMatch shape without leaking the
-      // deleted abstraction into satisfaction math.
-      room: '',
       distance: m.distance,
       source_peer: m._source_peer ?? null,
       also_from_peers: m._also_from_peers ?? [],

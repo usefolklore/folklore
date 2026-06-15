@@ -74,11 +74,10 @@ export const thisCmd = async (args: readonly string[]): Promise<number> => {
   const absRoot = resolve(root);
 
   // Register the watch-target FIRST. This is independent of the index
-  // result. V5: the watch-target shape carries a workspace slug
-  // instead of a room (back-compat: the field name remains `room`
-  // until watch-targets.json shape is migrated).
+  // result. V5: the watch-target shape carries a workspace slug; the
+  // entry field is named `workspace` to match watch-targets.ts.
   registerWatchTarget(join(folkloreHome(), 'watch-targets.json'), {
-    room: slug,
+    workspace: slug,
     root: absRoot,
   });
 

@@ -142,7 +142,7 @@ export interface FederatedSearchParams {
   /** Cross-room tunnel threshold. Default 0.6 matches MCP find_tunnels default. */
   readonly tunnelThreshold?: number;
   /**
-   * Skip the cross-room tunnel pass at the end of the merge.
+   * Skip the cross-domain tunnel pass at the end of the merge.
    * Tunnel detection runs findTunnelsPure on the merged result set,
    * which on a 5–10 hit return adds ~150-250ms because it embeds
    * pairs of records and compares. The agent contract block does

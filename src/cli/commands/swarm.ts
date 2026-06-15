@@ -47,7 +47,6 @@ interface SwarmNote {
   readonly id: string;              // concept://YYYY-MM-DD/slug
   readonly label: string;
   readonly summary: string;
-  readonly room: 'research' | 'toolshed';
   readonly source_uri: string;
   readonly fetched_at: string;
   readonly peer_id: string;         // owning virtual peer
@@ -183,7 +182,6 @@ const generateNotesForPeer = (
       id,
       label,
       summary,
-      room: 'research',
       source_uri: id,
       fetched_at: todayISO(),
       peer_id: peer.peer_id,

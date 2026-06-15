@@ -12,7 +12,7 @@
  *   - dryRun: skips persist + mark, still summarizes
  *   - Per-cluster summary failure: status=summary_failed, others continue
  *   - Per-cluster persist failure: status=persist_failed, others continue
- *   - Multi-room across-rooms helper: processes per room
+ *   - Multi-workspace across-workspaces helper: processes per workspace
  *   - defaultMakeId is content-addressed deterministic
  */
 
@@ -21,7 +21,7 @@ import { strict as assert } from 'node:assert';
 import { okAsync, errAsync, ResultAsync } from 'neverthrow';
 import {
   runConsolidation,
-  runConsolidationAcrossRooms,
+  runConsolidationAcrossWorkspaces,
   defaultMakeId,
   type ConsolidatorDeps,
 } from '../src/application/consolidator.ts';
@@ -30,7 +30,7 @@ import {
   type ConsolidatedMemory,
   type ConsolidationCluster,
 } from '../src/domain/consolidated-memory.ts';
-import type { NodeId, Room } from '../src/domain/graph.ts';
+import type { NodeId } from '../src/domain/graph.ts';
 import type { AppError } from '../src/domain/errors.ts';
 import { normalize } from '../src/domain/vectors.ts';
 
@@ -58,30 +58,30 @@ const nearby = (seed: Float32Array, angle: number, noiseSeed: number): Float32Ar
   return normalize(v);
 };
 
-const mkEntry = (id: string, room: string, vector: Float32Array, ts: string, text: string | null = null): EpisodicEntry => ({
+const mkEntry = (id: string, workspace: string, vector: Float32Array, ts: string, text: string | null = null): EpisodicEntry => ({
   node_id: id,
-  room,
+  workspace,
   vector,
   raw_text: text ?? `${id} body`,
   timestamp: ts,
 });
 
 interface Recorded {
-  loadEntriesCalls: Room[];
+  loadEntriesCalls: string[];
   summaryCalls: Array<{ seed: NodeId; size: number }>;
   persisted: ConsolidatedMemory[];
   markedIds: Array<{ ids: readonly NodeId[]; at: string }>;
 }
 
-const buildFakeDeps = (overrides: Partial<ConsolidatorDeps> & { entriesByRoom?: Record<Room, readonly EpisodicEntry[]> } = {}): { deps: ConsolidatorDeps; rec: Recorded } => {
+const buildFakeDeps = (overrides: Partial<ConsolidatorDeps> & { entriesByWorkspace?: Record<string, readonly EpisodicEntry[]> } = {}): { deps: ConsolidatorDeps; rec: Recorded } => {
   const rec: Recorded = { loadEntriesCalls: [], summaryCalls: [], persisted: [], markedIds: [] };
-  const entriesByRoom = overrides.entriesByRoom ?? {};
+  const entriesByWorkspace = overrides.entriesByWorkspace ?? {};
   const deps: ConsolidatorDeps = {
     llm_model: overrides.llm_model ?? 'fake-model:1',
     clock: overrides.clock ?? (() => '2026-04-18T00:00:00.000Z'),
-    loadEntries: overrides.loadEntries ?? ((room) => {
-      rec.loadEntriesCalls.push(room);
-      return okAsync(entriesByRoom[room] ?? []);
+    loadEntries: overrides.loadEntries ?? ((workspace) => {
+      rec.loadEntriesCalls.push(workspace);
+      return okAsync(entriesByWorkspace[workspace] ?? []);
     }),
     generateSummary: overrides.generateSummary ?? ((cluster) => {
       rec.summaryCalls.push({ seed: cluster.seed_node_id, size: cluster.entries.length });
@@ -99,13 +99,13 @@ const buildFakeDeps = (overrides: Partial<ConsolidatorDeps> & { entriesByRoom?: 
   return { deps, rec };
 };
 
-const buildCluster = (room: Room): readonly EpisodicEntry[] => {
+const buildCluster = (workspace: string): readonly EpisodicEntry[] => {
   const seed = unit(32, 100);
   const entries: EpisodicEntry[] = [
-    mkEntry('seed', room, seed, '2026-04-01T00:00:00Z'),
+    mkEntry('seed', workspace, seed, '2026-04-01T00:00:00Z'),
   ];
   for (let i = 1; i <= 5; i++) {
-    entries.push(mkEntry(`n${i}`, room, nearby(seed, 0.05 + i * 0.02, 200 + i), `2026-04-01T00:0${i}:00Z`));
+    entries.push(mkEntry(`n${i}`, workspace, nearby(seed, 0.05 + i * 0.02, 200 + i), `2026-04-01T00:0${i}:00Z`));
   }
   return entries;
 };
@@ -114,8 +114,8 @@ const buildCluster = (room: Room): readonly EpisodicEntry[] => {
 
 describe('consolidator — empty + degenerate cases', () => {
   it('empty room → no clusters, no calls', async () => {
-    const { deps, rec } = buildFakeDeps({ entriesByRoom: { 'r1': [] } });
-    const r = await runConsolidation(deps)({ room: 'r1' });
+    const { deps, rec } = buildFakeDeps({ entriesByWorkspace: { 'r1': [] } });
+    const r = await runConsolidation(deps)({ workspace: 'r1' });
     assert.ok(r.isOk());
     if (!r.isOk()) return;
     assert.equal(r.value.clusters_found, 0);
@@ -125,12 +125,12 @@ describe('consolidator — empty + degenerate cases', () => {
 
   it('sub-min-size neighborhood → no cluster → no LLM call', async () => {
     const { deps, rec } = buildFakeDeps({
-      entriesByRoom: { 'r1': [
+      entriesByWorkspace: { 'r1': [
         mkEntry('a', 'r1', unit(16, 1), '2026-04-01T00:00:00Z'),
         mkEntry('b', 'r1', unit(16, 99), '2026-04-01T00:01:00Z'),
       ]},
     });
-    const r = await runConsolidation(deps)({ room: 'r1' });
+    const r = await runConsolidation(deps)({ workspace: 'r1' });
     assert.ok(r.isOk());
     if (!r.isOk()) return;
     assert.equal(r.value.clusters_found, 0);
@@ -143,9 +143,9 @@ describe('consolidator — empty + degenerate cases', () => {
 describe('consolidator — happy path', () => {
   it('cluster found → summary → persist → mark all in sequence', async () => {
     const entries = buildCluster('r1');
-    const { deps, rec } = buildFakeDeps({ entriesByRoom: { 'r1': entries } });
+    const { deps, rec } = buildFakeDeps({ entriesByWorkspace: { 'r1': entries } });
     const r = await runConsolidation(deps)({
-      room: 'r1',
+      workspace: 'r1',
       clusterOpts: { similarity_threshold: 0.9, min_size: 5 },
     });
     assert.ok(r.isOk());
@@ -160,7 +160,7 @@ describe('consolidator — happy path', () => {
 
     assert.equal(rec.persisted.length, 1);
     const memory = rec.persisted[0];
-    assert.equal(memory.room, 'r1');
+    assert.equal(memory.workspace, 'r1');
     assert.equal(memory.llm_model, 'fake-model:1');
     assert.ok(memory.id.startsWith('consolidated:'));
     assert.deepEqual([...memory.provenance_ids].sort(), [...memory.provenance_ids]); // already sorted
@@ -172,9 +172,9 @@ describe('consolidator — happy path', () => {
 
   it('dryRun=true: summarizes but skips persist + mark', async () => {
     const entries = buildCluster('r1');
-    const { deps, rec } = buildFakeDeps({ entriesByRoom: { 'r1': entries } });
+    const { deps, rec } = buildFakeDeps({ entriesByWorkspace: { 'r1': entries } });
     const r = await runConsolidation(deps)({
-      room: 'r1',
+      workspace: 'r1',
       clusterOpts: { similarity_threshold: 0.9, min_size: 5 },
       dryRun: true,
     });
@@ -205,7 +205,7 @@ describe('consolidator — per-cluster failure isolation', () => {
 
     let callCount = 0;
     const { deps, rec } = buildFakeDeps({
-      entriesByRoom: { 'r1': entries },
+      entriesByWorkspace: { 'r1': entries },
       generateSummary: (cluster) => {
         callCount++;
         if (cluster.seed_node_id === 'a-seed') {
@@ -215,7 +215,7 @@ describe('consolidator — per-cluster failure isolation', () => {
       },
     });
 
-    const r = await runConsolidation(deps)({ room: 'r1', clusterOpts: { similarity_threshold: 0.85, min_size: 5 } });
+    const r = await runConsolidation(deps)({ workspace: 'r1', clusterOpts: { similarity_threshold: 0.85, min_size: 5 } });
     assert.ok(r.isOk());
     if (!r.isOk()) return;
     assert.equal(callCount, 2, 'both clusters attempted');
@@ -233,10 +233,10 @@ describe('consolidator — per-cluster failure isolation', () => {
   it('persist failure marks step as persist_failed but continues', async () => {
     const entries = buildCluster('r1');
     const { deps, rec } = buildFakeDeps({
-      entriesByRoom: { 'r1': entries },
+      entriesByWorkspace: { 'r1': entries },
       persistConsolidated: () => errAsync<void, AppError>({ type: 'GraphWriteError' as never, path: '<mem>', message: 'disk full' } as unknown as AppError),
     });
-    const r = await runConsolidation(deps)({ room: 'r1', clusterOpts: { similarity_threshold: 0.9, min_size: 5 } });
+    const r = await runConsolidation(deps)({ workspace: 'r1', clusterOpts: { similarity_threshold: 0.9, min_size: 5 } });
     assert.ok(r.isOk());
     if (!r.isOk()) return;
     assert.equal(r.value.clusters_persisted, 0);
@@ -246,26 +246,26 @@ describe('consolidator — per-cluster failure isolation', () => {
   });
 });
 
-describe('consolidator — across rooms', () => {
-  it('partitions input + processes each room independently', async () => {
+describe('consolidator — across workspaces', () => {
+  it('partitions input + processes each workspace independently', async () => {
     const entriesR1 = buildCluster('r1');
     const entriesR2 = buildCluster('r2').map((e) => ({ ...e, node_id: e.node_id + '-r2' }));
     const all: readonly EpisodicEntry[] = [...entriesR1, ...entriesR2];
 
     const { deps, rec } = buildFakeDeps();
-    const r = await runConsolidationAcrossRooms(deps)(
+    const r = await runConsolidationAcrossWorkspaces(deps)(
       () => okAsync(all),
       { similarity_threshold: 0.9, min_size: 5 },
     );
     assert.ok(r.isOk());
     if (!r.isOk()) return;
     assert.equal(r.value.length, 2);
-    const rooms = r.value.map((rep) => rep.room).sort();
+    const rooms = r.value.map((rep) => rep.workspace).sort();
     assert.deepEqual(rooms, ['r1', 'r2']);
 
     // Both rooms persisted exactly one cluster each
     assert.equal(rec.persisted.length, 2);
-    const persistedRooms = rec.persisted.map((p) => p.room).sort();
+    const persistedRooms = rec.persisted.map((p) => p.workspace).sort();
     assert.deepEqual(persistedRooms, ['r1', 'r2']);
   });
 });
@@ -279,7 +279,7 @@ describe('defaultMakeId', () => {
         mkEntry('a', 'r1', unit(16, 2), '2026-04-01T00:01:00Z'),
       ],
       centroid: unit(16, 1),
-      room: 'r1',
+      workspace: 'r1',
     };
     const id1 = defaultMakeId(cluster, 'a summary');
     const id2 = defaultMakeId(cluster, 'a summary');
@@ -290,7 +290,7 @@ describe('defaultMakeId', () => {
   it('different summary → different ID', () => {
     const cluster: ConsolidationCluster = {
       seed_node_id: 's', entries: [mkEntry('s', 'r1', unit(16, 1), '2026-04-01T00:00:00Z')],
-      centroid: unit(16, 1), room: 'r1',
+      centroid: unit(16, 1), workspace: 'r1',
     };
     const id1 = defaultMakeId(cluster, 'first');
     const id2 = defaultMakeId(cluster, 'second');

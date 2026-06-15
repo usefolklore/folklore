@@ -336,7 +336,6 @@ const build = (
       }>;
       const matches: readonly Match[] = rows.map((r) => ({
         node_id: r.node_id,
-        room: '',
         wing: r.wing ?? undefined,
         distance: r.distance,
       }));
@@ -358,7 +357,6 @@ const build = (
       }>;
       return rows.map((r, idx) => ({
         node_id: r.node_id,
-        room: '',
         wing: r.wing ?? undefined,
         denseRank: null,
         bm25Rank: idx,
@@ -379,7 +377,6 @@ const build = (
     searchGlobal(query, k).map((matches) =>
       matches.map((m, idx) => ({
         node_id: m.node_id,
-        room: m.room,
         wing: m.wing,
         denseRank: idx,
         bm25Rank: null,
@@ -398,7 +395,6 @@ const build = (
       const fused = rrfFuse(dense, bm25, cfg);
       return fused.slice(0, k).map((c) => ({
         node_id: c.node_id,
-        room: '',
         wing: c.wing,
         distance: c.distance ?? 0,
       }));
@@ -462,7 +458,6 @@ const build = (
       const topN = scored.slice(0, k);
       const ranked: RankedCandidate[] = topN.map((s, idx) => ({
         node_id: s.row.node_id,
-        room: '',
         wing: s.row.wing ?? undefined,
         denseRank: idx,
         bm25Rank: null,
@@ -486,7 +481,6 @@ const build = (
       const fused = rrfFuse(dense, bm25, cfg);
       return fused.slice(0, k).map((c) => ({
         node_id: c.node_id,
-        room: '',
         wing: c.wing,
         distance: c.distance ?? 0,
       }));
@@ -526,7 +520,6 @@ const build = (
           if (!vec) return null;
           const record: VectorRecord = {
             node_id: m.node_id,
-            room: '',
             wing: m.wing ?? undefined,
             vector: vec,
             raw_text: m.raw_text ?? undefined,

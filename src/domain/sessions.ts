@@ -44,8 +44,7 @@ export interface ToolCallSummary {
 export interface SessionNode {
   readonly id: string;                         // "claude-session://<sessionId>/<uuid>"
   readonly label: string;                      // "[user] first 80 chars ..." | "[tool:Bash] npm test" | ...
-  readonly room: 'sessions';                   // literal — sessions room is the only target
-  readonly source_uri: string;                 // same as id, used as dedup key
+  readonly source_uri: string;                 // same as id, used as dedup key (session discriminator scheme)
   readonly fetched_at: string;                 // ISO-8601
   readonly content_summary: string;            // first 200 chars, after secrets scan
   readonly session_id: string;

@@ -9,7 +9,7 @@
  * verifiable — `share-envelope.verifyShareableNode` already does the
  * three Ed25519 checks offline. The resolver's job is the META layer:
  *
- *   - Track which DIDs we've seen sign envelopes for which rooms.
+ *   - Track which DIDs we've seen sign envelopes (count + first/last seen).
  *   - Surface that data via metrics + a JSON snapshot for audit.
  *   - Provide a single seam where future `did:web` HTTP resolution
  *     drops in WITHOUT touching share-sync.ts again.
@@ -35,7 +35,6 @@ export interface DidObservation {
   readonly first_seen: string;       // ISO-8601
   readonly last_seen: string;        // ISO-8601
   readonly count: number;            // total envelopes verified for this DID
-  readonly rooms: readonly string[]; // rooms this DID has signed into
 }
 
 /**
@@ -51,7 +50,7 @@ export interface DidObservation {
  * always says ok and just tracks.
  */
 export interface IdentityResolver {
-  readonly record: (input: { did: DID; device_id: string; room: string; at?: string }) => void;
+  readonly record: (input: { did: DID; device_id: string; at?: string }) => void;
   readonly list: () => readonly DidObservation[];
   readonly findByDid: (did: DID) => DidObservation | undefined;
 }
@@ -68,20 +67,16 @@ export interface IdentityResolver {
 export const inProcessIdentityResolver = (): IdentityResolver => {
   const byDid = new Map<DID, DidObservation>();
 
-  const record: IdentityResolver['record'] = ({ did, device_id, room, at }) => {
+  const record: IdentityResolver['record'] = ({ did, device_id, at }) => {
     const now = at ?? new Date().toISOString();
     const existing = byDid.get(did);
     if (existing) {
-      const rooms = existing.rooms.includes(room)
-        ? existing.rooms
-        : [...existing.rooms, room];
       byDid.set(did, {
         did,
         device_id,
         first_seen: existing.first_seen,
         last_seen: now,
         count: existing.count + 1,
-        rooms,
       });
     } else {
       byDid.set(did, {
@@ -90,7 +85,6 @@ export const inProcessIdentityResolver = (): IdentityResolver => {
         first_seen: now,
         last_seen: now,
         count: 1,
-        rooms: [room],
       });
       metrics.counter('identity.dids.first_seen').inc();
     }

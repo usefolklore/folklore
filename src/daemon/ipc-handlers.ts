@@ -78,7 +78,6 @@ export const ipcL2Stats = () => getL2().stats();
 
 interface AskArgs {
   readonly query: string;
-  readonly room?: string;
   readonly k: number;
   readonly json: boolean;
   readonly peers: boolean;
@@ -102,7 +101,6 @@ const FALLBACK = Symbol('ipc-fallback');
 
 const parseAskArgs = (args: readonly string[]): AskArgs | string | typeof FALLBACK => {
   let query = '';
-  let room: string | undefined;
   let k = 5;
   let json = false;
   let peers = false;
@@ -111,9 +109,7 @@ const parseAskArgs = (args: readonly string[]): AskArgs | string | typeof FALLBA
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     const next = (): string => args[++i] ?? '';
-    if (a === '--room') room = next();
-    else if (a.startsWith('--room=')) room = a.slice('--room='.length);
-    else if (a === '--k' || a === '-k') k = parseInt(next(), 10) || 5;
+    if (a === '--k' || a === '-k') k = parseInt(next(), 10) || 5;
     else if (a.startsWith('--k=')) k = parseInt(a.slice('--k='.length), 10) || 5;
     else if (a === '--json') json = true;
     else if (a === '--peers') peers = true;
@@ -133,7 +129,7 @@ const parseAskArgs = (args: readonly string[]): AskArgs | string | typeof FALLBA
   // depends on the CLIENT's cwd, which IPC does not carry → full CLI.
   if (!peers && workspaceSeen) return FALLBACK;
   if (!query) return 'missing query — usage: folklore ask "your question" [--k N] [--json] [--peers [--pull]]';
-  return { query, room, k, json, peers, pull };
+  return { query, k, json, peers, pull };
 };
 
 const makeAskHandler = (federation?: FederationRef): IpcHandler<Runtime> => async (args, runtime) => {
@@ -212,14 +208,9 @@ const makeAskHandler = (federation?: FederationRef): IpcHandler<Runtime> => asyn
   // reuse the vector both for L2 lookup AND (on miss) for the search
   // path below. This is "embed once, route twice" — saves an ONNX
   // forward pass on the cache-miss code path vs the naive design.
-  //
-  // Only meaningful when not filtering by room: room-scoped cached
-  // stdout from a different room would be misleading. Room queries
-  // skip L2 and pay the full search cost. Acceptable: paraphrase hits
-  // are dominated by global-room interactive queries.
   const l2 = getL2();
   let queryVec: Float32Array | null = null;
-  if (!parsed.room) {
+  {
     const embRes = await runtime.embedder.embed(parsed.query);
     if (embRes.isErr()) {
       return { stdout: '', stderr: `ask: ${formatError(embRes.error)}\n`, exit: 1 };
@@ -412,18 +403,11 @@ const statsHandler: IpcHandler<Runtime> = async (_args, runtime): Promise<Handle
   const nodes = graph.json.nodes.length;
   const edges = graph.json.links.length;
   const vectors = runtime.vectors.size();
-  // Rooms: count distinct room values
-  const rooms = new Set<string>();
-  for (const n of graph.json.nodes) {
-    const r = (n as { room?: string }).room;
-    if (typeof r === 'string') rooms.add(r);
-  }
   return {
     stdout: JSON.stringify({
       nodes,
       edges,
       vectors,
-      rooms: rooms.size,
       via: 'daemon-ipc',
     }) + '\n',
     exit: 0,
@@ -436,8 +420,8 @@ const statsHandler: IpcHandler<Runtime> = async (_args, runtime): Promise<Handle
  * `folklore jobs submit <kind> <...args>` over IPC.
  *
  * Args shape:
- *   submit ingest:room <room>
- *   submit ingest:file <room> <path>
+ *   submit ingest:workspace <workspace>
+ *   submit ingest:file <workspace> <path>
  *   submit ingest:session [path]
  *
  * The queue captured in the closure is the daemon-owned singleton.
@@ -448,20 +432,20 @@ const submitJobHandler = (queue: JobQueue): IpcHandler<Runtime> =>
   async (args): Promise<HandlerResult> => {
     const [kind, ...rest] = args;
     let payload: JobPayload | string;
-    if (kind === 'ingest:room') {
-      if (!rest[0]) payload = 'usage: submit ingest:room <room>';
-      else payload = { kind: 'ingest:room', room: rest[0] };
+    if (kind === 'ingest:workspace') {
+      if (!rest[0]) payload = 'usage: submit ingest:workspace <workspace>';
+      else payload = { kind: 'ingest:workspace', workspace: rest[0] };
     } else if (kind === 'ingest:file') {
-      if (!rest[0] || !rest[1]) payload = 'usage: submit ingest:file <room> <path>';
-      else payload = { kind: 'ingest:file', room: rest[0], path: rest[1] };
+      if (!rest[0] || !rest[1]) payload = 'usage: submit ingest:file <workspace> <path>';
+      else payload = { kind: 'ingest:file', workspace: rest[0], path: rest[1] };
     } else if (kind === 'ingest:session') {
       payload = { kind: 'ingest:session', path: rest[0] };
     } else if (kind === 'ingest:project') {
-      if (!rest[0] || !rest[1]) payload = 'usage: submit ingest:project <room> <root>';
-      else payload = { kind: 'ingest:project', room: rest[0], root: rest[1] };
+      if (!rest[0] || !rest[1]) payload = 'usage: submit ingest:project <workspace> <root>';
+      else payload = { kind: 'ingest:project', workspace: rest[0], root: rest[1] };
     } else if (kind === 'ingest:batch') {
-      if (!rest[0] || rest.length < 2) payload = 'usage: submit ingest:batch <room> <path1> [path2 ...]';
-      else payload = { kind: 'ingest:batch', room: rest[0], paths: rest.slice(1) };
+      if (!rest[0] || rest.length < 2) payload = 'usage: submit ingest:batch <workspace> <path1> [path2 ...]';
+      else payload = { kind: 'ingest:batch', workspace: rest[0], paths: rest.slice(1) };
     } else {
       payload = `unknown job kind: ${kind ?? '<missing>'}`;
     }

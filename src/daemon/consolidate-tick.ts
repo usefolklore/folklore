@@ -3,9 +3,8 @@
  * consolidation worker on a configurable cadence inside the long-
  * running daemon.
  *
- * Runs in a detached child process per room so:
+ * Runs in a detached child process so:
  *   - Long LLM calls don't block the daemon tick loop
- *   - Failure of one room doesn't abort others
  *   - The cross-process write lock semantics still apply (child
  *     acquires the lock just like a CLI invocation would)
  *
@@ -20,7 +19,6 @@
  *     consolidate:
  *       enabled: true
  *       interval_seconds: 86400
- *       rooms: [sessions]      # empty = all rooms above threshold
  *       prune: true
  *       model: qwen2.5:1.5b
  */
@@ -81,14 +79,14 @@ export const shouldRunConsolidate = (
 };
 
 /**
- * Kick off consolidation for the configured rooms via detached child
- * processes. Records the run start in the state file so the next tick
- * doesn't re-trigger. Returns the number of children spawned.
+ * Kick off a single consolidation run via a detached child process.
+ * Records the run start in the state file so the next tick doesn't
+ * re-trigger. Returns the number of children spawned (0 or 1).
  *
- * Children inherit FOLKLORE_HOME so they hit the same graph.
- * Each child acquires its own write lock — if the daemon's lock
- * conflicts (it shouldn't, but stale-recovery handles edge cases),
- * the child errors out cleanly.
+ * The child inherits FOLKLORE_HOME so it hits the same graph.
+ * It acquires its own write lock — if the daemon's lock conflicts
+ * (it shouldn't, but stale-recovery handles edge cases), the child
+ * errors out cleanly.
  */
 export const runConsolidateTick = (
   homeDir: string,
@@ -99,43 +97,32 @@ export const runConsolidateTick = (
   const state = loadState(homeDir);
   if (!shouldRunConsolidate(cfg, state.last_run_at, now)) return 0;
 
-  // Determine target rooms. If config specifies rooms, use those; else
-  // discover at runtime from the live graph (delegated to the child).
-  const rooms = cfg.rooms.length > 0 ? cfg.rooms : ['__auto__'];
+  const args = [
+    CLI_ENTRY,
+    'consolidate', 'run',
+    '--threshold', String(cfg.similarity_threshold),
+    '--min-size', String(cfg.min_size),
+    '--max-size', String(cfg.max_size),
+    '--model', cfg.model,
+    ...(cfg.prune ? ['--prune'] : []),
+  ];
 
   let spawned = 0;
-  for (const room of rooms) {
-    if (room === '__auto__') {
-      log('consolidate-tick: rooms=[] → auto-discovery (deferred to v4.2)');
-      log('  for now, set config.daemon.consolidate.rooms explicitly');
-      continue;
-    }
-
-    const args = [
-      CLI_ENTRY,
-      'consolidate', 'run', room,
-      '--threshold', String(cfg.similarity_threshold),
-      '--min-size', String(cfg.min_size),
-      '--max-size', String(cfg.max_size),
-      '--model', cfg.model,
-      ...(cfg.prune ? ['--prune'] : []),
-    ];
-    try {
-      const child = spawn(process.execPath, args, {
-        detached: true,
-        stdio: 'ignore',
-        env: { ...process.env, FOLKLORE_HOME: homeDir },
-      });
-      child.unref();
-      log(`consolidate-tick: spawned room=${room} pid=${child.pid}`);
-      spawned++;
-    } catch (e) {
-      log(`consolidate-tick: spawn failed for room=${room}: ${(e as Error).message}`);
-    }
+  try {
+    const child = spawn(process.execPath, args, {
+      detached: true,
+      stdio: 'ignore',
+      env: { ...process.env, FOLKLORE_HOME: homeDir },
+    });
+    child.unref();
+    log(`consolidate-tick: spawned pid=${child.pid}`);
+    spawned = 1;
+  } catch (e) {
+    log(`consolidate-tick: spawn failed: ${(e as Error).message}`);
   }
 
-  // Record the run attempt timestamp regardless of per-room outcome.
-  // Per-child success/failure is opaque to the daemon (they're detached).
+  // Record the run attempt timestamp regardless of child outcome.
+  // The child's success/failure is opaque to the daemon (it's detached).
   saveState(homeDir, {
     version: 1,
     last_run_at: now.toISOString(),

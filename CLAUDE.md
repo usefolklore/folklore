@@ -25,9 +25,8 @@ connected peers first. If a confident answer exists (satisfaction ≥
 injects the graph hits into your context — you reason from cached
 peer knowledge instead of paying the network trip. If the graph
 can't satisfy the query, the web call proceeds normally and a
-PostToolUse hook auto-saves the result into the system-managed
-`research` room so the next session (yours or any peer's) hits the
-graph instead of the web.
+PostToolUse hook auto-saves the result into your graph so the next
+session (yours or any peer's) hits the graph instead of the web.
 
 What this means in practice:
 - Routine prompts ("fix this typo", "rename X to Y") never touch
@@ -45,35 +44,27 @@ Tuning knobs (env in `.claude/settings.json`):
 - `FOLKLORE_PREFETCH_PEERS=0` — force local-only (skip federated
   fan-out).
 
-## System rooms (always-on, P2P-shared, auto-populated)
+## What gets shared
 
-Two canonical rooms every folklore peer advertises out of the box:
-
-- **`toolshed`** — codebase, skills, MCP tools, deps, git history.
-  "What can this peer do." Stale-after: 30 days.
-- **`research`** — arxiv, hn, rss, web searches, web fetches.
-  "What has this peer recently read." Stale-after: 7 days.
-
-Membership is virtual — derived from each node's `source_uri` scheme,
-not from its `room` field. You don't need to set the room when you
-`folklore save`: a URL-sourced save lands in `research`
-automatically; a codebase save lands in `toolshed`. The system rooms
-are always present in shared-rooms.json and cannot be unshared.
-
-Every other room is user-negotiable — opt-in via the share TUI.
+Every node is either local-only or shared over P2P, gated by a
+per-node `private` flag. Sharing is symmetric: peers exchange their
+non-private nodes via the Y.js CRDT sync. A node's `source_uri`
+scheme records where it came from (codebase, web fetch, arxiv, etc.);
+an optional local-only `workspace` tag groups nodes by the repo they
+were captured in but never travels over the wire.
 
 ## Freshness rule (data aging)
 
 Every graph hit returned by `ask --json` and the prefetch hook carries
 `age_days` and `fetched_at`. The smart-hook render shows it inline:
-`label [room, 3d] d=0.82`. When choosing whether to trust a cache
-hit vs re-fetch:
+`label [3d] d=0.82`. When choosing whether to trust a cache hit vs
+re-fetch:
 
-- If the hit is younger than the room's stale-after window, trust the
-  cache. (research: <7d, toolshed: <30d.)
-- If the hit is older, prefer a fresh pull — `mcp__folklore__trigger_room`
-  or the original WebFetch / WebSearch — and let the auto-save hook put
-  the newer version back into the graph.
+- If the hit is younger than the staleness window (default 7 days),
+  trust the cache.
+- If the hit is older, prefer a fresh pull — the original WebFetch /
+  WebSearch — and let the auto-save hook put the newer version back
+  into the graph.
 - If a hit has no `fetched_at` at all, treat it as stale of unknown age.
 
 ## When to invoke folklore
@@ -99,10 +90,10 @@ memory explicitly, before deciding whether you even need a web call:
    the statusline panel and the `folklore metrics bypass` audit,
    not by routing through Bash.
 
-3. **`search` / `ask`** take a query string and optional room filter.
-   `ask` is the higher-level one — it does multi-stage retrieval
-   (hybrid lex+vec → cross-encoder rerank → graph PPR rerank) and
-   returns a satisfaction-scored result. `search` is the raw k-NN.
+3. **`search` / `ask`** take a query string. `ask` is the
+   higher-level one — it does multi-stage retrieval (hybrid lex+vec →
+   cross-encoder rerank → graph PPR rerank) and returns a
+   satisfaction-scored result. `search` is the raw k-NN.
 
 4. **`find_tunnels`** surfaces surprising connections across domains
    — useful when you suspect two ideas are related but aren't sure.
@@ -111,16 +102,16 @@ memory explicitly, before deciding whether you even need a web call:
    already have a node id (from a prior search hit or a citation).
 
 6. **Save synthesized insights with `folklore save --type
-   synthesis --room <room>`** after reasoning through an external
-   result. The auto-save hook already filed the raw source; your
-   synthesis adds the *distilled* claim alongside it. Future
-   retrieval hits the synthesis first (shorter, denser signal) and
-   pulls the raw source as the neighbor.
+   synthesis`** after reasoning through an external result. The
+   auto-save hook already filed the raw source; your synthesis adds
+   the *distilled* claim alongside it. Future retrieval hits the
+   synthesis first (shorter, denser signal) and pulls the raw source
+   as the neighbor.
 
 7. **When the deny-hook overrides your WebSearch.** If you see the
    tool call denied with a graph hit injected, treat the graph data
    as the authoritative answer. If it turns out wrong or stale,
-   tune `FOLKLORE_DENY_THRESHOLD` upward (0.90 / 0.95) or trigger
-   a refresh via `mcp__folklore__trigger_room` then retry.
+   tune `FOLKLORE_DENY_THRESHOLD` upward (0.90 / 0.95) or re-run the
+   original WebFetch / WebSearch to refresh, then retry.
 
 <!-- folklore:end -->

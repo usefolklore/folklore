@@ -303,7 +303,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
           );
         }
 
-        // 4. Run federated search. Skip cross-room tunnel pass — it
+        // 4. Run federated search. Skip cross-domain tunnel pass — it
         // adds ~150-250ms and the federated_search MCP response
         // surface does not render tunnels.
         const result = await runFederatedSearch(
@@ -651,19 +651,18 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
 
   // ─────────────── recent_sessions ─────────
   // Phase 20 — 16th MCP tool. Returns structured rollups of recent Claude
-  // Code sessions from the local `sessions` room so the agent can recover
-  // context across restarts. The `sessions` room is NEVER shared over
-  // libp2p — session data stays local.
+  // Code sessions stored locally so the agent can recover context across
+  // restarts. Session data is NEVER shared over libp2p — it stays local.
 
   server.registerTool(
     'recent_sessions',
     {
       description:
-        'Return structured rollups of recent Claude Code sessions from the local `sessions` room. ' +
+        'Return structured rollups of recent local Claude Code sessions. ' +
         'Each rollup contains {id, started_at, duration_ms, tool_calls, files_touched, ' +
         'final_assistant_message, git_branch, node_count}. ' +
         'Use this tool at the start of a new session to recover what the previous session was doing. ' +
-        'The `sessions` room is NEVER shared over libp2p — session data stays local.',
+        'Session data is NEVER shared over libp2p — it stays local.',
       inputSchema: {
         hours: z
           .number()
@@ -703,15 +702,15 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
 
   // ─────────────── oracle_ask ─────────────
   // Layer A of the peer-discovery stack — post a question to the oracle
-  // system room. Every connected peer picks it up via their next
-  // `touch oracle`. Returns the new question id so the caller can
+  // bulletin board. Every connected peer picks it up via their next
+  // `touch`. Returns the new question id so the caller can
   // poll back with oracle_answers.
 
   server.registerTool(
     'oracle_ask',
     {
       description:
-        'Post a new question to the oracle system room. The question propagates ' +
+        'Post a new question to the oracle bulletin board. The question propagates ' +
         'to all connected peers via the existing touch + CRDT sync (no new ' +
         'wire protocol). Peers can answer with oracle_answer. Returns the ' +
         'question id (`oracle-question:<uuid>`). Use this when you want the ' +
@@ -804,7 +803,7 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
     'list_open_questions',
     {
       description:
-        'List open questions in the oracle room — questions peers (including ' +
+        'List open questions in the oracle bulletin board — questions peers (including ' +
         'you) have posted and are awaiting answers for. Newest-first. Each ' +
         'entry has {id, label, text, asked_by, status, fetched_at, ' +
         'answer_count}. Use this before answering to see what the network ' +

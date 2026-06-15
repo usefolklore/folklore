@@ -32,31 +32,31 @@ const buildGraphWith = (nodes: readonly GraphNode[]): Graph => {
 test('phase-32: empty graph produces a sane snapshot', () => {
   const snap = buildSnapshot(empty(), '2026-04-16T10:00:00.000Z');
   assert.strictEqual(snap.total_nodes, 0);
-  assert.strictEqual(snap.total_rooms, 0);
-  assert.strictEqual(snap.rooms_by_size.length, 0);
+  assert.strictEqual(snap.total_workspaces, 0);
+  assert.strictEqual(snap.workspaces_by_size.length, 0);
   assert.strictEqual(snap.recent_nodes.length, 0);
 });
 
-test('phase-32: groups nodes by room and sorts by size', () => {
+test('phase-32: groups nodes by workspace and sorts by size', () => {
   const nodes = [
-    mkNode({ id: 'a', room: 'r1' }),
-    mkNode({ id: 'b', room: 'r1' }),
-    mkNode({ id: 'c', room: 'r1' }),
-    mkNode({ id: 'd', room: 'r2' }),
+    mkNode({ id: 'a', workspace: 'r1' }),
+    mkNode({ id: 'b', workspace: 'r1' }),
+    mkNode({ id: 'c', workspace: 'r1' }),
+    mkNode({ id: 'd', workspace: 'r2' }),
   ];
   const snap = buildSnapshot(buildGraphWith(nodes));
   assert.strictEqual(snap.total_nodes, 4);
-  assert.strictEqual(snap.total_rooms, 2);
-  assert.strictEqual(snap.rooms_by_size[0].name, 'r1');
-  assert.strictEqual(snap.rooms_by_size[0].node_count, 3);
-  assert.strictEqual(snap.rooms_by_size[1].name, 'r2');
+  assert.strictEqual(snap.total_workspaces, 2);
+  assert.strictEqual(snap.workspaces_by_size[0].name, 'r1');
+  assert.strictEqual(snap.workspaces_by_size[0].node_count, 3);
+  assert.strictEqual(snap.workspaces_by_size[1].name, 'r2');
 });
 
 test('phase-32: recent_nodes sorted by fetched_at descending', () => {
   const nodes = [
-    mkNode({ id: 'old', label: 'old', room: 'r', fetched_at: '2026-04-10T00:00:00.000Z' }),
-    mkNode({ id: 'new', label: 'new', room: 'r', fetched_at: '2026-04-16T00:00:00.000Z' }),
-    mkNode({ id: 'mid', label: 'mid', room: 'r', fetched_at: '2026-04-12T00:00:00.000Z' }),
+    mkNode({ id: 'old', label: 'old', workspace: 'r', fetched_at: '2026-04-10T00:00:00.000Z' }),
+    mkNode({ id: 'new', label: 'new', workspace: 'r', fetched_at: '2026-04-16T00:00:00.000Z' }),
+    mkNode({ id: 'mid', label: 'mid', workspace: 'r', fetched_at: '2026-04-12T00:00:00.000Z' }),
   ];
   const snap = buildSnapshot(buildGraphWith(nodes));
   assert.strictEqual(snap.recent_nodes[0].id, 'new');
@@ -67,10 +67,10 @@ test('phase-32: recent_nodes sorted by fetched_at descending', () => {
 test('phase-32: p2p_inbound_7d counts only peer-stamped + within-7-days nodes', () => {
   const now = '2026-04-16T00:00:00.000Z';
   const nodes = [
-    mkNode({ id: 'p1', room: 'r', fetched_at: '2026-04-15T00:00:00.000Z', source_file: 'peer:12D3...' }),
-    mkNode({ id: 'p2', room: 'r', fetched_at: '2026-04-15T00:00:00.000Z', source_file: 'p2p://abc' }),
-    mkNode({ id: 'local', room: 'r', fetched_at: '2026-04-15T00:00:00.000Z', source_file: 'arxiv' }),
-    mkNode({ id: 'old-peer', room: 'r', fetched_at: '2026-03-01T00:00:00.000Z', source_file: 'peer:x' }),
+    mkNode({ id: 'p1', workspace: 'r', fetched_at: '2026-04-15T00:00:00.000Z', source_file: 'peer:12D3...' }),
+    mkNode({ id: 'p2', workspace: 'r', fetched_at: '2026-04-15T00:00:00.000Z', source_file: 'p2p://abc' }),
+    mkNode({ id: 'local', workspace: 'r', fetched_at: '2026-04-15T00:00:00.000Z', source_file: 'arxiv' }),
+    mkNode({ id: 'old-peer', workspace: 'r', fetched_at: '2026-03-01T00:00:00.000Z', source_file: 'peer:x' }),
   ];
   const snap = buildSnapshot(buildGraphWith(nodes), now);
   assert.strictEqual(snap.p2p_inbound_7d, 2);
@@ -78,14 +78,14 @@ test('phase-32: p2p_inbound_7d counts only peer-stamped + within-7-days nodes', 
 
 test('phase-32: render output contains all section headings + stays under budget', () => {
   const nodes = [
-    mkNode({ id: 'a', room: 'alpha', label: 'one', fetched_at: '2026-04-16T00:00:00.000Z' }),
-    mkNode({ id: 'b', room: 'beta',  label: 'two', fetched_at: '2026-04-15T00:00:00.000Z' }),
+    mkNode({ id: 'a', workspace: 'alpha', label: 'one', fetched_at: '2026-04-16T00:00:00.000Z' }),
+    mkNode({ id: 'b', workspace: 'beta',  label: 'two', fetched_at: '2026-04-15T00:00:00.000Z' }),
   ];
   const snap = buildSnapshot(buildGraphWith(nodes));
   const out = render(snap);
   assert.match(out, /# Recent Context/);
   assert.match(out, /## Graph at a Glance/);
-  assert.match(out, /## Biggest Rooms/);
+  assert.match(out, /## Biggest Workspaces/);
   assert.match(out, /## Newest Nodes/);
   const wordCount = out.split(/\s+/).length;
   assert.ok(wordCount <= 550, `render output ${wordCount} words exceeds soft budget`);
@@ -96,7 +96,7 @@ test('phase-32: render clamps on 10000-node synthetic graph', () => {
   for (let i = 0; i < 10_000; i++) {
     nodes.push(mkNode({
       id: `n${i}`,
-      room: `room${i % 20}`,
+      workspace: `workspace${i % 20}`,
       label: `node ${i} with a moderately long title that describes something important`,
       fetched_at: `2026-04-${String((i % 15) + 1).padStart(2, '0')}T00:00:00.000Z`,
     }));

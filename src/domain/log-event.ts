@@ -74,18 +74,17 @@ export type LogEvent =
   | (EventBase & { kind: 'peer.connected';           peer_id: string })
   | (EventBase & { kind: 'peer.disconnected';        peer_id: string; reason?: string })
   | (EventBase & { kind: 'peer.dial_failed';         addr: string; error: string })
-  | (EventBase & { kind: 'search.inbound';           peer_id: string; room?: string; k: number })
-  | (EventBase & { kind: 'search.outbound';          peer_id: string; room?: string; k: number; ms: number })
+  | (EventBase & { kind: 'search.inbound';           peer_id: string; k: number })
+  | (EventBase & { kind: 'search.outbound';          peer_id: string; k: number; ms: number })
   | (EventBase & { kind: 'search.timeout';           peer_id: string; ms: number })
-  | (EventBase & { kind: 'search.unauthorized';      peer_id: string; room: string })
   | (EventBase & { kind: 'search.rate_limited';      peer_id: string })
   | (EventBase & { kind: 'envelope.verify_failed';   reason: string; signer_did_hash?: string })
   | (EventBase & { kind: 'envelope.signed';          payload_kind: string })
-  | (EventBase & { kind: 'share.update_received';    peer_id: string; room: string; bytes: number })
-  | (EventBase & { kind: 'share.update_sent';        peer_id: string; room: string; bytes: number })
-  | (EventBase & { kind: 'share.update_rejected';    peer_id: string; room: string; reason: string })
-  | (EventBase & { kind: 'touch.requested';          peer_id: string; room: string })
-  | (EventBase & { kind: 'touch.responded';          peer_id: string; room: string; node_count: number })
+  | (EventBase & { kind: 'share.update_received';    peer_id: string; bytes: number })
+  | (EventBase & { kind: 'share.update_sent';        peer_id: string; bytes: number })
+  | (EventBase & { kind: 'share.update_rejected';    peer_id: string; reason: string })
+  | (EventBase & { kind: 'touch.requested';          peer_id: string })
+  | (EventBase & { kind: 'touch.responded';          peer_id: string; node_count: number })
   | (EventBase & { kind: 'identity.created' })
   | (EventBase & { kind: 'identity.rotated' })
   | (EventBase & { kind: 'update.checked';           current_version: string; latest_version: string })
@@ -151,18 +150,17 @@ export const fmtEvent = (e: LogEvent): string => {
     case 'peer.connected':         return `${head}${tag}peer=${e.peer_id}`;
     case 'peer.disconnected':      return `${head}${tag}peer=${e.peer_id} reason=${e.reason ?? '?'}`;
     case 'peer.dial_failed':       return `${head}${tag}addr=${e.addr} error=${e.error}`;
-    case 'search.inbound':         return `${head}${tag}peer=${e.peer_id} room=${e.room ?? '*'} k=${e.k}`;
-    case 'search.outbound':        return `${head}${tag}peer=${e.peer_id} room=${e.room ?? '*'} k=${e.k} ms=${e.ms}`;
+    case 'search.inbound':         return `${head}${tag}peer=${e.peer_id} k=${e.k}`;
+    case 'search.outbound':        return `${head}${tag}peer=${e.peer_id} k=${e.k} ms=${e.ms}`;
     case 'search.timeout':         return `${head}${tag}peer=${e.peer_id} ms=${e.ms}`;
-    case 'search.unauthorized':    return `${head}${tag}peer=${e.peer_id} room=${e.room}`;
     case 'search.rate_limited':    return `${head}${tag}peer=${e.peer_id}`;
     case 'envelope.verify_failed': return `${head}${tag}reason=${e.reason}${e.signer_did_hash ? ' signer=' + e.signer_did_hash : ''}`;
     case 'envelope.signed':        return `${head}${tag}payload=${e.payload_kind}`;
-    case 'share.update_received':  return `${head}${tag}peer=${e.peer_id} room=${e.room} bytes=${e.bytes}`;
-    case 'share.update_sent':      return `${head}${tag}peer=${e.peer_id} room=${e.room} bytes=${e.bytes}`;
-    case 'share.update_rejected':  return `${head}${tag}peer=${e.peer_id} room=${e.room} reason=${e.reason}`;
-    case 'touch.requested':        return `${head}${tag}peer=${e.peer_id} room=${e.room}`;
-    case 'touch.responded':        return `${head}${tag}peer=${e.peer_id} room=${e.room} nodes=${e.node_count}`;
+    case 'share.update_received':  return `${head}${tag}peer=${e.peer_id} bytes=${e.bytes}`;
+    case 'share.update_sent':      return `${head}${tag}peer=${e.peer_id} bytes=${e.bytes}`;
+    case 'share.update_rejected':  return `${head}${tag}peer=${e.peer_id} reason=${e.reason}`;
+    case 'touch.requested':        return `${head}${tag}peer=${e.peer_id}`;
+    case 'touch.responded':        return `${head}${tag}peer=${e.peer_id} nodes=${e.node_count}`;
     case 'identity.created':       return `${head}${tag}`;
     case 'identity.rotated':       return `${head}${tag}`;
     case 'update.checked':         return `${head}${tag}current=${e.current_version} latest=${e.latest_version}`;

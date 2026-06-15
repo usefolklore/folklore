@@ -130,12 +130,12 @@ export const startFileWatchers = (deps: FileWatcherDeps): FileWatcherHandle => {
     if (state.paths.size === 0) return;
     const paths = Array.from(state.paths);
     state.paths = new Set();
-    deps.queue.submit({ kind: 'ingest:batch', room: state.target.room, paths });
-    log(`watch: queued ingest:batch room=${state.target.room} paths=${paths.length}`);
+    deps.queue.submit({ kind: 'ingest:batch', workspace: state.target.workspace, paths });
+    log(`watch: queued ingest:batch workspace=${state.target.workspace} paths=${paths.length}`);
   };
 
   const enqueueFile = (target: WatchTarget, path: string): void => {
-    const key = `${target.room}:${target.root}`;
+    const key = `${target.workspace}:${target.root}`;
     let state = batches.get(key);
     if (!state) {
       state = { target, paths: new Set(), timer: null };
@@ -173,15 +173,15 @@ export const startFileWatchers = (deps: FileWatcherDeps): FileWatcherHandle => {
     if (caughtUp.length > 0) {
       for (let i = 0; i < caughtUp.length; i += MAX_BATCH_PATHS) {
         const chunk = caughtUp.slice(i, i + MAX_BATCH_PATHS);
-        deps.queue.submit({ kind: 'ingest:batch', room: t.room, paths: chunk });
+        deps.queue.submit({ kind: 'ingest:batch', workspace: t.workspace, paths: chunk });
       }
       const batches = Math.ceil(caughtUp.length / MAX_BATCH_PATHS);
-      log(`watch: catch-up for ${t.root} (room=${t.room}) — ${caughtUp.length} file(s) in ${batches} batch(es) since ${t.last_scan_at ?? '<never>'}`);
+      log(`watch: catch-up for ${t.root} (workspace=${t.workspace}) — ${caughtUp.length} file(s) in ${batches} batch(es) since ${t.last_scan_at ?? '<never>'}`);
     }
     // Stamp the scan so the next boot's catch-up window starts here.
     // Done BEFORE chokidar starts so concurrent live events still
     // get debounced through the normal path.
-    try { stampWatchTargetScan(watchTargetsPath, { room: t.room, root: t.root }); }
+    try { stampWatchTargetScan(watchTargetsPath, { workspace: t.workspace, root: t.root }); }
     catch (e) { log(`watch: stamp failed for ${t.root}: ${(e as Error).message}`); }
 
     const w = chokidar.watch(t.root, {
@@ -195,7 +195,7 @@ export const startFileWatchers = (deps: FileWatcherDeps): FileWatcherHandle => {
     w.on('change', (p) => enqueueFile(t, p));
     w.on('error', (e) => log(`watch: error on ${t.root}: ${(e as Error).message}`));
     watchers.push(w);
-    log(`watch: started for ${t.root} (room=${t.room})`);
+    log(`watch: started for ${t.root} (workspace=${t.workspace})`);
   }
 
   // Session watcher — flat ~/.claude/projects tree. Always-on since

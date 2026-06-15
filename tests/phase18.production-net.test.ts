@@ -189,8 +189,8 @@ describe('Phase 18 — Structural: PeerConfig extensions (Plan 01)', () => {
 
   test("S11 DEFAULT_PEER has locked default values (50, 10, [], true)", () => {
     assert.ok(
-      cfg.includes('max_updates_per_sec_per_peer_per_room: 50'),
-      'default max_updates_per_sec_per_peer_per_room must be 50',
+      cfg.includes('max_updates_per_sec_per_peer: 50'),
+      'default max_updates_per_sec_per_peer must be 50',
     );
     assert.ok(
       cfg.includes('max_concurrent_share_syncs: 10'),
@@ -232,12 +232,12 @@ describe('Phase 18 — Structural: Daemon wiring (Plan 03)', () => {
   });
 
   test("S12d Plan 03: bandwidth config wired into createShareSyncRegistry", () => {
-    // The daemon passes maxUpdatesPerSecPerPeerPerRoom from config into
+    // The daemon passes maxUpdatesPerSecPerPeer from config into
     // createShareSyncRegistry which internally constructs the rate limiter —
     // the registry owns the createRateLimiter call (not the daemon directly).
     assert.ok(
-      loop.includes('max_updates_per_sec_per_peer_per_room'),
-      'daemon must pass max_updates_per_sec_per_peer_per_room to share sync registry',
+      loop.includes('max_updates_per_sec_per_peer'),
+      'daemon must pass max_updates_per_sec_per_peer to share sync registry',
     );
     assert.ok(
       loop.includes('createShareSyncRegistry'),

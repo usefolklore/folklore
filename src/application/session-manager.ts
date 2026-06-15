@@ -79,7 +79,6 @@ const buildSummary = (sessions: readonly GraphNode[]): string => {
   return [
     `Session consolidation: ${sessions.length} sessions from ${oldest} to ${newest}`,
     `Topics discussed: ${topTopics.join(', ')}`,
-    `Rooms: ${[...new Set(sessions.map((s) => s.room))].filter(Boolean).join(', ')}`,
   ].join('\n');
 };
 
@@ -123,7 +122,9 @@ export const consolidateSessions =
           source_uri: `session://summary-${Date.now()}`,
           fetched_at: new Date().toISOString(),
           kind: 'session_summary',
-          room: toConsolidate[0]?.room as string ?? 'default',
+          ...(typeof toConsolidate[0]?.workspace === 'string'
+            ? { workspace: toConsolidate[0].workspace }
+            : {}),
           consolidated_count: toConsolidate.length,
           summary: summaryText,
         };

@@ -19,14 +19,14 @@ import type { ConsolidateConfig } from '../src/infrastructure/config-loader.ts';
 
 const baseConfig: ConsolidateConfig = {
   enabled: true,
-  rooms: ['sessions'],
+  workspaces: ['sessions'],
   interval_seconds: 86400,
   model: 'qwen2.5:1.5b',
   similarity_threshold: 0.8,
   min_size: 5,
   max_size: 100,
   prune: true,
-  min_room_raw_to_trigger: 50,
+  min_workspace_raw_to_trigger: 50,
 };
 
 let home: string;
@@ -130,7 +130,7 @@ describe('integration — config wiring', () => {
       'daemon:',
       '  consolidate:',
       '    enabled: true',
-      '    rooms: [sessions, research]',
+      '    workspaces: [sessions, research]',
       '    interval_seconds: 3600',
       '    model: qwen2.5:3b',
       '    prune: false',
@@ -140,7 +140,7 @@ describe('integration — config wiring', () => {
     assert.ok(r.isOk());
     if (!r.isOk()) return;
     assert.equal(r.value.daemon.consolidate.enabled, true);
-    assert.deepEqual([...r.value.daemon.consolidate.rooms], ['sessions', 'research']);
+    assert.deepEqual([...r.value.daemon.consolidate.workspaces], ['sessions', 'research']);
     assert.equal(r.value.daemon.consolidate.interval_seconds, 3600);
     assert.equal(r.value.daemon.consolidate.model, 'qwen2.5:3b');
     assert.equal(r.value.daemon.consolidate.prune, false);

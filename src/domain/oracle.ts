@@ -1,11 +1,11 @@
 /**
  * oracle — peer-to-peer Q&A bulletin board.
  *
- * Questions and answers live as GraphNodes in the `oracle` system room.
- * Propagation is free: the existing touch + CRDT sync distributes them
- * to peers, the existing remote-node validator gates them at the trust
- * boundary, the secret-gate redacts them, the virtual-room membership
- * in system-rooms.ts auto-includes them on every peer without opt-in.
+ * Questions and answers live as GraphNodes identified by their
+ * `oracle_kind` field and `folklore:oracle` source_file. Propagation
+ * is free: the existing touch + CRDT sync distributes them to peers,
+ * the existing remote-node validator gates them at the trust boundary,
+ * and the secret-gate redacts them.
  *
  * The oracle "protocol" is therefore entirely a data shape — no new
  * libp2p handler, no new wire format, no new rate limiter. That's the
@@ -17,7 +17,7 @@
  *     id:           oracle-question:<uuid>
  *     source_uri:   oracle-question:<uuid>
  *     file_type:    'document'
- *     room:         'oracle' (physical room = system room name is fine)
+ *     source_file:  'folklore:oracle'
  *     label:        short title (first 120 chars of text)
  *     summary:      full question body
  *     oracle_kind:  'question'
@@ -29,7 +29,7 @@
  *     id:           oracle-answer:<uuid>
  *     source_uri:   oracle-answer:<uuid>
  *     file_type:    'rationale'
- *     room:         'oracle'
+ *     source_file:  'folklore:oracle'
  *     label:        first 120 chars of answer body
  *     summary:      full answer body
  *     oracle_kind:  'answer'
@@ -95,7 +95,6 @@ export const nodeFromQuestion = (i: QuestionInput): GraphNode => {
     file_type: 'document',
     source_file: 'folklore:oracle',
     source_uri: id,
-    room: 'oracle',
     fetched_at: now,
     embedding_id: id,
     summary: clampSummary(i.text),
@@ -117,7 +116,6 @@ export const nodeFromAnswer = (i: AnswerInput): GraphNode => {
     file_type: 'rationale',
     source_file: 'folklore:oracle',
     source_uri: id,
-    room: 'oracle',
     fetched_at: now,
     embedding_id: id,
     summary: clampSummary(i.text),

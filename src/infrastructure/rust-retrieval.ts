@@ -21,27 +21,27 @@ import { dirname, join } from 'node:path';
 import * as readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { VectorError } from '../domain/errors.js';
-import type { NodeId, Room } from '../domain/graph.js';
+import type { NodeId } from '../domain/graph.js';
 import type { Vector } from '../domain/vectors.js';
 
 // ─────────────────────── wire types ───────────────────────
 
 interface WireVector {
   readonly node_id: NodeId;
-  readonly room: Room;
+  readonly room: string;
   readonly vector: readonly number[];
 }
 
 interface WireTunnel {
   readonly a: NodeId;
   readonly b: NodeId;
-  readonly room_a: Room;
-  readonly room_b: Room;
+  readonly room_a: string;
+  readonly room_b: string;
   readonly distance: number;
 }
 
 interface WireCentroid {
-  readonly room: Room;
+  readonly room: string;
   readonly vector: readonly number[];
   readonly doc_count: number;
 }
@@ -70,8 +70,8 @@ interface RustResponse {
 export interface RetrievalTunnel {
   readonly a: NodeId;
   readonly b: NodeId;
-  readonly room_a: Room;
-  readonly room_b: Room;
+  readonly room_a: string;
+  readonly room_b: string;
   readonly distance: number;
 }
 
@@ -80,7 +80,7 @@ export interface RetrievalTunnel {
  * RouterRetriever-style routing (cosine query → nearest room).
  */
 export interface RoomCentroid {
-  readonly room: Room;
+  readonly room: string;
   readonly vector: Vector;
   readonly doc_count: number;
 }
@@ -94,7 +94,7 @@ export interface RustRetrievalClient {
   findTunnels(
     vectors: ReadonlyArray<{
       readonly node_id: NodeId;
-      readonly room: Room;
+      readonly room: string;
       readonly vector: Vector;
     }>,
     kNeighbors?: number,
@@ -103,7 +103,7 @@ export interface RustRetrievalClient {
   computeCentroids(
     vectors: ReadonlyArray<{
       readonly node_id: NodeId;
-      readonly room: Room;
+      readonly room: string;
       readonly vector: Vector;
     }>,
   ): ResultAsync<readonly RoomCentroid[], VectorError>;
@@ -213,7 +213,7 @@ export const spawnRustRetrievalClient = (
   const toWireVectors = (
     vectors: ReadonlyArray<{
       readonly node_id: NodeId;
-      readonly room: Room;
+      readonly room: string;
       readonly vector: Vector;
     }>,
   ): readonly WireVector[] =>
@@ -226,7 +226,7 @@ export const spawnRustRetrievalClient = (
   const findTunnels = (
     vectors: ReadonlyArray<{
       readonly node_id: NodeId;
-      readonly room: Room;
+      readonly room: string;
       readonly vector: Vector;
     }>,
     kNeighbors = 20,
@@ -256,7 +256,7 @@ export const spawnRustRetrievalClient = (
   const computeCentroids = (
     vectors: ReadonlyArray<{
       readonly node_id: NodeId;
-      readonly room: Room;
+      readonly room: string;
       readonly vector: Vector;
     }>,
   ): ResultAsync<readonly RoomCentroid[], VectorError> =>

@@ -6,9 +6,9 @@
  *   ingestSource(deps)(source)
  *     — runs one source end to end, returns a SourceRun report
  *
- *   triggerRoom(deps)(room)
- *     — loads sources.json, filters to the room, hydrates via the
- *       registry, runs ingestSource for each, returns a RoomRun
+ *   triggerAllSources(deps)()
+ *     — loads sources.json, hydrates every enabled source via the
+ *       registry, runs ingestSource for each, returns an IngestTickRun
  *
  * Dedup strategy
  * --------------
@@ -36,7 +36,7 @@ import type { AppError } from '../domain/errors.js';
 import type { ContentItem } from '../domain/content.js';
 import type { Graph } from '../domain/graph.js';
 import { getNode } from '../domain/graph.js';
-import type { Source, SourceDescriptor, SourceRun, RoomRun } from '../domain/sources.js';
+import type { Source, SourceDescriptor, SourceRun, IngestTickRun } from '../domain/sources.js';
 import { emptyRun, isEnabled } from '../domain/sources.js';
 import type { GraphRepository } from '../infrastructure/graph-repository.js';
 import type { VectorIndex } from '../infrastructure/vector-index.js';
@@ -124,17 +124,15 @@ export const ingestSource =
 // ─────────────────────── triggerAllSources ─────────────────
 
 /**
- * V5 (Phase 24): load every enabled source and run it. Returns a
- * RoomRun aggregate (the shape is retained for back-compat with the
- * daemon's tick reporting); the `room` field on the aggregate is
- * omitted because the room dimension no longer exists.
+ * V5 (Phase 24): load every enabled source and run it. Returns an
+ * IngestTickRun aggregate consumed by the daemon's tick reporting.
  *
  * Per-source errors are captured on SourceRun.error so the CLI can
  * report them without aborting the whole batch.
  */
 export const triggerAllSources =
   (deps: IngestDeps) =>
-  (): ResultAsync<RoomRun, AppError> => {
+  (): ResultAsync<IngestTickRun, AppError> => {
     const started_at = new Date().toISOString();
     return deps.sources
       .list()
@@ -162,7 +160,7 @@ export const triggerAllSources =
               }),
             ),
           ),
-        ).map((runs): RoomRun => ({
+        ).map((runs): IngestTickRun => ({
           runs: [...hydrationRuns, ...runs],
           started_at,
           finished_at: new Date().toISOString(),
@@ -171,12 +169,12 @@ export const triggerAllSources =
   };
 
 /**
- * @deprecated V5 — preserved alias of `triggerAllSources`. The `room`
+ * @deprecated V5 — preserved alias of `triggerAllSources`. The `_room`
  * argument is ignored. Will be removed in a follow-up wave.
  */
 export const triggerRoom =
   (deps: IngestDeps) =>
-  (_room: string): ResultAsync<RoomRun, AppError> =>
+  (_room: string): ResultAsync<IngestTickRun, AppError> =>
     triggerAllSources(deps)();
 
 // ─────────────────────── internals ────────────────────────

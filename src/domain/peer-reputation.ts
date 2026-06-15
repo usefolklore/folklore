@@ -28,11 +28,10 @@
 /**
  * Stable key for a subject the reputation system tracks.
  *
- * v1 only ships `entity:*` and `room:*` keys. Embedding-cluster keys
- * are deferred (taxonomy drift risk — see design doc §8 Risk 1).
+ * v1 only ships `entity:*` keys. Embedding-cluster keys are deferred
+ * (taxonomy drift risk — see design doc §8 Risk 1).
  *
- *   - `entity:product:lemlist`   from canonical entity_id (preferred)
- *   - `room:research`            from system room name (fallback)
+ *   - `entity:product:lemlist`   from canonical entity_id
  */
 export type SubjectKey = string;
 
@@ -89,7 +88,7 @@ export interface ReviewerEvidence {
 export interface SubjectAggregate {
   readonly key: SubjectKey;
   readonly label: string;
-  readonly kind: 'entity' | 'room';
+  readonly kind: 'entity';
   readonly peer_scores: Readonly<Record<PeerIdRef, PeerSubjectScore>>;
 }
 
@@ -137,9 +136,8 @@ export const PRIOR_MEAN = 0.5;
 export const PRIOR_WEIGHT = 3;
 
 /**
- * Default windows for staleness + decay. Matches the system room
- * conventions (research = 7-day stale-window, toolshed = 30 days).
- * Per-subject overrides land on the SubjectAggregate later.
+ * Default windows for staleness + decay — the per-subject decay
+ * window. Per-subject overrides land on the SubjectAggregate later.
  */
 export const DEFAULT_STALE_AFTER_DAYS = 30;
 export const DEFAULT_DECAY_HALF_LIFE_DAYS = 45;
@@ -223,7 +221,7 @@ export interface RecordObservationInput {
   readonly target_peer_id: PeerIdRef;
   readonly subject_key: SubjectKey;
   readonly subject_label: string;
-  readonly subject_kind: 'entity' | 'room';
+  readonly subject_kind: 'entity';
   readonly reviewer_did: ReviewerDid;
   readonly satisfaction_score: number;       // 0..1 from peer-telemetry scorer
   readonly review_weight?: number;           // freshness · provenance · independence

@@ -1,8 +1,8 @@
 /**
- * `folklore oracle <sub>` — peer-to-peer Q&A via the oracle system room.
+ * `folklore oracle <sub>` — peer-to-peer Q&A bulletin board.
  *
  * Subcommands:
- *   ask "<text>"            post a question to the oracle room; peers see it on next touch
+ *   ask "<text>"            post a question; peers see it on next touch
  *   answer <qid> "<text>"   post an answer linked to a question id
  *   list [--status open]    show questions, newest-first
  *   show <qid>              show a question plus its answers (confidence-ranked)
@@ -394,7 +394,7 @@ const answerable = async (rest: readonly string[]): Promise<number> => {
           distance: m.distance,
           node: getNode(graph.value, m.node_id),
         }))
-        .filter((h) => h.node?.room !== 'oracle')
+        .filter((h) => h.node?.source_file !== 'folklore:oracle')
         .map((h) => ({ nodeId: h.nodeId, distance: h.distance }));
       inputs.push({ question: q, hits });
     }
@@ -426,7 +426,7 @@ const answerable = async (rest: readonly string[]): Promise<number> => {
       console.log(`    ${r.question.id}  asked_by=${r.question.askedBy}  suggested_confidence=${r.suggestedConfidence.toFixed(2)}`);
       for (const h of r.topHits) {
         const node = getNode(graph.value, h.nodeId);
-        console.log(`    ↳ d=${h.distance.toFixed(3)} ${node?.label ?? h.nodeId} [${node?.room ?? '?'}]`);
+        console.log(`    ↳ d=${h.distance.toFixed(3)} ${node?.label ?? h.nodeId} [${node?.workspace ?? node?.source_file ?? '?'}]`);
       }
       console.log('');
     }

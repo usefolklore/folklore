@@ -29,7 +29,7 @@ const truncQuery = (q: string, max = 48): string => {
 };
 
 export const formatTelemetryBlock = (t: PeerPullTelemetry): string => {
-  const queryLine = ` query    "${truncQuery(t.query)}"${t.room ? ` · room=${t.room}` : ''}`;
+  const queryLine = ` query    "${truncQuery(t.query)}"`;
   const tookLine = ` took     ${formatMs(t.took_ms)}  (${formatMs(t.took_local_ms)} local · ${formatMs(t.took_merge_ms)} merge)`;
   const dataLine = ` data     ${formatBytes(t.bytes_received)} · ${t.result_count} result${t.result_count === 1 ? '' : 's'} · ${t.distinct_sources} unique source${t.distinct_sources === 1 ? '' : 's'}`;
   const peersLine = ` peers    ${t.peers_responded}/${t.peers_queried} responded · ${t.peers_alive} alive on swarm${
