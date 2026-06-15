@@ -42,7 +42,7 @@
       <div class="meta">
         <h3>Never-Research-Twice Tee</h3>
         <div class="desc">The speech-bubble mark screen-printed on heavyweight charcoal cotton. Unisex, S–3XL.</div>
-        <div class="row"><span class="price">$32</span><a class="buy" href="#" aria-disabled="true">Coming soon</a></div>
+        <div class="row"><span class="price">$32</span><a class="buy" data-price="tee" href="#" aria-disabled="true">Coming soon</a></div>
       </div>
     </div>
     <div class="prod">
@@ -50,7 +50,7 @@
       <div class="meta">
         <h3>Folk Sticker Sheet</h3>
         <div class="desc">Die-cut weatherproof vinyl — the sun, swallow, fish, flower, and the teller. Stick the lore anywhere.</div>
-        <div class="row"><span class="price">$9</span><a class="buy" href="#" aria-disabled="true">Coming soon</a></div>
+        <div class="row"><span class="price">$9</span><a class="buy" data-price="stickers" href="#" aria-disabled="true">Coming soon</a></div>
       </div>
     </div>
     <div class="prod">
@@ -58,7 +58,7 @@
       <div class="meta">
         <h3>The Hearth Pin</h3>
         <div class="desc">Hard-enamel lapel pin, polished gold edges, 1.25in. The voice of the folk on your collar.</div>
-        <div class="row"><span class="price">$12</span><a class="buy" href="#" aria-disabled="true">Coming soon</a></div>
+        <div class="row"><span class="price">$12</span><a class="buy" data-price="pin" href="#" aria-disabled="true">Coming soon</a></div>
       </div>
     </div>
     <div class="prod">
@@ -66,7 +66,7 @@
       <div class="meta">
         <h3>"The Commons" — Art Print</h3>
         <div class="desc">The whole village around the fire, threads of stars between them. Risograph-grain giclée, A2.</div>
-        <div class="row"><span class="price">$40</span><a class="buy" href="#" aria-disabled="true">Coming soon</a></div>
+        <div class="row"><span class="price">$40</span><a class="buy" data-price="commons-print" href="#" aria-disabled="true">Coming soon</a></div>
       </div>
     </div>
     <div class="prod">
@@ -74,7 +74,7 @@
       <div class="meta">
         <h3>"Mouth to Ear" — Art Print</h3>
         <div class="desc">Knowledge passing elder to child as a thread of stars. The founding image. Giclée, A2.</div>
-        <div class="row"><span class="price">$40</span><a class="buy" href="#" aria-disabled="true">Coming soon</a></div>
+        <div class="row"><span class="price">$40</span><a class="buy" data-price="hero-print" href="#" aria-disabled="true">Coming soon</a></div>
       </div>
     </div>
     <div class="prod">
@@ -82,7 +82,7 @@
       <div class="meta">
         <h3>"The Knowledge Graph" — Poster</h3>
         <div class="desc">Story-nodes — suns, faces, books — wired into one constellation. Matte poster, A1.</div>
-        <div class="row"><span class="price">$30</span><a class="buy" href="#" aria-disabled="true">Coming soon</a></div>
+        <div class="row"><span class="price">$30</span><a class="buy" data-price="graph-poster" href="#" aria-disabled="true">Coming soon</a></div>
       </div>
     </div>
   </div>
@@ -91,6 +91,7 @@
     <div>
       <div class="stamp">The Coin</div>
       <h2>$LORE — on <span style="color:var(--teal)">bags.fm.</span></h2>
+      <div id="lore-worth" class="loreworth"><span class="lw-pre">$LORE — checking the bag…</span></div>
       <p class="lead muted" style="margin-top:14px">A community memecoin for the commons. Fair-launched on bags.fm. The folk hold the lore — for the culture, not the chart.</p>
       <p style="margin-top:22px"><a class="btn btn-primary" href="https://bags.fm">Get $LORE on bags.fm</a></p>
       <p class="fineprint">Memecoin · for fun &amp; culture, not financial advice · contract address at launch.</p>
@@ -103,9 +104,16 @@
   <div class="wrap foot">
     <a href="/">Home</a>
     <a href="/blog">Blog</a>
+    <a href="/legal/terms">Terms</a>
+    <a href="/legal/privacy">Privacy</a>
+    <a href="/legal/refund">Refund</a>
     <a href="https://github.com/usefolklore/folklore">GitHub</a>
     <span class="r">MIT · signed by you · no central server, ever</span>
   </div>
 </footer>
+<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+<script src="/assets/config.js"></script>
+<script src="/assets/store-checkout.js"></script>
+<script src="/assets/lore-widget.js"></script>
 </body>
 </html>

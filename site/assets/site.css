@@ -88,3 +88,20 @@ footer{border-top:3px solid var(--ink);padding:46px 0 62px;background:var(--yell
 .foot{display:flex;gap:26px;flex-wrap:wrap;align-items:center;font-family:var(--mono);font-size:13px;font-weight:600}
 .foot a{border-bottom:2px solid var(--ink)}.foot a:hover{color:var(--paper)}
 .foot .r{margin-left:auto}
+
+/* $LORE live worth widget */
+.loreworth{margin-top:18px;font-family:var(--mono)}
+.lw-pre{font-size:13px;color:var(--muted)}
+.lw-mc{font-family:var(--serif);font-weight:700;font-size:clamp(2rem,4vw,3rem);line-height:1;letter-spacing:-.02em}
+.lw-lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.lw-row{display:flex;gap:12px;align-items:baseline;margin-top:10px;font-size:13px}
+.lw-price{font-weight:600}
+.lw-ch.up{color:var(--teal)}.lw-ch.dn{color:var(--pink)}
+
+/* legal pages */
+.legal{max-width:760px;margin:0 auto}
+.legal .upd{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:6px}
+.legal h2{font-family:var(--serif);font-weight:700;font-size:1.5rem;margin:1.5em 0 .4em}
+.legal p,.legal li{font-size:1.06rem;line-height:1.75}
+.legal ul{margin:.4em 0 1.1em 1.2em}
+.legal a{border-bottom:2px solid var(--ink)}
