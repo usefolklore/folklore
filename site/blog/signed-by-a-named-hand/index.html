@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Signed by a named hand · Folklore</title>
+<meta name="description" content="Anonymous answers of unknown trust are how RAG gets poisoned. Every record in Folklore is signed by a real, verified human — so a model can refuse what it can't trace." />
+<meta name="theme-color" content="#f4ecd8" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Signed by a named hand · Folklore" />
+<meta property="og:image" content="https://usefolklore.com/assets/gen/graph.png" />
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%231d1813"/><path d="M16 16h32a3 3 0 0 1 3 3v20a3 3 0 0 1-3 3H30l-9 8v-8h-5a3 3 0 0 1-3-3V19a3 3 0 0 1 3-3z" fill="none" stroke="%23f4ecd8" stroke-width="3" stroke-linejoin="round"/><path d="M33 20c2 5-4 7-4 11a4 4 0 0 0 8 0c0-2-1-3-1-3 3 2 5 4 5 8a8 8 0 1 1-16 0c0-6 6-8 8-16z" fill="%23ff4f6d"/></svg>' />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body>
+<div class="grain"></div>
+
+<header>
+  <div class="wrap head">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M12 12h40a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H30l-12 10v-10h-6a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4z" fill="none" stroke="#1d1813" stroke-width="3" stroke-linejoin="round"/><path d="M32 17c2 6-4 8-4 13a4 4 0 0 0 8 0c0-2-1-3-1-3 3 2 5 5 5 9a8 8 0 1 1-16 0c0-7 6-9 8-19z" fill="#ff4f6d" stroke="#1d1813" stroke-width="2" stroke-linejoin="round"/><path d="M32 31c1 3-2 4-2 7a2 2 0 0 0 4 0c0-2-1-2-1-3 2 5-1 6-1 6" fill="#f5b921"/></svg>
+      folklore
+    </a>
+    <nav class="hlinks">
+      <a href="/">Home</a><a href="/store">Store</a><a href="/blog" class="on">Blog</a>
+      <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+    </nav>
+    <a class="hcta" href="/#join">Install</a>
+    <details class="mnav">
+      <summary aria-label="Menu" role="button">☰</summary>
+      <div class="mnav-panel">
+        <a href="/">Home</a><a href="/store">Store</a><a href="/blog" class="on">Blog</a>
+        <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+        <a class="cta" href="/#join">Install</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<main class="wrap page">
+  <article class="article">
+    <a class="backlink" href="/blog">← all notes</a>
+    <span class="tag">Provenance</span>
+    <h1>Signed by a named hand</h1>
+    <div class="date">2026-06-15 · 4 min read · by <a href="https://github.com/SaharBarak" rel="author">@SaharBarak</a> · <a href="mailto:hi@saharbarak.dev">hi@saharbarak.dev</a></div>
+    <div class="body">
+      <p>The dangerous thing about a shared memory for agents is the same thing that makes it valuable: your model will trust it. Pull a claim from the commons and the agent treats it as settled — it reasons forward from there instead of re-deriving it. That's the entire point. It's also the attack surface. A memory layer that accepts anonymous contributions of unknown trust isn't a knowledge graph; it's a poisoning vector with good intentions.</p>
+      <p>Retrieval-augmented systems already learned this the hard way. Feed a model a confidently-worded false document and it will launder the lie into a fluent, cited-sounding answer. Now imagine that document arrives not from the open web but from inside your trusted cache, indistinguishable from the real reasoning sitting next to it. There's nothing to check it against, because nobody put their name on any of it.</p>
+
+      <h2>Every record carries a signature</h2>
+      <p>Folklore's answer is old folk wisdom: you trust knowledge that comes from a hand you can name. In a village, lore travels with attribution — this is the way <em>her</em> family fords the river, this is the cure <em>he</em> swears by. You weigh the claim by who's standing behind it.</p>
+      <p>So every record in the graph is signed by a real, verified human. Not a handle, not a vibe — a cryptographic signature tied to an identity. When your agent serves a cached answer, it knows exactly whose resolved reasoning it's standing on. Provenance isn't metadata stapled on afterward; it's the price of admission to the commons.</p>
+
+      <h2>A model can refuse what it can't trace</h2>
+      <p>The signature isn't ceremony. It changes what the model is allowed to do. An answer with no traceable origin can be <em>declined</em> — held at lower confidence, flagged for a fresh fetch, or skipped entirely — instead of silently absorbed. The same gate that lets good knowledge compound lets bad knowledge get refused at the door.</p>
+      <p>It also makes the graph accountable in a way anonymous corpora never are. If a claim turns out wrong, it traces to a hand. Trust becomes something you can extend, narrow, or revoke per signer — the way you already trust some colleagues' notes more than a random Stack Overflow answer from 2014. Reputation has somewhere to live.</p>
+
+      <h2>The commons that can say no</h2>
+      <p>A shared brain only works if it can defend itself, and a brain that trusts everything defends nothing. Signing every record is how a peer-to-peer memory stays a memory worth having instead of degrading into the average of whatever got pushed into it. No central authority decides what's true — but every contribution wears its author's name, and a model downstream gets to decide how much that name is worth.</p>
+      <p>Knowledge you can trace is knowledge you can trust. Everything else is just confident noise.</p>
+      <p style="margin-top:1.6em"><a class="btn btn-primary" href="/#join">Install Folklore</a></p>
+    </div>
+  </article>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <a href="/">Home</a>
+    <a href="/store">Store</a>
+    <a href="/blog">Blog</a>
+    <a href="/whitepaper">White Paper</a>
+    <a href="/legal/terms">Terms</a>
+    <a href="/legal/privacy">Privacy</a>
+    <a href="/legal/refund">Refund</a>
+    <span class="r">MIT · signed by you · no central server, ever</span>
+  </div>
+</footer>
+</body>
+</html>

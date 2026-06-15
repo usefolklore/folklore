@@ -14,7 +14,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image" content="https://usefolklore.com/assets/gen/og.png" />
 <meta name="twitter:site" content="@usefolklore" />
-<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="%23f4ecd8"/><path d="M44 70 h168 a16 16 0 0 1 16 16 v74 a16 16 0 0 1 -16 16 h-96 l-40 34 v-34 h-32 a16 16 0 0 1 -16 -16 v-74 a16 16 0 0 1 16 -16 z" fill="%231d1813"/><circle cx="86" cy="108" r="13" fill="%23ff4f6d"/><circle cx="128" cy="108" r="13" fill="%23f4ecd8"/><circle cx="170" cy="108" r="13" fill="%232fb6a3"/><circle cx="107" cy="146" r="13" fill="%23f5b921"/><circle cx="149" cy="146" r="13" fill="%235a6fd6"/><circle cx="65" cy="146" r="13" fill="%23f4ecd8"/><circle cx="191" cy="146" r="13" fill="%23f4ecd8"/></svg>' />
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%231d1813"/><path d="M16 16h32a3 3 0 0 1 3 3v20a3 3 0 0 1-3 3H30l-9 8v-8h-5a3 3 0 0 1-3-3V19a3 3 0 0 1 3-3z" fill="none" stroke="%23f4ecd8" stroke-width="3" stroke-linejoin="round"/><path d="M33 20c2 5-4 7-4 11a4 4 0 0 0 8 0c0-2-1-3-1-3 3 2 5 4 5 8a8 8 0 1 1-16 0c0-6 6-8 8-16z" fill="%23ff4f6d"/></svg>' />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
@@ -32,6 +32,14 @@
     -webkit-font-smoothing:antialiased;overflow-x:hidden}
   ::selection{background:var(--pink);color:var(--paper)}
   a{color:inherit;text-decoration:none}
+  /* cross-document page transitions (View Transitions API) */
+  @view-transition{navigation:auto}
+  ::view-transition-old(root){animation:vt-out .26s ease both}
+  ::view-transition-new(root){animation:vt-in .36s cubic-bezier(.16,1,.3,1) both}
+  @keyframes vt-out{to{opacity:0;transform:translateY(-10px)}}
+  @keyframes vt-in{from{opacity:0;transform:translateY(14px)}}
+  header{view-transition-name:site-header}
+  @media(prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none}}
   .wrap{max-width:var(--wrap);margin:0 auto;padding:0 clamp(24px,5vw,80px);position:relative;z-index:3}
 
   /* faint texture, kept off the reading */
@@ -69,16 +77,42 @@
   .hcta{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.04em;background:var(--blue);color:var(--paper);
     border:2px solid var(--ink);padding:9px 16px;box-shadow:3px 3px 0 var(--ink);transition:.12s}
   .hcta:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink);background:var(--pink)}
-  @media(max-width:820px){.hlinks{display:none}}
+  /* mobile nav disclosure */
+  .mnav{display:none;margin-left:auto;position:relative}
+  .mnav>summary{list-style:none;cursor:pointer;font-size:20px;line-height:1;width:42px;height:42px;display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--ink);background:var(--paper);box-shadow:3px 3px 0 var(--ink);user-select:none}
+  .mnav>summary::-webkit-details-marker{display:none}
+  .mnav[open]>summary{background:var(--yellow)}
+  .mnav .mnav-panel{position:absolute;right:0;top:calc(100% + 10px);min-width:208px;background:var(--paper);border:3px solid var(--ink);box-shadow:6px 6px 0 var(--ink);
+    display:flex;flex-direction:column;padding:8px;z-index:90}
+  .mnav .mnav-panel a{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:11px 12px;border-bottom:2px solid rgba(29,24,19,.12)}
+  .mnav .mnav-panel a:last-child{border-bottom:0}
+  .mnav .mnav-panel a:hover{color:var(--pink)}
+  .mnav .mnav-panel a.cta{background:var(--blue);color:var(--paper);text-align:center;margin-top:6px;border-bottom:0}
+  .mnav>summary:focus-visible,.mnav .mnav-panel a:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+  @media(max-width:820px){.hlinks{display:none}.hcta{display:none}.mnav{display:block}}
 
-  section{min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:clamp(48px,7vh,84px) 0;position:relative;overflow:hidden;scroll-snap-align:start}
+  section{min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:clamp(22px,3vh,48px) 0;position:relative;overflow:hidden;scroll-snap-align:start;background:var(--paper)}
+  /* ── risograph section rhythm: contrast bands + textures ── */
+  .band-2{background:var(--paper-2)}
+  .band-teal{background:#dcebe3}
+  .band-blue{background:#dde1f0}
+  .band-yellow{background:#f7e6b4}            /* echoes the footer yellow */
+  section > .wrap{position:relative;z-index:2}
+  /* texture layer (under content, over band colour) */
+  .tx-dots::before,.tx-hatch::before,.tx-grid::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none}
+  .tx-dots::before{opacity:.55;background-image:radial-gradient(rgba(29,24,19,.11) 1.4px,transparent 1.5px);background-size:23px 23px}
+  .tx-hatch::before{opacity:.7;background-image:repeating-linear-gradient(45deg,transparent 0 13px,rgba(29,24,19,.05) 13px 14px)}
+  .tx-grid::before{opacity:.6;background-image:linear-gradient(rgba(29,24,19,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(29,24,19,.05) 1px,transparent 1px);background-size:30px 30px}
   /* illustration plates — capped so every section fits within one viewport */
   .plate{max-width:460px;margin:24px auto 0;border:3px solid var(--ink);line-height:0;overflow:hidden}
   .plate img,.plate video{display:block;width:100%;max-height:32svh;object-fit:contain;background:var(--paper)}
   /* full-bleed scene: illustration as section background, text in a readable panel */
   .scene{position:relative;overflow:hidden}
-  .scene .bg{position:absolute;inset:0;z-index:0}
-  .scene .bg img,.scene .bg video{width:100%;height:100%;object-fit:cover;display:block}
+  .scene .bg{position:absolute;inset:0;z-index:0;overflow:hidden;
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 11%,#000 89%,transparent 100%);
+    mask-image:linear-gradient(to bottom,transparent 0,#000 11%,#000 89%,transparent 100%)}
+  .scene .bg img,.scene .bg video{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.12);transform-origin:center}
   .scene .bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(244,236,216,.95),rgba(244,236,216,.80) 38%,rgba(244,236,216,.36) 70%,rgba(244,236,216,.10))}
   .scene .panel{background:rgba(244,236,216,.9);border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink);padding:clamp(24px,3vw,38px);max-width:540px;backdrop-filter:blur(2px)}
   .scene .panel .stamp{box-shadow:3px 3px 0 var(--ink)}
@@ -94,14 +128,14 @@
   .mis::before{content:attr(data-text);position:absolute;left:0;top:0;color:var(--pink);
     transform:translate(.028em,.03em);z-index:-1;mix-blend-mode:multiply;pointer-events:none}
   h1{font-size:clamp(2.6rem,7vw,5.4rem)}
-  h2{font-size:clamp(1.9rem,4.4vw,3.4rem);max-width:17ch}
+  h2{font-size:clamp(1.7rem,3.2vw,2.9rem);max-width:18ch}
   .em-blue{color:var(--blue)}.em-pink{color:var(--pink)}.em-teal{color:var(--teal)}
 
   .body{font-size:clamp(1.02rem,1.2vw,1.22rem);line-height:1.6;max-width:42ch;font-weight:470;color:var(--ink)}
   .body+.body{margin-top:1em}
   .lede{font-size:clamp(1.15rem,1.8vw,1.55rem);line-height:1.38;max-width:32ch;font-weight:520}
   .lede b{color:var(--blue);font-weight:800}
-  .rule{height:4px;background:var(--ink);margin:40px 0;max-width:140px}
+  .rule{height:4px;background:var(--ink);margin:18px 0;max-width:140px}
 
   /* hero */
   .hero{min-height:calc(100svh - 86px);display:flex;flex-direction:column;justify-content:center;padding-top:70px}
@@ -109,7 +143,7 @@
   .hero h1{max-width:14ch;margin-bottom:20px;font-size:clamp(2.4rem,4.6vw,4.4rem)}
   .hero .lede{max-width:34ch}
   .herogrid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(32px,5vw,72px);align-items:center;width:100%}
-  .herocol-art img,.herocol-art video{width:100%;display:block;border:3px solid var(--ink);box-shadow:14px 14px 0 var(--blue)}
+  .herocol-art img,.herocol-art video{width:100%;display:block;border:3px solid var(--ink);box-shadow:14px 14px 0 var(--blue);aspect-ratio:16/9;object-fit:cover}
   @media(max-width:900px){.herogrid{grid-template-columns:1fr;gap:30px}.herocol-art{max-width:460px}}
   .cta-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:26px}
   .btn{font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:.03em;padding:17px 30px;
@@ -133,7 +167,12 @@
   .marq{border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);background:var(--blue);color:var(--paper);overflow:hidden;padding:18px 0;position:relative;z-index:3}
   .track{display:flex;gap:44px;white-space:nowrap;width:max-content;animation:slide 28s linear infinite;font-weight:800;font-size:1.7rem;font-style:italic;text-transform:lowercase}
   .track i{color:var(--yellow);font-style:normal}
+  .track .bi{width:.82em;height:.82em;vertical-align:-.06em;margin-right:.3em;fill:var(--paper)}
   @keyframes slide{to{transform:translateX(-50%)}}
+
+  /* hero "keeps" caption — what the graph holds */
+  .keeps{font-family:var(--mono);font-size:12px;font-weight:600;opacity:.6;margin-top:16px;letter-spacing:.01em;line-height:1.6;max-width:52ch}
+  .keeps span{color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-right:8px}
 
   /* folk divider band */
   .folkband{height:74px;background:url(assets/gen/border.png) repeat-x center/auto 100%;
@@ -150,27 +189,30 @@
   @media(max-width:880px){.beat{grid-template-columns:1fr;gap:30px}.beat:nth-of-type(even) .txt{order:0}}
 
   /* mechanism */
-  .illum{display:grid;grid-template-columns:repeat(2,1fr);gap:26px;margin-top:24px}
-  .il{border:3px solid var(--ink);background:var(--paper);padding:24px;box-shadow:7px 7px 0 var(--ink)}
+  .illum{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(10px,1.4vw,16px);margin-top:clamp(10px,1.6vh,16px)}
+  .il{border:3px solid var(--ink);background:var(--paper);padding:clamp(11px,1.5vh,16px);box-shadow:6px 6px 0 var(--ink)}
+  @media(max-width:1080px){.illum{grid-template-columns:repeat(2,1fr)}}
   .il:nth-child(1){box-shadow:7px 7px 0 var(--pink)}.il:nth-child(2){box-shadow:7px 7px 0 var(--blue)}
   .il:nth-child(3){box-shadow:7px 7px 0 var(--yellow)}.il:nth-child(4){box-shadow:7px 7px 0 var(--teal)}
-  .il .num{font-weight:900;font-style:italic;font-size:2.2rem;line-height:.8}
+  .il .num{font-weight:900;font-style:italic;font-size:1.7rem;line-height:.8}
   .il:nth-child(1) .num{color:var(--pink)}.il:nth-child(2) .num{color:var(--blue)}.il:nth-child(3) .num{color:var(--yellow)}.il:nth-child(4) .num{color:var(--teal)}
-  .il h4{font-weight:800;font-size:1.2rem;margin:12px 0 8px}
-  .il p{font-size:1rem;font-weight:460;line-height:1.5;color:var(--ink);max-width:40ch}
+  .il h4{font-weight:800;font-size:1.02rem;margin:8px 0 5px}
+  .il p{font-size:.86rem;font-weight:460;line-height:1.42;color:var(--ink);max-width:40ch}
   @media(max-width:760px){.illum{grid-template-columns:1fr}}
 
   /* proof */
-  .ledger{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:30px}
-  .led{border:3px solid var(--ink);background:var(--paper);padding:22px 20px}
+  .ledger{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}
+  .proofrow{display:grid;grid-template-columns:1fr minmax(0,360px);gap:clamp(20px,4vw,48px);align-items:center;margin-top:22px}
+  @media(max-width:840px){.proofrow{grid-template-columns:1fr}}
+  .led{border:3px solid var(--ink);background:var(--paper);padding:15px 16px}
   .led:nth-child(1){box-shadow:7px 7px 0 var(--pink)}.led:nth-child(2){box-shadow:7px 7px 0 var(--blue)}
   .led:nth-child(3){box-shadow:7px 7px 0 var(--yellow)}.led:nth-child(4){box-shadow:7px 7px 0 var(--teal)}
   .led .n{font-family:var(--mono);font-weight:700;font-size:clamp(1.6rem,2.8vw,2.3rem)}
   .led:nth-child(1) .n{color:var(--pink)}.led:nth-child(2) .n{color:var(--blue)}.led:nth-child(3) .n{color:var(--ink)}.led:nth-child(4) .n{color:var(--teal)}
   .led .n small{font-size:.45em}
-  .led .k{font-style:italic;font-size:1rem;margin-top:10px;font-weight:480}
+  .led .k{font-style:italic;font-size:.9rem;margin-top:7px;font-weight:480}
   @media(max-width:760px){.ledger{grid-template-columns:1fr 1fr}}
-  .bars{margin-top:40px;display:flex;flex-direction:column;gap:12px;max-width:600px}
+  .bars{margin-top:0;display:flex;flex-direction:column;gap:9px;max-width:600px}
   .bar{display:grid;grid-template-columns:120px 1fr 56px;gap:14px;align-items:center;font-size:.92rem;font-weight:500}
   .bar .nm{font-style:italic}.bar.me .nm{font-style:normal;font-weight:800}
   .bar .tr{height:12px;border:2px solid var(--ink);background:var(--paper)}
@@ -190,12 +232,42 @@
   .name .sig{font-family:var(--mono);font-size:14px;font-weight:600;letter-spacing:.08em;margin-top:32px;color:var(--blue)}
 
   /* store — product-card shop */
-  .shop{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:26px;margin-top:36px}
-  .prod{border:3px solid var(--ink);background:var(--paper);padding:22px;display:flex;flex-direction:column;gap:14px}
+  .shop{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-top:22px}
+  .prod{border:3px solid var(--ink);background:var(--paper);padding:14px;display:flex;flex-direction:column;gap:10px}
   .prod:nth-child(1){box-shadow:9px 9px 0 var(--pink)}
   .prod:nth-child(2){box-shadow:9px 9px 0 var(--blue)}
   .prod:nth-child(3){box-shadow:9px 9px 0 var(--teal)}
   .prod .shot{position:relative;border:3px solid var(--ink);overflow:hidden;line-height:0;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:var(--paper-2)}
+  /* store header: title left, browse-link right */
+  .store-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-top:10px}
+  .store-head h2{margin:0}
+  .store-browse{font-family:var(--mono);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-bottom:3px solid var(--ink);white-space:nowrap;padding-bottom:5px}
+  .store-browse:hover{color:var(--blue)}
+  /* shop teaser: full-bleed grid, square uncropped product shots, sized to content */
+  #store{min-height:auto}
+  #store .prod .spec{display:none}            /* teaser: drop fulfilment line; full /store keeps it */
+  #store .prod .desc{-webkit-line-clamp:2}
+  #store .shop{grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,2vw,24px);margin-top:18px}
+  /* teaser cards: cap the shot so the whole row + $LORE strip clears one viewport */
+  #store .prod{padding:12px;gap:7px}
+  #store .prod .shot{aspect-ratio:3/2}
+  #store .stamp{margin-bottom:14px}
+  #store .prod .shot img{object-fit:cover}
+  #store .prod .shot.tee img,#store .prod .shot.pin img{object-fit:contain}
+  #store .store-more{font-family:var(--mono);font-size:13px;font-weight:600;text-align:center;margin-top:14px;opacity:.78}
+  #store .store-more a{font-weight:700;border-bottom:2px solid var(--ink);white-space:nowrap}
+  #store .store-more a:hover{color:var(--blue)}
+  @media(max-width:760px){#store .shop{grid-template-columns:1fr 1fr}}
+  @media(max-width:480px){#store .shop{grid-template-columns:1fr}}
+  /* compact $LORE strip — single horizontal row; full block lives on /store */
+  .lorestrip{display:flex;align-items:center;gap:clamp(16px,2.4vw,28px);margin-top:16px;
+    border:3px solid var(--ink);background:var(--paper);padding:clamp(12px,1.6vw,18px) clamp(16px,2.2vw,26px);box-shadow:8px 8px 0 var(--yellow)}
+  .lorestrip .lorecoin{width:clamp(60px,7vw,82px);height:clamp(60px,7vw,82px);flex:none;border-radius:50%;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink)}
+  .lorestrip .loretext{flex:1;min-width:0}
+  .lorestrip h3{font-weight:800;font-size:clamp(1.1rem,1.8vw,1.45rem);line-height:1.1;margin-bottom:5px}
+  .lorestrip .disc{font-family:var(--mono);font-size:11px;font-weight:600;opacity:.62;line-height:1.5;max-width:56ch;margin:0}
+  .lorestrip .lorebtn{flex:none;padding:12px 20px;font-size:13px;box-shadow:5px 5px 0 var(--ink)}
+  @media(max-width:680px){.lorestrip{flex-wrap:wrap;text-align:center;justify-content:center}.lorestrip .loretext{flex-basis:100%}.lorestrip .disc{max-width:none}}
   .prod:nth-child(1) .shot{box-shadow:6px 6px 0 var(--pink)}
   .prod:nth-child(2) .shot{box-shadow:6px 6px 0 var(--blue)}
   .prod:nth-child(3) .shot{box-shadow:6px 6px 0 var(--teal)}
@@ -227,22 +299,22 @@
     color:var(--ink);opacity:.66;border-top:2px dotted rgba(29,24,19,.35);padding-top:10px}
   .prod .soon{font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
     background:var(--yellow);color:var(--ink);border:2px solid var(--ink);padding:5px 10px;align-self:flex-start}
-  .prod h4{font-weight:800;font-style:italic;font-size:1.28rem;line-height:1.1}
-  .prod .desc{font-size:.96rem;font-weight:460;line-height:1.45;color:var(--ink);flex:1}
-  .prod .foot{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:4px}
-  .prod .price{font-family:var(--mono);font-weight:700;font-size:1.5rem;letter-spacing:-.02em}
+  .prod h4{font-weight:800;font-style:italic;font-size:1rem;line-height:1.1}
+  .prod .desc{font-size:.8rem;font-weight:460;line-height:1.4;color:var(--ink);flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .prod .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px}
+  .prod .price{font-family:var(--mono);font-weight:700;font-size:1.15rem;letter-spacing:-.02em}
   .prod:nth-child(1) .price{color:var(--pink)}.prod:nth-child(2) .price{color:var(--blue)}.prod:nth-child(3) .price{color:var(--teal)}
   .buy{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.03em;padding:11px 20px;
     border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);background:var(--ink);color:var(--paper);cursor:not-allowed;opacity:.92}
   .buy[aria-disabled="true"]{pointer-events:none}
   /* $LORE block inside the shop */
-  .lore{display:grid;grid-template-columns:1.2fr .8fr;gap:clamp(32px,5vw,72px);align-items:center;
-    margin-top:56px;border:3px solid var(--ink);background:var(--paper);padding:clamp(28px,4vw,44px);box-shadow:12px 12px 0 var(--yellow)}
-  .lore h3{font-weight:800;font-size:clamp(1.5rem,2.6vw,2.2rem);line-height:1.05;margin-bottom:18px}
-  .lore .disc{font-family:var(--mono);font-size:12px;font-weight:600;opacity:.6;margin-top:20px;max-width:42ch}
+  .lore{display:grid;grid-template-columns:minmax(auto,46ch) auto;justify-content:center;gap:clamp(40px,7vw,120px);align-items:center;
+    margin-top:18px;border:3px solid var(--ink);background:var(--paper);padding:clamp(20px,3vw,40px);box-shadow:10px 10px 0 var(--yellow)}
+  .lore h3{font-weight:800;font-size:clamp(1.3rem,2.2vw,1.8rem);line-height:1.05;margin-bottom:10px}
+  .lore .disc{font-family:var(--mono);font-size:11px;font-weight:600;opacity:.6;margin-top:12px;max-width:42ch}
   .lore .coinwrap{display:flex;align-items:center;justify-content:center}
-  .lore .coinwrap img{width:min(84%,300px);border-radius:50%;border:3px solid var(--ink);box-shadow:14px 14px 0 var(--ink);display:block}
-  @media(max-width:760px){.lore{grid-template-columns:1fr;gap:32px}.lore .coinwrap{order:-1}}
+  .lore .coinwrap img{width:clamp(150px,18vw,210px);border-radius:50%;border:3px solid var(--ink);box-shadow:9px 9px 0 var(--ink);display:block}
+  @media(max-width:760px){.lore{grid-template-columns:1fr;gap:28px;justify-content:stretch}.lore .coinwrap{order:-1}}
 
   footer{border-top:3px solid var(--ink);padding:56px 0 76px;background:var(--yellow);position:relative;z-index:3}
   .foot{display:flex;gap:28px;flex-wrap:wrap;align-items:center;font-family:var(--mono);font-size:14px;font-weight:600}
@@ -265,6 +337,137 @@
   .rv.in{opacity:1;transform:none}
   .rv[data-d="1"]{transition-delay:.1s}.rv[data-d="2"]{transition-delay:.2s}.rv[data-d="3"]{transition-delay:.3s}
   @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}.fg,.farshape,.track{animation:none}.scrollcue svg{animation:none}}
+
+  @keyframes cur-blink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
+
+  /* ── mechanism carousel: one step in focus, auto-advancing, sticker-framed ── */
+  .mech{margin-top:clamp(14px,2.6vh,30px)}
+  .mech-stage{overflow:hidden;border:3px solid var(--ink);background:var(--paper-2);box-shadow:10px 10px 0 var(--ink);
+    background-image:radial-gradient(rgba(29,24,19,.08) 1.4px,transparent 1.5px);background-size:22px 22px}
+  .mech-track{list-style:none;display:flex;margin:0;padding:0;transition:transform .55s cubic-bezier(.16,1,.3,1)}
+  .mech-slide{flex:0 0 100%;min-width:100%;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;
+    column-gap:clamp(18px,3vw,40px);row-gap:8px;align-items:center;padding:clamp(20px,3.4vh,40px) clamp(22px,4vw,56px)}
+  .mech-slide .mech-num{grid-row:1 / span 2;font-weight:900;font-style:italic;font-size:clamp(2.4rem,6vw,4rem);line-height:.8;align-self:start}
+  .mech-slide.s1 .mech-num{color:var(--pink)}.mech-slide.s2 .mech-num{color:var(--blue)}
+  .mech-slide.s3 .mech-num{color:var(--yellow)}.mech-slide.s4 .mech-num{color:var(--teal)}
+  .mech-diag{grid-column:1;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:center;gap:7px;align-self:center;justify-self:center}
+  /* place number above, diagram below in the left rail */
+  .mech-slide{grid-template-columns:96px 1fr}
+  .mech-slide .mech-num{grid-column:1;grid-row:1;text-align:center;justify-self:center}
+  .mech-slide .mech-diag{grid-column:1;grid-row:2}
+  .mech-slide h4{grid-column:2;grid-row:1;align-self:end;font-weight:800;font-size:clamp(1.3rem,2.6vw,2rem);line-height:1.04}
+  .mech-slide p{grid-column:2;grid-row:2;align-self:start;font-size:clamp(.95rem,1.3vw,1.15rem);font-weight:470;line-height:1.5;max-width:42ch}
+  .mech-diag svg{width:clamp(64px,9vw,84px);height:auto;display:block}
+  .mech-tag{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    background:var(--paper);border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);padding:3px 7px;line-height:1.1;white-space:nowrap}
+  @media(max-width:620px){
+    .mech-slide{grid-template-columns:1fr;row-gap:10px;text-align:center;justify-items:center}
+    .mech-slide .mech-num,.mech-slide .mech-diag,.mech-slide h4,.mech-slide p{grid-column:1}
+    .mech-slide .mech-num{grid-row:1}.mech-slide .mech-diag{grid-row:2}.mech-slide h4{grid-row:3;align-self:auto}
+    .mech-slide p{grid-row:4;align-self:auto}
+  }
+  .mech-dots{display:flex;gap:10px;justify-content:center;margin-top:16px}
+  .mech-dot{width:13px;height:13px;border:2.5px solid var(--ink);background:var(--paper);border-radius:50%;cursor:pointer;padding:0;transition:.18s}
+  .mech-dot:hover{background:var(--yellow)}
+  .mech-dot[aria-selected="true"]{background:var(--pink);box-shadow:2px 2px 0 var(--ink)}
+  .mech-dot:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+  @media(prefers-reduced-motion:reduce){.mech-track{transition:none}}
+
+  /* ── meme marquee: continuous right-to-left flow of all memes ── */
+  .meme-carousel{margin-top:clamp(28px,4vh,44px);overflow:hidden}
+  .meme-track{list-style:none;display:flex;margin:0;padding:6px 0;width:max-content}
+  .meme-track.flow{animation:meme-marquee var(--mdur,40s) linear infinite}
+  .meme-carousel:hover .meme-track.flow{animation-play-state:paused}
+  @keyframes meme-marquee{to{transform:translateX(-50%)}}
+  .meme-slide{flex:0 0 clamp(230px,25vw,320px);padding:0 11px;box-sizing:border-box}
+  .meme-card{border:3px solid var(--ink);background:var(--paper);overflow:hidden;line-height:0}
+  .meme-card img{width:100%;display:block;aspect-ratio:1/1;object-fit:cover}
+  .meme-slide:nth-child(4n+1) .meme-card{box-shadow:8px 8px 0 var(--pink)}
+  .meme-slide:nth-child(4n+2) .meme-card{box-shadow:8px 8px 0 var(--blue)}
+  .meme-slide:nth-child(4n+3) .meme-card{box-shadow:8px 8px 0 var(--teal)}
+  .meme-slide:nth-child(4n+4) .meme-card{box-shadow:8px 8px 0 var(--yellow)}
+  @media(prefers-reduced-motion:reduce){.meme-track,.meme-track.flow{width:auto;flex-wrap:wrap;animation:none}.meme-slide{flex-basis:33.333%}}
+  @media(prefers-reduced-motion:reduce) and (max-width:760px){.meme-slide{flex-basis:50%}}
+
+  /* ── query-flow pipeline (ported, re-skinned) ── */
+  .flow-wrap{width:100%;margin:8px auto 22px;max-width:760px}
+  .flow-svg{width:100%;height:auto;display:block}
+  @media(max-width:760px){.flow-wrap{display:none}}
+
+  /* ── traced scene: two terminal panes (kept dark for terminal authenticity) ── */
+  .scene-pair{display:grid;grid-template-columns:1fr auto 1fr;gap:clamp(.9rem,2vw,1.6rem);align-items:stretch}
+  @media(max-width:880px){.scene-pair{grid-template-columns:1fr}.scene-arrow{display:none}}
+  .scene-pane{background:var(--ink);border:3px solid var(--ink);border-radius:14px;box-shadow:8px 8px 0 var(--blue);padding:clamp(11px,1.6vh,16px) 16px;font-family:var(--mono);font-size:clamp(10.5px,1.45vh,12.5px);line-height:1.4;display:flex;flex-direction:column;color:rgba(244,236,216,.62)}
+  .scene-pane:last-of-type{box-shadow:8px 8px 0 var(--pink)}
+  .scene-pane .pstamp{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);margin-bottom:8px;display:flex;gap:.5rem;align-items:center}
+  .scene-pane .pstamp .dot{width:6px;height:6px;background:var(--teal);border-radius:50%;animation:blink 1.6s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .scene-pane h3{font-family:var(--serif);font-weight:600;font-size:clamp(1rem,1.7vh,1.25rem);line-height:1.18;color:var(--paper);margin:.15rem 0 .45rem;letter-spacing:-.01em}
+  .scene-pane .line{padding:.06rem 0}
+  .scene-pane .line.you{color:var(--yellow)}
+  .scene-pane .line.tool{color:var(--teal)}
+  .scene-pane .sig{margin-top:auto;padding-top:.6rem;border-top:1px dashed rgba(244,236,216,.28);font-size:11.5px;letter-spacing:.04em;color:var(--paper)}
+  .scene-pane .sig b{color:var(--teal);font-weight:600}
+  .scene-arrow{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;padding:0 .2rem}
+  .scene-arrow svg{width:56px;height:auto}
+  .scene-arrow .cap{font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--ink);opacity:.6;text-align:center;white-space:nowrap}
+  .scene-note{margin-top:22px;font-family:var(--serif);font-size:clamp(1.1rem,1.6vw,1.35rem);line-height:1.5;max-width:60ch}
+  .scene-note em{color:var(--teal);font-style:italic}
+  /* #trace: keep within 100svh on short viewports */
+  #trace h2{font-size:clamp(1.55rem,2.6vw,2.4rem)}
+  #trace > .wrap > .body{font-size:clamp(.98rem,1.4vw,1.1rem);margin-top:8px}
+  #trace .flow-wrap{margin:6px auto 14px}
+  #trace .scene-note{margin-top:14px;font-size:clamp(1rem,1.4vw,1.2rem)}
+
+  /* ── provenance: poison stat + signed record ── */
+  .prov-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:clamp(1rem,3vw,2.2rem);align-items:center;margin-top:24px}
+  @media(max-width:820px){.prov-grid{grid-template-columns:1fr;gap:1.4rem}.prov-arrow{transform:rotate(90deg)}}
+  .prov-label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
+  .prov-problem .prov-label{color:var(--pink)}
+  .prov-answer .prov-label{color:var(--teal)}
+  .prov-stat{font-family:var(--serif);font-weight:700;font-size:clamp(2.6rem,6vw,4rem);line-height:1;letter-spacing:-.02em;color:var(--pink);margin-bottom:10px}
+  .prov-body{font-size:1rem;line-height:1.55;opacity:.8;max-width:42ch}
+  .prov-body strong{font-weight:700;opacity:1}
+  .prov-cite{font-family:var(--mono);font-size:11px;opacity:.55;margin-top:8px;letter-spacing:.04em}
+  .prov-arrow svg{width:58px;height:auto}
+  .prov-record{font-family:var(--mono);font-size:12px;line-height:1.55;color:rgba(244,236,216,.7);background:var(--ink);border:3px solid var(--ink);border-radius:12px;box-shadow:8px 8px 0 var(--teal);padding:14px 16px;margin:0 0 12px;white-space:pre;overflow-x:auto}
+  .prov-record .prov-hl{color:var(--yellow);font-weight:600}
+
+  /* ── compounding cost curve (draws on reveal) ── */
+  .curve-wrap{width:100%;max-width:360px;margin:0 auto}
+  .curve-chart{width:100%;height:auto}
+  .curve-line{stroke-dasharray:460;stroke-dashoffset:460}
+  .curve-wrap.in .curve-line{animation:curve-draw 1.9s cubic-bezier(.16,1,.3,1) forwards}
+  .curve-dot,.curve-lbl{opacity:0}
+  .curve-wrap.in .curve-dot,.curve-wrap.in .curve-lbl{animation:curve-fade .5s ease forwards}
+  .curve-wrap.in .d0,.curve-wrap.in .curve-lbl:first-of-type{animation-delay:.35s}
+  .curve-wrap.in .d1{animation-delay:1.7s}
+  @keyframes curve-draw{to{stroke-dashoffset:0}}
+  @keyframes curve-fade{to{opacity:1}}
+  @media(prefers-reduced-motion:reduce){.curve-line{stroke-dashoffset:0}.curve-dot,.curve-lbl{opacity:1}.curve-wrap.in .curve-line,.curve-wrap.in .curve-dot,.curve-wrap.in .curve-lbl{animation:none}}
+
+  /* ── inference-depth cascade (ported, re-skinned): tree builds top-down on a loop ── */
+  .compound-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:clamp(1rem,3vw,2.4rem)}
+  /* #problem: viz beside the text */
+  .prob-grid{display:grid;grid-template-columns:1fr 1.12fr;gap:clamp(26px,5vw,60px);align-items:center;margin-top:clamp(14px,2.4vh,26px)}
+  .prob-grid .prob-txt .body:first-child{margin-top:0}
+  .prob-grid .compound-stage{align-items:flex-start}
+  .prob-grid .cascade-foot{text-align:left}
+  @media(max-width:860px){.prob-grid{grid-template-columns:1fr;gap:22px}.prob-grid .compound-stage{align-items:center}.prob-grid .cascade-foot{text-align:center}}
+  .cascade{font-family:var(--mono);font-size:clamp(.78rem,.92vw,1rem);line-height:1.75;width:fit-content;margin:0 auto}
+  .cascade .cl{white-space:pre;opacity:0;animation:cascade 7s ease-in-out infinite;animation-delay:calc(var(--i) * .42s)}
+  @keyframes cascade{0%{opacity:0;transform:translateX(-3px)}8%,82%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(-3px)}}
+  .cascade .ask{color:var(--ink)}
+  .cascade .seed{color:var(--teal);font-weight:600}
+  .cascade .e{color:var(--ink);opacity:.38}
+  .cascade .nd{color:var(--teal)}
+  .cascade .lbl{color:var(--ink);opacity:.72}
+  .cascade .punch{color:var(--pink);font-weight:700}
+  .cascade .cur{display:inline-block;width:1ch;background:var(--teal);color:var(--paper);animation:cur-blink 1.1s steps(2) infinite}
+  .cascade-foot{font-family:var(--mono);font-size:12px;line-height:1.5;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);opacity:.7;text-align:center;margin-top:18px}
+  .cascade-foot b{color:var(--pink);font-weight:700;opacity:1}
+  @media(prefers-reduced-motion:reduce){.cascade .cl{animation:none;opacity:1}.cascade .cur{animation:none}}
+  @media(max-width:560px){.cascade{font-size:.66rem}}
 </style>
 </head>
 <body>
@@ -305,14 +508,23 @@
 <header>
   <div class="wrap head">
     <a class="brand" href="#top">
-      <svg viewBox="0 0 256 256" aria-hidden="true"><path d="M44 70 h168 a16 16 0 0 1 16 16 v74 a16 16 0 0 1 -16 16 h-96 l-40 34 v-34 h-32 a16 16 0 0 1 -16 -16 v-74 a16 16 0 0 1 16 -16 z" fill="#1d1813"/><circle cx="86" cy="108" r="13" fill="#ff4f6d"/><circle cx="128" cy="108" r="13" fill="#f4ecd8"/><circle cx="170" cy="108" r="13" fill="#2fb6a3"/><circle cx="107" cy="146" r="13" fill="#f5b921"/><circle cx="149" cy="146" r="13" fill="#5a6fd6"/><circle cx="65" cy="146" r="13" fill="#f4ecd8"/><circle cx="191" cy="146" r="13" fill="#f4ecd8"/></svg>
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M12 12h40a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H30l-12 10v-10h-6a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4z" fill="none" stroke="#1d1813" stroke-width="3" stroke-linejoin="round"/><path d="M32 17c2 6-4 8-4 13a4 4 0 0 0 8 0c0-2-1-3-1-3 3 2 5 5 5 9a8 8 0 1 1-16 0c0-7 6-9 8-19z" fill="#ff4f6d" stroke="#1d1813" stroke-width="2" stroke-linejoin="round"/><path d="M32 31c1 3-2 4-2 7a2 2 0 0 0 4 0c0-2-1-2-1-3 2 5-1 6-1 6" fill="#f5b921"/></svg>
       folklore
     </a>
     <nav class="hlinks">
       <a href="#guidebook">Guidebook</a><a href="#proof">Proof</a><a href="/store">Store</a><a href="/blog">Blog</a>
-      <a href="https://github.com/usefolklore/folklore/tree/main/docs/rfc">RFC</a>
+      <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore/tree/main/docs/rfc">RFC</a>
     </nav>
     <a class="hcta" href="https://github.com/usefolklore/folklore">GitHub</a>
+    <details class="mnav">
+      <summary aria-label="Menu" role="button">☰</summary>
+      <div class="mnav-panel">
+        <a href="#guidebook">Guidebook</a><a href="#proof">Proof</a><a href="/store">Store</a><a href="/blog">Blog</a>
+        <a href="https://github.com/usefolklore/folklore/tree/main/docs/rfc">RFC</a>
+        <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+        <a class="cta" href="#join">Install</a>
+      </div>
+    </details>
   </div>
 </header>
 
@@ -323,12 +535,14 @@
     <div class="herocol-txt">
       <div class="est rv in">Peer-to-peer compounding inference</div>
       <h1 class="rv in" data-d="1"><span class="mis" data-text="knowledge travels mouth to ear.">knowledge travels <span class="em-blue">mouth to ear.</span></span></h1>
-      <p class="lede rv in" data-d="2"><b>Folklore</b> is that — for your agents. Never research the same thing twice.</p>
+      <p class="lede rv in" data-d="2"><b>Folklore</b> is that — for your agents. Never start your LLM inference from square one.</p>
       <div class="cta-row rv in" data-d="3">
         <a class="btn btn-primary" href="#join">Install</a>
         <a class="btn btn-ghost" href="#mechanism">How it works</a>
+        <a class="btn btn-ghost" href="/whitepaper">Read the white paper</a>
       </div>
       <div class="install rv in" data-d="3"><span class="d">$</span> npm install -g @usefolklore/folklore<span class="copy" data-copy="npm install -g @usefolklore/folklore">copy</span></div>
+      <p class="keeps rv in" data-d="3"><span>keeps</span> findings · debug traces · papers read · dead-ends ruled out · syntheses · grounded claims</p>
     </div>
     <div class="herocol-art rv in" data-d="2"><video autoplay muted loop playsinline poster="assets/gen/hero.png"><source src="assets/gen/hero.mp4" type="video/mp4"/></video></div>
   </div>
@@ -336,32 +550,70 @@
 </section>
 
 <div class="marq"><div class="track">
-  <span>findings &nbsp;<i>·</i>&nbsp; debug traces &nbsp;<i>·</i>&nbsp; papers read &nbsp;<i>·</i>&nbsp; dead-ends ruled out &nbsp;<i>·</i>&nbsp; syntheses &nbsp;<i>·</i>&nbsp; grounded claims &nbsp;<i>·</i>&nbsp;&nbsp;</span>
-  <span>findings &nbsp;<i>·</i>&nbsp; debug traces &nbsp;<i>·</i>&nbsp; papers read &nbsp;<i>·</i>&nbsp; dead-ends ruled out &nbsp;<i>·</i>&nbsp; syntheses &nbsp;<i>·</i>&nbsp; grounded claims &nbsp;<i>·</i>&nbsp;&nbsp;</span>
+  <span>works with &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z"/></svg>claude code &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.503.131 1.891 5.678a.84.84 0 0 0-.42.726v11.188c0 .3.162.575.42.724l9.609 5.55a1 1 0 0 0 .998 0l9.61-5.55a.84.84 0 0 0 .42-.724V6.404a.84.84 0 0 0-.42-.726L12.497.131a1.01 1.01 0 0 0-.996 0M2.657 6.338h18.55c.263 0 .43.287.297.515L12.23 22.918c-.062.107-.229.064-.229-.06V12.335a.59.59 0 0 0-.295-.51l-9.11-5.257c-.109-.063-.064-.23.061-.23"/></svg>cursor &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="m23.365 13.556-1.442-2.895V8.994c0-2.764-2.218-5.002-4.954-5.002h-2.464c.178-.367.276-.779.276-1.213A2.77 2.77 0 0 0 12.018 0a2.77 2.77 0 0 0-2.763 2.779c0 .434.098.846.276 1.213H7.067c-2.736 0-4.954 2.238-4.954 5.002v1.667L.64 13.549c-.149.29-.149.636 0 .927l1.472 2.855v1.667C2.113 21.762 4.33 24 7.067 24h9.902c2.736 0 4.954-2.238 4.954-5.002V17.33l1.44-2.865c.143-.286.143-.622.002-.91m-12.854 2.36a2.27 2.27 0 0 1-2.261 2.273 2.27 2.27 0 0 1-2.261-2.273v-4.042A2.27 2.27 0 0 1 8.249 9.6a2.267 2.267 0 0 1 2.262 2.274zm7.285 0a2.27 2.27 0 0 1-2.26 2.273 2.27 2.27 0 0 1-2.262-2.273v-4.042A2.267 2.267 0 0 1 15.535 9.6a2.267 2.267 0 0 1 2.261 2.274z"/></svg>cline &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81"/></svg>gemini cli &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M23.55 5.067c-1.2038-.002-2.1806.973-2.1806 2.1765v4.8676c0 .972-.8035 1.7594-1.7597 1.7594-.568 0-1.1352-.286-1.4718-.7659l-4.9713-7.1003c-.4125-.5896-1.0837-.941-1.8103-.941-1.1334 0-2.1533.9635-2.1533 2.153v4.8957c0 .972-.7969 1.7594-1.7596 1.7594-.57 0-1.1363-.286-1.4728-.7658L.4076 5.1598C.2822 4.9798 0 5.0688 0 5.2882v4.2452c0 .2147.0656.4228.1884.599l5.4748 7.8183c.3234.462.8006.8052 1.3509.9298 1.3771.313 2.6446-.747 2.6446-2.0977v-4.893c0-.972.7875-1.7593 1.7596-1.7593h.003a1.798 1.798 0 0 1 1.4718.7658l4.9723 7.0994c.4135.5905 1.05.941 1.8093.941 1.1587 0 2.1515-.9645 2.1515-2.153v-4.8948c0-.972.7875-1.7594 1.7596-1.7594h.194a.22.22 0 0 0 .2204-.2202v-4.622a.22.22 0 0 0-.2203-.2203Z"/></svg>windsurf &nbsp;<i>·</i>&nbsp; zed &nbsp;<i>·</i>&nbsp; continue &nbsp;<i>·</i>&nbsp; aider &nbsp;<i>·</i>&nbsp; roo code &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/></svg>anthropic &nbsp;<i>·</i>&nbsp; openai &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81"/></svg>gemini &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"/></svg>llama &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.143 3.429v3.428h-3.429v3.429h-3.428V6.857H6.857V3.43H3.43v13.714H0v3.428h10.286v-3.428H6.857v-3.429h3.429v3.429h3.429v-3.429h3.428v3.429h-3.428v3.428H24v-3.428h-3.43V3.429z"/></svg>mistral &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M23.748 4.651c-.254-.124-.364.113-.512.233-.051.04-.094.09-.137.137-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.155-.708-.311-.955-.65-.172-.24-.219-.509-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.094.172.187.129.323-.082.28-.18.553-.266.833-.055.179-.137.218-.328.14a5.5 5.5 0 0 1-1.737-1.179c-.857-.828-1.631-1.743-2.597-2.46a12 12 0 0 0-.689-.47c-.985-.957.13-1.743.387-1.836.27-.098.094-.433-.778-.428-.872.003-1.67.295-2.687.685a3 3 0 0 1-.465.136 9.6 9.6 0 0 0-2.883-.101c-1.885.21-3.39 1.1-4.497 2.622C.082 8.776-.231 10.854.152 13.02c.403 2.284 1.568 4.175 3.36 5.653 1.857 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.132-.284 4.994-1.86.47.234.962.328 1.78.398.629.058 1.235-.031 1.705-.129.735-.155.684-.836.418-.961-2.155-1.004-1.682-.595-2.112-.926 1.095-1.295 2.768-3.598 3.284-6.733.05-.346.115-.834.108-1.114-.004-.171.035-.238.23-.257a4.2 4.2 0 0 0 1.545-.475c1.397-.763 1.96-2.016 2.093-3.517.02-.23-.004-.467-.247-.588M11.58 18.168c-2.088-1.642-3.101-2.183-3.52-2.16-.39.024-.32.472-.234.763.09.288.207.487.371.74.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.168-1.361-.801-2.5-1.86-3.301-3.306-.775-1.393-1.225-2.888-1.299-4.482-.02-.385.094-.522.477-.592a4.7 4.7 0 0 1 1.53-.038c2.131.311 3.946 1.264 5.467 2.774.868.86 1.525 1.887 2.202 2.89.72 1.066 1.494 2.082 2.48 2.915.348.291.626.513.892.677-.802.09-2.14.109-3.055-.615zm1.001-6.44a.306.306 0 0 1 .415-.287.3.3 0 0 1 .113.074.3.3 0 0 1 .086.214c0 .17-.136.307-.308.307a.303.303 0 0 1-.306-.307m3.11 1.596c-.2.081-.4.151-.591.16a1.25 1.25 0 0 1-.798-.254c-.274-.23-.47-.358-.551-.758a1.7 1.7 0 0 1 .015-.588c.07-.327-.007-.537-.238-.727-.188-.156-.426-.199-.689-.199a.6.6 0 0 1-.254-.078.253.253 0 0 1-.114-.358 1 1 0 0 1 .192-.21c.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.392.451.462.576.685.915.176.264.336.536.446.848.066.194-.02.353-.25.45"/></svg>deepseek &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.361 10.26a.894.894 0 0 0-.558.47l-.072.148.001.207c0 .193.004.217.059.353.076.193.152.312.291.448.24.238.51.3.872.205a.86.86 0 0 0 .517-.436.752.752 0 0 0 .08-.498c-.064-.453-.33-.782-.724-.897a1.06 1.06 0 0 0-.466 0zm-9.203.005c-.305.096-.533.32-.65.639a1.187 1.187 0 0 0-.06.52c.057.309.31.59.598.667.362.095.632.033.872-.205.14-.136.215-.255.291-.448.055-.136.059-.16.059-.353l.001-.207-.072-.148a.894.894 0 0 0-.565-.472 1.02 1.02 0 0 0-.474.007Zm4.184 2c-.131.071-.223.25-.195.383.031.143.157.288.353.407.105.063.112.072.117.136.004.038-.01.146-.029.243-.02.094-.036.194-.036.222.002.074.07.195.143.253.064.052.076.054.255.059.164.005.198.001.264-.03.169-.082.212-.234.15-.525-.052-.243-.042-.28.087-.355.137-.08.281-.219.324-.314a.365.365 0 0 0-.175-.48.394.394 0 0 0-.181-.033c-.126 0-.207.03-.355.124l-.085.053-.053-.032c-.219-.13-.259-.145-.391-.143a.396.396 0 0 0-.193.032zm.39-2.195c-.373.036-.475.05-.654.086-.291.06-.68.195-.951.328-.94.46-1.589 1.226-1.787 2.114-.04.176-.045.234-.045.53 0 .294.005.357.043.524.264 1.16 1.332 2.017 2.714 2.173.3.033 1.596.033 1.896 0 1.11-.125 2.064-.727 2.493-1.571.114-.226.169-.372.22-.602.039-.167.044-.23.044-.523 0-.297-.005-.355-.045-.531-.288-1.29-1.539-2.304-3.072-2.497a6.873 6.873 0 0 0-.855-.031zm.645.937a3.283 3.283 0 0 1 1.44.514c.223.148.537.458.671.662.166.251.26.508.303.82.02.143.01.251-.043.482-.08.345-.332.705-.672.957a3.115 3.115 0 0 1-.689.348c-.382.122-.632.144-1.525.138-.582-.006-.686-.01-.853-.042-.57-.107-1.022-.334-1.35-.68-.264-.28-.385-.535-.45-.946-.03-.192.025-.509.137-.776.136-.326.488-.73.836-.963.403-.269.934-.46 1.422-.512.187-.02.586-.02.773-.002zm-5.503-11a1.653 1.653 0 0 0-.683.298C5.617.74 5.173 1.666 4.985 2.819c-.07.436-.119 1.04-.119 1.503 0 .544.064 1.24.155 1.721.02.107.031.202.023.208a8.12 8.12 0 0 1-.187.152 5.324 5.324 0 0 0-.949 1.02 5.49 5.49 0 0 0-.94 2.339 6.625 6.625 0 0 0-.023 1.357c.091.78.325 1.438.727 2.04l.13.195-.037.064c-.269.452-.498 1.105-.605 1.732-.084.496-.095.629-.095 1.294 0 .67.009.803.088 1.266.095.555.288 1.143.503 1.534.071.128.243.393.264.407.007.003-.014.067-.046.141a7.405 7.405 0 0 0-.548 1.873c-.062.417-.071.552-.071.991 0 .56.031.832.148 1.279L3.42 24h1.478l-.05-.091c-.297-.552-.325-1.575-.068-2.597.117-.472.25-.819.498-1.296l.148-.29v-.177c0-.165-.003-.184-.057-.293a.915.915 0 0 0-.194-.25 1.74 1.74 0 0 1-.385-.543c-.424-.92-.506-2.286-.208-3.451.124-.486.329-.918.544-1.154a.787.787 0 0 0 .223-.531c0-.195-.07-.355-.224-.522a3.136 3.136 0 0 1-.817-1.729c-.14-.96.114-2.005.69-2.834.563-.814 1.353-1.336 2.237-1.475.199-.033.57-.028.776.01.226.04.367.028.512-.041.179-.085.268-.19.374-.431.093-.215.165-.333.36-.576.234-.29.46-.489.822-.729.413-.27.884-.467 1.352-.561.17-.035.25-.04.569-.04.319 0 .398.005.569.04a4.07 4.07 0 0 1 1.914.997c.117.109.398.457.488.602.034.057.095.177.132.267.105.241.195.346.374.43.14.068.286.082.503.045.343-.058.607-.053.943.016 1.144.23 2.14 1.173 2.581 2.437.385 1.108.276 2.267-.296 3.153-.097.15-.193.27-.333.419-.301.322-.301.722-.001 1.053.493.539.801 1.866.708 3.036-.062.772-.26 1.463-.533 1.854a2.096 2.096 0 0 1-.224.258.916.916 0 0 0-.194.25c-.054.109-.057.128-.057.293v.178l.148.29c.248.476.38.823.498 1.295.253 1.008.231 2.01-.059 2.581a.845.845 0 0 0-.044.098c0 .006.329.009.732.009h.73l.02-.074.036-.134c.019-.076.057-.3.088-.516.029-.217.029-1.016 0-1.258-.11-.875-.295-1.57-.597-2.226-.032-.074-.053-.138-.046-.141.008-.005.057-.074.108-.152.376-.569.607-1.284.724-2.228.031-.26.031-1.378 0-1.628-.083-.645-.182-1.082-.348-1.525a6.083 6.083 0 0 0-.329-.7l-.038-.064.131-.194c.402-.604.636-1.262.727-2.04a6.625 6.625 0 0 0-.024-1.358 5.512 5.512 0 0 0-.939-2.339 5.325 5.325 0 0 0-.95-1.02 8.097 8.097 0 0 1-.186-.152.692.692 0 0 1 .023-.208c.208-1.087.201-2.443-.017-3.503-.19-.924-.535-1.658-.98-2.082-.354-.338-.716-.482-1.15-.455-.996.059-1.8 1.205-2.116 3.01a6.805 6.805 0 0 0-.097.726c0 .036-.007.066-.015.066a.96.96 0 0 1-.149-.078A4.857 4.857 0 0 0 12 3.03c-.832 0-1.687.243-2.456.698a.958.958 0 0 1-.148.078c-.008 0-.015-.03-.015-.066a6.71 6.71 0 0 0-.097-.725C8.997 1.392 8.337.319 7.46.048a2.096 2.096 0 0 0-.585-.041Zm.293 1.402c.248.197.523.759.682 1.388.03.113.06.244.069.292.007.047.026.152.041.233.067.365.098.76.102 1.24l.002.475-.12.175-.118.178h-.278c-.324 0-.646.041-.954.124l-.238.06c-.033.007-.038-.003-.057-.144a8.438 8.438 0 0 1 .016-2.323c.124-.788.413-1.501.696-1.711.067-.05.079-.049.157.013zm9.825-.012c.17.126.358.46.498.888.28.854.36 2.028.212 3.145-.019.14-.024.151-.057.144l-.238-.06a3.693 3.693 0 0 0-.954-.124h-.278l-.119-.178-.119-.175.002-.474c.004-.669.066-1.19.214-1.772.157-.623.434-1.185.68-1.382.078-.062.09-.063.159-.012z"/></svg>ollama &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>grok &nbsp;<i>·</i>&nbsp;&nbsp;</span>
+  <span>works with &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z"/></svg>claude code &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.503.131 1.891 5.678a.84.84 0 0 0-.42.726v11.188c0 .3.162.575.42.724l9.609 5.55a1 1 0 0 0 .998 0l9.61-5.55a.84.84 0 0 0 .42-.724V6.404a.84.84 0 0 0-.42-.726L12.497.131a1.01 1.01 0 0 0-.996 0M2.657 6.338h18.55c.263 0 .43.287.297.515L12.23 22.918c-.062.107-.229.064-.229-.06V12.335a.59.59 0 0 0-.295-.51l-9.11-5.257c-.109-.063-.064-.23.061-.23"/></svg>cursor &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="m23.365 13.556-1.442-2.895V8.994c0-2.764-2.218-5.002-4.954-5.002h-2.464c.178-.367.276-.779.276-1.213A2.77 2.77 0 0 0 12.018 0a2.77 2.77 0 0 0-2.763 2.779c0 .434.098.846.276 1.213H7.067c-2.736 0-4.954 2.238-4.954 5.002v1.667L.64 13.549c-.149.29-.149.636 0 .927l1.472 2.855v1.667C2.113 21.762 4.33 24 7.067 24h9.902c2.736 0 4.954-2.238 4.954-5.002V17.33l1.44-2.865c.143-.286.143-.622.002-.91m-12.854 2.36a2.27 2.27 0 0 1-2.261 2.273 2.27 2.27 0 0 1-2.261-2.273v-4.042A2.27 2.27 0 0 1 8.249 9.6a2.267 2.267 0 0 1 2.262 2.274zm7.285 0a2.27 2.27 0 0 1-2.26 2.273 2.27 2.27 0 0 1-2.262-2.273v-4.042A2.267 2.267 0 0 1 15.535 9.6a2.267 2.267 0 0 1 2.261 2.274z"/></svg>cline &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81"/></svg>gemini cli &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M23.55 5.067c-1.2038-.002-2.1806.973-2.1806 2.1765v4.8676c0 .972-.8035 1.7594-1.7597 1.7594-.568 0-1.1352-.286-1.4718-.7659l-4.9713-7.1003c-.4125-.5896-1.0837-.941-1.8103-.941-1.1334 0-2.1533.9635-2.1533 2.153v4.8957c0 .972-.7969 1.7594-1.7596 1.7594-.57 0-1.1363-.286-1.4728-.7658L.4076 5.1598C.2822 4.9798 0 5.0688 0 5.2882v4.2452c0 .2147.0656.4228.1884.599l5.4748 7.8183c.3234.462.8006.8052 1.3509.9298 1.3771.313 2.6446-.747 2.6446-2.0977v-4.893c0-.972.7875-1.7593 1.7596-1.7593h.003a1.798 1.798 0 0 1 1.4718.7658l4.9723 7.0994c.4135.5905 1.05.941 1.8093.941 1.1587 0 2.1515-.9645 2.1515-2.153v-4.8948c0-.972.7875-1.7594 1.7596-1.7594h.194a.22.22 0 0 0 .2204-.2202v-4.622a.22.22 0 0 0-.2203-.2203Z"/></svg>windsurf &nbsp;<i>·</i>&nbsp; zed &nbsp;<i>·</i>&nbsp; continue &nbsp;<i>·</i>&nbsp; aider &nbsp;<i>·</i>&nbsp; roo code &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/></svg>anthropic &nbsp;<i>·</i>&nbsp; openai &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81"/></svg>gemini &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"/></svg>llama &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.143 3.429v3.428h-3.429v3.429h-3.428V6.857H6.857V3.43H3.43v13.714H0v3.428h10.286v-3.428H6.857v-3.429h3.429v3.429h3.429v-3.429h3.428v3.429h-3.428v3.428H24v-3.428h-3.43V3.429z"/></svg>mistral &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M23.748 4.651c-.254-.124-.364.113-.512.233-.051.04-.094.09-.137.137-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.155-.708-.311-.955-.65-.172-.24-.219-.509-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.094.172.187.129.323-.082.28-.18.553-.266.833-.055.179-.137.218-.328.14a5.5 5.5 0 0 1-1.737-1.179c-.857-.828-1.631-1.743-2.597-2.46a12 12 0 0 0-.689-.47c-.985-.957.13-1.743.387-1.836.27-.098.094-.433-.778-.428-.872.003-1.67.295-2.687.685a3 3 0 0 1-.465.136 9.6 9.6 0 0 0-2.883-.101c-1.885.21-3.39 1.1-4.497 2.622C.082 8.776-.231 10.854.152 13.02c.403 2.284 1.568 4.175 3.36 5.653 1.857 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.132-.284 4.994-1.86.47.234.962.328 1.78.398.629.058 1.235-.031 1.705-.129.735-.155.684-.836.418-.961-2.155-1.004-1.682-.595-2.112-.926 1.095-1.295 2.768-3.598 3.284-6.733.05-.346.115-.834.108-1.114-.004-.171.035-.238.23-.257a4.2 4.2 0 0 0 1.545-.475c1.397-.763 1.96-2.016 2.093-3.517.02-.23-.004-.467-.247-.588M11.58 18.168c-2.088-1.642-3.101-2.183-3.52-2.16-.39.024-.32.472-.234.763.09.288.207.487.371.74.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.168-1.361-.801-2.5-1.86-3.301-3.306-.775-1.393-1.225-2.888-1.299-4.482-.02-.385.094-.522.477-.592a4.7 4.7 0 0 1 1.53-.038c2.131.311 3.946 1.264 5.467 2.774.868.86 1.525 1.887 2.202 2.89.72 1.066 1.494 2.082 2.48 2.915.348.291.626.513.892.677-.802.09-2.14.109-3.055-.615zm1.001-6.44a.306.306 0 0 1 .415-.287.3.3 0 0 1 .113.074.3.3 0 0 1 .086.214c0 .17-.136.307-.308.307a.303.303 0 0 1-.306-.307m3.11 1.596c-.2.081-.4.151-.591.16a1.25 1.25 0 0 1-.798-.254c-.274-.23-.47-.358-.551-.758a1.7 1.7 0 0 1 .015-.588c.07-.327-.007-.537-.238-.727-.188-.156-.426-.199-.689-.199a.6.6 0 0 1-.254-.078.253.253 0 0 1-.114-.358 1 1 0 0 1 .192-.21c.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.392.451.462.576.685.915.176.264.336.536.446.848.066.194-.02.353-.25.45"/></svg>deepseek &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.361 10.26a.894.894 0 0 0-.558.47l-.072.148.001.207c0 .193.004.217.059.353.076.193.152.312.291.448.24.238.51.3.872.205a.86.86 0 0 0 .517-.436.752.752 0 0 0 .08-.498c-.064-.453-.33-.782-.724-.897a1.06 1.06 0 0 0-.466 0zm-9.203.005c-.305.096-.533.32-.65.639a1.187 1.187 0 0 0-.06.52c.057.309.31.59.598.667.362.095.632.033.872-.205.14-.136.215-.255.291-.448.055-.136.059-.16.059-.353l.001-.207-.072-.148a.894.894 0 0 0-.565-.472 1.02 1.02 0 0 0-.474.007Zm4.184 2c-.131.071-.223.25-.195.383.031.143.157.288.353.407.105.063.112.072.117.136.004.038-.01.146-.029.243-.02.094-.036.194-.036.222.002.074.07.195.143.253.064.052.076.054.255.059.164.005.198.001.264-.03.169-.082.212-.234.15-.525-.052-.243-.042-.28.087-.355.137-.08.281-.219.324-.314a.365.365 0 0 0-.175-.48.394.394 0 0 0-.181-.033c-.126 0-.207.03-.355.124l-.085.053-.053-.032c-.219-.13-.259-.145-.391-.143a.396.396 0 0 0-.193.032zm.39-2.195c-.373.036-.475.05-.654.086-.291.06-.68.195-.951.328-.94.46-1.589 1.226-1.787 2.114-.04.176-.045.234-.045.53 0 .294.005.357.043.524.264 1.16 1.332 2.017 2.714 2.173.3.033 1.596.033 1.896 0 1.11-.125 2.064-.727 2.493-1.571.114-.226.169-.372.22-.602.039-.167.044-.23.044-.523 0-.297-.005-.355-.045-.531-.288-1.29-1.539-2.304-3.072-2.497a6.873 6.873 0 0 0-.855-.031zm.645.937a3.283 3.283 0 0 1 1.44.514c.223.148.537.458.671.662.166.251.26.508.303.82.02.143.01.251-.043.482-.08.345-.332.705-.672.957a3.115 3.115 0 0 1-.689.348c-.382.122-.632.144-1.525.138-.582-.006-.686-.01-.853-.042-.57-.107-1.022-.334-1.35-.68-.264-.28-.385-.535-.45-.946-.03-.192.025-.509.137-.776.136-.326.488-.73.836-.963.403-.269.934-.46 1.422-.512.187-.02.586-.02.773-.002zm-5.503-11a1.653 1.653 0 0 0-.683.298C5.617.74 5.173 1.666 4.985 2.819c-.07.436-.119 1.04-.119 1.503 0 .544.064 1.24.155 1.721.02.107.031.202.023.208a8.12 8.12 0 0 1-.187.152 5.324 5.324 0 0 0-.949 1.02 5.49 5.49 0 0 0-.94 2.339 6.625 6.625 0 0 0-.023 1.357c.091.78.325 1.438.727 2.04l.13.195-.037.064c-.269.452-.498 1.105-.605 1.732-.084.496-.095.629-.095 1.294 0 .67.009.803.088 1.266.095.555.288 1.143.503 1.534.071.128.243.393.264.407.007.003-.014.067-.046.141a7.405 7.405 0 0 0-.548 1.873c-.062.417-.071.552-.071.991 0 .56.031.832.148 1.279L3.42 24h1.478l-.05-.091c-.297-.552-.325-1.575-.068-2.597.117-.472.25-.819.498-1.296l.148-.29v-.177c0-.165-.003-.184-.057-.293a.915.915 0 0 0-.194-.25 1.74 1.74 0 0 1-.385-.543c-.424-.92-.506-2.286-.208-3.451.124-.486.329-.918.544-1.154a.787.787 0 0 0 .223-.531c0-.195-.07-.355-.224-.522a3.136 3.136 0 0 1-.817-1.729c-.14-.96.114-2.005.69-2.834.563-.814 1.353-1.336 2.237-1.475.199-.033.57-.028.776.01.226.04.367.028.512-.041.179-.085.268-.19.374-.431.093-.215.165-.333.36-.576.234-.29.46-.489.822-.729.413-.27.884-.467 1.352-.561.17-.035.25-.04.569-.04.319 0 .398.005.569.04a4.07 4.07 0 0 1 1.914.997c.117.109.398.457.488.602.034.057.095.177.132.267.105.241.195.346.374.43.14.068.286.082.503.045.343-.058.607-.053.943.016 1.144.23 2.14 1.173 2.581 2.437.385 1.108.276 2.267-.296 3.153-.097.15-.193.27-.333.419-.301.322-.301.722-.001 1.053.493.539.801 1.866.708 3.036-.062.772-.26 1.463-.533 1.854a2.096 2.096 0 0 1-.224.258.916.916 0 0 0-.194.25c-.054.109-.057.128-.057.293v.178l.148.29c.248.476.38.823.498 1.295.253 1.008.231 2.01-.059 2.581a.845.845 0 0 0-.044.098c0 .006.329.009.732.009h.73l.02-.074.036-.134c.019-.076.057-.3.088-.516.029-.217.029-1.016 0-1.258-.11-.875-.295-1.57-.597-2.226-.032-.074-.053-.138-.046-.141.008-.005.057-.074.108-.152.376-.569.607-1.284.724-2.228.031-.26.031-1.378 0-1.628-.083-.645-.182-1.082-.348-1.525a6.083 6.083 0 0 0-.329-.7l-.038-.064.131-.194c.402-.604.636-1.262.727-2.04a6.625 6.625 0 0 0-.024-1.358 5.512 5.512 0 0 0-.939-2.339 5.325 5.325 0 0 0-.95-1.02 8.097 8.097 0 0 1-.186-.152.692.692 0 0 1 .023-.208c.208-1.087.201-2.443-.017-3.503-.19-.924-.535-1.658-.98-2.082-.354-.338-.716-.482-1.15-.455-.996.059-1.8 1.205-2.116 3.01a6.805 6.805 0 0 0-.097.726c0 .036-.007.066-.015.066a.96.96 0 0 1-.149-.078A4.857 4.857 0 0 0 12 3.03c-.832 0-1.687.243-2.456.698a.958.958 0 0 1-.148.078c-.008 0-.015-.03-.015-.066a6.71 6.71 0 0 0-.097-.725C8.997 1.392 8.337.319 7.46.048a2.096 2.096 0 0 0-.585-.041Zm.293 1.402c.248.197.523.759.682 1.388.03.113.06.244.069.292.007.047.026.152.041.233.067.365.098.76.102 1.24l.002.475-.12.175-.118.178h-.278c-.324 0-.646.041-.954.124l-.238.06c-.033.007-.038-.003-.057-.144a8.438 8.438 0 0 1 .016-2.323c.124-.788.413-1.501.696-1.711.067-.05.079-.049.157.013zm9.825-.012c.17.126.358.46.498.888.28.854.36 2.028.212 3.145-.019.14-.024.151-.057.144l-.238-.06a3.693 3.693 0 0 0-.954-.124h-.278l-.119-.178-.119-.175.002-.474c.004-.669.066-1.19.214-1.772.157-.623.434-1.185.68-1.382.078-.062.09-.063.159-.012z"/></svg>ollama &nbsp;<i>·</i>&nbsp; <svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>grok &nbsp;<i>·</i>&nbsp;&nbsp;</span>
 </div></div>
 
-<section id="problem">
+<section id="problem" class="tx-dots">
   <div class="wrap">
     <div class="stamp rv">Chapter the First — The Problem</div>
     <h2 class="rv" data-d="1"><span class="mis" data-text="agents reason from zero.">agents reason from <span class="em-pink">zero.</span></span></h2>
     <div class="rule rv"></div>
+    <div class="prob-grid">
+    <div class="prob-txt">
     <p class="body rv" data-d="1">The same paper read again. The same dead-ends walked again. The same conclusion re-derived — and re-billed — a thousand times.</p>
     <p class="body rv" data-d="2">You pay OpenAI, Anthropic, every endpoint, per token, to re-run inference over data someone already ground out yesterday. The work was done. Nobody kept the answer.</p>
+    </div>
+    <div class="compound-stage rv" data-d="2" style="margin-top:0" aria-label="The same query asked on different days, each time fetched from the web, re-billed, and thrown away.">
+      <div class="cascade waste" aria-hidden="true">
+<div class="cl" style="--i:0"><span class="ask">mon  </span>ask "mxbai vs cross-encoder?"<span class="lbl">   web · 1.8s · 3.2k tok</span><span class="punch">  ✗ discarded</span></div>
+<div class="cl" style="--i:1"><span class="ask">tue  </span>ask "mxbai vs cross-encoder?"<span class="lbl">   web · 1.8s · 3.2k tok</span><span class="punch">  ✗ discarded</span></div>
+<div class="cl" style="--i:2"><span class="ask">wed  </span>ask "mxbai vs cross-encoder?"<span class="lbl">   web · 1.8s · 3.2k tok</span><span class="punch">  ✗ discarded</span></div>
+<div class="cl" style="--i:3"><span class="e">          ⋮  the same answer, re-derived ×1000</span></div>
+<div class="cl" style="--i:4"><span class="punch">          └─ re-billed every single time</span></div>
+      </div>
+      <p class="cascade-foot">the work was done. <b>nobody kept it.</b></p>
+    </div>
+    </div>
   </div>
 </section>
 
 <section id="alone" class="scene">
-  <div class="bg"><img src="assets/gen/campfire.png" alt="a lone reader by the fire under the stars"/></div>
+  <div class="bg"><video autoplay muted loop playsinline poster="assets/gen/campfire.png" aria-label="a lone reader by the fire under the stars"><source src="assets/gen/campfire.mp4" type="video/mp4"/></video></div>
   <div class="wrap">
     <div class="panel rv">
       <div class="stamp">Chapter the Second — Alone</div>
       <h3>Day one, it <span class="em-pink">already pays off.</span></h3>
       <p class="body">Folklore sits between your agent and the web. Every research call meets your own graph first. Read it Tuesday? You don't pay Thursday.</p>
       <div class="card">
-        <div><b>folklore ask</b> "mxbai vs cross-encoder?"</div>
-        <div class="hit">▸ from your graph · 11 ms · 0 tokens</div>
-        <div style="opacity:.65">▸ if unknown — fetched once, kept</div>
+        <div><span style="opacity:.5">tue</span> <b>folklore ask</b> "mxbai vs cross-encoder?"</div>
+        <div style="opacity:.6">↳ not in graph — web · 1.8s · 3.2k tokens · <b>saved + signed</b></div>
+        <div style="margin-top:10px"><span style="opacity:.5">thu</span> <b>folklore ask</b> "mxbai vs cross-encoder?"</div>
+        <div class="hit">↳ from your graph · 11 ms · 0 tokens — never paid again</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="bridge" class="band-2 tx-hatch">
+  <svg class="fg teal" style="top:15%;left:6%;width:82px;--rot:-8deg;--fdur:12s"><use href="#bird"/></svg>
+  <svg class="fg pink" style="bottom:16%;right:7%;width:74px;--rot:9deg;--fdur:10s"><use href="#fish"/></svg>
+  <div class="wrap" style="text-align:center">
+    <div class="stamp rv">Interlude — From One to Many</div>
+    <h2 class="rv" data-d="1" style="max-width:20ch;margin:0 auto">alone, it <span class="em-pink">pays.</span> together, it <span class="em-teal">compounds.</span></h2>
+    <p class="body rv" data-d="1" style="max-width:54ch;margin:22px auto 0;font-size:1.15rem">One graph spares you the second lookup. A thousand graphs spare the whole network the first. The same motion — kept, signed, passed on — is single-player value and a commons at once.</p>
+    <div class="compound-stage rv" data-d="2" aria-label="A query inherits a branching tree of reasoning that peers already inferred, so you start partway up, not at zero.">
+      <div class="cascade" aria-hidden="true">
+<div class="cl" style="--i:0"><span class="ask">ask </span><span class="seed">●</span><span class="cur">&nbsp;</span></div>
+<div class="cl" style="--i:1"><span class="e">    │</span></div>
+<div class="cl" style="--i:2"><span class="e">    ├────</span><span class="nd">●</span><span class="lbl">  a peer already inferred this</span></div>
+<div class="cl" style="--i:3"><span class="e">    │     └────</span><span class="nd">●</span><span class="lbl">  …and this, from that</span></div>
+<div class="cl" style="--i:4"><span class="e">    │            └────</span><span class="nd">●</span><span class="lbl">  …and this, deeper still</span></div>
+<div class="cl" style="--i:5"><span class="e">    ├────</span><span class="nd">●</span><span class="lbl">  and this, from another peer</span></div>
+<div class="cl" style="--i:6"><span class="e">    └────</span><span class="nd">●</span><span class="lbl">  and this</span></div>
+<div class="cl" style="--i:7"><span class="punch">             ↳ you start here, not at zero</span></div>
+      </div>
+      <p class="cascade-foot">inherit the reasoning. <b>infer deeper.</b></p>
     </div>
   </div>
 </section>
@@ -382,57 +634,223 @@
   </div>
 </section>
 
-<section id="culture">
-  <svg class="fg teal" style="top:13%;right:4%;width:78px;--rot:-6deg;--fdur:11s"><use href="#flower"/></svg>
-  <div class="wrap">
-    <div class="stamp rv">The Folklore — Platform Culture</div>
-    <h2 class="rv" data-d="1"><span class="mis" data-text="a commons, not a cloud.">a commons, <span class="em-teal">not a cloud.</span></span></h2>
-    <div class="rule rv"></div>
-    <p class="body rv" data-d="1">It works <b>alone</b> on day one — your own graph answers first. It <b>compounds</b> the moment peers join, and nobody grinds out the same answer twice.</p>
-    <div class="illum">
-      <div class="il rv" data-d="1">
-        <div class="num">·</div>
-        <h4>The Lore</h4>
-        <p>Knowledge that survives by being passed on — story to story, peer to peer — never relearned from scratch. The lore is the graph: every finding set down so it can be told again.</p>
-      </div>
-      <div class="il rv" data-d="2">
-        <div class="num">·</div>
-        <h4>The Commons</h4>
-        <p>Stone soup for machines — each peer drops in what they ground out, everyone eats. A shared pool of answers nobody pays for twice. Not a vendor's cloud; a hearth the folk keep together.</p>
-      </div>
-      <div class="il rv" data-d="1">
-        <div class="num">·</div>
-        <h4>The Folk</h4>
-        <p>The peers who hold it. Every record signed by a real, named hand — no central server, no anonymous scrape. The folk are the peers, and the telling is theirs to pass on.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
 <section id="mechanism">
   <div class="wrap">
     <div class="stamp rv">Chapter the Fourth — The Mechanism</div>
     <h2 class="rv" data-d="1"><span class="mis" data-text="a graph that earns the deny.">a graph that earns the <span class="em-blue">deny.</span></span></h2>
-    <div class="illum">
-      <div class="il rv" data-d="1"><div class="num">i</div><h4>Intercept</h4><p>A hook catches every WebSearch and WebFetch before it leaves. Local tools never touched.</p></div>
-      <div class="il rv" data-d="2"><div class="num">ii</div><h4>Ask the graph</h4><p>Hybrid recall, cross-encoder rerank, graph PPR — your pages first, then the network's.</p></div>
-      <div class="il rv" data-d="1"><div class="num">iii</div><h4>Deny, or pass</h4><p>Score 0.85 with two hits or more, served from memory. Fall short, the fetch proceeds.</p></div>
-      <div class="il rv" data-d="2"><div class="num">iv</div><h4>Set it down</h4><p>Whatever the web returns is filed and signed, so the next reader pays nothing.</p></div>
+    <div class="mech rv" data-d="1">
+      <div class="mech-stage" id="mech-stage" aria-live="off">
+        <ol class="mech-track" id="mech-track">
+
+          <li class="mech-slide s1" aria-roledescription="step" aria-label="Step 1 of 4: Intercept">
+            <div class="mech-num">i</div>
+            <div class="mech-diag" aria-hidden="true">
+              <svg viewBox="0 0 80 80" fill="none">
+                <!-- net catching an outbound WebSearch arrow -->
+                <path d="M10 40h40" stroke="#1d1813" stroke-width="3" stroke-linecap="round"/>
+                <path d="M44 32l8 8-8 8" stroke="#1d1813" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M56 18a18 18 0 0 1 0 44" stroke="#ff4f6d" stroke-width="3" stroke-linecap="round"/>
+                <path d="M56 26v28M50 30v20M62 30v20" stroke="#ff4f6d" stroke-width="2"/>
+                <circle cx="14" cy="40" r="4" fill="#1d1813"/>
+              </svg>
+              <span class="mech-tag">WebSearch</span>
+            </div>
+            <h4>Intercept</h4>
+            <p>A hook catches every WebSearch and WebFetch before it leaves. Local tools never touched.</p>
+          </li>
+
+          <li class="mech-slide s2" aria-roledescription="step" aria-label="Step 2 of 4: Ask the graph">
+            <div class="mech-num">ii</div>
+            <div class="mech-diag" aria-hidden="true">
+              <svg viewBox="0 0 80 80" fill="none">
+                <!-- magnifier over a 3-node cluster -->
+                <line x1="30" y1="34" x2="46" y2="30" stroke="#2b3a8c" stroke-width="2.4"/>
+                <line x1="30" y1="34" x2="40" y2="48" stroke="#2b3a8c" stroke-width="2.4"/>
+                <line x1="46" y1="30" x2="40" y2="48" stroke="#2b3a8c" stroke-width="2.4"/>
+                <circle cx="30" cy="34" r="5" fill="#2b3a8c"/>
+                <circle cx="46" cy="30" r="5" fill="#1fae8b"/>
+                <circle cx="40" cy="48" r="5" fill="#f5b921"/>
+                <circle cx="44" cy="40" r="17" stroke="#1d1813" stroke-width="3"/>
+                <path d="M56 52l12 12" stroke="#1d1813" stroke-width="4" stroke-linecap="round"/>
+              </svg>
+              <span class="mech-tag">your graph first</span>
+            </div>
+            <h4>Ask the graph</h4>
+            <p>Hybrid recall, cross-encoder rerank, graph PPR — your pages first, then the network's.</p>
+          </li>
+
+          <li class="mech-slide s3" aria-roledescription="step" aria-label="Step 3 of 4: Deny, or pass">
+            <div class="mech-num">iii</div>
+            <div class="mech-diag" aria-hidden="true">
+              <svg viewBox="0 0 80 80" fill="none">
+                <!-- gate: served-from-memory check vs branch to web -->
+                <path d="M40 14v18" stroke="#1d1813" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="40" cy="36" r="6" fill="#f5b921" stroke="#1d1813" stroke-width="2.5"/>
+                <path d="M34 50l6 6 8-12" stroke="#1fae8b" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M46 38l16 8" stroke="#1d1813" stroke-width="2" stroke-dasharray="3 3"/>
+                <text x="64" y="52" font-family="var(--mono)" font-size="9" font-weight="700" fill="#ff4f6d">web</text>
+              </svg>
+              <span class="mech-tag">≥ 0.85 · 2 hits</span>
+            </div>
+            <h4>Deny, or pass</h4>
+            <p>Score 0.85 with two hits or more, served from memory. Fall short, the fetch proceeds.</p>
+          </li>
+
+          <li class="mech-slide s4" aria-roledescription="step" aria-label="Step 4 of 4: Set it down">
+            <div class="mech-num">iv</div>
+            <div class="mech-diag" aria-hidden="true">
+              <svg viewBox="0 0 80 80" fill="none">
+                <!-- a page filed & signed: signature squiggle + check -->
+                <rect x="22" y="14" width="36" height="46" rx="3" fill="#fff" stroke="#1d1813" stroke-width="3"/>
+                <line x1="29" y1="26" x2="48" y2="26" stroke="#1d1813" stroke-width="2"/>
+                <line x1="29" y1="34" x2="44" y2="34" stroke="#1d1813" stroke-width="2"/>
+                <path d="M29 46c4-5 7 4 10-1s6 2 10-2" stroke="#1fae8b" stroke-width="2.6" stroke-linecap="round"/>
+                <circle cx="56" cy="54" r="11" fill="#1fae8b" stroke="#1d1813" stroke-width="2.5"/>
+                <path d="M51 54l3.4 3.4L62 50" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span class="mech-tag">signed · filed</span>
+            </div>
+            <h4>Set it down</h4>
+            <p>Whatever the web returns is filed and signed, so the next reader pays nothing.</p>
+          </li>
+
+        </ol>
+      </div>
+      <div class="mech-dots" id="mech-dots" role="tablist" aria-label="Mechanism steps">
+        <button class="mech-dot" data-i="0" role="tab" aria-label="Step 1 — Intercept"></button>
+        <button class="mech-dot" data-i="1" role="tab" aria-label="Step 2 — Ask the graph"></button>
+        <button class="mech-dot" data-i="2" role="tab" aria-label="Step 3 — Deny, or pass"></button>
+        <button class="mech-dot" data-i="3" role="tab" aria-label="Step 4 — Set it down"></button>
+      </div>
     </div>
-    <div class="plate rv" data-d="1" style="box-shadow:12px 12px 0 var(--teal)"><video autoplay muted loop playsinline poster="assets/gen/graph.png"><source src="assets/gen/graph.mp4" type="video/mp4"/></video></div>
   </div>
 </section>
 
-<section id="proof">
+<section id="trace" class="tx-dots">
+  <div class="wrap">
+    <div class="stamp rv">Chapter the Fourth & a Half — A Query, Traced</div>
+    <h2 class="rv" data-d="1"><span class="mis" data-text="47-minute debug. 142 ms hit.">47-minute debug. <span class="em-blue">142&nbsp;ms</span> hit.</span></h2>
+    <p class="body rv" data-d="1" style="font-size:1.1rem;opacity:.8;max-width:54ch">One peer pays the cost. The network gets the answer. No server brokers it, no vendor takes a cut.</p>
+
+    <div class="flow-wrap rv" data-d="1" aria-hidden="true">
+      <svg class="flow-svg" viewBox="0 0 720 112">
+        <defs>
+          <marker id="fa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--ink)" fill-opacity=".55"/></marker>
+          <marker id="fac" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--teal)"/></marker>
+        </defs>
+        <g font-family="var(--mono)" font-size="9.5" text-anchor="middle">
+          <rect x="6" y="14" width="64" height="36" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
+          <text x="38" y="30" fill="var(--ink)">you ask</text>
+          <text x="38" y="43" fill="var(--ink)" fill-opacity=".55" font-size="7.5">any harness</text>
+          <rect x="90" y="14" width="96" height="36" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
+          <text x="138" y="30" fill="var(--ink)">your graph</text>
+          <text x="138" y="43" fill="var(--ink)" fill-opacity=".55" font-size="7.5">free · instant</text>
+          <rect x="206" y="14" width="100" height="36" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
+          <text x="256" y="30" fill="var(--ink)">peer graphs</text>
+          <text x="256" y="43" fill="var(--ink)" fill-opacity=".55" font-size="7.5">4 asked · ~140 ms</text>
+          <rect x="326" y="14" width="116" height="36" rx="6" fill="var(--paper-2)" stroke="var(--teal)" stroke-width="2"/>
+          <text x="384" y="30" fill="var(--teal)" font-weight="700">good answer?</text>
+          <text x="384" y="43" fill="var(--teal)" font-size="7.5">confidence gate</text>
+          <rect x="462" y="14" width="128" height="36" rx="6" fill="var(--paper-2)" stroke="var(--pink)" stroke-width="2"/>
+          <text x="526" y="30" fill="var(--pink)" font-weight="700">use it · signed</text>
+          <text x="526" y="43" fill="var(--ink)" fill-opacity=".55" font-size="7.5">0 web calls</text>
+          <g stroke="var(--ink)" stroke-opacity=".55" stroke-width="1.3" fill="none" marker-end="url(#fa)">
+            <line x1="70" y1="32" x2="88" y2="32"/>
+            <line x1="186" y1="32" x2="204" y2="32"/>
+            <line x1="306" y1="32" x2="324" y2="32"/>
+          </g>
+          <line x1="442" y1="32" x2="460" y2="32" stroke="var(--teal)" stroke-width="2" marker-end="url(#fac)"/>
+          <text x="451" y="10" fill="var(--teal)" font-size="8" font-weight="700">yes</text>
+          <line x1="384" y1="50" x2="384" y2="66" stroke="var(--ink)" stroke-opacity=".55" stroke-width="1.3" marker-end="url(#fa)"/>
+          <text x="402" y="62" fill="var(--pink)" font-size="8" text-anchor="start" font-weight="700">no</text>
+          <rect x="284" y="68" width="220" height="26" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
+          <text x="394" y="85" fill="var(--ink)">web — <tspan fill="var(--pink)" font-weight="700">once</tspan> → signed → saved back</text>
+          <path d="M284,81 C 230,81 236,56 252,52" stroke="var(--teal)" stroke-width="1.4" fill="none" stroke-dasharray="4 3" marker-end="url(#fac)"/>
+          <text x="150" y="66" fill="var(--teal)" font-size="8" font-weight="600">next ask hits the graph</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="scene-pair rv" data-d="1">
+      <article class="scene-pane">
+        <div class="pstamp"><span class="dot"></span>tue 03:14 · berlin</div>
+        <h3>The work happens once.</h3>
+        <div class="line you">$ claude</div>
+        <div class="line">&gt; long-ctx vllm OOM after fp16 prefix cache;</div>
+        <div class="line">&gt; raising max_model_len blew the kv budget</div>
+        <div class="line tool">[debug session · 47 min]</div>
+        <div class="line">&gt; root cause: prefix cache page size too small</div>
+        <div class="line">&gt; fix: --kv-cache-dtype=fp8 + --block-size=32</div>
+        <div class="line tool">[folklore · auto-saved trace]</div>
+        <div class="sig">signed · <b>@you</b> · ed25519&nbsp;3a4b…</div>
+      </article>
+      <div class="scene-arrow" aria-hidden="true">
+        <svg viewBox="0 0 80 40" fill="none">
+          <line x1="6" y1="20" x2="68" y2="20" stroke="var(--teal)" stroke-width="2" stroke-dasharray="4 4"/>
+          <polyline points="62,12 72,20 62,28" stroke="var(--teal)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+        </svg>
+        <span class="cap">36&nbsp;h later<br>0 servers between</span>
+      </div>
+      <article class="scene-pane">
+        <div class="pstamp"><span class="dot"></span>wed 18:42 · tokyo</div>
+        <h3>Everyone after skips it.</h3>
+        <div class="line you">$ claude</div>
+        <div class="line">&gt; vllm long-ctx OOM, prefix cache failure</div>
+        <div class="line tool">[folklore · asked 3 peers · 142 ms · hit: @you's trace]</div>
+        <div class="line">&gt; confident answer — web not needed</div>
+        <div class="line">&gt; 0 web calls. injecting the signed trace.</div>
+        <div class="line tool">[claude · reading @you's notes]</div>
+        <div class="line">&gt; try --kv-cache-dtype=fp8 + --block-size=32</div>
+        <div class="sig">received · <b>@you</b> · verified · 0 web hops</div>
+      </article>
+    </div>
+    <p class="scene-note rv" data-d="1">No server brokered it. No vendor took a cut. The trace is now in two graphs. <em>The next query hits three.</em></p>
+  </div>
+</section>
+
+<section id="provenance" class="band-teal tx-grid">
+  <div class="wrap">
+    <div class="stamp rv">Chapter the Fourth & three-quarters — Provenance</div>
+    <h2 class="rv" data-d="1"><span class="mis" data-text="anonymous retrieval is a poisoning surface.">anonymous retrieval is a <span class="em-pink">poisoning surface.</span></span></h2>
+    <p class="body rv" data-d="1" style="font-size:1.1rem;opacity:.8;max-width:56ch">Every other AI memory feeds your model unsigned text from nowhere. Folklore signs every record by a verified human, so a model can refuse what it can't trace.</p>
+    <div class="prov-grid rv" data-d="1">
+      <div class="prov-problem">
+        <div class="prov-label">RAG's open wound</div>
+        <p class="prov-stat">5&nbsp;→&nbsp;97%</p>
+        <p class="prov-body"><strong>5 poisoned documents</strong> can hijack a retrieval system with a <strong>97% attack success rate</strong>. The model has no way to tell trustworthy context from an injected lie.</p>
+        <p class="prov-cite">PoisonedRAG, arXiv · Zou et al.</p>
+      </div>
+      <div class="prov-arrow" aria-hidden="true">
+        <svg viewBox="0 0 60 24" fill="none">
+          <line x1="4" y1="12" x2="48" y2="12" stroke="var(--teal)" stroke-width="2" stroke-dasharray="4 4"/>
+          <polyline points="42,5 52,12 42,19" stroke="var(--teal)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+      <div class="prov-answer">
+        <div class="prov-label">Folklore's answer</div>
+        <pre class="prov-record" aria-hidden="true">record {
+  signed_by: <span class="prov-hl">@verified-human</span>
+  identity:  ed25519 3a4b…
+  source:    arxiv.org/abs/…
+  fetched:   2026-06-09T…
+}</pre>
+        <p class="prov-body"><strong>Signed by a verified GitHub identity</strong>, with an auditable chain: who curated it, what they grounded on, when. Trust becomes a property the model can read.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="proof" class="band-teal tx-grid">
   <div class="wrap">
     <div class="stamp rv">Chapter the Fifth — The Reckoning</div>
     <h2 class="rv" data-d="1"><span class="mis" data-text="each claim, on disk.">each claim, <span class="em-pink">on disk.</span></span></h2>
     <div class="ledger rv" data-d="1">
-      <div class="led"><div class="n" data-count="942">0</div><div class="k">tests passing</div></div>
+      <div class="led"><div class="n" data-count="943">0</div><div class="k">tests passing</div></div>
       <div class="led"><div class="n" data-count="0.7522" data-dec="4">0</div><div class="k">BEIR SciFact NDCG@10</div></div>
       <div class="led"><div class="n">11<small>ms</small></div><div class="k">median retrieval</div></div>
       <div class="led"><div class="n">~140<small>ms</small></div><div class="k">federation-hit P50</div></div>
     </div>
+    <div class="proofrow">
     <div class="bars" id="bars">
       <div class="bar me"><span class="nm">Folklore</span><span class="tr"><span class="fl" data-w="75.2"></span></span><span class="v">0.7522</span></div>
       <div class="bar"><span class="nm">Pinecone base</span><span class="tr"><span class="fl" data-w="58.4"></span></span><span class="v">0.5840</span></div>
@@ -440,11 +858,36 @@
       <div class="bar"><span class="nm">Letta</span><span class="tr"><span class="fl" data-w="31.5"></span></span><span class="v">0.3150</span></div>
       <div class="bar"><span class="nm">LangChain RAG</span><span class="tr"><span class="fl" data-w="26.8"></span></span><span class="v">0.2680</span></div>
     </div>
-    <p class="body rv" style="margin-top:34px;font-size:1.05rem;font-style:italic;opacity:.8;max-width:60ch">CPU-only. No model judging a model. Simulator figures — the hundred-peer pilot is next.</p>
+    <div class="curve-wrap rv" data-d="1" aria-label="Web-fallback rate decays from 17% to 1% over 2000 queries as the graph compounds.">
+      <svg class="curve-chart" viewBox="0 0 420 270" aria-hidden="true">
+        <g stroke="var(--ink)" stroke-opacity=".12" stroke-width="1">
+          <line x1="44" y1="56.7" x2="400" y2="56.7"/>
+          <line x1="44" y1="111.1" x2="400" y2="111.1"/>
+          <line x1="44" y1="165.6" x2="400" y2="165.6"/>
+          <line x1="44" y1="220" x2="400" y2="220"/>
+        </g>
+        <line x1="44" y1="24" x2="44" y2="220" stroke="var(--ink)" stroke-opacity=".4" stroke-width="1"/>
+        <line x1="44" y1="220" x2="400" y2="220" stroke="var(--ink)" stroke-opacity=".4" stroke-width="1"/>
+        <g fill="var(--ink)" fill-opacity=".6" font-family="var(--mono)" font-size="9" text-anchor="end">
+          <text x="38" y="223">0%</text><text x="38" y="169">5%</text><text x="38" y="114">10%</text><text x="38" y="60">15%</text>
+        </g>
+        <g fill="var(--ink)" fill-opacity=".6" font-family="var(--mono)" font-size="9" text-anchor="middle">
+          <text x="44" y="236">0</text><text x="222" y="236">1000</text><text x="400" y="236">2000</text>
+        </g>
+        <polyline class="curve-line" fill="none" stroke="var(--pink)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" points="44,34.9 88.5,109.3 133,151.7 177.5,176.2 222,190.3 266.5,198.3 311,202.9 355.5,205.5 400,207"/>
+        <circle class="curve-dot d0" cx="44" cy="34.9" r="3.8" fill="var(--pink)"/>
+        <circle class="curve-dot d1" cx="400" cy="207" r="3.8" fill="var(--pink)"/>
+        <text class="curve-lbl" x="54" y="32" fill="var(--pink)" font-family="var(--mono)" font-size="11" font-weight="700">17%</text>
+        <text class="curve-lbl" x="392" y="200" fill="var(--pink)" font-family="var(--mono)" font-size="11" font-weight="700" text-anchor="end">1%</text>
+        <text x="222" y="258" fill="var(--ink)" fill-opacity=".5" font-family="var(--mono)" font-size="9" text-anchor="middle"># web-fallback rate · simulated · v1</text>
+      </svg>
+    </div>
+    </div>
+    <p class="body rv" style="margin-top:18px;font-size:.98rem;font-style:italic;opacity:.8;max-width:60ch">CPU-only. No model judging a model. Simulator figures — the hundred-peer pilot is next.</p>
   </div>
 </section>
 
-<section id="join">
+<section id="join" class="tx-dots">
   <div class="wrap">
     <div class="stamp rv">Chapter the Sixth — Join the Telling</div>
     <h2 class="rv" data-d="1"><span class="mis" data-text="one command to a peer.">one command to a <span class="em-pink">peer.</span></span></h2>
@@ -464,7 +907,7 @@
   </div>
 </section>
 
-<section id="guidebook">
+<section id="guidebook" class="band-2 tx-hatch">
   <div class="wrap">
     <div class="stamp rv">The Guidebook</div>
     <h2 class="rv" data-d="1"><span class="mis" data-text="four moves to never research twice."><span class="em-blue">four moves</span> to never research twice.</span></h2>
@@ -505,13 +948,13 @@
 </section>
 
 <div class="folkband"></div>
-<section id="store">
+<section id="store" class="band-yellow tx-dots">
   <div class="wrap">
     <div class="stamp rv">The Store</div>
-    <h2 class="rv" data-d="1">wear the <span class="em-blue">commons.</span></h2>
-    <p class="rv" data-d="1" style="margin-top:18px"><a href="/store" style="font-family:var(--mono);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-bottom:3px solid var(--ink)">Browse the full store →</a></p>
-    <div class="rule rv"></div>
-    <p class="body rv" data-d="1">Folk-pop merch and the $LORE coin — minted by the network, for the culture. Drops to peers first.</p>
+    <div class="store-head">
+      <h2 class="rv" data-d="1">wear the <span class="em-blue">commons.</span></h2>
+      <a class="store-browse rv" data-d="1" href="/store">Browse the full store →</a>
+    </div>
     <div class="shop">
       <div class="prod rv" data-d="1">
         <span class="soon">Drops to peers first</span>
@@ -550,33 +993,34 @@
         </div>
       </div>
     </div>
-    <div class="lore rv" data-d="1">
-      <div>
+    <p class="store-more rv" data-d="3">Prints, posters, pins &amp; more — <a href="/store">browse the full store →</a></p>
+    <div class="lorestrip rv" data-d="1">
+      <img class="lorecoin" src="assets/gen/coin.png" alt="$LORE coin"/>
+      <div class="loretext">
         <h3>$LORE — minted on <span class="em-teal">bags.fm.</span></h3>
-        <p class="body" style="margin-bottom:28px">A community memecoin for the commons. Fair-launched on bags.fm. The folk hold the lore — for the culture, not the chart.</p>
-        <a class="btn btn-primary" href="https://bags.fm" style="display:inline-block">Get $LORE on bags.fm</a>
-        <p class="disc">Memecoin · for fun &amp; culture, not financial advice · contract address at launch</p>
+        <p class="disc">A community memecoin for the commons — for the culture, not the chart. Not financial advice.</p>
       </div>
-      <div class="coinwrap">
-        <img src="assets/gen/coin.png" alt="$LORE coin"/>
-      </div>
+      <a class="btn btn-primary lorebtn" href="https://bags.fm">Get $LORE</a>
     </div>
   </div>
 </section>
 
-<section id="memes">
+<section id="memes" class="band-yellow tx-dots">
   <svg class="fg pink" style="top:14%;right:5%;width:90px;--rot:8deg;--fdur:10s"><use href="#star"/></svg>
   <div class="wrap">
     <div class="stamp rv">The Memes</div>
     <h2 class="rv" data-d="1"><span class="mis" data-text="told and retold.">told and <span class="em-pink">retold.</span></span></h2>
     <p class="body rv" data-d="1" style="max-width:50ch">Folk knowledge always spread as memes. Ours are minted by the network and posted to the timeline — drop yours; the best ones make the store.</p>
-    <div class="memegrid rv" id="memegrid" data-static="1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;margin-top:44px">
-      <div style="border:3px solid var(--ink);background:var(--paper);box-shadow:8px 8px 0 var(--pink);overflow:hidden"><img src="assets/gen/char1.png" alt="folk-pop meme — the teller" style="width:100%;display:block"/></div>
-      <div style="border:3px solid var(--ink);background:var(--paper);box-shadow:8px 8px 0 var(--blue);overflow:hidden"><img src="assets/gen/bird.png" alt="folk meme" style="width:100%;display:block"/></div>
-      <div style="border:3px solid var(--ink);background:var(--paper);box-shadow:8px 8px 0 var(--teal);overflow:hidden"><img src="assets/gen/sun.png" alt="folk meme" style="width:100%;display:block"/></div>
-      <div style="border:3px solid var(--ink);background:var(--paper);box-shadow:8px 8px 0 var(--yellow);overflow:hidden"><img src="assets/gen/meme-amnesia.png" alt="folk meme — agent amnesia" style="width:100%;display:block"/></div>
-      <div style="border:3px solid var(--ink);background:var(--paper);box-shadow:8px 8px 0 var(--pink);overflow:hidden"><img src="assets/gen/meme-coinrain.png" alt="folk meme — $LORE rain" style="width:100%;display:block"/></div>
-      <div style="border:3px solid var(--ink);background:var(--paper);box-shadow:8px 8px 0 var(--blue);overflow:hidden"><img src="assets/gen/fishflower.png" alt="folk sticker" style="width:100%;display:block"/></div>
+    <div class="meme-carousel rv" id="meme-carousel" data-d="1">
+      <ul class="meme-track" id="memegrid" data-static="1">
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-stonesoup.png" loading="lazy" alt="folk meme — villagers and robots sharing one cauldron"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-signed.png" loading="lazy" alt="folk meme — signed node welcomed, anonymous scroll turned away"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-zeroweb.png" loading="lazy" alt="folk meme — agent walking past the web toll booth"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-reread.png" loading="lazy" alt="folk meme — re-reading the same papers vs resting by the fire"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-amnesia.png" loading="lazy" alt="folk meme — agent amnesia"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-coinrain.png" loading="lazy" alt="folk meme — $LORE rain"/></div></li>
+      </ul>
+      <div class="mech-dots" id="meme-dots" role="tablist" aria-label="Meme carousel"></div>
     </div>
     <p class="rv" data-d="2" style="font-family:var(--mono);font-size:13px;font-weight:600;margin-top:24px;opacity:.7">more minting · follow <a href="https://x.com/usefolklore" style="border-bottom:2px solid var(--ink)">@usefolklore</a></p>
   </div>
@@ -587,6 +1031,7 @@
   <div class="wrap foot">
     <a href="/store">Store</a>
     <a href="/blog">Blog</a>
+    <a href="/whitepaper">White Paper</a>
     <a href="https://github.com/usefolklore/folklore">GitHub</a>
     <a href="/legal/terms">Terms</a>
     <a href="/legal/privacy">Privacy</a>
@@ -623,32 +1068,81 @@ onScroll();
    leaving the seeded markup untouched so the section is never blank). */
 (async function loadMemes(){
   const grid=document.getElementById('memegrid');
-  if(!grid)return;
-  const SHADOWS=['var(--pink)','var(--blue)','var(--teal)','var(--yellow)'];
-  try{
-    const res=await fetch('assets/memes.json',{cache:'no-store'});
-    if(!res.ok)return;                       // keep static fallback
-    const memes=await res.json();
-    if(!Array.isArray(memes)||memes.length===0)return; // empty → keep fallback
-    const frag=document.createDocumentFragment();
-    memes.forEach((m,i)=>{
-      if(!m||typeof m.image!=='string')return;
-      const card=document.createElement('div');
-      card.style.cssText='border:3px solid var(--ink);background:var(--paper);box-shadow:8px 8px 0 '+SHADOWS[i%SHADOWS.length]+';overflow:hidden';
-      const img=document.createElement('img');
-      img.src=m.image;
-      img.alt=(typeof m.alt==='string'&&m.alt)?m.alt:'folk meme';
-      if(typeof m.caption==='string'&&m.caption)img.title=m.caption;
-      img.loading='lazy';
-      img.style.cssText='width:100%;display:block';
-      card.appendChild(img);
-      frag.appendChild(card);
-    });
-    if(!frag.childNodes.length)return;        // nothing renderable → keep fallback
-    grid.replaceChildren(frag);               // swap static cards for live ones
-    grid.removeAttribute('data-static');
-  }catch(e){/* file:// or network/parse error — keep the static fallback */}
-})().catch(()=>{});
+  if(grid){
+    try{
+      const res=await fetch('assets/memes.json',{cache:'no-store'});
+      if(res.ok){
+        const memes=await res.json();
+        if(Array.isArray(memes)&&memes.length){
+          const frag=document.createDocumentFragment();
+          memes.forEach((m)=>{
+            if(!m||typeof m.image!=='string')return;
+            const li=document.createElement('li');li.className='meme-slide';
+            const card=document.createElement('div');card.className='meme-card';
+            const img=document.createElement('img');
+            img.src=m.image;
+            img.alt=(typeof m.alt==='string'&&m.alt)?m.alt:'folk meme';
+            if(typeof m.caption==='string'&&m.caption)img.title=m.caption;
+            img.loading='lazy';
+            card.appendChild(img);li.appendChild(card);frag.appendChild(li);
+          });
+          if(frag.childNodes.length){
+            grid.replaceChildren(frag);        // swap static slides for live ones
+            grid.removeAttribute('data-static');
+          }
+        }
+      }
+    }catch(e){/* file:// or network/parse error — keep the static fallback slides */}
+  }
+  initMemeCarousel();                          // build dots + autoplay around whatever's in the track
+})().catch(()=>{ initMemeCarousel(); });
+
+/* ── meme marquee: continuous flow; duplicate the slide set for a seamless -50% loop ── */
+function initMemeCarousel(){
+  const track=document.getElementById('memegrid');
+  const dotsWrap=document.getElementById('meme-dots');
+  if(!track)return;
+  if(dotsWrap)dotsWrap.style.display='none';          // marquee has no paging dots
+  const reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if(reduceMotion)return;                              // wrapped static grid, no motion
+  const originals=Array.prototype.slice.call(track.children);
+  if(!originals.length)return;
+  originals.forEach((li)=>track.appendChild(li.cloneNode(true)));  // 2× set → translateX(-50%) loops seamlessly
+  // pace the loop to slide count so speed feels constant regardless of how many memes
+  track.style.setProperty('--mdur',Math.max(24,originals.length*7)+'s');
+  track.classList.add('flow');
+}
+
+/* ── mechanism carousel: auto-advancing step focus, dots, hover-pause ── */
+(function(){
+  const stage=document.getElementById('mech-stage');
+  const track=document.getElementById('mech-track');
+  const dotsWrap=document.getElementById('mech-dots');
+  if(!stage||!track||!dotsWrap)return;
+  const dots=Array.prototype.slice.call(dotsWrap.querySelectorAll('.mech-dot'));
+  const n=track.children.length;
+  const reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  let i=0,timer=null;
+  const DUR=1800;
+  function go(k){
+    i=(k+n)%n;
+    track.style.transform='translateX(-'+(i*100)+'%)';
+    dots.forEach((d,j)=>d.setAttribute('aria-selected',j===i?'true':'false'));
+  }
+  function start(){ if(reduceMotion||timer)return; timer=setInterval(()=>go(i+1),DUR); }
+  function stop(){ if(timer){clearInterval(timer);timer=null;} }
+  dots.forEach((d)=>d.addEventListener('click',()=>{ stop(); go(+d.dataset.i); start(); }));
+  stage.addEventListener('mouseenter',stop);
+  stage.addEventListener('mouseleave',start);
+  dotsWrap.addEventListener('mouseenter',stop);
+  dotsWrap.addEventListener('mouseleave',start);
+  go(0);
+  if(reduceMotion)return;            // reduced motion: show first slide, no auto-advance
+  // only run while the section is on/near screen
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting?start():stop()),{threshold:.25}).observe(stage);
+  }else{ start(); }
+})();
 </script>
 </body>
 </html>

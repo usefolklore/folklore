@@ -8,13 +8,40 @@ window.FOLKLORE = {
     // "production" for live_ tokens, "sandbox" for test_ tokens.
     environment: "production",
     // Map each store product to its Paddle price id (starts with pri_).
+    // Empty string = checkout stays "Coming soon" for that product (Drop 01 not live yet).
+    // TODO(launch): fill in pri_ ids per product to enable Paddle checkout.
     priceIds: {
+      // hero bundle
+      "commons-kit": "",
+      // apparel
       tee: "",
-      stickers: "",
-      pin: "",
+      "mouth-ear-tee": "",
+      hoodie: "",
+      "nbw-longsleeve": "",
+      cap: "",
+      crewneck: "",
+      // prints & posters
       "commons-print": "",
-      "hero-print": "",
-      "graph-poster": ""
+      "mouth-ear-print": "",
+      "graph-poster": "",
+      "hearth-riso": "",
+      "nbw-poster": "",
+      "swallow-fish-diptych": "",
+      // stickers & pins
+      stickers: "",
+      "hearth-pin": "",
+      "lore-medallion-pin": "",
+      "holofoil-sticker": "",
+      "node-magnets": "",
+      "peers-first-sticker": "",
+      "founders-pin": "",
+      // digital & collectibles
+      "wallpaper-pack": "",
+      "texture-pack": "",
+      "lore-badge": "",
+      "commons-zine": "",
+      "numbered-edition": "",
+      "phygital-print": ""
     }
   },
   lore: {

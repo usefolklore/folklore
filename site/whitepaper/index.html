@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Folklore: A Cooperative Compounding-Inference Protocol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+  window.MathJax = {
+    tex: { displayMath: [['\\[','\\]'], ['$$','$$']], inlineMath: [['\\(','\\)']] },
+    svg: { fontCache: 'global', scale: 0.92 },
+    startup: { typeset: true }
+  };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  * { box-sizing:border-box; }
+  html { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body {
+    font-family:'STIX Two Text', Georgia, 'Times New Roman', serif;
+    color:#000; background:#fff;
+    font-size:10.5pt; line-height:1.42;
+    margin:0; padding:0;
+    text-rendering:optimizeLegibility;
+  }
+  .paper { max-width:43rem; margin:0 auto; padding:2.6rem 2rem 3rem; }
+
+  /* ---- title block (centered) ---- */
+  .titleblock { text-align:center; margin:0 0 1.1rem; }
+  .titleblock h1 {
+    font-family:'STIX Two Text', serif; font-weight:700;
+    font-size:18.5pt; line-height:1.14; letter-spacing:0;
+    margin:0 0 0.4rem;
+  }
+  .titleblock p { margin:0.1rem 0; text-indent:0; text-align:center; }
+  .titleblock p:first-of-type { font-size:11pt; font-style:italic; }
+  .titleblock p:first-of-type strong { font-weight:400; }
+  .titleblock p:last-of-type { font-size:9pt; color:#333; }
+
+  /* ---- abstract (set apart, narrower, smaller) ---- */
+  .abstract { margin:0.4rem 1.6em 0.6rem; font-size:9.6pt; line-height:1.4; }
+  .abstract h2 {
+    text-align:center; border:none; margin:0 0 0.4rem; padding:0;
+    font-size:10.5pt; font-weight:700; font-variant:small-caps; letter-spacing:0.04em;
+  }
+  .abstract p { text-indent:0; text-align:justify; hyphens:auto; margin:0 0 0.4rem; }
+  .abstract p:last-of-type { font-size:9.2pt; } /* keywords */
+
+  /* ---- numbered section headings (serif bold, LaTeX-article style) ---- */
+  h2 {
+    font-family:'STIX Two Text', serif; font-weight:700;
+    font-size:12.5pt; margin:1.5rem 0 0.4rem; color:#000;
+    page-break-after:avoid;
+  }
+  h3 {
+    font-family:'STIX Two Text', serif; font-weight:600; font-style:italic;
+    font-size:11pt; margin:1rem 0 0.3rem; color:#000;
+    page-break-after:avoid;
+  }
+
+  /* ---- body paragraphs: first-line indent, no gaps ---- */
+  p { margin:0; text-indent:1.5em; text-align:justify; hyphens:auto; -webkit-hyphens:auto; }
+  h1 + p, h2 + p, h3 + p, blockquote p, li p, td p { text-indent:0; }
+  strong { font-weight:700; } em { font-style:italic; }
+  a { color:#000; text-decoration:none; }
+  a[href^="http"] { text-decoration:underline; text-decoration-thickness:0.5px; text-underline-offset:1.5px; }
+
+  /* ---- code ---- */
+  code { font-family:'Source Code Pro', ui-monospace, monospace; font-size:0.86em; }
+  pre {
+    background:#f6f6f6; border:1px solid #ddd; border-radius:2px;
+    padding:0.65rem 0.85rem; overflow-x:auto;
+    font-family:'Source Code Pro', monospace; font-size:0.82em; line-height:1.45;
+    page-break-inside:avoid; text-align:left; margin:0.6rem 0;
+  }
+  pre code { font-size:1em; }
+
+  blockquote { margin:0.6rem 1.4em; padding:0; font-style:italic; }
+  blockquote p { text-align:left; }
+
+  /* ---- lists ---- */
+  ul,ol { margin:0.3rem 0 0.5rem; padding-left:1.5em; }
+  li { margin:0.12rem 0; text-align:justify; hyphens:auto; }
+
+  /* ---- booktabs-style tables ---- */
+  table {
+    border-collapse:collapse; margin:0.8rem auto; font-size:9pt;
+    border-top:1.3px solid #000; border-bottom:1.3px solid #000;
+    page-break-inside:avoid; min-width:60%;
+  }
+  thead th { border-bottom:1px solid #000; }
+  th,td { border:none; padding:0.3rem 0.7rem; text-align:left; vertical-align:top; }
+  th { font-weight:700; }
+
+  /* ---- figures (B&W, centered, academic caption) ---- */
+  figure { margin:1rem auto 1.1rem; text-align:center; page-break-inside:avoid; }
+  figure img { max-width:86%; height:auto; }
+  figcaption {
+    font-size:8.6pt; line-height:1.4; color:#000;
+    text-align:justify; margin:0.45rem auto 0; max-width:86%; hyphens:auto;
+  }
+  figcaption strong { font-weight:700; }
+
+  hr { border:0; border-top:0.6px solid #000; margin:1rem 0; }
+
+  mjx-container[display="true"] { margin:0.6rem 0 !important; page-break-inside:avoid; }
+
+  /* ---- print: gutters ---- */
+  @page { size:A4; margin:22mm 25mm; }
+  @media print {
+    .paper { padding:0; max-width:none; }
+    pre { background:#f6f6f6 !important; }
+  }
+</style>
+</head>
+<body>
+<div class="paper">
+<div class="titleblock"><h1>Folklore: A Cooperative Compounding-Inference Protocol</h1>
+<p><strong>A peer-to-peer knowledge layer where research compounds across the network.</strong></p>
+<p>Version 0.1 (pre-launch draft) · MIT-licensed protocol</p>
+</div>
+<hr>
+<div class="abstract"><h2>Abstract</h2>
+<p>Large language model agents continuously re-derive the same answers. The same paper is read, the same regression is debugged, and the same retrieval is billed per token thousands of times daily across the open-source community, with each result discarded when the session ends. Folklore is a peer-to-peer protocol designed to make that inference work compound rather than evaporate. Each peer maintains a local graph-RAG over its own code, research, and past sessions; queries fan out to connected peers before reaching the paid web; and every record is signed with a cryptographic identity bound to a verified GitHub handle. We formalize the central claim, &quot;we compound on inference,&quot; as a monotonicity property over R(T,t), the number of peers holding a resolved answer for topic T at time t. The claim is grounded in established cache theory: pooled cooperative capacity under Mandelbrot-Zipf demand, evaluated with Che&#39;s LRU approximation, raises the network&#39;s hit-rate ceiling and collapses the marginal cost of resolving a topic after the first peer pays for it. A 10-peer federation simulator shows the web-fallback rate falling from 17% to 1% over 2,000 steps. We show, however, that this v1 result treats per-peer retrieval as a boolean, which makes part of the decay true by construction rather than an empirical discovery; we therefore present it as a demonstration, not evidence, and specify the v2 experiment, a semantic-satisfaction-threshold sweep, that makes the claim genuinely falsifiable. This paper presents the full system architecture, a formal compounding model, a security architecture and threat model centered on provenance-attested retrieval against context poisoning, the empirical results to date with their limitations, and the open problems that remain.</p>
+<p><strong>Keywords:</strong> peer-to-peer retrieval, retrieval-augmented generation, cooperative cache theory, federated knowledge, cryptographic provenance, RAG poisoning, trust calibration.</p>
+</div>
+<hr>
+<h2>1. Introduction</h2>
+<h3>1.1 The redundant-inference problem</h3>
+<p>Open source built the freest software stack in history by sharing code: CRAN, npm, PyPI, GitHub, arXiv. Distribution of artifacts compounds, so each contribution permanently improves what every future engineer starts with. The knowledge <em>between</em> the code has never had the same substrate. What an engineer read, what they figured out at 3am, the synthesis that explained why a fix worked: this dies with the session. The same papers are re-explained in posts that 404 within a year, and the same regression is diagnosed in parallel by many engineers the following week.</p>
+<p>The cost of this redundancy is now metered. Every retrieval-augmented call an LLM agent makes is billed per token, run against the same data that has already been processed many times over. The waste is not only economic. It represents a missed opportunity: inference that could build on prior inference instead restarts from zero each time.</p>
+<h3>1.2 The thesis</h3>
+<p>Folklore&#39;s central claim is that knowledge work can compound the way code distribution does, provided three properties hold:</p>
+<ol>
+<li>Each peer keeps only its own graph, on its own machine, with no central server.</li>
+<li>Every contribution is signed by a verified human identity, forming an auditable provenance chain.</li>
+<li>Queries fan out to every connected peer, and once any peer has resolved a topic, every other peer can inherit that resolution at federation cost rather than paying the web again.</li>
+</ol>
+<p>We term this &quot;compounding on inference&quot;: each answer a peer produces becomes reasoning the next peer inherits. The network thereby reasons from a broader base than any single node, and the marginal cost of a topic falls toward a federation round-trip after the first peer pays the full cost.</p>
+<h3>1.3 Scope of this paper</h3>
+<p>This paper specifies the protocol, formalizes the compounding claim with an explicit statement of when it is a theorem versus an empirical claim, presents the security architecture and threat model, reports the empirical results to date with their limitations, positions the work against prior art, and enumerates open problems. It is a pre-launch draft: the federation result is from a simulator, not a pilot, and we preserve that distinction throughout.</p>
+<p><strong>Contributions.</strong> This paper makes four contributions:</p>
+<ol>
+<li>A specification of the Folklore protocol: a federated, signed, demand-shaped knowledge layer in which each peer runs a local graph-RAG and resolutions transfer across peers (Sections 3 and 4).</li>
+<li>A formal model of compounding grounded in cooperative cache theory, with an explicit statement of the conditions under which the monotonicity of R(T,t) is a theorem true by construction versus an empirical claim, and the experiment that makes it falsifiable (Section 5).</li>
+<li>A security architecture and threat model for provenance-attested retrieval, separating what cryptographic provenance guarantees from the semantic accuracy it cannot certify (Section 6).</li>
+<li>A fully specified, runnable safety experiment testing whether provenance metadata lets a consuming model detect and refuse poisoned context, with a stated null hypothesis (Section 7.4).</li>
+</ol>
+<hr>
+<h2>2. The Compounding Thesis, Informally</h2>
+<p>Let <code>T</code> be a topic, defined as a query together with its answerable neighborhood, and let <code>R(T, t)</code> be the number of peers in the network holding a cached, resolved answer for <code>T</code> at time <code>t</code>.</p>
+<p>Under the protocol, when a peer resolves <code>T</code>, whether from a peer cache or, on a miss, from the web, the resolved and signed answer is disseminated so that other peers can cache it. The intended consequence is that <code>R(T, t)</code> grows over time and the community&#39;s marginal cost to resolve <code>T</code> collapses toward a federation round-trip once the first peer has paid the full cost.</p>
+<p>The observable proxy for this process is the <strong>web-fallback rate</strong>: the fraction of research-shaped queries that pass through to a paid web call because no peer could satisfy them locally. If the thesis holds, this rate decays as the network accumulates resolutions.</p>
+<p>Section 5 makes this precise, including the conditions under which monotonicity of <code>R(T, t)</code> is true by construction versus an empirical claim that a properly designed experiment must be capable of falsifying.</p>
+<hr>
+<h2>3. System Architecture</h2>
+<h3>3.1 The node model</h3>
+<p>Each peer operates independently, without a central server. Every peer maintains a <strong>local graph-RAG</strong>: a retrieval index over its own code, research, and past LLM/agent sessions, held on its own machine. Storage cost on any peer scales with that peer&#39;s own activity, not the community&#39;s total volume.</p>
+<p>Every record in the graph carries a fixed schema so that all context is fully traceable:</p>
+<ul>
+<li><code>identity</code>: the curator&#39;s cryptographic peer identity (public key).</li>
+<li><code>signature</code>: a signature over the record content, produced with the private key.</li>
+<li><code>github_handle</code>: the verified GitHub handle bound to the identity.</li>
+<li><code>source_uri</code>: the origin of the content (a paper URL, a thread, a file path).</li>
+<li><code>fetch_timestamp</code>: when the content was retrieved.</li>
+<li><code>content</code>: the resolved text or synthesis.</li>
+<li><code>embeddings</code>: the dense vectors used for semantic retrieval.</li>
+<li><code>grounding_artifacts</code>: the sources the record was grounded on.</li>
+</ul>
+<h3>3.2 Identity, signing, and provenance</h3>
+<p>Each cached RAG context is signed with a private key bound to a verified GitHub handle and a public cryptographic identity. This binding yields three formal guarantees:</p>
+<ul>
+<li><strong>Authenticity</strong>: a specific peer authored the context.</li>
+<li><strong>Integrity</strong>: the context was not tampered with in transmission.</li>
+<li><strong>Non-repudiation</strong>: a peer p cannot deny that it published the record.</li>
+</ul>
+<p>The architecture is explicit about the limit of these guarantees: cryptographic attestation <strong>cannot verify the semantic accuracy, truthfulness, or safety of the content</strong>. A peer with a verified and reputable identity can still be compromised or act as an honest-but-confused node, signing and distributing hallucinated or poisoned context. Provenance secures the channel and the chain of custody; it does not certify truth. Section 6 addresses how the protocol layers semantic defenses on top of cryptographic provenance.</p>
+<h3>3.3 The retrieval stack</h3>
+<p>Within each peer, retrieval executes as a layered pipeline:</p>
+<ol>
+<li><strong>Hybrid first-stage retrieval</strong>: BM25 (lexical) and dense vector retrieval, combined with reciprocal rank fusion (RRF).</li>
+<li><strong>Cross-encoder rerank</strong>: a cross-encoder rescoring of the fused candidate set.</li>
+<li><strong>Graph rerank</strong>: a personalized-PageRank rerank over the knowledge graph, integrating topological structure with semantic distance.</li>
+<li><strong>Satisfaction scoring</strong>: a satisfaction score computed on the top result, consumed by the federation decision contract described in Section 3.4.</li>
+</ol>
+<h3>3.4 Query and federation flow</h3>
+<p>The protocol installs a <strong>decentralized cooperative semantic interception hook</strong>. When a peer&#39;s harness (for example, Claude Code or an MCP client) attempts a research-shaped call such as <code>WebSearch</code> or <code>WebFetch</code>, the hook intercepts it and executes the following sequence:</p>
+<ol>
+<li>Query the local graph first.</li>
+<li>On a local miss, fan out to every connected peer listed in <code>peers.json</code>.</li>
+<li>Evaluate the responses against the <strong>satisfaction floor</strong> (the deny-gating contract):<ul>
+<li><code>satisfaction_score</code> &gt;= <strong>0.85</strong> on the top result, after the full rerank pipeline.</li>
+<li>At least <strong>2</strong> graph hits in the answer set.</li>
+<li>An agent-decision layer that must affirmatively choose <strong>answer from memory</strong> rather than answer-but-verify or search-web.</li>
+</ul>
+</li>
+<li>If all three conditions hold, the external web call is canceled and the verified, signed peer result is injected into the local inference pipeline as if the web call had returned it.</li>
+<li>If the threshold is not met, the web call proceeds. Once the node resolves the fallback query, the resulting signed context is disseminated through the network so that other peers can cache it for future use.</li>
+</ol>
+<p>Figure 1 summarizes this flow.</p>
+<figure>
+  <img src="figures/fig1-architecture.svg" alt="Query and federation flow: a harness call is intercepted, answered from the local graph or peer fan-out if the satisfaction gate is cleared, otherwise falls through to the web and is signed and disseminated." />
+  <figcaption><strong>Figure 1.</strong> The query and federation flow. A research-shaped harness call is intercepted by the hook, answered from the local graph or a peer fan-out when the satisfaction gate (>= 0.85, >= 2 hits, use_memory) is cleared, and otherwise falls through to the web, whose signed result is disseminated back into the network so that R(T,t) grows.</figcaption>
+</figure>
+
+<p>The deny pathway is opt-in per project, because a false positive, the graph claiming it has an answer it does not, costs more than a redundant fetch. Only <code>WebSearch</code> and <code>WebFetch</code> are deniable; local tools such as <code>Read</code>, <code>Glob</code>, and <code>Grep</code> are never blocked.</p>
+<p>This creates an apparent tension with the compounding thesis: if the mechanism that cancels the paid web call is off by default, does the default network compound at all? The resolution is that <strong>compounding and hard-denial are separate mechanisms</strong>. Two things occur on every research-shaped call regardless of the deny setting: (1) the local-plus-federated graph is consulted first, and any sufficiently good hit is injected into the model&#39;s context; and (2) on a web fallback, the resolved result is signed and disseminated, growing R(T,t). Knowledge accrual and cross-peer transfer, which constitute the thesis, are therefore <strong>default-on</strong>. What <code>FOLKLORE_DENY_WEBSEARCH</code> controls is only whether a satisfied query also hard-cancels the redundant web call to capture the full token saving. The default network still compounds knowledge and serves it as context; the opt-in deny mode converts that compounding into a hard cost reduction once an operator trusts the graph&#39;s coverage. The benchmark in Section 7.2 measures the deny-on regime, representing the upper bound on cost savings; the default regime captures the same knowledge accrual with a softer cost effect.</p>
+<p>Per-project tunables:</p>
+<pre><code>FOLKLORE_DENY_WEBSEARCH=1     # opt in to the deny pathway (off by default)
+FOLKLORE_DENY_THRESHOLD=0.85  # satisfaction floor
+FOLKLORE_DENY_MIN_HITS=2      # minimum hits to allow the deny
+FOLKLORE_PREFETCH_PEERS=0     # local-only, skip federated fan-out
+</code></pre>
+<h3>3.5 Network and transport layer</h3>
+<p>Peer discovery and transport reuse established structured routing primitives. The protocol uses Kademlia-style routing overlays, cryptographic content identifiers (CIDs), and replication intervals to manage the P2P topology. Query distribution and save-back propagation are modeled as a fanned-out gossip protocol with epidemic dissemination dynamics, segmenting nodes into Ignorants, Active Spreaders, and Stiflers, following the SIR rumor-spreading literature discussed in Section 5.1.</p>
+<hr>
+<h2>4. Harness Integration</h2>
+<p>Folklore does not alter how an engineer works. Once installed and running, the interception hook sits in front of the harness&#39;s research-shaped calls without requiring workflow changes.</p>
+<table>
+<thead>
+<tr>
+<th>Harness</th>
+<th>Integration</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Claude Code</td>
+<td><code>folklore claude install</code> wires <code>PreToolUse</code> + <code>PostToolUse</code> + <code>SessionStart</code> hooks and a <code>CLAUDE.md</code> system-prompt section.</td>
+<td>Implemented</td>
+</tr>
+<tr>
+<td>Any MCP-capable harness</td>
+<td>Register <code>folklore mcp start</code> as an MCP tool server; the harness&#39;s tool-routing layer prefers folklore for query-shaped calls.</td>
+<td>Intended integration path</td>
+</tr>
+<tr>
+<td>Anything with a PreToolUse hook</td>
+<td>Point the harness&#39;s <code>PreToolUse</code> config at the reusable <code>folklore-smart-hook.cjs</code>.</td>
+<td>Intended integration path</td>
+</tr>
+</tbody></table>
+<p>The Claude Code path is implemented; the MCP and generic-hook paths are intended integration points that follow the same interception contract. After integration, the local-plus-federated graph becomes the first hop on every research-shaped call.</p>
+<hr>
+<h2>5. A Formal Model of Compounding</h2>
+<p>We model the compounding claim with classical cache theory. The appropriate formalism is <strong>cooperative cache hit-rate under heavy-tailed demand, evaluated with Che&#39;s LRU approximation</strong>. Epidemic/gossip models and network-effects economics are complementary layers; they are not the load-bearing model, and their role is discussed in Section 8.</p>
+<h3>5.1 Demand model</h3>
+<p>Query popularity follows a power law. For a catalog of <code>N</code> topics, the strict-Zipf probability <code>q_i</code> of the i-th most popular topic is</p>
+<p>\[q_i = \frac{i^{-\alpha}}{\sum_{j=1}^{N} j^{-\alpha}}, \qquad \alpha \ge 0\]</p>
+<p>where <code>alpha</code> is the Zipfian exponent. Observed access patterns are better fit by the <strong>Mandelbrot-Zipf</strong> generalization, which introduces a plateau parameter <code>q &gt;= 0</code> that flattens the high-frequency head:</p>
+<p>\[q_i = \frac{(i + q)^{-\alpha}}{\sum_{j=1}^{N} (j + q)^{-\alpha}}\]</p>
+<p>with <code>q = 0</code> recovering strict Zipf. Both the simulator and the cooperative-caching literature use the Mandelbrot-Zipf form; the formal results below carry over directly with the shifted ranks.</p>
+<h3>5.2 Effective cooperative capacity</h3>
+<p>The pooled memory of a cooperating set of peers <code>P</code> exceeds that of any single node. Let <code>C_p</code> be the local cache size of peer <code>p</code>. The effective cooperative capacity is</p>
+<p>\[C_{\text{eff}} = \gamma \sum_{p \in P} C_p, \qquad \gamma \in (0, 1]\]</p>
+<p>where <code>gamma</code> is a cooperation-efficiency factor that discounts for redundancy, churn, and imperfect routing.</p>
+<p>This is a deliberate simplification with a known weakness. Che&#39;s approximation assumes independent per-object caching probabilities. In a gossip-disseminated network without strict DHT partitioning, the same record is replicated across many peers, so the effective distinct capacity is less than the naive sum and the independence assumption is violated. Collapsing all of that into a single scalar <code>gamma</code> is an approximation, not a derivation. A rigorous treatment derives <code>gamma</code> from the expected replication overlap (a function of the gossip fan-out, TTL, and churn rate); we treat that derivation as open work (Section 9). The numbers below should be read as the ceiling the model permits, not the rate the network will achieve.</p>
+<h3>5.3 Hit-rate under Che&#39;s approximation</h3>
+<p>Under a Least-Recently-Used policy, the hit probability <code>h_i</code> for topic <code>i</code> is approximated by Che&#39;s method as</p>
+<p>\[h_i \approx 1 - e^{-q_i \, t_C}\]</p>
+<p>where the <strong>characteristic time</strong> <code>t_C</code> is the unique root of the capacity-constraint equation</p>
+<p>\[C = \sum_{i=1}^{N} \left( 1 - e^{-q_i \, t_C} \right).\]</p>
+<p>The overall hit rate is the demand-weighted sum <code>H = sum_i q_i h_i</code>.</p>
+<h3>5.4 Isolated versus cooperative ceiling</h3>
+<p>Evaluating Che&#39;s approximation at <code>C = C_eff</code> instead of a single node&#39;s <code>C_p</code>, under Mandelbrot-Zipf demand, raises the ideal hit-rate ceiling. In the formalization documents this is illustrated as a rise from an isolated single-node level (on the order of 43%) to a cooperative level (on the order of 69%) <strong>under one chosen set of parameters</strong> (catalog size <code>N</code>, exponent <code>alpha</code>, plateau <code>q</code>, per-node capacity <code>C_p</code>, and cooperation factor <code>gamma</code>). These two figures are <strong>parameter-sensitive model outputs, not measured production rates and not a performance guarantee</strong>: changing <code>alpha</code> or <code>gamma</code> moves both numbers substantially, and the <code>gamma</code> simplification of Section 5.2 inflates the cooperative figure relative to a network with heavy replication overlap. They illustrate the <em>direction</em> of the mechanism (pooling raises the ceiling, and the complement of the hit rate is the web-fallback rate) rather than its magnitude. A parameter-sensitivity sweep is required before either figure is cited as evidence. Figure 4 depicts the mechanism: the two operating points lie on a single saturating hit-rate curve, with the cooperative point reached by enlarging capacity from <code>C_p</code> to <code>C_eff</code>.</p>
+<figure>
+  <img src="figures/fig4-hitrate.svg" alt="Cache hit-rate as a saturating function of effective capacity, with the isolated operating point at 43% and the cooperative point at 69%." />
+  <figcaption><strong>Figure 4.</strong> Cooperative caching raises the hit-rate ceiling. Che's approximation evaluated at the pooled effective capacity <code>C_eff</code> shifts the operating point along the same saturating curve. The 43% and 69% values are parameter-sensitive model illustrations under one chosen configuration, not measured rates.</figcaption>
+</figure>
+
+<h3>5.5 Cost model</h3>
+<p>The decision to contribute is modeled as a voluntary-contribution game. A peer <code>i</code>&#39;s utility is</p>
+<p>\[U_i(x_i, Y) = u_i(x_i) + \theta_i \cdot V(Y)\]</p>
+<p>where <code>x_i</code> is the peer&#39;s private resource expenditure (memory, compute), <code>u_i</code> its private utility, <code>Y</code> the aggregate cooperative cache, and <code>theta_i</code> the peer&#39;s valuation of the shared good. This framing exposes a free-rider risk: a peer can query the network (benefit from <code>Y</code>) while contributing nothing (<code>x_i = 0</code>). The model is not decorative only if it drives a mechanism. The intended mechanism is <strong>contribution-gated federation</strong>: a peer&#39;s query priority and fan-out reach are weighted by its EigenTrust standing (Section 6.4), which in turn is earned by satisfactory contributions. Free-riding and Sybil resistance are therefore handled by the same reputation layer, with the caveat that this gating policy is specified but not yet validated (Section 9, cold-start). A peer reviewer will note that contribution gating and the cold-start problem are in direct tension, which we acknowledge rather than resolve here.</p>
+<h3>5.6 Monotonicity: theorem versus empirical claim</h3>
+<p>The headline claim is that <code>R(T, t)</code> is monotonically non-decreasing. This is a <strong>theorem true by construction only under idealized constraints</strong>: infinite local storage (no eviction), zero peer offline-churn, and infinite cryptographic time-to-live (no temporal decay). In any real network none of these hold: finite storage forces LRU/LFU eviction, peers disconnect, and records expire, so the cardinality of <code>R(T, t)</code> actively fluctuates. Under realistic constraints, monotonicity is an <strong>empirical claim</strong> that an experiment must be designed to falsify.</p>
+<p>This is the crux of honest evaluation. Because the v1 simulator (Section 7.2) treats per-peer retrieval as a boolean (&quot;does peer N hold doc D&quot;), it assumes exact-match retrieval and therefore bakes in part of the decay. The experiment that makes the claim genuinely falsifiable must vary <strong>the semantic satisfaction threshold</strong>: sweep it (for example 0.75 to 0.95 in 0.01 increments) on a continuous semantic-similarity harness to find the point at which natural linguistic variance forces a cache miss and breaks the idealized compounding curve. That is the v2 design (Section 7.3).</p>
+<hr>
+<h2>6. Security Architecture and Threat Model</h2>
+<p>A peer-to-peer RAG network exposes a large attack surface. We separate what the Folklore formalization specifies from what is borrowed from the literature and still needs integration.</p>
+<h3>6.1 Threat model</h3>
+<p><strong>Specified in the Folklore architecture:</strong></p>
+<ul>
+<li><strong>Data poisoning / context injection</strong>: adversaries inject corrupted context into the cooperative cache to hijack downstream outputs.</li>
+<li><strong>Sybil and collective poisoning</strong>: attackers spin up many cheap automated identities to collude, cross-validate, and sign and distribute poisoned reasoning at scale.</li>
+<li><strong>Stale / expired knowledge</strong>: records that were once correct but are no longer, requiring eviction and temporal-decay controls.</li>
+</ul>
+<p><strong>Borrowed from the literature, needs integration:</strong></p>
+<ul>
+<li><strong>Indirect prompt injection via retrieved context</strong> must be distinguished from factual poisoning. Factual poisoning corrupts the model&#39;s facts; indirect prompt injection hijacks the model&#39;s instructions (for example, retrieved text that says &quot;ignore your rules and do X&quot;).</li>
+<li><strong>Agentic consequences</strong>: a poisoned retrieval need not stop at a wrong answer; it can lead an autonomous agent to take unauthorized real-world actions.</li>
+<li><strong>Replay and supply-chain tampering</strong>: addressed by SCITT-style immutable, non-repudiable audit trails and epoch markers.</li>
+</ul>
+<h3>6.2 Cryptographic provenance and its limit</h3>
+<p>As in Section 3.2, signing binds each record to a verified identity and yields authenticity, integrity, and non-repudiation. The explicit limit bears repeating because it motivates the rest of this section: cryptography secures <em>who said it</em> and <em>that it was not altered</em>, but <strong>not whether it is true or safe</strong>. Defenses against poisoned-but-validly-signed content must be semantic, not only cryptographic.</p>
+<h3>6.3 The poisoning-defense layer</h3>
+<p>The literature establishes that the attack is cheap and effective. <strong>PoisonedRAG</strong> demonstrates that injecting as few as 5 poisoned texts into a database of millions can reach a 97% attack success rate, where a successful attack must satisfy a <em>retrieval condition</em> (the poison ranks above legitimate documents) and an <em>effectiveness condition</em> (it compels the target output). Layered defenses from the literature include:</p>
+<ul>
+<li><strong>Chunk-wise perplexity filtering</strong> (Secure-RAG-against-poisoning): flag over-optimized, unnatural text via perplexity difference and perplexity maximum, plus text-similarity filtering.</li>
+<li><strong>Leave-one-out decoding</strong> (RAGuard): temporarily remove each retrieved document and measure answer stability and entropy differential; a document whose removal radically changes the output is flagged as a malicious anomaly.</li>
+</ul>
+<p>Folklore specifies a <strong>three-stage defense</strong> that integrates these ideas. All three stages are <strong>specified in the architecture but not yet implemented or evaluated</strong> (none appears in the empirical results of Section 7):</p>
+<ol>
+<li><strong>Ingestion-level embedding anomaly detection</strong> <em>(specified, not yet implemented)</em>: flag statistical outliers in vector space at save time.</li>
+<li><strong>Retrieval-level adversarial training</strong> <em>(specified, not yet implemented)</em>: train the retriever on synthetic poisons so it down-ranks suspicious passages.</li>
+<li><strong>Generation-level zero-knowledge causal filtering</strong> <em>(specified, not yet implemented)</em>: isolate documents that cause radical semantic shifts in the output, in the manner of RAGuard&#39;s leave-one-out decoding.</li>
+</ol>
+<p>The protocol&#39;s distinctive lever is <strong>attestation as a candidate trust signal</strong>. Because every retrieved chunk carries provenance metadata (peer identity, verified handle, source URI, timestamp, grounding artifacts), a consuming LLM could in principle weigh retrieved context against its lineage before treating it as factual grounding, in the spirit of SBOM/AIBOM supply-chain attestation. We state this as a hypothesis, not a guarantee: a cryptographically signed poison is still a poison, and LLMs are known to be susceptible to context-hijacking and sycophancy regardless of metadata. Whether a model can actually weigh a provenance tag against an adversarial payload is an open empirical question, the protocol&#39;s strongest research direction, and the subject of the planned safety experiment in Section 7.4.</p>
+<h3>6.4 Sybil resistance and reputation</h3>
+<p>The literature provides a hard result: <strong>there is no symmetric, Sybil-proof, nontrivial reputation function</strong> (Sybilproof Reputation Mechanisms). A symmetric function cannot distinguish a real trust graph from an exact attacker-made duplicate, so any symmetric system lets an adversary inflate rank with fake nodes. Sybil resistance therefore requires an <strong>asymmetric</strong> approach that propagates trust from pre-trusted seed nodes.</p>
+<p>Folklore adopts this via <strong>EigenTrust</strong>. Local trust is computed from satisfactory versus unsatisfactory transactions, <code>s_ij = sat(i, j) - unsat(i, j)</code>, and global trust is computed recursively with pre-trusted seeds:</p>
+<p>\[t^{(k+1)} = (1 - a)\, C^{\top} t^{(k)} + a\, p\]</p>
+<p>where <code>C</code> is the normalized local-trust matrix, <code>p</code> is the distribution over pre-trusted seed peers, and <code>a</code> is the teleport probability back to those seeds. The teleportation forces the trust computation to periodically return to verified foundation peers, so a Sybil cluster cannot inflate its global reputation merely by exchanging trust among its own members.</p>
+<h3>6.5 Revocation and freshness</h3>
+<p>When a signed record is found to be poisoned or becomes stale, the network must be able to retract it. Folklore maps PKI revocation to signed knowledge:</p>
+<ul>
+<li>Peers periodically poll a <strong>signed Certificate Revocation List (CRL)</strong>, analogous to PKI CRL/OCSP. When a record&#39;s signature serial number appears on the CRL, each peer parses its local graph, prunes the revoked CIDs, and re-runs its personalized-PageRank calculations.</li>
+<li><strong>Cryptographic tombstone protocols</strong> reconcile immutable provenance with the right to be forgotten: a signed deletion record removes content while the chain still verifies.</li>
+<li><strong>Time-to-live (TTL) staleness</strong> uses Kademlia-style record expiration, so records naturally decay and are evicted from the cooperative cache unless their original author re-publishes them.</li>
+<li><strong>SCITT-style transparency logs</strong> provide an append-only, receipt-backed audit trail for the inclusion and status of records, supporting ongoing verification.</li>
+</ul>
+<hr>
+<h2>7. Empirical Validation</h2>
+<h3>7.1 Retrieval quality (per-peer)</h3>
+<p>On the full BEIR SciFact benchmark (5,183 documents, 300 queries), the per-peer retrieval stack scores <strong>0.7522 NDCG@10</strong>, CPU-only, with an 11 ms median, no LLM judging an LLM. For reference against published single-user baselines: Pinecone-baseline 0.5840, mem0 0.4410, Letta 0.3150, LangChain-RAG 0.2680 (Figure 3). This establishes that the per-peer retriever is competitive before any federation; the federation question is separate.</p>
+<figure>
+  <img src="figures/fig3-beir.svg" alt="Bar chart of NDCG@10 on BEIR SciFact: folklore 0.7522, Pinecone 0.5840, mem0 0.4410, Letta 0.3150, LangChain 0.2680." />
+  <figcaption><strong>Figure 3.</strong> Per-peer retrieval quality on BEIR SciFact (NDCG@10, CPU-only, 11 ms median). folklore is shown against published single-user baselines.</figcaption>
+</figure>
+
+<h3>7.2 Federation simulator (FolkloreBench-F)</h3>
+<p>FolkloreBench-F is a federation-level simulator measuring <code>web_fallback_rate(t)</code> over a peer network with offline churn. First run, on the LoCoMo factual subset:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Corpus</td>
+<td>LoCoMo factual subset, 695 queries</td>
+</tr>
+<tr>
+<td>Peers</td>
+<td>10, strictly disjoint initial shards</td>
+</tr>
+<tr>
+<td>Sim steps</td>
+<td>2,000</td>
+</tr>
+<tr>
+<td>Offline churn</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>Query distribution</td>
+<td>Zipfian (alpha = 1.0)</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+<th>Reading</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>web_fallback_rate (start)</td>
+<td>0.170</td>
+<td>17% of queries hit the web at t=0</td>
+</tr>
+<tr>
+<td>web_fallback_rate (end)</td>
+<td>0.010</td>
+<td>1% of queries hit the web by t=2,000</td>
+</tr>
+<tr>
+<td>web_fallback_rate (run-average)</td>
+<td>0.045</td>
+<td>4.5% of all queries across the full 2,000-step run hit the web</td>
+</tr>
+<tr>
+<td>Compounding slope</td>
+<td>-4.74e-5</td>
+<td>Negative; thesis holds for this corpus</td>
+</tr>
+</tbody></table>
+<p>The end-state (1%) and the run-average (4.5%) are different quantities and must not be conflated: the curve decays over the run, so the average over all steps is higher than the converged end value. The headline claim is the <em>decay</em> (17% to 1%) and its negative slope, not a single point estimate. Figure 2 plots the decay.</p>
+<figure>
+  <img src="figures/fig2-compounding.svg" alt="Line chart of web-fallback rate decaying from 17% at step 0 to about 1% at step 2000." />
+  <figcaption><strong>Figure 2.</strong> Simulated web-fallback rate over 2,000 steps in FolkloreBench-F v1 (10 peers, 20% offline churn, Zipfian demand). The curve is a <em>demonstration, not validated evidence</em>: under v1's boolean-retrieval abstraction the decay is partly true by construction (Sections 5.6 and 7.3). The shape is illustrative of the reported endpoints and negative slope.</figcaption>
+</figure>
+
+<h3>7.3 Honest limitations and the v2 design</h3>
+<p>These are simulator numbers, not pilot numbers. The v1 simulator treats per-peer retrieval as a boolean (&quot;does peer N hold doc D&quot;). As Section 5.6 argues, that abstraction makes part of the 17%-to-1% decay a property of the cache model rather than an empirical discovery, because monotonicity is near-tautological once retrieval is assumed exact.</p>
+<p>The v2 experiment removes the abstraction. Each simulated peer runs the actual retrieval stack (BM25 + vector + RRF, cross-encoder, personalized PageRank) over its shard, producing a real continuous satisfaction score per query per peer. The experiment then <strong>sweeps the satisfaction threshold</strong> and reports how the compounding curve bends as the threshold tightens. The threshold sweep is what makes the claim falsifiable: if natural semantic variance breaks the curve at a realistic threshold, the thesis is weakened in a measurable way; if it survives, the result is genuine rather than built-in. Real-world validation beyond the simulator is a 100-peer pilot in the local-AI / agent-tooling ecosystem, measuring the real web-fallback curve over 30 days of traffic.</p>
+<h3>7.4 Planned safety experiment: does attestation defend against poisoned retrieval?</h3>
+<p>The architecture&#39;s strongest safety claim, that per-record provenance lets a consuming LLM detect and refuse poisoned context, is currently an aspiration, not a result. This subsection specifies the experiment that would make it a falsifiable empirical contribution. The experiment is not yet run; it is stated here so the claim is operationalized rather than hand-waved.</p>
+<ul>
+<li><strong>Dataset and attack corpus.</strong> The PoisonedRAG benchmark corpus (its published query set and target answers), extended so that each poisoned passage is injected as a federated record carrying a full, valid Folklore provenance chain (a real signing key, a verified handle, a source URI, a timestamp). This models the realistic adversary: not an unsigned blob, but a Sybil or compromised peer that signs its poison.</li>
+<li><strong>Conditions (4 arms, each isolating one effect).</strong> The arms are designed so that the difference between any adjacent pair attributes a single causal factor, avoiding the confound of mixing the LLM&#39;s reasoning with mechanical filtering or with prompt instruction-following.<ol>
+<li><em>Anonymous RAG (baseline):</em> retrieved chunks carry no provenance; the LLM sees text only.</li>
+<li><em>Attested, metadata visible, no instruction:</em> each chunk is prefixed with its provenance (handle, identity age, EigenTrust score, source URI), but the system prompt does <strong>not</strong> tell the model to use it. Arm 2 minus arm 1 isolates whether provenance metadata is <em>intrinsically informative</em> to the model without being prompted.</li>
+<li><em>Attested, metadata visible, instructed to weigh trust:</em> as (2), plus a system-prompt instruction to discount low-trust context before grounding. Arm 3 minus arm 2 isolates the marginal value of <em>instructing</em> the model to use the signal, separating the metadata&#39;s inherent signal from instruction-following.</li>
+<li><em>Reputation pre-filtering (mechanical, no LLM reasoning):</em> low-EigenTrust records are filtered out before retrieval reaches the model; the LLM sees only surviving text, with no metadata. Arm 4 isolates the value of <em>mechanical</em> gating independent of any LLM trust reasoning, and bounds how much of any defense is the model versus the filter.</li>
+</ol>
+</li>
+<li><strong>Attack budget.</strong> Injection rate swept from 1% to 20% of the retrieval pool, with attacker identities split between freshly created (low-reputation) and aged-but-compromised (high-reputation) peers, to separate the value of identity age from the value of the signature.</li>
+<li><strong>Primary metric.</strong> Attack success rate (fraction of poisoned queries where the model emits the attacker&#39;s target answer), reported as a delta between arms. Secondary: refusal rate, answer-faithfulness delta, and false-positive rate (legitimate signed records wrongly discounted).</li>
+<li><strong>Null hypothesis (the honest framing).</strong> H0: provenance metadata produces no significant reduction in attack success rate versus the anonymous baseline, because a signed poison is still a poison and the model cannot operationalize the trust signal. Rejecting H0 is the safety result; failing to reject it is also a publishable result and would refute the protocol&#39;s central safety claim.</li>
+</ul>
+<p>Figure 5 lays out the design. This is the experiment that converts Folklore from cost-saving infrastructure into a testable claim about trust-calibrated retrieval. It reuses the infrastructure the protocol already builds (signed, attributed records) and an apparatus almost no one else has (a provenance-attested federated retrieval network), which is precisely why it is the protocol&#39;s most defensible research direction.</p>
+<figure>
+  <img src="figures/fig5-experiment.svg" alt="Four-arm experiment design: anonymous baseline, attested without instruction, attested with instruction, and mechanical reputation pre-filter, with delta annotations isolating each effect." />
+  <figcaption><strong>Figure 5.</strong> The four-arm provenance-against-poisoning experiment. Each adjacent-arm difference isolates a single causal factor: arm 2 minus arm 1 measures whether provenance is intrinsically informative, arm 3 minus arm 2 measures the value of instructing the model, and arm 4 measures mechanical gating independent of any model reasoning.</figcaption>
+</figure>
+
+<hr>
+<h2>8. Related Work and Novelty Positioning</h2>
+<p>Folklore sits at the intersection of several mature fields. The defensible novelty is <strong>demand-shaped cross-peer transfer of resolved RAG inference, with cryptographically attested provenance on every record</strong>. We position against the closest prior art:</p>
+<ul>
+<li><strong>P2P / DHT / content-addressed storage</strong> (Kademlia, IPFS, BitTorrent DHT): provide routing and content addressing for <em>bytes</em>, not semantic resolution of <em>queries</em>. Folklore reuses Kademlia-style routing but adds a semantic retrieval and satisfaction layer on top.</li>
+<li><strong>Cooperative web/proxy caching</strong> (the cooperative-caching and LRU-approximation literature): supplies the exact formal model for pooled hit-rate (Section 5), but addresses exact-match object caching, not semantic, embedding-based retrieval with a satisfaction floor.</li>
+<li><strong>Semantic / RAG caching</strong> (GPTCache and successors): caches LLM responses for a single tenant. Folklore&#39;s departure is that the cache is <em>federated and signed across a community</em>, so resolution transfers across peers rather than being trapped in one tenant.</li>
+<li><strong>Centralized multi-tenant semantic gateways</strong> (Cloudflare AI Gateway, Portkey, and similar): this is the <strong>single strongest prior-art threat</strong>, because these gateways already pool semantic cache hits across many users globally, achieving cross-user transfer of resolved inference, which is most of Folklore&#39;s economic claim. The honest distinction is therefore not &quot;we pool across users and they do not&quot;; they do. The distinction is <strong>trust topology</strong>: a centralized gateway is a single trusted operator that sees every query and every cached answer (a privacy and capture surface), and offers no per-record provenance for the consuming model to reason about. Folklore&#39;s claim must be defended on the two axes the centralized gateway cannot match: (a) no central operator that sees or owns the pooled knowledge, and (b) cryptographically attested provenance on every record, which is the substrate for the safety experiment in Section 7.4. If those two axes do not deliver measurable value, a centralized semantic gateway is the simpler design and the decentralization is not justified. This is a load-bearing claim the pilot and the safety experiment must substantiate.</li>
+<li><strong>RAG and GraphRAG</strong> (hybrid retrieval, RRF, cross-encoder reranking, personalized PageRank over knowledge graphs): the per-peer stack is standard strong RAG. The novelty is not the retriever; it is the cross-peer federation and attestation around it.</li>
+<li><strong>AI-memory products</strong> (mem0, Letta/MemGPT, Cognee, Zep): single-tenant by architecture. A single-tenant design cannot compound across a community by construction, which is precisely the gap Folklore targets.</li>
+<li><strong>Verifiable provenance</strong> (W3C DIDs, verifiable credentials, SCITT, SBOM/AIBOM, Sigstore): supply the attestation analogues. Folklore applies supply-chain attestation to <em>retrieved LLM context</em>, which is a new application domain for these primitives.</li>
+<li><strong>Reputation and Sybil resistance</strong> (EigenTrust, Sybilproof Reputation Mechanisms): supply the trust layer and the impossibility result that forces an asymmetric, seed-anchored design.</li>
+<li><strong>Information-spread models</strong> (multi-stage SIR, gossip protocols): model the <em>push</em> dissemination of resolved answers, complementary to the <em>pull</em> demand model that governs the cost savings.</li>
+</ul>
+<p>In one sentence: prior art solves routing, single-tenant caching, strong retrieval, and attestation <em>separately</em>; Folklore composes them into a demand-shaped, signed, federated knowledge layer, and the composition (not any single component) is the contribution.</p>
+<hr>
+<h2>9. Open Problems</h2>
+<ol>
+<li><strong>Falsify the compounding curve under real retrieval (v2).</strong> Replace boolean retrieval with the real stack and sweep the satisfaction threshold (Section 7.3). This is the single highest-leverage next experiment.</li>
+<li><strong>Provenance-attested retrieval against adversarial context.</strong> The central safety question: does per-record provenance let a consuming LLM detect and refuse poisoned context versus an anonymous-RAG baseline? Fully specified as a runnable four-arm experiment in Section 7.4. Not yet run. This is the protocol&#39;s strongest and most defensible research direction.</li>
+<li><strong>Sybil resistance at scale.</strong> EigenTrust with seed anchoring is specified but not validated under automated collusion at the scale a real network would face.</li>
+<li><strong>Cold-start and network liquidity.</strong> New peers arrive with empty graphs and no reputation to trade. Restricting access to prevent free-riding locks newcomers out; open access invites abuse. The incentive design that resolves this tension is unsolved.</li>
+<li><strong>Privacy versus immutable provenance.</strong> Cryptographic tombstones reconcile the right to be forgotten with an immutable chain in principle; the full mechanism needs specification and audit.</li>
+<li><strong>Rarity-aware replication.</strong> Niche knowledge held by a single peer evaporates when that peer goes offline. Federation fan-out should weight toward rare artifacts so they survive, which is a replication-policy problem not yet formalized.</li>
+</ol>
+<hr>
+<h2>10. Conclusion</h2>
+<p>Folklore proposes that knowledge work can compound across the open-source community the way code distribution already does, given three properties: local-only graphs, signed provenance on every record, and demand-shaped federation that resolves a topic once for the whole network. We formalized the compounding claim with cooperative cache theory, stated precisely when its monotonicity is a theorem versus an empirical claim, and specified the threshold-sweep experiment that makes it falsifiable. We presented a security architecture in which cryptographic provenance secures the chain of custody and a three-stage semantic-plus-reputation layer addresses the poisoning it cannot, with the open and most interesting question being whether attestation metadata lets an LLM calibrate trust on retrieved context. The per-peer retriever is competitive today (0.7522 NDCG@10 on BEIR SciFact). The federation result (17% to 1% web-fallback in simulation) is <strong>not yet usable as evidence</strong>: under v1&#39;s boolean-retrieval abstraction the decay is partly true by construction (Section 5.6), so we report it as a demonstration that the simulator runs and the curve has the predicted sign, not as a validated claim. It becomes evidence only after the v2 threshold sweep (Section 7.3) shows the curve survives realistic semantic variance. The protocol is MIT-licensed with no central server. The next milestones are the v2 falsification experiment and a 100-peer pilot.</p>
+<hr>
+<h2>References</h2>
+<p>The following sources ground this paper. Citations refer to documents collected in the project research notebook.</p>
+<p><strong>Folklore primary documents</strong></p>
+<ul>
+<li>Technical Formalization and Security Architecture of the Folklore Peer-to-Peer Cooperative Knowledge Protocol.</li>
+<li>The Folklore Protocol: Compounding Intelligence through Federated Retrieval-Augmented Generation.</li>
+</ul>
+<p><strong>Cache theory and demand modeling</strong></p>
+<ul>
+<li>C. Fricker, P. Robert, J. Roberts. A versatile and accurate approximation for LRU cache performance (Che approximation), arXiv:1202.3974.</li>
+<li>On the Benefits of Cooperative Proxy Caching for Peer-to-Peer Traffic.</li>
+<li>Effect of Mandelbrot-Zipf popularity distribution on the cache performance.</li>
+<li>Performance and Cost Effectiveness of Caching in Mobile Access Networks.</li>
+</ul>
+<p><strong>Retrieval and RAG</strong></p>
+<ul>
+<li>GraphRAG: Graph-Based Retrieval Augmentation; What is GraphRAG? (Neo4j).</li>
+<li>Semantic Caching for LLM Apps; GPTCache (zilliztech).</li>
+<li>LoCoMo and LongMemEval benchmarks; Evaluating Very Long-Term Conversational Memory of LLM Agents, arXiv:2402.17753.</li>
+</ul>
+<p><strong>RAG security and poisoning</strong></p>
+<ul>
+<li>PoisonedRAG: Knowledge Poisoning Attacks to Retrieval-Augmented Generation of Large Language Models, arXiv.</li>
+<li>RAGuard: A Layered Defense Framework for Retrieval-Augmented Generation Systems Against Data Poisoning.</li>
+<li>Secure Retrieval-Augmented Generation against Poisoning Attacks, arXiv.</li>
+</ul>
+<p><strong>P2P, gossip, reputation</strong></p>
+<ul>
+<li>Kademlia / libp2p routing.</li>
+<li>Gossip Protocols (Cornell); A multi-stage SIR model for rumor spreading.</li>
+<li>The EigenTrust Algorithm for Reputation Management in P2P Networks.</li>
+<li>Sybilproof Reputation Mechanisms.</li>
+<li>Incentive Schemes for Mobile Peer-to-Peer Systems and Free Riding Problem, arXiv.</li>
+</ul>
+<p><strong>Provenance, revocation, supply-chain trust</strong></p>
+<ul>
+<li>W3C DIDs and Verifiable Credentials; Supply Chain Integrity, Transparency, and Trust (SCITT), IETF.</li>
+<li>Trust in Software Supply Chains: Blockchain-Enabled SBOM and the AIBOM Future, arXiv.</li>
+<li>Certificate Revocation List; OCSP, CRL and Revoked SSL Certificates.</li>
+<li>Non-Human Identity Management: Designing and Governing Machine Actors.</li>
+</ul>
+<hr>
+<p><em>Pre-launch draft. The federation result is simulator-derived; the v2 experiment and the 100-peer pilot are pending. Formulas and the isolated-vs-cooperative hit-rate figures are drawn from the Folklore formalization documents; the 43% and 69% values are model illustrations under chosen parameters, not measured production rates.</em></p>
+
+
+</div>
+</body>
+</html>

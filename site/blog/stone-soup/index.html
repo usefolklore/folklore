@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stone soup for machines · Folklore</title>
+<meta name="description" content="In the folk tale, everyone drops one ingredient and the whole village eats. Federation is that, for inference: each peer contributes what it ground out, nobody pays twice." />
+<meta name="theme-color" content="#f4ecd8" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Stone soup for machines · Folklore" />
+<meta property="og:image" content="https://usefolklore.com/assets/gen/commons.png" />
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%231d1813"/><path d="M16 16h32a3 3 0 0 1 3 3v20a3 3 0 0 1-3 3H30l-9 8v-8h-5a3 3 0 0 1-3-3V19a3 3 0 0 1 3-3z" fill="none" stroke="%23f4ecd8" stroke-width="3" stroke-linejoin="round"/><path d="M33 20c2 5-4 7-4 11a4 4 0 0 0 8 0c0-2-1-3-1-3 3 2 5 4 5 8a8 8 0 1 1-16 0c0-6 6-8 8-16z" fill="%23ff4f6d"/></svg>' />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body>
+<div class="grain"></div>
+
+<header>
+  <div class="wrap head">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M12 12h40a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H30l-12 10v-10h-6a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4z" fill="none" stroke="#1d1813" stroke-width="3" stroke-linejoin="round"/><path d="M32 17c2 6-4 8-4 13a4 4 0 0 0 8 0c0-2-1-3-1-3 3 2 5 5 5 9a8 8 0 1 1-16 0c0-7 6-9 8-19z" fill="#ff4f6d" stroke="#1d1813" stroke-width="2" stroke-linejoin="round"/><path d="M32 31c1 3-2 4-2 7a2 2 0 0 0 4 0c0-2-1-2-1-3 2 5-1 6-1 6" fill="#f5b921"/></svg>
+      folklore
+    </a>
+    <nav class="hlinks">
+      <a href="/">Home</a><a href="/store">Store</a><a href="/blog" class="on">Blog</a>
+      <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+    </nav>
+    <a class="hcta" href="/#join">Install</a>
+    <details class="mnav">
+      <summary aria-label="Menu" role="button">☰</summary>
+      <div class="mnav-panel">
+        <a href="/">Home</a><a href="/store">Store</a><a href="/blog" class="on">Blog</a>
+        <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+        <a class="cta" href="/#join">Install</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<main class="wrap page">
+  <article class="article">
+    <a class="backlink" href="/blog">← all notes</a>
+    <span class="tag">The Commons</span>
+    <h1>Stone soup for machines</h1>
+    <div class="date">2026-06-15 · 4 min read · by <a href="https://github.com/SaharBarak" rel="author">@SaharBarak</a> · <a href="mailto:hi@saharbarak.dev">hi@saharbarak.dev</a></div>
+    <div class="body">
+      <p>A traveler walks into a hungry village with nothing but a pot and a stone. He fills the pot with water, drops the stone in, and starts to stir. Curious, a villager asks what he's making. "Stone soup," he says. "Delicious — though it's even better with a carrot." A carrot appears. Then an onion. Then a handful of barley, a bone, some herbs. By nightfall the whole village is eating a rich soup that no single person could have cooked, built entirely from scraps each of them thought were too small to matter alone.</p>
+      <p>That's federation. Not in spirit — in mechanism.</p>
+
+      <h2>One ingredient each</h2>
+      <p>No agent grounds out everything. You debug the flaky test. A teammate three time zones over reads the migration guide. Someone on another team already mapped the API you're about to meet for the first time. Each of those is one carrot — a single piece of resolved reasoning that cost real tokens to produce and is sitting, useless, in a closed context window.</p>
+      <p>Folklore is the pot in the middle of the square. When your agent reaches for the web, it asks the commons first: have any of us already ground this out? If a peer has — with enough confidence, signed and fresh — the answer is served from their work instead of yours. You drop your carrot in; you eat from everyone else's.</p>
+
+      <h2>Nobody pays twice</h2>
+      <p>The magic of the tale isn't generosity, it's <em>arithmetic</em>. The soup gets richer with every contributor and no one is poorer for it — a carrot given is still a carrot eaten. Cached inference works the same way. The first peer to research a thing pays the network cost once. Every peer after that pays zero. The marginal cost of the second lookup, and the thousandth, collapses toward nothing.</p>
+      <p>We measured the shape of this. In a cooperative cache simulation, hit-rate climbs as peers join and the per-query cost curve bends down — the more hands on the pot, the cheaper everyone's soup. The full model and the honest caveats are in the repo; we label what's simulated and what's measured, because a benchmark you can't trust is just a story with numbers in it.</p>
+
+      <h2>The stone was never the point</h2>
+      <p>In the tale, the stone does nothing. It's a prompt — a reason for the first person to contribute, and then the next. Folklore's stone is the <code>WebSearch</code> you were going to run anyway. You didn't set out to feed the village; you set out to answer your own question. But because the answer lands in the pot, signed by you, it feeds the next agent that asks. Self-interest and the commons turn out to be the same motion.</p>
+      <p>There's no central kitchen. No server owns the soup. Each peer keeps its own pot and advertises what's in it; the soup exists only as long as people keep stirring. That's the deal: drop one ingredient, eat from all of them.</p>
+      <p style="margin-top:1.6em"><a class="btn btn-primary" href="/#join">Install Folklore</a></p>
+    </div>
+  </article>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <a href="/">Home</a>
+    <a href="/store">Store</a>
+    <a href="/blog">Blog</a>
+    <a href="/whitepaper">White Paper</a>
+    <a href="/legal/terms">Terms</a>
+    <a href="/legal/privacy">Privacy</a>
+    <a href="/legal/refund">Refund</a>
+    <span class="r">MIT · signed by you · no central server, ever</span>
+  </div>
+</footer>
+</body>
+</html>
