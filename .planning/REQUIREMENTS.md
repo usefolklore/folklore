@@ -34,7 +34,7 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 - [x] **SITE-02**: Guidebook section added (how Folklore works / get started)
 - [ ] **SITE-03**: Platform Culture section added (the lore, the commons, the folk)
 - [ ] **SITE-04**: real Store section (merch products + $LORE), structured for live products
-- [ ] **SITE-05**: Cloudflare Pages deploy config verified buildable (`wrangler.toml`, `_headers`); deploy itself blocked on user auth/domain
+- [x] **SITE-05**: Cloudflare Pages deploy config verified buildable (`wrangler.toml`, `_headers`); deploy itself blocked on user auth/domain
 
 ### Merch
 
@@ -75,7 +75,7 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 | SITE-02 | Phase 27 | Complete |
 | SITE-03 | Phase 27 | Pending |
 | SITE-04 | Phase 27 | Pending |
-| SITE-05 | Phase 27 | Pending |
+| SITE-05 | Phase 27 | Complete |
 | MERCH-01 | Phase 28 | Pending |
 | AGENT-01 | Phase 28 | Pending |
 | AGENT-02 | Phase 28 | Pending |
