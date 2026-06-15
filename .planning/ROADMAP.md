@@ -188,7 +188,7 @@ Plans:
 
 - [x] **Phase 25: Cleanup & Repo Restructure** - Strip ruflo/claude-flow cruft, tidy ML/bench code, reorganize into org-ready akashikprotocol-clean layout with green build. (completed 2026-06-14)
 - [x] **Phase 26: Docs & Benchmarks** - BENCHMARKS page with real numbers, extended RFC set, org profile README. (completed 2026-06-15)
-- [ ] **Phase 27: Site Build-Out** - Composition + mobile sweep, Guidebook + Platform Culture sections, real Store, Cloudflare Pages build config.
+- [x] **Phase 27: Site Build-Out** - Composition + mobile sweep, Guidebook + Platform Culture sections, real Store, Cloudflare Pages build config. (completed 2026-06-15)
 - [ ] **Phase 28: Merch & Meme-Agent** - Real merch product designs wired into the Store, autonomous Twitter meme-agent scaffold feeding the site.
 
 ## Phase Details
@@ -239,7 +239,7 @@ Plans:
 **Goal:** The folk-pop site is composition-tightened and mobile-clean across all sections, with a Guidebook section, a Platform Culture section, a real Store section structured for live products, and a verified-buildable Cloudflare Pages config.
 **Depends on:** Phase 26 (Guidebook/benchmarks content sourced from docs; Store structure shared with Phase 28 merch + agent)
 **Requirements:** SITE-01, SITE-02, SITE-03, SITE-04, SITE-05
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [ ] 27-01-PLAN.md — Wave 1: Guidebook section (install / hooks / ask / peer) in the folk-pop section system + navbar link (SITE-02)
@@ -280,7 +280,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 25. Cleanup & Repo Restructure | 5/5 | Complete    | 2026-06-14 |
 | 26. Docs & Benchmarks | 3/3 | Complete    | 2026-06-15 |
-| 27. Site Build-Out | 4/5 | In Progress|  |
+| 27. Site Build-Out | 5/5 | Complete   | 2026-06-15 |
 | 28. Merch & Meme-Agent | 0/TBD | Not started | - |
 
 ## Phase Summary (v3.0)

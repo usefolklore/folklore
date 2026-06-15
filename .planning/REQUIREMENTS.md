@@ -30,7 +30,7 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 
 ### Site
 
-- [ ] **SITE-01**: composition pass + mobile responsive sweep across all sections (no overflow, clean stacking at 390px)
+- [x] **SITE-01**: composition pass + mobile responsive sweep across all sections (no overflow, clean stacking at 390px)
 - [x] **SITE-02**: Guidebook section added (how Folklore works / get started)
 - [x] **SITE-03**: Platform Culture section added (the lore, the commons, the folk)
 - [x] **SITE-04**: real Store section (merch products + $LORE), structured for live products
@@ -71,7 +71,7 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 | DOCS-01 | Phase 26 | Complete |
 | DOCS-02 | Phase 26 | Complete |
 | DOCS-03 | Phase 26 | Complete |
-| SITE-01 | Phase 27 | Pending |
+| SITE-01 | Phase 27 | Complete |
 | SITE-02 | Phase 27 | Complete |
 | SITE-03 | Phase 27 | Complete |
 | SITE-04 | Phase 27 | Complete |
