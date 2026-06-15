@@ -202,7 +202,7 @@ const USAGE = `usage: folklore peers rep [<peer-id>] [--subject <key>] [--json]
 
   default                        list every peer + top-3 subjects
   <peer-id>                      drill into one peer
-  --subject <entity:foo|room:r>  rank peers by score on this subject
+  --subject <entity:foo>         rank peers by score on this subject
   --json                         machine-readable output`;
 
 export const peersRep = async (args: readonly string[]): Promise<number> => {

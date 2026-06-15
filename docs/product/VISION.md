@@ -68,7 +68,7 @@ satisfaction =
 | ≥ 0.85       | Use peer/local memory; no live search             |
 | 0.65 – 0.85  | Use memory, verify one source                     |
 | 0.40 – 0.65  | Show memory as hints; perform live search         |
-| < 0.40       | Cache miss — search or ask the oracle room        |
+| < 0.40       | Cache miss — search or ask a trusted oracle peer  |
 
 Numbers are placeholders. The point is the breakpoint is **explicit and
 measurable**, not an emergent property of cosine distance.
@@ -215,7 +215,7 @@ peer · query is high-risk or time-sensitive.
   fresh source.
 - All evidence traces to one origin through re-shares.
 - Stale window exceeded and source can't be cheaply refreshed.
-- Room-required signature missing or invalid.
+- Required peer signature on the shared node missing or invalid.
 
 ### Minimum bright protocol — v1 milestone
 

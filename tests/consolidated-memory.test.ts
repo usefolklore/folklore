@@ -5,11 +5,11 @@
  *   - seed + ≥min_size neighborhood → one cluster
  *   - <min_size neighborhood → no cluster emitted, entries left raw
  *   - max_size clamp keeps the closest neighbors
- *   - rejects multi-room input (caller must partition)
+ *   - rejects multi-workspace input (caller must partition)
  *   - rejects mixed-dim vectors
  *   - buildConsolidatedMemory: provenance_ids are sorted deterministic
  *   - computeCentroid: unit-norm output on unit-norm input
- *   - partitionByRoom: round-trip equivalence
+ *   - partitionByWorkspace: round-trip equivalence
  */
 
 import { describe, it } from 'node:test';
@@ -18,7 +18,7 @@ import {
   findClusters,
   buildConsolidatedMemory,
   computeCentroid,
-  partitionByRoom,
+  partitionByWorkspace,
   type EpisodicEntry,
 } from '../src/domain/consolidated-memory.ts';
 import { normalize } from '../src/domain/vectors.ts';
@@ -49,10 +49,10 @@ const nearby = (seed: Float32Array, angle: number, noiseSeed: number): Float32Ar
 
 const mkEntry = (
   id: string,
-  room: string,
+  workspace: string,
   vector: Float32Array,
   ts: string,
-): EpisodicEntry => ({ node_id: id, room, vector, raw_text: `${id} body`, timestamp: ts });
+): EpisodicEntry => ({ node_id: id, workspace, vector, raw_text: `${id} body`, timestamp: ts });
 
 // ─────────────── findClusters ───────────────
 
@@ -82,7 +82,7 @@ describe('findClusters — basic clustering', () => {
     const c = r.value[0];
     assert.equal(c.seed_node_id, 'seed');
     assert.equal(c.entries.length, 5);
-    assert.equal(c.room, 'r1');
+    assert.equal(c.workspace, 'r1');
     assert.equal(c.centroid.length, 64);
   });
 
@@ -146,7 +146,7 @@ describe('findClusters — basic clustering', () => {
 });
 
 describe('findClusters — input validation', () => {
-  it('rejects multi-room input', () => {
+  it('rejects multi-workspace input', () => {
     const seed = unit(16, 1);
     const entries: EpisodicEntry[] = [
       mkEntry('a', 'r1', seed, '2026-04-01T00:00:00Z'),
@@ -192,7 +192,7 @@ describe('buildConsolidatedMemory', () => {
         mkEntry('b', 'r1', unit(16, 3), '2026-04-01T00:02:00Z'),
       ],
       centroid: unit(16, 1),
-      room: 'r1' as const,
+      workspace: 'r1',
     };
     const r = buildConsolidatedMemory(cluster, 'the summary', {
       makeId: () => 'consolidated:abc123',
@@ -211,7 +211,7 @@ describe('buildConsolidatedMemory', () => {
   it('trims whitespace from summary', () => {
     const cluster = {
       seed_node_id: 's', entries: [mkEntry('s', 'r1', unit(16, 1), '2026-04-01T00:00:00Z')],
-      centroid: unit(16, 1), room: 'r1' as const,
+      centroid: unit(16, 1), workspace: 'r1',
     };
     const r = buildConsolidatedMemory(cluster, '  padded  ', {
       makeId: () => 'x', llm_model: 'm',
@@ -223,7 +223,7 @@ describe('buildConsolidatedMemory', () => {
   it('rejects empty summary', () => {
     const cluster = {
       seed_node_id: 's', entries: [mkEntry('s', 'r1', unit(16, 1), '2026-04-01T00:00:00Z')],
-      centroid: unit(16, 1), room: 'r1' as const,
+      centroid: unit(16, 1), workspace: 'r1',
     };
     assert.ok(buildConsolidatedMemory(cluster, '   ', {
       makeId: () => 'x', llm_model: 'm',
@@ -249,9 +249,9 @@ describe('computeCentroid', () => {
   });
 });
 
-// ─────────────── partitionByRoom ───────────────
+// ─────────────── partitionByWorkspace ───────────────
 
-describe('partitionByRoom', () => {
+describe('partitionByWorkspace', () => {
   it('round-trip preserves entries', () => {
     const entries: EpisodicEntry[] = [
       mkEntry('a', 'r1', unit(8, 1), '2026-04-01T00:00:00Z'),
@@ -259,10 +259,22 @@ describe('partitionByRoom', () => {
       mkEntry('c', 'r1', unit(8, 3), '2026-04-01T00:02:00Z'),
       mkEntry('d', 'r3', unit(8, 4), '2026-04-01T00:03:00Z'),
     ];
-    const part = partitionByRoom(entries);
+    const part = partitionByWorkspace(entries);
     assert.equal(part.size, 3);
     assert.equal(part.get('r1')!.length, 2);
     assert.equal(part.get('r2')!.length, 1);
     assert.equal(part.get('r3')!.length, 1);
+  });
+
+  it('buckets untagged entries under the empty-string key', () => {
+    const entries: EpisodicEntry[] = [
+      { node_id: 'u1', vector: unit(8, 1), raw_text: 'u1 body', timestamp: '2026-04-01T00:00:00Z' },
+      { node_id: 'u2', vector: unit(8, 2), raw_text: 'u2 body', timestamp: '2026-04-01T00:01:00Z' },
+      mkEntry('t1', 'r1', unit(8, 3), '2026-04-01T00:02:00Z'),
+    ];
+    const part = partitionByWorkspace(entries);
+    assert.equal(part.size, 2);
+    assert.equal(part.get('')!.length, 2);
+    assert.equal(part.get('r1')!.length, 1);
   });
 });

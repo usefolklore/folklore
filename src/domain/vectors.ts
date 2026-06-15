@@ -12,7 +12,7 @@
 
 import { Result, err, ok } from 'neverthrow';
 import { VectorError } from './errors.js';
-import type { NodeId, Room, Wing } from './graph.js';
+import type { NodeId, Wing } from './graph.js';
 
 /** Canonical embedding dimension for Xenova/all-MiniLM-L6-v2. */
 export const DEFAULT_DIM = 384;
@@ -21,7 +21,7 @@ export const DEFAULT_DIM = 384;
 export type Vector = Float32Array;
 
 /**
- * A vector in context — carries the id, room, and wing of its node.
+ * A vector in context — carries the id and wing of its node.
  *
  * Optional `raw_text` is the pre-prefix, pre-normalization text used to
  * generate the vector. When present, the vector index can use it to feed
@@ -30,12 +30,6 @@ export type Vector = Float32Array;
  */
 export interface VectorRecord {
   readonly node_id: NodeId;
-  /**
-   * @deprecated V5 (Phase 24) — rooms were deleted. Optional purely
-   * so legacy sqlite-vec rows round-trip cleanly; new writes should
-   * omit this field.
-   */
-  readonly room?: Room;
   readonly wing?: Wing;
   readonly vector: Vector;
   readonly raw_text?: string;
@@ -44,32 +38,21 @@ export interface VectorRecord {
 /**
  * A similarity match returned by a search. `distance` is L2 on unit
  * vectors.
- *
- * V5 (Phase 24): `room` is now optional/legacy — search responders
- * (federated_search) include it when carrying back a wire envelope's
- * shape, but local-only searches don't populate it.
  */
 export interface Match {
   readonly node_id: NodeId;
-  readonly room?: Room;
   readonly wing?: Wing;
   readonly distance: number;
 }
 
 /**
- * A pair of nodes with a short semantic distance.
- *
- * V5 (Phase 24): `room_a` / `room_b` are optional and only populated
- * when the underlying VectorRecord still carries legacy room metadata.
- * Cross-room tunnel detection is no longer the primary use case; the
- * field set is retained so the federated-search wire envelope can
- * still round-trip a tunnels block from V4 peers (if any).
+ * A pair of nodes with a short semantic distance — a "tunnel" that
+ * surfaces a surprising connection between two otherwise-unrelated
+ * notes.
  */
 export interface Tunnel {
   readonly a: NodeId;
   readonly b: NodeId;
-  readonly room_a?: Room;
-  readonly room_b?: Room;
   readonly distance: number;
 }
 
@@ -157,7 +140,6 @@ export const sanitizeForFts5 = (query: string): string => {
  */
 export interface RankedCandidate {
   readonly node_id: NodeId;
-  readonly room?: Room;
   readonly wing?: Wing;
   readonly denseRank: number | null;
   readonly bm25Rank: number | null;
@@ -293,8 +275,9 @@ export const rrfFuse = (
 // ─────────────────────── tunnel detection ────────────────
 
 /**
- * Find cross-room tunnel candidates — pairs of records from different
- * rooms with L2 distance ≤ threshold.
+ * Find tunnel candidates — pairs of records with L2 distance ≤
+ * threshold. A tunnel surfaces a surprising connection between two
+ * notes that aren't otherwise linked.
  *
  * Pure function: no I/O, no mutation. The caller passes a snapshot of
  * all vector records it cares about, and this returns a sorted list.
@@ -306,22 +289,17 @@ export const rrfFuse = (
 export const findTunnels = (
   records: readonly VectorRecord[],
   threshold: number,
-  restrictToRoom?: Room,
 ): readonly Tunnel[] => {
   const tunnels: Tunnel[] = [];
   for (let i = 0; i < records.length; i++) {
     const a = records[i];
-    if (restrictToRoom && a.room !== restrictToRoom) continue;
     for (let j = i + 1; j < records.length; j++) {
       const b = records[j];
-      if (a.room === b.room) continue; // same room is not a tunnel
       const d = l2(a.vector, b.vector);
       if (d <= threshold) {
         tunnels.push({
           a: a.node_id,
           b: b.node_id,
-          room_a: a.room,
-          room_b: b.room,
           distance: d,
         });
       }

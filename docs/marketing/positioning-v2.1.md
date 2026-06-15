@@ -23,10 +23,11 @@ their cloud, argue about LOCOMO numbers, lock in a pricing model that
 only works if the free tier eventually shrinks.
 
 **The counter:** Every Folklore instance is a node in a peer mesh.
-Your knowledge graph lives on your CPU. You share rooms with peers
-you trust via libp2p. Questions reach peers via an oracle bulletin
-board. Answers flow back through the same pipe that auto-saved your
-web research. No cloud. No subscription. No benchmark theater.
+Your knowledge graph lives on your CPU. Every node federates to peers
+you trust via libp2p unless you mark it `private`. Questions reach
+peers via an oracle bulletin board. Answers flow back through the same
+pipe that auto-saved your web research. No cloud. No subscription. No
+benchmark theater.
 
 **The hook that lands:** *These companies exist because every agent
 needs a memory — and every one of them is building the same locked
@@ -65,9 +66,9 @@ memory SaaS locks your context in their silo — by design, my graph
 can't help answer your question and vice versa. Folklore's
 entire architecture is the opposite: the prefetch hook consults
 connected peers *before* letting Claude reach for WebSearch, and
-the PostToolUse hook saves what Claude did fetch back into a room
-your peers can touch. Research compounds. The network gets smarter
-the more of us run it.
+the PostToolUse hook saves what Claude did fetch back into your graph,
+where your peers can touch it. Research compounds. The network gets
+smarter the more of us run it.
 
 The subheadline lands four specific claims in one paragraph:
 (1) peers already did the work, (2) their embeddings flow direct —
@@ -131,7 +132,7 @@ Use after the hero. Single idea per column.
 
 > Folklore is the opposite shape. Every instance is a peer. Every
 > peer runs the same code. Your graph lives on your CPU; your peers'
-> graphs live on theirs; the P2P layer lets them share rooms without
+> graphs live on theirs; the P2P layer lets nodes flow between them without
 > anyone brokering the exchange. **When your agent needs context it
 > doesn't have, Folklore checks the peers you trust before it
 > reaches for the web** — their embeddings, their fetched articles,
@@ -164,7 +165,7 @@ Every Folklore install provisions a W3C `did:key` (Ed25519,
 during first boot. Your user DID is long-lived and survives device
 changes. Your device key is authorized by that DID via a signed
 authorization chain, and every message you send to peers — memory
-entries, oracle answers, room shares — can be wrapped in a signed
+entries, oracle answers, shared nodes — can be wrapped in a signed
 envelope that any other peer verifies **offline, in under 2 ms, with
 zero DID-resolver calls**. Rotate a compromised device, keep the user
 DID; nobody ever emails support. No central issuer, no directory
@@ -174,13 +175,14 @@ of pure domain code.
 ### 3. Your graph, not theirs.
 
 Every node is embedded locally. Every query hits your SQLite file
-first, connected peers second, the open web last. The network layer
-opens only for rooms you explicitly share or the always-on system
-rooms you opt into. There is no Folklore server — nobody to buy
-out, nobody to shut down, nobody to raise prices. Three system rooms
-(`toolshed`, `research`, `oracle`) every peer advertises by default;
-every other room is negotiable room-by-room via the interactive
-share picker.
+first, connected peers second, the open web last. Every node federates
+to the peers you trust by default; mark a node `private` and it never
+leaves your machine. There is no Folklore server — nobody to buy
+out, nobody to shut down, nobody to raise prices. An optional
+local-only `workspace` tag groups nodes by the repo they were captured
+in, and each node's `source_uri` scheme records where it came from
+(codebase, web, arxiv) — both stay on your machine and never travel
+over the wire.
 
 ### 4. Benchmarks you can reproduce.
 
@@ -214,8 +216,8 @@ Two paths, both in-tree:
   before every Glob / Grep / Read / WebSearch / WebFetch. If your
   graph has the answer, Claude answers from it. If not, Claude makes
   the outbound call — and the PostToolUse hook auto-saves the result
-  to the `research` system room. The next time anyone asks about
-  the same topic, the graph answers.
+  into your graph (tagged by its `source_uri` as web research). The
+  next time anyone asks about the same topic, the graph answers.
 
 - **Oracle bulletin board** — post a question via `oracle ask`. It
   propagates to every peer you're connected to, both over libp2p
@@ -250,15 +252,15 @@ You don't, and you shouldn't. The trust boundary is explicit:
   nodes at the boundary with a specific failure code (`FetchedAtMissing`,
   `UriSchemeNotAllowed`, etc.) — logged on both sides for drift
   observability.
-- **`shareable: false`** on any room in `shared-rooms.json` excludes
-  it from system-room virtual membership too — the opt-out for
-  sensitive work.
-- **`share ui`** — the interactive picker — toggles opt-in per
-  non-system room in ~10 seconds, zero-dep.
+- **`private: true`** on any node keeps it out of federation entirely
+  — the opt-out for sensitive work, set per node rather than per
+  bucket.
+- **`share ui`** — the interactive picker — toggles a node's `private`
+  flag in ~10 seconds, zero-dep.
 
-You trust the peers you choose, at the granularity of rooms you
-choose, with cryptographic attribution for every claim that reaches
-you, and the protocol enforces the rest.
+You trust the peers you choose, at the granularity of individual nodes
+you choose to keep private, with cryptographic attribution for every
+claim that reaches you, and the protocol enforces the rest.
 
 ### "Why should I believe you won't become another VC-funded SaaS?"
 
@@ -318,8 +320,8 @@ Mirror the hero. Repeat the install command. No risk reversal needed
   CRDT, MCP. The reader this page exists to convert already knows
   what those are. Explaining them dilutes the signal.
 - **Active voice, present tense.** "Your graph runs on your CPU"
-  not "Your graph would be run on your CPU." "Peers exchange rooms"
-  not "Rooms are exchanged between peers."
+  not "Your graph would be run on your CPU." "Peers exchange nodes"
+  not "Nodes are exchanged between peers."
 
 ---
 
@@ -393,10 +395,10 @@ federated by protocol not by platform."
 
 ### Chapter 5 — join the federation (dark, rising action)
 
-- Headline: **One install to run a node. Two system rooms by default.**
-- Key points: `toolshed` + `research` always-on + the `oracle`
-  bulletin board for peer Q&A. Layer B over libp2p pubsub for
-  real-time. CRDT sync for durability.
+- Headline: **One install to run a node. Federation on by default.**
+- Key points: every node you capture federates to trusted peers unless
+  marked `private`, plus the `oracle` bulletin board for peer Q&A.
+  Layer B over libp2p pubsub for real-time. CRDT sync for durability.
 - Proof: GIF of `folklore oracle ask "..." --live` on peer A,
   `folklore oracle show <qid>` on peer B within 2 s.
 - Visual: three nodes, questions flowing between them as small
@@ -405,7 +407,7 @@ federated by protocol not by platform."
 ### Finale (centered symbol) — unity
 
 - No headline. A single symbol: a small mesh of peers, each with a
-  tiny key icon, connected by the three system-room edges. Below
+  tiny key icon, connected by federation edges. Below
   the mesh: **Run your own node.** `git clone …`
 - Exit without a recap — the reader either runs the command or
   doesn't. Don't beg for the install.

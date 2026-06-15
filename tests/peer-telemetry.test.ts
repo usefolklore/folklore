@@ -21,7 +21,6 @@ const fixedNow = Date.parse('2026-04-29T12:00:00Z');
 
 const mk = (overrides: Partial<EnrichedMatch>): EnrichedMatch => ({
   node_id: 'n',
-  room: 'research',
   distance: 0.4,
   source_peer: null,
   also_from_peers: [],
@@ -126,7 +125,6 @@ test('low-data REMOTE results are NOT inflated by unknown-prior averaging', () =
   // chain still fires for this case.
   const m: EnrichedMatch = {
     node_id: 'n',
-    room: 'research',
     distance: 0.3,                    // retrieval ≈ 0.7
     source_peer: 'peer-x',            // REMOTE → triggers single-origin penalty
     also_from_peers: [],
@@ -164,7 +162,6 @@ test('observed_components reports the count of visible signals', () => {
   // "shallow evidence" case the decision picker must demote.
   const sparse: EnrichedMatch = {
     node_id: 'n',
-    room: 'research',
     distance: 0.4,
     source_peer: 'peer-x',
     also_from_peers: [],
@@ -200,7 +197,6 @@ test('score is clamped to [0, 1]', () => {
 
 const sampleTelemetry: PeerPullTelemetry = {
   query: 'vector search sqlite',
-  room: 'research',
   took_ms: 820,
   took_local_ms: 340,
   took_merge_ms: 80,
@@ -233,7 +229,7 @@ test('formatTelemetryBlock renders all six lines plus borders', () => {
   const lines = out.split('\n');
   assert.equal(lines.length, 8); // top + 6 + bottom (query/took/data/peers/fit/action)
   assert.match(lines[0], /^─+ folklore peer pull/);
-  assert.match(lines[1], /query.*vector search sqlite.*room=research/);
+  assert.match(lines[1], /query.*vector search sqlite/);
   assert.match(lines[2], /took.*820ms.*340ms local.*80ms merge/);
   assert.match(lines[3], /data.*4\.2 KB.*12 results.*3 unique sources/);
   assert.match(lines[4], /peers.*2\/4 responded.*6 alive.*1 timeout.*1 error/);

@@ -6,7 +6,7 @@ The RFC process is where Folklore's design decisions get made in the open. It ex
 
 | RFC | Title | Status |
 |---|---|---|
-| [0001](0001-folklore-core.md) | Folklore Core — node model, rooms, federation, deny semantics | Draft |
+| [0001](0001-folklore-core.md) | Folklore Core — node model, sharing gate, federation, deny semantics | Draft |
 | [0002](0002-deny-on-confidence.md) | Deny-on-Confidence Gate — the network-before-web hook | Draft |
 
 ## Process

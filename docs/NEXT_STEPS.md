@@ -21,7 +21,7 @@ folklore should make this demo feel inevitable:
 1. Peer A researches or fixes something current.
 2. Peer B asks Claude/Codex a related task.
 3. folklore retrieves the trusted peer memory before web search.
-4. The agent sees source age, room, peer attribution, and provenance.
+4. The agent sees source age, workspace, peer attribution, and provenance.
 5. The answer is faster, cheaper, and better than local-only context.
 
 Everything below should serve that loop.
@@ -41,43 +41,42 @@ Relevant files:
 Work:
 
 - Add an optional `query_text` field to the federated search request.
-- Gate raw query sharing by config or room policy.
-- When `query_text` is present, remote peers should call `searchByRoomHybrid`
-  or hybrid search across shared rooms.
-- Preserve the embedding-only path for privacy-sensitive rooms.
+- Gate raw query sharing by config.
+- When `query_text` is present, remote peers should run hybrid search across
+  their shared (non-private) nodes.
+- Preserve the embedding-only path for privacy-sensitive queries.
 - Add tests proving local-only hybrid and federated remote hybrid return the
   same class of results on BM25-sensitive queries.
 
 Acceptance gate:
 
 - Federated search no longer silently downgrades remote peers to dense-only
-  when the room policy allows query text.
+  when config allows query text.
 
-## Priority 2: Fix Room-Filtered Dense Retrieval
+## Priority 2: Fix Scope-Filtered Dense Retrieval
 
-`searchByRoom` performs global vector search, then filters by room. This can
-miss good in-room results when other rooms dominate the global nearest
-neighbors.
+Scoped search (by `workspace` tag or `source_uri` scheme) performs global
+vector search, then filters by scope. This can miss good in-scope results when
+out-of-scope nodes dominate the global nearest neighbors.
 
 Relevant files:
 
 - `src/infrastructure/vector-index.ts`
 - `src/domain/vectors.ts`
-- `tests/phase4.rooms.test.ts`
 - `tests/vector-index-binary.test.ts`
 
 Work:
 
-- Add a true room-restricted dense retrieval path.
-- Prefer per-room vector partitions or a query shape that constrains by room
-  before ranking.
+- Add a true scope-restricted dense retrieval path.
+- Prefer per-scope vector partitions or a query shape that constrains by
+  `workspace` / `source_uri` scheme before ranking.
 - Keep binary and fp32 behavior aligned.
-- Add a regression test where global top-k is dominated by another room but
-  room search still returns the correct in-room hit.
+- Add a regression test where global top-k is dominated by out-of-scope nodes
+  but scoped search still returns the correct in-scope hit.
 
 Acceptance gate:
 
-- Room search recall is independent of global overfetch luck.
+- Scoped search recall is independent of global overfetch luck.
 
 ## Priority 3: Ship The Native Rust CLI Path
 
@@ -136,7 +135,7 @@ Acceptance gate:
 ## Priority 5: Make Consolidation Ambient And Safe
 
 Consolidation is central to long-running agent memory, but the current path is
-still operator-driven or requires explicit room config.
+still operator-driven or requires explicit scope config.
 
 Relevant files:
 
@@ -148,15 +147,17 @@ Relevant files:
 
 Work:
 
-- Auto-discover eligible rooms when `daemon.consolidate.rooms` is empty.
-- Run a pre/post retrieval-quality gate for consolidated rooms.
+- Consolidate across the whole graph by default, auto-discovering eligible
+  nodes when no consolidation scopes are configured (the
+  `daemon.consolidate.workspaces` config key names the optional scope list).
+- Run a pre/post retrieval-quality gate for consolidated nodes.
 - Keep NDJSON backup on by default before prune.
-- Record consolidation outcome per room, not only per tick.
+- Record consolidation outcome per scope, not only per tick.
 - Surface status in CLI and daemon logs.
 
 Acceptance gate:
 
-- Users can enable auto-consolidation without hand-listing rooms and without
+- Users can enable auto-consolidation without hand-listing scopes and without
   losing retrieval quality silently.
 
 ## Priority 6: Add Product-Shaped Evals
@@ -177,7 +178,7 @@ Add eval fixtures for:
 - dense-only vs hybrid remote search
 - prior session recall
 - stale source handling
-- room isolation
+- workspace / private-gate isolation
 - oracle answerability
 - consolidation before/after quality
 - "would this avoid a web search?" agent workflow cases
@@ -215,8 +216,8 @@ Acceptance gate:
 ## Suggested Order
 
 1. Fix README claim clarity.
-2. Add room-search regression test, then fix room-restricted dense retrieval.
-3. Add federated `query_text` policy and remote hybrid search.
+2. Add scoped-search regression test, then fix scope-restricted dense retrieval.
+3. Add federated `query_text` config and remote hybrid search.
 4. Wire semantic L2 cache into daemon IPC.
 5. Ship native CLI fast path.
 6. Make auto-consolidation safe by default.
@@ -234,7 +235,7 @@ Acceptance gate:
 folklore is ready to claim category leadership when:
 
 - federated search is not lower quality than local search by default policy;
-- room search has deterministic recall;
+- scoped search has deterministic recall;
 - warm daemon hits are visibly fast in a fresh install;
 - semantic paraphrases hit cache;
 - consolidation is safe to leave on;

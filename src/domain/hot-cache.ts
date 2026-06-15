@@ -10,7 +10,8 @@
  * Deterministic + pure. No LLM calls — if we summarised with Claude we
  * would be paying per-tick token costs for a file that changes many
  * times per day. Instead we project raw graph counts + newest-N titles
- * + most-active-rooms into a fixed template. Good enough for orientation.
+ * + most-active-workspaces into a fixed template. Good enough for
+ * orientation.
  *
  * Size cap enforced in `render()` — the caller never needs to worry
  * about blowing past the word budget.
@@ -20,23 +21,32 @@ import type { Graph, GraphNode } from './graph.js';
 
 const WORD_BUDGET = 500;
 const RECENT_NODE_LIMIT = 15;
-const TOP_ROOM_LIMIT = 5;
+const TOP_WORKSPACE_LIMIT = 5;
 const RECENT_SESSION_LIMIT = 5;
+
+/** Session nodes are identified by their canonical id/source_uri scheme. */
+const SESSION_URI_PREFIX = 'claude-session://';
+
+const isSessionNode = (n: GraphNode): boolean => {
+  const uri = typeof n.source_uri === 'string' ? n.source_uri : '';
+  const id = typeof n.id === 'string' ? n.id : '';
+  return uri.startsWith(SESSION_URI_PREFIX) || id.startsWith(SESSION_URI_PREFIX);
+};
 
 /** Structural summary — the pure-data projection before rendering. */
 export interface HotCacheSnapshot {
   readonly generated_at: string;
   readonly total_nodes: number;
-  readonly total_rooms: number;
-  readonly rooms_by_size: ReadonlyArray<{ readonly name: string; readonly node_count: number }>;
+  readonly total_workspaces: number;
+  readonly workspaces_by_size: ReadonlyArray<{ readonly name: string; readonly node_count: number }>;
   /** Newest nodes across the whole graph, by fetched_at descending. */
   readonly recent_nodes: ReadonlyArray<{
     readonly id: string;
     readonly label: string;
-    readonly room: string;
+    readonly workspace: string;
     readonly fetched_at?: string;
   }>;
-  /** Newest session IDs across the sessions room (if present). */
+  /** Newest session IDs across all session-scheme nodes (if present). */
   readonly recent_sessions: ReadonlyArray<{
     readonly session_id: string;
     readonly label: string;
@@ -53,13 +63,13 @@ const sortByFetchedAt = (nodes: readonly GraphNode[]): readonly GraphNode[] =>
     return bT.localeCompare(aT);
   });
 
-const groupByRoom = (nodes: readonly GraphNode[]): Map<string, GraphNode[]> => {
+const groupByWorkspace = (nodes: readonly GraphNode[]): Map<string, GraphNode[]> => {
   const m = new Map<string, GraphNode[]>();
   for (const n of nodes) {
-    const room = typeof n.room === 'string' ? n.room : '(unassigned)';
-    const bucket = m.get(room) ?? [];
+    const workspace = typeof n.workspace === 'string' ? n.workspace : '(unassigned)';
+    const bucket = m.get(workspace) ?? [];
     bucket.push(n);
-    m.set(room, bucket);
+    m.set(workspace, bucket);
   }
   return m;
 };
@@ -70,22 +80,22 @@ export const buildSnapshot = (
   nowIso: string = new Date().toISOString(),
 ): HotCacheSnapshot => {
   const nodes = graph.json.nodes;
-  const byRoom = groupByRoom(nodes);
+  const byWorkspace = groupByWorkspace(nodes);
 
-  const roomsBySize = [...byRoom.entries()]
+  const workspacesBySize = [...byWorkspace.entries()]
     .map(([name, list]) => ({ name, node_count: list.length }))
     .sort((a, b) => b.node_count - a.node_count)
-    .slice(0, TOP_ROOM_LIMIT);
+    .slice(0, TOP_WORKSPACE_LIMIT);
 
   const recent = sortByFetchedAt(nodes).slice(0, RECENT_NODE_LIMIT);
   const recentNodes = recent.map((n) => ({
     id: n.id,
     label: typeof n.label === 'string' ? n.label : '(unlabelled)',
-    room: typeof n.room === 'string' ? n.room : '(unassigned)',
+    workspace: typeof n.workspace === 'string' ? n.workspace : '(unassigned)',
     fetched_at: typeof n.fetched_at === 'string' ? n.fetched_at : undefined,
   }));
 
-  const sessionNodes = nodes.filter((n) => n.room === 'sessions');
+  const sessionNodes = nodes.filter(isSessionNode);
   const recentSessionsRaw = sortByFetchedAt(sessionNodes).slice(0, RECENT_SESSION_LIMIT);
   const recentSessions = recentSessionsRaw.map((n) => ({
     session_id: typeof n.source_file === 'string' ? n.source_file : n.id,
@@ -105,8 +115,8 @@ export const buildSnapshot = (
   return {
     generated_at: nowIso,
     total_nodes: nodes.length,
-    total_rooms: byRoom.size,
-    rooms_by_size: roomsBySize,
+    total_workspaces: byWorkspace.size,
+    workspaces_by_size: workspacesBySize,
     recent_nodes: recentNodes,
     recent_sessions: recentSessions,
     p2p_inbound_7d: p2pInbound7d,
@@ -130,14 +140,14 @@ export const render = (snap: HotCacheSnapshot): string => {
   lines.push('# Recent Context');
   lines.push('');
   lines.push('## Graph at a Glance');
-  lines.push(`- **${snap.total_nodes}** nodes across **${snap.total_rooms}** rooms`);
+  lines.push(`- **${snap.total_nodes}** nodes across **${snap.total_workspaces}** workspaces`);
   lines.push(`- **${snap.p2p_inbound_7d}** node(s) received from P2P peers in the last 7 days`);
   lines.push('');
 
-  if (snap.rooms_by_size.length > 0) {
-    lines.push('## Biggest Rooms');
-    for (const r of snap.rooms_by_size) {
-      lines.push(`- \`${r.name}\` — ${r.node_count} nodes`);
+  if (snap.workspaces_by_size.length > 0) {
+    lines.push('## Biggest Workspaces');
+    for (const w of snap.workspaces_by_size) {
+      lines.push(`- \`${w.name}\` — ${w.node_count} nodes`);
     }
     lines.push('');
   }
@@ -146,7 +156,7 @@ export const render = (snap: HotCacheSnapshot): string => {
     lines.push('## Newest Nodes');
     for (const n of snap.recent_nodes) {
       const when = n.fetched_at ? ` (${n.fetched_at.slice(0, 10)})` : '';
-      lines.push(`- \`${n.room}\` — ${n.label.slice(0, 140)}${when}`);
+      lines.push(`- \`${n.workspace}\` — ${n.label.slice(0, 140)}${when}`);
     }
     lines.push('');
   }

@@ -4,8 +4,8 @@
  * orchestrator to concrete infrastructure ports:
  *
  *   loadEntries  → pulls nodes from graph.json + vectors.db, filters
- *                  to the requested room, excludes already-consolidated
- *                  entries
+ *                  to the requested workspace, excludes already-
+ *                  consolidated entries
  *   generateSummary → Ollama /api/generate with a deterministic prompt
  *   persistConsolidated → upserts a new graph node (kind=
  *                  'consolidated_memory') + centroid vector
@@ -14,8 +14,9 @@
  *                  to prune
  *
  * Subcommands:
- *   run <room> [--dry-run] [--threshold N] [--min-size N] [--model M]
- *   status        — summary of consolidated vs unconsolidated entries per room
+ *   run [workspace] [--dry-run] [--threshold N] [--min-size N] [--model M]
+ *                 — consolidate one workspace, or every workspace when omitted
+ *   status        — summary of consolidated vs unconsolidated entries per workspace
  *   help
  *
  * The CLI enforces `folklore daemon start` is NOT running with
@@ -29,11 +30,16 @@ import { formatError } from '../../domain/errors.js';
 import type { AppError, GraphError } from '../../domain/errors.js';
 import { ResultAsync, okAsync, errAsync } from 'neverthrow';
 import { getNode, upsertNode } from '../../domain/graph.js';
-import type { GraphNode, NodeId, Room } from '../../domain/graph.js';
+import type { GraphNode, NodeId } from '../../domain/graph.js';
 import type { VectorRecord } from '../../domain/vectors.js';
 import type { EpisodicEntry, ConsolidatedMemory } from '../../domain/consolidated-memory.js';
 import type { ConsolidationCluster } from '../../domain/consolidated-memory.js';
-import { runConsolidation, type ConsolidationReport, type ConsolidatorDeps } from '../../application/consolidator.js';
+import {
+  runConsolidation,
+  runConsolidationAcrossWorkspaces,
+  type ConsolidationReport,
+  type ConsolidatorDeps,
+} from '../../application/consolidator.js';
 import { defaultRuntime, type Runtime } from '../runtime.js';
 import { ollamaClient } from '../../infrastructure/ollama-client.js';
 import { acquireLock } from '../../infrastructure/process-lock.js';
@@ -43,7 +49,8 @@ import { join } from 'node:path';
 // ─── arg parsing ──────────────────────────────────────────────────
 
 interface RunArgs {
-  readonly room: Room;
+  /** Workspace slug to consolidate. `null` ⇒ consolidate every workspace. */
+  readonly workspace: string | null;
   readonly dryRun: boolean;
   readonly threshold: number;
   readonly minSize: number;
@@ -55,7 +62,7 @@ interface RunArgs {
 }
 
 const parseRunArgs = (args: readonly string[]): RunArgs | string => {
-  let room: string | null = null;
+  let workspace: string | null = null;
   let dryRun = false;
   let threshold = 0.8;
   let minSize = 5;
@@ -81,38 +88,44 @@ const parseRunArgs = (args: readonly string[]): RunArgs | string => {
     else if (a === '--min-size') minSize = parseInt(next(), 10) || minSize;
     else if (a === '--max-size') maxSize = parseInt(next(), 10) || maxSize;
     else if (a === '--model') model = next();
-    else if (!a.startsWith('-')) room = room ?? a;
+    else if (!a.startsWith('-')) workspace = workspace ?? a;
   }
-  if (!room) return 'missing <workspace>. usage: folklore consolidate run <workspace> [--dry-run] [--prune [--backup PATH | --no-backup]]';
+  // <workspace> is optional. Omitted ⇒ consolidate every workspace
+  // (the daemon's consolidate-tick spawns this form). When given, only
+  // nodes tagged with that workspace are consolidated.
   if (dryRun && prune) return 'cannot use --dry-run and --prune together';
-  return { room, dryRun, threshold, minSize, maxSize, model, prune, backup, backupPath };
+  return { workspace, dryRun, threshold, minSize, maxSize, model, prune, backup, backupPath };
 };
 
 // ─── wiring: build ConsolidatorDeps from Runtime ────────────────
 
-const buildDeps = (runtime: Runtime, model: string): ConsolidatorDeps => {
+interface BuiltDeps {
+  readonly deps: ConsolidatorDeps;
+  /** Loads every unconsolidated entry across all workspaces. */
+  readonly loadAllEntries: () => ResultAsync<readonly EpisodicEntry[], AppError>;
+}
+
+const buildDeps = (runtime: Runtime, model: string): BuiltDeps => {
   const ollama = ollamaClient({ model });
 
-  const loadEntries = (room: Room): ResultAsync<readonly EpisodicEntry[], AppError> =>
+  // Load episodic entries for consolidation. `workspace === null` loads
+  // every unconsolidated node (across all workspaces); a slug restricts
+  // to nodes tagged with that workspace. Each entry carries its own
+  // workspace tag so the across-workspaces partitioner can split them.
+  const loadEntriesFor = (
+    workspace: string | null,
+  ): ResultAsync<readonly EpisodicEntry[], AppError> =>
     runtime.graphs
       .load()
       .mapErr((e): AppError => e)
       .andThen((graph) => {
-        // V5 (Phase 24): rooms deleted. The CLI's positional argument
-        // (`<room>`) is now a workspace slug — consolidation operates
-        // on every node whose `workspace` field matches it. Falls back
-        // to the legacy `n.room` extension field for v4 graph data
-        // that hasn't been migrated yet.
         const wsNodes = graph.json.nodes.filter((n) => {
           const ws = typeof n.workspace === 'string' ? n.workspace : undefined;
-          const legacyRoom = (n as { room?: unknown }).room;
-          const matches = ws === room || legacyRoom === room;
-          if (!matches) return false;
+          if (workspace !== null && ws !== workspace) return false;
           if ((n as { consolidated_at?: unknown }).consolidated_at) return false;
           if ((n as { kind?: unknown }).kind === 'consolidated_memory') return false;
           return true;
         });
-        const roomNodes = wsNodes;
         return runtime.vectors.all()
           .mapErr((e): AppError => e)
           .map((records): readonly EpisodicEntry[] => {
@@ -120,16 +133,17 @@ const buildDeps = (runtime: Runtime, model: string): ConsolidatorDeps => {
             for (const r of records) vByNode.set(r.node_id, r);
 
             const entries: EpisodicEntry[] = [];
-            for (const node of roomNodes) {
+            for (const node of wsNodes) {
               const vec = vByNode.get(node.id);
               if (!vec) continue; // node has no vector — skip (can't cluster)
               const tsRaw = (node as { timestamp?: unknown; fetched_at?: unknown }).timestamp
                 ?? (node as { fetched_at?: unknown }).fetched_at
                 ?? '1970-01-01T00:00:00Z';
               const timestamp = typeof tsRaw === 'string' ? tsRaw : '1970-01-01T00:00:00Z';
+              const ws = typeof node.workspace === 'string' ? node.workspace : undefined;
               entries.push({
                 node_id: node.id,
-                room,
+                ...(ws ? { workspace: ws } : {}),
                 vector: vec.vector,
                 raw_text: typeof vec.raw_text === 'string' ? vec.raw_text : null,
                 timestamp,
@@ -139,12 +153,16 @@ const buildDeps = (runtime: Runtime, model: string): ConsolidatorDeps => {
           });
       });
 
+  const loadEntries = (workspace: string): ResultAsync<readonly EpisodicEntry[], AppError> =>
+    loadEntriesFor(workspace);
+
   const generateSummary = (cluster: ConsolidationCluster): ResultAsync<string, AppError> => {
     const bodies = cluster.entries
       .map((e, i) => `<entry ${i + 1}>\n${e.raw_text ?? '(no text)'}\n</entry ${i + 1}>`)
       .join('\n\n');
     const prompt =
-      `Below are ${cluster.entries.length} related memory entries from the "${cluster.room}" room:\n\n` +
+      `Below are ${cluster.entries.length} related memory entries` +
+      `${cluster.workspace ? ` from the "${cluster.workspace}" workspace` : ''}:\n\n` +
       bodies +
       `\n\nWrite a single 100-word semantic summary that captures the shared topic, key entities, and any decisions or conclusions. This summary will replace the raw entries as a consolidated memory, so it must preserve what's useful for future recall. Output only the summary, no preamble.`;
 
@@ -155,7 +173,6 @@ const buildDeps = (runtime: Runtime, model: string): ConsolidatorDeps => {
     // Upsert the centroid vector with the summary as raw_text
     const vectorUpsert = runtime.vectors.upsert({
       node_id: memory.id,
-      room: memory.room,
       vector: memory.centroid,
       raw_text: memory.summary,
     }).mapErr((e): AppError => e);
@@ -167,7 +184,7 @@ const buildDeps = (runtime: Runtime, model: string): ConsolidatorDeps => {
         label: memory.summary.slice(0, 80),
         file_type: 'document',
         source_file: `consolidated://${memory.id}`,
-        room: memory.room,
+        ...(memory.workspace ? { workspace: memory.workspace } : {}),
         summary: memory.summary,
         kind: 'consolidated_memory',
         consolidated_at: memory.consolidated_at,
@@ -198,11 +215,14 @@ const buildDeps = (runtime: Runtime, model: string): ConsolidatorDeps => {
     });
 
   return {
-    llm_model: model,
-    loadEntries,
-    generateSummary,
-    persistConsolidated,
-    markEntriesConsolidated,
+    deps: {
+      llm_model: model,
+      loadEntries,
+      generateSummary,
+      persistConsolidated,
+      markEntriesConsolidated,
+    },
+    loadAllEntries: () => loadEntriesFor(null),
   };
 };
 
@@ -241,7 +261,7 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
   const runtime = rt.value;
 
   try {
-    const deps = buildDeps(runtime, parsed.model);
+    const { deps, loadAllEntries } = buildDeps(runtime, parsed.model);
 
     // Probe Ollama first — fail fast with a clear message
     const ping = await ollamaClient({ model: parsed.model }).ping();
@@ -253,19 +273,31 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
     console.error(`consolidate: ollama ${ping.value} @ ${process.env.FOLKLORE_OLLAMA_URL ?? 'http://localhost:11434'}, model=${parsed.model}`);
 
     console.error(
-      `consolidate: workspace=${parsed.room} threshold=${parsed.threshold} ` +
+      `consolidate: workspace=${parsed.workspace ?? '(all)'} threshold=${parsed.threshold} ` +
       `min_size=${parsed.minSize} max_size=${parsed.maxSize} ${parsed.dryRun ? '(dry-run)' : ''}`,
     );
 
-    const res = await runConsolidation(deps)({
-      room: parsed.room,
-      clusterOpts: {
-        similarity_threshold: parsed.threshold,
-        min_size: parsed.minSize,
-        max_size: parsed.maxSize,
-      },
-      dryRun: parsed.dryRun,
-    });
+    const clusterOpts = {
+      similarity_threshold: parsed.threshold,
+      min_size: parsed.minSize,
+      max_size: parsed.maxSize,
+    };
+
+    // A single slug runs one workspace; an omitted slug consolidates
+    // every workspace (the daemon path). Multi-workspace reports are
+    // merged into one so the print + prune logic below is uniform.
+    const res =
+      parsed.workspace === null
+        ? await runConsolidationAcrossWorkspaces(deps)(
+            loadAllEntries,
+            clusterOpts,
+            parsed.dryRun,
+          ).map(mergeReports)
+        : await runConsolidation(deps)({
+            workspace: parsed.workspace,
+            clusterOpts,
+            dryRun: parsed.dryRun,
+          });
 
     if (res.isErr()) {
       console.error(`consolidate: ${formatError(res.error)}`);
@@ -291,7 +323,7 @@ const runCmd = async (args: readonly string[]): Promise<number> => {
       // (or a manual re-import) can undo the prune.
       if (parsed.backup) {
         const path = parsed.backupPath
-          ?? join(folkloreHome(), `prune-backup-${parsed.room}-${Date.now()}.ndjson`);
+          ?? join(folkloreHome(), `prune-backup-${parsed.workspace ?? 'all'}-${Date.now()}.ndjson`);
         const backupRes = await writeBackup(runtime, ids, path);
         if (backupRes.isErr()) {
           console.error(`consolidate prune: backup failed, ABORTING prune: ${formatError(backupRes.error)}`);
@@ -381,8 +413,35 @@ const pruneSources = (
   });
 };
 
+/**
+ * Merge per-workspace reports from an all-workspaces run into a single
+ * report so the print + prune path stays uniform with the single-workspace
+ * case. Counts sum; source ids and per-cluster results concatenate.
+ */
+const mergeReports = (reports: readonly ConsolidationReport[]): ConsolidationReport =>
+  reports.reduce<ConsolidationReport>(
+    (acc, r) => ({
+      workspace: '(all)',
+      entries_loaded: acc.entries_loaded + r.entries_loaded,
+      clusters_found: acc.clusters_found + r.clusters_found,
+      clusters_summarized: acc.clusters_summarized + r.clusters_summarized,
+      clusters_persisted: acc.clusters_persisted + r.clusters_persisted,
+      source_ids_marked: [...acc.source_ids_marked, ...r.source_ids_marked],
+      results: [...acc.results, ...r.results],
+    }),
+    {
+      workspace: '(all)',
+      entries_loaded: 0,
+      clusters_found: 0,
+      clusters_summarized: 0,
+      clusters_persisted: 0,
+      source_ids_marked: [],
+      results: [],
+    },
+  );
+
 const printReport = (r: ConsolidationReport): void => {
-  console.log(`# consolidate ${r.room}`);
+  console.log(`# consolidate ${r.workspace || '(no workspace)'}`);
   console.log(`  entries loaded:        ${r.entries_loaded}`);
   console.log(`  clusters found:        ${r.clusters_found}`);
   console.log(`  clusters summarized:   ${r.clusters_summarized}`);
@@ -416,19 +475,19 @@ const status = async (): Promise<number> => {
     }
     const counts = new Map<string, { raw: number; consolidated_raw: number; consolidated_memories: number }>();
     for (const n of g.value.json.nodes) {
-      const r = (n as { room?: string }).room ?? '(no room)';
-      const cur = counts.get(r) ?? { raw: 0, consolidated_raw: 0, consolidated_memories: 0 };
+      const ws = (n as { workspace?: string }).workspace ?? '(no workspace)';
+      const cur = counts.get(ws) ?? { raw: 0, consolidated_raw: 0, consolidated_memories: 0 };
       if ((n as { kind?: string }).kind === 'consolidated_memory') cur.consolidated_memories++;
       else if ((n as { consolidated_at?: string }).consolidated_at) cur.consolidated_raw++;
       else cur.raw++;
-      counts.set(r, cur);
+      counts.set(ws, cur);
     }
     console.log('# consolidation status (graph-wide)');
-    console.log('  room                               raw  consolidated_raw  consolidated_memories');
-    const rooms = [...counts.keys()].sort();
-    for (const r of rooms) {
-      const c = counts.get(r)!;
-      console.log(`  ${r.padEnd(32)} ${String(c.raw).padStart(6)}  ${String(c.consolidated_raw).padStart(16)}  ${String(c.consolidated_memories).padStart(20)}`);
+    console.log('  workspace                          raw  consolidated_raw  consolidated_memories');
+    const workspaces = [...counts.keys()].sort();
+    for (const ws of workspaces) {
+      const c = counts.get(ws)!;
+      console.log(`  ${ws.padEnd(32)} ${String(c.raw).padStart(6)}  ${String(c.consolidated_raw).padStart(16)}  ${String(c.consolidated_memories).padStart(20)}`);
     }
     return 0;
   } finally {
@@ -439,10 +498,11 @@ const status = async (): Promise<number> => {
 const help = (): number => {
   console.log('usage: folklore consolidate <sub>');
   console.log('');
-  console.log('  run <workspace> [--dry-run | --prune [--backup PATH | --no-backup]]');
+  console.log('  run [workspace] [--dry-run | --prune [--backup PATH | --no-backup]]');
   console.log('             [--threshold 0.8] [--min-size 5] [--max-size 100] [--model M]');
-  console.log('                    Cluster raw entries in <workspace>, LLM-summarize each cluster,');
-  console.log('                    persist as consolidated_memory nodes, mark sources.');
+  console.log('                    Cluster raw entries (one workspace, or all when omitted),');
+  console.log('                    LLM-summarize each cluster, persist as consolidated_memory');
+  console.log('                    nodes, mark sources.');
   console.log('                    --prune: also DELETE source raw entries (graph + vectors)');
   console.log('                             after consolidation. NDJSON backup written by default.');
   console.log('                             Mutually exclusive with --dry-run.');
@@ -463,16 +523,16 @@ const help = (): number => {
 // ─── prune-marked subcommand ─────────────────────────────────────
 
 /**
- * Deletes every node in <room> that has `consolidated_at != null` AND
- * `kind != 'consolidated_memory'`. These are raw source entries that
- * were marked during a prior consolidation run but not atomically
+ * Deletes every node in <workspace> that has `consolidated_at != null`
+ * AND `kind != 'consolidated_memory'`. These are raw source entries
+ * that were marked during a prior consolidation run but not atomically
  * pruned (e.g. run without --prune). Closes the §2j quality regression
  * retroactively.
  *
  * Backup-by-default — same semantics as `run --prune`.
  */
 const pruneMarkedCmd = async (args: readonly string[]): Promise<number> => {
-  let room: string | null = null;
+  let workspace: string | null = null;
   let backup = true;
   let backupPath: string | null = null;
   let force = false;
@@ -482,9 +542,9 @@ const pruneMarkedCmd = async (args: readonly string[]): Promise<number> => {
     if (a === '--no-backup') backup = false;
     else if (a === '--backup') { backup = true; backupPath = next(); }
     else if (a === '--force' || a === '-y') force = true;
-    else if (!a.startsWith('-')) room = room ?? a;
+    else if (!a.startsWith('-')) workspace = workspace ?? a;
   }
-  if (!room) {
+  if (!workspace) {
     console.error('consolidate prune-marked: missing <workspace>. usage: folklore consolidate prune-marked <workspace> [--no-backup | --backup PATH] [--force]');
     return 1;
   }
@@ -502,17 +562,17 @@ const pruneMarkedCmd = async (args: readonly string[]): Promise<number> => {
     if (g.isErr()) { console.error(`consolidate prune-marked: ${formatError(g.error)}`); return 1; }
 
     const candidates = g.value.json.nodes.filter((n) =>
-      (n as { room?: string }).room === room
+      (n as { workspace?: string }).workspace === workspace
       && (n as { consolidated_at?: unknown }).consolidated_at
       && (n as { kind?: unknown }).kind !== 'consolidated_memory',
     );
 
     if (candidates.length === 0) {
-      console.log(`no consolidated_at-marked raw entries in workspace '${room}'. nothing to prune.`);
+      console.log(`no consolidated_at-marked raw entries in workspace '${workspace}'. nothing to prune.`);
       return 0;
     }
 
-    console.error(`consolidate prune-marked: ${candidates.length} candidates in workspace '${room}'`);
+    console.error(`consolidate prune-marked: ${candidates.length} candidates in workspace '${workspace}'`);
     if (!force) {
       console.error(`  DESTRUCTIVE. pass --force (or -y) to actually delete.`);
       return 1;
@@ -520,7 +580,7 @@ const pruneMarkedCmd = async (args: readonly string[]): Promise<number> => {
 
     const ids = candidates.map((n) => n.id);
     if (backup) {
-      const path = backupPath ?? join(folkloreHome(), `prune-marked-backup-${room}-${Date.now()}.ndjson`);
+      const path = backupPath ?? join(folkloreHome(), `prune-marked-backup-${workspace}-${Date.now()}.ndjson`);
       const r = await writeBackup(runtime, ids, path);
       if (r.isErr()) {
         console.error(`consolidate prune-marked: backup failed, ABORTING: ${formatError(r.error)}`);

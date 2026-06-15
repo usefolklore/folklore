@@ -105,8 +105,7 @@ const looksLikeShareable = (v: unknown): v is ShareableNode => {
   return (
     typeof o.id === 'string' &&
     o.id.length > 0 &&
-    typeof o.label === 'string' &&
-    typeof o.room === 'string'
+    typeof o.label === 'string'
   );
 };
 

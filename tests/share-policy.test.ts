@@ -45,7 +45,6 @@ const buildIdentity = () => {
 const samplePayload: ShareableNode = {
   id: 'node-1',
   label: 'libp2p mesh',
-  room: 'research',
   source_uri: 'https://example.com/x',
   fetched_at: '2026-05-01T00:00:00Z',
 };
@@ -133,11 +132,19 @@ test('null / undefined / non-object → malformed', () => {
 
 test('object missing required ShareableNode fields → malformed', () => {
   // No id — fails the looksLikeShareable guard.
-  assert.equal(classifyInboundShare({ label: 'x', room: 'r' }, 'soft').verdict, 'malformed');
+  assert.equal(classifyInboundShare({ label: 'x' }, 'soft').verdict, 'malformed');
   // No label.
-  assert.equal(classifyInboundShare({ id: 'a', room: 'r' }, 'soft').verdict, 'malformed');
-  // No room.
-  assert.equal(classifyInboundShare({ id: 'a', label: 'b' }, 'soft').verdict, 'malformed');
+  assert.equal(classifyInboundShare({ id: 'a' }, 'soft').verdict, 'malformed');
+  // Empty id — non-empty string required by the guard.
+  assert.equal(classifyInboundShare({ id: '', label: 'b' }, 'soft').verdict, 'malformed');
+});
+
+test('valid id+label (no room field) is accepted, not malformed', () => {
+  // `room` is no longer part of ShareableNode, so a node carrying only
+  // a non-empty id + string label is a well-formed unsigned node.
+  const c = classifyInboundShare({ id: 'a', label: 'b' }, 'soft');
+  assert.equal(c.verdict, 'unsigned_allowed');
+  if (c.verdict === 'unsigned_allowed') assert.equal(c.payload.id, 'a');
 });
 
 test('signed-envelope-shaped but with missing required signature fields → malformed', () => {

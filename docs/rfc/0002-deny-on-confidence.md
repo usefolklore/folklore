@@ -32,11 +32,11 @@ If any one condition fails, the gate does not deny. The conjunction is deliberat
 
 ### On deny
 
-When all three conditions hold, the hook returns a permission-deny for the tool call and injects the graph hits — each carrying its `satisfaction_score`, `age_days`, and `provenance` (per RFC-0001) — into the caller's context in place of the web result. The agent sees the cached answer with its freshness and attribution and reasons from it. The render surfaces the freshness inline (`label [room, 3d] d=0.82`) so a stale substitution is visible.
+When all three conditions hold, the hook returns a permission-deny for the tool call and injects the graph hits — each carrying its `satisfaction_score`, `age_days`, and `provenance` (per RFC-0001) — into the caller's context in place of the web result. The agent sees the cached answer with its freshness and attribution and reasons from it. The render surfaces the freshness inline (`label [3d] d=0.82`) so a stale substitution is visible.
 
 ### On failure / fall-through
 
-If any condition fails, if the local graph is empty, if peer fan-out times out, or if the hook errors for any reason, the web call **proceeds normally**. Fall-through is the safe default: a missed deny only costs a redundant fetch, whereas a spurious deny corrupts the agent's answer. After the web call returns, a PostToolUse hook auto-saves the result into the system-managed `research` room, so the next session — yours or any peer's — hits the graph instead of the web. The gate thus improves monotonically: every fall-through seeds a future deny.
+If any condition fails, if the local graph is empty, if peer fan-out times out, or if the hook errors for any reason, the web call **proceeds normally**. Fall-through is the safe default: a missed deny only costs a redundant fetch, whereas a spurious deny corrupts the agent's answer. After the web call returns, a PostToolUse hook auto-saves the result into the local graph as a shared (non-`private`) node, so the next session — yours or any peer's — hits the graph instead of the web. The gate thus improves monotonically: every fall-through seeds a future deny.
 
 ### Off by default
 
@@ -55,7 +55,7 @@ All knobs are environment variables (set in `.claude/settings.json` for the Clau
 
 ### Freshness interplay
 
-The gate composes with RFC-0001's freshness rule. A graph hit inside its room's stale-after window (`research` < 7 days, `toolshed` < 30 days) is trustworthy and eligible to satisfy a deny. Past the window, a peer SHOULD prefer a fresh pull — re-running the original `WebFetch` / `WebSearch`, or `mcp__folklore__trigger_room` — and let the auto-save hook replace the stale node with the newer version. A hit lacking `fetched_at` is treated as stale of unknown age and SHOULD NOT, on its own, authorize a deny.
+The gate composes with RFC-0001's freshness rule. A graph hit inside the global stale-after window (~7 days) is trustworthy and eligible to satisfy a deny. Past the window, a peer SHOULD prefer a fresh pull — re-running the original `WebFetch` / `WebSearch` — and let the auto-save hook replace the stale node with the newer version. A hit lacking `fetched_at` is treated as stale of unknown age and SHOULD NOT, on its own, authorize a deny.
 
 ## Alternatives considered
 
@@ -66,6 +66,6 @@ The gate composes with RFC-0001's freshness rule. A graph hit inside its room's 
 ## Open questions
 
 - **Permanent opt-in vs. eventual default.** Should deny-on-confidence ever flip to on by default once coverage heuristics mature, or is opt-in the permanent stance? (This is RFC-0001 open question 3, still live.)
-- **Per-room vs. global thresholds.** A single global `FOLKLORE_DENY_THRESHOLD` treats a `toolshed` hit and a `research` hit identically. Should the floor (and min-hits) be settable per room, given their different stale-after windows and trust profiles?
+- **Per-source-type vs. global thresholds.** A single global `FOLKLORE_DENY_THRESHOLD` treats a codebase (`file:` / `git:`) hit and a web (`https:` / `arxiv:`) hit identically. Should the floor (and min-hits) be settable per `source_uri` scheme, given their different trust and freshness profiles?
 - **Surfacing a deny correctably.** A deny is invisible to the user beyond the injected hits. How should a wrong deny be surfaced so the user can override it in the moment — a one-keystroke "fetch anyway", a metrics audit (`folklore metrics bypass`), or both?
 - **Multi-peer disagreement.** When federated fan-out returns hits from peers that disagree, what should the gate do — deny on the highest-confidence cluster, refuse to deny when peers conflict, or surface the disagreement and let the agent decide? (Ties into RFC-0001 open question 5, conflict surfacing.)

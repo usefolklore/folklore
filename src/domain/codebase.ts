@@ -1,9 +1,7 @@
 /**
  * codebase — domain types for the structured code graph (Phase 19).
  *
- * Codebase is a first-class DDD aggregate root with its own CodebaseId,
- * separate from RoomId. Rooms attach to codebases via the codebase_rooms
- * join table (M:N) — see src/infrastructure/code-graph.ts for persistence.
+ * Codebase is a first-class DDD aggregate root with its own CodebaseId.
  *
  * Phase 19 scope: TypeScript/JavaScript/Python parsing. Rust and Go land
  * in Phase 20 per 19-CONTEXT.md decisions.

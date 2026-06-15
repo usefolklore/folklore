@@ -21,7 +21,7 @@ Still contested: chunking strategy, whether to summarize on traversal versus pre
 - Hybrid retrieval already on the roadmap (BM25 + dense fusion via SQLite FTS5): `.planning/SOTA-UPGRADE-PLAN.md` chunk 8, plus `src/infrastructure/rust-retrieval.ts`.
 - Graph rerank and recency rerank as separable stages: `src/domain/graph-rerank.ts`, `src/domain/recency-rerank.ts` — mirrors the dual-level pattern LightRAG champions.
 - PageRank-style signal over the graph: `src/domain/pagerank.ts` — the same primitive HippoRAG 2 uses for context-aware selection.
-- Freshness as a first-class retrieval signal with per-room stale-after windows (`research` 7d, `toolshed` 30d), exposed inline as `age_days` on every hit (README §System rooms). Most GraphRAG implementations ignore freshness entirely.
+- Freshness as a first-class retrieval signal with a global stale-after window (~7d default), exposed inline as `age_days` on every hit. Most GraphRAG implementations ignore freshness entirely.
 - Evidence-stage typing (raw_remote → treated → consolidated → reasoned → accepted_local) in `docs/VISION.md` — closer to LoCoMo-grade memory hygiene than to a flat vector store.
 - 75.22% NDCG@10 on BEIR SciFact (`docs/BENCHMARKS.md`) — competitive with published hybrid RAG baselines and reproducible CPU-only.
 - Coverage-map output planned over top-k chunk lists (`docs/VISION.md` §Coverage map) — matches the agent-contract framing emerging in 2025/2026 literature.
@@ -29,7 +29,7 @@ Still contested: chunking strategy, whether to summarize on traversal versus pre
 ## 3. Where Folklore diverges intentionally
 
 - **P2P federation over centralized index.** No comparable GraphRAG ships a libp2p gossip layer; we want the network effect of compounding research across peers, not a single corpus owner.
-- **Virtual room membership derived from `source_uri` scheme**, not a per-node `room` field. Keeps `toolshed` and `research` self-healing without manual curation and avoids the rigid taxonomy GraphRAG community trees impose.
+- **Origin tagging derived from each node's `source_uri` scheme** (codebase, web, arxiv, …), not a manual taxonomy. Source family is self-healing without curation and avoids the rigid taxonomy GraphRAG community trees impose; a per-node `private` flag and an optional local-only `workspace` tag handle scoping.
 - **DID/OAuth-anchored identity (W3C `did:key` + GitHub social DID)** rather than anonymous embedding ownership. Required to make peer trust scoring tractable — see `src/domain/peer-reputation.ts`.
 - **`did:key` envelope verification on every shared node** (`src/domain/share-envelope.ts`, `src/infrastructure/identity-resolver.ts`). Sybil-resistance and provenance lineage matter more in a federated graph than in a single-tenant one.
 - **Satisfaction breakpoint over similarity top-k.** Vision targets an explicit Stop/Continue/Refetch/Consensus/Risk/Ambiguity decision rather than returning chunks and praying. No mainstream GraphRAG does this.

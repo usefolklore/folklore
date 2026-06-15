@@ -19,10 +19,6 @@
  */
 export interface EnrichedMatch {
   readonly node_id: string;
-  /** V5 (Phase 24): retained as optional for backwards-compat with
-   * legacy callers (telemetry display, audit logs). New callers should
-   * not set this; sharing/federation are no longer room-keyed. */
-  readonly room?: string;
   readonly distance: number;
   /** null = local, peerId string = arrived from this peer */
   readonly source_peer: string | null;
@@ -33,9 +29,10 @@ export interface EnrichedMatch {
   readonly age_days?: number;         // computed against `now`
   readonly has_signature?: boolean;
   /**
-   * Stale-window for this node's room (e.g. 7d for research, 30d for
-   * toolshed). Used to decide whether `age_days > stale` triggers a
-   * staleness penalty.
+   * Stale-window for this node, in days. Used to decide whether
+   * `age_days > stale` triggers a staleness penalty. V5: a single
+   * global default (see DEFAULT_STALE_AFTER_DAYS) — no longer
+   * per-room.
    */
   readonly stale_after_days?: number;
 }
@@ -88,7 +85,6 @@ export type AgentDecision =
  */
 export interface PeerPullTelemetry {
   readonly query: string;
-  readonly room?: string;
   readonly took_ms: number;
   readonly took_local_ms: number;
   readonly took_merge_ms: number;

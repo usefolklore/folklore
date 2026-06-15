@@ -5,7 +5,7 @@
  * The pure clustering math lives in `src/domain/consolidated-memory.ts`.
  * This module composes it with three injected ports:
  *
- *   loadEntries(room)              → episodic entries for a room
+ *   loadEntries(workspace)         → episodic entries for a workspace
  *   generateSummary(cluster)       → LLM-distilled summary text
  *   persistConsolidated(memory)    → write to graph + vector index
  *   markEntriesConsolidated(ids,t) → set `consolidated_at` on sources
@@ -21,11 +21,11 @@
 import { Result, ResultAsync, errAsync, okAsync, ok } from 'neverthrow';
 import { createHash } from 'node:crypto';
 import type { AppError } from '../domain/errors.js';
-import type { NodeId, Room } from '../domain/graph.js';
+import type { NodeId } from '../domain/graph.js';
 import {
   findClusters,
   buildConsolidatedMemory,
-  partitionByRoom,
+  partitionByWorkspace,
   type ClusterOptions,
   type ConsolidatedMemory,
   type ConsolidationCluster,
@@ -35,8 +35,8 @@ import {
 // ─────────────── ports (injected) ───────────────
 
 export interface ConsolidatorDeps {
-  /** Load every episodic entry for a single room. */
-  readonly loadEntries: (room: Room) => ResultAsync<readonly EpisodicEntry[], AppError>;
+  /** Load every episodic entry for a single workspace. */
+  readonly loadEntries: (workspace: string) => ResultAsync<readonly EpisodicEntry[], AppError>;
 
   /**
    * Distill a cluster's raw_text fields into a single summary via LLM.
@@ -74,7 +74,7 @@ export interface ConsolidatorDeps {
 // ─────────────── public API ───────────────
 
 export interface ConsolidationParams {
-  readonly room: Room;
+  readonly workspace: string;
   readonly clusterOpts?: ClusterOptions;
   /**
    * If true, the orchestrator builds clusters + LLM-summarizes but
@@ -85,7 +85,7 @@ export interface ConsolidationParams {
 }
 
 export interface ConsolidationReport {
-  readonly room: Room;
+  readonly workspace: string;
   readonly entries_loaded: number;
   readonly clusters_found: number;
   readonly clusters_summarized: number;
@@ -104,10 +104,10 @@ export interface ConsolidationReport {
 }
 
 /**
- * Run a single-room consolidation pass.
+ * Run a single-workspace consolidation pass.
  *
  * Steps:
- *   1. loadEntries(room) — pull all episodic entries
+ *   1. loadEntries(workspace) — pull all episodic entries
  *   2. findClusters() — pure domain
  *   3. For each cluster: generateSummary → buildConsolidatedMemory →
  *      persistConsolidated → markEntriesConsolidated
@@ -121,7 +121,7 @@ export const runConsolidation = (deps: ConsolidatorDeps) =>
     const clock = deps.clock ?? (() => new Date().toISOString());
     const dryRun = params.dryRun ?? false;
 
-    return deps.loadEntries(params.room).andThen((entries) => {
+    return deps.loadEntries(params.workspace).andThen((entries) => {
       // findClusters returns Result; lift it into ResultAsync.
       const clustersRes = findClusters(entries, params.clusterOpts);
       if (clustersRes.isErr()) return errAsync<ConsolidationReport, AppError>(clustersRes.error);
@@ -137,7 +137,7 @@ export const runConsolidation = (deps: ConsolidatorDeps) =>
           r.status === 'persisted' ? clusters[i].entries.map((e) => e.node_id) : [],
         );
         return {
-          room: params.room,
+          workspace: params.workspace,
           entries_loaded: entries.length,
           clusters_found: clusters.length,
           clusters_summarized: summarized,
@@ -150,34 +150,34 @@ export const runConsolidation = (deps: ConsolidatorDeps) =>
   };
 
 /**
- * Convenience wrapper for multi-room consolidation. Loads ALL entries
- * the caller specifies, partitions per-room, and runs `runConsolidation`
- * for each room. Reports are concatenated.
+ * Convenience wrapper for multi-workspace consolidation. Loads ALL
+ * entries the caller specifies, partitions per-workspace, and runs
+ * `runConsolidation` for each workspace. Reports are concatenated.
  *
- * Caller controls room scope by passing `loadAllEntries` that returns
- * the union — we don't impose a "consolidate every room" policy at
+ * Caller controls scope by passing `loadAllEntries` that returns the
+ * union — we don't impose a "consolidate every workspace" policy at
  * this layer.
  */
-export const runConsolidationAcrossRooms = (deps: ConsolidatorDeps) =>
+export const runConsolidationAcrossWorkspaces = (deps: ConsolidatorDeps) =>
   (
     loadAllEntries: () => ResultAsync<readonly EpisodicEntry[], AppError>,
     clusterOpts?: ClusterOptions,
     dryRun?: boolean,
   ): ResultAsync<readonly ConsolidationReport[], AppError> =>
     loadAllEntries().andThen((all) => {
-      const partitioned = partitionByRoom(all);
-      const rooms = [...partitioned.keys()].sort();
+      const partitioned = partitionByWorkspace(all);
+      const workspaces = [...partitioned.keys()].sort();
 
-      // Per-room runs serial — same Ollama-rate-limit reasoning as above.
-      const runOne = (room: Room): ResultAsync<ConsolidationReport, AppError> => {
-        const perRoomDeps: ConsolidatorDeps = {
+      // Per-workspace runs serial — same Ollama-rate-limit reasoning as above.
+      const runOne = (workspace: string): ResultAsync<ConsolidationReport, AppError> => {
+        const perWorkspaceDeps: ConsolidatorDeps = {
           ...deps,
-          loadEntries: () => okAsync(partitioned.get(room) ?? []),
+          loadEntries: () => okAsync(partitioned.get(workspace) ?? []),
         };
-        return runConsolidation(perRoomDeps)({ room, clusterOpts, dryRun });
+        return runConsolidation(perWorkspaceDeps)({ workspace, clusterOpts, dryRun });
       };
 
-      return runRoomsSerial(rooms, runOne);
+      return runWorkspacesSerial(workspaces, runOne);
     });
 
 // ─────────────── helpers ───────────────
@@ -268,14 +268,14 @@ const processOneCluster = (
   );
 };
 
-const runRoomsSerial = <T>(
-  rooms: readonly Room[],
-  fn: (room: Room) => ResultAsync<T, AppError>,
+const runWorkspacesSerial = <T>(
+  workspaces: readonly string[],
+  fn: (workspace: string) => ResultAsync<T, AppError>,
 ): ResultAsync<readonly T[], AppError> =>
-  rooms.reduce<ResultAsync<T[], AppError>>(
-    (acc, room) =>
+  workspaces.reduce<ResultAsync<T[], AppError>>(
+    (acc, workspace) =>
       acc.andThen((reports) =>
-        fn(room).map((report) => [...reports, report]),
+        fn(workspace).map((report) => [...reports, report]),
       ),
     okAsync<T[], AppError>([]),
   );
@@ -284,7 +284,7 @@ const runRoomsSerial = <T>(
 
 /**
  * Default content-addressed ID for a consolidated memory:
- *   sha256(cluster.room + ":" + sorted(provenance_ids).join(",") + ":" + summary)
+ *   sha256(cluster.workspace + ":" + sorted(provenance_ids).join(",") + ":" + summary)
  *   prefix "consolidated:"
  *
  * Cross-peer determinism: two peers with identical sources + summary
@@ -296,7 +296,7 @@ export const defaultMakeId = (
 ): NodeId => {
   const ids = cluster.entries.map((e) => e.node_id).sort().join(',');
   const h = createHash('sha256')
-    .update(`${cluster.room}:${ids}:${summary}`)
+    .update(`${cluster.workspace ?? ''}:${ids}:${summary}`)
     .digest('hex');
   return `consolidated:${h.slice(0, 32)}` as NodeId;
 };

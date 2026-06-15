@@ -37,7 +37,7 @@ The libp2p transport, peer state, and sync protocols.
 
 ## code-graph
 
-Codebase indexing for the `toolshed` room.
+Structured codebase indexing (tree-sitter → code-graph.db).
 
 - `code-graph.ts` — code-graph builder.
 - `tree-sitter-parser.ts` — tree-sitter source parsing.

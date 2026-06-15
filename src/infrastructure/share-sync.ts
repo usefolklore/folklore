@@ -180,14 +180,14 @@ export const syncNodeIntoYDoc = (
 
   if (limiter !== undefined && !limiter.consume(ownPeerId)) {
     return ResultAsync.fromPromise(log('bandwidth_limited', false, 'rate_limit_exceeded'), writeErr)
-      .andThen(() => errAsync<void, ShareError>(SE.bandwidthExceeded(ownPeerId, '')));
+      .andThen(() => errAsync<void, ShareError>(SE.bandwidthExceeded(ownPeerId)));
   }
 
   const scanResult = scanNode(node, patterns);
   if (scanResult.isErr()) {
     const reason = scanResult.error.matches.map((m) => `${m.field}/${m.patternName}`).join(',');
     return ResultAsync.fromPromise(log('outbound', false, reason), writeErr)
-      .andThen(() => errAsync<void, ShareError>(SE.shareAuditBlocked('', 1)));
+      .andThen(() => errAsync<void, ShareError>(SE.shareAuditBlocked(1)));
   }
 
   // Y.Map upsert. ShareableNode.room is omitted from the wire payload (V5).
@@ -233,7 +233,6 @@ const screenInbound = (
     identityResolver.record({
       did: c.verified.verified_user_did,
       device_id: c.verified.verified_device_id,
-      room: '',  // V5: dim dropped; arg kept for legacy resolver shape
     });
     return { payload: c.payload, signedBy: c.verified.verified_user_did };
   }
@@ -368,11 +367,11 @@ export const createShareSyncRegistry = (deps: {
   graphRepo: GraphRepository;
   patterns: ReturnType<typeof buildPatterns>;
   /** Outbound rate cap. Omit to skip bandwidth gating. V5: peer-only key. */
-  maxUpdatesPerSecPerPeerPerRoom?: number;
+  maxUpdatesPerSecPerPeer?: number;
   policyMode?: SharePolicyMode;
   identityResolver?: IdentityResolver;
 }): ShareSyncRegistry => {
-  const r = deps.maxUpdatesPerSecPerPeerPerRoom;
+  const r = deps.maxUpdatesPerSecPerPeer;
   return {
     node: deps.node, homePath: deps.homePath, graphRepo: deps.graphRepo,
     patterns: deps.patterns, doc: null, streams: new Map(),

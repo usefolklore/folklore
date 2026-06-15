@@ -14,7 +14,7 @@ flowchart TB
     PRE["PreToolUse hook<br/>folklore-smart-hook.cjs"]
     DEC["Decision layer<br/>satisfaction · hits · evidence heuristics"]
     RET["Retrieval pipeline"]
-    GRAPH[("Knowledge graph<br/>nodes · rooms · edges<br/>signed, on disk")]
+    GRAPH[("Knowledge graph<br/>nodes · edges<br/>signed, on disk")]
     POST["PostToolUse hook<br/>auto-save"]
     DAEMON["Daemon<br/>libp2p identity + transport"]
   end
@@ -39,25 +39,14 @@ Folklore runs as a local daemon plus a pair of harness hooks. The daemon owns th
 The graph is the unit of everything. Each **node** is one atom of knowledge — a fetched source, a debug trace, a synthesized claim — with:
 
 - `content` and an embedding (ONNX `all-MiniLM-L6-v2`, 384-dim, CPU)
-- `source_uri` — where it came from; the scheme decides its room
+- `source_uri` — where it came from; the scheme records its origin
 - `fetched_at` / `age_days` — freshness, surfaced on every hit
 - a **signature**: the curator's cryptographic identity + verified GitHub handle
 - typed **edges** to related nodes (supports, contradicts, supersedes, elaborates, …)
 
-### Rooms
-
-Rooms are virtual collections derived from each node's `source_uri` scheme, not a stored field. Two system rooms ship always-on and federated:
-
-| Room | Holds | Stale-after |
-|---|---|---|
-| `toolshed` | codebase, skills, MCP tools, deps, git history — "what this peer can do" | 30 days |
-| `research` | arXiv, HN, RSS, web searches, web fetches — "what this peer recently read" | 7 days |
-
-A URL-sourced save lands in `research`; a codebase save lands in `toolshed`. Every other room is user-negotiable and opt-in.
-
 ### Freshness rule
 
-Every hit carries `age_days` and `fetched_at`. Inside a room's stale-after window, the cache is trusted; past it, a fresh pull is preferred and the auto-save replaces the stale node. A hit with no `fetched_at` is treated as stale of unknown age.
+Every hit carries `age_days` and `fetched_at`. Inside the staleness window (default 7 days), the cache is trusted; past it, a fresh pull is preferred and the auto-save replaces the stale node. A hit with no `fetched_at` is treated as stale of unknown age.
 
 ## Retrieval pipeline
 
@@ -109,7 +98,7 @@ sequenceDiagram
   end
 ```
 
-Each peer advertises its rooms and answers federated queries against its own graph. Membership is virtual — derived from `source_uri` schemes. There is no central server: peers talk directly over libp2p, and the union of all peer graphs is the commons. Disk cost per peer scales with that peer's own curiosity, not the network's total volume.
+Each peer shares its non-private nodes and answers federated queries against its own graph. There is no central server: peers talk directly over libp2p, and the union of all peer graphs is the commons. Disk cost per peer scales with that peer's own curiosity, not the network's total volume.
 
 Provenance is end-to-end: every federated hit arrives signed by its curator's identity and verified GitHub handle, traceable to its sources and timestamp. This is what lets a consumer reason about — and potentially refuse — adversarial or stale retrieval, a defense anonymous RAG can't offer.
 

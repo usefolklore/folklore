@@ -2,7 +2,7 @@
  * Phase 33 — graph-lint regression tests.
  *
  * Each rule is exercised with a focused fixture. The entry-point
- * lintGraph() is also tested for rule composition + room scoping.
+ * lintGraph() is also tested for rule composition.
  */
 
 import { strict as assert } from 'node:assert';
@@ -52,12 +52,6 @@ test('phase-33: orphan rule catches isolated nodes', () => {
   assert.strictEqual(orphans[0].node_id, 'orphan');
 });
 
-test('phase-33: missing-room rule catches unassigned nodes', () => {
-  const g = graphWith([mkNode({ id: 'noroom' })]);
-  const r = lintGraph(g);
-  assert.ok(r.findings.some((f) => f.category === 'missing-room' && f.node_id === 'noroom'));
-});
-
 test('phase-33: missing-fetched-at rule catches nodes with no timestamp', () => {
   const g = graphWith([mkNode({ id: 'nots', room: 'r' })]);
   const r = lintGraph(g);
@@ -82,17 +76,6 @@ test('phase-33: duplicate-uri rule flags overlapping source_uris', () => {
   assert.match(dup[0].detail, /2 nodes share source_uri/);
 });
 
-test('phase-33: unshared-p2p rule flags peer-stamped node in non-shared room', () => {
-  const g = graphWith([
-    mkNode({ id: 'remote', room: 'private', source_file: 'peer:12D3...' }),
-    mkNode({ id: 'local', room: 'private', source_file: 'arxiv' }),
-  ]);
-  const r = lintGraph(g, { shared_rooms: new Set(['published']) });
-  const flags = r.findings.filter((f) => f.category === 'unshared-p2p');
-  assert.strictEqual(flags.length, 1);
-  assert.strictEqual(flags[0].node_id, 'remote');
-});
-
 test('phase-33: stale-secret-match rule catches drifted tokens', () => {
   const g = graphWith([
     mkNode({
@@ -108,24 +91,12 @@ test('phase-33: stale-secret-match rule catches drifted tokens', () => {
   assert.strictEqual(hits[0].node_id, 'leaking');
 });
 
-test('phase-33: room scoping excludes nodes outside the target room', () => {
-  const g = graphWith([
-    mkNode({ id: 'o1', room: 'r1' }),  // orphan in r1
-    mkNode({ id: 'o2', room: 'r2' }),  // orphan in r2
-  ]);
-  const all = lintGraph(g);
-  const r1Only = lintGraph(g, { room: 'r1' });
-  assert.strictEqual(all.findings.filter((f) => f.category === 'orphan').length, 2);
-  assert.strictEqual(r1Only.findings.filter((f) => f.category === 'orphan').length, 1);
-  assert.strictEqual(r1Only.findings.filter((f) => f.category === 'orphan')[0].node_id, 'o1');
-});
-
 test('phase-33: clean graph produces zero findings', () => {
   const g = graphWith([
     mkNode({ id: 'a', room: 'r', label: 'alpha', fetched_at: '2026-04-16T00:00:00.000Z' }),
     mkNode({ id: 'b', room: 'r', label: 'beta',  fetched_at: '2026-04-16T00:00:00.000Z' }),
   ], [{ s: 'a', t: 'b' }]);
-  const r = lintGraph(g, { shared_rooms: new Set(), secret_patterns: buildPatterns() });
+  const r = lintGraph(g, { secret_patterns: buildPatterns() });
   assert.strictEqual(r.findings.length, 0);
 });
 

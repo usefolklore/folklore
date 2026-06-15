@@ -80,7 +80,6 @@ const buildChunkNode = (
     chunk_index: c.index,
     chunk_count: k.chunks.length,
     kind: descriptor.kind,
-    room: descriptor.room,
     wing: descriptor.wing,
     embedding_id: id,
     summary: c.text.length <= NODE_BODY_MAX ? c.text : c.text.slice(0, NODE_BODY_MAX),
@@ -134,7 +133,6 @@ export const ingestBatch =
       return okAsync({
         source_id: descriptor.id,
         kind: descriptor.kind,
-        room: descriptor.room,
         items_seen: 0,
         items_new: 0,
         items_updated: 0,
@@ -194,7 +192,6 @@ export const ingestBatch =
               return okAsync<SourceRun, AppError>({
                 source_id: descriptor.id,
                 kind: descriptor.kind,
-                room: descriptor.room,
                 items_seen: items.length,
                 items_new: 0,
                 items_updated: 0,
@@ -233,7 +230,6 @@ export const ingestBatch =
                     return deps.vectors
                       .upsert({
                         node_id: nodeId,
-                        room: descriptor.room,
                         wing: descriptor.wing,
                         vector: vectors[i],
                         raw_text: f.text,
@@ -341,7 +337,6 @@ export const ingestBatch =
                     return {
                       source_id: descriptor.id,
                       kind: descriptor.kind,
-                      room: descriptor.room,
                       items_seen: items.length,
                       items_new: newCount,
                       items_updated: updatedCount,

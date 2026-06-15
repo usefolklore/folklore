@@ -84,7 +84,7 @@ Refine these alongside the hero — they live as section headers, badge text, sl
 
 1. **No servers. No subscriptions. No revoke.** *(strong rhythm; works as the closing line under the hero)*
 2. **The peer who answered last week answers your agent today.** *(captures federation + reputation + freshness)*
-3. **Your code, your research, your past sessions — one query, all rooms.** *(captures the multi-room federation that already works)*
+3. **Your code, your research, your past sessions — one query, one graph.** *(captures the unified federation that already works)*
 4. **W3C did:key identity. Your math, not someone's user table.** *(identity differentiator)*
 5. **Signed envelopes. Cited sources. Auditable provenance.** *(B2B / SOC2 angle)*
 6. **75% NDCG@10 on BEIR SciFact. CPU-only. 11 ms p50.** *(performance numbers — honest, defensible)*

@@ -2,7 +2,7 @@
  * `folklore dashboard [--port N]`
  *
  * Starts a localhost HTTP server serving a browser-based graph
- * visualization with search, room filter, and node inspector.
+ * visualization with search, workspace filter, and node inspector.
  *
  * DASH-01..06: Closes the mcp-memory-service web dashboard gap.
  *
@@ -34,11 +34,11 @@ h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
 #search:focus{border-color:#34d399}
 #stats{font-size:12px;color:#6b7280;line-height:1.8}
 #stats .val{color:#34d399;font-weight:600}
-#rooms{list-style:none;font-size:12px}
-#rooms li{padding:4px 8px;cursor:pointer;border-radius:4px;margin:2px 0;display:flex;justify-content:space-between}
-#rooms li:hover{background:rgba(52,211,153,.08)}
-#rooms li.active{background:rgba(52,211,153,.15);color:#34d399}
-#rooms .count{color:#6b7280;font-size:11px}
+#workspaces{list-style:none;font-size:12px}
+#workspaces li{padding:4px 8px;cursor:pointer;border-radius:4px;margin:2px 0;display:flex;justify-content:space-between}
+#workspaces li:hover{background:rgba(52,211,153,.08)}
+#workspaces li.active{background:rgba(52,211,153,.15);color:#34d399}
+#workspaces .count{color:#6b7280;font-size:11px}
 #inspector{flex:1;overflow-y:auto;padding:16px;font-size:12px;line-height:1.7}
 #inspector .field{margin-bottom:6px}
 #inspector .key{color:#9ca3af}
@@ -68,8 +68,8 @@ h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
     <div id="stats">Loading...</div>
   </div>
   <div class="panel">
-    <h2>Rooms</h2>
-    <ul id="rooms"></ul>
+    <h2>Workspaces</h2>
+    <ul id="workspaces"></ul>
   </div>
   <div id="inspector">
     <div style="color:#6b7280;font-style:italic">Click a node to inspect</div>
@@ -79,29 +79,29 @@ h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
 <script>
 const API = 'http://localhost:${port}/api';
 const COLORS = ['#34d399','#38bdf8','#f59e0b','#fb7185','#a78bfa','#22d3ee','#f472b6','#84cc16'];
-let network, allNodes, allEdges, currentRoom = null, graphData = null;
+let network, allNodes, allEdges, currentWorkspace = null, graphData = null;
 
 async function loadGraph() {
   const res = await fetch(API + '/graph');
   graphData = await res.json();
   renderGraph(graphData);
   renderStats(graphData);
-  renderRooms(graphData);
+  renderWorkspaces(graphData);
 }
 
 function renderGraph(data) {
-  const rooms = [...new Set(data.nodes.map(n => n.room || 'none'))];
-  const roomColor = {};
-  rooms.forEach((r,i) => roomColor[r] = COLORS[i % COLORS.length]);
+  const workspaces = [...new Set(data.nodes.map(n => n.workspace || 'none'))];
+  const wsColor = {};
+  workspaces.forEach((r,i) => wsColor[r] = COLORS[i % COLORS.length]);
 
-  const filtered = currentRoom
-    ? data.nodes.filter(n => (n.room||'none') === currentRoom)
+  const filtered = currentWorkspace
+    ? data.nodes.filter(n => (n.workspace||'none') === currentWorkspace)
     : data.nodes;
   const nodeIds = new Set(filtered.map(n => n.id));
 
   allNodes = new vis.DataSet(filtered.map(n => ({
     id: n.id, label: (n.label||n.id).slice(0,40),
-    color: { background: roomColor[n.room||'none'], border: roomColor[n.room||'none'] },
+    color: { background: wsColor[n.workspace||'none'], border: wsColor[n.workspace||'none'] },
     title: n.label
   })));
   allEdges = new vis.DataSet((data.links||[])
@@ -124,27 +124,27 @@ function renderGraph(data) {
 }
 
 function renderStats(data) {
-  const rooms = new Set(data.nodes.map(n => n.room)).size;
+  const workspaces = new Set(data.nodes.map(n => n.workspace)).size;
   document.getElementById('stats').innerHTML =
     '<div>Nodes: <span class="val">' + data.nodes.length + '</span></div>' +
     '<div>Edges: <span class="val">' + (data.links||[]).length + '</span></div>' +
-    '<div>Rooms: <span class="val">' + rooms + '</span></div>';
+    '<div>Workspaces: <span class="val">' + workspaces + '</span></div>';
 }
 
-function renderRooms(data) {
+function renderWorkspaces(data) {
   const counts = {};
-  data.nodes.forEach(n => { const r = n.room||'none'; counts[r] = (counts[r]||0)+1; });
-  const ul = document.getElementById('rooms');
-  ul.innerHTML = '<li class="' + (!currentRoom?'active':'') + '" onclick="filterRoom(null)">All <span class="count">' + data.nodes.length + '</span></li>';
+  data.nodes.forEach(n => { const r = n.workspace||'none'; counts[r] = (counts[r]||0)+1; });
+  const ul = document.getElementById('workspaces');
+  ul.innerHTML = '<li class="' + (!currentWorkspace?'active':'') + '" onclick="filterWorkspace(null)">All <span class="count">' + data.nodes.length + '</span></li>';
   Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([r,c]) => {
-    ul.innerHTML += '<li class="' + (currentRoom===r?'active':'') + '" onclick="filterRoom(\\'' + r + '\\')">' + r + ' <span class="count">' + c + '</span></li>';
+    ul.innerHTML += '<li class="' + (currentWorkspace===r?'active':'') + '" onclick="filterWorkspace(\\'' + r + '\\')">' + r + ' <span class="count">' + c + '</span></li>';
   });
 }
 
-function filterRoom(room) {
-  currentRoom = room;
+function filterWorkspace(workspace) {
+  currentWorkspace = workspace;
   renderGraph(graphData);
-  renderRooms(graphData);
+  renderWorkspaces(graphData);
 }
 
 function inspectNode(id) {
@@ -152,7 +152,7 @@ function inspectNode(id) {
   if (!node) return;
   const el = document.getElementById('inspector');
   let html = '<h2>Node</h2>';
-  const fields = ['id','label','room','wing','file_type','source_uri','source_file','fetched_at','published_at','author','kind','content_sha256'];
+  const fields = ['id','label','workspace','wing','file_type','source_uri','source_file','fetched_at','published_at','author','kind','content_sha256'];
   for (const f of fields) {
     if (node[f]) {
       const val = String(node[f]);
@@ -185,8 +185,7 @@ document.getElementById('search').addEventListener('input', function() {
   const q = this.value.trim();
   if (q.length < 2) { document.getElementById('search-results').innerHTML = ''; return; }
   searchTimeout = setTimeout(async () => {
-    const room = currentRoom || '';
-    const res = await fetch(API + '/search?q=' + encodeURIComponent(q) + '&room=' + room + '&k=8');
+    const res = await fetch(API + '/search?q=' + encodeURIComponent(q) + '&k=8');
     const results = await res.json();
     const el = document.getElementById('search-results');
     if (!results.length) { el.innerHTML = '<div style="padding:8px;color:#6b7280">No results</div>'; return; }

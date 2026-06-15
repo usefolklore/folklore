@@ -19,7 +19,7 @@
  */
 
 import { Result, err, ok } from 'neverthrow';
-import type { NodeId, Room } from './graph.js';
+import type { NodeId } from './graph.js';
 import type { Vector } from './vectors.js';
 import { cosine } from './vectors.js';
 import { ConsolidationError } from './errors.js';
@@ -30,7 +30,8 @@ export type { ConsolidationError };
 /** A raw episodic entry as seen by the consolidator. */
 export interface EpisodicEntry {
   readonly node_id: NodeId;
-  readonly room: Room;
+  /** Optional workspace tag — clusters never span workspaces. */
+  readonly workspace?: string;
   readonly vector: Vector;
   /** Optional raw text — summaries need it. When null, the LLM gets only labels. */
   readonly raw_text: string | null;
@@ -49,8 +50,8 @@ export interface ConsolidationCluster {
   readonly entries: readonly EpisodicEntry[];
   /** L2-normalized mean of member vectors — useful as the consolidated-memory's own vector. */
   readonly centroid: Vector;
-  /** Room all entries belong to. Clusters NEVER span rooms. */
-  readonly room: Room;
+  /** Workspace all entries belong to. Clusters NEVER span workspaces. */
+  readonly workspace?: string;
 }
 
 /**
@@ -60,7 +61,7 @@ export interface ConsolidationCluster {
  */
 export interface ConsolidatedMemory {
   readonly id: NodeId;
-  readonly room: Room;
+  readonly workspace?: string;
   /** Natural-language summary from the LLM. Length typically 50–200 words. */
   readonly summary: string;
   readonly provenance_ids: readonly NodeId[];
@@ -78,7 +79,7 @@ export interface ClusterOptions {
   readonly similarity_threshold?: number;
   /** Minimum cluster size to emit. Smaller neighborhoods are dropped. Default 5. */
   readonly min_size?: number;
-  /** Maximum cluster size (prevents a single dominant topic eating the room). Default 100. */
+  /** Maximum cluster size (prevents a single dominant topic eating the workspace). Default 100. */
   readonly max_size?: number;
 }
 
@@ -110,8 +111,8 @@ const DEFAULT_CLUSTER_OPTIONS: Required<ClusterOptions> = {
  * Complexity: O(N²) cosine. At 7,000 entries = 49 M cosine ops, ~5 s
  * in hot JS. Consolidation is a background task — runtime is fine.
  *
- * Clusters NEVER span rooms. The caller partitions input per-room
- * and invokes findClusters once per room.
+ * Clusters NEVER span workspaces. The caller partitions input
+ * per-workspace and invokes findClusters once per workspace.
  */
 export const findClusters = (
   entries: readonly EpisodicEntry[],
@@ -136,13 +137,13 @@ export const findClusters = (
     ));
   }
 
-  // Verify uniform room — callers must partition per-room
-  const room = entries[0].room;
+  // Verify uniform workspace — callers must partition per-workspace
+  const workspace = entries[0].workspace;
   for (let i = 0; i < entries.length; i++) {
-    if (entries[i].room !== room) {
+    if (entries[i].workspace !== workspace) {
       return err(ConsolidationError.invalidParameter(
         'entries',
-        `room mismatch at index ${i}: expected '${room}', got '${entries[i].room}'`,
+        `workspace mismatch at index ${i}: expected '${workspace}', got '${entries[i].workspace}'`,
       ));
     }
   }
@@ -201,7 +202,7 @@ export const findClusters = (
       seed_node_id: seed.node_id,
       entries: members,
       centroid,
-      room: seed.room,
+      workspace: seed.workspace,
     });
   }
 
@@ -241,7 +242,7 @@ export const buildConsolidatedMemory = (
   const provenance_ids = cluster.entries.map((e) => e.node_id).sort(); // sorted for determinism
   return ok({
     id,
-    room: cluster.room,
+    workspace: cluster.workspace,
     summary: summary.trim(),
     provenance_ids,
     consolidated_at: clock(),
@@ -276,18 +277,20 @@ export const computeCentroid = (vectors: readonly Vector[]): Vector => {
 };
 
 /**
- * Convenience: partition a heterogeneous entry list by room, returning
- * one array per room. The consolidator main loop calls findClusters
- * on each partition independently.
+ * Convenience: partition a heterogeneous entry list by workspace,
+ * returning one array per workspace. The consolidator main loop calls
+ * findClusters on each partition independently. Entries with no
+ * workspace tag share the empty-string bucket.
  */
-export const partitionByRoom = (
+export const partitionByWorkspace = (
   entries: readonly EpisodicEntry[],
-): ReadonlyMap<Room, readonly EpisodicEntry[]> => {
-  const byRoom = new Map<Room, EpisodicEntry[]>();
+): ReadonlyMap<string, readonly EpisodicEntry[]> => {
+  const byWorkspace = new Map<string, EpisodicEntry[]>();
   for (const e of entries) {
-    const bucket = byRoom.get(e.room);
+    const key = e.workspace ?? '';
+    const bucket = byWorkspace.get(key);
     if (bucket) bucket.push(e);
-    else byRoom.set(e.room, [e]);
+    else byWorkspace.set(key, [e]);
   }
-  return byRoom;
+  return byWorkspace;
 };

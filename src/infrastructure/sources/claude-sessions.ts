@@ -1,6 +1,8 @@
 /**
  * claude_sessions source adapter — walks ~/.claude/projects/**\/*.jsonl and
- * incrementally ingests every session transcript into the `sessions` room.
+ * incrementally ingests every session transcript. Session nodes are
+ * identified by their `claude-session://` source_uri/id scheme (rooms
+ * were removed in the V5 cutover), not by a `room` field.
  *
  * Key constraints (Phase 20 CONTEXT.md):
  *   - Current-session skip (belt-and-suspenders):
@@ -159,7 +161,7 @@ const readTail = (
 /**
  * Project a classified SessionEntry to a SessionNode.
  *
- * Applies the secrets scanner (Phase 15 scanNode) to both the label/id/room
+ * Applies the secrets scanner (Phase 15 scanNode) to both the label/id
  * fields (via canonical scanNode) AND the content_summary text (direct
  * pattern match against baseSummary — the real leak surface for pasted keys).
  *
@@ -193,15 +195,14 @@ const projectEntry = (
     }
 
     if (!blocked) {
-      // Also run canonical scanNode on the graph-shaped node so id/label/room/source_uri get checked.
+      // Also run canonical scanNode on the graph-shaped node so id/label/source_uri get checked.
       const graphNodeShaped: GraphNode = {
         id: nodeId,
         label,
-        room: 'sessions',
         source_uri: nodeId,
         fetched_at: fetchedAt,
         // GraphNode requires file_type + source_file (graphify fields).
-        // scanNode only reads id/label/room/source_uri/fetched_at/embedding_id.
+        // scanNode only reads id/label/source_uri/fetched_at/embedding_id.
         // Supply minimal valid values so the type check passes.
         file_type: 'document',
         source_file: '',
@@ -217,7 +218,6 @@ const projectEntry = (
   return {
     id: nodeId,
     label,
-    room: 'sessions',
     source_uri: nodeId,
     fetched_at: fetchedAt,
     content_summary: contentSummary,

@@ -84,14 +84,13 @@ describe('Phase 19 — Domain types (CODE-08)', () => {
 // ─────────────────────── CodebaseError (error union) ───────────────────────
 
 describe('Phase 19 — CodebaseError (error union)', () => {
-  it('has 8 constructor helpers on the CodebaseError namespace', () => {
+  it('has 7 constructor helpers on the CodebaseError namespace', () => {
     assert.equal(typeof CodebaseError.dbOpenError, 'function', 'dbOpenError missing');
     assert.equal(typeof CodebaseError.dbReadError, 'function', 'dbReadError missing');
     assert.equal(typeof CodebaseError.dbWriteError, 'function', 'dbWriteError missing');
     assert.equal(typeof CodebaseError.grammarMissingError, 'function', 'grammarMissingError missing');
     assert.equal(typeof CodebaseError.parseError, 'function', 'parseError missing');
     assert.equal(typeof CodebaseError.notFound, 'function', 'notFound missing');
-    assert.equal(typeof CodebaseError.attachFailed, 'function', 'attachFailed missing');
     assert.equal(typeof CodebaseError.invalidPath, 'function', 'invalidPath missing');
   });
 
@@ -103,7 +102,6 @@ describe('Phase 19 — CodebaseError (error union)', () => {
       CodebaseError.grammarMissingError('python', 'not installed'),
       CodebaseError.parseError('x.ts', 'unexpected token'),
       CodebaseError.notFound('abc123'),
-      CodebaseError.attachFailed('cb1', 'room1', 'dup'),
       CodebaseError.invalidPath('/nope', 'ENOENT'),
     ];
     for (const e of cases) {
@@ -469,75 +467,14 @@ describe('Phase 19 — Incremental reindex (CODE-06, hash skip)', () => {
   });
 });
 
-// ─────────────────────── Codebase attachment M:N (CODE-03, CODE-05) ────────
+// ─────────────────────── Codebase delete cascade (CODE-03) ─────────────────
 
-describe('Phase 19 — Codebase attachment M:N (CODE-03, CODE-05)', () => {
+describe('Phase 19 — Codebase delete cascade (CODE-03)', () => {
   let tmpHome: string;
   before(() => { tmpHome = makeTmp('attach'); });
   after(() => { rmSync(tmpHome, { recursive: true, force: true }); });
 
-  it('attachToRoom + detachFromRoom round-trip (CODE-05)', async () => {
-    const repo = (await openCodeGraph({ path: join(tmpHome, 'cg.db') }))._unsafeUnwrap();
-    try {
-      const id = computeCodebaseId('/att/test') as CodebaseId;
-      await repo.upsertCodebase({
-        id,
-        name: 'att',
-        root_path: '/att/test',
-        language_summary: 'typescript:1',
-        indexed_at: new Date().toISOString(),
-        node_count: 0,
-        root_sha: 'deadbeef',
-      });
-
-      const a1 = await repo.attachToRoom(id, 'homelab');
-      assert.ok(a1.isOk(), 'attach should succeed');
-      const rooms = (await repo.getRoomsForCodebase(id))._unsafeUnwrap();
-      assert.deepStrictEqual(rooms, ['homelab'], 'attached room must appear');
-
-      // Attach a second room — M:N
-      await repo.attachToRoom(id, 'research');
-      const rooms2 = (await repo.getRoomsForCodebase(id))._unsafeUnwrap();
-      assert.strictEqual(rooms2.length, 2, 'must have 2 rooms after second attach');
-      assert.ok(rooms2.includes('homelab'), 'homelab must be present');
-      assert.ok(rooms2.includes('research'), 'research must be present');
-
-      // Detach one — codebase stays (non-destructive)
-      await repo.detachFromRoom(id, 'homelab');
-      const rooms3 = (await repo.getRoomsForCodebase(id))._unsafeUnwrap();
-      assert.deepStrictEqual(rooms3, ['research'], 'only research should remain');
-
-      const cb = await repo.getCodebase(id);
-      assert.ok(cb.isOk());
-      assert.notStrictEqual(cb._unsafeUnwrap(), null, 'codebase must still exist after detach');
-    } finally {
-      repo.close();
-    }
-  });
-
-  it('getCodebasesForRoom returns all codebases attached to a room', async () => {
-    const repo = (await openCodeGraph({ path: join(tmpHome, 'cg2.db') }))._unsafeUnwrap();
-    try {
-      const idA = computeCodebaseId('/a') as CodebaseId;
-      const idB = computeCodebaseId('/b') as CodebaseId;
-      await repo.upsertCodebase({
-        id: idA, name: 'A', root_path: '/a',
-        language_summary: 'ts:1', indexed_at: 'now', node_count: 0, root_sha: 'x',
-      });
-      await repo.upsertCodebase({
-        id: idB, name: 'B', root_path: '/b',
-        language_summary: 'py:1', indexed_at: 'now', node_count: 0, root_sha: 'y',
-      });
-      await repo.attachToRoom(idA, 'homelab');
-      await repo.attachToRoom(idB, 'homelab');
-      const list = (await repo.getCodebasesForRoom('homelab'))._unsafeUnwrap();
-      assert.strictEqual(list.length, 2, 'both codebases must be returned for the room');
-    } finally {
-      repo.close();
-    }
-  });
-
-  it('deleteCodebase cascades to nodes/edges/attachments (ON DELETE CASCADE)', async () => {
+  it('deleteCodebase cascades to nodes/edges (ON DELETE CASCADE)', async () => {
     const repo = (await openCodeGraph({ path: join(tmpHome, 'cg3.db') }))._unsafeUnwrap();
     try {
       const id = computeCodebaseId('/del') as CodebaseId;
@@ -545,7 +482,6 @@ describe('Phase 19 — Codebase attachment M:N (CODE-03, CODE-05)', () => {
         id, name: 'del', root_path: '/del',
         language_summary: 'ts:1', indexed_at: 'now', node_count: 0, root_sha: 'z',
       });
-      await repo.attachToRoom(id, 'scratch');
       await repo.upsertNodes([{
         id: 'nx',
         codebase_id: id,
@@ -561,8 +497,6 @@ describe('Phase 19 — Codebase attachment M:N (CODE-03, CODE-05)', () => {
       }]);
       const del = await repo.deleteCodebase(id);
       assert.ok(del.isOk(), 'deleteCodebase should succeed');
-      const rooms = (await repo.getRoomsForCodebase(id))._unsafeUnwrap();
-      assert.deepStrictEqual(rooms, [], 'room attachments must be cascaded');
       const search = (await repo.searchNodes({ codebase_id: id }))._unsafeUnwrap();
       assert.deepStrictEqual(search, [], 'nodes must be cascaded');
     } finally {

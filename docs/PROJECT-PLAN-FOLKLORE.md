@@ -8,13 +8,15 @@
 > work, not the engineering phase numbers used in the commit history.
 > Read it as direction, not as a current task list.
 >
-> **Terminology note.** The body below was written before the rooms
-> abstraction was deleted. Read every mention of "room" as
-> approximately "workspace tag + per-node `private: bool` gate" —
-> the two V5 primitives that replaced it. The `--room` flag, the
-> shared-rooms registry, and per-room rate-limiting / metrics no
-> longer exist; their analogues are `--workspace` for the read-side
-> filter and `--private` for the sharing gate.
+> **Terminology note.** The original draft was written before the
+> rooms abstraction was deleted; the body has since been re-expressed
+> in the V5 primitives. Sharing is per-node — a node is shared over
+> P2P unless marked `private` (a per-node boolean) — and an optional
+> LOCAL-ONLY `workspace` tag groups nodes by capture-repo for read-side
+> filtering. The old `--room` flag, the shared-rooms registry, and
+> per-room rate-limiting / metrics no longer exist; their analogues
+> are `--workspace` for the read-side filter and `--private` for the
+> sharing gate.
 
 This is the engineering+launch plan for the v5.0 cycle, anchored
 in the smallest-viable launch recommendation: "next engineering
@@ -67,7 +69,7 @@ core differentiator. Concrete deliverables:
   surfaced `propagation.never = 76 / 103` documents — only a quarter
   of newly-introduced docs ever reach 50% peer coverage. This is
   Q6b in the Round 5 brief (niche evaporation). Implement
-  rarity-aware caching: peers opt-in to caching room items below
+  rarity-aware caching: peers opt-in to caching shared nodes below
   a popularity threshold (the inverse of BitTorrent rarest-first
   — peers proactively replicate the long tail that's at risk of
   evaporating). Add a `replicateBelowPopularity` knob to `SimConfig`,
@@ -92,13 +94,13 @@ core differentiator. Concrete deliverables:
 
 - **24.4 `web_fallback_rate` telemetry pipeline.** Per Round 5
   priority matrix (high impact, low effort). Add a cardinality-safe
-  counter to `src/domain/metrics.ts` (no `peer_id × room × entity_id`
+  counter to `src/domain/metrics.ts` (no `peer_id × entity_id`
   labels — the round-2 audit already warned this is a 500M-series
-  bomb; we emit room-level aggregates only). Counter increments
+  bomb; we emit peer-level aggregates only). Counter increments
   on `web` resolves, denominator on all resolves; daily snapshot
   written to the peer's local metrics ring. This is the live-network
   analogue of the simulator's `webFallbackRateOverTime`. Success
-  criterion: per-room daily snapshot, queryable from CLI, integrates
+  criterion: daily snapshot, queryable from CLI, integrates
   cleanly with the existing `metrics bypass` audit path.
 
 - **24.5 Operational hardening — top 3 of the Round 4 blocker list.**
@@ -146,7 +148,7 @@ high query overlap so compounding shows up fast." Worth it.
   Each artifact saved via `folklore save --type research` from
   a librarian's peer (so provenance lands signed by a real maintainer,
   not the project itself). Deliverable: `docs/marketing/seed-corpus-pilot.md`
-  listing every artifact with its URL, librarian, and room.
+  listing every artifact with its URL and librarian.
 
 - **25.2 Librarian onboarding (5-10 maintainers).** Specific named
   maintainers in `llama.cpp`, `ollama`, `vllm-project/vllm`, and
@@ -168,7 +170,7 @@ high query overlap so compounding shows up fast." Worth it.
   Show HN post), the `r/LocalLLaMA` subreddit, LocalLLM Discords,
   and the maintainers' own audiences. Onboarding artifact is a
   90-second video walkthrough + `npm install -g folklore` +
-  `folklore share` to join the pilot rooms. Success criterion:
+  `folklore share` to start contributing shared nodes to the pilot. Success criterion:
   ≥ 80 active peers (defined as: ≥ 1 query in past 7 days) by end
   of week 3.
 
@@ -204,8 +206,8 @@ phase slot, not a hand-wave:
 - **26.2 Observability for federated search** (Round 4 D). The
   current cardinality-safe metric design is correct but
   under-instrumented for ops — when fan-out degrades, the
-  operator can't tell which peer / room is the cause.
-  Mitigation: per-room (not per-peer) histograms for fan-out
+  operator can't tell which peer is the cause.
+  Mitigation: per-peer histograms for fan-out
   latency, federation hit rate, dial failures; emitted as
   structured logs the operator can grep, not as Prometheus
   labels.
@@ -227,7 +229,7 @@ phase slot, not a hand-wave:
   Today peers federate queries autonomously; an enterprise
   auditor cannot prove what proprietary IP left the local machine.
   Mitigation: append-only signed audit log of every outbound
-  federation query with `(timestamp, room, query-hash, target-peer-set)`;
+  federation query with `(timestamp, query-hash, target-peer-set)`;
   optional WORM export. This is enterprise gating, not pilot
   gating.
 
@@ -291,7 +293,7 @@ forgotten:
   of size zero; their first 10 queries will all fall through to web
   (because none of their queries' answers are yet cached on their
   peer). The compounding only helps from query 11 onward. Is this
-  acceptable? Mitigations to evaluate: a "starter pack" room of
+  acceptable? Mitigations to evaluate: a "starter pack" bundle of
   the most-queried topics in the pilot that new peers can opt into
   cloning (LOCKSS-style proactive replication), or accepting that
   day-1 UX is "just like having no peer" and the value compounds.
@@ -306,9 +308,9 @@ forgotten:
   reputation they subscribe to.) Concrete design pending; for the
   pilot we rely on the small librarian-vetted seed corpus.
 
-- **Federation under partial-trust rooms.** Today rooms are binary
-  (member or not). Real OSS communities have trust gradients —
-  "I trust llama.cpp maintainers more than randoms in the same room."
+- **Federation under partial peer trust.** Today peer trust is binary
+  (connected or not). Real OSS communities have trust gradients —
+  "I trust llama.cpp maintainers more than randoms on the same network."
   Do we need weighted federation (a peer's contributions count
   more if they're in the librarian set)? Or is binary good enough
   for v1? Decision: binary for the pilot; revisit if compounding
@@ -341,7 +343,7 @@ Concrete, measurable, falsifiable:
   in-process.
 
 - **Phase 24.4 `web_fallback_rate` telemetry ships.** CLI command
-  `folklore metrics fallback --room <room>` returns a per-day
+  `folklore metrics fallback` returns a per-day
   series, and the daemon emits zero spurious cardinality.
 
 - **Pilot has ≥ 50 active peers by end of week 3** and the live

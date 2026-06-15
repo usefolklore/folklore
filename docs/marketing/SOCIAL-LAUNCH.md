@@ -163,9 +163,9 @@ with the category claim.
 
 **"What's the eventual consistency story?"**
 
-> Yjs CRDTs over libp2p pubsub. Per-room shared docs; freshness rules
-> let consumers prefer fresh pulls when a hit's `age_days` exceeds the
-> room's stale-after window (research: 7 d, toolshed: 30 d).
+> Yjs CRDTs over libp2p pubsub. Nodes replicate per-peer (anything not
+> marked `private`); freshness rules let consumers prefer fresh pulls
+> when a hit's `age_days` exceeds the global stale-after window (~7 d).
 
 ---
 
@@ -249,7 +249,7 @@ with the category claim.
 >
 > The reputation system might interest folks here: each peer
 > accumulates a Bayesian posterior per `(peer, subject)` tuple, where
-> subject = entity-id or room-id derived from the federated match. The
+> subject = entity-id or source-family derived from the federated match. The
 > ranking score is `posterior × freshness(half-life) ×
 > loadMultiplier(in-flight)`, with epsilon-greedy exploration on top
 > to keep the cold-start tail from starving. Top-N fan-out cap +
@@ -258,7 +258,7 @@ with the category claim.
 >
 > Threat model documents the praise-ring attack defense (relay credit
 > capped at source peer's posterior) and the silent-zero-credit fix
-> for novel chunks (always emit room subject when entity unknown).
+> for novel chunks (always emit the source-family subject when entity unknown).
 >
 > Code + design doc in repo. Curious if anyone has hit a similar
 > peer-ranking problem in federated learning settings.

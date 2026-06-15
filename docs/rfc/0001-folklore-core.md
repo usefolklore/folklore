@@ -6,7 +6,7 @@
 
 ## Summary
 
-Folklore Core defines the minimum a node must implement to be a Folklore peer: the **node model** (the unit of knowledge), the **room** derivation, the **federated query**, the **deny semantics** that gate the web, and the **provenance** envelope that makes every record attributable. A conforming peer can save knowledge locally, answer queries from its own graph, fan a query out to peers, and serve signed results back.
+Folklore Core defines the minimum a node must implement to be a Folklore peer: the **node model** (the unit of knowledge), the **sharing gate** (the per-node `private` flag that decides what crosses the wire), the **federated query**, the **deny semantics** that gate the web, and the **provenance** envelope that makes every record attributable. A conforming peer can save knowledge locally, answer queries from its own graph, fan a query out to peers, and serve signed results back.
 
 ## Motivation
 
@@ -25,7 +25,9 @@ The atomic unit. Required fields:
 | `id` | string (ULID) | stable, sortable |
 | `content` | string | the knowledge |
 | `type` | enum | `source`, `synthesis`, `finding`, `decision`, `observation`, `contradiction`, `correction` |
-| `source_uri` | string | origin; its scheme derives the room |
+| `source_uri` | string | origin; its scheme records provenance |
+| `private` | bool | sharing gate; `true` keeps the node local, default shares over P2P |
+| `workspace` | string? | optional LOCAL-ONLY capture-repo tag; never crosses the wire |
 | `embedding` | float32[384] | `all-MiniLM-L6-v2`, CPU |
 | `fetched_at` | timestamp | freshness anchor |
 | `provenance` | Provenance | see below |
@@ -44,27 +46,27 @@ Every node is signed. A consumer can verify the chain end-to-end.
 | `signature` | bytes | over `content` + `source_uri` + `fetched_at` |
 | `sources` | string[] | URIs the node was grounded on |
 
-### Rooms
+### Sharing and scope
 
-Rooms are **virtual**, derived from `source_uri` scheme, never stored on the node. Two system rooms are mandatory and always federated:
+There is no room abstraction. A node's reach is decided by two fields:
 
-- `toolshed` — codebase / tools / deps (`file:`, `git:` schemes). Stale-after 30 days.
-- `research` — web / arXiv / RSS (`https:`, `arxiv:` schemes). Stale-after 7 days.
+- `private` — the sharing gate. A node is shared over P2P unless it is marked `private`, which keeps it local. The default is to share.
+- `workspace` — an optional LOCAL-ONLY tag, derived from the capture repo, that groups nodes for read-side filtering. It never crosses the wire and plays no part in federation.
 
-A peer MUST advertise both. Additional rooms are opt-in.
+A node's `source_uri` scheme records its origin (`file:` / `git:` for codebase and tools, `https:` / `arxiv:` for web and research) and is available for retrieval-side filtering, but it does not partition the graph into federated units.
 
 ### Operations
 
 A Level-0 peer MUST implement:
 
-- `SAVE(node)` → signs, embeds, inserts, derives room.
-- `ASK(query, {rooms?, peers?})` → runs the retrieval pipeline, returns ranked hits each carrying `score`, `age_days`, `provenance`.
-- `ADVERTISE()` → returns the peer's room set for federation membership.
+- `SAVE(node)` → signs, embeds, inserts, sets the `private` gate (default shared) and the local `workspace` tag.
+- `ASK(query, {workspace?, peers?})` → runs the retrieval pipeline, returns ranked hits each carrying `score`, `age_days`, `provenance`.
+- `ADVERTISE()` → announces the peer for federation discovery.
 
 A Level-1 peer adds:
 
-- `FAN_OUT(query)` → federated `ASK` across configured peers over libp2p, merging signed hits.
-- `SUBSCRIBE(room)` → push updates for a room.
+- `FAN_OUT(query)` → federated `ASK` across configured peers over libp2p, merging signed hits. Only non-`private` nodes are eligible to answer a remote query.
+- `SUBSCRIBE(peer)` → push updates from a peer's shared nodes.
 
 ### Retrieval pipeline (normative for `ASK`)
 
@@ -86,7 +88,7 @@ On deny, the peer injects the graph hits into the caller's context in place of t
 
 ### Freshness
 
-A hit inside its room's stale-after window is trustworthy. Past the window, a peer SHOULD prefer a fresh pull and replace the stale node on auto-save. A hit lacking `fetched_at` MUST be treated as stale of unknown age.
+A single global stale-after window (~7 days) applies to every node. A hit inside that window is trustworthy. Past it, a peer SHOULD prefer a fresh pull and replace the stale node on auto-save. A hit lacking `fetched_at` MUST be treated as stale of unknown age.
 
 ## Alternatives considered
 

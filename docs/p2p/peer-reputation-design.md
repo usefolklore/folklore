@@ -22,7 +22,7 @@ subject, and uses it for peer selection. Six prior works the agents converged on
 |----------------------|----------------------------------------------------------------------|----------------------------------------------------------------|
 | **EigenTrust** (Kamvar 2003) | Local feedback + global aggregation; explicit collusion thinking | Single global scalar; "good at libp2p" ≠ "good at lemlist"    |
 | **PeerTrust** (Xiong & Liu 2004) | Multi-factor scoring: feedback, volume, source credibility, context | Heavier than v1 needs; overfits sparse data                |
-| **PowerTrust** (Zhou & Hwang 2007) | Scalable global aggregation via power nodes              | Soft centralization cuts against room-symmetric peer model     |
+| **PowerTrust** (Zhou & Hwang 2007) | Scalable global aggregation via power nodes              | Soft centralization cuts against the symmetric peer model      |
 | **Beta Reputation** (Jøsang 2002) | Probability + uncertainty (sparse-data handling)         | Wants binary success/failure; we have continuous satisfaction  |
 | **Flow-based reputation** (Škorić 2016) | Combines propagation with explicit uncertainty       | Too much machinery for local-only v1                          |
 | **SybilGuard** (Yu 2008) | Graph-based identity defense                                   | Assumes social trust graph Folklore doesn't have today         |
@@ -42,7 +42,7 @@ subject, and uses it for peer selection. Six prior works the agents converged on
   connected peers in parallel. Reputation lets us sort first, optionally early-stop,
   and budget low-rep peers tighter.
 - **"Ask only the experts" mode** for high-stakes queries.
-- **Fresh-room bootstrap.** Joining a new room? See who already knows the subject
+- **Fresh-subject bootstrap.** Starting on a new subject? See who already knows it
   and request a connection.
 - **Decay/freshness weighting.** A peer who was the lemlist authority 90 days ago
   but stopped reading shouldn't outrank a peer active this week.
@@ -218,7 +218,7 @@ plausibility, **not truthfulness.**
 | Duplicate evidence inflation via `_also_from_peers` | Split or downweight when same node arrived from multiple peers |
 | Reviewer identity churn (cheap new DIDs) | Local age/tenure weighting; signed envelopes give continuity, not uniqueness |
 | Replay of stale reviews | `review_id`, `signed_at`, monotonic per-reviewer sequence; reject old duplicates |
-| Privacy leakage | Subject competence reveals what a peer reads — keep local by default; export with explicit room/subject opt-outs |
+| Privacy leakage | Subject competence reveals what a peer reads — keep local by default; export with explicit subject opt-outs |
 | Compliance (B2B / multi-tenant) | Retention policy, deletion semantics, SOC2/GDPR audit trail |
 
 ---
@@ -247,8 +247,8 @@ plausibility, **not truthfulness.**
 > subject extraction wrong, you build a precise-looking reputation layer on top
 > of noisy labels. A peer answering three "lemlist-adjacent" asks may be
 > genuinely strong on outbound automation, weak on lemlist specifically, and
-> irrelevant for Clay or Instantly. If v1 mixes room names, fuzzy embedding
-> clusters, and returned entities too freely, the profile becomes hard to audit
+> irrelevant for Clay or Instantly. If v1 mixes fuzzy embedding
+> clusters and returned entities too freely, the profile becomes hard to audit
 > and easy to game.
 
 **Prerequisite:** stable subject-key hierarchy with canonical `entity_id` first

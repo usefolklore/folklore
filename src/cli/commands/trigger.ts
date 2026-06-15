@@ -11,7 +11,7 @@
  */
 
 import { formatError } from '../../domain/errors.js';
-import type { RoomRun, SourceRun } from '../../domain/sources.js';
+import type { IngestTickRun, SourceRun } from '../../domain/sources.js';
 import { triggerAllSources } from '../../application/ingest.js';
 import { defaultRuntime, runtimePaths } from '../runtime.js';
 import { isRunning } from '../../daemon/loop.js';
@@ -43,7 +43,7 @@ const renderRun = (run: SourceRun): string => {
   return base;
 };
 
-const renderTickRun = (tick: RoomRun): string => {
+const renderTickRun = (tick: IngestTickRun): string => {
   const lines = [`sources=${tick.runs.length}`];
   for (const r of tick.runs) lines.push(renderRun(r));
   return lines.join('\n');
@@ -89,7 +89,7 @@ export const trigger = async (args: readonly string[]): Promise<number> => {
       return 0;
     }
     console.log(renderTickRun(tick));
-    const hadError = tick.runs.some((r) => r.error !== undefined);
+    const hadError = tick.runs.some((r: SourceRun) => r.error !== undefined);
     return hadError ? 1 : 0;
   } finally {
     runtime.close();

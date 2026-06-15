@@ -200,10 +200,8 @@ export const runOneTick = (deps: DaemonDeps): ResultAsync<TickResult, AppError> 
       const enabled = descriptors.filter(isEnabled);
       const picked = (() => {
         if (enabled.length === 0) return [];
-        if (deps.config.round_robin_rooms) {
-          // V5: round-robin now cycles sources (not rooms). The config
-          // key is preserved for backward compatibility; Wave 2/3 may
-          // rename it to round_robin_sources.
+        if (deps.config.round_robin_sources) {
+          // V5: round-robin cycles sources (not rooms).
           const next = [enabled[roundRobinIndex % enabled.length]];
           roundRobinIndex++;
           return next;
@@ -319,7 +317,7 @@ const runSources = (
   // Hydration failures become synthetic failed SourceRuns so the
   // tick log surfaces them.
   for (const e of errors) {
-    results.push({ ...emptyRun(descriptors[0] ?? { id: '<unknown>', kind: 'generic_rss', enabled: true, room: '' as never }), error: e });
+    results.push({ ...emptyRun(descriptors[0] ?? { id: '<unknown>', kind: 'generic_rss', enabled: true, config: {} }), error: e });
   }
 
   return live
@@ -480,7 +478,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                 const lines = nodeReadFileSync(swarmCorpusPath, 'utf8').split('\n').filter(Boolean);
                 const corpusNotes = lines.slice(1).map((l: string) => JSON.parse(l)) as ReadonlyArray<{
                   id: string; label: string; summary: string;
-                  room: string; source_uri: string; fetched_at: string;
+                  source_uri: string; fetched_at: string;
                   peer_id: string;
                   embedding?: ReadonlyArray<number>;
                 }>;
@@ -526,7 +524,6 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                     const cap = Math.min(scored.length, 200);
                     return scored.slice(0, cap).map(({ note, distance }) => ({
                       node_id: note.id,
-                      room: note.room,
                       distance,
                       peer_id: note.peer_id,
                       summary: note.summary,
@@ -607,8 +604,8 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               homePath: deps.homePath,
               graphRepo: deps.graphs,
               patterns: buildPatterns(cfgRes.value.security.secrets_patterns),
-              maxUpdatesPerSecPerPeerPerRoom:
-                cfgRes.value.peer.bandwidth.max_updates_per_sec_per_peer_per_room,
+              maxUpdatesPerSecPerPeer:
+                cfgRes.value.peer.bandwidth.max_updates_per_sec_per_peer,
             });
             const reg = await registerShareProtocol(liveSync);
             if (reg.isErr()) {
@@ -805,7 +802,6 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                     const meta = enrichMatchMeta(gossipGraph, gossipPatterns, m.node_id);
                     return {
                       node_id: m.node_id,
-                      room: m.room,
                       wing: m.wing,
                       distance: m.distance,
                       ...meta,

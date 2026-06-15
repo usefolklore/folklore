@@ -1,15 +1,15 @@
 /**
  * Pure domain vocabulary for sources.
  *
- * A `Source` is the strategy that knows how to produce `ContentItem`s
- * for a given room. The port is narrow — one method, one ResultAsync —
- * so any adapter (RSS, ArXiv, HN, URL, future: github_trending,
- * star_history, ecosystems_timeline) plugs in uniformly.
+ * A `Source` is the strategy that knows how to produce `ContentItem`s.
+ * The port is narrow — one method, one ResultAsync — so any adapter
+ * (RSS, ArXiv, HN, URL, future: github_trending, star_history,
+ * ecosystems_timeline) plugs in uniformly.
  *
- * Registered adapters are described by a `SourceDescriptor`: a kind,
- * the config shape, the list of rooms it belongs to. The infra layer
- * reads these descriptors from sources.json and hydrates them into
- * live `Source` instances via a registry.
+ * Registered adapters are described by a `SourceDescriptor`: a kind
+ * and the config shape. The infra layer reads these descriptors from
+ * sources.json and hydrates them into live `Source` instances via a
+ * registry.
  *
  * This file has no I/O and no classes — just types + pure helpers.
  */
@@ -17,7 +17,7 @@
 import type { ResultAsync } from 'neverthrow';
 import type { AppError } from './errors.js';
 import type { ContentItem } from './content.js';
-import type { Room, Wing } from './graph.js';
+import type { Wing } from './graph.js';
 
 /** Source adapter kinds. Phase 2: external feeds. Project indexing: codebase, deps, submodules, git. */
 export type SourceKind =
@@ -54,12 +54,6 @@ export interface SourceDescriptor {
   /** Stable opaque id; used in logs and SourceRun reports. */
   readonly id: string;
   readonly kind: SourceKind;
-  /**
-   * @deprecated V5 (Phase 24) — rooms were deleted. The field remains
-   * to round-trip legacy sources.json entries; new descriptors should
-   * omit it. Adapters MUST NOT depend on this field for routing.
-   */
-  readonly room?: Room;
   /** Optional sub-partition on the emitted nodes. */
   readonly wing?: Wing;
   /** If false, the source is skipped by trigger. Defaults to true. */
@@ -77,18 +71,10 @@ export interface Source {
 
 /**
  * Result of running one source through the ingest pipeline.
- *
- * V5 (Phase 24): the `room` field is retained on the report shape for
- * back-compat with telemetry consumers and the daemon's TickResult.
- * Producers may omit it when no legacy room data is around.
  */
 export interface SourceRun {
   readonly source_id: string;
   readonly kind: SourceKind;
-  /**
-   * @deprecated V5 — present only for legacy telemetry display.
-   */
-  readonly room?: Room;
   readonly items_seen: number;
   readonly items_new: number;
   readonly items_updated: number;
@@ -97,11 +83,11 @@ export interface SourceRun {
 }
 
 /**
- * @deprecated V5 (Phase 24) — kept as the daemon tick aggregator shape
- * for back-compat. New code should consume SourceRun[] directly.
+ * Aggregated result of one ingest tick — the runs of every source that
+ * fired plus the wall-clock window. Consumed by the daemon's
+ * TickResult and the telemetry display.
  */
-export interface RoomRun {
-  readonly room?: Room;
+export interface IngestTickRun {
   readonly runs: readonly SourceRun[];
   readonly started_at: string;
   readonly finished_at: string;

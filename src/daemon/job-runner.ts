@@ -9,10 +9,10 @@
  * `folklore jobs list`. Errors throw — the queue catches them and
  * tags the job `failed`.
  *
- * V5: per-room dispatch is gone. The legacy `ingest:room` payload is
+ * V5: per-workspace dispatch is gone. The `ingest:workspace` payload is
  * still carried by the Job type (24-09 owns the domain narrowing) but
  * the runner now interprets it as "run every enabled source flat" —
- * the room label is captured in the summary only. Jobs (ingest,
+ * the workspace label is captured in the summary only. Jobs (ingest,
  * share-sync, search-gossip) run against the global graph.
  */
 
@@ -34,8 +34,8 @@ export interface RunnerDeps {
 }
 
 /**
- * V5: run every enabled source flat. The `room` label is preserved in
- * the result summary for parity with the legacy `ingest:room` payload
+ * V5: run every enabled source flat. The `workspace` label is preserved in
+ * the result summary for parity with the `ingest:workspace` payload
  * shape, but no longer drives source selection.
  */
 const runIngestAll = async (deps: RunnerDeps, label: string): Promise<string> => {
@@ -74,8 +74,8 @@ const runIngestAll = async (deps: RunnerDeps, label: string): Promise<string> =>
  *
  * Now: O(1) per save. Just the file we got the change event for.
  *
- * V5: the `label` argument is a vestigial pass-through of the legacy
- * job-payload `room` field — used only in the result summary, never
+ * V5: the `label` argument is a vestigial pass-through of the
+ * job-payload `workspace` field — used only in the result summary, never
  * for routing.
  */
 const runIngestFile = async (
@@ -137,7 +137,7 @@ const runIngestFile = async (
 };
 
 /**
- * Incremental session ingest. V5: with per-room dispatch retired, this
+ * Incremental session ingest. V5: with per-workspace dispatch retired, this
  * routes through the flat source list and lets the sessions adapter's
  * own cursor decide what work to do.
  *
@@ -280,14 +280,14 @@ export const buildJobRunner = (deps: RunnerDeps) =>
   async (job: Job): Promise<string> => {
     const p = job.payload;
     switch (p.kind) {
-      // V5: the legacy per-room dispatch is gone. Job payloads still carry
-      // a `room` field (24-09 owns the domain narrowing); the runner reads
+      // V5: per-workspace dispatch is gone. Job payloads still carry
+      // a `workspace` field (24-09 owns the domain narrowing); the runner reads
       // it as an opaque label for the result summary only.
-      case 'ingest:room':    return runIngestAll(deps, p.room);
-      case 'ingest:file':    return runIngestFile(deps, p.room, p.path);
+      case 'ingest:workspace': return runIngestAll(deps, p.workspace);
+      case 'ingest:file':    return runIngestFile(deps, p.workspace, p.path);
       case 'ingest:session': return runIngestSession(deps, p.path);
-      case 'ingest:project': return runIngestProject(deps, p.room, p.root, p.maxCommits ?? 50, p.includeDev ?? true);
-      case 'ingest:batch':   return runIngestBatch(deps, p.room, p.paths);
+      case 'ingest:project': return runIngestProject(deps, p.workspace, p.root, p.maxCommits ?? 50, p.includeDev ?? true);
+      case 'ingest:batch':   return runIngestBatch(deps, p.workspace, p.paths);
       default: {
         const _exhaustive: never = p;
         void _exhaustive;

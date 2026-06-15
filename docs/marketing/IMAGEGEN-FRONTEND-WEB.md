@@ -517,7 +517,7 @@ all on paper bg, split adds visual rhythm).
 
 ---
 
-### 5.7 — SECTION 7 of 11: Architecture (Identity + Rooms merged)
+### 5.7 — SECTION 7 of 11: Architecture (Identity + Federation merged)
 
 | Field | Value |
 |-------|-------|
@@ -538,9 +538,10 @@ all on paper bg, split adds visual rhythm).
 │                                                                           │
 │  ┌────────── pristine gapless bento (3-col, mixed sizes) ──────────┐    │
 │  │ ┌────────────┐ ┌────────────┐ ┌──────────────────────────────┐  │    │
-│  │ │ TOOLSHED   │ │ RESEARCH   │ │ user-negotiated rooms        │  │    │
-│  │ │ codebase   │ │ arxiv, web │ │ wi-test · auto-tlv · etc.    │  │    │
-│  │ │ stale: 30d │ │ stale: 7d  │ │ membership: opt-in via TUI   │  │    │
+│  │ │ SOURCE     │ │ PRIVATE    │ │ WORKSPACE                    │  │    │
+│  │ │ source_uri │ │ per-node   │ │ local-only tag, groups by    │  │    │
+│  │ │ codebase / │ │ flag —     │ │ repo; never leaves your      │  │    │
+│  │ │ web / arxiv│ │ stays local│ │ machine. stale: 7d global    │  │    │
 │  │ └────────────┘ └────────────┘ └──────────────────────────────┘  │    │
 │  │                                                                  │    │
 │  │ ┌──────────────────────────────────────────────────────────────┐ │    │
@@ -561,8 +562,8 @@ all on paper bg, split adds visual rhythm).
 > ARCHITECTURE" in muted gray. Below: a tight Outfit 600 H2 "W3C
 > did:key identity. Your math, not someone's user table." in light
 > gray. Center: a pristine gapless bento grid — three smaller
-> tiles in the top row (TOOLSHED, RESEARCH, user-negotiated rooms),
-> each with a uppercase mono label + 2-line description; below
+> tiles in the top row (SOURCE, PRIVATE, WORKSPACE), each with a
+> uppercase mono label + 2-line description; below
 > them a single wide tile spanning the full row width describing
 > the OAuth-anchored DID identity model. All tiles are dark
 > elevated panels (#14141f) with thin 1px emerald borders at low

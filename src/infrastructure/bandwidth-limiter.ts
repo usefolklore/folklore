@@ -2,10 +2,11 @@
  * Shared bandwidth primitives for Phase 18 production networking.
  *
  * NET-02 layered limits (CONTEXT.md locked):
- *   - Per-peer-per-room token bucket — reuses createRateLimiter from Phase 17
+ *   - Per-peer token bucket — reuses createRateLimiter from Phase 17
  *     search-sync.ts via re-export (single source of truth, Pitfall 5 —
  *     18-RESEARCH.md lines 249-275). The rate limiter's Pitfall 7 inline
- *     idle eviction carries over unchanged.
+ *     idle eviction carries over unchanged. V5: the rate-limiter key is
+ *     per-peer; the room dimension was removed with the rooms abstraction.
  *   - Daemon-tick semaphore on concurrent outbound share syncs (NEW here).
  *
  * This module has NO libp2p imports — it is pure primitives so tests can
@@ -14,12 +15,10 @@
 export { createRateLimiter, type RateLimiter } from './search-sync.js';
 
 /**
- * Compose a canonical per-peer-per-room rate-limiter key.
- * Format: `<peerId>::<roomId>` — matches the stream registry key convention
- * used throughout share-sync.ts so keys are consistent across subsystems.
+ * Canonical per-peer rate-limiter key — just the peer id. V5: the
+ * `<peerId>::<roomId>` form was retired with the rooms abstraction.
  */
-export const makePerPeerRoomKey = (peerId: string, room: string): string =>
-  `${peerId}::${room}`;
+export const makePerPeerKey = (peerId: string): string => peerId;
 
 /**
  * Counting semaphore — bounded concurrency primitive.

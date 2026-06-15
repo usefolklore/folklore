@@ -146,9 +146,10 @@ here so future contributors do not re-add the parts that hurt quality.
 - **Reranker on scientific text (avoid):** Wave-3 `bge-reranker-base`
   *regressed* quality on scientific text (−1.92 NDCG@10) due to MS-MARCO domain
   mismatch. Do not enable it as a default for scientific corpora.
-- **Room-aware routing gate (null):** Wave-4 oracle routing on CQADupStack gave
-  only +0.34 NDCG@10 — rooms/workspaces are a UX / permissions / discovery
-  signal, **not** a retrieval signal. Do not add routing gates to the pipeline.
+- **Scope-aware routing gate (null):** Wave-4 oracle routing on CQADupStack gave
+  only +0.34 NDCG@10 — scope signals (the `workspace` tag, `source_uri` scheme,
+  the `private` gate) are a UX / permissions / discovery signal, **not** a
+  retrieval signal. Do not add routing gates to the pipeline.
 
 ---
 

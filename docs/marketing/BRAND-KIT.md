@@ -79,7 +79,7 @@ any condition. The "Lila ban" applies hard.
 `--accent-warm` is for **data annotations only**:
 
 - Benchmark bars showing comparison cohorts
-- "Stale" badges on graph hits older than the room's freshness window
+- "Stale" badges on graph hits older than the freshness window
 - Highlight ring on hovered chart datapoints
 
 It is NOT a second brand color. It NEVER appears in CTAs, body copy,

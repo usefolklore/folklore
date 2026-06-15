@@ -3,7 +3,7 @@
  *
  *  1. Write a local RSS 2.0 fixture to a tmp file
  *  2. Register a `generic_rss` SourceDescriptor pointing at file://<tmp>
- *  3. Run triggerRoom('homelab')
+ *  3. Run triggerAllSources()
  *  4. Assert:
  *     - 3 new items (one chunk each for small bodies)
  *     - graph.json has 3 nodes with source_uri + content_sha256 + fetched_at
@@ -30,7 +30,7 @@ import { xmlParser } from '../src/infrastructure/parsers/xml-parser.js';
 import { readabilityExtractor } from '../src/infrastructure/parsers/html-extractor.js';
 import { sourceRegistry } from '../src/infrastructure/sources/registry.js';
 import { fileSourcesConfig } from '../src/infrastructure/sources-config.js';
-import { triggerRoom } from '../src/application/ingest.js';
+import { triggerAllSources } from '../src/application/ingest.js';
 import type { IngestDeps } from '../src/application/ingest.js';
 import type { SourceDescriptor } from '../src/domain/sources.js';
 
@@ -94,7 +94,6 @@ test('phase 2: generic_rss ingest — fetch, chunk, index, dedup, update', async
     const descriptor: SourceDescriptor = {
       id: 'homelab-weekly',
       kind: 'generic_rss',
-      room: 'homelab',
       wing: 'network',
       enabled: true,
       config: { feed_url: feedUrl, max_items: 10 },
@@ -103,7 +102,7 @@ test('phase 2: generic_rss ingest — fetch, chunk, index, dedup, update', async
 
     // ── act 1 — first run ──
 
-    const run1 = (await triggerRoom(deps)('homelab'))._unsafeUnwrap();
+    const run1 = (await triggerAllSources(deps)())._unsafeUnwrap();
     assert.equal(run1.runs.length, 1);
     const s1 = run1.runs[0];
     assert.equal(s1.error, undefined, `first run should not error, got ${JSON.stringify(s1.error)}`);
@@ -116,7 +115,7 @@ test('phase 2: generic_rss ingest — fetch, chunk, index, dedup, update', async
     const afterRun1 = (await graphs.load())._unsafeUnwrap();
     assert.equal(afterRun1.json.nodes.length, 3);
     for (const node of afterRun1.json.nodes) {
-      assert.equal(node.room, 'homelab', `node ${node.id} should be in homelab`);
+      assert.equal(node.wing, 'network', `node ${node.id} should carry the descriptor's wing`);
       assert.ok(node.source_uri, `node ${node.id} must have source_uri`);
       assert.ok(node.fetched_at, `node ${node.id} must have fetched_at`);
       assert.ok(node.content_sha256, `node ${node.id} must have content_sha256`);
@@ -126,7 +125,7 @@ test('phase 2: generic_rss ingest — fetch, chunk, index, dedup, update', async
 
     // ── act 2 — idempotent re-run (no changes) ──
 
-    const run2 = (await triggerRoom(deps)('homelab'))._unsafeUnwrap();
+    const run2 = (await triggerAllSources(deps)())._unsafeUnwrap();
     const s2 = run2.runs[0];
     assert.equal(s2.error, undefined);
     assert.equal(s2.items_seen, 3);
@@ -141,7 +140,7 @@ test('phase 2: generic_rss ingest — fetch, chunk, index, dedup, update', async
     // ── act 3 — mutate one item's body and re-run ──
 
     writeFileSync(feedPath, rssFixture('v2'));
-    const run3 = (await triggerRoom(deps)('homelab'))._unsafeUnwrap();
+    const run3 = (await triggerAllSources(deps)())._unsafeUnwrap();
     const s3 = run3.runs[0];
     assert.equal(s3.error, undefined);
     assert.equal(s3.items_seen, 3);

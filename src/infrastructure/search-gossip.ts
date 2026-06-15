@@ -315,9 +315,6 @@ export const registerSwarmSimResponder = (
         for (const [peerId, peerHits] of byPeer.entries()) {
           const matches: SearchGossipPeerMatch[] = peerHits.map((h) => ({
             node_id: h.node_id,
-            // `room` field on Match is a vestigial V4 carrier — pass empty
-            // string until the domain Match type is narrowed in 24-09.
-            room: '',
             // wing is part of the real Match type — synthesize a
             // sensible default so the asker's typecheck passes.
             wing: 'main' as unknown as Match['wing'],

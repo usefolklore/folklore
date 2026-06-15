@@ -13,7 +13,7 @@
  *   - `EmbeddingError`  — transformers runtime, model load, inference
  *   - `PeerError`       — P2P identity, peer store I/O, transport, dial
  *   - `ScanError`       — secrets detection at the sharing boundary
- *   - `ShareError`      — room sharing, Y.js CRDT sync, shared-rooms.json I/O
+ *   - `ShareError`      — node sharing, Y.js CRDT sync, share-log I/O
  *   - `SearchError`     — federated search fan-out, rate limiting, auth (Phase 17)
  *   - `CodebaseError`   — structured codebase indexing, tree-sitter, code-graph.db (Phase 19)
  *   - `NetError`        — production networking: relay, hole-punch, UPnP, bandwidth (Phase 18)
@@ -142,34 +142,34 @@ export const ScanError = {
 // ─────────────────────── ShareError ───────────────────────
 
 /**
- * Errors from the room-sharing bounded context (Phase 16).
+ * Errors from the node-sharing bounded context (Phase 16).
  *
- * - ShareAuditBlocked        — `share room X` aborted because auditRoom found flagged nodes
+ * - ShareAuditBlocked        — sharing aborted because the audit found flagged nodes
  * - YDocLoadError / SaveError — .ydoc file I/O failures (binary Yjs state)
  * - SyncProtocolError        — libp2p stream / sync handshake failure with a specific peer
  * - InboundUpdateRejected    — secrets scanner blocked an update arriving from a peer (logged + dropped, no back-prop)
- * - ShareStoreReadError / WriteError — shared-rooms.json I/O (mirrors PeerStoreReadError pattern)
+ * - ShareStoreReadError / WriteError — share-log I/O (mirrors PeerStoreReadError pattern)
  */
 export type ShareError =
-  | { readonly type: 'ShareAuditBlocked';     readonly room: string; readonly blockedCount: number }
+  | { readonly type: 'ShareAuditBlocked';     readonly blockedCount: number }
   | { readonly type: 'YDocLoadError';         readonly path: string; readonly message: string }
   | { readonly type: 'YDocSaveError';         readonly path: string; readonly message: string }
   | { readonly type: 'SyncProtocolError';     readonly peer: string; readonly message: string }
-  | { readonly type: 'InboundUpdateRejected'; readonly peer: string; readonly room: string; readonly reason: string }
+  | { readonly type: 'InboundUpdateRejected'; readonly peer: string; readonly reason: string }
   | { readonly type: 'ShareStoreReadError';   readonly path: string; readonly message: string }
   | { readonly type: 'ShareStoreWriteError';  readonly path: string; readonly message: string }
-  /** NET-02: per-peer-per-room token bucket exhausted — outbound update rejected. */
-  | { readonly type: 'BandwidthExceeded';     readonly peer: string; readonly room: string };
+  /** NET-02: per-peer token bucket exhausted — outbound update rejected. */
+  | { readonly type: 'BandwidthExceeded';     readonly peer: string };
 
 export const ShareError = {
-  shareAuditBlocked:     (room: string, blockedCount: number): ShareError => ({ type: 'ShareAuditBlocked', room, blockedCount }),
+  shareAuditBlocked:     (blockedCount: number): ShareError => ({ type: 'ShareAuditBlocked', blockedCount }),
   ydocLoadError:         (path: string, message: string): ShareError => ({ type: 'YDocLoadError', path, message }),
   ydocSaveError:         (path: string, message: string): ShareError => ({ type: 'YDocSaveError', path, message }),
   syncProtocolError:     (peer: string, message: string): ShareError => ({ type: 'SyncProtocolError', peer, message }),
-  inboundUpdateRejected: (peer: string, room: string, reason: string): ShareError => ({ type: 'InboundUpdateRejected', peer, room, reason }),
+  inboundUpdateRejected: (peer: string, reason: string): ShareError => ({ type: 'InboundUpdateRejected', peer, reason }),
   shareStoreReadError:   (path: string, message: string): ShareError => ({ type: 'ShareStoreReadError', path, message }),
   shareStoreWriteError:  (path: string, message: string): ShareError => ({ type: 'ShareStoreWriteError', path, message }),
-  bandwidthExceeded:     (peer: string, room: string): ShareError => ({ type: 'BandwidthExceeded', peer, room }),
+  bandwidthExceeded:     (peer: string): ShareError => ({ type: 'BandwidthExceeded', peer }),
 } as const;
 
 // ─────────────────────── SearchError ──────────────────────
@@ -212,7 +212,6 @@ export const SearchError = {
  *   - DbOpenError / DbReadError / DbWriteError — code-graph.db I/O at infrastructure boundary
  *   - GrammarMissingError / ParseError        — tree-sitter grammar load + parse failures
  *   - CodebaseNotFoundError                   — lookup miss in codebases table
- *   - AttachFailedError                       — codebase_rooms join table mutations
  *   - InvalidPathError                        — user supplied path does not exist or is not a directory
  */
 export type CodebaseError =
@@ -222,7 +221,6 @@ export type CodebaseError =
   | { readonly type: 'CodebaseGrammarMissingError'; readonly language: string; readonly message: string }
   | { readonly type: 'CodebaseParseError';          readonly file_path: string; readonly message: string }
   | { readonly type: 'CodebaseNotFoundError';       readonly codebase_id: string }
-  | { readonly type: 'CodebaseAttachFailedError';   readonly codebase_id: string; readonly room_id: string; readonly message: string }
   | { readonly type: 'CodebaseInvalidPathError';    readonly path: string; readonly message: string };
 
 export const CodebaseError = {
@@ -232,7 +230,6 @@ export const CodebaseError = {
   grammarMissingError: (language: string, message: string): CodebaseError => ({ type: 'CodebaseGrammarMissingError', language, message }),
   parseError:          (file_path: string, message: string): CodebaseError => ({ type: 'CodebaseParseError', file_path, message }),
   notFound:            (codebase_id: string): CodebaseError           => ({ type: 'CodebaseNotFoundError', codebase_id }),
-  attachFailed:        (codebase_id: string, room_id: string, message: string): CodebaseError => ({ type: 'CodebaseAttachFailedError', codebase_id, room_id, message }),
   invalidPath:         (path: string, message: string): CodebaseError => ({ type: 'CodebaseInvalidPathError', path, message }),
 } as const;
 
@@ -253,7 +250,7 @@ export type NetError =
   | { readonly type: 'RelayDialFailed';    readonly addr: string; readonly message: string }
   | { readonly type: 'HolePunchTimeout';   readonly peer: string; readonly elapsedMs: number }
   | { readonly type: 'UPnPMapFailed';      readonly message: string }
-  | { readonly type: 'BandwidthExceeded';  readonly peer: string; readonly room: string }
+  | { readonly type: 'BandwidthExceeded';  readonly peer: string }
   | { readonly type: 'HealthDegraded';     readonly peer: string; readonly reason: 'disconnects' | 'idle' }
   | { readonly type: 'RelayNotConfigured' };
 
@@ -261,7 +258,7 @@ export const NetError = {
   relayDialFailed:    (addr: string, message: string): NetError    => ({ type: 'RelayDialFailed', addr, message }),
   holePunchTimeout:   (peer: string, elapsedMs: number): NetError  => ({ type: 'HolePunchTimeout', peer, elapsedMs }),
   upnpMapFailed:      (message: string): NetError                  => ({ type: 'UPnPMapFailed', message }),
-  bandwidthExceeded:  (peer: string, room: string): NetError       => ({ type: 'BandwidthExceeded', peer, room }),
+  bandwidthExceeded:  (peer: string): NetError                     => ({ type: 'BandwidthExceeded', peer }),
   healthDegraded:     (peer: string, reason: 'disconnects' | 'idle'): NetError => ({ type: 'HealthDegraded', peer, reason }),
   relayNotConfigured: (): NetError                                 => ({ type: 'RelayNotConfigured' }),
 } as const;
@@ -310,14 +307,12 @@ export const SessionError = {
  * stream closes. Failure modes mirror SearchError's request/response shape.
  */
 export type TouchError =
-  | { readonly type: 'TouchRoomNotShared'; readonly peer: string; readonly room: string }
   | { readonly type: 'TouchProtocolError'; readonly peer: string; readonly message: string }
   | { readonly type: 'TouchTimeout';       readonly peer: string; readonly elapsedMs: number }
   | { readonly type: 'TouchBudgetExceeded'; readonly peer: string; readonly max: number }
   | { readonly type: 'TouchRemoteError';   readonly peer: string; readonly code: string };
 
 export const TouchError = {
-  roomNotShared:   (peer: string, room: string): TouchError    => ({ type: 'TouchRoomNotShared', peer, room }),
   protocolError:   (peer: string, message: string): TouchError => ({ type: 'TouchProtocolError', peer, message }),
   timeout:         (peer: string, elapsedMs: number): TouchError => ({ type: 'TouchTimeout', peer, elapsedMs }),
   budgetExceeded:  (peer: string, max: number): TouchError     => ({ type: 'TouchBudgetExceeded', peer, max }),
@@ -451,7 +446,7 @@ export const formatError = (e: AppError): string => {
     case 'SecretDetected':
       return `secret detected in node ${e.nodeId}: ${e.matches.map((m) => `${m.field}/${m.patternName}`).join(', ')}`;
     case 'ShareAuditBlocked':
-      return `share blocked: room '${e.room}' has ${e.blockedCount} flagged node(s)`;
+      return `share blocked: ${e.blockedCount} flagged node(s)`;
     case 'YDocLoadError':
       return `ydoc load error at ${e.path}: ${e.message}`;
     case 'YDocSaveError':
@@ -459,7 +454,7 @@ export const formatError = (e: AppError): string => {
     case 'SyncProtocolError':
       return `sync protocol error with peer ${e.peer}: ${e.message}`;
     case 'InboundUpdateRejected':
-      return `inbound update rejected from ${e.peer} (room ${e.room}): ${e.reason}`;
+      return `inbound update rejected from ${e.peer}: ${e.reason}`;
     case 'ShareStoreReadError':
       return `share store read error at ${e.path}: ${e.message}`;
     case 'ShareStoreWriteError':
@@ -474,8 +469,6 @@ export const formatError = (e: AppError): string => {
       return `search timeout for peer ${e.peer} after ${e.elapsedMs}ms`;
     case 'SearchProtocolMismatch':
       return `search protocol mismatch: ${e.message}`;
-    case 'TouchRoomNotShared':
-      return `touch: peer ${e.peer} does not share room '${e.room}'`;
     case 'TouchProtocolError':
       return `touch protocol error with peer ${e.peer}: ${e.message}`;
     case 'TouchTimeout':
@@ -496,8 +489,6 @@ export const formatError = (e: AppError): string => {
       return `code parse error in ${e.file_path}: ${e.message}`;
     case 'CodebaseNotFoundError':
       return `codebase not found: ${e.codebase_id}`;
-    case 'CodebaseAttachFailedError':
-      return `attach failed for codebase ${e.codebase_id} to room ${e.room_id}: ${e.message}`;
     case 'CodebaseInvalidPathError':
       return `invalid codebase path '${e.path}': ${e.message}`;
     case 'RelayDialFailed':
@@ -507,7 +498,7 @@ export const formatError = (e: AppError): string => {
     case 'UPnPMapFailed':
       return `UPnP port mapping failed: ${e.message}`;
     case 'BandwidthExceeded':
-      return `bandwidth limit exceeded for peer ${e.peer} in room '${e.room}'`;
+      return `bandwidth limit exceeded for peer ${e.peer}`;
     case 'HealthDegraded':
       return `peer ${e.peer} health degraded (${e.reason})`;
     case 'RelayNotConfigured':
@@ -609,10 +600,10 @@ export const hintFor = (e: AppError): string | null => {
       // SecretDetected is the user's most-confusing error: an opaque
       // node id and a list of pattern names with no path forward.
       // Hint points at the two real fixes.
-      return `fix: the node was BLOCKED before reaching the network — your secret is safe locally. Either remove the credential from the source content, or move it to a non-shared room. Inspect the node with \`folklore get-node ${e.nodeId}\`.`;
+      return `fix: the node was BLOCKED before reaching the network — your secret is safe locally. Either remove the credential from the source content, or mark the node private. Inspect the node with \`folklore get-node ${e.nodeId}\`.`;
 
     case 'ShareAuditBlocked':
-      return `fix: review flagged nodes with \`folklore lint --room ${e.room}\` and either remove the secrets or unshare the room.`;
+      return `fix: review flagged nodes with \`folklore lint\` and either remove the secrets or mark them private.`;
 
     // ─── identity / signing ───────────────────
     case 'IdentityKeyGenerationError':

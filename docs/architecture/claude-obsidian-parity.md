@@ -1,10 +1,11 @@
 # claude-obsidian Parity Audit
 
-> **Snapshot — pre-V5 audit.** This parity comparison was written
-> when "rooms" were a federation primitive. V5 removed rooms; the
-> per-`--room` proposals below map to V5 `--workspace <slug>` +
-> `--private` flags. The structural insight (claude-obsidian is
-> a single-user wiki; folklore is a multi-peer commons) is the
+> **Note.** This parity comparison originally predated V5 and has
+> been re-expressed in the current model: there is no room
+> abstraction; sharing is per-node (`--private` keeps a node local,
+> default shares), and an optional `--workspace <slug>` tag scopes
+> reads locally. The structural insight (claude-obsidian is a
+> single-user wiki; folklore is a multi-peer commons) is the
 > still-relevant takeaway.
 
 Source: **AgriciDaniel/claude-obsidian** @ commit 2026-04-16 (1,417 stars). Karpathy LLM-wiki pattern. 10 skills, single-user single-vault.
@@ -14,9 +15,9 @@ Source: **AgriciDaniel/claude-obsidian** @ commit 2026-04-16 (1,417 stars). Karp
 | Their capability | Our equivalent | Gap |
 |---|---|---|
 | **Hot cache** (`wiki/hot.md`, ~500w recency digest regenerated after every ingest + session end) | `recent_sessions` MCP tool (reads session transcripts) | **No unified digest** — user must query per-session. Claude-obsidian produces one cached blob Claude can grab at session start with ~1 read. |
-| **Wiki-lint** (orphans / dead links / stale claims / missing pages / missing xrefs / frontmatter gaps / empty sections / stale index) | none | **Full gap.** We have no graph-health tool. Orphan nodes in shared rooms is a real hygiene bug we can't currently surface. |
+| **Wiki-lint** (orphans / dead links / stale claims / missing pages / missing xrefs / frontmatter gaps / empty sections / stale index) | none | **Full gap.** We have no graph-health tool. Orphan nodes among shared (non-`private`) nodes is a real hygiene bug we can't currently surface. |
 | **Save-as-synthesis** (`/save` turns current conversation into a typed wiki note: synthesis/concept/source/decision) | Sessions auto-ingest (raw transcript → nodes) | **Missing the typed synthesis step.** We capture the raw conversation, but not the "here's the distilled answer as a permanent concept/synthesis node." |
-| **Autoresearch program.md** (user-configurable research objectives: source prefs, confidence scoring, domain constraints, stop conditions) | `discover-loop` | **Missing the `program.md`.** Our loop is hard-coded in logic; theirs is config-driven per project/room. |
+| **Autoresearch program.md** (user-configurable research objectives: source prefs, confidence scoring, domain constraints, stop conditions) | `discover-loop` | **Missing the `program.md`.** Our loop is hard-coded in logic; theirs is config-driven per project/workspace. |
 | **Obsidian-native vault output** (wikilinks `[[Name]]`, frontmatter properties, callouts, dataview dashboards) | `export-obsidian` command | **Partial.** We export plain markdown but not wikilinks, frontmatter properties, or dataview blocks — Obsidian's graph view and Dataview can't query what we emit. |
 | **Visual canvas** (`claude-canvas` companion, mind-map topology) | `dashboard` web view (vis.js) | **Different UX.** Ours is a standalone webpage, theirs integrates with Obsidian Canvas. |
 | **Skill trigger vocabulary** (rich frontmatter trigger phrases: "ingest this url", "what do you know about", "/save", "find orphans", …) | `.claude/skills/folklore/SKILL.md` has 7 triggers | **Minor.** Our skill is wired but the vocabulary is narrow; natural-sounding phrases like "save this to Folklore" don't activate. |
@@ -39,7 +40,7 @@ Ranked by leverage / cost ratio:
 
 ### 1. Hot cache (HIGH leverage, LOW cost — ship first)
 
-**Add:** `folklore/hot-cache` — a new domain concept. After each tick, generate a ~500-word summary of: (a) newest N nodes, (b) most-queried rooms this session, (c) pending ingests, (d) 3-5 most surprising cross-references. Store at `~/.folklore/hot.md` and include in SessionStart hook output.
+**Add:** `folklore/hot-cache` — a new domain concept. After each tick, generate a ~500-word summary of: (a) newest N nodes, (b) most-queried workspaces this session, (c) pending ingests, (d) 3-5 most surprising cross-references. Store at `~/.folklore/hot.md` and include in SessionStart hook output.
 
 **Why:** Session continuity is the single biggest daily UX improvement. Today Claude walks into an Folklore session with no context. With a hot cache, the first thing Claude reads is an actionable recency digest.
 
@@ -47,15 +48,15 @@ Ranked by leverage / cost ratio:
 
 ### 2. Lint command (HIGH leverage, MEDIUM cost)
 
-**Add:** `folklore lint [--room R] [--fix]` — graph-health checker with the 8 categories from claude-obsidian's wiki-lint, plus P2P-specific ones (orphaned remote nodes, stale shared-room manifest, secret-pattern drift since last audit).
+**Add:** `folklore lint [--workspace W] [--fix]` — graph-health checker with the 8 categories from claude-obsidian's wiki-lint, plus P2P-specific ones (orphaned remote nodes, stale shared-node set, secret-pattern drift since last audit).
 
-**Why:** We ship shared rooms with zero hygiene checks. A user's public room could have dangling node references, stale source URIs, or drifted frontmatter and nobody would know. Lint catches it before other peers touch it.
+**Why:** We ship shared (non-`private`) nodes with zero hygiene checks. A user's shared nodes could have dangling references, stale source URIs, or drifted frontmatter and nobody would know. Lint catches it before other peers touch it.
 
 **Files:** `src/domain/graph-lint.ts` (rules), `src/application/lint.ts`, `src/cli/commands/lint.ts`. Est. 3-4h.
 
 ### 3. Save-as-synthesis (MEDIUM leverage, LOW cost)
 
-**Add:** `folklore save --room R` — called from a Claude session, takes the last N assistant messages + the user question, produces a typed node (synthesis/concept/decision), writes into the chosen room. Complements auto-ingest by capturing *distillations*, not transcripts.
+**Add:** `folklore save [--workspace W] [--private]` — called from a Claude session, takes the last N assistant messages + the user question, produces a typed node (synthesis/concept/decision) tagged to the chosen workspace and shared by default unless `--private`. Complements auto-ingest by capturing *distillations*, not transcripts.
 
 **Why:** Today sessions auto-ingest raw chat. Users who want to preserve the *answer* (not the journey to the answer) have no first-class path.
 

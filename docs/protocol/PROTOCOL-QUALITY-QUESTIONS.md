@@ -31,7 +31,7 @@ Every query needs a breakpoint decision:
 
 1. Use local graph only.
 2. Use trusted peer graph.
-3. Ask the oracle room.
+3. Ask a peer oracle.
 4. Trigger live web search.
 5. Trigger source re-fetch.
 6. Ask the user because the confidence boundary is unclear.
@@ -45,7 +45,7 @@ appropriate.
 Peer data is amazing when it beats live search on the dimensions agents care
 about:
 
-- It is already scoped to the user's task, repo, toolchain, or room.
+- It is already scoped to the user's task, repo, toolchain, or workspace.
 - It includes provenance, age, and peer attribution.
 - It captures lived debugging experience not present in docs.
 - It includes local measurements, configs, commands, errors, and fixes.
@@ -75,8 +75,9 @@ confidence:
 - Dense similarity matches that are topic-adjacent but not answer-bearing.
 - Re-shared memories where the original provenance is unclear.
 - Peer answers that are too short to verify and too confident to ignore.
-- Good content from an untrusted room accidentally crossing into a sensitive
-  workflow.
+- Good content from an untrusted peer or source accidentally crossing the trust
+  boundary into a sensitive workflow (the private-gate, workspace filter, or
+  peer-trust check failed to hold the line).
 
 Open questions:
 
@@ -121,7 +122,7 @@ breakpoint is explicit and measurable.
 Open questions:
 
 - What are the initial weights?
-- Should weights be global, per room, per source type, or per user?
+- Should weights be global, per workspace, per source type, or per user?
 - Does "skip search" mean no web search, or no agent-initiated search at all?
 - Should high-risk domains require a higher breakpoint?
 - Should coding tasks, medical/legal/financial tasks, and product research
@@ -129,15 +130,13 @@ Open questions:
 
 ## Required Metadata For Peer Results
 
-A peer result should probably include more than `node_id`, `room`, and
-`distance`.
+A peer result should probably include more than `node_id` and `distance`.
 
 Candidate result envelope:
 
 ```ts
 interface PeerKnowledgeResult {
   node_id: string;
-  room: string;
   label: string;
   distance: number;
   source_peer: string;
@@ -162,7 +161,9 @@ Open questions:
 - Which fields are mandatory at the trust boundary?
 - Which fields are safe to reveal across peers?
 - Should peers reveal labels, summaries, or only source handles until trusted?
-- How do we avoid leaking sensitive repo names through `room`?
+- How do we avoid leaking sensitive repo names through `workspace`? (Workspace
+  is repo-derived but local-only, so it should never cross the wire — the open
+  question is keeping it from leaking into anything that does.)
 - Should `distance` be exposed if different peers use different embedders?
 - Should every result include the embedder model and dim used to index it?
 
@@ -250,7 +251,7 @@ Dataset rows:
 {
   "query": "how do I wire sqlite-vec with FTS5 hybrid search?",
   "task_type": "coding",
-  "room": "folklore-dev",
+  "workspace": "folklore-dev",
   "local_hits": [],
   "peer_hits": [],
   "live_search_hits": [],
@@ -279,14 +280,14 @@ Open questions:
 - Is a 5% bad skip rate tolerable for coding but not for finance/legal?
 - Should "mixed" count as success if it reduces search scope?
 - How many labeled examples are enough before changing protocol defaults?
-- Should we benchmark per room, per source type, per peer, or globally?
+- Should we benchmark per workspace, per source type, per peer, or globally?
 
 ## Peer Trust Is Not One Number
 
 Trust should be multi-dimensional:
 
 - Identity trust: do we recognize this peer?
-- Room trust: is this room shared intentionally?
+- Scope trust: is this node intentionally shared (not marked `private`)?
 - Source trust: is the source official, primary, or random commentary?
 - Freshness trust: is the result inside its stale window?
 - Historical trust: did this peer satisfy similar queries before?
@@ -334,7 +335,8 @@ Examples:
 
 Open questions:
 
-- Should stale windows be configured by room or source type?
+- Should stale windows be configured by source type, or is the single global
+  default (~7 days) enough?
 - Should peers return stale data with a warning or omit it?
 - Should a stale but official source outrank fresh commentary?
 - How do we detect that a dependency version changed since indexing?
@@ -358,7 +360,7 @@ Open questions:
 
 - Can the daemon infer task risk from query text?
 - Should MCP hosts pass task-risk metadata?
-- Should users configure "never skip search" rooms?
+- Should users configure "never skip search" workspaces or source types?
 - What does the CLI do differently from Claude/Codex hooks?
 
 ## Protocol Ideas To Explore
@@ -428,7 +430,7 @@ Questions:
 
 - When is refresh cheaper than search?
 - Who pays the network/token cost?
-- Should refresh results update the shared room automatically?
+- Should refresh results update the shared graph automatically?
 
 ## What To Build First
 
@@ -498,12 +500,12 @@ These should block "skip search":
 - Peer result only matches semantically but contains no answer-bearing text.
 - All evidence comes from one origin through re-shares.
 - Source freshness window is exceeded and cannot be cheaply refreshed.
-- Signature required by room policy but missing or invalid.
+- Signature required by policy but missing or invalid.
 
 Open questions:
 
 - Which red lines are hard protocol failures versus policy warnings?
-- Can users override red lines per room?
+- Can users override red lines per workspace or source type?
 - How do we avoid making the system too conservative to be useful?
 
 ## The Hardest Open Problem
@@ -834,7 +836,7 @@ This creates incentive and abuse questions:
 - How do we prevent sybil consensus?
 - Should peers earn reputation per satisfied query?
 - Can reputation be local and private instead of global and gameable?
-- Can a peer specialize by room, source type, or benchmark domain?
+- Can a peer specialize by workspace, source type, or benchmark domain?
 
 Design pressure:
 
@@ -899,7 +901,8 @@ The system will receive:
   all mixed together;
 - repeated re-shares where the origin becomes unclear;
 - multiple embeddings, models, dimensions, and source schemas;
-- rooms whose names leak context or collide semantically.
+- workspace tags whose names leak context or collide semantically (these are
+  local-only, so the risk is local hygiene rather than cross-peer leakage).
 
 The protocol must therefore separate four jobs:
 
@@ -930,7 +933,7 @@ Peer knowledge should probably move through explicit stages.
 
 Open questions:
 
-- Should these be separate rooms, node kinds, or storage tables?
+- Should these be separate node kinds or storage tables?
 - Should promotion be automatic, user-reviewed, or policy-driven?
 - Can a result be useful without ever becoming `accepted_local`?
 - Should raw peer data expire quickly unless promoted?
@@ -954,7 +957,7 @@ Potential pipeline:
    - prompt-injection scan
    - unsafe command pattern scan
    - SSRF/source URI gate
-   - room policy check
+   - scope policy check (private gate + workspace filter)
 
 3. **Normalization**
    - canonical source URI
@@ -1124,7 +1127,7 @@ Open questions:
 Once peer data is cleaned and clustered, the query path should reason over an
 evidence graph:
 
-- nodes are claims, sources, peers, rooms, benchmarks, sessions, packages;
+- nodes are claims, sources, peers, benchmarks, sessions, packages;
 - edges represent supports, contradicts, derived-from, re-shared-from,
   measured-by, supersedes, stale-because;
 - query asks for coverage and decision, not just nearest neighbors.
@@ -1204,7 +1207,8 @@ Open questions:
 This is not enterprise governance, but some governance still exists:
 
 - user controls what becomes local memory;
-- room policy controls what peer data can influence;
+- scope policy (workspace filter + per-node `private` gate) controls what peer
+  data can influence;
 - source policy controls refresh/fetch behavior;
 - trust policy controls peer weighting;
 - retention policy controls raw remote garbage;

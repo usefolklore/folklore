@@ -12,7 +12,7 @@
  */
 
 export type JobKind =
-  | 'ingest:room'
+  | 'ingest:workspace'
   | 'ingest:file'
   | 'ingest:session'
   | 'ingest:project'
@@ -31,7 +31,7 @@ export interface JobBase {
   /**
    * Free-form per-kind summary line. Set by the runner on completion.
    * Examples:
-   *   - 'ingest:room sessions — 3 sources · 142 new · 12 updated · 0 errors'
+   *   - 'ingest:workspace sessions — 3 sources · 142 new · 12 updated · 0 errors'
    *   - 'ingest:file /repo/src/foo.ts — 1 chunk · 1 new'
    */
   readonly result_summary?: string;
@@ -39,14 +39,14 @@ export interface JobBase {
 
 // ─────────────── per-kind payloads ─────────
 
-export interface IngestRoomPayload {
-  readonly kind: 'ingest:room';
-  readonly room: string;
+export interface IngestWorkspacePayload {
+  readonly kind: 'ingest:workspace';
+  readonly workspace: string;
 }
 
 export interface IngestFilePayload {
   readonly kind: 'ingest:file';
-  readonly room: string;
+  readonly workspace: string;
   readonly path: string;           // absolute path
 }
 
@@ -63,13 +63,13 @@ export interface IngestSessionPayload {
 /**
  * Project ingest — what `folklore this` actually wants. Runs the
  * four ephemeral codebase descriptors (codebase, package_deps,
- * git_submodules, git_log) for a (room, root) pair. The descriptors
+ * git_submodules, git_log) for a (workspace, root) pair. The descriptors
  * are NOT persisted to sources.json — they're rebuilt each time
- * from the room+root inputs, mirroring `folklore index`.
+ * from the workspace+root inputs, mirroring `folklore index`.
  */
 export interface IngestProjectPayload {
   readonly kind: 'ingest:project';
-  readonly room: string;
+  readonly workspace: string;
   readonly root: string;          // absolute path
   readonly maxCommits?: number;   // default 50
   readonly includeDev?: boolean;  // default true
@@ -95,12 +95,12 @@ export interface IngestProjectPayload {
  */
 export interface IngestBatchPayload {
   readonly kind: 'ingest:batch';
-  readonly room: string;
+  readonly workspace: string;
   readonly paths: readonly string[];   // absolute paths
 }
 
 export type JobPayload =
-  | IngestRoomPayload
+  | IngestWorkspacePayload
   | IngestFilePayload
   | IngestSessionPayload
   | IngestProjectPayload

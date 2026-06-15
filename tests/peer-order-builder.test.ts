@@ -4,10 +4,12 @@
  * Locks the contract:
  *   - Empty rep file → identity ordering (cold-start safe)
  *   - Single subject → known peers ranked, unknowns last
- *   - Multi-subject query → max rank across candidate subjects
  *   - Epsilon-greedy with deterministic randomFn → predictable swap
  *   - Single-peer input is a no-op (epsilon doesn't fire)
  *   - Registry resolution: canonical id, alias, both fail-closed
+ *
+ * V5 (Phase 24): rooms deleted. Reputation subjects are entity-only;
+ * the `room:` subject scheme and the `room` input field are gone.
  */
 
 import assert from 'node:assert/strict';
@@ -69,12 +71,22 @@ const baseFile = (): PeerReputationFile => ({
   reviews: [],
 });
 
+const lemlistEntity = (aliases: readonly string[]): Entity => ({
+  id: 'entity:product:lemlist',
+  type: 'product',
+  label: 'Lemlist',
+  aliases: [...aliases],
+  kind: 'entity',
+  created_at: NOW,
+  last_seen: NOW,
+  mention_count: 0,
+});
+
 // ─────────────── cold-start ───────────────
 
 test('empty rep file returns the input order unchanged', () => {
   const order = buildOrderFromFile(baseFile(), {
     query: 'lemlist',
-    room: 'research',
     registry: fakeRegistry(new Map()),
   });
   const peers = ['peerA', 'peerB', 'peerC'];
@@ -84,7 +96,6 @@ test('empty rep file returns the input order unchanged', () => {
 test('single peer input is a no-op', () => {
   const order = buildOrderFromFile(baseFile(), {
     query: 'lemlist',
-    room: 'research',
     registry: fakeRegistry(new Map()),
   });
   assert.deepEqual(order(['onlyPeer']), ['onlyPeer']);
@@ -93,55 +104,15 @@ test('single peer input is a no-op', () => {
 test('zero peer input is a no-op', () => {
   const order = buildOrderFromFile(baseFile(), {
     query: 'lemlist',
-    room: 'research',
     registry: fakeRegistry(new Map()),
   });
   assert.deepEqual(order([]), []);
 });
 
-// ─────────────── room-only ranking ────────
-
-test('room-keyed reputation orders known peers ahead of unknowns', () => {
-  const file: PeerReputationFile = {
-    ...baseFile(),
-    subjects: {
-      'room:research': {
-        key: 'room:research',
-        label: 'research',
-        kind: 'room',
-        peer_scores: {
-          'peerA': score(8, 10, NOW),
-          'peerB': score(3, 5, NOW),
-          // peerC has no observations → unknown
-        },
-      },
-    },
-  };
-  const order = buildOrderFromFile(file, {
-    query: 'unknown query',
-    room: 'research',
-    registry: fakeRegistry(new Map()),
-    randomFn: () => 1,             // disable epsilon-greedy swap
-  });
-  const out = order(['peerC', 'peerA', 'peerB']);
-  // peerA must be first (highest evidence), peerC last (unknown).
-  assert.equal(out[0], 'peerA');
-  assert.equal(out[out.length - 1], 'peerC');
-});
-
 // ─────────────── entity-keyed ranking ─────
 
 test('entity-keyed query resolves alias and ranks by entity rep', () => {
-  const lemlist: Entity = {
-    id: 'entity:product:lemlist',
-    type: 'product',
-    label: 'Lemlist',
-    aliases: ['lemlist', 'lemlist.com'],
-    kind: 'entity',
-    created_at: NOW,
-    last_seen: NOW,
-    mention_count: 0,
-  };
+  const lemlist = lemlistEntity(['lemlist', 'lemlist.com']);
   const file: PeerReputationFile = {
     ...baseFile(),
     subjects: {
@@ -165,57 +136,43 @@ test('entity-keyed query resolves alias and ranks by entity rep', () => {
   assert.equal(out[0], 'lemlistExpert');
 });
 
-// ─────────────── multi-subject (max rank) ─
-
-test('multi-subject query takes max rank across entity + room', () => {
-  const lemlist: Entity = {
-    id: 'entity:product:lemlist',
-    type: 'product',
-    label: 'Lemlist',
-    aliases: [],
-    kind: 'entity',
-    created_at: NOW,
-    last_seen: NOW,
-    mention_count: 0,
-  };
-  // peerA: weak on entity, strong on room  →  high MAX rank from room
-  // peerB: strong on entity, weak on room  →  high MAX rank from entity
-  // both should outrank unknowns; comparator just verifies neither
-  // is null when one of the subjects has data on them.
+test('entity-keyed reputation orders known peers ahead of unknowns', () => {
+  const lemlist = lemlistEntity([]);
   const file: PeerReputationFile = {
     ...baseFile(),
     subjects: {
       'entity:product:lemlist': {
-        key: 'entity:product:lemlist', label: 'Lemlist', kind: 'entity',
-        peer_scores: { 'peerB': score(15, 20, NOW) },
-      },
-      'room:research': {
-        key: 'room:research', label: 'research', kind: 'room',
-        peer_scores: { 'peerA': score(15, 20, NOW) },
+        key: 'entity:product:lemlist',
+        label: 'Lemlist',
+        kind: 'entity',
+        peer_scores: {
+          'peerA': score(8, 10, NOW),
+          'peerB': score(3, 5, NOW),
+          // peerC has no observations → unknown
+        },
       },
     },
   };
   const order = buildOrderFromFile(file, {
     query: 'lemlist',
-    room: 'research',
     registry: fakeRegistry(new Map([[lemlist.id, lemlist]])),
-    randomFn: () => 1,
+    randomFn: () => 1,             // disable epsilon-greedy swap
   });
-  const out = order(['unknownX', 'peerA', 'peerB']);
-  // Both peerA and peerB rank ahead of unknownX.
-  assert.notEqual(out[2], 'peerA');
-  assert.notEqual(out[2], 'peerB');
-  assert.equal(out[2], 'unknownX');
+  const out = order(['peerC', 'peerA', 'peerB']);
+  // peerA must be first (highest evidence), peerC last (unknown).
+  assert.equal(out[0], 'peerA');
+  assert.equal(out[out.length - 1], 'peerC');
 });
 
 // ─────────────── epsilon-greedy ───────────
 
 test('epsilon-greedy swaps top with random index when randomFn < EPSILON', () => {
+  const lemlist = lemlistEntity([]);
   const file: PeerReputationFile = {
     ...baseFile(),
     subjects: {
-      'room:research': {
-        key: 'room:research', label: 'research', kind: 'room',
+      'entity:product:lemlist': {
+        key: 'entity:product:lemlist', label: 'Lemlist', kind: 'entity',
         peer_scores: {
           'topPeer': score(20, 25, NOW),
         },
@@ -227,9 +184,8 @@ test('epsilon-greedy swaps top with random index when randomFn < EPSILON', () =>
   let calls = 0;
   const sequence = [0.05, 0.5];
   const order = buildOrderFromFile(file, {
-    query: 'unknown',
-    room: 'research',
-    registry: fakeRegistry(new Map()),
+    query: 'lemlist',
+    registry: fakeRegistry(new Map([[lemlist.id, lemlist]])),
     randomFn: () => sequence[calls++ % sequence.length],
   });
   const out = order(['topPeer', 'midPeer', 'bottomPeer']);
@@ -239,11 +195,12 @@ test('epsilon-greedy swaps top with random index when randomFn < EPSILON', () =>
 });
 
 test('epsilon-greedy is no-op when randomFn ≥ EPSILON', () => {
+  const lemlist = lemlistEntity([]);
   const file: PeerReputationFile = {
     ...baseFile(),
     subjects: {
-      'room:research': {
-        key: 'room:research', label: 'research', kind: 'room',
+      'entity:product:lemlist': {
+        key: 'entity:product:lemlist', label: 'Lemlist', kind: 'entity',
         peer_scores: {
           'topPeer': score(20, 25, NOW),
         },
@@ -251,9 +208,8 @@ test('epsilon-greedy is no-op when randomFn ≥ EPSILON', () => {
     },
   };
   const order = buildOrderFromFile(file, {
-    query: 'unknown',
-    room: 'research',
-    registry: fakeRegistry(new Map()),
+    query: 'lemlist',
+    registry: fakeRegistry(new Map([[lemlist.id, lemlist]])),
     randomFn: () => EXPLORATION_EPSILON + 0.01,
   });
   const out = order(['midPeer', 'topPeer']);
@@ -263,7 +219,7 @@ test('epsilon-greedy is no-op when randomFn ≥ EPSILON', () => {
 
 // ─────────────── registry-throws guard ────
 
-test('registry throws on resolve → falls through to room-only ranking', () => {
+test('registry throws on resolve → falls through to no rep signal (identity order)', () => {
   const throwyRegistry: EntityRegistry = {
     list: () => [],
     getById: () => undefined,
@@ -276,18 +232,20 @@ test('registry throws on resolve → falls through to room-only ranking', () => 
   const file: PeerReputationFile = {
     ...baseFile(),
     subjects: {
-      'room:research': {
-        key: 'room:research', label: 'research', kind: 'room',
+      'entity:product:lemlist': {
+        key: 'entity:product:lemlist', label: 'Lemlist', kind: 'entity',
         peer_scores: { 'peerA': score(10, 12, NOW) },
       },
     },
   };
   const order = buildOrderFromFile(file, {
     query: 'lemlist',
-    room: 'research',
     registry: throwyRegistry,
     randomFn: () => 1,
   });
-  const out = order(['unknownX', 'peerA']);
-  assert.equal(out[0], 'peerA', 'registry throw must not break room-keyed ranking');
+  // resolve() throwing is swallowed; no subject resolves, so the order
+  // is unchanged rather than crashing.
+  const peers = ['unknownX', 'peerA'];
+  assert.deepEqual(order(peers), peers,
+    'registry throw must not break ordering');
 });

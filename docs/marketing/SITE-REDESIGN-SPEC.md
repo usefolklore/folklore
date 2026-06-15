@@ -194,7 +194,7 @@ implementation in §2.6):
 - Counter A: `· 12 peers online` (clickable, links to repo `/network`
   page; will be `folklore peer list` JSON output until built)
 - Counter B: `· 4 domains indexed` (clickable, scrolls to `#arch`
-  rooms section)
+  architecture section)
 - Action: `☆ Star on GitHub` (primary `btn-primary`, emerald fill,
   links to `https://github.com/twocirclestudios/folklore`)
 
@@ -500,9 +500,8 @@ the daemon.
 Backing data per field:
 
 - `peers`: bootstrap node's connected libp2p peer count
-- `domains`: distinct rooms in `shared-rooms.json` (system rooms
-  `toolshed` + `research` always counted; user-negotiated rooms
-  add to it)
+- `domains`: distinct `source_uri` families across the graph
+  (codebase, web, arxiv, …) — derived per node, no manual curation
 - `chunks`: total nodes in the bootstrap node's graph (for §11)
 - `avg_latency_ms`: rolling 5-min average from the daemon's
   federated-query telemetry (for §11)
@@ -586,7 +585,7 @@ daemon's peer count changes (debounced to 1 update/sec max).
 - Counter A (`peers online`) → `#try` (scrolls to live-network section
   — clicking the live counter takes you to the live demo, perfect
   visual rhyme)
-- Counter B (`domains indexed`) → `#arch` (rooms section)
+- Counter B (`domains indexed`) → `#arch` (architecture section)
 - Star → repo URL
 
 **Note on §11 alignment:** §11.6 also calls out `/api/stats`'s
@@ -609,14 +608,14 @@ both read from one source of truth.
 | 4 | **How it works in 3 steps** | `#how` | — (NEW) | Full draft in §4 |
 | 5 | Quickstart | `#install` | scattered | New explicit install section, npm flow |
 | 6 | Benchmark | `#bench` | Ch. 05 (`#bench`) | Keep as-is, move up |
-| 7 | Architecture (Identity + Rooms merged) | `#arch` | Ch. 04 + Ch. 06 | Merge two sections into one |
+| 7 | Architecture (Identity + Federation merged) | `#arch` | Ch. 04 + Ch. 06 | Merge two sections into one |
 | 8 | Comparison table | `#compare` | Ch. 02 (`#silo`) | Keep, move down — lands harder after proof |
 | 9 | Pillars (the opposite shape) | `#shape` | Ch. 03 (`#shape`) | Keep, move down |
 | 10 | Manifesto (shortened) | `#thesis` | Ch. 01 (`#manifesto`) | Cut from 5 paragraphs → 2 paragraphs; move to position 10 |
 | 11 | Finale — star + community | (bottom) | finale | Rebuild per §5 |
 
 **Net change: 11 → 11 sections** (live-graph section added; architecture
-merges identity + rooms; manifesto sheds three paragraphs).
+merges identity + federation; manifesto sheds three paragraphs).
 
 **Why "Ask the network" sits at position 3 (not 2 or 4):** the gif
 demos at position 2 prove the *integration* (Claude Code with the
@@ -877,7 +876,7 @@ the next commit until the previous one is approved.
 - Add new `#how` section per §4
 - Add new explicit `#install` section between `#how` and `#bench`
 - Rename anchors and update nav links
-- Merge identity + rooms chapters into single `#arch`
+- Merge identity + federation chapters into single `#arch`
 - Trim manifesto to 2 paragraphs; link to full thesis page (separate
   file, can be empty stub for now)
 
@@ -988,11 +987,11 @@ stuck mid-execution:
       ($1.94/mo) running `folklore daemon`. Generates a fresh
       did:key on first boot, persisted to a Fly volume.
 
-11. **Demo-content room.** §11 suggests loading a `demo-content`
-    room on the bootstrap node, seeded with the cryogenic-LH2 sample
-    data so the suggested-query chips have answers. Approve loading
-    `demo/data/*` into a public room, or curate a different content
-    set?
+11. **Demo content.** §11 suggests loading a curated `demo-content`
+    workspace on the bootstrap node, seeded with the cryogenic-LH2
+    sample data so the suggested-query chips have answers. Approve
+    loading `demo/data/*` as public (non-`private`) nodes, or curate
+    a different content set?
     - Recommended: load the existing demo data. It's already shaped
       to give good answers ("LSTM quench detection" → Stanford
       cryo-lab paper); writing new content is wasted effort.
@@ -1046,7 +1045,9 @@ page:
 - Design tokens at `:root`
 - The `data-reveal` IntersectionObserver reveal engine
 - The BEIR SciFact bench bars (genuinely good proof)
-- The 3-rooms section (`#rooms`)
+- The source-families section (`#sources`) — reframed from the old
+  3-rooms panel to the per-node `source_uri` model (codebase / web /
+  arxiv) plus the `private` flag and local-only `workspace` tag
 - The pseudo-terminal output blocks (identity + oracle examples)
 - The chapter-numbered IA inside the page (`Chapter 03`, etc.) — we
   keep this typographic device but renumber to match the new order
@@ -1091,7 +1092,7 @@ the gif demo and "How it works").
 A two-column live demo:
 
 - **Left:** a 3D force-directed graph of the bootstrap node's public
-  knowledge graph (toolshed + research rooms + public demo content).
+  knowledge graph (codebase + web sources + public demo content).
   Nodes pulse and edges glow when a query touches them.
 - **Right:** a query input + results panel. Visitor types a question.
   The page fires `POST /api/ask`, the server runs `folklore ask
@@ -1177,8 +1178,8 @@ every 10 minutes by the same cron that writes `/_counters.json`.
 {
   "nodes": [
     { "id": "did:key:zX9…", "label": "peer-alice",  "type": "peer",      "size": 8 },
-    { "id": "node:abc123", "label": "Quench LSTM", "type": "research", "room": "research" },
-    { "id": "node:def456", "label": "src/db.ts",   "type": "code",     "room": "toolshed" }
+    { "id": "node:abc123", "label": "Quench LSTM", "type": "research", "source": "web" },
+    { "id": "node:def456", "label": "src/db.ts",   "type": "code",     "source": "codebase" }
   ],
   "edges": [
     { "source": "did:key:zX9…", "target": "node:abc123", "type": "authored" },
@@ -1193,8 +1194,8 @@ every 10 minutes by the same cron that writes `/_counters.json`.
 | Node type   | Color                | Size | Notes |
 |-------------|----------------------|------|-------|
 | `peer`      | `var(--accent)` emerald | 8 | Larger, halo-glow on render |
-| `research`  | `#d9a255` warm amber | 4 | Demo-content rooms (research, toolshed, public) |
-| `code`      | `#8c8c98` ink-mute   | 3 | Toolshed code chunks |
+| `research`  | `#d9a255` warm amber | 4 | Web / arxiv source nodes + public demo content |
+| `code`      | `#8c8c98` ink-mute   | 3 | Codebase-sourced code chunks |
 | `synthesis` | `#34d399` accent     | 4 | Synthesis nodes — slightly emissive |
 
 Edges: 0.4 alpha emerald lines; on active query, edges connecting
@@ -1204,7 +1205,7 @@ responding peers→matched chunks pulse to 1.0 alpha for 1.5 s.
 
 - **Idle:** auto-rotate at 0.6 deg/sec
 - **Hover node:** pause rotation, halo on hovered node, tooltip with
-  `label` + `room` + `type`
+  `label` + `source` + `type`
 - **Drag:** rotate / pan
 - **Scroll wheel:** zoom (clamped: max 2× initial, min 0.4×)
 - **On query fire:** trace edges from each responding peer node →
@@ -1381,11 +1382,11 @@ These need answers before commit 2 work begins on the section. See
   small Fly.io / VPS node?
 - **10.** Bootstrap-node identity — which actual peer runs the demo
   daemon? (Likely a dedicated host, not the founder's laptop.)
-- **11.** What rooms are exposed to the demo? (Recommended:
-  `toolshed`, `research`, plus a curated `demo-content` room loaded
-  with the cryogenic-LH2 sample data — the same demo content the
-  gifs use, so the live demo answers the suggested-query chips
-  correctly.)
+- **11.** What content is exposed to the demo? (Recommended: the
+  bootstrap node's public, non-`private` nodes — codebase + web
+  sources — plus a curated `demo-content` workspace loaded with the
+  cryogenic-LH2 sample data, the same demo content the gifs use, so
+  the live demo answers the suggested-query chips correctly.)
 - **12.** Rate limiting — 10 queries / IP / hour, or different?
 
 ---

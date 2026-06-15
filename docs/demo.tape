@@ -10,7 +10,7 @@
 # Beats:
 #   1. Thesis banner       — what folklore does in one sentence
 #   2. Identity + peers    — did:key + libp2p, not a SaaS row
-#   3. Ask the graph       — one query, three rooms, cross-source
+#   3. Ask the graph       — one query, three sources, cross-source
 #   4. Federate            — community shards stream in via libp2p
 #   5. Wired into Claude   — claude mcp get confirms the MCP surface
 #   6. Closer              — every future session starts from what
