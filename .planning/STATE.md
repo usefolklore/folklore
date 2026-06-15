@@ -18,14 +18,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15)
 
 **Core value:** Your coding agent answers from your actual research and codebase, not its training data.
-**Current focus:** Phase 25 — Cleanup & Repo Restructure
+**Current focus:** Phase 26 — Docs & Benchmarks (planned, 3 plans / 1 wave)
 
 ## Current Position
 
 Phase: 25 (Cleanup & Repo Restructure) — COMPLETE (5/5 plans)
 Plan: 5 of 5 complete (25-01: claude-flow cruft stripped from CLAUDE.md/settings.json/.mcp.json, Folklore hooks documented; CLEAN-01/02/03/06 satisfied. 25-02: retrieval module layout documented; CLEAN-04 satisfied. 25-03: 29 standalone benchmark runners consolidated under bench/ with repro README, docs repointed; CLEAN-05 satisfied. 25-04: akashikprotocol-clean layout map (docs/architecture/REPO-LAYOUT.md) + spec/ and examples/ surfaces + written usefolklore org-split plan (docs/REPO-SPLIT.md) + README repo map; REPO-01/REPO-03 satisfied, zero source moves, tsc green. 25-05: validation gate — build exit 0, lint exit 0, full suite 942 pass / 0 fail (zero regressions), config-surface cruft grep clean, site untouched; REPO-02 satisfied. Evidence: 25-VALIDATION.md)
 
-Next action: `/gsd:plan-phase 26` (Docs & Benchmarks).
+Phase 26 (Docs & Benchmarks) PLANNED — 3 plans, 1 wave (all docs independent, disjoint files → fully parallel):
+- 26-01 (DOCS-01): BENCHMARKS page — reconcile 72.30% pure-Node hybrid headline vs 75.22%/0.7522 Rust-sidecar (same SciFact dataset), keep Wave-3/Wave-4 failures as failures, label FolkloreBench-F 17%→1% a SIMULATOR figure, repro command behind every claim.
+- 26-02 (DOCS-02): author RFC-0002 (deny-on-confidence gate, deployed defaults 0.85/2/off-by-default) + refresh docs/rfc/README.md index.
+- 26-03 (DOCS-03): stage usefolklore org-profile README at .github/profile/README.md (folk-pop, product-first, real numbers) + point docs/REPO-SPLIT.md at it.
+
+Doc-only phase: no source changes, `npx tsc --noEmit` stays 0. Conventional commits, no AI co-authors.
+
+Next action: `/gsd:execute-phase 26`.
 
 ### v3.0 Phase Map
 

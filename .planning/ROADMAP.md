@@ -220,6 +220,12 @@ Plans:
 **Goal:** Launch-grade documentation: a BENCHMARKS page presenting real, reproducible numbers; an extended and indexed RFC set; and an org profile README ready for the usefolklore org landing.
 **Depends on:** Phase 25 (docs reference the clean module + `bench/` structure and the org-ready boundaries)
 **Requirements:** DOCS-01, DOCS-02, DOCS-03
+**Plans:** 3 plans (1 wave — all three docs are independent, disjoint files → fully parallel)
+
+Plans:
+- [ ] 26-01-PLAN.md — Wave 1: BENCHMARKS page — reconcile 72.30% (pure-Node hybrid headline) vs 75.22%/0.7522 (Rust sidecar, same dataset), keep failures as failures, label FolkloreBench-F 17%→1% a simulator figure, repro command behind every claim (DOCS-01)
+- [ ] 26-02-PLAN.md — Wave 1: Author RFC-0002 (deny-on-confidence gate, deployed defaults 0.85/2/off) + refresh the RFC index (DOCS-02)
+- [ ] 26-03-PLAN.md — Wave 1: Stage the usefolklore org-profile README at .github/profile/README.md (folk-pop, product-first, real numbers) + point REPO-SPLIT.md at it (DOCS-03)
 **Wave decomposition (parallel-friendly):**
   - Wave A — BENCHMARKS page: real BEIR SciFact NDCG, Wave-2 hybrid, FolkloreBench-F (17%→1%) with method + repro commands (DOCS-01). Sources numbers from BENCH-v2.md + the consolidated `bench/`.
   - Wave B — RFCs: extend RFC set (RFC-0002+) and refresh the RFC index (DOCS-02). Independent of Wave A.
@@ -262,7 +268,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 25. Cleanup & Repo Restructure | 5/5 | Complete    | 2026-06-14 |
-| 26. Docs & Benchmarks | 0/TBD | Not started | - |
+| 26. Docs & Benchmarks | 0/3 | Planned | - |
 | 27. Site Build-Out | 0/TBD | Not started | - |
 | 28. Merch & Meme-Agent | 0/TBD | Not started | - |
 
