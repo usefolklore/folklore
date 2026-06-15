@@ -280,7 +280,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 25. Cleanup & Repo Restructure | 5/5 | Complete    | 2026-06-14 |
 | 26. Docs & Benchmarks | 3/3 | Complete    | 2026-06-15 |
-| 27. Site Build-Out | 5/5 | Complete   | 2026-06-15 |
+| 27. Site Build-Out | 5/5 | Complete    | 2026-06-15 |
 | 28. Merch & Meme-Agent | 0/TBD | Not started | - |
 
 ## Phase Summary (v3.0)
