@@ -63,7 +63,7 @@ export interface ShareableNode {
   readonly fetched_at?: string;
   /**
    * Phase 26 — verified GitHub handle of the author. Stamped at write
-   * time by `indexNode` from ~/.akashik/linked-accounts.json. Travels
+   * time by `indexNode` from ~/.folklore/linked-accounts.json. Travels
    * over the wire so peers can pin the claimed handle against their
    * peer-labels.json mapping via VerifyShareableOptions.expectedGithubUser.
    */

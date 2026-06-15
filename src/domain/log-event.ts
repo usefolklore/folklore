@@ -1,7 +1,7 @@
 /**
  * Network telemetry event taxonomy — pure domain.
  *
- * Every observable behavior on a akashik node is one of these
+ * Every observable behavior on a folklore node is one of these
  * events. Each carries a deterministic `kind` discriminator + payload
  * fields needed to reconstruct what happened. No mutable state, no
  * I/O — emission lives in the infrastructure layer (log-store.ts).
@@ -140,7 +140,7 @@ export const buildEvent = <K extends EventKind>(
 // ─────────────────────── rendering ────────────────────────────────
 
 /**
- * One-line human-readable rendering for `akashik logs tail`.
+ * One-line human-readable rendering for `folklore logs tail`.
  * Format: `<ts>  <kind>  <key=value> ...`
  */
 export const fmtEvent = (e: LogEvent): string => {

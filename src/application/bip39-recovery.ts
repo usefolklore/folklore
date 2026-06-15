@@ -7,7 +7,7 @@
  *     keystore standards). Operators recognize the 24-word shape and
  *     trust the recovery story.
  *   - Hex remains supported for backward compatibility with v4.0;
- *     `akashik identity import` autodetects the format.
+ *     `folklore identity import` autodetects the format.
  *   - 24-word phrase = 256 bits of entropy = exact match for the
  *     Ed25519 seed length. No HKDF derivation needed.
  *

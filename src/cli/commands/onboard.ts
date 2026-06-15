@@ -1,5 +1,5 @@
 /**
- * `akashik onboard` — first-run installer + onboarding wizard.
+ * `folklore onboard` — first-run installer + onboarding wizard.
  *
  * Eight numbered steps that take a fresh machine to a wired install:
  *
@@ -15,7 +15,7 @@
  * The UI uses @clack/prompts so the surface matches modern installer
  * UX (bordered intro/outro, spinners with live status, clean Ctrl-C
  * cancellation). Onboarding deliberately does NOT index the cwd —
- * indexing is the user's intent, exposed as `akashik this`.
+ * indexing is the user's intent, exposed as `folklore this`.
  */
 
 import {
@@ -143,7 +143,7 @@ const ensure = <T>(v: T | symbol): T => {
 // ─────────────── steps ─────────────────────
 
 const stepHome = async (flags: Flags): Promise<string> => {
-  const def = flags.home ?? process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
+  const def = flags.home ?? process.env.FOLKLORE_HOME ?? join(homedir(), '.folklore');
   const chosen = flags.yes
     ? def
     : ensure(
@@ -154,11 +154,11 @@ const stepHome = async (flags: Flags): Promise<string> => {
           validate: (v) => (v && v.trim() ? undefined : 'path required'),
         }),
       );
-  process.env.AKASHIK_HOME = chosen;
+  process.env.FOLKLORE_HOME = chosen;
   mkdirSync(chosen, { recursive: true });
-  if (chosen !== join(homedir(), '.akashik')) {
+  if (chosen !== join(homedir(), '.folklore')) {
     note(
-      `Add to your shell profile so future sessions agree:\n  export AKASHIK_HOME="${chosen}"`,
+      `Add to your shell profile so future sessions agree:\n  export FOLKLORE_HOME="${chosen}"`,
       'non-default home',
     );
   }
@@ -174,7 +174,7 @@ const stepDoctor = (): void => {
   if (r.status === 0) {
     sp.stop('runtime healthy');
   } else {
-    sp.stop("runtime check reported issues — run 'akashik doctor --fix'");
+    sp.stop("runtime check reported issues — run 'folklore doctor --fix'");
   }
 };
 
@@ -191,13 +191,13 @@ const stepIdentity = async (home: string): Promise<string | null> => {
 };
 
 /**
- * MANDATORY GitHub OAuth link (Phase 26 stage B). akashik communication
+ * MANDATORY GitHub OAuth link (Phase 26 stage B). folklore communication
  * and identity are GitHub-anchored — every node is tagged github_user
  * at write time, federation envelopes pin the peer's claimed handle —
  * so a fresh install MUST link an account before the wizard advances.
  *
  * Three abort paths:
- *   - No AKASHIK_GITHUB_CLIENT_ID  → process.exit(1) with setup steps
+ *   - No FOLKLORE_GITHUB_CLIENT_ID  → process.exit(1) with setup steps
  *   - User declines the prompt     → process.exit(1) with re-run hint
  *   - OAuth flow fails             → process.exit(1) with retry hint
  *
@@ -218,11 +218,11 @@ const stepLoginGithub = async (flags: Flags, home: string): Promise<void> => {
     return;
   }
 
-  const clientId = process.env.AKASHIK_GITHUB_CLIENT_ID;
+  const clientId = process.env.FOLKLORE_GITHUB_CLIENT_ID;
   if (!clientId || clientId.trim().length === 0) {
     note(
       [
-        'akashik identity is GitHub-anchored — every node you author is',
+        'folklore identity is GitHub-anchored — every node you author is',
         'tagged with your verified handle, and peers verify that handle',
         'against your local signing key before accepting your nodes.',
         '',
@@ -230,10 +230,10 @@ const stepLoginGithub = async (flags: Flags, home: string): Promise<void> => {
         '  1. Register a Device Flow OAuth app:',
         '     https://github.com/settings/applications/new',
         '     (any callback URL; enable "Device Flow" in app settings)',
-        '  2. export AKASHIK_GITHUB_CLIENT_ID="Iv1.<your_id>"',
-        '  3. Re-run `akashik onboard`',
+        '  2. export FOLKLORE_GITHUB_CLIENT_ID="Iv1.<your_id>"',
+        '  3. Re-run `folklore onboard`',
       ].join('\n'),
-      'GitHub login required — AKASHIK_GITHUB_CLIENT_ID not set',
+      'GitHub login required — FOLKLORE_GITHUB_CLIENT_ID not set',
     );
     cancel('onboarding cannot proceed without a GitHub identity.');
     process.exit(1);
@@ -254,12 +254,12 @@ const stepLoginGithub = async (flags: Flags, home: string): Promise<void> => {
   }
 
   // Defer to the standalone login command so the flow + persistence
-  // logic is identical to `akashik login`. One canonical path keeps
+  // logic is identical to `folklore login`. One canonical path keeps
   // behavior consistent across the wizard and the direct command.
   const { login } = await import('./login.js');
   const exit = await login([]);
   if (exit !== 0) {
-    cancel('GitHub login failed — onboarding aborted. Run `akashik login` to retry.');
+    cancel('GitHub login failed — onboarding aborted. Run `folklore login` to retry.');
     process.exit(1);
   }
 };
@@ -316,7 +316,7 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
     "Session nodes never federate — they're hard-blocked at the sharing gate.",
     '',
     'Default is NO because re-walking can be heavy on the first run.',
-    "Skip if unsure; you can always run 'akashik trigger' later.",
+    "Skip if unsure; you can always run 'folklore trigger' later.",
   ].join('\n');
   note(explainer, 'past Claude sessions');
 
@@ -329,7 +329,7 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
         }),
       );
   if (!yes) {
-    log.message('skipped — run `akashik trigger` when convenient');
+    log.message('skipped — run `folklore trigger` when convenient');
     return;
   }
 
@@ -340,7 +340,7 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
     {
       detached: true,
       stdio: ['ignore', 'inherit', 'inherit'],
-      env: { ...process.env, AKASHIK_HOME: home },
+      env: { ...process.env, FOLKLORE_HOME: home },
     },
   );
   child.unref();
@@ -384,7 +384,7 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
     } else {
       sp.stop(`ingest exited early (code=${childExitCode ?? 'error'})`);
       note(
-        `The 'akashik trigger' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - AKASHIK_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  akashik trigger`,
+        `The 'folklore trigger' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - FOLKLORE_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  folklore trigger`,
         'session ingest failed',
       );
     }
@@ -392,7 +392,7 @@ const stepIngestSessions = async (flags: Flags, home: string): Promise<void> => 
   }
   sp.stop(`ingest still running in background (pid=${child.pid})`);
   note(
-    `Track progress with:\n  akashik sessions status\n  tail -f ${logPath}\n\nThe daemon will pick up the new nodes once it starts.`,
+    `Track progress with:\n  folklore sessions status\n  tail -f ${logPath}\n\nThe daemon will pick up the new nodes once it starts.`,
     'sessions ingest detached',
   );
   void logPath; // reserved for future stdout redirect
@@ -468,24 +468,24 @@ const stepP2pStatus = async (home: string, peerId: string | null): Promise<void>
     lines.push('');
     lines.push('No peers yet. Your graph works fully offline; federation is opt-in.');
     lines.push('Add a bootstrap peer:');
-    lines.push('  akashik peer add /ip4/<host>/tcp/<port>/p2p/<id>');
+    lines.push('  folklore peer add /ip4/<host>/tcp/<port>/p2p/<id>');
   }
   note(lines.join('\n'), 'P2P status');
 };
 
 // ─────────────── usage + entry ─────────────
 
-const USAGE = `usage: akashik onboard [--yes] [--home DIR] [--no-sessions]
+const USAGE = `usage: folklore onboard [--yes] [--home DIR] [--no-sessions]
 
   --yes, -y       accept every default; skip optional prompts
-  --home DIR      data home (graph + vectors + model cache); also via $AKASHIK_HOME
+  --home DIR      data home (graph + vectors + model cache); also via $FOLKLORE_HOME
   --no-sessions   skip ingesting past Claude Code sessions
 
   Run once on a fresh machine. Sets up identity, hooks, daemon, and prints
-  what akashik will do on every session.
+  what folklore will do on every session.
 
   Onboard does NOT index any folder. To index a project, cd into it and
-  run 'akashik this me' (private) or 'akashik this everyone'
+  run 'folklore this me' (private) or 'folklore this everyone'
   (P2P-shared, secrets-audited).`;
 
 export const onboard = async (args: readonly string[]): Promise<number> => {
@@ -496,7 +496,7 @@ export const onboard = async (args: readonly string[]): Promise<number> => {
   const flags = parseFlags(args);
   const projectDir = process.cwd();
 
-  intro('akashik onboard');
+  intro('folklore onboard');
   note(
     [
       'CPU-local knowledge graph + opt-in P2P federation.',
@@ -543,18 +543,18 @@ export const onboard = async (args: readonly string[]): Promise<number> => {
       '  · daemon         fetches sources, consolidates memory, syncs P2P rooms',
       '',
       'Daily commands:',
-      '  akashik this              index the current folder, keep it private',
-      '  akashik this everyone     index + share with the P2P network',
-      '  akashik ask "..."         semantic search across your graph',
-      '  akashik trigger           refresh all rooms',
-      '  akashik peer list         see who you talk to',
-      '  akashik doctor            health check',
+      '  folklore this              index the current folder, keep it private',
+      '  folklore this everyone     index + share with the P2P network',
+      '  folklore ask "..."         semantic search across your graph',
+      '  folklore trigger           refresh all rooms',
+      '  folklore peer list         see who you talk to',
+      '  folklore doctor            health check',
       '',
       'Privacy:',
-      `  · Everything stays under ${process.env.AKASHIK_HOME}`,
+      `  · Everything stays under ${process.env.FOLKLORE_HOME}`,
       "  · 'this me' never leaves your machine",
       "  · 'this everyone' enters the secrets-audit gate before federation",
-      "  · Stop the network at any time: akashik daemon stop",
+      "  · Stop the network at any time: folklore daemon stop",
     ].join('\n'),
     'you are wired in',
   );

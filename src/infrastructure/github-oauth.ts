@@ -3,7 +3,7 @@
  *
  * Why device flow and not authorization-code:
  *
- *   1. akashik runs in a terminal on the user's laptop. There's
+ *   1. folklore runs in a terminal on the user's laptop. There's
  *      no public callback URL. Device flow needs no redirect URI, no
  *      localhost callback server, no client secret.
  *   2. Works the same on a server, a corporate workstation, or behind
@@ -27,7 +27,7 @@
  *   - All HTTP via Node fetch (no third-party OAuth lib pulls).
  *   - Access token stays in memory; never persisted. Only the public
  *     verified handle + GitHub user id + profile URL go to disk.
- *   - User-Agent identifies akashik so GitHub's audit log can
+ *   - User-Agent identifies folklore so GitHub's audit log can
  *     show what tool created the OAuth session.
  *   - Device-code endpoint requires the client_id only (no secret).
  *     Caller validates client_id is set before any request fires.
@@ -122,7 +122,7 @@ const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token';
 const GITHUB_USER_URL = 'https://api.github.com/user';
 const GITHUB_USER_EMAILS_URL = 'https://api.github.com/user/emails';
 
-const USER_AGENT = 'akashik-oauth/1.0';
+const USER_AGENT = 'folklore-oauth/1.0';
 
 // ─────────────── step 1: request device code ─────
 

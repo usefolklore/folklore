@@ -1,5 +1,5 @@
 /**
- * Domain errors for the akashik knowledge graph.
+ * Domain errors for the folklore knowledge graph.
  *
  * Every error is a tagged union member with a `type` discriminator plus
  * enough context for a caller to render a useful message. No `Error`
@@ -274,7 +274,7 @@ export const NetError = {
  * Split by failure surface:
  *   - SessionFileReadError   — reading a *.jsonl transcript from ~/.claude/projects
  *   - SessionJsonlParseError — one line of a transcript failed JSON.parse (partial write, corruption)
- *   - SessionStateFileError  — ~/.akashik/sessions-state.json read/write/parse failure
+ *   - SessionStateFileError  — ~/.folklore/sessions-state.json read/write/parse failure
  *   - SessionRetentionError  — retention pruning pass failed (graph repo write error during delete)
  *   - SessionIngestError     — upstream application-layer ingest for a session node failed
  */
@@ -545,7 +545,7 @@ export const formatError = (e: AppError): string => {
     case 'RerankInference':
       return `rerank inference failed: ${e.message}`;
     case 'RerankDisabled':
-      return `rerank disabled (AKASHIK_RERANK is not set)`;
+      return `rerank disabled (FOLKLORE_RERANK is not set)`;
   }
 };
 
@@ -570,21 +570,21 @@ export const hintFor = (e: AppError): string | null => {
       // Most common cause on first run: graph.json doesn't exist yet.
       // The path-bearing message already shows ENOENT.
       return /ENOENT|no such file/i.test(e.message)
-        ? 'fix: run `akashik trigger` to populate the graph (this is normal on first run).'
-        : 'fix: run `akashik doctor --fix` and check the file is readable.';
+        ? 'fix: run `folklore trigger` to populate the graph (this is normal on first run).'
+        : 'fix: run `folklore doctor --fix` and check the file is readable.';
     case 'GraphParseError':
-      return `fix: graph file is corrupted at ${e.path}. Restore from backup or move it aside and run \`akashik trigger\` to rebuild.`;
+      return `fix: graph file is corrupted at ${e.path}. Restore from backup or move it aside and run \`folklore trigger\` to rebuild.`;
     case 'GraphWriteError':
-      return 'fix: check disk space and that no other akashik process is holding the write lock (`akashik doctor`).';
+      return 'fix: check disk space and that no other folklore process is holding the write lock (`folklore doctor`).';
 
     // ─── vectors / embedder ───────────────────
     case 'VectorOpenError':
-      return 'fix: run `akashik doctor --fix` to reset the sqlite-vec store, or check the file permissions on `~/.akashik/vectors.db`.';
+      return 'fix: run `folklore doctor --fix` to reset the sqlite-vec store, or check the file permissions on `~/.folklore/vectors.db`.';
     case 'ModelLoadError':
       // The model is fetched lazily on first embed (~90 MB for
       // all-MiniLM-L6-v2). Either the cache is missing or the
       // download failed.
-      return 'fix: check network access; the embedder downloads ~90 MB on first use. Re-run `akashik doctor` to retry, or set `AKASHIK_MODEL_CACHE` to a writable directory.';
+      return 'fix: check network access; the embedder downloads ~90 MB on first use. Re-run `folklore doctor` to retry, or set `FOLKLORE_MODEL_CACHE` to a writable directory.';
 
     // ─── peer / network ───────────────────────
     case 'PeerDialError':
@@ -598,28 +598,28 @@ export const hintFor = (e: AppError): string | null => {
       if (/ECONNREFUSED/i.test(e.message)) {
         return 'fix: remote port refused the connection. The peer may be offline or listening on a different address.';
       }
-      return 'fix: re-check the multiaddr; for diagnostics run `akashik peer list`.';
+      return 'fix: re-check the multiaddr; for diagnostics run `folklore peer list`.';
 
     case 'PeerIdentityReadError':
     case 'PeerIdentityParseError':
-      return 'fix: run `akashik identity init` to (re)create the peer identity, or `akashik identity import <hex>` to restore.';
+      return 'fix: run `folklore identity init` to (re)create the peer identity, or `folklore identity import <hex>` to restore.';
 
     // ─── share / privacy ──────────────────────
     case 'SecretDetected':
       // SecretDetected is the user's most-confusing error: an opaque
       // node id and a list of pattern names with no path forward.
       // Hint points at the two real fixes.
-      return `fix: the node was BLOCKED before reaching the network — your secret is safe locally. Either remove the credential from the source content, or move it to a non-shared room. Inspect the node with \`akashik get-node ${e.nodeId}\`.`;
+      return `fix: the node was BLOCKED before reaching the network — your secret is safe locally. Either remove the credential from the source content, or move it to a non-shared room. Inspect the node with \`folklore get-node ${e.nodeId}\`.`;
 
     case 'ShareAuditBlocked':
-      return `fix: review flagged nodes with \`akashik lint --room ${e.room}\` and either remove the secrets or unshare the room.`;
+      return `fix: review flagged nodes with \`folklore lint --room ${e.room}\` and either remove the secrets or unshare the room.`;
 
     // ─── identity / signing ───────────────────
     case 'IdentityKeyGenerationError':
-      return 'fix: run `akashik identity init` to create your DID, or `akashik onboard` to run the full setup wizard.';
+      return 'fix: run `folklore identity init` to create your DID, or `folklore onboard` to run the full setup wizard.';
     case 'IdentityBadSignatureError':
     case 'IdentityDeviceAuthorizationError':
-      return 'fix: the identity chain failed to verify. If this is your own identity, `akashik identity rotate` regenerates the device key under your existing DID.';
+      return 'fix: the identity chain failed to verify. If this is your own identity, `folklore identity rotate` regenerates the device key under your existing DID.';
 
     // Default: no actionable suffix.
     default:
@@ -632,8 +632,8 @@ export const hintFor = (e: AppError): string | null => {
  * `hintFor` newline-suffix. Most CLI callsites should use this rather
  * than calling the two helpers separately.
  *
- *   ask: graph read error at ~/.akashik/graph.json: ENOENT
- *     → fix: run `akashik trigger` to populate the graph (this is normal on first run).
+ *   ask: graph read error at ~/.folklore/graph.json: ENOENT
+ *     → fix: run `folklore trigger` to populate the graph (this is normal on first run).
  *
  * Returns just the formatted error when there is no hint.
  */

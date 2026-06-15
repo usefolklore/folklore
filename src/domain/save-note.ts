@@ -1,5 +1,5 @@
 /**
- * save-note — pure helpers for the `akashik save` command.
+ * save-note — pure helpers for the `folklore save` command.
  *
  * Port of claude-obsidian's `/save` skill. Distillation step that
  * complements raw session auto-ingest: user files the current answer,
@@ -74,7 +74,7 @@ export const nodeFromSave = (i: SaveNoteInput): GraphNode => {
     id,
     label: i.label,
     file_type: i.type === 'source' ? 'document' : 'rationale',
-    source_file: 'akashik:save',
+    source_file: 'folklore:save',
     source_uri: i.sourceUri ?? id,
     fetched_at: now,
     embedding_id: id,

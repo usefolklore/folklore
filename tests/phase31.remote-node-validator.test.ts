@@ -2,8 +2,8 @@
  * Phase 31 — regression test for the remote-node validator.
  *
  * The validator is the ONLY defence at the P2P trust boundary. Every
- * known-bad node shape must be rejected; every legitimate akashik
- * node must pass. If either side breaks, akashik becomes either
+ * known-bad node shape must be rejected; every legitimate folklore
+ * node must pass. If either side breaks, folklore becomes either
  * an RCE vector or useless for P2P — both are ship-blockers.
  *
  * Scope:
@@ -29,7 +29,7 @@ test('phase-31: legitimate arxiv-shaped node passes validation', () => {
     label: 'AVGen-Bench: A Task-Driven Benchmark for Multi-Granular Evaluation',
     file_type: 'paper',
     source_file: 'arxiv',
-    room: 'akashik-dev',
+    room: 'folklore-dev',
     source_uri: 'https://arxiv.org/abs/2604.08540',
     fetched_at: '2026-04-11T19:32:26.182Z',
     embedding_id: 'https://arxiv.org/abs/2604.08540',

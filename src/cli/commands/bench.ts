@@ -1,8 +1,8 @@
 /**
- * `akashik bench memory` — unified memory benchmark runner.
+ * `folklore bench memory` — unified memory benchmark runner.
  *
  * Spawns the suite of bench-*.test.ts files with
- * `AKASHIK_BENCH_OUT` set so each suite appends a
+ * `FOLKLORE_BENCH_OUT` set so each suite appends a
  * `BenchSuiteReport` JSON line. The driver collects all reports,
  * composes a `BenchCompositeReport`, and emits either:
  *
@@ -53,7 +53,7 @@ interface SuiteSpec {
  * iterates SUITES in order. Putting the real suite AFTER its
  * synth/proxy means: on machines without the public datasets, the
  * real suite skips (emits no report) and the synth value is used; on
- * the Hetzner box (with `AKASHIK_BENCH_PUBLIC_REAL=1` and the
+ * the Hetzner box (with `FOLKLORE_BENCH_PUBLIC_REAL=1` and the
  * dataset dirs set) the real value cleanly overwrites the synthetic.
  */
 const SUITES: readonly SuiteSpec[] = [
@@ -98,7 +98,7 @@ const runSuites = (opts: RunOpts): BenchCompositeReport => {
         ['--yes', 'tsx', '--test', join(REPO_ROOT, suite.path)],
         {
           cwd: REPO_ROOT,
-          env: { ...process.env, AKASHIK_BENCH_OUT: outFile },
+          env: { ...process.env, FOLKLORE_BENCH_OUT: outFile },
           stdio: ['ignore', 'pipe', 'pipe'],
           encoding: 'utf8',
         },
@@ -158,7 +158,7 @@ const runSuites = (opts: RunOpts): BenchCompositeReport => {
 const renderHuman = (r: BenchCompositeReport): string => {
   const pad = (s: string, n: number) => s.length >= n ? s : s + ' '.repeat(n - s.length);
   const lines: string[] = [];
-  lines.push(`akashik memory bench — ${r.runAt}`);
+  lines.push(`folklore memory bench — ${r.runAt}`);
   lines.push(`elapsed: ${(r.elapsedMs / 1000).toFixed(2)}s`);
   lines.push('');
   lines.push('per-dimension:');
@@ -187,7 +187,7 @@ const renderHuman = (r: BenchCompositeReport): string => {
 // ─────────────── entry ─────────────
 
 const printBenchHelp = (): void => {
-  console.log(`akashik bench — unified memory benchmark
+  console.log(`folklore bench — unified memory benchmark
 
 Subcommands:
   memory [--json] [--suite <name>]   Run the memory bench

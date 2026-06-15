@@ -6,7 +6,7 @@
  *   - fixture table lookup + fallback
  *   - fixture error propagation
  *   - ollama wrapping concatenates system + user with separator
- *   - summariserFromEnv() respects AKASHIK_SUMMARISER=fixture
+ *   - summariserFromEnv() respects FOLKLORE_SUMMARISER=fixture
  *   - summariserFromEnv() falls back to ollama adapter when client passed
  *   - summariserFromEnv() returns null when no config + no client
  */
@@ -119,9 +119,9 @@ const withEnv = async <T>(env: Record<string, string | undefined>, fn: () => T |
   }
 };
 
-test('summariserFromEnv: AKASHIK_SUMMARISER=fixture → fixture adapter', async () => {
+test('summariserFromEnv: FOLKLORE_SUMMARISER=fixture → fixture adapter', async () => {
   await withEnv(
-    { AKASHIK_SUMMARISER: 'fixture', AKASHIK_SUMMARISER_FIXTURE: 'env-default' },
+    { FOLKLORE_SUMMARISER: 'fixture', FOLKLORE_SUMMARISER_FIXTURE: 'env-default' },
     async () => {
       const s = summariserFromEnv();
       assert.ok(s !== null);
@@ -132,7 +132,7 @@ test('summariserFromEnv: AKASHIK_SUMMARISER=fixture → fixture adapter', async 
 });
 
 test('summariserFromEnv: no env + ollama supplied → ollama adapter', async () => {
-  await withEnv({ AKASHIK_SUMMARISER: undefined }, () => {
+  await withEnv({ FOLKLORE_SUMMARISER: undefined }, () => {
     const stub: OllamaClient = {
       baseUrl: 'x',
       defaultModel: 'q2',
@@ -146,7 +146,7 @@ test('summariserFromEnv: no env + ollama supplied → ollama adapter', async () 
 });
 
 test('summariserFromEnv: no env + no ollama → null', async () => {
-  await withEnv({ AKASHIK_SUMMARISER: undefined }, () => {
+  await withEnv({ FOLKLORE_SUMMARISER: undefined }, () => {
     assert.equal(summariserFromEnv(), null);
   });
 });

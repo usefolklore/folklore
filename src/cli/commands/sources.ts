@@ -1,5 +1,5 @@
 /**
- * `akashik sources <sub>` — manage the ~/.akashik/sources.json
+ * `folklore sources <sub>` — manage the ~/.folklore/sources.json
  * registry.
  *
  * Subcommands:
@@ -11,7 +11,7 @@
  *   enable <id>
  *
  * Example:
- *   akashik sources add hn-embeddings \
+ *   folklore sources add hn-embeddings \
  *     --kind hn_algolia --room fundraise \
  *     --config '{"query":"embeddings","max_items":10}'
  */
@@ -34,7 +34,7 @@ interface AddArgs {
 }
 
 const parseAddArgs = (args: readonly string[]): AddArgs | string => {
-  if (args.length === 0) return 'missing <id> — usage: akashik sources add <id> --kind K --room R --config {json}';
+  if (args.length === 0) return 'missing <id> — usage: folklore sources add <id> --kind K --room R --config {json}';
   const id = args[0];
   let kind: string | undefined;
   let room: string | undefined;
@@ -82,7 +82,7 @@ const list = async (): Promise<number> => {
   }
   const all = result.value;
   if (all.length === 0) {
-    console.log('no sources configured. try `akashik sources add` to create one.');
+    console.log('no sources configured. try `folklore sources add` to create one.');
     return 0;
   }
   console.log('id                              kind            room            enabled  config');

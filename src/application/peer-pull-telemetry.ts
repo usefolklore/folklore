@@ -4,7 +4,7 @@
  * the wire-level numbers federated-search already collected.
  *
  * Shared by: MCP `federated_search` / `ask` tools, the PreToolUse
- * smart-hook, and `akashik ask --peers` CLI tail.
+ * smart-hook, and `folklore ask --peers` CLI tail.
  *
  * V5 (Phase 24-03, ROOMS-DEL-05): per-peer telemetry only — the room
  * dimension was dropped 2026-05-27. Pre-V5 telemetry tracked the (peer,

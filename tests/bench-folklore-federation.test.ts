@@ -1,5 +1,5 @@
 /**
- * Bench — AkashikBench-F (federation-level compounding).
+ * Bench — FolkloreBench-F (federation-level compounding).
  *
  * The benchmark the octopus-discover Round 5 synthesis identified
  * as the only one that can falsify or validate the federated-
@@ -27,7 +27,7 @@
  *
  * Environment contract (all required to run; otherwise skipped):
  *
- *   AKASHIK_BENCH_F=1
+ *   FOLKLORE_BENCH_F=1
  *     Master gate (off by default so CI stays fast).
  *
  *   LOCOMO_DIR=/path/to/locomo
@@ -35,18 +35,18 @@
  *     `bench-locomo-real.test.ts`. Set to a directory that
  *     contains `locomo10.json`.
  *
- *   AKASHIK_BENCH_OUT=/path/to/run.jsonl   (optional)
+ *   FOLKLORE_BENCH_OUT=/path/to/run.jsonl   (optional)
  *     If set, suite appends one `BenchSuiteReport` JSON line.
  *
- *   AKASHIK_BENCH_PEERS=10           (default 10 — Round 5 spec)
- *   AKASHIK_BENCH_STEPS=2000         (default 2000)
- *   AKASHIK_BENCH_OFFLINE=0.2        (default 0.2 — Round 5 spec)
- *   AKASHIK_BENCH_ZIPF=1.0           (default 1.0)
- *   AKASHIK_BENCH_SEED=42            (default 42)
- *   AKASHIK_BENCH_SHARD=0.05         (default 0.05 — 50% web-only
+ *   FOLKLORE_BENCH_PEERS=10           (default 10 — Round 5 spec)
+ *   FOLKLORE_BENCH_STEPS=2000         (default 2000)
+ *   FOLKLORE_BENCH_OFFLINE=0.2        (default 0.2 — Round 5 spec)
+ *   FOLKLORE_BENCH_ZIPF=1.0           (default 1.0)
+ *   FOLKLORE_BENCH_SEED=42            (default 42)
+ *   FOLKLORE_BENCH_SHARD=0.05         (default 0.05 — 50% web-only
  *                                     at 10 peers; gives a strong
  *                                     compounding signal)
- *   AKASHIK_BENCH_WINDOW=100         (default 100)
+ *   FOLKLORE_BENCH_WINDOW=100         (default 100)
  *
  * Why a pure simulator instead of spinning up real peers:
  *
@@ -132,9 +132,9 @@ const buildCorpusFromLoCoMo = (locomoPath: string): SimCorpus => {
 
 // ─────────────── bench ─────────────
 
-test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60 * 60 * 1000 }, async (t) => {
-  if (process.env.AKASHIK_BENCH_F !== '1') {
-    t.skip('AKASHIK_BENCH_F not set — skipping AkashikBench-F');
+test('bench: FolkloreBench-F — federation compounding on LoCoMo', { timeout: 60 * 60 * 1000 }, async (t) => {
+  if (process.env.FOLKLORE_BENCH_F !== '1') {
+    t.skip('FOLKLORE_BENCH_F not set — skipping FolkloreBench-F');
     return;
   }
   const dir = process.env.LOCOMO_DIR;
@@ -152,13 +152,13 @@ test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60
   assert.ok(corpus.queries.length > 0, 'corpus has zero queries');
   assert.ok(corpus.allDocs.length > 0, 'corpus has zero docs');
 
-  const numPeers = Number(process.env.AKASHIK_BENCH_PEERS ?? 10);
-  const numSteps = Number(process.env.AKASHIK_BENCH_STEPS ?? 2000);
-  const offlineProbability = Number(process.env.AKASHIK_BENCH_OFFLINE ?? 0.2);
-  const zipfAlpha = Number(process.env.AKASHIK_BENCH_ZIPF ?? 1.0);
-  const seed = Number(process.env.AKASHIK_BENCH_SEED ?? 42);
-  const initialShardFraction = Number(process.env.AKASHIK_BENCH_SHARD ?? 0.05);
-  const windowSize = Number(process.env.AKASHIK_BENCH_WINDOW ?? 100);
+  const numPeers = Number(process.env.FOLKLORE_BENCH_PEERS ?? 10);
+  const numSteps = Number(process.env.FOLKLORE_BENCH_STEPS ?? 2000);
+  const offlineProbability = Number(process.env.FOLKLORE_BENCH_OFFLINE ?? 0.2);
+  const zipfAlpha = Number(process.env.FOLKLORE_BENCH_ZIPF ?? 1.0);
+  const seed = Number(process.env.FOLKLORE_BENCH_SEED ?? 42);
+  const initialShardFraction = Number(process.env.FOLKLORE_BENCH_SHARD ?? 0.05);
+  const windowSize = Number(process.env.FOLKLORE_BENCH_WINDOW ?? 100);
 
   // Disjointness invariant: numPeers × initialShardFraction ≤ 1.0
   // — otherwise the simulator's sequential sharding can't allocate
@@ -169,7 +169,7 @@ test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60
     console.warn(`  WARN: peers (${numPeers}) × shardFraction (${initialShardFraction}) = ${totalCoverage} > 1.0 — sharding will be uneven`);
   }
 
-  console.log(`AkashikBench-F: ${numPeers} peers × ${numSteps} steps · offline=${offlineProbability} · zipf=${zipfAlpha} · shard=${initialShardFraction} (coverage ${(totalCoverage * 100).toFixed(0)}%) · corpus=${corpus.queries.length} queries, ${corpus.allDocs.length} docs`);
+  console.log(`FolkloreBench-F: ${numPeers} peers × ${numSteps} steps · offline=${offlineProbability} · zipf=${zipfAlpha} · shard=${initialShardFraction} (coverage ${(totalCoverage * 100).toFixed(0)}%) · corpus=${corpus.queries.length} queries, ${corpus.allDocs.length} docs`);
 
   const t0 = performance.now();
   const result = runFederationSim(corpus, {
@@ -203,7 +203,7 @@ test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60
   console.log(`  elapsed: ${(elapsedMs).toFixed(1)} ms`);
 
   const report: BenchSuiteReport = {
-    suite: 'akashik-federation',
+    suite: 'folklore-federation',
     metrics: {
       webFallbackRateFirst: firstRate,
       webFallbackRateLast: lastRate,
@@ -224,11 +224,11 @@ test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60
       value: r.rate,
     })),
     elapsedMs,
-    notes: `AkashikBench-F v1 on LoCoMo factual — ${corpus.queries.length} queries × ${corpus.allDocs.length} docs · ${numPeers} peers · ${numSteps} steps · offline=${offlineProbability} · zipf=${zipfAlpha} · shard=${initialShardFraction}. Boolean federation simulator (no per-peer retrieval — see suite header). Compounding = negative slope of web_fallback_rate over the simulation.`,
+    notes: `FolkloreBench-F v1 on LoCoMo factual — ${corpus.queries.length} queries × ${corpus.allDocs.length} docs · ${numPeers} peers · ${numSteps} steps · offline=${offlineProbability} · zipf=${zipfAlpha} · shard=${initialShardFraction}. Boolean federation simulator (no per-peer retrieval — see suite header). Compounding = negative slope of web_fallback_rate over the simulation.`,
   };
 
-  if (process.env.AKASHIK_BENCH_OUT) {
-    appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+  if (process.env.FOLKLORE_BENCH_OUT) {
+    appendFileSync(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
   }
 
   // Floor: with realistic Zipfian curiosity + < 100% initial coverage,

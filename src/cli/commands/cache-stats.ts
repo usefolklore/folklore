@@ -1,5 +1,5 @@
 /**
- * `akashik cache-stats` — print L1 query cache observability.
+ * `folklore cache-stats` — print L1 query cache observability.
  *
  * Pure proxy for the daemon-side `cache-stats` IPC command. Only
  * meaningful when the daemon is running (the cache lives in the
@@ -12,14 +12,14 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
-const akashikHome = (): string =>
-  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
+const folkloreHome = (): string =>
+  process.env.FOLKLORE_HOME ?? join(homedir(), '.folklore');
 
 export const cacheStats = async (_args: string[]): Promise<number> => {
-  // The actual IPC call is intercepted in bin/akashik.js when the
+  // The actual IPC call is intercepted in bin/folklore.js when the
   // socket exists; this function only runs when the shim falls through
   // (no daemon socket). We render the no-daemon case here.
-  const sock = join(akashikHome(), 'daemon.sock');
+  const sock = join(folkloreHome(), 'daemon.sock');
   if (!existsSync(sock)) {
     console.log(JSON.stringify({
       size: 0,
@@ -28,7 +28,7 @@ export const cacheStats = async (_args: string[]): Promise<number> => {
       evictions: 0,
       hit_rate: 0,
       via: 'no-daemon',
-      note: 'L1 cache lives in the daemon process. Start `akashik daemon` to populate.',
+      note: 'L1 cache lives in the daemon process. Start `folklore daemon` to populate.',
     }));
     return 0;
   }

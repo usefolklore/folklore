@@ -362,7 +362,7 @@ export const runFederatedSearch = async (
   // returning a stack of near-duplicates. Audit fold-in from
   // .planning/p2p-scale-plan.md Phase 1 mod.
   const gossipDisabled = params.useGossip === false
-    || process.env.AKASHIK_SEARCH_GOSSIP === '0';
+    || process.env.FOLKLORE_SEARCH_GOSSIP === '0';
   let gossipPeerOutcomes: PeerOutcome[] | null = null;
 
   if (!gossipDisabled) {

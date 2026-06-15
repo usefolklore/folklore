@@ -9,7 +9,7 @@
  * compute, no LLM judge, no API call, deterministic.
  *
  * Two-call shape (not single-call generation) so the bench can:
- *   1. retrieve top-k via akashik
+ *   1. retrieve top-k via folklore
  *   2. extract from the retrieved text via the LLM
  *   3. score extraction vs gold via pure F1
  * which mirrors how every public LongMemEval / LoCoMo / SQuAD eval

@@ -8,8 +8,8 @@
  * the install step to the operator's package manager of choice.
  *
  * Why no built-in installer:
- *   - npm-based installs (the canonical akashik distribution)
- *     already have an idiomatic upgrade path (`npm update -g akashik`)
+ *   - npm-based installs (the canonical folklore distribution)
+ *     already have an idiomatic upgrade path (`npm update -g folklore`)
  *   - Auto-replacing a running binary requires platform-specific tricks
  *     (file locks on Windows, code-signing on macOS, etc.) that are
  *     out of scope for v3.0
@@ -17,7 +17,7 @@
  *     installer they want (apt, brew, container image pull, etc.)
  *     and trust the manifest signature regardless
  *
- * v3.1 may add a `akashik update install` flow for the npm path
+ * v3.1 may add a `folklore update install` flow for the npm path
  * specifically — gated on adopter feedback.
  */
 
@@ -132,7 +132,7 @@ export interface UpdateCheckResult {
 /**
  * Fetch the manifest, verify the signature, gate the upgrade decision.
  * Updates the local state with the latest-seen version regardless of
- * eligibility (for `akashik update status` reporting).
+ * eligibility (for `folklore update status` reporting).
  */
 export const checkForUpdate = (
   homeDir: string,
@@ -142,7 +142,7 @@ export const checkForUpdate = (
   loadUpdateConfig(homeDir).andThen((cfg) => {
     if (!cfg) {
       return errAsync<UpdateCheckResult, AppError>(
-        PeerError.identityReadError(updatePaths(homeDir).configPath, 'update not configured — run `akashik update configure`'),
+        PeerError.identityReadError(updatePaths(homeDir).configPath, 'update not configured — run `folklore update configure`'),
       );
     }
     const checkedAt = new Date().toISOString();

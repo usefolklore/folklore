@@ -1,7 +1,7 @@
 /**
  * Identity resolver — port + in-process implementation.
  *
- * Round-2 architecture-review priority #5: pair `AKASHIK_REQUIRE_SIGNED_NODES`
+ * Round-2 architecture-review priority #5: pair `FOLKLORE_REQUIRE_SIGNED_NODES`
  * with an `IdentityResolver` that the daemon can ask "is this DID
  * authorised, and what's its current device chain?"
  *
@@ -43,7 +43,7 @@ export interface DidObservation {
  *
  *   record   — called by share-sync after a successful envelope verify,
  *              so the resolver can log/count the sighting.
- *   list     — snapshot of every DID seen; used by `akashik
+ *   list     — snapshot of every DID seen; used by `folklore
  *              identity peers` (future CLI) and the audit log.
  *
  * Future implementations (did:web, OAuth-anchored social DIDs) add a
@@ -62,7 +62,7 @@ export interface IdentityResolver {
  * TOFU-style resolver — accepts every DID the verifier already
  * accepts, accumulates sightings, surfaces them via metrics +
  * `list()`. No persistence; daemon restart wipes the audit. Future
- * commit lifts state to `~/.akashik/identity-audit.json` with
+ * commit lifts state to `~/.folklore/identity-audit.json` with
  * atomic writes (mirrors entities.json pattern).
  */
 export const inProcessIdentityResolver = (): IdentityResolver => {

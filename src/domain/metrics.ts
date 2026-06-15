@@ -10,7 +10,7 @@
  * needs that justify the bundle weight.
  *
  * Surfaces this enables:
- *   - `akashik metrics` IPC command returns a JSON snapshot.
+ *   - `folklore metrics` IPC command returns a JSON snapshot.
  *   - The eval harness can correlate retrieval quality drops to
  *     queue/graph pressure without grepping logs.
  *   - `daemon health --json` consumes the same snapshot.

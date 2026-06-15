@@ -76,7 +76,7 @@ const signManifest = (
   const parts: string[] = [];
   for (const k of keys) parts.push(`${JSON.stringify(k)}:${JSON.stringify(obj[k])}`);
   const json = `{${parts.join(',')}}`;
-  const message = new TextEncoder().encode(`akashik-release:v1:${json}`);
+  const message = new TextEncoder().encode(`folklore-release:v1:${json}`);
   const sigRes = signBytes(privateKey, message);
   if (sigRes.isErr()) throw new Error(`signBytes: ${sigRes.error.type}`);
   return { ...body, signature_hex: toHex(sigRes.value) };
@@ -133,7 +133,7 @@ describe('release — verifyManifest', () => {
       version: '3.1.0',
       channel: 'stable',
       released_at: '2026-04-17T00:00:00.000Z',
-      tarball_url: 'https://example.com/akashik-3.1.0.tgz',
+      tarball_url: 'https://example.com/folklore-3.1.0.tgz',
       tarball_sha256: 'a'.repeat(64),
       notes: 'P2P memory protocol v3.1',
       project_did: project.identity.did,

@@ -8,7 +8,7 @@
  * interface without touching the network.
  *
  * Skipped Ollama smoke-test: the live `ollamaLlmExtractor` only runs
- * when `AKASHIK_BENCH_LLM_EXTRACTOR=1` and a reachable Ollama is
+ * when `FOLKLORE_BENCH_LLM_EXTRACTOR=1` and a reachable Ollama is
  * configured — it lives inside the bench-locomo-real suite, not here.
  */
 

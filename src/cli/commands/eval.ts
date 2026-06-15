@@ -1,5 +1,5 @@
 /**
- * `akashik eval <queries.jsonl> [--k 10] [--json]`
+ * `folklore eval <queries.jsonl> [--k 10] [--json]`
  *
  * Retrieval-quality eval harness. Reads a JSONL file of labelled
  * queries, runs the application's `ask` use case, and computes the
@@ -58,7 +58,7 @@ const parseArgs = (args: readonly string[]): ParsedArgs | string => {
     else if (!a.startsWith('-')) file = a;
   }
   if (!file) {
-    return 'missing queries file — usage: akashik eval <queries.jsonl> [--k 10] [--limit N] [--json]';
+    return 'missing queries file — usage: folklore eval <queries.jsonl> [--k 10] [--limit N] [--json]';
   }
   if (!existsSync(file)) return `eval: queries file not found: ${file}`;
   if (k < 1 || k > 100) return `eval: --k must be in [1, 100], got ${k}`;

@@ -1,10 +1,10 @@
 #!/bin/sh
-# akashik SessionStart hook — announces the knowledge graph on session start
+# folklore SessionStart hook — announces the knowledge graph on session start
 # Shows: stats, recent activity, trending topics, tunnel candidates
 
-GRAPH="${AKASHIK_HOME:-$HOME/.akashik}/graph.json"
-SOURCES="${AKASHIK_HOME:-$HOME/.akashik}/sources.json"
-LOG="${AKASHIK_HOME:-$HOME/.akashik}/daemon.log"
+GRAPH="${FOLKLORE_HOME:-$HOME/.folklore}/graph.json"
+SOURCES="${FOLKLORE_HOME:-$HOME/.folklore}/sources.json"
+LOG="${FOLKLORE_HOME:-$HOME/.folklore}/daemon.log"
 
 if [ ! -f "$GRAPH" ]; then exit 0; fi
 
@@ -33,7 +33,7 @@ except: pass
 " 2>/dev/null)
 fi
 
-MSG="━━ akashik ━━ ${NODES} nodes │ ${EDGES} edges │ ${SOURCE_COUNT} sources"
+MSG="━━ folklore ━━ ${NODES} nodes │ ${EDGES} edges │ ${SOURCE_COUNT} sources"
 
 if [ -n "$RECENT" ]; then
   MSG="$MSG

@@ -8,11 +8,11 @@
  *   3. generates a single global report after the batch
  *   4. sleeps until the next tick
  *
- * PID file at `~/.akashik/daemon.pid` for lifecycle management.
+ * PID file at `~/.folklore/daemon.pid` for lifecycle management.
  *
  * The daemon is designed to run as a detached child process forked
- * by `akashik daemon start`. It logs to
- * `~/.akashik/daemon.log` and exits cleanly on SIGTERM.
+ * by `folklore daemon start`. It logs to
+ * `~/.folklore/daemon.log` and exits cleanly on SIGTERM.
  *
  * For testability, `runOneTick` is exported separately — tests call
  * it directly without starting the timer.
@@ -404,7 +404,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
 
   // ───── Phase 16: optional libp2p + share sync bootstrap ─────
   // Only start a libp2p node if the user has already created an identity
-  // (i.e. they have run `akashik peer status` or `peer add` at least once).
+  // (i.e. they have run `folklore peer status` or `peer add` at least once).
   // This keeps the daemon's network footprint zero for users who never use P2P.
   let liveNode: Libp2p | null = null;
   let liveSync: ShareSyncRegistry | null = null;
@@ -422,7 +422,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
     // identity then exists, but libp2p only starts on the NEXT boot).
     daemonLog(
       deps.homePath,
-      'p2p disabled: no peer identity yet. Run `akashik peer status` (creates one), then `akashik daemon stop && akashik daemon start`.',
+      'p2p disabled: no peer identity yet. Run `folklore peer status` (creates one), then `folklore daemon stop && folklore daemon start`.',
     );
   }
   if (existsSync(identityPath)) {
@@ -452,7 +452,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
 
             // Surface dialable addresses — without this, a peer on
             // another machine has no way to learn what to `peer add`.
-            // Logged AND persisted so `akashik peer status` can print
+            // Logged AND persisted so `folklore peer status` can print
             // them while the daemon runs.
             const listenAddrs = liveNode.getMultiaddrs().map((a) => a.toString());
             for (const addr of listenAddrs) {
@@ -615,7 +615,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               daemonLog(deps.homePath, `share sync register failed: ${formatError(reg.error)}`);
               liveSync = null;
             } else {
-              daemonLog(deps.homePath, `share sync registered: /akashik/share/1.0.0`);
+              daemonLog(deps.homePath, `share sync registered: /folklore/share/1.0.0`);
 
               // P2P-sync bug fix: the daemon's main-tick share sync cadence is
               // tied to research-tick interval (daily by default), which leaves
@@ -691,7 +691,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               daemonLog(deps.homePath, `search protocol register failed: ${formatError(searchReg.error)}`);
               liveSearch = null;
             } else {
-              daemonLog(deps.homePath, `search protocol registered: /akashik/search/1.0.0`);
+              daemonLog(deps.homePath, `search protocol registered: /folklore/search/1.0.0`);
             }
 
             // Register entity-recall protocol — sibling to search.
@@ -705,7 +705,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                 },
                 log: (m) => daemonLog(deps.homePath, m),
               });
-              daemonLog(deps.homePath, `recall protocol registered: /akashik/recall/1.0.0`);
+              daemonLog(deps.homePath, `recall protocol registered: /folklore/recall/1.0.0`);
             } catch (e) {
               daemonLog(deps.homePath, `recall protocol register failed: ${(e as Error).message}`);
             }
@@ -723,7 +723,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                 signSeed,
                 log: (m) => daemonLog(deps.homePath, m),
               });
-              daemonLog(deps.homePath, `fetch protocol registered: /akashik/fetch/1.0.0`);
+              daemonLog(deps.homePath, `fetch protocol registered: /folklore/fetch/1.0.0`);
             } catch (e) {
               daemonLog(deps.homePath, `fetch protocol register failed: ${(e as Error).message}`);
             }
@@ -745,11 +745,11 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               daemonLog(deps.homePath, `touch protocol register failed: ${formatError(touchReg.error)}`);
               liveTouch = null;
             } else {
-              daemonLog(deps.homePath, `touch protocol registered: /akashik/touch/1.0.0`);
+              daemonLog(deps.homePath, `touch protocol registered: /folklore/touch/1.0.0`);
             }
 
             // Phase 39 — Layer B oracle pubsub. Subscribe to the
-            // /akashik/oracle/1.0.0 topic so inbound questions and
+            // /folklore/oracle/1.0.0 topic so inbound questions and
             // answers from connected peers land in the local graph in
             // real-time (seconds, not minutes). Upserts run through the
             // same remote-node-validator as touch, so the trust boundary
@@ -769,7 +769,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               daemonLog(deps.homePath, `oracle subscribe failed (Layer B disabled): ${formatError(oracleSub.error)}`);
             } else {
               liveOracle = oracleSub.value;
-              daemonLog(deps.homePath, `oracle pubsub subscribed: /akashik/oracle/1.0.0`);
+              daemonLog(deps.homePath, `oracle pubsub subscribed: /folklore/oracle/1.0.0`);
             }
 
             // P2P-scale phase 1 — federated search over pubsub. Replaces
@@ -821,7 +821,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               daemonLog(deps.homePath, `search-gossip register failed: ${formatError(gossipSub.error)}`);
             } else {
               liveSearchGossip = gossipSub.value;
-              daemonLog(deps.homePath, `search-gossip subscribed: /akashik/search/1.0.0`);
+              daemonLog(deps.homePath, `search-gossip subscribed: /folklore/search/1.0.0`);
             }
 
             // P2P-scale phase 3 — swarm-sim registration was lifted

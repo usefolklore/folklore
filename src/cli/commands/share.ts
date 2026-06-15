@@ -1,9 +1,9 @@
 /**
- * `akashik share <peer>` — V5 peer-only share command.
+ * `folklore share <peer>` — V5 peer-only share command.
  *
  * Every graph node where `private === false` is shareable. There is no
  * per-topic flag and no shared-rooms.json. To stop sharing a node, mark
- * it private; to stop sharing with a peer, `akashik unshare <peer>`.
+ * it private; to stop sharing with a peer, `folklore unshare <peer>`.
  *
  * Flow: audit the shareable subset against the secrets-scanner
  * (Phase 15 SEC-01 — hard block on flagged content), print a summary,
@@ -17,7 +17,7 @@ import { scanNode, buildPatterns, type ShareableNode } from '../../domain/sharin
 import type { GraphNode } from '../../domain/graph.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
 import { fileGraphRepository } from '../../infrastructure/graph-repository.js';
-import { runtimePaths, akashikHome } from '../runtime.js';
+import { runtimePaths, folkloreHome } from '../runtime.js';
 import { mutatePeers, addPeerRecord, loadPeers } from '../../infrastructure/peer-store.js';
 
 // Local batch wrapper around scanNode — V5 share surface operates on
@@ -36,13 +36,13 @@ const auditNodes = (
   return { allowed, blocked };
 };
 
-const configPath = (): string => join(akashikHome(), 'config.yaml');
-const peersPath = (): string => join(akashikHome(), 'peers.json');
+const configPath = (): string => join(folkloreHome(), 'config.yaml');
+const peersPath = (): string => join(folkloreHome(), 'peers.json');
 
-const USAGE = `usage: akashik share <peer-id> [--audit-only] [--json]
+const USAGE = `usage: folklore share <peer-id> [--audit-only] [--json]
 
 Shares every graph node where \`private === false\` with the given peer.
-The peer must already be reachable (run \`akashik peer add <multiaddr>\`
+The peer must already be reachable (run \`folklore peer add <multiaddr>\`
 first if it is not yet in peers.json). Sharing is gated by the secrets
 scanner — any node containing tokens or keys is hard-blocked.
 
@@ -131,7 +131,7 @@ export const share = async (args: readonly string[]): Promise<number> => {
 
   if (parsed.auditOnly) return 0;
   if (result.blocked.length > 0) {
-    console.error(`\nshare: refusing — ${result.blocked.length} node(s) contain secrets. Mark them private (\`akashik save --private\`) or remove them before sharing.`);
+    console.error(`\nshare: refusing — ${result.blocked.length} node(s) contain secrets. Mark them private (\`folklore save --private\`) or remove them before sharing.`);
     return 1;
   }
 
@@ -152,6 +152,6 @@ export const share = async (args: readonly string[]): Promise<number> => {
     console.error(`share: ${formatError(mutResult.error)}`);
     return 1;
   }
-  console.log(`\nshare intent recorded for ${parsed.peerId}. Restart the daemon (\`akashik daemon stop && start\`) so it picks up the new share target.`);
+  console.log(`\nshare intent recorded for ${parsed.peerId}. Restart the daemon (\`folklore daemon stop && start\`) so it picks up the new share target.`);
   return 0;
 };

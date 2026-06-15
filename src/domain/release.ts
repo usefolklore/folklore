@@ -1,7 +1,7 @@
 /**
  * Release domain — pure version-comparison + signed-release verification.
  *
- * A release manifest published by the akashik project is a JSON
+ * A release manifest published by the folklore project is a JSON
  * document signed under the **release-signing DID** (a long-lived
  * project Ed25519 key, distinct from any user identity). Adopters
  * pin the project DID at install time; auto-update verifies every
@@ -158,7 +158,7 @@ export const verifyManifest = (
   if (pubKeyRes.isErr()) {
     return err(ReleaseError.invalidManifest('project_did', `cannot decode: ${pubKeyRes.error.type}`));
   }
-  const message = new TextEncoder().encode(`akashik-release:v1:${canonicalManifestJSON(manifest)}`);
+  const message = new TextEncoder().encode(`folklore-release:v1:${canonicalManifestJSON(manifest)}`);
 
   // Decode hex signature
   const sig = new Uint8Array(ED25519_SIGNATURE_LENGTH);

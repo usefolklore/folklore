@@ -67,8 +67,8 @@ test('onnx-bench: real all-MiniLM-L6-v2 IR metrics', async (t) => {
   // Opt-in: downloads ~25MB ONNX model from Hugging Face. Same gate
   // as bench-scifact-real / bench-locomo-real / bench-longmemeval-real
   // so CI never hits the network and never flakes on a CDN blip.
-  if (process.env.AKASHIK_BENCH_PUBLIC_REAL !== '1') {
-    t.skip('AKASHIK_BENCH_PUBLIC_REAL not set — skipping real ONNX model download');
+  if (process.env.FOLKLORE_BENCH_PUBLIC_REAL !== '1') {
+    t.skip('FOLKLORE_BENCH_PUBLIC_REAL not set — skipping real ONNX model download');
     return;
   }
   const tmp = mkdtempSync(join(tmpdir(), 'wi-onnx-'));
@@ -139,7 +139,7 @@ test('onnx-bench: real all-MiniLM-L6-v2 IR metrics', async (t) => {
 
     console.log(`\n  Comparison:`);
     console.log(`    mcp-memory-service: 86.0% R@5 (claimed)`);
-    console.log(`    akashik:       ${(avgR5 * 100).toFixed(1)}% R@5 (measured, real ONNX)`);
+    console.log(`    folklore:       ${(avgR5 * 100).toFixed(1)}% R@5 (measured, real ONNX)`);
     console.log(`    Cognee HotPotQA:    published but different corpus/metric`);
 
     // With real embeddings, MRR should be significantly better than fixture embedder

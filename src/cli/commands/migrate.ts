@@ -1,10 +1,10 @@
 /**
- * `akashik migrate v5 [--rollback]` — V4 → V5 schema migration
+ * `folklore migrate v5 [--rollback]` — V4 → V5 schema migration
  * (Phase 24, Plan 11, ROOMS-DEL-06) PLUS the Phase 25 data-dir
- * relocation `~/.wellinformed/` → `~/.akashik/`.
+ * relocation `~/.wellinformed/` → `~/.folklore/`.
  *
  * Two transitions in one command, in order:
- *   1. Directory relocate: rename ~/.wellinformed/ → ~/.akashik/ (or
+ *   1. Directory relocate: rename ~/.wellinformed/ → ~/.folklore/ (or
  *      copy+delete on cross-device). Atomic where filesystems allow.
  *   2. Schema migrate: graph.json V4 → V5 — strip `room` from every
  *      node, stamp `private: false`, heuristically infer `workspace`,
@@ -16,7 +16,7 @@
  * Rollback restores the graph blob from backup; rooms.json +
  * shared-rooms.json deletions, reputation flattening, and the dir
  * relocate are one-way. The dir relocate is deliberately not rolled
- * back: ~/.akashik/ is the canonical post-rebrand home; reverting
+ * back: ~/.folklore/ is the canonical post-rebrand home; reverting
  * the brand is out of scope for a schema rollback.
  */
 
@@ -27,13 +27,13 @@ import {
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 
-const akashikHome = (): string =>
-  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
+const folkloreHome = (): string =>
+  process.env.FOLKLORE_HOME ?? join(homedir(), '.folklore');
 
 /** Pre-rebrand home. Only consulted by the relocator below; the rest of
- *  the CLI has been swept to akashikHome(). */
+ *  the CLI has been swept to folkloreHome(). */
 const legacyHome = (): string =>
-  process.env.AKASHIK_LEGACY_HOME ?? join(homedir(), '.wellinformed');
+  process.env.FOLKLORE_LEGACY_HOME ?? join(homedir(), '.wellinformed');
 
 const slugify = (s: string): string =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 63);
@@ -70,7 +70,7 @@ interface MigrateStats {
 }
 
 const migratePaths = (): MigratePaths => {
-  const home = akashikHome();
+  const home = folkloreHome();
   return {
     home,
     graph: join(home, 'graph.json'),
@@ -85,10 +85,10 @@ const migratePaths = (): MigratePaths => {
 /**
  * Heuristic: does a slugified room name match a real repo on disk?
  * Scans ~/personal, ~/code, ~/work, ~/src, ~/projects.
- * Override via AKASHIK_REPO_ROOTS=path1:path2.
+ * Override via FOLKLORE_REPO_ROOTS=path1:path2.
  */
 const repoRoots = (): readonly string[] => {
-  const env = process.env.AKASHIK_REPO_ROOTS;
+  const env = process.env.FOLKLORE_REPO_ROOTS;
   if (env) return env.split(':').filter(Boolean);
   const h = homedir();
   return [join(h, 'personal'), join(h, 'code'), join(h, 'work'), join(h, 'src'), join(h, 'projects')];
@@ -216,7 +216,7 @@ const confirmBackupOverwrite = (path: string, graphPath?: string): boolean => {
 };
 
 /** Is the directory empty (or just stale dotfiles + a post-relocate
- *  breadcrumb)? Used to decide whether a path like ~/.akashik/ counts
+ *  breadcrumb)? Used to decide whether a path like ~/.folklore/ counts
  *  as a real "would clobber" conflict or is safe to consume, and also
  *  whether the legacy path is just a left-over breadcrumb from a prior
  *  successful relocate (idempotency on re-runs). */
@@ -235,7 +235,7 @@ interface RelocateOutcome {
 }
 
 /**
- * Relocate `~/.wellinformed/` → `~/.akashik/`. Decision matrix:
+ * Relocate `~/.wellinformed/` → `~/.folklore/`. Decision matrix:
  *
  *   legacy │ target          │ action
  *   ───────┼─────────────────┼─────────────────────────────────────
@@ -250,7 +250,7 @@ interface RelocateOutcome {
  */
 const relocateDir = (): RelocateOutcome => {
   const legacy = legacyHome();
-  const target = akashikHome();
+  const target = folkloreHome();
 
   if (!existsSync(legacy)) {
     return { kind: 'noop', message: `Legacy ${legacy} not present — skipping dir relocate.` };
@@ -281,7 +281,7 @@ const relocateDir = (): RelocateOutcome => {
           process.kill(pid, 0);
           return {
             kind: 'aborted',
-            message: `daemon still running in ${legacy} (pid ${pid}). Stop it first: 'akashik daemon stop' (against the legacy home).`,
+            message: `daemon still running in ${legacy} (pid ${pid}). Stop it first: 'folklore daemon stop' (against the legacy home).`,
           };
         } catch { /* stale pidfile, safe to proceed */ }
       }
@@ -328,7 +328,7 @@ const relocateDir = (): RelocateOutcome => {
     writeFileSync(
       join(legacy, 'RELOCATED.txt'),
       `This directory was relocated to ${target} on ${new Date().toISOString()}\n` +
-      `by 'akashik migrate v5'. The relocation is one-way; akashik no longer\n` +
+      `by 'folklore migrate v5'. The relocation is one-way; folklore no longer\n` +
       `reads from this path. Safe to delete.\n`,
     );
   } catch { /* breadcrumb is best-effort */ }
@@ -338,7 +338,7 @@ const relocateDir = (): RelocateOutcome => {
 
 /** Forward migration: V4 → V5. */
 const runMigrate = (): number => {
-  // Step 0 — relocate ~/.wellinformed/ → ~/.akashik/ before touching schema.
+  // Step 0 — relocate ~/.wellinformed/ → ~/.folklore/ before touching schema.
   console.log('Checking data home...');
   const reloc = relocateDir();
   if (reloc.kind === 'aborted') {
@@ -410,7 +410,7 @@ const runMigrate = (): number => {
 
   console.log(`  ✓ Backed up pre-migration graph to ${basename(paths.backup)}`);
   console.log('');
-  console.log('V5 cutover complete. Run `akashik doctor` to verify.');
+  console.log('V5 cutover complete. Run `folklore doctor` to verify.');
   return 0;
 };
 
@@ -443,13 +443,13 @@ const runRollback = (): number => {
   console.log(`  ✗ peer-reputation.json flattening NOT auto-reversible`);
   console.log('');
   console.log('Re-create rooms.json + shared-rooms.json from your own backups if needed,');
-  console.log('or run `akashik migrate v5` again to re-apply.');
+  console.log('or run `folklore migrate v5` again to re-apply.');
   return 0;
 };
 
 /**
  * Back-fill `github_user` on every existing node from the linked
- * github handle in ~/.akashik/linked-accounts.json (Phase 26).
+ * github handle in ~/.folklore/linked-accounts.json (Phase 26).
  *
  * Nodes that already carry a `github_user` are NEVER overwritten —
  * peer-imported nodes carry their author's handle, and this command
@@ -457,7 +457,7 @@ const runRollback = (): number => {
  *
  * Idempotent: re-runs with no eligible nodes exit "Already stamped."
  * No-op when there's no github handle to stamp (the user hasn't run
- * `akashik login` yet).
+ * `folklore login` yet).
  */
 const runStampGithub = (): number => {
   const paths = migratePaths();
@@ -479,7 +479,7 @@ const runStampGithub = (): number => {
   }
   if (!handle) {
     console.error(`migrate --stamp-github: no linked github account in ${linkedPath}.`);
-    console.error(`  Run \`akashik login\` first to link an account.`);
+    console.error(`  Run \`folklore login\` first to link an account.`);
     return 1;
   }
 
@@ -532,9 +532,9 @@ const runStampGithub = (): number => {
 };
 
 const printUsage = (): void => {
-  console.error('usage: akashik migrate v5 [--rollback | --stamp-github]');
+  console.error('usage: folklore migrate v5 [--rollback | --stamp-github]');
   console.error('  V4 → V5 schema migration (rooms abstraction removed) PLUS');
-  console.error('  data-dir relocation ~/.wellinformed/ → ~/.akashik/ (Phase 25).');
+  console.error('  data-dir relocation ~/.wellinformed/ → ~/.folklore/ (Phase 25).');
   console.error('  --rollback     restores the pre-migration graph.json from backup.');
   console.error('  --stamp-github back-fills github_user on existing nodes from the');
   console.error('                 verified handle in linked-accounts.json (Phase 26).');
@@ -542,7 +542,7 @@ const printUsage = (): void => {
 };
 
 // Test seam — exposed so tests can drive the relocator with synthetic
-// AKASHIK_HOME / AKASHIK_LEGACY_HOME without invoking the full migrate.
+// FOLKLORE_HOME / FOLKLORE_LEGACY_HOME without invoking the full migrate.
 export const __relocateDirForTest = relocateDir;
 
 export const migrateCommand = async (args: string[]): Promise<number> => {

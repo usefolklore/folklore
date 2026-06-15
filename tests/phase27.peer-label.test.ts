@@ -1,12 +1,12 @@
 /**
- * Phase 27 — `akashik peer label` / `peer unlabel` E2E.
+ * Phase 27 — `folklore peer label` / `peer unlabel` E2E.
  *
- * Drives the renamed-akashik bin through `execFileSync` against a
- * temp AKASHIK_HOME so the test never touches the live ~/.akashik/.
+ * Drives the renamed-folklore bin through `execFileSync` against a
+ * temp FOLKLORE_HOME so the test never touches the live ~/.folklore/.
  * What this pins:
  *
  *   L1  `peer label <id> <handle>` writes the github mapping to
- *       peer-labels.json under the supplied AKASHIK_HOME
+ *       peer-labels.json under the supplied FOLKLORE_HOME
  *   L2  `peer label <id> @<handle>` strips the `@` prefix gracefully
  *   L3  `--note "free text"` is persisted alongside the github field
  *   L4  re-running `peer label` with the same id upserts (no duplicates)
@@ -31,7 +31,7 @@ import {
   removePeerLabel,
 } from '../src/infrastructure/peer-labels.js';
 
-const cliBin = join(process.cwd(), 'bin/akashik.js');
+const cliBin = join(process.cwd(), 'bin/folklore.js');
 
 const tmpHome = (): string => mkdtempSync(join(tmpdir(), 'ak-p27-'));
 
@@ -40,7 +40,7 @@ interface CliResult { code: number; stdout: string; stderr: string; }
 const runCli = (args: readonly string[], home: string): CliResult => {
   try {
     const stdout = execFileSync(process.execPath, [cliBin, ...args], {
-      env: { ...process.env, AKASHIK_HOME: home },
+      env: { ...process.env, FOLKLORE_HOME: home },
       stdio: ['ignore', 'pipe', 'pipe'],
       encoding: 'utf8',
     });
@@ -155,7 +155,7 @@ test('phase-27 L6: peer label with too few args exits 1 with usage hint', () => 
   try {
     const r = runCli(['peer', 'label', PEER_A], home);
     assert.equal(r.code, 1);
-    assert.match(r.stderr, /usage: akashik peer label/);
+    assert.match(r.stderr, /usage: folklore peer label/);
   } finally {
     rmSync(home, { recursive: true, force: true });
   }

@@ -1,10 +1,10 @@
 /**
- * `akashik swarm` — Phase 3 of the P2P scale plan.
+ * `folklore swarm` — Phase 3 of the P2P scale plan.
  *
  * Two subcommands:
  *
  *   swarm gen --count N [--domain D]
- *     Generates ~/.akashik/swarm-corpus.jsonl with N synthetic
+ *     Generates ~/.folklore/swarm-corpus.jsonl with N synthetic
  *     virtual peers, each with 5-10 notes covering the chosen domain.
  *     Each peer carries a deterministic libp2p-shaped PeerId, a fake
  *     github handle, and a did_short. The corpus is keyed by peer_id
@@ -32,7 +32,7 @@
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { defaultRuntime, akashikHome } from '../runtime.js';
+import { defaultRuntime, folkloreHome } from '../runtime.js';
 
 // ───────────────────────── helpers ─────────────────────────
 
@@ -226,7 +226,7 @@ const cmdGen = async (args: readonly string[]): Promise<number> => {
   let count = 100;
   let domain = 'hydrogen-detection';
   let adversarialFrac = 0;
-  let seed = 'akashik-swarm-default';
+  let seed = 'folklore-swarm-default';
   for (let i = 0; i < args.length; i++) {
     const f = args[i];
     if (f === '--count') count = parseInt(args[++i] ?? '0', 10);
@@ -243,7 +243,7 @@ const cmdGen = async (args: readonly string[]): Promise<number> => {
     console.error('swarm gen: --adversarial-frac must be in [0,1]');
     return 1;
   }
-  const home = akashikHome();
+  const home = folkloreHome();
   if (!existsSync(home)) mkdirSync(home, { recursive: true });
   const outPath = join(home, 'swarm-corpus.jsonl');
   const corpus = genCorpus(count, domain, adversarialFrac, seed);
@@ -308,7 +308,7 @@ const cmdGen = async (args: readonly string[]): Promise<number> => {
   console.log(`  corpus:       ${outPath}`);
   console.log(`  peer table:   ${peersPath}`);
   console.log(`  labels:       ${labelsPath} (extended)`);
-  console.log(`Next: \`akashik swarm sim\` to start the responder.`);
+  console.log(`Next: \`folklore swarm sim\` to start the responder.`);
   return 0;
 };
 
@@ -325,11 +325,11 @@ const cmdSim = async (args: readonly string[]): Promise<number> => {
     else if (f === '--top-peers') topPeersPerQuery = parseInt(args[++i] ?? '50', 10);
     else { console.error(`swarm sim: unknown flag '${f}'`); return 1; }
   }
-  const home = akashikHome();
+  const home = folkloreHome();
   const path = corpusPath ?? join(home, 'swarm-corpus.jsonl');
   if (!existsSync(path)) {
     console.error(`swarm sim: corpus not found at ${path}`);
-    console.error(`  run \`akashik swarm gen --count 100\` first.`);
+    console.error(`  run \`folklore swarm gen --count 100\` first.`);
     return 1;
   }
   const lines = readFileSync(path, 'utf8').split('\n').filter(Boolean);
@@ -348,7 +348,7 @@ const cmdSim = async (args: readonly string[]): Promise<number> => {
   console.log(`        publish on inbound search request) lands in a`);
   console.log(`        follow-up commit — this scaffold proves the`);
   console.log(`        corpus + addressing model. Run with the daemon:`);
-  console.log(`          akashik daemon start`);
+  console.log(`          folklore daemon start`);
   console.log(`        then query with --peers; future swarm-sim`);
   console.log(`        responder injects synthetic responses to the`);
   console.log(`        gossip topic.`);
@@ -362,16 +362,16 @@ export const swarm = async (args: readonly string[]): Promise<number> => {
   if (sub === 'gen') return cmdGen(rest);
   if (sub === 'sim') return cmdSim(rest);
   if (!sub || sub === 'help' || sub === '--help' || sub === '-h') {
-    console.log('usage: akashik swarm <gen|sim> [flags]');
+    console.log('usage: folklore swarm <gen|sim> [flags]');
     console.log('');
     console.log('  swarm gen --count N [--domain D] [--adversarial-frac F] [--seed S]');
     console.log('    Generate N virtual peers + ~5 notes each into');
-    console.log('    ~/.akashik/swarm-corpus.jsonl. Adversarial peers');
+    console.log('    ~/.folklore/swarm-corpus.jsonl. Adversarial peers');
     console.log('    flip to plausible-looking garbage for sybil testing.');
     console.log('');
     console.log('  swarm sim [--corpus PATH] [--respond-as N]');
     console.log('    Load the corpus and start a responder that publishes');
-    console.log('    synthetic gossip responses on /akashik/search-resp');
+    console.log('    synthetic gossip responses on /folklore/search-resp');
     console.log('    for any incoming federated search request.');
     return 0;
   }

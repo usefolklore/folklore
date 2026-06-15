@@ -1,5 +1,5 @@
 /**
- * `akashik identity <sub>` — inspect and manage the user+device
+ * `folklore identity <sub>` — inspect and manage the user+device
  * identity tuple that wraps every outbound memory entry (DID wave).
  *
  * Subcommands:
@@ -21,7 +21,7 @@ import {
   exportRecoveryMnemonic,
   importRecoveryAuto,
 } from '../../application/identity-lifecycle.js';
-import { akashikHome } from '../runtime.js';
+import { folkloreHome } from '../runtime.js';
 
 const toHex = (bytes: Uint8Array): string => {
   let s = '';
@@ -40,7 +40,7 @@ const printResolved = (title: string, r: { user: { did: string; publicKey: Uint8
 };
 
 const init = async (): Promise<number> => {
-  const res = await ensureIdentity(akashikHome());
+  const res = await ensureIdentity(folkloreHome());
   if (res.isErr()) {
     console.error(`identity init: ${formatError(res.error)}`);
     return 1;
@@ -53,7 +53,7 @@ const show = async (): Promise<number> => {
   // `ensureIdentity` doubles as a load-or-initialize. We could also
   // add a load-only variant to the application layer — for now, show
   // implies "create if missing" which matches operator expectations.
-  const res = await ensureIdentity(akashikHome());
+  const res = await ensureIdentity(folkloreHome());
   if (res.isErr()) {
     console.error(`identity show: ${formatError(res.error)}`);
     return 1;
@@ -63,7 +63,7 @@ const show = async (): Promise<number> => {
 };
 
 const rotate = async (): Promise<number> => {
-  const res = await rotateDeviceKey(akashikHome());
+  const res = await rotateDeviceKey(folkloreHome());
   if (res.isErr()) {
     console.error(`identity rotate: ${formatError(res.error)}`);
     return 1;
@@ -75,8 +75,8 @@ const rotate = async (): Promise<number> => {
 const exportCmd = async (rest: readonly string[]): Promise<number> => {
   const wantHex = rest.includes('--hex');
   const res = wantHex
-    ? await exportRecoveryHex(akashikHome())
-    : await exportRecoveryMnemonic(akashikHome());
+    ? await exportRecoveryHex(folkloreHome())
+    : await exportRecoveryMnemonic(folkloreHome());
   if (res.isErr()) {
     console.error(`identity export: ${formatError(res.error)}`);
     return 1;
@@ -87,7 +87,7 @@ const exportCmd = async (rest: readonly string[]): Promise<number> => {
     console.error('   v1 hex format: 64-char hex of the 32-byte Ed25519 seed.\n');
   } else {
     console.error('   v4.1 BIP39 format: 24 English words = 256 bits = exact seed.');
-    console.error('   Use `akashik identity export --hex` for the legacy v1 hex format.\n');
+    console.error('   Use `folklore identity export --hex` for the legacy v1 hex format.\n');
   }
   console.log(res.value);
   return 0;
@@ -101,12 +101,12 @@ const importCmd = async (rest: readonly string[]): Promise<number> => {
   // multiple argv tokens; join them.
   if (rest.length === 0) {
     console.error('identity import: missing recovery input.');
-    console.error('  usage: akashik identity import <24-word-mnemonic>');
-    console.error('         akashik identity import <64-char-hex>');
+    console.error('  usage: folklore identity import <24-word-mnemonic>');
+    console.error('         folklore identity import <64-char-hex>');
     return 1;
   }
   const input = rest.join(' ');
-  const res = await importRecoveryAuto(akashikHome(), input);
+  const res = await importRecoveryAuto(folkloreHome(), input);
   if (res.isErr()) {
     console.error(`identity import: ${formatError(res.error)}`);
     return 1;
@@ -116,7 +116,7 @@ const importCmd = async (rest: readonly string[]): Promise<number> => {
 };
 
 const help = (): number => {
-  console.log('usage: akashik identity <sub>');
+  console.log('usage: folklore identity <sub>');
   console.log('');
   console.log('  init                          create user+device identity if missing (idempotent)');
   console.log('  show                          print current identity');
@@ -125,7 +125,7 @@ const help = (): number => {
   console.log('                                hex with --hex (SENSITIVE — warns)');
   console.log('  import <words... | hex>       restore identity from BIP39 mnemonic OR 64-char hex');
   console.log('');
-  console.log('Every memory entry akashik signs is wrapped in an envelope');
+  console.log('Every memory entry folklore signs is wrapped in an envelope');
   console.log('provably authored by this user DID via this device key. Rotating');
   console.log('the device key revokes it for future signatures; past envelopes');
   console.log('remain verifiable because each embeds its own device pubkey.');

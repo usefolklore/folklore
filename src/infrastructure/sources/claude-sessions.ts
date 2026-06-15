@@ -50,7 +50,7 @@ const BLOCKED_PREFIX = '[BLOCKED: ';
 // ─────────────────────── deps + config ────────────────────
 
 export interface ClaudeSessionsDeps {
-  /** ~/.akashik directory — state file is written here. */
+  /** ~/.folklore directory — state file is written here. */
   readonly homePath: string;
   /** Compiled secret patterns from buildPatterns(). */
   readonly patterns: ReturnType<typeof buildPatterns>;

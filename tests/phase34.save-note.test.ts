@@ -1,7 +1,7 @@
 /**
  * Phase 34 — save-note regression tests.
  *
- * Covers the pure helpers that back the `akashik save` CLI:
+ * Covers the pure helpers that back the `folklore save` CLI:
  *   - slugify edge cases
  *   - deterministic id derivation (same input → same id)
  *   - GraphNode shape + file_type mapping per note type
@@ -53,7 +53,7 @@ test("phase-34: nodeFromSave maps 'source' → document, others → rationale", 
   assert.strictEqual(con.file_type, 'rationale');
   assert.strictEqual(dec.file_type, 'rationale');
   for (const n of [src, syn, con, dec]) {
-    assert.strictEqual(n.source_file, 'akashik:save');
+    assert.strictEqual(n.source_file, 'folklore:save');
     // V5: nodes carry `private: boolean` and optional `workspace`, no room
     assert.strictEqual((n as unknown as Record<string, unknown>).private, false);
   }

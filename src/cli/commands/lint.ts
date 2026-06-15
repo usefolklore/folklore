@@ -1,5 +1,5 @@
 /**
- * `akashik lint [--json]`
+ * `folklore lint [--json]`
  *
  * Scan the graph for hygiene issues and print a report. Non-zero exit
  * if any findings — so the command can be wired into `npm test`-style

@@ -41,7 +41,7 @@
  * mean down sharply.
  *
  * Opt-in LLM extractor (Phase 23.7+):
- *   set `AKASHIK_BENCH_LLM_EXTRACTOR=1` to swap the
+ *   set `FOLKLORE_BENCH_LLM_EXTRACTOR=1` to swap the
  *   containment metric for a real Ollama Phi-4-mini extracted
  *   answer scored via SQuAD-style F1. Not wired in this turn —
  *   the scaffolding is documented in the suite registry.
@@ -473,8 +473,8 @@ test('bench: synthetic LoCoMo-style factual F1 ≥ 0.50', async () => {
       notes: 'Synthetic 4-persona × 40-session × 6-month LoCoMo-style proxy. Dimension = harmonic mean of evidence-session recall AND answer-token containment in top-3 retrieved evidence. Token-F1-on-full-summary dropped — see suite header for the length-mismatch precision bug. Real LoCoMo + LLM extractor pending Phase 23.7+.',
     };
 
-    if (process.env.AKASHIK_BENCH_OUT) {
-      appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+    if (process.env.FOLKLORE_BENCH_OUT) {
+      appendFileSync(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
     }
 
     console.log(

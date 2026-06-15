@@ -2,7 +2,7 @@
  * tree-sitter-parser.ts — infrastructure adapter wrapping tree-sitter
  * for Phase 19 structured code indexing.
  *
- * CRITICAL: tree-sitter and its grammar packages are CommonJS. akashik
+ * CRITICAL: tree-sitter and its grammar packages are CommonJS. folklore
  * is an ESM module ("type": "module" in package.json). We use createRequire
  * to load them — a TypeScript `import TreeSitter from 'tree-sitter'` works
  * at build time but blows up at runtime on ESM/CJS interop. See 19-RESEARCH.md

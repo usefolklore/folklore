@@ -1,5 +1,5 @@
 /**
- * Peer store — persists known peers to ~/.akashik/peers.json.
+ * Peer store — persists known peers to ~/.folklore/peers.json.
  * Atomic writes via write-to-tmp + rename to prevent file corruption.
  * No classes, neverthrow ResultAsync for all I/O.
  *
@@ -23,7 +23,7 @@ const PEERS_FILE_VERSION = 1 as const;
  * Uses exclusive-create (`wx` flag) on a sibling `.lock` file — POSIX
  * atomic exclusive file creation with no external dependency. Holds the
  * lock for the duration of a read-modify-write transaction so two
- * concurrent akashik processes cannot clobber each other's peer list.
+ * concurrent folklore processes cannot clobber each other's peer list.
  *
  * Staleness guard: lock file contains the locker's PID and timestamp.
  * Locks older than STALE_LOCK_MS are considered abandoned (e.g., parent
@@ -108,7 +108,7 @@ export interface PeerRecord {
   /**
    * How this peer was discovered. Optional for backward compatibility with
    * pre-Phase 17 peers.json files (absence means 'manual' — the only pre-17 path).
-   *   - 'manual' : `akashik peer add <multiaddr>`
+   *   - 'manual' : `folklore peer add <multiaddr>`
    *   - 'mdns'   : libp2p mDNS peer:discovery event
    *   - 'dht'    : kad-dht FIND_NODE response (Phase 17 wiring, off by default)
    *
@@ -256,7 +256,7 @@ export const removePeerRecord = (
  *
  * Acquires a cross-process lock (sibling `.lock` file via exclusive-create),
  * loads the current state, applies the pure transform, saves atomically,
- * and releases the lock. Prevents two akashik processes (e.g., daemon +
+ * and releases the lock. Prevents two folklore processes (e.g., daemon +
  * CLI `peer add`) from racing and clobbering each other's writes.
  *
  * The `transform` function receives the current PeersFile and must return

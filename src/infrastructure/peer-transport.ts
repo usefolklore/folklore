@@ -23,8 +23,8 @@ import { circuitRelayTransport } from '@libp2p/circuit-relay-v2';
 import { dcutr } from '@libp2p/dcutr';
 // Layer B of the peer-discovery stack (oracle live queries). Floodsub
 // is the simpler pubsub over libp2p — O(n²) relay traffic but fine for
-// the small networks akashik targets at this stage. Gossipsub 14.x
-// still targets @libp2p/interface v2 while akashik uses v3, so
+// the small networks folklore targets at this stage. Gossipsub 14.x
+// still targets @libp2p/interface v2 while folklore uses v3, so
 // floodsub is the right fit until @chainsafe ships a v3-compatible
 // gossipsub release. The service API is identical so upgrading later
 // is a one-line swap.
@@ -227,7 +227,7 @@ export const createNode = (
           // multicast bind failure. Log and continue without mDNS.
           // mDNS unavailable — user must use manual 'peer add' or enable Docker --network host / WSL2 mirrored mode.
           process.stderr.write(
-            `akashik: mDNS unavailable (${(e as Error).message}). ` +
+            `folklore: mDNS unavailable (${(e as Error).message}). ` +
             `Continuing without LAN discovery. ` +
             `Use manual 'peer add' or enable Docker --network host / WSL2 mirrored mode.\n`,
           );
@@ -248,7 +248,7 @@ export const createNode = (
       // silent no-op on loopback — Pitfall 2).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const services: Record<string, any> = {
-        ...(dhtOn ? { dht: kadDHT({ clientMode: true, protocol: '/akashik/kad/1.0.0' }) } : {}),
+        ...(dhtOn ? { dht: kadDHT({ clientMode: true, protocol: '/folklore/kad/1.0.0' }) } : {}),
         // identify() is required by circuitRelayTransport — RelayDiscovery always
         // registers '@libp2p/identify' as a serviceDependency regardless of init opts.
         // Safe to run unconditionally: it adds the /ipfs/id/1.0.0 protocol handler
@@ -328,7 +328,7 @@ export const createNode = (
             }),
           ).match(
             () => undefined,
-            (e) => process.stderr.write(`akashik: peer:discovery persist failed: ${e.type}\n`),
+            (e) => process.stderr.write(`folklore: peer:discovery persist failed: ${e.type}\n`),
           );
 
           // Explicit dial — only if not already connected (avoid dial storms on
@@ -373,7 +373,7 @@ export const dialAndTag = (
       const peerId = conn.remotePeer;
       await node.peerStore.merge(peerId, {
         multiaddrs: [ma],
-        tags: { 'keep-alive-akashik': { value: 50 } },
+        tags: { 'keep-alive-folklore': { value: 50 } },
       });
       return peerId.toString();
     })(),

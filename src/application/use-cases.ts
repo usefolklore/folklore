@@ -54,12 +54,12 @@ export interface UseCaseDeps {
   /**
    * Lookup of the local GitHub handle (Phase 26). Called by `indexNode`
    * at the write boundary to stamp `github_user` on every locally-
-   * authored node. Returns undefined when `akashik login` hasn't been
+   * authored node. Returns undefined when `folklore login` hasn't been
    * run — in that case the field is omitted and `migrate --stamp-github`
    * can back-fill it once the user does link an account.
    *
-   * Injectable so tests can drive it without touching ~/.akashik/.
-   * Wired by `defaultRuntime()` to `readGithubHandle(akashikHome())`.
+   * Injectable so tests can drive it without touching ~/.folklore/.
+   * Wired by `defaultRuntime()` to `readGithubHandle(folkloreHome())`.
    */
   readonly githubUser?: () => string | undefined;
 }

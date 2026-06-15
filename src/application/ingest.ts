@@ -17,7 +17,7 @@
  *   1. load the current graph
  *   2. compute sha256(normalized text) of every fetched ContentItem
  *   3. compare against `content_sha256` stored on the existing node
- *      (a new akashik extra field — not in graphify's patch but
+ *      (a new folklore extra field — not in graphify's patch but
  *      graphify's validator passes extras through unchanged)
  *   4. equal → skipped, different → updated, not-seen → new
  *   5. only new + updated items chunk/embed/upsert

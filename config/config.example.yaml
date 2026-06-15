@@ -1,5 +1,5 @@
-# akashik — example configuration.
-# Copy to ~/.akashik/config.yaml and fill in secrets.
+# folklore — example configuration.
+# Copy to ~/.folklore/config.yaml and fill in secrets.
 # Never commit real bot tokens or chat ids.
 
 daemon:
@@ -11,17 +11,17 @@ daemon:
 embeddings:
   model: Xenova/all-MiniLM-L6-v2
   dim: 384
-  cache_dir: ~/.akashik/models
+  cache_dir: ~/.folklore/models
 
 graph:
   # forked graphify sidecar — Phase 1
-  path: ~/.akashik/graph
-  python_venv: ~/.akashik/.venv
+  path: ~/.folklore/graph
+  python_venv: ~/.folklore/.venv
   schema_version: 1
 
 vectors:
   # sqlite-vec table shared across rooms; room is a column, not a separate DB
-  path: ~/.akashik/vectors.db
+  path: ~/.folklore/vectors.db
 
 rooms:
   default_room: default

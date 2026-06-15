@@ -1,6 +1,6 @@
 /**
  * Identity store — persists the user-identity / device-key tuple to
- * `~/.akashik/identity/` (or the caller-supplied home directory).
+ * `~/.folklore/identity/` (or the caller-supplied home directory).
  *
  * Layout:
  *   <home>/identity/user.json      — public bundle (DID, pubkey, created_at)
@@ -58,7 +58,7 @@ export interface IdentityPaths {
   readonly devicePath: string;
 }
 
-/** Build the identity-layer file paths from a akashik home directory. */
+/** Build the identity-layer file paths from a folklore home directory. */
 export const identityPaths = (homeDir: string): IdentityPaths => {
   const dir = join(homeDir, 'identity');
   return {

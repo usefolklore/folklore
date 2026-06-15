@@ -169,7 +169,7 @@ describe('Ed25519 sign/verify', () => {
     assert.ok(kpRes.isOk());
     if (!kpRes.isOk()) return;
 
-    const msg = new TextEncoder().encode('hello akashik');
+    const msg = new TextEncoder().encode('hello folklore');
     const sigRes = signBytes(kpRes.value.privateKey, msg);
     assert.ok(sigRes.isOk());
     if (!sigRes.isOk()) return;
@@ -255,7 +255,7 @@ describe('envelope sign/verify', () => {
     const payload = {
       kind: 'memory_entry',
       label: 'nomic-embed-text-v1.5 is MRL-trained',
-      room: 'akashik-dev',
+      room: 'folklore-dev',
       tags: ['retrieval', 'mrl'],
       metadata: { score: 0.93, z: 1 },
     };

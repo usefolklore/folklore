@@ -83,7 +83,7 @@ const sampleCommand = {
     id: 'n1',
     label: 'sample',
     file_type: 'document' as const,
-    source_file: 'akashik:test',
+    source_file: 'folklore:test',
   } satisfies GraphNode,
   text: 'sample body',
 };
@@ -131,7 +131,7 @@ test('phase-26: indexNode preserves a github_user already on cmd.node (peer-impo
 
 // ─────────────── migrate --stamp-github tests ─────────
 
-const cliBin = join(process.cwd(), 'bin/akashik.js');
+const cliBin = join(process.cwd(), 'bin/folklore.js');
 
 interface CliResult { code: number; stdout: string; stderr: string; }
 
@@ -143,8 +143,8 @@ const runMigrateStamp = (home: string): CliResult => {
     const stdout = execFileSync(process.execPath, [cliBin, 'migrate', 'v5', '--stamp-github'], {
       env: {
         ...process.env,
-        AKASHIK_HOME: home,
-        AKASHIK_LEGACY_HOME: join(home, '_no_legacy'),
+        FOLKLORE_HOME: home,
+        FOLKLORE_LEGACY_HOME: join(home, '_no_legacy'),
       },
       stdio: ['ignore', 'pipe', 'pipe'],
       encoding: 'utf8',

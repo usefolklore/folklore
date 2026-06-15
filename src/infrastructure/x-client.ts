@@ -3,7 +3,7 @@
  *
  * Uses twitter-api-v2 (1.5K stars, last commit Jan 2026).
  * OAuth flow: opens browser for auth, stores token at
- * ~/.akashik/x-token.json, refreshes automatically.
+ * ~/.folklore/x-token.json, refreshes automatically.
  *
  * No credentials are hardcoded. X_CLIENT_ID must be set as env var
  * or passed in config. Client secret is optional for public clients.
@@ -60,7 +60,7 @@ const authenticate = async (cfg: XClientConfig): Promise<StoredToken> => {
     scope: SCOPES,
   });
 
-  console.log('\nOpen this URL in your browser to authorize akashik:\n');
+  console.log('\nOpen this URL in your browser to authorize folklore:\n');
   console.log(`  ${url}\n`);
 
   // Try to open browser automatically
@@ -100,7 +100,7 @@ const authenticate = async (cfg: XClientConfig): Promise<StoredToken> => {
         saveToken(cfg.homePath, token);
 
         res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end('<h2>akashik authorized. You can close this tab.</h2>');
+        res.end('<h2>folklore authorized. You can close this tab.</h2>');
         server.close();
         resolve(token);
       } catch (e) {

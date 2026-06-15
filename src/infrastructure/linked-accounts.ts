@@ -2,7 +2,7 @@
  * Linked external accounts — verified handles from OAuth providers
  * that anchor the user's social DID without leaking access tokens.
  *
- * Persisted at `~/.akashik/linked-accounts.json` with an atomic
+ * Persisted at `~/.folklore/linked-accounts.json` with an atomic
  * write (tmp+rename) so a crash mid-write never leaves a torn file
  * that the next read silently rolls back to "empty."
  *
@@ -23,7 +23,7 @@
  *   }
  *
  * Tokens never reach this file. Only the public attestation that the
- * verified-at timestamp says "akashik proved the user controls
+ * verified-at timestamp says "folklore proved the user controls
  * github.com/<handle> at this moment." Email — when present — is the
  * primary verified address from the provider's API (for GitHub:
  * `/user/emails` with primary:true, verified:true). It's the canonical

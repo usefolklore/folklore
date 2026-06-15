@@ -1,17 +1,17 @@
 {
-  "name": "akashik",
+  "name": "folklore",
   "version": "5.0.0",
   "description": "OSS P2P agent memory — DID-authored cryptographic envelopes, 48× compressed vectors, 33× faster cached queries via daemon IPC + native Rust client, episodic→semantic consolidation worker, cross-model embedding bridge. CPU-local, zero GPU, zero SaaS.",
   "type": "module",
   "bin": {
-    "akashik": "./bin/akashik.js"
+    "folklore": "./bin/folklore.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "bootstrap": "bash scripts/bootstrap.sh",
-    "doctor": "node bin/akashik.js doctor",
-    "start": "node bin/akashik.js",
+    "doctor": "node bin/folklore.js doctor",
+    "start": "node bin/folklore.js",
     "lint": "eslint src tests",
     "test": "node --import tsx --test tests/*.test.ts"
   },

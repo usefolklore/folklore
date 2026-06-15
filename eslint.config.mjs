@@ -14,7 +14,7 @@ export default tseslint.config(
       'demo/**',
       'bin/**',
       'scripts/**',
-      'akashik-rs/**',
+      'folklore-rs/**',
       '.claude/**',
       '.planning/**',
     ],
