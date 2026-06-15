@@ -42,7 +42,7 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 
 ### Agent
 
-- [ ] **AGENT-01**: autonomous Twitter meme-agent scaffold — pipeline that generates a folk-pop meme, posts to X, and appends it to the site `/store` (runnable once X creds exist)
+- [x] **AGENT-01**: autonomous Twitter meme-agent scaffold — pipeline that generates a folk-pop meme, posts to X, and appends it to the site `/store` (runnable once X creds exist)
 - [ ] **AGENT-02**: site `/store` (or memes) integration consuming agent output (data file the site reads)
 
 ## Out of Scope (this milestone)
@@ -77,7 +77,7 @@ Requirements for the public launch milestone. Each maps to a roadmap phase (cont
 | SITE-04 | Phase 27 | Complete |
 | SITE-05 | Phase 27 | Complete |
 | MERCH-01 | Phase 28 | Pending |
-| AGENT-01 | Phase 28 | Pending |
+| AGENT-01 | Phase 28 | Complete |
 | AGENT-02 | Phase 28 | Pending |
 
 **Coverage:** 20/20 v3.0 requirements mapped ✓ — no orphans, no duplicates.
