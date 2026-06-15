@@ -8,7 +8,7 @@
 PROJECT CONTEXT (unchanged from Round 4 — abbreviated)
 ================================================================
 
-Akashik = federated knowledge commons for the OSS community.
+Folklore = federated knowledge commons for the OSS community.
 Compounding via the ambitioned-curator loop:
   local-first → federation-fan-out → web-on-miss → save-locally
   → transfer-to-next-asker (when ambitioned curator is online).
@@ -33,7 +33,7 @@ Q1 — Where should the next engineering month go: marketing
      federation rather than per-peer retrieval?
      >> Pick one. One paragraph rationale.
 
-Q2 — Is the Akashik 'ambitioned-curator + curiosity-driven cache'
+Q2 — Is the Folklore 'ambitioned-curator + curiosity-driven cache'
      mechanism architecturally novel, or a known pattern in
      disguise?
      >> Name the closest prior-art system or paper (arxiv ID,
@@ -64,7 +64,7 @@ Q6 — Failure modes of curiosity-driven propagation:
      >> One known system that solved each, and the mechanism.
 
 Q7 — REAL competitors (not categories). Pick the 2-3 specific
-     existing systems that Akashik most directly competes with /
+     existing systems that Folklore most directly competes with /
      extends / supersedes. Among:
        Are.na · Logseq P2P sync · Mastodon · arxiv · Wikipedia ·
        Roam · IPFS · hypercore · Bluesky/ATProto · mem0 ·
@@ -116,13 +116,13 @@ The LME-S gap is 3.2pp (0.9202 → 0.952). Closing it requires specialized model
 
 ## Q2 — Novel or known pattern?
 
-**Nearest neighbour: Named Data Networking (NDN)**, specifically the Interest/Data forwarding plane described in Jacobson et al., "Named Data Networking," arxiv:1611.03982 (also SIGCOMM 2009). NDN routes content *requests* toward caches based on name prefixes; forwarding state is maintained per-hop; content flows back along the reverse path and is cached en route. The structural analogy to Akashik is exact: a query (Interest packet) propagates toward knowledgeable peers; the answer flows back and is cached locally.
+**Nearest neighbour: Named Data Networking (NDN)**, specifically the Interest/Data forwarding plane described in Jacobson et al., "Named Data Networking," arxiv:1611.03982 (also SIGCOMM 2009). NDN routes content *requests* toward caches based on name prefixes; forwarding state is maintained per-hop; content flows back along the reverse path and is cached en route. The structural analogy to Folklore is exact: a query (Interest packet) propagates toward knowledgeable peers; the answer flows back and is cached locally.
 
-**What Akashik adds that NDN lacks**: (a) routing signal is *semantic similarity* (vector distance), not name prefix — so it handles unstructured knowledge without a naming authority; (b) episodic→semantic consolidation changes what gets propagated over time (the `consolidator.ts` distillation loop has no NDN equivalent); (c) the Oracle module routes open questions to peers most likely to answer based on local graph coverage, not just content proximity.
+**What Folklore adds that NDN lacks**: (a) routing signal is *semantic similarity* (vector distance), not name prefix — so it handles unstructured knowledge without a naming authority; (b) episodic→semantic consolidation changes what gets propagated over time (the `consolidator.ts` distillation loop has no NDN equivalent); (c) the Oracle module routes open questions to peers most likely to answer based on local graph coverage, not just content proximity.
 
 **Two other neighbours worth naming**: Freenet (Clarke et al., 2001 — "A Distributed Decentralised Information Storage and Retrieval System") for the interest-driven caching model; and EpidemicBroadcastTrees (Leitão et al., Middleware 2007) for the gossip propagation shape. Neither combines semantic routing with episodic distillation.
 
-**Positioning against NDN**: "Akashik is NDN for unstructured agent knowledge, with semantic routing replacing name routing and LLM distillation replacing static cache eviction."
+**Positioning against NDN**: "Folklore is NDN for unstructured agent knowledge, with semantic routing replacing name routing and LLM distillation replacing static cache eviction."
 
 ---
 
@@ -164,17 +164,17 @@ The LME-S gap is 3.2pp (0.9202 → 0.952). Closing it requires specialized model
 
 **Target communities (named)**:
 - **Hugging Face Discord** (`#transformers`, `#research`) — 50k members, highest concentration of people who (a) already run local embeddings, (b) already use agent memory tools, (c) will read benchmark numbers critically. This is the hardest community to impress and therefore the most valuable early validation.
-- **Rust Discord** (`#general`, `#tooling`) — 70k members, strong local-first and CLI-first culture. The `akashik-rs` Rust IPC client is a genuine first-class citizen for this audience. Rust Discord is the fastest community at turning a cool CLI demo into GitHub stars.
+- **Rust Discord** (`#general`, `#tooling`) — 70k members, strong local-first and CLI-first culture. The `folklore-rs` Rust IPC client is a genuine first-class citizen for this audience. Rust Discord is the fastest community at turning a cool CLI demo into GitHub stars.
 - **Zed editor Discord** (`#extensions`, `#ai`) — 15k members, aggressive early adopters, already using AI-assisted coding, predisposed to local-first tools. Smaller but extremely high conversion rate for tools that integrate with dev workflows.
 
 **Seed content (named)**:
-- Index the **LoCoMo paper** (arxiv:2306.02954) with an annotation explaining the 60pp R@3/R@30 gap and what it means for agent memory — this positions Akashik as the system that *understands* the benchmark, not just scores on it.
-- Index the **MemGPT/Letta paper** (arxiv:2310.08560) with a comparison note: "Letta requires their agent runtime; akashik works with Claude Code, Cursor, and Cline today."
+- Index the **LoCoMo paper** (arxiv:2306.02954) with an annotation explaining the 60pp R@3/R@30 gap and what it means for agent memory — this positions Folklore as the system that *understands* the benchmark, not just scores on it.
+- Index the **MemGPT/Letta paper** (arxiv:2310.08560) with a comparison note: "Letta requires their agent runtime; folklore works with Claude Code, Cursor, and Cline today."
 - Index the **Anthropic Contextual Retrieval blog post** (already on the sprint hit-list in `findings.md`) — the Hugging Face community will know this reference and appreciate that the system indexed it and annotated the tradeoffs.
 
 **Timeline**:
 - **Days 1–7**: Fix the README "What ships today" section (NEXT_STEPS.md Priority 7). Record a 3-minute terminal video: peer A ingests an arxiv paper, peer B's Claude Code session retrieves it without a web call. No editing, no narration. Raw terminal.
-- **Days 8–14**: Post "Show HN: akashik — P2P semantic cache for AI agent memory" with the FedComp-LoCoMo chart (even a synthetic one from the simulation). Link the terminal video. HN is the fastest path to 50 GitHub stars from technical users.
+- **Days 8–14**: Post "Show HN: folklore — P2P semantic cache for AI agent memory" with the FedComp-LoCoMo chart (even a synthetic one from the simulation). Link the terminal video. HN is the fastest path to 50 GitHub stars from technical users.
 - **Days 15–21**: Direct DMs to 10 known Rust Discord power users who have posted about local LLM tooling. Offer to set up a shared `rust-ecosystem` research room — seed it with the top 20 Rust crates documentation (from crates.io). The offer is: "your Claude Code sessions will stop re-researching crate APIs."
 - **Days 22–30**: Hugging Face Discord post in `#research` with the benchmark numbers and the FedComp graph. Tag the LoCoMo authors if they're in the Discord. 100 contributors checkpoint.
 
@@ -194,13 +194,13 @@ The `peerDiversityDivisor` parameter in `federated-search.ts` (line 177) caps an
 
 The `auto-forget.ts` / `auto-forget-tick.ts` modules will eventually prune nodes that aren't touched. If only 1–2 peers care about a niche topic and they go offline, their consolidated knowledge decays below the TTL threshold and disappears from the network.
 
-**System that solved it**: BitTorrent's seeding incentive model. Rare torrents (low-seeders) get *preferential download slots* from peers with available bandwidth — the system explicitly rewards seeding rare content. **Mechanism**: Inverse-frequency replication weighting — assign a higher `touch` refresh priority to nodes with low cross-peer replication count. In Akashik terms: nodes that exist on only 1–2 known peers should get longer TTLs and lower auto-forget priority, not equal treatment.
+**System that solved it**: BitTorrent's seeding incentive model. Rare torrents (low-seeders) get *preferential download slots* from peers with available bandwidth — the system explicitly rewards seeding rare content. **Mechanism**: Inverse-frequency replication weighting — assign a higher `touch` refresh priority to nodes with low cross-peer replication count. In Folklore terms: nodes that exist on only 1–2 known peers should get longer TTLs and lower auto-forget priority, not equal treatment.
 
 **(c) Adversarial misinformation flood**
 
 The `peer-reputation-store.ts` and `remote-node-validator.ts` are the current defense. But a Sybil attack — many fake peers publishing high-confidence oracle answers — can flood the `oracle` room with plausible-sounding disinformation that passes the trust boundary because each peer looks legitimate in isolation.
 
-**System that solved it**: Wikipedia's ORES (Objective Revision Evaluation Service, 2015). ORES scores every edit on a vandalism probability using ML, independent of who made the edit. The mechanism is *content scoring*, not *identity trust*: a high-reputation editor can still submit bad content; a new editor's good content gets accepted. **Mechanism for Akashik**: Add a local incoherence/quality score at ingestion time (e.g., embedding distance between a node's summary and its source text as a factual consistency proxy), separate from peer reputation. New peers' oracle answers are quarantined until N positive consistency scores accumulate — same structure as Wikipedia's flagged revisions.
+**System that solved it**: Wikipedia's ORES (Objective Revision Evaluation Service, 2015). ORES scores every edit on a vandalism probability using ML, independent of who made the edit. The mechanism is *content scoring*, not *identity trust*: a high-reputation editor can still submit bad content; a new editor's good content gets accepted. **Mechanism for Folklore**: Add a local incoherence/quality score at ingestion time (e.g., embedding distance between a node's summary and its source text as a factual consistency proxy), separate from peer reputation. New peers' oracle answers are quarantined until N positive consistency scores accumulate — same structure as Wikipedia's flagged revisions.
 
 ---
 
@@ -208,16 +208,16 @@ The `peer-reputation-store.ts` and `remote-node-validator.ts` are the current de
 
 **1. mem0** (github.com/mem0ai/mem0, ⭐ 30k+):
 Single-agent memory extraction — automatically distills facts from LLM conversations into a vector store. Same retrieval problem space, completely different architecture: single-user, centralized, no federation, no curiosity-driven propagation.
-**Positioning**: "mem0 knows what *your* agent told it. Akashik knows what your *network* has researched. Your agent memory is only as good as your network."
+**Positioning**: "mem0 knows what *your* agent told it. Folklore knows what your *network* has researched. Your agent memory is only as good as your network."
 
 **2. Letta (MemGPT)** (arxiv:2310.08560, github.com/letta-ai/letta, ⭐ 35k+):
 Full stateful agent runtime with hierarchical memory (in-context / recall / archival), self-editing memory blocks, multi-agent conversations. The most technically sophisticated competitor.
-**Positioning**: "Letta is an agent runtime you run instead of Claude Code. Akashik is a retrieval layer you add *to* Claude Code, Cursor, or Cline. If you want stateful agents on their platform, use Letta. If you want your existing agent to stop re-researching what your teammates already know, use Akashik." The moat is composability, not capability replacement.
+**Positioning**: "Letta is an agent runtime you run instead of Claude Code. Folklore is a retrieval layer you add *to* Claude Code, Cursor, or Cline. If you want stateful agents on their platform, use Letta. If you want your existing agent to stop re-researching what your teammates already know, use Folklore." The moat is composability, not capability replacement.
 
 **3. Logseq P2P sync / Roam** (logseq.com, roamresearch.com):
 Personal knowledge graphs with backlinks, graph view, daily notes. Roam has ~50k paying users; Logseq has 50k+ GitHub stars.
-**Positioning**: "Logseq requires you to *write* what you know. Akashik captures what you *research* automatically. Zero-overhead knowledge accumulation vs. zero-friction note-taking."
-The real threat from this category is Obsidian + the DataviewJS + Remotely Save plugin stack — 1M+ users, free, already has community plugins for AI. Akashik's answer: that stack requires human curation; Akashik auto-ingests agent research and propagates it to peers without a separate writing step.
+**Positioning**: "Logseq requires you to *write* what you know. Folklore captures what you *research* automatically. Zero-overhead knowledge accumulation vs. zero-friction note-taking."
+The real threat from this category is Obsidian + the DataviewJS + Remotely Save plugin stack — 1M+ users, free, already has community plugins for AI. Folklore's answer: that stack requires human curation; Folklore auto-ingests agent research and propagates it to peers without a separate writing step.
 
 ---
 
@@ -229,7 +229,7 @@ The real threat from this category is Obsidian + the DataviewJS + Remotely Save 
 
 **The honest response**:
 
-The cold-start problem is real and the argument is correct that federation provides zero benefit to a single isolated peer. Our answer is that *local value is already sufficient on day zero* — `akashik save` + `akashik ask` already beats a bare LLM context window for a single user on the LME-S benchmark (R@5=0.9202), and that value is why someone installs it. Federation is a multiplier on existing value, not a prerequisite for it. The coordination burden is also lower than Slack or GitHub Discussions because it's *implicit*: when two developers in the same OSS project both install akashik, they automatically share knowledge through the `toolshed` system room (which is always-on and P2P-shared) without any explicit "join this workspace" action. The social coordination is replaced by ambient proximity in the codebase — the same mechanism that makes pull request visibility work without users needing to subscribe to each other. The honest concession: this argument becomes false if the `toolshed` room and oracle gossip are not reliably working on first install. The current state (federation silently downgrades to dense-only, oracle gossip end-to-end test is in `phase39.oracle-gossip-e2e.test.ts` but not shipped) means the argument *is* currently true. Fixing that is the same work as Q1's answer.
+The cold-start problem is real and the argument is correct that federation provides zero benefit to a single isolated peer. Our answer is that *local value is already sufficient on day zero* — `folklore save` + `folklore ask` already beats a bare LLM context window for a single user on the LME-S benchmark (R@5=0.9202), and that value is why someone installs it. Federation is a multiplier on existing value, not a prerequisite for it. The coordination burden is also lower than Slack or GitHub Discussions because it's *implicit*: when two developers in the same OSS project both install folklore, they automatically share knowledge through the `toolshed` system room (which is always-on and P2P-shared) without any explicit "join this workspace" action. The social coordination is replaced by ambient proximity in the codebase — the same mechanism that makes pull request visibility work without users needing to subscribe to each other. The honest concession: this argument becomes false if the `toolshed` room and oracle gossip are not reliably working on first install. The current state (federation silently downgrades to dense-only, oracle gossip end-to-end test is in `phase39.oracle-gossip-e2e.test.ts` but not shipped) means the argument *is* currently true. Fixing that is the same work as Q1's answer.
 
 ---
 

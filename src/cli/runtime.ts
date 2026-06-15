@@ -61,13 +61,13 @@ export const detectWorkspace = (cwd: string = process.cwd()): string | undefined
   }
 };
 
-export const akashikHome = (): string =>
-  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
+export const folkloreHome = (): string =>
+  process.env.FOLKLORE_HOME ?? join(homedir(), '.folklore');
 
 /**
  * Parse the binary-quantization env toggle.
- *   AKASHIK_VECTOR_QUANTIZATION=binary-512   → returns 512
- *   AKASHIK_VECTOR_QUANTIZATION=binary-256   → returns 256
+ *   FOLKLORE_VECTOR_QUANTIZATION=binary-512   → returns 512
+ *   FOLKLORE_VECTOR_QUANTIZATION=binary-256   → returns 256
  *   (unset | 'fp32' | anything else)              → returns undefined
  *
  * When set to a supported value, the VectorIndex opens with Matryoshka-
@@ -78,7 +78,7 @@ export const akashikHome = (): string =>
  * to null.
  */
 export const parseQuantizationEnv = (): number | undefined => {
-  const raw = process.env.AKASHIK_VECTOR_QUANTIZATION;
+  const raw = process.env.FOLKLORE_VECTOR_QUANTIZATION;
   if (!raw) return undefined;
   const m = /^binary-(\d+)$/i.exec(raw.trim());
   if (!m) return undefined;
@@ -90,47 +90,47 @@ export const parseQuantizationEnv = (): number | undefined => {
 /**
  * Build the live Embedder adapter based on environment configuration.
  *
- * Backends (selected by `AKASHIK_EMBEDDER_BACKEND`):
+ * Backends (selected by `FOLKLORE_EMBEDDER_BACKEND`):
  *   'xenova'  — legacy `@xenova/transformers` in-process ONNX. Default.
  *               Known defective on bge-base-en-v1.5 (-11 NDCG vs published);
  *               correct on nomic-embed-text-v1.5 and all-MiniLM-L6-v2.
- *   'rust'    — spawns the `akashik-rs` embed_server binary and
+ *   'rust'    — spawns the `folklore-rs` embed_server binary and
  *               streams batches over stdio JSON-RPC. Uses fastembed-rs
  *               which pulls Qdrant-curated ONNX conversions that match
  *               the published BEIR ceilings within noise.
  *
  * Rust backend options (all optional, sensible defaults):
- *   AKASHIK_EMBEDDER_MODEL   — 'minilm' | 'nomic' | 'bge-base'
- *   AKASHIK_RUST_BIN         — path to embed_server binary
+ *   FOLKLORE_EMBEDDER_MODEL   — 'minilm' | 'nomic' | 'bge-base'
+ *   FOLKLORE_RUST_BIN         — path to embed_server binary
  *
  * This is a factory, not a global — each call constructs a fresh
  * adapter. No singletons, no shared mutable state.
  */
 export const buildEmbedder = (modelCache: string): Embedder => {
-  const backend = (process.env.AKASHIK_EMBEDDER_BACKEND ?? 'xenova').toLowerCase();
+  const backend = (process.env.FOLKLORE_EMBEDDER_BACKEND ?? 'xenova').toLowerCase();
 
   // Phase 2 — coalescing batch decorator. Transparent to callers;
   // individual `.embed()` calls (e.g. from indexNode) get queued and
   // flushed as a single `embedBatch()` against the underlying encoder.
-  // Measured 3.1× throughput on the live akashik stack via
+  // Measured 3.1× throughput on the live folklore stack via
   // scripts/bench-embed-throughput.mjs (bge-base, N=32: serial 8.56
   // docs/sec → batched 26.56 docs/sec).
   //
-  // Opt-out via AKASHIK_EMBEDDER_BATCH=off for the serial path
+  // Opt-out via FOLKLORE_EMBEDDER_BATCH=off for the serial path
   // (useful for comparisons or if the batching window ever interferes
   // with a latency-sensitive caller). Defaults to enabled.
-  const batchingEnabled = (process.env.AKASHIK_EMBEDDER_BATCH ?? 'on').toLowerCase() !== 'off';
-  const batchSize = parseInt(process.env.AKASHIK_EMBEDDER_BATCH_SIZE ?? '32', 10) || 32;
-  const batchWaitMs = parseInt(process.env.AKASHIK_EMBEDDER_BATCH_MS ?? '20', 10) || 20;
+  const batchingEnabled = (process.env.FOLKLORE_EMBEDDER_BATCH ?? 'on').toLowerCase() !== 'off';
+  const batchSize = parseInt(process.env.FOLKLORE_EMBEDDER_BATCH_SIZE ?? '32', 10) || 32;
+  const batchWaitMs = parseInt(process.env.FOLKLORE_EMBEDDER_BATCH_MS ?? '20', 10) || 20;
 
   const base: Embedder = (() => {
     if (backend === 'rust') {
-      const model = (process.env.AKASHIK_EMBEDDER_MODEL ?? 'minilm').toLowerCase();
+      const model = (process.env.FOLKLORE_EMBEDDER_MODEL ?? 'minilm').toLowerCase();
       const dim =
         model === 'minilm' ? 384 : model === 'nomic' || model === 'bge-base' ? 768 : 384;
       if (model !== 'minilm' && model !== 'nomic' && model !== 'bge-base') {
         throw new Error(
-          `AKASHIK_EMBEDDER_MODEL='${model}' — supported: minilm, nomic, bge-base`,
+          `FOLKLORE_EMBEDDER_MODEL='${model}' — supported: minilm, nomic, bge-base`,
         );
       }
       return rustSubprocessEmbedder({ model, dim });
@@ -153,7 +153,7 @@ export interface RuntimePaths {
 }
 
 export const runtimePaths = (): RuntimePaths => {
-  const home = akashikHome();
+  const home = folkloreHome();
   return {
     home,
     graph: join(home, 'graph.json'),
@@ -195,7 +195,7 @@ export interface Runtime {
   readonly graphMutex: AsyncMutex;
   /**
    * Phase 26 — local GitHub author lookup. Returns the verified handle
-   * from `~/.akashik/linked-accounts.json` (set by `akashik login`), or
+   * from `~/.folklore/linked-accounts.json` (set by `folklore login`), or
    * undefined when no account is linked. Passed into `UseCaseDeps` by
    * write-side callers so `indexNode` can stamp `github_user` on every
    * locally-authored node.
@@ -228,7 +228,7 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
       openSqliteVectorIndex({
         path: paths.vectors,
         binaryDim: parseQuantizationEnv(),
-        binaryOnly: (process.env.AKASHIK_VECTOR_FP32_DROP ?? '').toLowerCase() === 'true',
+        binaryOnly: (process.env.FOLKLORE_VECTOR_FP32_DROP ?? '').toLowerCase() === 'true',
       })
         .mapErr((e): AppError => e)
         .map((vectors): Runtime => {

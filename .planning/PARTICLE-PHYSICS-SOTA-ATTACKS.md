@@ -3,7 +3,7 @@
 **Author:** experimental-physicist conscience pass, 2026-04-19
 **Anchor:** Phase 25 SciFact NDCG@10 = 75.22% (bge-base Rust × searchHybrid × RRF k=60). Round 1 nulled fusion-tuning, dense PRF, LLM contextualization, cross-encoder rerank, PPR, and whitening.
 **Constraint:** CPU, JS/WASM, no GPU, re-rank cached `sota.db` top-100 (no re-embedding).
-**Graph probe:** akashik `search` returned distance >1.0 on all five core queries — these vectors are net-new to the indexed literature in this stack.
+**Graph probe:** folklore `search` returned distance >1.0 on all five core queries — these vectors are net-new to the indexed literature in this stack.
 
 ---
 

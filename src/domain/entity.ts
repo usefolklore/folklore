@@ -1,7 +1,7 @@
 /**
  * Entity domain model — the object layer of the knowledge graph.
  *
- * Akashik's chunk graph (documents → text → embeddings) is a
+ * Folklore's chunk graph (documents → text → embeddings) is a
  * *document* index. The entity layer makes it a *knowledge graph*:
  * concrete objects (products, repos, people, concepts) become nodes
  * the system can reason over independently of which document
@@ -57,7 +57,7 @@ export interface Entity {
   readonly first_seen: string;       // ISO-8601
   readonly last_seen: string;        // ISO-8601 — updated on every mention
   readonly mention_count: number;    // monotonic
-  /** Optional human note shown in `akashik entity list`. */
+  /** Optional human note shown in `folklore entity list`. */
   readonly note?: string;
   /**
    * True when the entity was added by heuristic auto-detection

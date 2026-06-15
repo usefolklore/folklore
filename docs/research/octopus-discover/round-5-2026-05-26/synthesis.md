@@ -6,7 +6,7 @@
 PROJECT CONTEXT (unchanged from Round 4 — abbreviated)
 ================================================================
 
-Akashik = federated knowledge commons for the OSS community.
+Folklore = federated knowledge commons for the OSS community.
 Compounding via the ambitioned-curator loop:
   local-first → federation-fan-out → web-on-miss → save-locally
   → transfer-to-next-asker (when ambitioned curator is online).
@@ -31,7 +31,7 @@ Q1 — Where should the next engineering month go: marketing
      federation rather than per-peer retrieval?
      >> Pick one. One paragraph rationale.
 
-Q2 — Is the Akashik 'ambitioned-curator + curiosity-driven cache'
+Q2 — Is the Folklore 'ambitioned-curator + curiosity-driven cache'
      mechanism architecturally novel, or a known pattern in
      disguise?
      >> Name the closest prior-art system or paper (arxiv ID,
@@ -62,7 +62,7 @@ Q6 — Failure modes of curiosity-driven propagation:
      >> One known system that solved each, and the mechanism.
 
 Q7 — REAL competitors (not categories). Pick the 2-3 specific
-     existing systems that Akashik most directly competes with /
+     existing systems that Folklore most directly competes with /
      extends / supersedes. Among:
        Are.na · Logseq P2P sync · Mastodon · arxiv · Wikipedia ·
        Roam · IPFS · hypercore · Bluesky/ATProto · mem0 ·
@@ -91,13 +91,13 @@ Here is the focused synthesis of the research findings, addressing the problem s
 ### 1. Key Findings (Direct Answers to Q1–Q8)
 
 **Q1 — Where should the next engineering month go?**
-The next engineering month must be spent on **architecting the federation and its measurement infrastructure (AkashikBench-F)**. The empirical data confirms the LME-S head is saturated (R@50=1.000, ~4pp NDCG headroom). Chasing the final 2-3pp to match `agentmemory`'s 0.952 is a vanity metric for a single-user memory product, which Akashik is no longer. The core differentiator is network compounding. Conversely, the tradeoff of abandoning single-peer tuning is leaving 60pp of factual headroom on LoCoMo unmined, meaning local retrieval may remain noisy. However, building the federation layer (CRDT sync, query fan-out) and measuring the `web_fallback_rate` is the only way to empirically validate the actual "knowledge commons" thesis.
+The next engineering month must be spent on **architecting the federation and its measurement infrastructure (FolkloreBench-F)**. The empirical data confirms the LME-S head is saturated (R@50=1.000, ~4pp NDCG headroom). Chasing the final 2-3pp to match `agentmemory`'s 0.952 is a vanity metric for a single-user memory product, which Folklore is no longer. The core differentiator is network compounding. Conversely, the tradeoff of abandoning single-peer tuning is leaving 60pp of factual headroom on LoCoMo unmined, meaning local retrieval may remain noisy. However, building the federation layer (CRDT sync, query fan-out) and measuring the `web_fallback_rate` is the only way to empirically validate the actual "knowledge commons" thesis.
 
-**Q2 — Is the Akashik mechanism architecturally novel?**
-The mechanism is compositionally novel, but builds entirely upon established primitives. The closest prior art for the monotonic caching property is **Freenet** (Clarke et al., 2001, [PDF](https://www.cs.princeton.edu/courses/archive/fall11/cos518/papers/freenet.pdf)), which formally described demand-driven transparent lazy replication. For identity and repositories, the closest neighbor is **AT Protocol**. Position Akashik as: *"Freenet-style demand-shaped replication applied to attributed semantic research memory, utilizing AT Protocol-style DID signatures."* The advantage is a strong lineage to Freenet's caching math and ATProto's identity model; however, the tradeoff is that unlike AT Protocol's always-on server relays, Akashik's device-level P2P suffers severe cold-start availability and relies heavily on unpredictable individual node uptime.
+**Q2 — Is the Folklore mechanism architecturally novel?**
+The mechanism is compositionally novel, but builds entirely upon established primitives. The closest prior art for the monotonic caching property is **Freenet** (Clarke et al., 2001, [PDF](https://www.cs.princeton.edu/courses/archive/fall11/cos518/papers/freenet.pdf)), which formally described demand-driven transparent lazy replication. For identity and repositories, the closest neighbor is **AT Protocol**. Position Folklore as: *"Freenet-style demand-shaped replication applied to attributed semantic research memory, utilizing AT Protocol-style DID signatures."* The advantage is a strong lineage to Freenet's caching math and ATProto's identity model; however, the tradeoff is that unlike AT Protocol's always-on server relays, Folklore's device-level P2P suffers severe cold-start availability and relies heavily on unpredictable individual node uptime.
 
 **Q3 — Propose a benchmark for federation-level compounding.**
-Propose **AkashikBench-F** (Federated Compounding Benchmark).
+Propose **FolkloreBench-F** (Federated Compounding Benchmark).
 *   **Experimental Design:** Use a frozen snapshot of an OSS dataset (e.g., BEIR SciFact or `snap-research/locomo` arXiv:2402.17753). Partition into N=10 strictly disjoint peer shards. Simulate a Zipfian query stream over time with a 20% offline churn rate. On a miss, the peer utilizes a controlled oracle web corpus, saves the result locally, and subsequent queries test propagation.
 *   **Metrics:** `web_fallback_rate(t)` and `Propagation Half-Life` (median time until a newly acquired fact reaches 50% peer coverage). Compounding is defined quantitatively as the negative slope of the `web_fallback_rate` over the simulation.
 *   **Tradeoff:** This directly measures the network's learning curve. On the other hand, simulated query streams are sterile and rarely match the adversarial semantic drift of real users, potentially overstating compounding compared to a real live network.
@@ -111,7 +111,7 @@ Propose **AkashikBench-F** (Federated Compounding Benchmark).
 Seed the **local-AI/agent-tooling ecosystem** (specifically `llama.cpp` + `ollama`, `vllm-project/vllm`, and `aider` contributors).
 *   **Seed content:** 50-80 canonical artifacts like GitHub issues on CUDA OOM errors, PRs, and relevant papers.
 *   **Timeline:** Week 1: 5-10 "librarian" maintainers seed the graph. Week 2: Onboard 80-90 early adopters. Week 3: Run organic debugging queries. Week 4: Publish the `web_fallback_rate` drop.
-*   **Tradeoff:** This narrow wedge guarantees high query overlap, making compounding visible quickly. Conversely, it temporarily pigeonholes Akashik as a niche debugging tool rather than a broad knowledge commons, which could stall wider OSS adoption.
+*   **Tradeoff:** This narrow wedge guarantees high query overlap, making compounding visible quickly. Conversely, it temporarily pigeonholes Folklore as a niche debugging tool rather than a broad knowledge commons, which could stall wider OSS adoption.
 
 **Q6 — Failure modes of curiosity-driven propagation.**
 1.  **(a) Popularity cascade:** Solved by **BitTorrent's rarest-first piece selection** (Legout et al., arXiv:cs/0609026); *mechanism:* weight federation fan-out by inverse document frequency to prioritize scarce records. *Tradeoff:* increases diversity but risks suppressing the genuinely best popular answer.
@@ -119,13 +119,13 @@ Seed the **local-AI/agent-tooling ecosystem** (specifically `llama.cpp` + `ollam
 3.  **(c) Adversarial misinformation flood:** Solved by **Bluesky/AT Protocol labelers** (or Wikipedia verifiability norms); *mechanism:* composable moderation labels attached to DIDs to compute local trust scores. *Tradeoff:* combats spam, but managing a decentralized auth error taxonomy raises governance costs and complicates enterprise SOC2 compliance.
 
 **Q7 — REAL competitors.**
-1.  **Are.na**: Closest *product* competitor. *Positioning:* Are.na is what Akashik looks like centralized; Akashik is Are.na where blocks are queryable via vector search, locally owned, and propagate peer-to-peer.
-2.  **AT Protocol (Bluesky)**: Closest *protocol* analogue. *Positioning:* AT Protocol solved federated identity for social posts; Akashik is AT Protocol for semantic research memory with demand-shaped retrieval.
-3.  **agentmemory**: Closest *current benchmark* rival. *Positioning:* agentmemory wins single-player retrieval; Akashik extends that baseline local memory into cross-peer transfer and network compounding.
+1.  **Are.na**: Closest *product* competitor. *Positioning:* Are.na is what Folklore looks like centralized; Folklore is Are.na where blocks are queryable via vector search, locally owned, and propagate peer-to-peer.
+2.  **AT Protocol (Bluesky)**: Closest *protocol* analogue. *Positioning:* AT Protocol solved federated identity for social posts; Folklore is AT Protocol for semantic research memory with demand-shaped retrieval.
+3.  **agentmemory**: Closest *current benchmark* rival. *Positioning:* agentmemory wins single-player retrieval; Folklore extends that baseline local memory into cross-peer transfer and network compounding.
 *   **Tradeoff:** Are.na offers superior curation UX, and AT Protocol offers mature federation/identity; however, neither combines semantic retrieval with a web-on-miss compounding loop.
 
 **Q8 — Strongest counter-argument against the entire project.**
-*   **Counter-argument:** "You are adding a flaky, mostly-offline federation hop in front of systems that already solve knowledge sharing better (Stack Overflow, GitHub, Google). Because peers are mostly offline laptops, users will miss locally, peers will time out, and Akashik will collapse into a slower 'web search plus personal cache', meaning the federated network effect is a complete illusion."
+*   **Counter-argument:** "You are adding a flaky, mostly-offline federation hop in front of systems that already solve knowledge sharing better (Stack Overflow, GitHub, Google). Because peers are mostly offline laptops, users will miss locally, peers will time out, and Folklore will collapse into a slower 'web search plus personal cache', meaning the federated network effect is a complete illusion."
 *   **Response:** That critique is devastatingly valid unless we can demonstrate a dense room where the `web_fallback_rate` materially drops over 30 days and cross-peer transfers happen faster than fresh web research. Our architecture mitigates the cold-start problem because the local-first web-fallback loop is highly useful on day 1 for the individual. The tradeoff is brutal, however: if the first pilot fails to show repeated miss-to-hit conversions across different users under real churn, the federated-commons thesis is empirically disproven, and the product devolves into local-first memory sync.
 
 ---
@@ -135,7 +135,7 @@ Seed the **local-AI/agent-tooling ecosystem** (specifically `llama.cpp` + `ollam
 *   **Bi-Encoder Dominance:** Small local LLMs for listwise reranking repeatedly failed to beat the bi-encoder baseline on factual subsets, confirming that the current architecture has reached the practical limit of local-only read-path retrieval tuning.
 
 ### 3. Conflicts & Trade-offs
-*   **Compliance & Enterprise Viability vs. Immutable Provenance:** For B2B/enterprise contexts, Akashik's "signed and attributed forever" model fundamentally conflicts with GDPR right-to-erasure (Article 17). If a peer deletes a node containing PII, tombstones must propagate reliably across the P2P graph. Furthermore, for SOC2 Type II compliance, enterprise customers require evidence of access control, audit trails, and data residency; Akashik's gossip-first federation lacks an explicit central audit trail of who queried what proprietary IP, risking accidental exfiltration.
+*   **Compliance & Enterprise Viability vs. Immutable Provenance:** For B2B/enterprise contexts, Folklore's "signed and attributed forever" model fundamentally conflicts with GDPR right-to-erasure (Article 17). If a peer deletes a node containing PII, tombstones must propagate reliably across the P2P graph. Furthermore, for SOC2 Type II compliance, enterprise customers require evidence of access control, audit trails, and data residency; Folklore's gossip-first federation lacks an explicit central audit trail of who queried what proprietary IP, risking accidental exfiltration.
 
 ### 4. Gaps
 *   **Federated Measurement:** Zero active integration tests demonstrate multi-peer compounding or measure real-world latency bounds during network saturation.
@@ -145,7 +145,7 @@ Seed the **local-AI/agent-tooling ecosystem** (specifically `llama.cpp` + `ollam
 
 | Initiative | Impact | Effort | Priority |
 | :--- | :---: | :---: | :---: |
-| **AkashikBench-F Harness (Federation Eval)** | High | Medium | **High** |
+| **FolkloreBench-F Harness (Federation Eval)** | High | Medium | **High** |
 | **`web_fallback_rate` Telemetry Pipeline** | High | Low | **High** |
 | **Launch 100-user OSS Pilot (local-AI)** | High | High | **Medium** |
 | **Tombstone Propagation (GDPR/Compliance)** | Medium | High | **Medium** |
@@ -153,7 +153,7 @@ Seed the **local-AI/agent-tooling ecosystem** (specifically `llama.cpp` + `ollam
 
 ### 6. Recommended Approach
 
-If I were Sahar, the next engineering month I'd spend on AkashikBench-F and federation routing because validating the compounding network effect is the only way to prove the product's core differentiator. The next marketing/launch month I'd spend on a 100-person pilot seeded in the local-AI/agent-tooling OSS ecosystem because their high-frequency debugging queries will make compounding visible and measurable within 30 days. Specifically NOT chasing the final 3pp of R@5 on LongMemEval-S because it chases a mathematical ceiling for a single-user metric, which distracts from the federated mission.
+If I were Sahar, the next engineering month I'd spend on FolkloreBench-F and federation routing because validating the compounding network effect is the only way to prove the product's core differentiator. The next marketing/launch month I'd spend on a 100-person pilot seeded in the local-AI/agent-tooling OSS ecosystem because their high-frequency debugging queries will make compounding visible and measurable within 30 days. Specifically NOT chasing the final 3pp of R@5 on LongMemEval-S because it chases a mathematical ceiling for a single-user metric, which distracts from the federated mission.
 </external-cli-output>
 
 ---

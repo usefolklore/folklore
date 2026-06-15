@@ -5,11 +5,11 @@
 
 ## What everyone agreed on (load-bearing facts)
 
-1. The user's surface complaint is real and well-founded: `default_room: "tlvtech"` (cold-email research room) is currently the active default while working in the `akashik` codebase. That is a wrong-room-by-default failure, regardless of which position wins.
+1. The user's surface complaint is real and well-founded: `default_room: "tlvtech"` (cold-email research room) is currently the active default while working in the `folklore` codebase. That is a wrong-room-by-default failure, regardless of which position wins.
 2. Rooms are the federation unit. Reputation accrues to `room:*` keys (`docs/p2p/peer-reputation-design.md:86`). Sharing policy is room-scoped via `shared-rooms.json`. The P2P protocol routes `SearchRequest` envelopes through a `room` field (`docs/architecture/V3-PROTOCOL.md:238–250`).
 3. Niche evaporation is empirically measured: 76/103 newly-introduced docs never reach 50% peer coverage. Phase 24.2 rarity-aware caching is the planned mitigation.
 4. Workspace filtering by cwd-derived repo identity is technically correct — Position A explicitly concedes this in its own Axis 6 ("This is the right layering — repos as a query filter, rooms as federation units").
-5. Lazy enrichment of room metadata does not happen in practice. Position A's observation — "users who won't run `akashik room create` will not run `akashik room describe --edit` either" — is correct, and Position C used it directly to refute Position B.
+5. Lazy enrichment of room metadata does not happen in practice. Position A's observation — "users who won't run `folklore room create` will not run `folklore room describe --edit` either" — is correct, and Position C used it directly to refute Position B.
 
 ## Where the debate actually split
 
@@ -22,11 +22,11 @@
 
 ## Decisive arguments (what survived rebuttal)
 
-**Position B's repo-as-federation-unit collapses on the long-tail problem.** B's claim that "repos are universally recognized, verifiable identities" holds for `react`, `postgres`, `typescript`. It fails for proprietary monorepos, forks, personal repos, internal company codebases — which are the actual workload for most akashik sessions. Position C named this correctly: per-repo rooms multiply existing thin-but-topical coverage into a vastly larger set of zero-peer singletons. The 76/103 evaporation problem gets structurally worse, not better. **B does not survive this rebuttal.**
+**Position B's repo-as-federation-unit collapses on the long-tail problem.** B's claim that "repos are universally recognized, verifiable identities" holds for `react`, `postgres`, `typescript`. It fails for proprietary monorepos, forks, personal repos, internal company codebases — which are the actual workload for most folklore sessions. Position C named this correctly: per-repo rooms multiply existing thin-but-topical coverage into a vastly larger set of zero-peer singletons. The 76/103 evaporation problem gets structurally worse, not better. **B does not survive this rebuttal.**
 
-**Position A's "defer until Phase 25+" is caution tax with no validated risk.** Position C correctly observed that the workspace-tag mechanism never enters the wire protocol, never creates rooms, never fragments coverage — so there is nothing for AkashikBench-F to validate. A is essentially arguing "wait" without articulating what risk the waiting is hedging against. **A's deferral position does not survive.**
+**Position A's "defer until Phase 25+" is caution tax with no validated risk.** Position C correctly observed that the workspace-tag mechanism never enters the wire protocol, never creates rooms, never fragments coverage — so there is nothing for FolkloreBench-F to validate. A is essentially arguing "wait" without articulating what risk the waiting is hedging against. **A's deferral position does not survive.**
 
-**Position B's write-pollution objection lands cleanly on C.** B in Round 2: "Under Position C, the user blindly appends `akashik` knowledge graph research into the `tlvtech` federation room. If the system auto-filters by workspace, the user has zero feedback that they are polluting a shared namespace." C never addressed this. A workspace-on-READ filter hides a write-side problem rather than fixing it. **C's R1 design is incomplete.**
+**Position B's write-pollution objection lands cleanly on C.** B in Round 2: "Under Position C, the user blindly appends `folklore` knowledge graph research into the `tlvtech` federation room. If the system auto-filters by workspace, the user has zero feedback that they are polluting a shared namespace." C never addressed this. A workspace-on-READ filter hides a write-side problem rather than fixing it. **C's R1 design is incomplete.**
 
 **Position A's reputation-mutability argument survives.** Repo identity is mutable (rename, fork, monorepo split). Reputation `room:*` keys are permanent. Auto-deriving rooms from repos creates a structural fragility that has no clean migration story. **A wins this point against B unambiguously.**
 
@@ -48,8 +48,8 @@ Position A's Axis 6 concedes this is the right layering. Position B did not refu
 
 When a user runs a write command (`save`, `index-project`, `touch`, `trigger`) inside a git repo without `--room`, the runtime SHOULD NOT silently write to a stale `default_room`. Three acceptable behaviors:
 
-- **Smart prompt** (most conservative): on first write in a new cwd, surface a one-time prompt: *"You're in `akashik/`, but your default room is `tlvtech`. Use `tlvtech`, switch to a different existing room, or skip writing?"* Costs one prompt per repo per shell session.
-- **Auto-create local workspace room** (B-flavored, scoped): auto-create a room named `workspace:<repo-slug>` (or similar prefix) on first write, **not federated by default** (`shared-rooms.json` excludes it). This room is structurally a topical room (gets a `RoomMeta`, can be federated later via explicit `share`), but it's born unshared and the prefix advertises its provenance. Migration story: if reputation accrues to it and the repo is later renamed, user explicitly migrates via `akashik room rename`. Solves the niche-evaporation concern by keeping it local until intentional sharing.
+- **Smart prompt** (most conservative): on first write in a new cwd, surface a one-time prompt: *"You're in `folklore/`, but your default room is `tlvtech`. Use `tlvtech`, switch to a different existing room, or skip writing?"* Costs one prompt per repo per shell session.
+- **Auto-create local workspace room** (B-flavored, scoped): auto-create a room named `workspace:<repo-slug>` (or similar prefix) on first write, **not federated by default** (`shared-rooms.json` excludes it). This room is structurally a topical room (gets a `RoomMeta`, can be federated later via explicit `share`), but it's born unshared and the prefix advertises its provenance. Migration story: if reputation accrues to it and the repo is later renamed, user explicitly migrates via `folklore room rename`. Solves the niche-evaporation concern by keeping it local until intentional sharing.
 - **Hard-refuse with helpful error**: if no `--room` and the default doesn't match the workspace, fail loudly. Maximum safety, maximum friction.
 
 I recommend the **smart prompt** for v1: it preserves user intent (Position A's invariant), surfaces the stale-default-room bug B identified, and avoids the empty-keyword room proliferation B's lazy enrichment would create. The auto-create-workspace-room behavior is a v2 option once we have data on how often users hit the prompt.
@@ -85,10 +85,10 @@ I recommend the **smart prompt** for v1: it preserves user intent (Position A's 
 
 After shipping Decision 1 + Decision 2:
 
-- Statusline shows `Akashik • akashik` (the repo, not stale tlvtech). ✓ Already shipped this session.
-- `akashik ask "how does X work"` from inside `~/personal/akashik` returns nodes tagged with `workspace: akashik` first — your repo's research, not cold-email research.
-- `akashik save "<insight>"` from inside `~/personal/akashik` either uses your explicit `--room`, or prompts: *"You're in `akashik/`, default room is `tlvtech`. Use tlvtech / switch / cancel?"* — stops the silent write pollution.
-- `akashik room list` is unchanged. The 5 existing rooms keep their hand-curated keywords, descriptions, and accumulated reputation. Nothing migrates, nothing breaks.
+- Statusline shows `Folklore • folklore` (the repo, not stale tlvtech). ✓ Already shipped this session.
+- `folklore ask "how does X work"` from inside `~/personal/folklore` returns nodes tagged with `workspace: folklore` first — your repo's research, not cold-email research.
+- `folklore save "<insight>"` from inside `~/personal/folklore` either uses your explicit `--room`, or prompts: *"You're in `folklore/`, default room is `tlvtech`. Use tlvtech / switch / cancel?"* — stops the silent write pollution.
+- `folklore room list` is unchanged. The 5 existing rooms keep their hand-curated keywords, descriptions, and accumulated reputation. Nothing migrates, nothing breaks.
 - Federation unchanged. P2P protocol unchanged. Reputation model unchanged.
 
 This is what Position C should have been in Round 1 if it had addressed the write-side bug Position B raised: the workspace tag handles READS, the smart prompt handles WRITES, and rooms-as-federation-units stays as Position A demanded.

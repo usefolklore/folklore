@@ -1,17 +1,17 @@
-# akashik — scene 7 — codebase Q&A inside Claude Code
+# folklore — scene 7 — codebase Q&A inside Claude Code
 #
-# The akashik repo is indexed into ~/.akashik.demo (room
-# `akashik`, 342 nodes including 249 code chunks + 50 git log
+# The folklore repo is indexed into ~/.folklore.demo (room
+# `folklore`, 342 nodes including 249 code chunks + 50 git log
 # entries). The repo's `.claude/settings.json` wires the PreToolUse
 # hook to prefetch the graph before any Read/Glob/Grep tool call.
 #
 # Claude is asked a specific implementation question. Without a
 # graph, it would need to grep through the source. With the
-# akashik hook, the relevant code chunks (and the very commit
+# folklore hook, the relevant code chunks (and the very commit
 # that introduced the change) are injected into context preemptively.
 #
-# Run: bash demo/setup.sh && AKASHIK_HOME=~/.akashik.demo \
-#        akashik this me  &&  vhs demo/scene-codebase.tape
+# Run: bash demo/setup.sh && FOLKLORE_HOME=~/.folklore.demo \
+#        folklore this me  &&  vhs demo/scene-codebase.tape
 # Output: demo/scene-codebase.gif
 
 Output demo/scene-codebase.gif
@@ -30,27 +30,27 @@ Set WindowBar Colorful
 Set WindowBarSize 30
 
 Hide
-Type "export AKASHIK_HOME=$HOME/.akashik.demo"
+Type "export FOLKLORE_HOME=$HOME/.folklore.demo"
 Enter
-Type "cd /Users/saharbarak/personal/akashik"
+Type "cd /Users/saharbarak/personal/folklore"
 Enter
 Type "clear"
 Enter
 Sleep 200ms
 Show
 
-Type '# Claude Code session in the akashik repo'
+Type '# Claude Code session in the folklore repo'
 Enter
-Type '# PreToolUse hook fires before any Read/Glob/Grep — akashik prefetches'
+Type '# PreToolUse hook fires before any Read/Glob/Grep — folklore prefetches'
 Enter
 Sleep 800ms
 
-Type 'time claude -p "How does the akashik daemon do bounded backpressure on the job queue? Cite the file path and key constants."'
+Type 'time claude -p "How does the folklore daemon do bounded backpressure on the job queue? Cite the file path and key constants."'
 Enter
 Sleep 30s
 
 Type 'echo'
 Enter
-Type 'echo "↑ akashik-prefetched: Claude cites src/daemon/job-queue.ts directly"'
+Type 'echo "↑ folklore-prefetched: Claude cites src/daemon/job-queue.ts directly"'
 Enter
 Sleep 3500ms

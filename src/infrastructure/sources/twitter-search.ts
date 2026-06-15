@@ -2,7 +2,7 @@
  * twitter_search source adapter (stub).
  *
  * The X/Twitter API requires OAuth authentication, so this adapter
- * reads from a local cache file (~/.akashik/twitter-cache.json)
+ * reads from a local cache file (~/.folklore/twitter-cache.json)
  * instead of hitting the live API. An external script or tool can
  * populate that cache file with the appropriate shape.
  *
@@ -61,7 +61,7 @@ const parseConfig = (raw: Readonly<Record<string, unknown>>): TwitterSearchConfi
   };
 };
 
-const CACHE_PATH = join(homedir(), '.akashik', 'twitter-cache.json');
+const CACHE_PATH = join(homedir(), '.folklore', 'twitter-cache.json');
 
 const readCache = (): ResultAsync<readonly CachedTweet[], never> =>
   ResultAsync.fromPromise(

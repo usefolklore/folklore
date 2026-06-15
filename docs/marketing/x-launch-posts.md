@@ -1,4 +1,4 @@
-# X/Twitter Launch Posts — Akashik
+# X/Twitter Launch Posts — Folklore
 
 ## Thread 1: Launch announcement
 
@@ -9,7 +9,7 @@ It fetches from ArXiv, Hacker News, and RSS feeds. Indexes your codebase. Search
 
 Your agent answers from YOUR sources, not training data.
 
-Open source: github.com/SaharBarak/akashik
+Open source: github.com/SaharBarak/folklore
 
 **Post 2 (demo):**
 Here's what happens when Claude asks for context on vector search:
@@ -23,15 +23,15 @@ Three source types. One query. No copy-paste.
 **Post 3 (how it works):**
 How it works:
 
-1. `akashik init` — pick your research topics
-2. `akashik trigger` — fetch from ArXiv, HN, RSS
-3. `akashik index` — index your codebase
-4. `akashik claude install` — hook into Claude Code
+1. `folklore init` — pick your research topics
+2. `folklore trigger` — fetch from ArXiv, HN, RSS
+3. `folklore index` — index your codebase
+4. `folklore claude install` — hook into Claude Code
 
 After step 4, Claude checks your graph before every file search. Automatically.
 
 **Post 4 (differentiator):**
-The key command is `akashik claude install`.
+The key command is `folklore claude install`.
 
 It adds a PreToolUse hook that fires before every Glob/Grep/Read. Claude sees "knowledge graph exists (425 nodes)" and uses MCP tools instead of grepping.
 
@@ -55,19 +55,19 @@ All deps verified via gh API + ossinsight.io before selection.
 **Post 1:**
 RAG is usually "embed your docs, hope for the best."
 
-Akashik is different: every contribution is signed by its curator's verified GitHub identity, lives on the curator's own peer, and federates on demand to anyone running the same protocol.
+Folklore is different: every contribution is signed by its curator's verified GitHub identity, lives on the curator's own peer, and federates on demand to anyone running the same protocol.
 
 It's a knowledge graph that compounds across the community, not a vector store with a search box.
 
 **Post 2:**
 The federation is the interesting part.
 
-You ask. Your local graph answers first. If it can't, akashik asks every connected peer in your `peers.json` — whatever they've curated flows back signed by them, with their sources attached.
+You ask. Your local graph answers first. If it can't, folklore asks every connected peer in your `peers.json` — whatever they've curated flows back signed by them, with their sources attached.
 
 You inherit their work in milliseconds. Cost: zero web fetches, zero tokens.
 
 **Post 3:**
-I indexed akashik's own codebase into its own graph.
+I indexed folklore's own codebase into its own graph.
 
 55 TypeScript files, 14 npm deps, 11 git commits, 1 submodule.
 
@@ -82,19 +82,19 @@ Self-referential RAG with attribution.
 **Post 1:**
 If you use Claude Code, Codex, Gemini, Hermes, or OpenClaw, your agent has no memory of what your team has been reading.
 
-Akashik fixes that in 4 commands:
+Folklore fixes that in 4 commands:
 
 ```
-akashik onboard
-akashik login           # link your verified GitHub identity
-akashik this            # index the current repo into your graph
-akashik claude install  # hook into Claude Code automatically
+folklore onboard
+folklore login           # link your verified GitHub identity
+folklore this            # index the current repo into your graph
+folklore claude install  # hook into Claude Code automatically
 ```
 
 Now Claude checks your local graph + your peers' graphs before every WebSearch.
 
 **Post 2:**
-Every WebSearch your agent makes goes through akashik first.
+Every WebSearch your agent makes goes through folklore first.
 
 If your graph (or a peer's graph) has the answer with satisfaction ≥ 0.85 and ≥ 2 hits, the WebSearch is denied — your agent uses the cached answer instead.
 
@@ -109,14 +109,14 @@ Zero behaviour change. Token cost: down. Compounding: on.
 **Short post 1:**
 Your AI coding agent reads 0 of the 50 articles you read this week.
 
-Akashik changes that.
+Folklore changes that.
 
-github.com/SaharBarak/akashik
+github.com/SaharBarak/folklore
 
 **Short post 2:**
 Every AI memory tool is single-user and gets stranded on someone's laptop.
 
-Akashik is a peer-to-peer knowledge graph. Every contribution is signed by its curator's verified GitHub identity, locally owned, and federated on demand — so one peer's research compounds for the whole network.
+Folklore is a peer-to-peer knowledge graph. Every contribution is signed by its curator's verified GitHub identity, locally owned, and federated on demand — so one peer's research compounds for the whole network.
 
 Open source. Runs locally. No API keys. No central server.
 
@@ -127,4 +127,4 @@ Then I built a tool that does the same thing automatically for your research.
 
 The meta is strong with this one.
 
-github.com/SaharBarak/akashik
+github.com/SaharBarak/folklore

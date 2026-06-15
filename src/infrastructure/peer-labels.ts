@@ -2,7 +2,7 @@
  * peer-labels — local registry mapping a libp2p peer-id to a
  * human-readable label (and, Phase 26, an expected GitHub handle).
  *
- * Persisted at `~/.akashik/peer-labels.json` with the shape:
+ * Persisted at `~/.folklore/peer-labels.json` with the shape:
  *
  *   {
  *     "version": 1,
@@ -20,7 +20,7 @@
  *
  * The store is intentionally pull-only here: tests + the read paths use
  * `loadPeerLabels(path)` and `lookupGithub(labels, peerId)`. Operator-
- * facing CLI registration lives in `akashik peer label` (out of scope
+ * facing CLI registration lives in `folklore peer label` (out of scope
  * for this module).
  *
  * Pure + sync — no I/O outside readFileSync + JSON.parse. Returns an

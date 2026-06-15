@@ -1,18 +1,18 @@
 ---
-name: akashik
-description: Knowledge graph research skill. Trigger with /akashik or when the user asks about research, sources, rooms, tunnels, or their knowledge graph. Also triggers when PreToolUse hook reports "akashik: Knowledge graph exists."
+name: folklore
+description: Knowledge graph research skill. Trigger with /folklore or when the user asks about research, sources, rooms, tunnels, or their knowledge graph. Also triggers when PreToolUse hook reports "folklore: Knowledge graph exists."
 ---
 
-# akashik — Agent Skill
+# folklore — Agent Skill
 
-You have access to the akashik knowledge graph via MCP tools. Use this skill to narrate operations with full visibility.
+You have access to the folklore knowledge graph via MCP tools. Use this skill to narrate operations with full visibility.
 
 ## When to Activate
 
-- User types `/akashik`
+- User types `/folklore`
 - User asks "what do I know about X", "search my research", "what did I read"
 - User asks to trigger, discover, index, or manage rooms/sources
-- PreToolUse hook fires with "akashik:" prefix
+- PreToolUse hook fires with "folklore:" prefix
 - User asks about architecture, dependencies, or prior research
 - **PROACTIVE:** When answering ANY technical question, check the graph FIRST
 - **PROACTIVE:** When reviewing code, search for related nodes before giving advice
@@ -21,7 +21,7 @@ You have access to the akashik knowledge graph via MCP tools. Use this skill to 
 
 ## Proactive Behavior (CRITICAL)
 
-**akashik is NOT passive.** Don't wait for the user to ask. Search the graph whenever:
+**folklore is NOT passive.** Don't wait for the user to ask. Search the graph whenever:
 
 1. You're about to answer a technical question → call `search` first
 2. You're about to write code in a file → call `search` with the module/concept name
@@ -48,7 +48,7 @@ When searching the graph, show the pipeline:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- akashik ► SEARCHING
+ folklore ► SEARCHING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ◆ Embedding query: "{query}"
@@ -67,7 +67,7 @@ When triggering a room, spawn a **named background agent** for visibility:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- akashik ► TRIGGERING room={room}
+ folklore ► TRIGGERING room={room}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ◆ Loading sources for room '{room}'...
@@ -86,7 +86,7 @@ Summary: +{total_new} nodes, {total_skipped} skipped
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- akashik ► DISCOVERY LOOP room={room}
+ folklore ► DISCOVERY LOOP room={room}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ◆ Iteration 1:
@@ -109,7 +109,7 @@ Summary: +{total_new} nodes, {total_skipped} skipped
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- akashik ► INDEXING PROJECT
+ folklore ► INDEXING PROJECT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ◆ Scanning codebase: {root}
@@ -132,7 +132,7 @@ Summary: +{total_new} nodes, {total_skipped} skipped
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- akashik ► TUNNEL DETECTION
+ folklore ► TUNNEL DETECTION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ◆ Loading vectors from {n} rooms...
@@ -183,7 +183,7 @@ After any operation, show the current state:
 
 ```
 ───────────────────────────────────────
-akashik • {room}
+folklore • {room}
 {nodes} nodes | {edges} edges | {vectors} vectors | {sources} sources
 ───────────────────────────────────────
 ```

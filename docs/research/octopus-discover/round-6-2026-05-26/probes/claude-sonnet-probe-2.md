@@ -2,18 +2,18 @@
 # Task ID: probe-1779816691-2
 # Role: researcher
 # Phase: probe
-# Prompt: Explore edge cases and potential challenges for: -P CLEANUP AUDIT — what's no longer relevant in the Akashik project given the full arc:
+# Prompt: Explore edge cases and potential challenges for: -P CLEANUP AUDIT — what's no longer relevant in the Folklore project given the full arc:
 
 CONTEXT:
 The project has gone through:
 1. Multiple ML retrieval optimization attempts (E1' rerank, E11 enrichment, listwise rerank, NDCG/MRR augmentation)
 2. Three octopus-discover synthesis rounds with empirical pushback
-3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+3. A fundamental pivot from 'folklore: agent memory product' to 'Folklore: federated knowledge commons for the OSS community'
 4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
-5. The scaffolding of AkashikBench-F which validated the compounding thesis (slope -4.74e-5 on LoCoMo)
-6. Now: rebrand sweep in progress (Akashik), and need to clean up the codebase + docs of stale artifacts.
+5. The scaffolding of FolkloreBench-F which validated the compounding thesis (slope -4.74e-5 on LoCoMo)
+6. Now: rebrand sweep in progress (Folklore), and need to clean up the codebase + docs of stale artifacts.
 
-WORKING DIR: /Users/saharbarak/personal/akashik
+WORKING DIR: /Users/saharbarak/personal/folklore
 
 QUESTIONS:
 
@@ -22,14 +22,14 @@ Q1. Looking at the project layout (src/, tests/, docs/, .planning/, scripts/, ex
 Q2. Specific things to investigate:
    - .planning/ directory — there are phase-21, phase-23 dirs, HANDOFF.md, long-term-memory-integration.md. The phase-based GSD planning workflow may be useful or may be cruft.
    - docs/research/ — multiple research docs (energy-based-contradiction-detection, beat-the-competitors-retrieval-plan, performance-prediction-matrix). Some of these may have been superseded by the pivot.
-   - src/ — there's akashik-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
+   - src/ — there's folklore-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
    - tests/ — many tests reflect the old framing. Tests for bench-real.test.ts (30-doc proxy), bench-standard.test.ts (synth HotpotQA). Are these still useful or superseded?
    - Markdown clutter — README.md.bak.830lines is in the working tree (a backup of an old README). docs has potential duplication.
-   - Codebase identifiers (akashik* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
+   - Codebase identifiers (folklore* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
 
 Q3. What docs/research artifacts should be ARCHIVED (moved to a docs/archive/ subfolder with a note) vs DELETED outright? Archive = useful historical record; delete = noise.
 
-Q4. Specific to the Akashik pivot:
+Q4. Specific to the Folklore pivot:
    - storybrand-messaging-draft.md went through THREE major revisions (personal → team → OSS community). Is preserving the evolution table useful, or should we collapse to just the final version?
    - The competitor-positioning research (beat-the-competitors-retrieval-plan.md) was written when we thought we were competing with mem0/agentmemory on R@5. That positioning is now superseded — but the research is still useful. Archive? Annotate?
 
@@ -58,7 +58,7 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 
 ---
 
-## Akashik Cleanup Audit — KEEP / ARCHIVE / DELETE / NEEDS-REWRITE
+## Folklore Cleanup Audit — KEEP / ARCHIVE / DELETE / NEEDS-REWRITE
 
 ---
 
@@ -66,21 +66,21 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 
 | File / Dir | Action | Reason |
 |---|---|---|
-| `README.md` | NEEDS-REWRITE | Still says "akashik", north-star is the old demo loop, no mention of compounding thesis or OSS commons |
+| `README.md` | NEEDS-REWRITE | Still says "folklore", north-star is the old demo loop, no mention of compounding thesis or OSS commons |
 | `README.md.bak.830lines` | **DELETE** | 50 KB backup file committed by mistake; every git clone carries it; no historical value beyond git log |
-| `NEXT_STEPS.md` | **ARCHIVE → `docs/archive/`** | North star ("make federated search match local search") is the old agent-memory framing; superseded by PROJECT-PLAN-AKASHIK.md and the compounding thesis |
+| `NEXT_STEPS.md` | **ARCHIVE → `docs/archive/`** | North star ("make federated search match local search") is the old agent-memory framing; superseded by PROJECT-PLAN-FOLKLORE.md and the compounding thesis |
 | `findings.md` | **ARCHIVE → `docs/archive/`** | SOTA retrieval synthesis for the Phase 21-23 CPU-bound optimization era; genuinely good research but frozen-in-time; will confuse contributors who read it as current direction |
 | `CLAUDE.md` | KEEP | Project instructions still valid |
 | `Dockerfile` | KEEP | Infra unchanged |
 | `package.json` / `tsconfig.json` | KEEP | |
 | `skills-lock.json` | KEEP | Harness tooling config |
-| `.mcp.json` | NEEDS-REWRITE | Tool names will still say `akashik` after rename; update after binary rename lands |
+| `.mcp.json` | NEEDS-REWRITE | Tool names will still say `folklore` after rename; update after binary rename lands |
 | `.gitignore` | **NEEDS EDIT** | `.claude-octopus/`, `.agents/`, `.claude-plugin/` are NOT gitignored but are committed local tool state — add all three |
 | `.claude-octopus/` | **DELETE from git + GITIGNORE** | state.json tracks session counts and local workflow state; accidentally committed; is per-developer local state; `state.json.backup` means someone was editing it manually. High-risk if it ever captures tokens. |
 | `.agents/` | ARCHIVE/GITIGNORE | Skills and hooks specific to the octopus workflow runner; local runtime state, not source |
 | `.claude-plugin/` | KEEP + GITIGNORE | Plugin config is fine but shouldn't be committed if it contains instance-specific data |
-| `bin/akashik.js` | NEEDS-REWRITE | Will become `bin/akashik.js` at rename; keep `akashik` as a symlink alias for zombie-integration continuity (see §Zombie Integrations below) |
-| `demo/` (all `.gif` files) | NEEDS-REWRITE | All GIFs show `akashik` branding; the `.tape` scripts are the source-of-truth and should be re-run after rebrand; binary GIFs bloat git history — consider moving to a CDN or GitHub Releases attachment |
+| `bin/folklore.js` | NEEDS-REWRITE | Will become `bin/folklore.js` at rename; keep `folklore` as a symlink alias for zombie-integration continuity (see §Zombie Integrations below) |
+| `demo/` (all `.gif` files) | NEEDS-REWRITE | All GIFs show `folklore` branding; the `.tape` scripts are the source-of-truth and should be re-run after rebrand; binary GIFs bloat git history — consider moving to a CDN or GitHub Releases attachment |
 | `demo/*.tape` / `*.sh` | KEEP | Source scripts are still valid conceptually; just need brand find-replace |
 | `vendor/` | KEEP | |
 | `config/config.example.yaml` | KEEP | |
@@ -92,16 +92,16 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 | Path | Action | Reason |
 |---|---|---|
 | `PROJECT.md` | NEEDS-REWRITE | Root project context; predates the pivot |
-| `REQUIREMENTS.md` | ARCHIVE | Original requirements doc for v2.0 P2P phases 15-18; superseded by AkashikBench-F + Phase 24 plan |
-| `ROADMAP.md` | ARCHIVE | Covers phases 15-18 only, ends at Phase 20; entire forward plan is now PROJECT-PLAN-AKASHIK.md |
+| `REQUIREMENTS.md` | ARCHIVE | Original requirements doc for v2.0 P2P phases 15-18; superseded by FolkloreBench-F + Phase 24 plan |
+| `ROADMAP.md` | ARCHIVE | Covers phases 15-18 only, ends at Phase 20; entire forward plan is now PROJECT-PLAN-FOLKLORE.md |
 | `STATE.md` | ARCHIVE | GSD state file frozen at Phase 20 execution (April 2026); phases 21-23 aren't tracked here; replaced by HANDOFF.md for operational state |
 | `HANDOFF.md` | **KEEP** | Contains live Hetzner box details (Phase 23.7), bench run status, and the exact blocker description. Still operationally relevant until the Phase 24 kickoff. |
-| `MILESTONES.md` | ARCHIVE | Historical milestone log; the active forward plan is in docs/PROJECT-PLAN-AKASHIK.md |
+| `MILESTONES.md` | ARCHIVE | Historical milestone log; the active forward plan is in docs/PROJECT-PLAN-FOLKLORE.md |
 | `long-term-memory-integration.md` | ARCHIVE | Pre-Phase-21 planning spec; the work shipped. Valuable design rationale but completed |
 | `harness-integration-roadmap.md` | NEEDS-REVIEW | May still be forward-looking or may be fully executed; read before deciding |
 | `multi-provider-epic.md` | KEEP | Multi-LLM provider for summariser is still live scope |
 | `p2p-scale-plan.md` | KEEP | Federation scale plan directly feeds Phase 24 |
-| `SOTA-UPGRADE-PLAN.md` | ARCHIVE | Per-peer retrieval optimization plan; the ceiling was explicitly reached (0.9268 LME-S R@5); explicitly de-prioritized in PROJECT-PLAN-AKASHIK.md |
+| `SOTA-UPGRADE-PLAN.md` | ARCHIVE | Per-peer retrieval optimization plan; the ceiling was explicitly reached (0.9268 LME-S R@5); explicitly de-prioritized in PROJECT-PLAN-FOLKLORE.md |
 | `BENCH-COMPETITORS.md` | ARCHIVE | Written against mem0/ByteRover head-to-head framing; superseded by the commons positioning |
 | `BENCH-v2.md` | ARCHIVE | Benchmark planning for Phase 23; now executed and documented in BENCHMARKS.md |
 | `v2.1-CANDIDATES.md` | ARCHIVE | Candidate retrieval improvements for v2.1; the actual executed work is in phase 21-23 context files |
@@ -125,9 +125,9 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 
 | File | Action | Reason |
 |---|---|---|
-| `docs/PROJECT-PLAN-AKASHIK.md` | **KEEP** | Living plan; the single source of truth for Phase 24+ direction |
+| `docs/PROJECT-PLAN-FOLKLORE.md` | **KEEP** | Living plan; the single source of truth for Phase 24+ direction |
 | `docs/product/BENCHMARKS.md` | KEEP | Acceptance contracts; the ratchet table is the CI contract |
-| `docs/product/MANIFESTO.md` | NEEDS-REWRITE | Presumably akashik-branded; core mission text needs Akashik language |
+| `docs/product/MANIFESTO.md` | NEEDS-REWRITE | Presumably folklore-branded; core mission text needs Folklore language |
 | `docs/product/VISION.md` | NEEDS-REWRITE | Same |
 | `docs/product/ROADMAP.md` | NEEDS-REWRITE | Should reflect Phase 24+ only |
 | `docs/product/GRAPHRAG-AUDIT.md` | KEEP | Architecture audit; still accurate |
@@ -143,19 +143,19 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 | `docs/marketing/storybrand-messaging-draft.md` | KEEP | Written today (2026-05-26); this IS the current brand voice |
 | `docs/marketing/positioning-draft.md` | **DELETE** | Superseded by storybrand-messaging-draft.md; the earlier personal/team framings are confusing and directly contradict the OSS commons mission |
 | `docs/marketing/positioning-v2.1.md` | **DELETE** | Same; two-version evolution table has no value in the working tree when the final direction is clearly stated — git history preserves the evolution |
-| `docs/marketing/how-akashik-works.md` | KEEP | The technical explainer for the compounding mechanism; cited from PROJECT-PLAN-AKASHIK.md |
-| `docs/research/beat-the-competitors-retrieval-plan.md` | **ARCHIVE with annotation** | The per-question-type loss breakdown and LME-S per-type R@5 numbers are genuinely valuable (0.905 multi-session, 0.871 temporal) and will guide Phase 24 routing decisions. But the framing "beat the competitors" and the anchor benchmarks against mem0/ByteRover are the old positioning. Move to `docs/archive/retrieval-research-pre-pivot.md` and add a 3-line header: "Framing superseded by Akashik commons pivot. Retrieval quality analysis and per-question-type loss breakdown remain accurate as of Phase 23.7." |
+| `docs/marketing/how-folklore-works.md` | KEEP | The technical explainer for the compounding mechanism; cited from PROJECT-PLAN-FOLKLORE.md |
+| `docs/research/beat-the-competitors-retrieval-plan.md` | **ARCHIVE with annotation** | The per-question-type loss breakdown and LME-S per-type R@5 numbers are genuinely valuable (0.905 multi-session, 0.871 temporal) and will guide Phase 24 routing decisions. But the framing "beat the competitors" and the anchor benchmarks against mem0/ByteRover are the old positioning. Move to `docs/archive/retrieval-research-pre-pivot.md` and add a 3-line header: "Framing superseded by Folklore commons pivot. Retrieval quality analysis and per-question-type loss breakdown remain accurate as of Phase 23.7." |
 | `docs/research/performance-prediction-matrix.md` | ARCHIVE | Performance prediction for the Phase 21-23 retrieval optimization era; the ceiling is reached, no forward relevance |
 | `docs/research/energy-based-contradiction-detection.md` | KEEP | Still live — Phase 21's auto-forget and Jaccard contradiction detection are in prod; this research informed that design |
-| `docs/research/github-star-growth.md` | KEEP | OSS growth strategy; directly relevant to Akashik's OSS community positioning |
+| `docs/research/github-star-growth.md` | KEEP | OSS growth strategy; directly relevant to Folklore's OSS community positioning |
 | `docs/research/octopus-discover/round-5-2026-05-26/` | KEEP | The synthesis that produced the current direction; this is the evidence for the pivot |
 | `docs/research/octopus-discover/round-4-2026-05-26/` | ARCHIVE | Round 4 was superseded by round 5; the intermediate probes are noise without the synthesis |
-| `docs/index.html` | NEEDS-REWRITE | The public-facing website; still says akashik |
+| `docs/index.html` | NEEDS-REWRITE | The public-facing website; still says folklore |
 | `docs/probe.html` | **DELETE** | Debug/network probe page; has no place in the public docs tree; likely contains local IP addresses |
-| `docs/welly-idle.png` | **DELETE** | "welly" is the old mascot/nickname for akashik; not part of the Akashik brand |
-| `docs/banner.png/svg`, `docs/logo.png/svg` | NEEDS-REWRITE | akashik branding; needs Akashik rebrand |
-| `docs/memory-stack.png/svg` | NEEDS-REWRITE | Architecture diagram references akashik stack; update to show Akashik federation layer |
-| `docs/assets/logo-*.svg`, `og-*.png/svg`, `manifesto-illustration.svg` | NEEDS-REWRITE | Brand assets; some may already be Akashik-branded (check), rest need the rename sweep |
+| `docs/welly-idle.png` | **DELETE** | "welly" is the old mascot/nickname for folklore; not part of the Folklore brand |
+| `docs/banner.png/svg`, `docs/logo.png/svg` | NEEDS-REWRITE | folklore branding; needs Folklore rebrand |
+| `docs/memory-stack.png/svg` | NEEDS-REWRITE | Architecture diagram references folklore stack; update to show Folklore federation layer |
+| `docs/assets/logo-*.svg`, `og-*.png/svg`, `manifesto-illustration.svg` | NEEDS-REWRITE | Brand assets; some may already be Folklore-branded (check), rest need the rename sweep |
 | `docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md` | KEEP | Protocol design questions; still forward-relevant |
 
 ---
@@ -164,16 +164,16 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 
 | File | Action | Reason |
 |---|---|---|
-| `tests/bench-akashik-federation.test.ts` | **KEEP** | AkashikBench-F — the key Phase 24 instrument; validates the compounding thesis |
+| `tests/bench-folklore-federation.test.ts` | **KEEP** | FolkloreBench-F — the key Phase 24 instrument; validates the compounding thesis |
 | `tests/bench-locomo-real.test.ts` | KEEP | Real-corpus LoCoMo factual recall; acceptance gate for Phase 23.7+ |
 | `tests/bench-longmemeval-real.test.ts` | KEEP | Real-corpus LME-S oracle; the primary quality gate |
 | `tests/bench-scifact-real.test.ts` | KEEP | BEIR SciFact full run; retrieval regression gate |
 | `tests/bench-real.test.ts` | KEEP (but NOTE) | Older BEIR proxy; still a valid regression guard, but its scope overlaps with bench-scifact-real.test.ts. The comment header saying "30-doc proxy" is fine — it runs fast in CI |
 | `tests/bench-standard.test.ts` | KEEP (comment header is stale) | The HotpotQA-style synthetic multi-hop bench is still a valid acceptance gate. However, the file header says "Uses the SAME evaluation methodology as competitors" — that framing is dead. The test itself is fine; the comment should be updated to reflect "synthetic regression harness for multi-hop retrieval" |
 | `tests/llm-listwise-rerank.test.ts` | **ARCHIVE** | Listwise LLM reranking was one of the explicitly abandoned ML optimization attempts (named in your project context). These tests guard dead code. If `src/domain/llm-listwise-rerank.ts` still exports anything, it should be deleted; if it's purely test-only, delete the test |
-| `tests/bench-locomo-synth.test.ts` | ARCHIVE | Synthetic LoCoMo proxy superseded by bench-locomo-real.test.ts and AkashikBench-F; keeping both creates ambiguity about which is the acceptance gate |
+| `tests/bench-locomo-synth.test.ts` | ARCHIVE | Synthetic LoCoMo proxy superseded by bench-locomo-real.test.ts and FolkloreBench-F; keeping both creates ambiguity about which is the acceptance gate |
 | `tests/bench-longmemeval-synth.test.ts` | ARCHIVE | Same — synthetic proxy replaced by real corpus; keeping both adds CI cost for no new signal |
-| `tests/phase29.rust-retrieval-regression.test.ts` | NEEDS-REVIEW | Phase 29 isn't in the ROADMAP — it was added in the 21-23 era. Verify that akashik-rs is still active and the test still passes; if the Rust sidecar is not on the Phase 24 roadmap, this becomes a maintenance liability |
+| `tests/phase29.rust-retrieval-regression.test.ts` | NEEDS-REVIEW | Phase 29 isn't in the ROADMAP — it was added in the 21-23 era. Verify that folklore-rs is still active and the test still passes; if the Rust sidecar is not on the Phase 24 roadmap, this becomes a maintenance liability |
 | `tests/fixtures/phase19/`, `tests/fixtures/phase20/` | KEEP | Support live phaseNN tests; not bloat |
 
 ---
@@ -189,9 +189,9 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 | `src/application/consolidator.ts` | KEEP | Phase 21/22 auto-promotion pipeline; feeds the compounding mechanism |
 | `src/application/auto-forget-tick.ts` | KEEP | Phase 21/22; live daemon tick |
 | `src/domain/long-term-memory.ts` | KEEP | Phase 21 core domain; the tier math and Beta(α,β) is the published architecture |
-| `src/domain/federation-sim.ts` | KEEP | AkashikBench-F simulator; Phase 24's key instrument |
-| `akashik-rs/` (submodule) | NEEDS-REVIEW | The Rust sidecar delivered phase29 regression testing. Per PROJECT-PLAN-AKASHIK.md, per-peer retrieval is de-prioritized; but if the Rust path is still in the test matrix, it needs to be maintained or explicitly frozen |
-| `src/cli/commands/bench.ts` | KEEP | The unified bench runner; becomes the `akashik bench` command after rename |
+| `src/domain/federation-sim.ts` | KEEP | FolkloreBench-F simulator; Phase 24's key instrument |
+| `folklore-rs/` (submodule) | NEEDS-REVIEW | The Rust sidecar delivered phase29 regression testing. Per PROJECT-PLAN-FOLKLORE.md, per-peer retrieval is de-prioritized; but if the Rust path is still in the test matrix, it needs to be maintained or explicitly frozen |
+| `src/cli/commands/bench.ts` | KEEP | The unified bench runner; becomes the `folklore bench` command after rename |
 
 ---
 
@@ -207,7 +207,7 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 | `scripts/jacobi-preconditioning.mjs` | ARCHIVE | PPR solver optimization experiment; not on Phase 24 roadmap |
 | `scripts/bench-beir-sota.mjs` | KEEP | Useful external SOTA comparison reference |
 | `scripts/contextualize-corpus.mjs` | KEEP | Anthropic Contextual Retrieval preprocessing; listed as Phase 24 priority in findings.md |
-| `scripts/bench-bridge.mjs` | NEEDS-REVIEW | Verify it targets the new AkashikBench-F path, not the old proxy |
+| `scripts/bench-bridge.mjs` | NEEDS-REVIEW | Verify it targets the new FolkloreBench-F path, not the old proxy |
 
 ---
 
@@ -215,17 +215,17 @@ I have all the evidence I need. Here is the full opinionated cleanup audit.
 
 ### 1. Auth mechanism → API version boundary
 
-The project uses ed25519 peer identity (Phase 15, `~/.akashik/peer-identity.json`). The identity strategy memory entry says GitHub OAuth is the planned social DID anchor. **This is a hard API version break.** Existing peers authenticating via raw ed25519 multiaddrs will silently fail to establish sessions if the OAuth requirement lands as a patch. The correct treatment: gate GitHub OAuth behind a new handshake version in the `/akashik/share/1.0.0` libp2p protocol (bump to `/akashik/share/2.0.0`), keep the v1 handler alive for at least one major version, and add a deprecation notice to the `akashik peer add` CLI response. The identity bridge code (`src/application/identity-bridge.ts`) should contain the migration path. This is **not currently documented** in any phase plan — it's an implicit assumption that auth and API versioning are decoupled. They are not.
+The project uses ed25519 peer identity (Phase 15, `~/.folklore/peer-identity.json`). The identity strategy memory entry says GitHub OAuth is the planned social DID anchor. **This is a hard API version break.** Existing peers authenticating via raw ed25519 multiaddrs will silently fail to establish sessions if the OAuth requirement lands as a patch. The correct treatment: gate GitHub OAuth behind a new handshake version in the `/folklore/share/1.0.0` libp2p protocol (bump to `/folklore/share/2.0.0`), keep the v1 handler alive for at least one major version, and add a deprecation notice to the `folklore peer add` CLI response. The identity bridge code (`src/application/identity-bridge.ts`) should contain the migration path. This is **not currently documented** in any phase plan — it's an implicit assumption that auth and API versioning are decoupled. They are not.
 
 ### 2. Zombie integrations
 
-The MCP server exposes `akashik` tool names. Any Claude Code user who installed the MCP via `.mcp.json` or `claude_desktop_config.json` has entries like `"command": "akashik"` hard-coded. When the npm package renames to `akashik`, the MCP server stops responding for every user who installed it and moved on. These users will never voluntarily migrate — they're in set-and-forget mode.
+The MCP server exposes `folklore` tool names. Any Claude Code user who installed the MCP via `.mcp.json` or `claude_desktop_config.json` has entries like `"command": "folklore"` hard-coded. When the npm package renames to `folklore`, the MCP server stops responding for every user who installed it and moved on. These users will never voluntarily migrate — they're in set-and-forget mode.
 
-**Strategy:** Keep `"akashik"` as a bin alias in `package.json` for at least 2 major versions (`"bin": { "akashik": "bin/akashik.js", "akashik": "bin/akashik.js" }`). The startup banner should print a one-time deprecation warning: `"akashik is deprecated; use akashik instead"` — but only if invoked as `akashik`, never if invoked as `akashik`. This respects the zero-noise contract for new users while notifying old users passively.
+**Strategy:** Keep `"folklore"` as a bin alias in `package.json` for at least 2 major versions (`"bin": { "folklore": "bin/folklore.js", "folklore": "bin/folklore.js" }`). The startup banner should print a one-time deprecation warning: `"folklore is deprecated; use folklore instead"` — but only if invoked as `folklore`, never if invoked as `folklore`. This respects the zero-noise contract for new users while notifying old users passively.
 
 ### 3. Shadow traffic validation / parity definition
 
-AkashikBench-F is an in-simulator boolean-set abstraction — it validates dynamics (compounding slope = -4.74e-5), not real network retrieval quality. The Phase 24 federation routing changes (room-affinity routing, query-type detection) will touch `src/application/federated-search.ts` and `src/infrastructure/search-sync.ts`. These changes have no shadow-traffic harness yet.
+FolkloreBench-F is an in-simulator boolean-set abstraction — it validates dynamics (compounding slope = -4.74e-5), not real network retrieval quality. The Phase 24 federation routing changes (room-affinity routing, query-type detection) will touch `src/application/federated-search.ts` and `src/infrastructure/search-sync.ts`. These changes have no shadow-traffic harness yet.
 
 **What parity means here is specific:** the composite bench score from Phase 23 (0.9012 / 1.0000) must not drop >1 point absolute when the new routing lands. That's the stated gate. What's missing is a test that replays a set of federated queries against both the old direct-fan-out path and the new routed path and diffs the top-5 result sets. Acceptable divergence: same hit in top-5 (order may change), zero cases where the routed path returns empty where direct-fan-out returns results. This harness does not exist and should be a Phase 24.1 deliverable before any routing change lands.
 
@@ -259,7 +259,7 @@ This single sweep removes ~65 files from the "active" view of the planning direc
 
 **3. Delete `docs/marketing/positioning-draft.md` + `positioning-v2.1.md`, and add the 3-line annotation header to `docs/research/beat-the-competitors-retrieval-plan.md` before moving it to `docs/archive/`**
 
-These three files are the most dangerous clutter in the repo because they actively contradict the current mission. A new contributor reading the docs/ folder will hit "akashik competes with mem0/ByteRover on R@5" before they hit "Akashik is the federated knowledge commons for the OSS community." That's a positioning inversion that takes time to undo mentally. The storybrand-messaging-draft.md (written today) is the canonical voice; every pre-pivot positioning document left in the active tree is a hole in that narrative.
+These three files are the most dangerous clutter in the repo because they actively contradict the current mission. A new contributor reading the docs/ folder will hit "folklore competes with mem0/ByteRover on R@5" before they hit "Folklore is the federated knowledge commons for the OSS community." That's a positioning inversion that takes time to undo mentally. The storybrand-messaging-draft.md (written today) is the canonical voice; every pre-pivot positioning document left in the active tree is a hole in that narrative.
 ```
 
 ## Status: SUCCESS

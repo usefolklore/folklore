@@ -8,7 +8,7 @@
 PROJECT CONTEXT (unchanged from Round 4 — abbreviated)
 ================================================================
 
-Akashik = federated knowledge commons for the OSS community.
+Folklore = federated knowledge commons for the OSS community.
 Compounding via the ambitioned-curator loop:
   local-first → federation-fan-out → web-on-miss → save-locally
   → transfer-to-next-asker (when ambitioned curator is online).
@@ -33,7 +33,7 @@ Q1 — Where should the next engineering month go: marketing
      federation rather than per-peer retrieval?
      >> Pick one. One paragraph rationale.
 
-Q2 — Is the Akashik 'ambitioned-curator + curiosity-driven cache'
+Q2 — Is the Folklore 'ambitioned-curator + curiosity-driven cache'
      mechanism architecturally novel, or a known pattern in
      disguise?
      >> Name the closest prior-art system or paper (arxiv ID,
@@ -64,7 +64,7 @@ Q6 — Failure modes of curiosity-driven propagation:
      >> One known system that solved each, and the mechanism.
 
 Q7 — REAL competitors (not categories). Pick the 2-3 specific
-     existing systems that Akashik most directly competes with /
+     existing systems that Folklore most directly competes with /
      extends / supersedes. Among:
        Are.na · Logseq P2P sync · Mastodon · arxiv · Wikipedia ·
        Roam · IPFS · hypercore · Bluesky/ATProto · mem0 ·
@@ -103,7 +103,7 @@ I now have everything I need. Here is the Round 5 synthesis.
 
 ---
 
-# Akashik Round 5 — Direct Answers to Q1–Q8
+# Folklore Round 5 — Direct Answers to Q1–Q8
 
 ---
 
@@ -122,7 +122,7 @@ The retrieval ceiling question is empirically closed. Twelve SOTA attacks across
 | Layer | Closest prior art | Reference |
 |---|---|---|
 | Curiosity-driven pull propagation | **Secure Scuttlebutt (SSB)** — peers pull feeds they follow; working set is subjective | Tarr et al. 2019, "Secure Scuttlebutt: An Identity-Centric Protocol for Subjective and Permissioned Publish-Subscribe"; repo: github.com/ssbc/ssb-db |
-| P2P cooperative cache with semantic miss | **Cooperative web caching (Squid/ICP, RFC 2186, 1997)** — peers consult each other on cache miss before hitting origin. Akashik replaces URL-identity with vector-similarity. | RFC 2186 (Wessels & Claffy, 1997) |
+| P2P cooperative cache with semantic miss | **Cooperative web caching (Squid/ICP, RFC 2186, 1997)** — peers consult each other on cache miss before hitting origin. Folklore replaces URL-identity with vector-similarity. | RFC 2186 (Wessels & Claffy, 1997) |
 | Graph-topology-driven routing | **Kleinberg's small-world routing** (2000, "Navigation in a small world") — curiosity as an approximation to the optimal routing metric on a power-law graph | Kleinberg 2000, Nature 406:845 |
 | Local-first CRDT federated state | **Automerge / Yjs** pattern — Y.js is already in the stack (Phase 16). Not novel in isolation. | Shapiro et al. 2011, arXiv:1010.3615 (CRDTs) |
 | Cross-model embedding bridge | **No direct prior art found.** The specific claim — linear W trained on paired corpus vectors, 91.9% retrieval retention across encoder boundaries — is not in the BEIR/MTEB literature. The closest is **CLUE (Cross-Lingual Universal Encoder)** but that is cross-lingual, not cross-architecture. | — |
@@ -175,9 +175,9 @@ The retrieval ceiling question is empirically closed. Twelve SOTA attacks across
 
 **Named communities to seed (not categories):**
 
-1. **Nix/NixOS community** — discourse.nixos.org (~40K members), GitHub nix-community (~600 active contributors). Value proposition: reproducible local tooling, no cloud dependency, Nix flake install is a natural fit for akashik.
+1. **Nix/NixOS community** — discourse.nixos.org (~40K members), GitHub nix-community (~600 active contributors). Value proposition: reproducible local tooling, no cloud dependency, Nix flake install is a natural fit for folklore.
 2. **llama.cpp + Ollama community** — github.com/ggerganov/llama.cpp discussions (65K stars, ~2K monthly commenters). They are already running local inference; adding a local knowledge graph to their Claude/Ollama setup is a natural extension.
-3. **Elixir/Phoenix community** — elixirforum.com (~50K members). Highly documentation-oriented, love functional programming, many run local dev environments. akashik's functional DDD architecture resonates.
+3. **Elixir/Phoenix community** — elixirforum.com (~50K members). Highly documentation-oriented, love functional programming, many run local dev environments. folklore's functional DDD architecture resonates.
 
 **Named seed content (specific, not categories):**
 
@@ -194,7 +194,7 @@ The retrieval ceiling question is empirically closed. Twelve SOTA attacks across
 - **Days 15–21:** "Show HN: I built a P2P knowledge graph where my peers' research answers your questions." Lead with the cross-model bridge claim (91.9% retention across encoder changes) — that is the most technically surprising single number. Include the BEIR-FedSplit result as the first comment.
 - **Days 22–30:** First public federation event: 10 peers simultaneously share their `local-ai` rooms. Run and publish the CR(N=10) number live. Invite the community to join and measure the lift.
 
-**The hook that gets ~100 contributors:** "Your Claude remembers conversations; Akashik lets your Claude remember what your entire team has read — across companies, without a server." The federation event makes this visceral.
+**The hook that gets ~100 contributors:** "Your Claude remembers conversations; Folklore lets your Claude remember what your entire team has read — across companies, without a server." The federation event makes this visceral.
 
 ---
 
@@ -204,19 +204,19 @@ The retrieval ceiling question is empirically closed. Twelve SOTA attacks across
 
 Problem: the most-queried nodes get pulled to more peers, increasing their retrieval probability further. Hot topics dominate; diverse tail knowledge gets evicted.
 
-**System that solved it:** BitTorrent's **rarest-first piece selection** (Cohen 2003, "Incentives Build Robustness in BitTorrent"). Peers preferentially request pieces that fewer peers have, ensuring swarm-wide diversity and preventing any single piece from monopolizing bandwidth. **Mechanism applied to Akashik:** weight the curiosity queue by inverse peer-count of the node — nodes held by fewer peers get propagation priority over nodes already held by many. Implementation: add a `peer_count` field to `GraphNode`, updated by the gossip layer; curiosity score = query_relevance / (1 + log(peer_count + 1)).
+**System that solved it:** BitTorrent's **rarest-first piece selection** (Cohen 2003, "Incentives Build Robustness in BitTorrent"). Peers preferentially request pieces that fewer peers have, ensuring swarm-wide diversity and preventing any single piece from monopolizing bandwidth. **Mechanism applied to Folklore:** weight the curiosity queue by inverse peer-count of the node — nodes held by fewer peers get propagation priority over nodes already held by many. Implementation: add a `peer_count` field to `GraphNode`, updated by the gossip layer; curiosity score = query_relevance / (1 + log(peer_count + 1)).
 
 **(b) Niche knowledge evaporation**
 
 Problem: specialized nodes (rare-disease papers, obscure language specs) are queried infrequently and get evicted as popular nodes crowd the cache. The long tail dissolves.
 
-**System that solved it:** **Wikipedia's Vital Articles + Good Article editorial system.** A designated cadre explicitly maintains coverage of tail knowledge regardless of traffic. **Mechanism applied to Akashik:** room-level `protected: true` flag. Protected rooms are exempt from any future eviction / compaction logic. The existing `shareStore` already has a `shareable` flag (Phase 16); extend it with `protected`. Rooms explicitly flagged by the room owner survive curiosity-driven decay. Curators self-identify.
+**System that solved it:** **Wikipedia's Vital Articles + Good Article editorial system.** A designated cadre explicitly maintains coverage of tail knowledge regardless of traffic. **Mechanism applied to Folklore:** room-level `protected: true` flag. Protected rooms are exempt from any future eviction / compaction logic. The existing `shareStore` already has a `shareable` flag (Phase 16); extend it with `protected`. Rooms explicitly flagged by the room owner survive curiosity-driven decay. Curators self-identify.
 
 **(c) Adversarial misinformation flood**
 
 Problem: a malicious peer floods the graph with plausible-looking but false nodes, which get pulled by other peers' curiosity queues and propagate.
 
-**System that solved it:** **Bluesky/ATProto's labeler architecture** (2023, github.com/bluesky-social/atproto). Third-party labelers can tag content; each peer configures which labelers to subscribe to. Content is not deleted globally — it is filtered locally per-peer trust policy. **Mechanism applied to Akashik:** the W3C did:key signed envelope layer (Phase 32) is already in place — every node has a verifiable `device_id + user_did` chain. Add: a `trust_score` per peer DID, computed from endorsements by other trusted peers (web-of-trust). At ingest, nodes from peers below a configurable trust threshold are quarantined (indexed but not surfaced in default search). The `ScanError.SecretDetected` hard-block pattern (already in Phase 18) is the template for this quarantine path.
+**System that solved it:** **Bluesky/ATProto's labeler architecture** (2023, github.com/bluesky-social/atproto). Third-party labelers can tag content; each peer configures which labelers to subscribe to. Content is not deleted globally — it is filtered locally per-peer trust policy. **Mechanism applied to Folklore:** the W3C did:key signed envelope layer (Phase 32) is already in place — every node has a verifiable `device_id + user_did` chain. Add: a `trust_score` per peer DID, computed from endorsements by other trusted peers (web-of-trust). At ingest, nodes from peers below a configurable trust threshold are quarantined (indexed but not surfaced in default search). The `ScanError.SecretDetected` hard-block pattern (already in Phase 18) is the template for this quarantine path.
 
 ---
 
@@ -226,15 +226,15 @@ From the provided list, the 3 most informative comparisons:
 
 **1. mem0** (github.com/mem0ai/mem0, 52,865 stars, arXiv:2504.19413)
 mem0 is conversation memory — it remembers what you *said* to an LLM across sessions. It has MCP, a graph variant (mem0ᵍ), and LOCOMO 68.4% (contested by Zep). No P2P, no codebase indexing, no research graph, no federation.
-**1-line positioning:** *"mem0 remembers your conversations; Akashik remembers everything you've read and researched — and lets your peers' knowledge answer your questions."*
+**1-line positioning:** *"mem0 remembers your conversations; Folklore remembers everything you've read and researched — and lets your peers' knowledge answer your questions."*
 
 **2. Are.na** (are.na, ~100K users, no GitHub)
 Are.na is curiosity-driven visual bookmarking with human-curated channels that users can follow and fork. It is the closest conceptual match to the "ambitioned-curator loop" — channels propagate content based on human curiosity, not algorithmic ranking. It has no vector search, no MCP, no agent integration, no retrieval benchmark.
-**1-line positioning:** *"Are.na is what Akashik looks like without the retrieval layer — Akashik is Are.na where any query gets answered, not just browsed."*
+**1-line positioning:** *"Are.na is what Folklore looks like without the retrieval layer — Folklore is Are.na where any query gets answered, not just browsed."*
 
 **3. Letta / MemGPT** (github.com/letta-ai/letta, 22,030 stars)
 Letta gives an agent a persistent memory that extends its context window via file-based storage. LOCOMO 74% with gpt-4o-mini. No P2P, no knowledge graph, no cross-encoder bridge, no codebase indexing.
-**1-line positioning:** *"Letta extends a single agent's memory; Akashik extends a community's collective research memory — portably, across providers and devices."*
+**1-line positioning:** *"Letta extends a single agent's memory; Folklore extends a community's collective research memory — portably, across providers and devices."*
 
 ---
 
@@ -264,7 +264,7 @@ The `GraphNode` schema must be additive-only from v1 forward. The current `conso
 The curiosity-driven cache currently has no TTL — nodes persist indefinitely. A retracted paper or a deleted repo would remain in every peer's graph forever. There is no staggered invalidation mechanism. Fix: add a `expires_at: Date | null` field per node, derived from `source_uri` domain (arxiv: 365d, HN: 7d, web: 1d). On next read, expired nodes trigger a lazy re-fetch. Circuit breaker: if re-fetch fails, serve stale with a `stale_since` annotation rather than evicting (matches the graceful-degradation model of the Phase 17 federated search timeout).
 
 **Long tail / orphaned records:**
-The Phase 4 consolidation left 6,013 raw entries flagged `consolidated_at != null` but not pruned. These compete with consolidated_memory nodes in BM25 (confirmed cause of the 55% quality proxy failure in §2j). The quarantine pattern: after consolidation, raw entries move to a `consolidated_raw` partition that is excluded from BM25 but retained for vector search. Add a `akashik prune --room <room>` command that performs this partition split and verify with the entity-extraction probe (§2j path forward).
+The Phase 4 consolidation left 6,013 raw entries flagged `consolidated_at != null` but not pruned. These compete with consolidated_memory nodes in BM25 (confirmed cause of the 55% quality proxy failure in §2j). The quarantine pattern: after consolidation, raw entries move to a `consolidated_raw` partition that is excluded from BM25 but retained for vector search. Add a `folklore prune --room <room>` command that performs this partition split and verify with the entity-extraction probe (§2j path forward).
 
 **Auth error taxonomy:**
 Current errors: `PeerError` has 10 variants, `ScanError.SecretDetected` is a hard block, `BandwidthExceeded` is a ResultAsync error. None are structured as a taxonomy visible to the remote peer. Fix: define a `PeerResponseError` with three top-level codes: `UNAUTHORIZED` (invalid/missing signature on signed envelope), `FORBIDDEN` (peer DID not authorized to access room), `RATE_LIMITED` (BandwidthExceeded with `retry_after_ms`). These map to HTTP 401/403/429 semantics. The `FramedStream` in `search-sync.ts` (Phase 17) should encode these in the length-prefixed response frame so the requester can distinguish and retry appropriately.

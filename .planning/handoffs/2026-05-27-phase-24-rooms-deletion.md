@@ -8,15 +8,15 @@
 
 A multi-hour Opus session executed **Phase 24: Delete Rooms — V5 Wire-Protocol Break**. The room abstraction is gone. Replaced with `workspace?: string` (read-side, local-only) + `node.private: boolean` (sharing gate). Wire protocol bumped to V5. **47 commits on `feat/delete-rooms`, 0 co-authored, +6775 / −8171 LOC across 122 files. tsc 0 errors. Tests 887/894 passing.** Phase verifier returned `## VERIFICATION PASSED` (8/8 must-haves).
 
-The work is on `feat/delete-rooms` and **not yet merged**. The user has not run `akashik migrate v5` on their live `~/.akashik/` data yet (recommended before merge).
+The work is on `feat/delete-rooms` and **not yet merged**. The user has not run `folklore migrate v5` on their live `~/.folklore/` data yet (recommended before merge).
 
 ---
 
 ## How we got here (decision chronology)
 
-1. **Initial complaint:** User saw "akashik • tlvtech" in their Claude Code statusline while working in the `akashik` repo. The brand was supposed to have been swept to "Akashik" already (prior conservative rebrand at commit `5d7fa16` did 20 docs). Two separate problems: (a) "akashik" label leaking through, (b) "tlvtech" as default room was their stale cold-email research room from `~/.akashik/rooms.json`.
+1. **Initial complaint:** User saw "folklore • tlvtech" in their Claude Code statusline while working in the `folklore` repo. The brand was supposed to have been swept to "Folklore" already (prior conservative rebrand at commit `5d7fa16` did 20 docs). Two separate problems: (a) "folklore" label leaking through, (b) "tlvtech" as default room was their stale cold-email research room from `~/.folklore/rooms.json`.
 2. **Quick fixes:**
-   - Statusline label `.claude/helpers/wi-statusline.cjs:205` changed from "akashik" to "Akashik". (User had to explicitly authorize — auto-mode classifier blocked self-modification first attempt.)
+   - Statusline label `.claude/helpers/wi-statusline.cjs:205` changed from "folklore" to "Folklore". (User had to explicitly authorize — auto-mode classifier blocked self-modification first attempt.)
    - Statusline room source changed from `default_room` JSON field to `basename(git rev-parse --show-toplevel)` slugified. Marks with `*` when the room doesn't exist in registry.
    - Parallel agents swept 14 docs the prior conservative rebrand missed (`docs/README.md`, `docs/architecture/*` 5 files, `docs/p2p/*` 5 files, `docs/protocol/PROTOCOL-QUALITY-QUESTIONS.md`, `docs/product/RELEASE-v4.md`). +40 brand-prose edits.
 3. **User asked: "what benefit does the room abstraction even have, architecturally?"** This kicked off `/octo:auto` → `/octo:debate` Round 1.
@@ -52,7 +52,7 @@ Working tree: 56 modified/untracked items remain (NOT created by Phase 24 — th
 
 These were uncommitted on `main` when the branch was created and traveled with it:
 
-- Rebrand sweep (docs/) — many user-facing markdown files now say "Akashik" instead of "akashik" in prose; technical identifiers preserved per conservative rules
+- Rebrand sweep (docs/) — many user-facing markdown files now say "Folklore" instead of "folklore" in prose; technical identifiers preserved per conservative rules
 - `.claude/helpers/wi-statusline.cjs` — statusline label change + repo-derived room logic
 - Phase 21 + 23 scaffolding under `.planning/phases/phase-21/` and `.planning/phases/phase-23/` (CONTEXT files only, no plans yet)
 - New untracked files: `src/application/auto-forget-tick.ts`, `src/cli/commands/gc.ts`, `src/domain/auto-forget.ts`, `src/domain/bench-types.ts`, `src/domain/cross-rerank.ts`, `src/domain/long-term-memory.ts`, `src/domain/write-time-gate.ts`, `src/infrastructure/cross-encoder.ts`, `src/infrastructure/summariser.ts`
@@ -91,11 +91,11 @@ These were uncommitted on `main` when the branch was created and traveled with i
 - `src/cli/index.ts` room dispatch removed
 5 commits.
 
-**24-03:** Wire protocol V5 across 7 files. All envelopes (`SearchRequest`, `SearchResponse`, `PeerMatch`, `TouchRequest`, `ShareEnvelope`) get `protocol_version: 5` and lose `room` field. `SearchError.protocolMismatch` variant added. `peer-pull-telemetry.ts` rewritten to peer-only. **libp2p protocol path strings (`/akashik/{search,touch}/1.0.0`) intentionally NOT bumped** — V5 is enforced at envelope layer; pre-V5 peers get `ProtocolMismatchError` payload (acceptable because user has no live peers; daemon.pid stale). 6 commits.
+**24-03:** Wire protocol V5 across 7 files. All envelopes (`SearchRequest`, `SearchResponse`, `PeerMatch`, `TouchRequest`, `ShareEnvelope`) get `protocol_version: 5` and lose `room` field. `SearchError.protocolMismatch` variant added. `peer-pull-telemetry.ts` rewritten to peer-only. **libp2p protocol path strings (`/folklore/{search,touch}/1.0.0`) intentionally NOT bumped** — V5 is enforced at envelope layer; pre-V5 peers get `ProtocolMismatchError` payload (acceptable because user has no live peers; daemon.pid stale). 6 commits.
 
 **24-04:** `src/cli/runtime.ts` — dropped `fileRoomsConfig` + `ensureSystemRoomsShared()` boot invariant. Added **`detectWorkspace(cwd?)`** exported helper for use by read-side commands. `src/daemon/loop.ts` — replaced `runRooms` with `runSources`; dropped `RoomsConfig`/`roomIds`/`triggerRoom`/`ensureSessionsRoom`/`searchByRoom`. One open item flagged: `RecallRegistryDeps.sharedRoomsPath` still required — closed in Wave 3 (24-10). 3 commits.
 
-**24-05:** 6 Claude Code hooks updated to drop `room` field from hit formatters: `akashik-{smart-hook, prompt-submit, mcp-pre, post-fetch}.cjs` + `akashik-{session-start, session-capture}.sh`. Format now shows `[workspace, age, peer]` triple with `-` fallback. All cjs pass `node --check`, both shells pass `bash -n`. 7 commits.
+**24-05:** 6 Claude Code hooks updated to drop `room` field from hit formatters: `folklore-{smart-hook, prompt-submit, mcp-pre, post-fetch}.cjs` + `folklore-{session-start, session-capture}.sh`. Format now shows `[workspace, age, peer]` triple with `-` fallback. All cjs pass `node --check`, both shells pass `bash -n`. 7 commits.
 
 ### Wave 2 — Major rewrites (3 parallel plans)
 
@@ -107,7 +107,7 @@ These were uncommitted on `main` when the branch was created and traveled with i
 
 ### Wave 3 — Surgical edits (2 parallel plans)
 
-**24-09:** 41 files surgical-edited across CLI + application + domain. **tsc errors: 101 → 0.** ~−850 net LOC. Decisions: `HALF_LIFE_BY_ROOM` dropped (uniform 14d global); `subjectFromRoom` dropped; `federation-sim.ts` niche-evaporation stubbed (Phase 25 territory). All read-side CLI now uses `runtime.detectWorkspace(cwd)` for workspace pre-filter. `--workspace all` opts out. `akashik save --private` sets the flag. 4 commits.
+**24-09:** 41 files surgical-edited across CLI + application + domain. **tsc errors: 101 → 0.** ~−850 net LOC. Decisions: `HALF_LIFE_BY_ROOM` dropped (uniform 14d global); `subjectFromRoom` dropped; `federation-sim.ts` niche-evaporation stubbed (Phase 25 territory). All read-side CLI now uses `runtime.detectWorkspace(cwd)` for workspace pre-filter. `--workspace all` opts out. `folklore save --private` sets the flag. 4 commits.
 
 **24-10:** 9 infra/daemon/telegram files. **Key closures:**
 - `RecallRegistryDeps.sharedRoomsPath` removed from `recall-sync.ts` (closed 24-04's open item); recall now uses `node.private === false` gate (same pattern as share-sync)
@@ -119,13 +119,13 @@ These were uncommitted on `main` when the branch was created and traveled with i
 
 ### Wave 4 — Migration + tests + docs (2 parallel plans)
 
-**24-11:** Built `src/cli/commands/migrate.ts` (309 lines new). Registered in `cli/index.ts`. **`akashik migrate v5`** is:
+**24-11:** Built `src/cli/commands/migrate.ts` (309 lines new). Registered in `cli/index.ts`. **`folklore migrate v5`** is:
 - Idempotent ("Already on V5." + exit 0 if no V4 data)
 - Lossless except `room` field is dropped, optionally mapped to `workspace` via heuristic (if room name slugified matches a directory in `~/personal/` or `~/code/`, use it)
-- Atomic backup → `~/.akashik/graph.v4-backup.json` before write
+- Atomic backup → `~/.folklore/graph.v4-backup.json` before write
 - Includes `--rollback` flag
 
-`akashik doctor` extended to warn on V4-dirty home (rooms.json or shared-rooms.json present, or any node with `room` field). Once migrated, prints `[ ok ] N/N sampled nodes V5-clean`.
+`folklore doctor` extended to warn on V4-dirty home (rooms.json or shared-rooms.json present, or any node with `room` field). Once migrated, prints `[ ok ] N/N sampled nodes V5-clean`.
 
 New docs:
 - `docs/architecture/V5-PROTOCOL.md` (344 lines, full V5 envelope spec)
@@ -148,9 +148,9 @@ New docs:
 `.planning/phases/phase-24/24-VERIFICATION.md` — status: **passed**, score 8/8.
 
 All 4 ROADMAP success criteria pass goal-backward verification:
-1. ✓ `akashik save "x"` routes to workspace-derived slice, `private: false` default, never sees room concept
-2. ✓ `akashik ask "x"` from git repo filters by workspace; `--workspace all` opt-out works
-3. ✓ `akashik share <peer>` shares all `private === false` nodes; no `--room` flag, no `shared-rooms.json` to maintain
+1. ✓ `folklore save "x"` routes to workspace-derived slice, `private: false` default, never sees room concept
+2. ✓ `folklore ask "x"` from git repo filters by workspace; `--workspace all` opt-out works
+3. ✓ `folklore share <peer>` shares all `private === false` nodes; no `--room` flag, no `shared-rooms.json` to maintain
 4. ✓ V5 wire protocol — no `room` in envelopes; ProtocolMismatchError emitted for pre-V5; migrate v5 lossless except heuristic workspace map
 
 All 8 ROOMS-DEL-* requirements verified with grep evidence + test assertions.
@@ -170,8 +170,8 @@ All 8 ROOMS-DEL-* requirements verified with grep evidence + test assertions.
 ### Human verification (UAT before declaring done)
 
 These are end-to-end behaviors the executor agents couldn't simulate:
-1. **End-to-end private-node share** between two real peers. Confirm: `akashik save --private "secret"` → not federated; peer B doesn't receive it. Then `akashik save "public"` → peer B does receive it.
-2. **Real-data migrate idempotency** on the user's live `~/.akashik/` (which has 5 rooms with accumulated data). Run `akashik migrate v5` once; verify backup exists; verify graph.json is V5; re-run and verify "Already on V5." exit. Then optionally `akashik migrate v5 --rollback` and confirm V4 data restored. Then re-migrate for the final state.
+1. **End-to-end private-node share** between two real peers. Confirm: `folklore save --private "secret"` → not federated; peer B doesn't receive it. Then `folklore save "public"` → peer B does receive it.
+2. **Real-data migrate idempotency** on the user's live `~/.folklore/` (which has 5 rooms with accumulated data). Run `folklore migrate v5` once; verify backup exists; verify graph.json is V5; re-run and verify "Already on V5." exit. Then optionally `folklore migrate v5 --rollback` and confirm V4 data restored. Then re-migrate for the final state.
 3. **V4 ↔ V5 wire-protocol cutover** between independent binaries. Build a V4 binary from `main`, build a V5 binary from `feat/delete-rooms`, connect them, confirm V5 rejects V4 envelopes with `ProtocolMismatchError`.
 
 ### Untracked work to triage before merge
@@ -219,10 +219,10 @@ When you come back to this in a fresh session:
 
 ## What this session did NOT do
 
-- Did **not** run `akashik migrate v5` on the user's live `~/.akashik/` data. Migration command exists and is verified on synthetic V4 fixtures, but the live data is still V4.
+- Did **not** run `folklore migrate v5` on the user's live `~/.folklore/` data. Migration command exists and is verified on synthetic V4 fixtures, but the live data is still V4.
 - Did **not** push to remote.
 - Did **not** merge to `main`.
-- Did **not** delete `~/.akashik/rooms.json` or `~/.akashik/shared-rooms.json` on disk (those will be deleted by `akashik migrate v5` when the user runs it).
+- Did **not** delete `~/.folklore/rooms.json` or `~/.folklore/shared-rooms.json` on disk (those will be deleted by `folklore migrate v5` when the user runs it).
 - Did **not** add Phase 21 or Phase 23 to the ROADMAP (only Phase 24 was added). The phase-21 and phase-23 CONTEXT files exist but aren't tied to roadmap entries.
 - Did **not** commit any of the in-flight work (rebrand, statusline, auto-forget, etc.) — all on the branch but uncommitted.
 - Did **not** create co-authored commits (per user's global CLAUDE.md). 47/47 commits are solo-authored.

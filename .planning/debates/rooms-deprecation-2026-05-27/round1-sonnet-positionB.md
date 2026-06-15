@@ -8,7 +8,7 @@
 
 ## Opening
 
-Let me be honest upfront: the user is right about the pain. `default_room: "tlvtech"` while working in `akashik` is a real bug, not a minor UX quibble. The previous debate's SYNTHESIS already fixed it — workspace-derived read filter + smart write prompt, no rooms changed. That fix is sitting unshipped. The question today is whether the user's escalation ("let's delete it") is the right response to an unshipped fix, or whether something deeper is broken.
+Let me be honest upfront: the user is right about the pain. `default_room: "tlvtech"` while working in `folklore` is a real bug, not a minor UX quibble. The previous debate's SYNTHESIS already fixed it — workspace-derived read filter + smart write prompt, no rooms changed. That fix is sitting unshipped. The question today is whether the user's escalation ("let's delete it") is the right response to an unshipped fix, or whether something deeper is broken.
 
 I'll argue that rooms are load-bearing in four specific, non-theoretical ways. I'll also concede two places where deletion is genuinely defensible. A strong Position B earns its claim by being falsifiable.
 
@@ -32,7 +32,7 @@ Four functions. Two survive deletion. Two don't.
 
 ## Axis 2 — Wire-protocol break
 
-`V3-PROTOCOL.md §5.2` defines `SearchRequest` with `room: string | null`. `V4-PROTOCOL.md` inherits this without modification. The `/akashik/share/2.0.0` CRDT sync protocol is Y.Doc-per-room (`${roomId}.ydoc`, `share.ts:202`). `PEER_HELLO` in `P2P-VISION.md` exchanges room lists.
+`V3-PROTOCOL.md §5.2` defines `SearchRequest` with `room: string | null`. `V4-PROTOCOL.md` inherits this without modification. The `/folklore/share/2.0.0` CRDT sync protocol is Y.Doc-per-room (`${roomId}.ydoc`, `share.ts:202`). `PEER_HELLO` in `P2P-VISION.md` exchanges room lists.
 
 Deletion requires at minimum: rename `room` to `namespace` or `partition` in `SearchRequest`, change `PEER_HELLO` to advertise tag-sets or nothing, re-key every existing Y.Doc. That is a major version bump — v5 by the spec's own convention. Every connected peer that hasn't upgraded will receive room-less requests they can't route, and will send room-keyed responses the requester can't parse.
 
@@ -42,7 +42,7 @@ The migration story is not "rooms vanish overnight." It's a two-version compatib
 
 ## Axis 3 — The 5 existing rooms with real data
 
-`akashik-dev`, `p2p-llm`, `tlvtech`, `forge`, `auto-tlv` each have accumulated graph nodes, Y.Doc CRDTs, and potentially shared-rooms.json entries. On deletion day:
+`folklore-dev`, `p2p-llm`, `tlvtech`, `forge`, `auto-tlv` each have accumulated graph nodes, Y.Doc CRDTs, and potentially shared-rooms.json entries. On deletion day:
 
 - All nodes get field `room` stripped or migrated to a flat namespace. BM25 retrieval breaks unless the field is retained as a label.
 - Y.Doc files become orphaned blobs with no routing key.
@@ -58,7 +58,7 @@ Migration options: rename all `room` fields to a `label` or `tag` and treat them
 This is the axis where deletion fails most concretely. Today the user runs:
 
 ```
-akashik share room p2p-llm    # marks p2p-llm public, seeds Y.Doc, runs secrets gate
+folklore share room p2p-llm    # marks p2p-llm public, seeds Y.Doc, runs secrets gate
 # tlvtech never appears in shared-rooms.json — stays private by default
 ```
 
@@ -86,7 +86,7 @@ However: Position A is right that entity-level keys (`entity:product:lemlist`) a
 
 ## Axis 6 — What the user actually wants
 
-The prior SYNTHESIS identified three pain signals: (i) statusline showed `tlvtech` while working in `akashik`, (ii) registry maintenance feels imposed, (iii) ceremony without value.
+The prior SYNTHESIS identified three pain signals: (i) statusline showed `tlvtech` while working in `folklore`, (ii) registry maintenance feels imposed, (iii) ceremony without value.
 
 Pain (i) is already fixed by the workspace-tag + smart-prompt approach — shipped in spirit, not in code. The bug is an unshipped fix, not evidence that rooms are structurally wrong.
 
@@ -123,7 +123,7 @@ Do not delete rooms. Ship the unshipped fix from the prior SYNTHESIS:
 1. `workspace?: string` field on graph nodes, populated from `git rev-parse --show-toplevel` slug.
 2. Read-side workspace filter at the 6 call sites (`report.ts:59`, `viz.ts:64`, `discover.ts:45`, `index-project.ts:66`, `export-obsidian.ts:85`, `discover-loop.ts:35`).
 3. Smart write-side prompt when `default_room` doesn't match cwd workspace.
-4. Hide `room create/switch/current/describe` from the top-level help text — demote to `akashik room --advanced`.
+4. Hide `room create/switch/current/describe` from the top-level help text — demote to `folklore room --advanced`.
 
 Surface area: ~50 lines, 2-3 files, zero protocol change, zero data migration.
 

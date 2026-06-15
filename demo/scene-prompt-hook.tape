@@ -1,4 +1,4 @@
-# akashik — scene 9 — UserPromptSubmit hook in flight
+# folklore — scene 9 — UserPromptSubmit hook in flight
 #
 # Demonstrates the freshly-shipped UserPromptSubmit hook (commit
 # 0749f21). A simulated Claude Code payload is piped into the hook;
@@ -24,14 +24,14 @@ Set WindowBar Colorful
 Set WindowBarSize 30
 
 Hide
-Type "export AKASHIK_HOME=$HOME/.akashik.demo"
+Type "export FOLKLORE_HOME=$HOME/.folklore.demo"
 Enter
 Type "clear"
 Enter
 Sleep 200ms
 Show
 
-Type "# akashik UserPromptSubmit hook — fires BEFORE Claude reads the user message."
+Type "# folklore UserPromptSubmit hook — fires BEFORE Claude reads the user message."
 Enter
 Sleep 1800ms
 
@@ -45,7 +45,7 @@ Type "# pipe it into the hook ↓"
 Enter
 Sleep 800ms
 
-Type "cat /tmp/ak-prompt-demo.json | node .claude/hooks/akashik-prompt-submit.cjs | jq -r .hookSpecificOutput.additionalContext"
+Type "cat /tmp/ak-prompt-demo.json | node .claude/hooks/folklore-prompt-submit.cjs | jq -r .hookSpecificOutput.additionalContext"
 Enter
 Sleep 8000ms
 

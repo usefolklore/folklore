@@ -85,7 +85,7 @@ export interface UpdatePeerReputationInput {
   readonly reviewer_did: ReviewerDid;
   /** Local peer id, recorded in the file's header. */
   readonly local_peer_id: string;
-  /** Akashik home directory. */
+  /** Folklore home directory. */
   readonly home: string;
   /** Optional ask correlation id for audit. */
   readonly ask_id?: string;

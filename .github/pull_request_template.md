@@ -19,7 +19,7 @@
 - [ ] `npm test` passes locally (0 fail, 0 cancelled)
 - [ ] `npx tsc --noEmit` clean
 - [ ] New behavior has a corresponding test
-- [ ] Manual smoke against `~/.akashik/` if data-dir touched
+- [ ] Manual smoke against `~/.folklore/` if data-dir touched
 
 ## Out of scope
 

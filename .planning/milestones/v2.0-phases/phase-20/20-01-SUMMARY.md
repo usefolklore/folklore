@@ -69,7 +69,7 @@ metrics:
 **1. [Rule 1 - Bug] Fixed missing shareable field in share.ts record construction**
 - **Found during:** Task 3 (tsc type-check caught it)
 - **Issue:** `src/cli/commands/share.ts` constructed a `SharedRoomRecord` literal without the new required `shareable` field, causing TS2345 type error
-- **Fix:** Added `shareable: true` to the record literal — rooms shared via `akashik share room <name>` are shareable by intent
+- **Fix:** Added `shareable: true` to the record literal — rooms shared via `folklore share room <name>` are shareable by intent
 - **Files modified:** src/cli/commands/share.ts
 - **Commit:** b797957 (included in Task 3 commit)
 

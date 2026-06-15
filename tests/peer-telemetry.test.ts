@@ -232,7 +232,7 @@ test('formatTelemetryBlock renders all six lines plus borders', () => {
   const out = formatTelemetryBlock(sampleTelemetry);
   const lines = out.split('\n');
   assert.equal(lines.length, 8); // top + 6 + bottom (query/took/data/peers/fit/action)
-  assert.match(lines[0], /^─+ akashik peer pull/);
+  assert.match(lines[0], /^─+ folklore peer pull/);
   assert.match(lines[1], /query.*vector search sqlite.*room=research/);
   assert.match(lines[2], /took.*820ms.*340ms local.*80ms merge/);
   assert.match(lines[3], /data.*4\.2 KB.*12 results.*3 unique sources/);

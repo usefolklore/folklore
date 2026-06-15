@@ -28,14 +28,14 @@ key_files:
     - path: "src/daemon/loop.ts"
       change: "drop RoomsConfig + roomIds + triggerRoom + ensureSessionsRoom + Room as VectorRoom; replace runRooms with runSources; drop searchByRoom branch in gossip responder; drop sharedRoomsPath from registerRecallProtocol callsite"
 decisions:
-  - "detectWorkspace placed in runtime.ts (composition root) not a separate helper file — it's a runtime-environment fact like akashikHome()"
+  - "detectWorkspace placed in runtime.ts (composition root) not a separate helper file — it's a runtime-environment fact like folkloreHome()"
   - "slugify is a local non-exported helper — it's an implementation detail of detectWorkspace; if a third consumer emerges, lift to a shared util"
   - "TickResult.rooms renamed to TickResult.sources rather than kept as a vestigial empty array — type-level cutover, no shim"
   - "round_robin_rooms config key preserved (cycles sources now instead of rooms); rename to round_robin_sources deferred to Wave 2/3"
   - "Hydration-error SourceRun synthesis uses descriptors[0] as a stand-in descriptor — same heuristic as the pre-V5 triggerRoom path, no logic regression"
   - "searchByRoom branch in gossip responder removed entirely (not stubbed) — Wave 3 workspace filter is client-side post-hit, not server-side dispatch"
 requirements_delivered:
-  - "ROOMS-DEL-02 — boot path no longer reads ~/.akashik/rooms.json or shared-rooms.json"
+  - "ROOMS-DEL-02 — boot path no longer reads ~/.folklore/rooms.json or shared-rooms.json"
   - "ROOMS-DEL-07 — detectWorkspace exported for Wave 3 commands to apply workspace pre-filter from cwd"
 metrics:
   duration: "~10 minutes wall-clock"
@@ -126,7 +126,7 @@ export const detectWorkspace = (cwd: string = process.cwd()): string | undefined
 
 ```
 $ npx tsx -e "import('./src/cli/runtime.ts').then(m => {
-    console.log(m.detectWorkspace());           // -> 'akashik'
+    console.log(m.detectWorkspace());           // -> 'folklore'
     console.log(m.detectWorkspace('/tmp'));     // -> undefined
   })"
 ```
@@ -210,7 +210,7 @@ Two micro-additions inside the spirit of Rule 2 (critical hygiene):
 
    The log line is also genuinely useful for daemon debugging — pre-V5 the room name in the log was the de-facto plan; post-V5 the source ids fill that role.
 
-2. **Comment rewording in `runtime.ts`** — the explanatory comment that originally referenced "`~/.akashik/rooms.json` or `shared-rooms.json`" was rephrased to "the old room registry or share-policy files" so the grep for the literal token `rooms.json` returns 0 (the acceptance criterion's spirit is "no code path reaches that file"; the comment shouldn't trip the gate either).
+2. **Comment rewording in `runtime.ts`** — the explanatory comment that originally referenced "`~/.folklore/rooms.json` or `shared-rooms.json`" was rephrased to "the old room registry or share-policy files" so the grep for the literal token `rooms.json` returns 0 (the acceptance criterion's spirit is "no code path reaches that file"; the comment shouldn't trip the gate either).
 
 No architectural decisions raised — every change was inside the locked scope of the synthesis.
 
@@ -239,7 +239,7 @@ grep -cE 'ensureSessionsRoom|nodesInRoom' src/daemon/loop.ts                    
 [ -f .planning/phases/phase-24/24-04-SUMMARY.md ]                                   -> FOUND
 git log --oneline --all | grep -q 'a775896'                                         -> FOUND
 git log --oneline --all | grep -q '7f8ba29'                                         -> FOUND
-inline detectWorkspace() runtime probe (akashik root)                               -> 'akashik' PASS
+inline detectWorkspace() runtime probe (folklore root)                               -> 'folklore' PASS
 inline detectWorkspace('/tmp') runtime probe                                        -> undefined PASS
 ```
 
@@ -268,6 +268,6 @@ Wave 1c (this plan) lands the runtime + daemon edits. Parallel-wave work proceed
 
 - **24-02 (deletions):** `src/domain/rooms.ts`, `src/domain/system-rooms.ts`, `src/infrastructure/rooms-config.ts`, `src/infrastructure/share-store.ts`, `src/cli/commands/room.ts` and the three phase-test files have been deleted (visible in the git log between this plan's two commits).
 - **24-03 (wire surgery):** Search-sync, peer-pull-telemetry envelopes had `room` excised (commits `e79f71d`, `93d26b7`).
-- **24-05 (hook scripts):** The five `.claude/hooks/akashik-*` scripts dropped room references (commits `1aabcd3`, `89cb376`, `634d09c`, `b40d82f`, `e619353`).
+- **24-05 (hook scripts):** The five `.claude/hooks/folklore-*` scripts dropped room references (commits `1aabcd3`, `89cb376`, `634d09c`, `b40d82f`, `e619353`).
 
 Once Wave 1 completes, Wave 2 rewrites `share-sync.ts`, `share.ts`, `unshare.ts`, `mcp/server.ts`, and `recall-sync.ts` (the latter closing the `RecallRegistryDeps` gap left by this plan). Wave 3 walks `/tmp/phase24-wave0-blastradius.txt` for the ~47 surgical node-construction edits.

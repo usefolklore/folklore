@@ -1,8 +1,8 @@
-# akashik — scene 4 — side-by-side timing comparison
+# folklore — scene 4 — side-by-side timing comparison
 #
 # THE marquee gif. Lead with the value prop, then prove it. Same
 # `claude -p` prompt run twice. Run A: no project hooks, Claude alone.
-# Run B: this repo, akashik PreToolUse hook wired.
+# Run B: this repo, folklore PreToolUse hook wired.
 #
 # Total target: ~25-30 s gif. First 4 s carry the value proposition
 # in text so the gif works as a teaser even if a viewer doesn't
@@ -27,7 +27,7 @@ Set WindowBar Colorful
 Set WindowBarSize 30
 
 Hide
-Type "export AKASHIK_HOME=$HOME/.akashik.demo"
+Type "export FOLKLORE_HOME=$HOME/.folklore.demo"
 Enter
 Type "clear"
 Enter
@@ -35,11 +35,11 @@ Sleep 200ms
 Show
 
 # ─── value prop opens the gif ──────────────────────────────
-Type '# Same model. Same prompt. The only difference: akashik.'
+Type '# Same model. Same prompt. The only difference: folklore.'
 Enter
 Sleep 1800ms
 
-Type 'cd /tmp/demo-without-akashik'
+Type 'cd /tmp/demo-without-folklore'
 Enter
 Sleep 400ms
 
@@ -52,16 +52,16 @@ Type 'time claude -p "Which research group publishes on quench-detection LSTMs f
 Enter
 Sleep 45s
 
-# ─── Run B: Claude + akashik — fast + cited ───────────
+# ─── Run B: Claude + folklore — fast + cited ───────────
 Type 'clear'
 Enter
 Sleep 300ms
 
-Type 'cd /Users/saharbarak/personal/akashik'
+Type 'cd /Users/saharbarak/personal/folklore'
 Enter
 Sleep 300ms
 
-Type '# (2)  claude WITH the akashik PreToolUse hook'
+Type '# (2)  claude WITH the folklore PreToolUse hook'
 Enter
 Sleep 700ms
 

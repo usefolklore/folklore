@@ -91,7 +91,7 @@ export const generateReport =
 
 export const renderReport = (data: ReportData): string => {
   const lines: string[] = [];
-  lines.push(`# akashik report`);
+  lines.push(`# folklore report`);
   lines.push(`generated: ${data.generated_at}`);
   if (data.since) lines.push(`since: ${data.since}`);
   lines.push('');

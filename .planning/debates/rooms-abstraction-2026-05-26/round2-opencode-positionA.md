@@ -11,7 +11,7 @@
 
 **Lazy enrichment does not work.** Position B claims `package.json` or git config yields usable keywords. It does not. A repo named `my-saas-backend` has `"name": "my-saas-backend"` — that is a label, not a semantic keyword. No amount of lazy derivation turns a git slug into `["knowledge-graphs", "embeddings", "MCP"]`. The gap between `package.json` keywords and `init`-worthy source suggestions is the same gap as having no keywords at all. Position B is proposing empty-keyword rooms with extra steps.
 
-**Repo-scoped reputation is an oxymoron.** The whole point of room-scoped reputation (`peer-reputation-design.md:86`) is that trust in one domain does not transfer to another. A repo-scoped reputation is a reputation over "everything this repo happens to touch" — auth, billing, infra docs, comments. That is not a signal; it is noise. OSS trust may be repo-scoped, but Akashik's reputation layer demands *topical* scope, not organizational scope.
+**Repo-scoped reputation is an oxymoron.** The whole point of room-scoped reputation (`peer-reputation-design.md:86`) is that trust in one domain does not transfer to another. A repo-scoped reputation is a reputation over "everything this repo happens to touch" — auth, billing, infra docs, comments. That is not a signal; it is noise. OSS trust may be repo-scoped, but Folklore's reputation layer demands *topical* scope, not organizational scope.
 
 **"Seamless migration" is hand-waving.** What happens when a repo is renamed, forked, or monorepo-split? The room ID changes, all accumulated reputation evaporates, and there is no migration path because the mapping is one-to-one with a mutable filesystem artifact. Position B has no answer for this.
 
@@ -33,6 +33,6 @@
 
 **(a) Ship this week:** Add `cwd_hint` to `ask`/`search` — detect git repo slug at runtime, filter nodes written during the session by it. Zero schema changes, zero federation impact, zero node migration.
 
-**(b) Defer:** Any change to `RoomMeta`, `RoomRegistry`, federation protocol, or reputation subject keys. All Phase 25+ territory after AkashikBench-F validates the niche-evaporation fix.
+**(b) Defer:** Any change to `RoomMeta`, `RoomRegistry`, federation protocol, or reputation subject keys. All Phase 25+ territory after FolkloreBench-F validates the niche-evaporation fix.
 
 **(c) Mind-changer:** Bench data showing repo-derived rooms increase peer coverage rates despite namespace fragmentation. Until then, the current model is sound.

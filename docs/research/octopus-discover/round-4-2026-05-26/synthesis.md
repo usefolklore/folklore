@@ -6,8 +6,8 @@
 PROJECT IDENTITY (changed since last round)
 ================================================================
 
-The project pivoted from "akashik: agent-memory product" to
-"Akashik: federated knowledge commons for the open-source community as a whole."
+The project pivoted from "folklore: agent-memory product" to
+"Folklore: federated knowledge commons for the open-source community as a whole."
 
 The mission is to give the OSS community what it has always lacked:
 a shared, contributor-owned memory substrate where every piece of
@@ -17,13 +17,13 @@ attributed, forever.
 
 The brand name borrows from the Akashic Records mythology, reframed
 as concrete contributor-owned infrastructure. The codebase is still
-called "akashik" internally.
+called "folklore" internally.
 
 ================================================================
 THE MECHANISM (the architectural insight that makes the mission credible)
 ================================================================
 
-Each Akashik peer holds only its own information:
+Each Folklore peer holds only its own information:
   - what its user explicitly contributed
   - what it pulled from other peers in response to its user's queries
   - what it researched on the web when the federation couldn't answer
@@ -34,7 +34,7 @@ user's curiosity.
 
 The compounding loop, in 5 steps:
 
-  STEP 1: Local-first query → A's local Akashik graph
+  STEP 1: Local-first query → A's local Folklore graph
   STEP 2: Federation fan-out → connected peers in shared rooms answer
           with their two cents (what they have)
   STEP 3: If federation can't satisfy → harness reaches the web on
@@ -146,15 +146,15 @@ WHAT'S NEW SINCE ROUND 3
        private-by-default and missing the mission)
      OSS-community-commons framing (correct: matches both the
        architecture AND the mission)
-   Brand renamed to Akashik. New StoryBrand-anchored marketing
-   draft + mechanism doc (docs/marketing/how-akashik-works.md)
+   Brand renamed to Folklore. New StoryBrand-anchored marketing
+   draft + mechanism doc (docs/marketing/how-folklore-works.md)
    capture the compounding loop architecturally and link to it
    from the brand messaging as the credibility anchor.
 
 2. LME-S baseline re-run with NDCG/MRR ladder. Confirmed head
    saturation (NDCG@5 = 0.884, only 4pp room below R@5 = 0.92).
 
-3. The Akashik mechanism (5-step compounding loop, peer-local
+3. The Folklore mechanism (5-step compounding loop, peer-local
    storage, ambitioned-curator model) is now explicitly documented
    as the architectural credibility anchor for the mission claim.
 
@@ -169,11 +169,11 @@ Q1. Given the empirical ceiling on LME-S R@5 (NDCG@5 headroom ~4pp,
     federation rather than tuning per-peer retrieval)? Where should
     the next engineering month go?
 
-Q2. The Akashik mechanism (peer-local + federation-on-query + web-
+Q2. The Folklore mechanism (peer-local + federation-on-query + web-
     on-miss + save-locally + transfer-on-next-ask) — is this
     architecturally novel, or is it a known pattern in disguise?
     Cite prior art. If it IS novel, what's the closest existing
-    research/protocol/system, and what makes Akashik different in
+    research/protocol/system, and what makes Folklore different in
     a defensible way?
 
 Q3. There is NO existing public benchmark for "how much does a
@@ -194,7 +194,7 @@ Q4. The Octopus has flagged "input-order bias" (Round 3) and
           / mem0 0.925 / ByteRover 0.928 — are these defensible
           baselines?)
 
-Q5. The Akashik mission requires the network to actually grow.
+Q5. The Folklore mission requires the network to actually grow.
     What's the smallest-viable launch plan that produces a
     meaningful compounding signal in the first ~30 days post-
     launch? Specifically: who are the first 100 contributors, what
@@ -202,7 +202,7 @@ Q5. The Akashik mission requires the network to actually grow.
     the compounding becomes visible to a new contributor visiting
     the network at day 30?
 
-Q6. The Akashik architecture relies on user curiosity as the
+Q6. The Folklore architecture relies on user curiosity as the
     propagation signal. This is brilliant when curiosity-volume is
     healthy. What happens when:
       (a) the network is dominated by N curators of the same hot
@@ -217,7 +217,7 @@ Q6. The Akashik architecture relies on user curiosity as the
 Q7. The competitor frame (mem0/agentmemory/ByteRover) was the
     wrong frame — they're single-user products and we're a
     federated commons. Who are the REAL existing systems that
-    Akashik competes with / extends / supersedes? Be specific
+    Folklore competes with / extends / supersedes? Be specific
     about systems, not categories. Possibilities to evaluate:
       - Are.na (curated cards, central)
       - Logseq P2P sync (knowledge graph, multi-device same user)
@@ -241,7 +241,7 @@ OUTPUT EXPECTED:
 
   - Direct answers to Q1-Q8
   - For Q2: closest prior-art protocol or research paper, with
-    why Akashik differs
+    why Folklore differs
   - For Q3: a proposed benchmark for measuring federation-level
     compounding, with the metrics and the experimental design
   - For Q5: the smallest-viable launch plan (specific communities,
@@ -255,7 +255,7 @@ OUTPUT EXPECTED:
     actually be spent on?
 
 <external-cli-output provider="gemini" trust="untrusted">
-This synthesis combines a direct analysis of the local codebase with the mandatory systemic perspectives. The findings below are grounded strictly in the actual file contents, repository structure, and CI/CD configurations found in your workspace, directly applying them to your recent pivot to the **Akashik** federated knowledge commons.
+This synthesis combines a direct analysis of the local codebase with the mandatory systemic perspectives. The findings below are grounded strictly in the actual file contents, repository structure, and CI/CD configurations found in your workspace, directly applying them to your recent pivot to the **Folklore** federated knowledge commons.
 
 ### 1. Codebase Reality Check: Tech Stack, Architecture, and Conventions
 
@@ -277,7 +277,7 @@ The codebase strictly adheres to **Domain-Driven Design (DDD)** and **Clean Arch
 *   **Extreme Purity:** Errors are handled via discriminated/tagged unions (e.g., `AppError` in `src/domain/errors.ts`), forcing exhaustive `switch` statements at the format boundary. This prevents silent runtime exceptions.
 *   **Immutable Types:** Heavy usage of `readonly` properties and `ReadonlyArray`.
 
-**Relation to the Akashik Pivot:**
+**Relation to the Folklore Pivot:**
 The architecture perfectly supports the "federated knowledge commons" pivot. The strict separation of pure domain logic (like `eval-metrics.ts` and `sharing.ts`) from infrastructure (like `peer-transport.ts`) means the local knowledge graph operates flawlessly offline, treating remote peers simply as additional infrastructure sources.
 
 ---
@@ -324,7 +324,7 @@ LLMs typically miss the following operational realities. Here is how your specif
 #### H. B2B / Enterprise Security Audits (SOC2 / GDPR)
 *   **Observation:** You built a robust `share audit` command (Phase 15 SEC-04) that blocks 14 patterns of secrets (OpenAI keys, AWS keys) from federating.
 *   **Analysis:** While you block secret ingestion, you completely lack **data exfiltration audit trails**. 
-*   **Balanced Trade-off:** The advantage of your current setup is that developers feel safe sharing rooms because API keys are scrubbed. The disadvantage is that enterprise SOC2 Type II auditors will fail the system. An enterprise needs to prove *who asked what, and what specific data left the local machine*. Because Akashik peers autonomously federate queries via `ask --peers`, a SOC2 audit cannot easily prove that a specific piece of proprietary IP wasn't inadvertently synced to an unauthorized peer's local graph.
+*   **Balanced Trade-off:** The advantage of your current setup is that developers feel safe sharing rooms because API keys are scrubbed. The disadvantage is that enterprise SOC2 Type II auditors will fail the system. An enterprise needs to prove *who asked what, and what specific data left the local machine*. Because Folklore peers autonomously federate queries via `ask --peers`, a SOC2 audit cannot easily prove that a specific piece of proprietary IP wasn't inadvertently synced to an unauthorized peer's local graph.
 </external-cli-output>
 
 ---

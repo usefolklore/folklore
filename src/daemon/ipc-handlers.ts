@@ -18,12 +18,13 @@
 
 import type { Libp2p } from '@libp2p/interface';
 import type { Runtime } from '../cli/runtime.js';
-import { akashikHome } from '../cli/runtime.js';
+import { folkloreHome } from '../cli/runtime.js';
 import { IPC_FALLBACK_SENTINEL } from './ipc.js';
 import type { HandlerResult, IpcHandler } from './ipc.js';
 import { formatError } from '../domain/errors.js';
 import { ask } from '../application/ask.js';
 import { executeFederatedAsk, formatFederatedAsk } from '../application/federated-ask.js';
+import { upsertEdge } from '../domain/graph.js';
 import { indexNode as indexNodeUseCase } from '../application/use-cases.js';
 import { queryCache, type QueryCache } from '../domain/query-cache.js';
 import { semanticCache, type SemanticCache } from '../domain/semantic-cache.js';
@@ -131,7 +132,7 @@ const parseAskArgs = (args: readonly string[]): AskArgs | string | typeof FALLBA
   // --peers is servable in-daemon. A LOCAL ask with --workspace
   // depends on the CLIENT's cwd, which IPC does not carry → full CLI.
   if (!peers && workspaceSeen) return FALLBACK;
-  if (!query) return 'missing query — usage: akashik ask "your question" [--k N] [--json] [--peers [--pull]]';
+  if (!query) return 'missing query — usage: folklore ask "your question" [--k N] [--json] [--peers [--pull]]';
   return { query, room, k, json, peers, pull };
 };
 
@@ -157,7 +158,7 @@ const makeAskHandler = (federation?: FederationRef): IpcHandler<Runtime> => asyn
     }
     const outcome = await executeFederatedAsk(
       {
-        home: akashikHome(),
+        home: folkloreHome(),
         node,
         vectorIndex: runtime.vectors,
         loadGraph: async () => {
@@ -173,6 +174,22 @@ const makeAskHandler = (federation?: FederationRef): IpcHandler<Runtime> => asyn
             githubUser: runtime.githubUser,
           })({ node: n, text });
           return r.isOk();
+        },
+        cacheEdges: async (edges) => {
+          const loaded = await runtime.graphs.load();
+          if (loaded.isErr()) return 0;
+          let graph = loaded.value;
+          let count = 0;
+          for (const edge of edges) {
+            const next = upsertEdge(graph, edge);
+            if (next.isOk()) {
+              graph = next.value;
+              count++;
+            }
+          }
+          if (count === 0) return 0;
+          const saved = await runtime.graphs.save(graph);
+          return saved.isOk() ? count : 0;
         },
       },
       { query: parsed.query, embedding: embRes.value, k: parsed.k, pull: parsed.pull },
@@ -285,7 +302,7 @@ const makeAskHandler = (federation?: FederationRef): IpcHandler<Runtime> => asyn
 
   // Human-readable rendering
   if (r.search_hits.length === 0 && !r.resolved_entity) {
-    const stdout = 'no results found. try a broader query or run `akashik trigger` to index content first.\n';
+    const stdout = 'no results found. try a broader query or run `folklore trigger` to index content first.\n';
     cache.set(cacheKey, stdout);
     if (queryVec) l2.set(queryVec, stdout);
     return { stdout, exit: 0 };
@@ -299,7 +316,7 @@ const makeAskHandler = (federation?: FederationRef): IpcHandler<Runtime> => asyn
   // sense." This composition is the visible answer.
   if (r.resolved_entity && r.recall_result && r.recall_result.hits.length > 0) {
     const e = r.resolved_entity;
-    lines.push(`# akashik: "${r.query}" matches entity ${e.id}`);
+    lines.push(`# folklore: "${r.query}" matches entity ${e.id}`);
     lines.push(`type: ${e.type} | aliases: ${e.aliases.join(', ')} | mentions: ${r.recall_result.total}`);
     lines.push('');
     lines.push(`## entity recall (top ${r.recall_result.hits.length})`);
@@ -355,7 +372,7 @@ const makeAskHandler = (federation?: FederationRef): IpcHandler<Runtime> => asyn
 
 /**
  * Returns the L1 query cache stats as a JSON line. The CLI surface
- * (akashik cache-stats) prints this for operators monitoring
+ * (folklore cache-stats) prints this for operators monitoring
  * cache effectiveness on real workloads.
  */
 const cacheStatsHandler: IpcHandler<Runtime> = async (_args, _runtime): Promise<HandlerResult> => {
@@ -416,7 +433,7 @@ const statsHandler: IpcHandler<Runtime> = async (_args, runtime): Promise<Handle
 // ─────────────── jobs handlers ───────────────
 
 /**
- * `akashik jobs submit <kind> <...args>` over IPC.
+ * `folklore jobs submit <kind> <...args>` over IPC.
  *
  * Args shape:
  *   submit ingest:room <room>
@@ -425,7 +442,7 @@ const statsHandler: IpcHandler<Runtime> = async (_args, runtime): Promise<Handle
  *
  * The queue captured in the closure is the daemon-owned singleton.
  * Returns the assigned job id on stdout (one line, no trailing brace
- * spam — keeps `akashik this | xargs` style scripting easy).
+ * spam — keeps `folklore this | xargs` style scripting easy).
  */
 const submitJobHandler = (queue: JobQueue): IpcHandler<Runtime> =>
   async (args): Promise<HandlerResult> => {
@@ -516,7 +533,7 @@ const jobsClearHandler = (queue: JobQueue): IpcHandler<Runtime> =>
  * JSON. Read-only, no parameters. Wired in step C of the multi-LLM
  * round-2 architecture review (production readiness — observability).
  *
- *   $ akashik metrics
+ *   $ folklore metrics
  *   {"counters":{"ask.calls":42,…},"gauges":{"queue.queued":3,…},
  *    "histograms":{"ask.latency.ms":{"p50":18.2,"p95":140.3,…}},…}
  */
@@ -543,7 +560,7 @@ export const buildIpcHandlers = (queue?: JobQueue, federation?: FederationRef): 
 /**
  * List of CLI subcommands the client-side shim should attempt to
  * delegate over IPC. Must stay in sync with the keys in
- * buildIpcHandlers(). Used by bin/akashik.js to know whether to
+ * buildIpcHandlers(). Used by bin/folklore.js to know whether to
  * try the socket before spawning.
  */
 export const IPC_DELEGATABLE_COMMANDS: ReadonlySet<string> = new Set([

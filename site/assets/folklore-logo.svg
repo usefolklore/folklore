@@ -1,0 +1,15 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Folklore">
+  <rect width="256" height="256" rx="56" fill="#f4ecd8"/>
+  <!-- the voice of the people: one speech, composed of the folk -->
+  <path d="M44 70 h168 a16 16 0 0 1 16 16 v74 a16 16 0 0 1 -16 16 h-96 l-40 34 v-34 h-32 a16 16 0 0 1 -16 -16 v-74 a16 16 0 0 1 16 -16 z" fill="#1d1813"/>
+  <!-- the folk: many, deciding together; a majority in ink, a few voices in colour -->
+  <g>
+    <circle cx="86" cy="108" r="13" fill="#ff4f6d"/>
+    <circle cx="128" cy="108" r="13" fill="#f4ecd8"/>
+    <circle cx="170" cy="108" r="13" fill="#2fb6a3"/>
+    <circle cx="107" cy="146" r="13" fill="#f5b921"/>
+    <circle cx="149" cy="146" r="13" fill="#5a6fd6"/>
+    <circle cx="65" cy="146" r="13" fill="#f4ecd8"/>
+    <circle cx="191" cy="146" r="13" fill="#f4ecd8"/>
+  </g>
+</svg>

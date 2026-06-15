@@ -14,29 +14,29 @@ Mark rooms as public and sync their nodes across connected peers using Y.js CRDT
 ## Implementation Decisions
 
 ### Y.js Architecture & Persistence
-- Use **y-protocols/sync** messages directly over a custom libp2p stream handler (`/akashik/share/1.0.0`) — no y-websocket/y-webrtc dep, no broken y-libp2p fork
+- Use **y-protocols/sync** messages directly over a custom libp2p stream handler (`/folklore/share/1.0.0`) — no y-websocket/y-webrtc dep, no broken y-libp2p fork
 - One **Y.Doc per shared room** — isolation, independent sync streams, per-room backpressure
-- Y.Docs persisted as binary files at `~/.akashik/ydocs/<room>.ydoc` using `encodeStateAsUpdate`/`applyUpdate` native format
+- Y.Docs persisted as binary files at `~/.folklore/ydocs/<room>.ydoc` using `encodeStateAsUpdate`/`applyUpdate` native format
 - Atomic writes via tmp+rename (reuse the pattern from peer-store.ts `savePeers`)
 - Debounced observer: Y.Doc changes flush to in-memory graph within 200ms; graph.json saves on its normal cycle — graph.json remains authoritative for search/ask commands
 
 ### libp2p Sync Protocol Design
-- Protocol ID: `/akashik/share/1.0.0` (versioned for forward compatibility)
+- Protocol ID: `/folklore/share/1.0.0` (versioned for forward compatibility)
 - One persistent libp2p stream per **(peer, room) pair** — yamux multiplexes them, per-room backpressure is clean
 - Symmetric room negotiation on connect: both sides exchange `SubscribeRequest` listing their locally-shared rooms, reply with the intersection
 - Standard y-protocols **sync step 1 (state vector) + sync step 2 (missing updates)** — no custom diffing, handles offline catchup (SHARE-06) natively via Y.js state vectors
 
 ### Share / Unshare Semantics
-- `share room X` — creates/loads the Y.Doc, runs `auditRoom` security scan, blocks on any flagged node, registers room in `~/.akashik/shared-rooms.json`. The daemon tick (polling interval configurable, default ≤5s) detects the new room on its next run and opens sync streams to all currently-connected peers. No immediate push from the CLI — the CLI does not maintain a live libp2p node (Phase 15 review flagged "one libp2p node per CLI invocation" as an architectural risk; the daemon-owned sync is the resolved design).
+- `share room X` — creates/loads the Y.Doc, runs `auditRoom` security scan, blocks on any flagged node, registers room in `~/.folklore/shared-rooms.json`. The daemon tick (polling interval configurable, default ≤5s) detects the new room on its next run and opens sync streams to all currently-connected peers. No immediate push from the CLI — the CLI does not maintain a live libp2p node (Phase 15 review flagged "one libp2p node per CLI invocation" as an architectural risk; the daemon-owned sync is the resolved design).
 - `unshare room X` local effect — removes room from `shared-rooms.json` registry. The daemon tick detects the room is gone on its next run and closes any active sync streams for that room. **Keeps the local .ydoc file** so a future `share room X` resumes from current state.
 - `unshare room X` remote effect — peers stop receiving updates because the daemon closes the streams. They **keep previously-imported nodes** (imported nodes are knowledge; deleting them would be hostile). No explicit `ROOM_UNSHARED` wire signal — stream close is the signal.
-- New shared-rooms registry at `~/.akashik/shared-rooms.json` with `version: 1` field (mirrors peers.json schema pattern)
+- New shared-rooms registry at `~/.folklore/shared-rooms.json` with `version: 1` field (mirrors peers.json schema pattern)
 
 ### Security Integration & Provenance
 - Secrets scanner runs: **(a)** on `share room X` — hard-block the share if any node in the room is flagged; **(b)** on every outbound update before pushing to the Y.Doc; **(c)** on every inbound update before applying to the local Y.Doc — symmetric block-on-match
 - Inbound blocked updates are logged and silently dropped (no back-propagation of the rejection — don't leak the scan verdict to the peer)
-- Node provenance: every imported node carries `_akashik_source_peer: <peerId>` as an extra GraphNode field (SEC-03-compatible, it's metadata not content)
-- Append-only audit trail at `~/.akashik/share-log.jsonl` — one JSON line per update: `{timestamp, peer, room, nodeId, action, allowed|blocked, reason?}`
+- Node provenance: every imported node carries `_folklore_source_peer: <peerId>` as an extra GraphNode field (SEC-03-compatible, it's metadata not content)
+- Append-only audit trail at `~/.folklore/share-log.jsonl` — one JSON line per update: `{timestamp, peer, room, nodeId, action, allowed|blocked, reason?}`
 
 ### Claude's Discretion
 - Exact debounce timing within the 200ms ceiling
@@ -50,7 +50,7 @@ Mark rooms as public and sync their nodes across connected peers using Y.js CRDT
 
 ### Reusable Assets
 - `src/domain/sharing.ts` — `ShareableNode`, `scanNode`, `auditRoom`, `buildPatterns` (14 secret patterns including private-key blocks, slack, Google, github-pat-fine). Phase 16 calls these on every in/outbound update
-- `src/infrastructure/peer-transport.ts` — `createNode`, `dialAndTag`, `getNodeStatus`. Phase 16 adds a libp2p `handle()` call to register `/akashik/share/1.0.0`
+- `src/infrastructure/peer-transport.ts` — `createNode`, `dialAndTag`, `getNodeStatus`. Phase 16 adds a libp2p `handle()` call to register `/folklore/share/1.0.0`
 - `src/infrastructure/peer-store.ts` — `mutatePeers` transactional helper + the cross-process lock pattern. Reuse the lock primitives for `shared-rooms.json` mutations
 - `src/infrastructure/graph-repository.ts` — `fileGraphRepository` loads/saves graph.json. Phase 16 needs an `upsertNode` call path that the Y.Doc observer can drive
 - `src/domain/graph.ts` — `upsertNode`, `nodesInRoom`, `GraphNode` type
@@ -80,7 +80,7 @@ Mark rooms as public and sync their nodes across connected peers using Y.js CRDT
 - y-protocols provides `sync.js` (state vector + update encoding) and `awareness.js` (presence). Phase 16 uses only the sync messages
 - Y.js `encodeStateVector(doc)` + `encodeStateAsUpdateV2(doc, stateVector)` are the exact primitives for SHARE-05 incremental sync
 - The existing `share audit` command already uses `fileGraphRepository` — Phase 16's `share room` reuses the same load path before calling `auditRoom`
-- Provenance field `_akashik_source_peer` survives the GraphNode round-trip because GraphNode has a catch-all `Readonly<Record<string, unknown>>` intersection
+- Provenance field `_folklore_source_peer` survives the GraphNode round-trip because GraphNode has a catch-all `Readonly<Record<string, unknown>>` intersection
 - Phase 15 review identified "one libp2p node per CLI command" as a Phase 16 risk. Phase 16 introduces a background process only if needed for sync — alternatively, sync runs inside the daemon loop (Phase 6 infrastructure)
 
 </specifics>

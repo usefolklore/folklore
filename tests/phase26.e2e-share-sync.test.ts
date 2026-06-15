@@ -48,7 +48,7 @@ const makeNode = (id: string, opts: { isPrivate: boolean; github?: string }): Gr
   id,
   label: `node ${id}`,
   file_type: 'document',
-  source_file: 'akashik:test',
+  source_file: 'folklore:test',
   source_uri: `https://example.com/${id}`,
   fetched_at: '2026-05-28T00:00:00Z',
   embedding_id: id,
@@ -187,7 +187,7 @@ test('phase-26 E2E: node authored before linking github carries no handle on wir
     const peerB = new Y.Doc();
 
     // Node WITHOUT github_user — simulates a peer that hasn't run
-    // `akashik login` yet (or pre-Phase-26 data).
+    // `folklore login` yet (or pre-Phase-26 data).
     const n = makeNode('legacy-1', { isPrivate: false });
     const r = await syncNodeIntoYDoc(peerA, n, buildPatterns([]), logPath, 'peerA-id');
     assert.ok(r.isOk());

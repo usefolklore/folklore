@@ -3,18 +3,18 @@
 # Task ID: probe-1779816691-0
 # Role: researcher
 # Phase: probe
-# Prompt: Analyze the problem space: -P CLEANUP AUDIT — what's no longer relevant in the Akashik project given the full arc:
+# Prompt: Analyze the problem space: -P CLEANUP AUDIT — what's no longer relevant in the Folklore project given the full arc:
 
 CONTEXT:
 The project has gone through:
 1. Multiple ML retrieval optimization attempts (E1' rerank, E11 enrichment, listwise rerank, NDCG/MRR augmentation)
 2. Three octopus-discover synthesis rounds with empirical pushback
-3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+3. A fundamental pivot from 'folklore: agent memory product' to 'Folklore: federated knowledge commons for the OSS community'
 4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
-5. The scaffolding of AkashikBench-F which validated the compounding thesis (slope -4.74e-5 on LoCoMo)
-6. Now: rebrand sweep in progress (Akashik), and need to clean up the codebase + docs of stale artifacts.
+5. The scaffolding of FolkloreBench-F which validated the compounding thesis (slope -4.74e-5 on LoCoMo)
+6. Now: rebrand sweep in progress (Folklore), and need to clean up the codebase + docs of stale artifacts.
 
-WORKING DIR: /Users/saharbarak/personal/akashik
+WORKING DIR: /Users/saharbarak/personal/folklore
 
 QUESTIONS:
 
@@ -23,14 +23,14 @@ Q1. Looking at the project layout (src/, tests/, docs/, .planning/, scripts/, ex
 Q2. Specific things to investigate:
    - .planning/ directory — there are phase-21, phase-23 dirs, HANDOFF.md, long-term-memory-integration.md. The phase-based GSD planning workflow may be useful or may be cruft.
    - docs/research/ — multiple research docs (energy-based-contradiction-detection, beat-the-competitors-retrieval-plan, performance-prediction-matrix). Some of these may have been superseded by the pivot.
-   - src/ — there's akashik-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
+   - src/ — there's folklore-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
    - tests/ — many tests reflect the old framing. Tests for bench-real.test.ts (30-doc proxy), bench-standard.test.ts (synth HotpotQA). Are these still useful or superseded?
    - Markdown clutter — README.md.bak.830lines is in the working tree (a backup of an old README). docs has potential duplication.
-   - Codebase identifiers (akashik* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
+   - Codebase identifiers (folklore* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
 
 Q3. What docs/research artifacts should be ARCHIVED (moved to a docs/archive/ subfolder with a note) vs DELETED outright? Archive = useful historical record; delete = noise.
 
-Q4. Specific to the Akashik pivot:
+Q4. Specific to the Folklore pivot:
    - storybrand-messaging-draft.md went through THREE major revisions (personal → team → OSS community). Is preserving the evolution table useful, or should we collapse to just the final version?
    - The competitor-positioning research (beat-the-competitors-retrieval-plan.md) was written when we thought we were competing with mem0/agentmemory on R@5. That positioning is now superseded — but the research is still useful. Archive? Annotate?
 
@@ -49,23 +49,23 @@ OUTPUT EXPECTED:
 <!-- BEGIN-UNTRUSTED:provider=codex:nonce=7d7a6ded977fcc5f -->
 ## Output
 ```
-The stale surface is mostly “leaderboard-era retrieval product” material, plus process debris from the phase-based buildout. The live core now is: federation, provenance, community compounding, AkashikBench-F, and the Akashik story.
+The stale surface is mostly “leaderboard-era retrieval product” material, plus process debris from the phase-based buildout. The live core now is: federation, provenance, community compounding, FolkloreBench-F, and the Folklore story.
 
 **Repo Root**
 
 | file path | action | one-line reason |
 |---|---|---|
-| `README.md` | `KEEP` | This is already the clearest statement of the Akashik pivot and should be the canonical repo entrypoint. |
+| `README.md` | `KEEP` | This is already the clearest statement of the Folklore pivot and should be the canonical repo entrypoint. |
 | `README.md.bak.830lines` | `DELETE` | Pure clutter; backup files do not belong in the working tree. |
 | `.claude-octopus/state.json` | `DELETE` | Runtime state, not product source; this looks accidentally committed. |
 | `.claude-octopus/state.json.backup` | `DELETE` | Same as above, plus even less defensible. |
 | `.gitignore` | `NEEDS-REWRITE` | Add `.claude-octopus/`, likely `demo.tape`, and any other local state/output paths. |
-| `.agents/skills/**` | `DELETE` | These are maintainer workflow assets, not Akashik product code or docs. |
+| `.agents/skills/**` | `DELETE` | These are maintainer workflow assets, not Folklore product code or docs. |
 | `CLAUDE.md` | `KEEP` | Dev instructions are useful internally, but it should stay clearly non-product-facing. |
-| `NEXT_STEPS.md` | `ARCHIVE` | Duplicates planning intent now better expressed in `docs/PROJECT-PLAN-AKASHIK.md`. |
+| `NEXT_STEPS.md` | `ARCHIVE` | Duplicates planning intent now better expressed in `docs/PROJECT-PLAN-FOLKLORE.md`. |
 | `findings.md` | `ARCHIVE` | Likely useful as a historical scratchpad, not as a live source of truth. |
 | `dist/` | `DELETE` | Generated output; if tracked, remove from git and regenerate in CI/builds only. |
-| `akashik-rs/` | `KEEP` | Still valid infrastructure for local retrieval speed, even though it no longer carries the product narrative. |
+| `folklore-rs/` | `KEEP` | Still valid infrastructure for local retrieval speed, even though it no longer carries the product narrative. |
 | `demo/README.md` | `NEEDS-REWRITE` | Demos should sell federation/community compounding, not old single-user memory behavior. |
 
 **.planning**
@@ -73,19 +73,19 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | file path | action | one-line reason |
 |---|---|---|
 | `.planning/HANDOFF.md` | `DELETE` | Session-specific Hetzner/OpenClaw handoff is operational residue, not reusable project knowledge. |
-| `.planning/long-term-memory-integration.md` | `ARCHIVE` | Good historical rationale for the old memory stack, but not the current Akashik thesis. |
+| `.planning/long-term-memory-integration.md` | `ARCHIVE` | Good historical rationale for the old memory stack, but not the current Folklore thesis. |
 | `.planning/phases/phase-15/**` | `ARCHIVE` | Historically useful for P2P/security lineage, but phase-by-phase GSD files are not a good live operating surface now. |
 | `.planning/phases/phase-16/**` | `ARCHIVE` | Same: room-sharing history matters, but not as active planning docs. |
 | `.planning/phases/phase-17/**` | `ARCHIVE` | Federation history is valuable, but the phase files are build logs now. |
 | `.planning/phases/phase-18/**` | `ARCHIVE` | Useful provenance, not live strategy. |
 | `.planning/phases/phase-19/**` | `ARCHIVE` | Same. |
 | `.planning/phases/phase-20/**` | `ARCHIVE` | Same. |
-| `.planning/phases/phase-21/21-CONTEXT.md` | `ARCHIVE` | Long-term-memory phase context is now secondary to Akashik federation work. |
+| `.planning/phases/phase-21/21-CONTEXT.md` | `ARCHIVE` | Long-term-memory phase context is now secondary to Folklore federation work. |
 | `.planning/phases/phase-23/23-CONTEXT.md` | `ARCHIVE` | Retrieval bench context matters historically, but not as a live product guide. |
-| `.planning/BENCH-v2.md` | `ARCHIVE` | Strong retrieval research record, but strategically superseded by AkashikBench-F. |
+| `.planning/BENCH-v2.md` | `ARCHIVE` | Strong retrieval research record, but strategically superseded by FolkloreBench-F. |
 | `.planning/BENCH-COMPETITORS.md` | `ARCHIVE` | Useful historical market/retrieval context, but no longer the main battlefield. |
-| `.planning/PROJECT.md` | `DELETE` | Duplicated by newer Akashik docs and likely stale. |
-| `.planning/ROADMAP.md` | `DELETE` | Redundant with `docs/PROJECT-PLAN-AKASHIK.md` unless rewritten completely. |
+| `.planning/PROJECT.md` | `DELETE` | Duplicated by newer Folklore docs and likely stale. |
+| `.planning/ROADMAP.md` | `DELETE` | Redundant with `docs/PROJECT-PLAN-FOLKLORE.md` unless rewritten completely. |
 | `.planning/REQUIREMENTS.md` | `ARCHIVE` | Preserve if you want requirements traceability; otherwise it will confuse current positioning. |
 | `.planning/STATE.md` | `DELETE` | State snapshots age badly and quickly become noise. |
 | `.planning/test-runs/**` | `DELETE` | Ephemeral run logs should not live as first-class repo artifacts. |
@@ -94,26 +94,26 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 
 | file path | action | one-line reason |
 |---|---|---|
-| `docs/PROJECT-PLAN-AKASHIK.md` | `KEEP` | This is the right live execution doc for the current arc. |
-| `docs/README.md` | `NEEDS-REWRITE` | Make it a clean docs index around Akashik, not accumulated legacy categories. |
-| `docs/marketing/how-akashik-works.md` | `KEEP` | Best explanation of the compounding mechanism and should remain first-class. |
+| `docs/PROJECT-PLAN-FOLKLORE.md` | `KEEP` | This is the right live execution doc for the current arc. |
+| `docs/README.md` | `NEEDS-REWRITE` | Make it a clean docs index around Folklore, not accumulated legacy categories. |
+| `docs/marketing/how-folklore-works.md` | `KEEP` | Best explanation of the compounding mechanism and should remain first-class. |
 | `docs/marketing/storybrand-messaging-draft.md` | `ARCHIVE` | Preserve the evolution internally, but collapse public-facing messaging to a final version. |
-| `docs/marketing/positioning-v2.1.md` | `NEEDS-REWRITE` | Likely close to the new thesis, but still carries transitional akashik/oracle-era framing. |
+| `docs/marketing/positioning-v2.1.md` | `NEEDS-REWRITE` | Likely close to the new thesis, but still carries transitional folklore/oracle-era framing. |
 | `docs/marketing/positioning-draft.md` | `ARCHIVE` | Draft-stage messaging should not compete with the current story. |
 | `docs/marketing/SOCIAL-LAUNCH.md` | `KEEP` | Launch execution is still relevant post-pivot. |
-| `docs/marketing/how-akashik-works.md` | `KEEP` | Core architecture/message bridge; not stale. |
+| `docs/marketing/how-folklore-works.md` | `KEEP` | Core architecture/message bridge; not stale. |
 | `docs/marketing/growth-sources-plan.md` | `NEEDS-REWRITE` | Keep only if retargeted to OSS-community seeding rather than generic product growth. |
 | `docs/marketing/influencer-outreach.md` | `NEEDS-REWRITE` | Valid only if aligned with the OSS pilot audience; otherwise it will drift. |
-| `docs/product/VISION.md` | `NEEDS-REWRITE` | Still smart, but it frames Akashik as an “agent-memory protocol problem” more than a federated commons. |
+| `docs/product/VISION.md` | `NEEDS-REWRITE` | Still smart, but it frames Folklore as an “agent-memory protocol problem” more than a federated commons. |
 | `docs/product/BENCHMARKS.md` | `NEEDS-REWRITE` | Too retrieval-leaderboard-heavy for the current story; keep the evidence, change the framing. |
-| `docs/product/ROADMAP.md` | `ARCHIVE` | Superseded by the Akashik project plan unless rewritten from scratch. |
+| `docs/product/ROADMAP.md` | `ARCHIVE` | Superseded by the Folklore project plan unless rewritten from scratch. |
 | `docs/product/RELEASE-v4.md` | `ARCHIVE` | Release notes for the old product arc are historical, not live product guidance. |
-| `docs/product/MANIFESTO.md` | `KEEP` | If it aligns with the Akashik commons thesis, this is still valuable narrative glue. |
+| `docs/product/MANIFESTO.md` | `KEEP` | If it aligns with the Folklore commons thesis, this is still valuable narrative glue. |
 | `docs/architecture/ADR-001-v3-memory-protocol.md` | `ARCHIVE` | Good lineage artifact, but no longer the leading architectural reference. |
 | `docs/architecture/ADR-002-v4-agent-brain.md` | `ARCHIVE` | “Agent brain” language is from the prior product identity. |
 | `docs/architecture/V3-PROTOCOL.md` | `ARCHIVE` | Historical protocol layer, not current outward-facing architecture. |
 | `docs/architecture/V4-PROTOCOL.md` | `ARCHIVE` | Same; useful lineage, stale primary framing. |
-| `docs/p2p/P2P-VISION.md` | `ARCHIVE` | Important pivot precursor, but README and Akashik docs supersede it. |
+| `docs/p2p/P2P-VISION.md` | `ARCHIVE` | Important pivot precursor, but README and Folklore docs supersede it. |
 | `docs/p2p/p2p-threat-model.md` | `KEEP` | Security/compliance-adjacent material ages better and matters for future SOC2/GDPR credibility. |
 | `docs/p2p/peer-reputation-design.md` | `KEEP` | Still part of the federation story and operational trust layer. |
 | `docs/p2p/peer-reputation-load-spreading.md` | `KEEP` | Still relevant to live federation scaling. |
@@ -123,7 +123,7 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | `docs/research/energy-based-contradiction-detection.md` | `ARCHIVE` | Good forward sketch, but not core to the current launch narrative. |
 | `docs/research/github-star-growth.md` | `KEEP` | Still useful if launch/distribution remains GitHub-centric. |
 | `docs/research/octopus-discover/round-4-2026-05-26/**` | `ARCHIVE` | Preserve as decision provenance; not a day-to-day doc surface. |
-| `docs/research/octopus-discover/round-5-2026-05-26/**` | `KEEP` | This round directly informed the current Akashik plan and AkashikBench-F thesis. |
+| `docs/research/octopus-discover/round-5-2026-05-26/**` | `KEEP` | This round directly informed the current Folklore plan and FolkloreBench-F thesis. |
 | `docs/index.html` | `KEEP` | Keep if this is the public docs/landing surface; otherwise it risks drift and needs synchronization. |
 | `docs/probe.html` | `DELETE` | Looks like an experiment artifact, not durable documentation. |
 
@@ -131,7 +131,7 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 
 | file path | action | one-line reason |
 |---|---|---|
-| `tests/bench-akashik-federation.test.ts` | `KEEP` | This is the one benchmark that directly validates the current product thesis. |
+| `tests/bench-folklore-federation.test.ts` | `KEEP` | This is the one benchmark that directly validates the current product thesis. |
 | `tests/bench-locomo-real.test.ts` | `KEEP` | Real-corpus single-peer retrieval still matters as a subsystem health check. |
 | `tests/bench-longmemeval-real.test.ts` | `KEEP` | Same: still useful as retrieval regression evidence, even if no longer the headline. |
 | `tests/bench-scifact-real.test.ts` | `KEEP` | Useful baseline for retrieval quality and hardware comparisons. |
@@ -141,15 +141,15 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | `tests/bench-longmemeval-synth.test.ts` | `ARCHIVE` | Same as above; valuable for local speed, not for product claims. |
 | `tests/phase39.oracle-gossip-e2e.test.ts` | `KEEP` | Oracle/pubsub is still a real federation capability, not just old framing fluff. |
 | `tests/federated-search-cap-tiers.test.ts` | `KEEP` | Directly relevant to federation fan-out quality and scaling behavior. |
-| `tests/phase18.production-net.test.ts` | `KEEP` | Networking regressions still matter to Akashik’s core architecture. |
+| `tests/phase18.production-net.test.ts` | `KEEP` | Networking regressions still matter to Folklore’s core architecture. |
 | `tests/phase29.rust-retrieval-regression.test.ts` | `KEEP` | Rust sidecar is still valid infra; keep a regression guard if you keep the sidecar. |
 
 **Src / code**
 
 | file path | action | one-line reason |
 |---|---|---|
-| `src/application/federated-search.ts` | `KEEP` | Core Akashik behavior; this is central, not optional. |
-| `src/domain/federation-sim.ts` | `KEEP` | Core to AkashikBench-F and the compounding thesis. |
+| `src/application/federated-search.ts` | `KEEP` | Core Folklore behavior; this is central, not optional. |
+| `src/domain/federation-sim.ts` | `KEEP` | Core to FolkloreBench-F and the compounding thesis. |
 | `src/application/use-cases.ts` | `KEEP` | Still foundational, but comments/reference text should stop talking like Phase 1 code. |
 | `src/application/ask.ts` | `NEEDS-REWRITE` | Keep the functionality, but align the flow/docs with local→federation→web→save. |
 | `src/domain/long-term-memory.ts` | `ARCHIVE` | Not dead code necessarily, but clearly from the older “agent memory product” center of gravity. |
@@ -160,11 +160,11 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | `src/telegram/commands.ts` | `DELETE` | Same. |
 | `src/domain/oracle.ts` | `KEEP` | The oracle room still fits community knowledge exchange, though it should be presented as secondary to federation-on-query. |
 | `src/cli/commands/onboard.ts` | `NEEDS-REWRITE` | Keep if you want adoption, but the onboarding story should be “join the commons,” not “set up your personal memory.” |
-| `src/cli/index.ts` | `NEEDS-REWRITE` | Command surface has grown into product sprawl; prune or regroup around Akashik’s current core use cases. |
+| `src/cli/index.ts` | `NEEDS-REWRITE` | Command surface has grown into product sprawl; prune or regroup around Folklore’s current core use cases. |
 
-A few clear calls. On the two-name issue: stay two-name only as a short transitional tactic, because the upside is package/install continuity, but the downside is constant cognitive tax across docs, tests, CLI, and benchmarks. I would not do an immediate repo/package rename before the pilot if it risks breaking the working distribution path; on the other hand, I would aggressively remove “akashik” from narrative docs now and schedule one coordinated technical rename once the pilot-facing docs stabilize. On `storybrand-messaging-draft.md`, keep the revision history only in archive form; the public or active doc should be the final message only. On `beat-the-competitors-retrieval-plan.md`, archive and annotate it rather than delete it; its strengths are real technical research and benchmark archaeology, however its competitive frame is now wrong for the product.
+A few clear calls. On the two-name issue: stay two-name only as a short transitional tactic, because the upside is package/install continuity, but the downside is constant cognitive tax across docs, tests, CLI, and benchmarks. I would not do an immediate repo/package rename before the pilot if it risks breaking the working distribution path; on the other hand, I would aggressively remove “folklore” from narrative docs now and schedule one coordinated technical rename once the pilot-facing docs stabilize. On `storybrand-messaging-draft.md`, keep the revision history only in archive form; the public or active doc should be the final message only. On `beat-the-competitors-retrieval-plan.md`, archive and annotate it rather than delete it; its strengths are real technical research and benchmark archaeology, however its competitive frame is now wrong for the product.
 
-If I were Sahar cleaning up right now, the 3 changes I’d make first are: delete repo junk and local state (`README.md.bak.830lines`, `.claude-octopus/*`, tracked `dist/`) because that is pure signal-to-noise drag; archive most of `.planning/` plus the retrieval-era research docs because they preserve history without continuing to steer the present; rewrite `docs/product/BENCHMARKS.md`, `docs/product/VISION.md`, and onboarding/command-facing docs around Akashik’s actual thesis because the biggest current risk is not dead code, it is a codebase and doc surface still telling two different stories.
+If I were Sahar cleaning up right now, the 3 changes I’d make first are: delete repo junk and local state (`README.md.bak.830lines`, `.claude-octopus/*`, tracked `dist/`) because that is pure signal-to-noise drag; archive most of `.planning/` plus the retrieval-era research docs because they preserve history without continuing to steer the present; rewrite `docs/product/BENCHMARKS.md`, `docs/product/VISION.md`, and onboarding/command-facing docs around Folklore’s actual thesis because the biggest current risk is not dead code, it is a codebase and doc surface still telling two different stories.
 ```
 <!-- END-UNTRUSTED:provider=codex:nonce=7d7a6ded977fcc5f -->
 
@@ -174,7 +174,7 @@ If I were Sahar cleaning up right now, the 3 changes I’d make first are: delet
 ```
 OpenAI Codex v0.125.0 (research preview)
 --------
-workdir: /Users/saharbarak/personal/akashik
+workdir: /Users/saharbarak/personal/folklore
 model: gpt-5.4
 provider: openai
 approval: never
@@ -219,18 +219,18 @@ You are a technical researcher specializing in deep investigation, pattern analy
 ---
 
 **Task:**
-Analyze the problem space: -P CLEANUP AUDIT — what's no longer relevant in the Akashik project given the full arc:
+Analyze the problem space: -P CLEANUP AUDIT — what's no longer relevant in the Folklore project given the full arc:
 
 CONTEXT:
 The project has gone through:
 1. Multiple ML retrieval optimization attempts (E1' rerank, E11 enrichment, listwise rerank, NDCG/MRR augmentation)
 2. Three octopus-discover synthesis rounds with empirical pushback
-3. A fundamental pivot from 'akashik: agent memory product' to 'Akashik: federated knowledge commons for the OSS community'
+3. A fundamental pivot from 'folklore: agent memory product' to 'Folklore: federated knowledge commons for the OSS community'
 4. The articulation of the compounding mechanism (peer-local + federation-on-query + web-on-miss + save-locally + transfer-on-next-ask)
-5. The scaffolding of AkashikBench-F which validated the compounding thesis (slope -4.74e-5 on LoCoMo)
-6. Now: rebrand sweep in progress (Akashik), and need to clean up the codebase + docs of stale artifacts.
+5. The scaffolding of FolkloreBench-F which validated the compounding thesis (slope -4.74e-5 on LoCoMo)
+6. Now: rebrand sweep in progress (Folklore), and need to clean up the codebase + docs of stale artifacts.
 
-WORKING DIR: /Users/saharbarak/personal/akashik
+WORKING DIR: /Users/saharbarak/personal/folklore
 
 QUESTIONS:
 
@@ -239,14 +239,14 @@ Q1. Looking at the project layout (src/, tests/, docs/, .planning/, scripts/, ex
 Q2. Specific things to investigate:
    - .planning/ directory — there are phase-21, phase-23 dirs, HANDOFF.md, long-term-memory-integration.md. The phase-based GSD planning workflow may be useful or may be cruft.
    - docs/research/ — multiple research docs (energy-based-contradiction-detection, beat-the-competitors-retrieval-plan, performance-prediction-matrix). Some of these may have been superseded by the pivot.
-   - src/ — there's akashik-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
+   - src/ — there's folklore-rs/ (Rust sidecar), .claude-octopus/ (octopus state), .agents/ (skills/hooks). Anything obviously dead code?
    - tests/ — many tests reflect the old framing. Tests for bench-real.test.ts (30-doc proxy), bench-standard.test.ts (synth HotpotQA). Are these still useful or superseded?
    - Markdown clutter — README.md.bak.830lines is in the working tree (a backup of an old README). docs has potential duplication.
-   - Codebase identifiers (akashik* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
+   - Codebase identifiers (folklore* prefixes everywhere) — should we plan a coordinated rename, or stay two-name?
 
 Q3. What docs/research artifacts should be ARCHIVED (moved to a docs/archive/ subfolder with a note) vs DELETED outright? Archive = useful historical record; delete = noise.
 
-Q4. Specific to the Akashik pivot:
+Q4. Specific to the Folklore pivot:
    - storybrand-messaging-draft.md went through THREE major revisions (personal → team → OSS community). Is preserving the evolution table useful, or should we collapse to just the final version?
    - The competitor-positioning research (beat-the-competitors-retrieval-plan.md) was written when we thought we were competing with mem0/agentmemory on R@5. That positioning is now superseded — but the research is still useful. Archive? Annotate?
 
@@ -293,11 +293,11 @@ Recent learnings from this project:
 **Learned:** <!-- trust=untrusted provider=cod...
 <!-- END-UNTRUSTED:provider-history:aebde26b15b6872d -->
 codex
-Inspecting the repository structure first, then I’ll sample the highest-signal docs, tests, and source files to classify what still fits the Akashik pivot versus what has become historical baggage.
+Inspecting the repository structure first, then I’ll sample the highest-signal docs, tests, and source files to classify what still fits the Folklore pivot versus what has become historical baggage.
 exec
-/bin/zsh -lc 'find docs -maxdepth 2 -type f | sort | head -n 200' in /Users/saharbarak/personal/akashik
+/bin/zsh -lc 'find docs -maxdepth 2 -type f | sort | head -n 200' in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
-docs/PROJECT-PLAN-AKASHIK.md
+docs/PROJECT-PLAN-FOLKLORE.md
 docs/README.md
 docs/architecture/ADR-001-v3-memory-protocol.md
 docs/architecture/ADR-002-v4-agent-brain.md
@@ -328,7 +328,7 @@ docs/marketing/IMAGEGEN-FRONTEND-WEB.md
 docs/marketing/SITE-REDESIGN-SPEC.md
 docs/marketing/SOCIAL-LAUNCH.md
 docs/marketing/growth-sources-plan.md
-docs/marketing/how-akashik-works.md
+docs/marketing/how-folklore-works.md
 docs/marketing/influencer-outreach.md
 docs/marketing/positioning-draft.md
 docs/marketing/positioning-v2.1.md
@@ -356,7 +356,7 @@ docs/research/performance-prediction-matrix.md
 docs/welly-idle.png
 
 exec
-/bin/zsh -lc 'find .planning -maxdepth 3 -type f | sort | head -n 200' in /Users/saharbarak/personal/akashik
+/bin/zsh -lc 'find .planning -maxdepth 3 -type f | sort | head -n 200' in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 .planning/BENCH-COMPETITORS.md
 .planning/BENCH-v2.md
@@ -457,13 +457,13 @@ exec
 .planning/v2.1-CANDIDATES.md
 
 exec
-/bin/zsh -lc "pwd && rg --files -g 'README*' -g 'docs/**' -g 'tests/**' -g 'src/**' -g '.planning/**' -g 'scripts/**' -g 'examples/**' -g '.claude-octopus/**' -g '.agents/**' | sed 's#"'^#./#'"' | sort | head -n 400" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "pwd && rg --files -g 'README*' -g 'docs/**' -g 'tests/**' -g 'src/**' -g '.planning/**' -g 'scripts/**' -g 'examples/**' -g '.claude-octopus/**' -g '.agents/**' | sed 's#"'^#./#'"' | sort | head -n 400" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
-/Users/saharbarak/personal/akashik
+/Users/saharbarak/personal/folklore
 ./README.md
 ./README.md.bak.830lines
 ./demo/README.md
-./docs/PROJECT-PLAN-AKASHIK.md
+./docs/PROJECT-PLAN-FOLKLORE.md
 ./docs/README.md
 ./docs/architecture/ADR-001-v3-memory-protocol.md
 ./docs/architecture/ADR-002-v4-agent-brain.md
@@ -503,7 +503,7 @@ exec
 ./docs/marketing/SITE-REDESIGN-SPEC.md
 ./docs/marketing/SOCIAL-LAUNCH.md
 ./docs/marketing/growth-sources-plan.md
-./docs/marketing/how-akashik-works.md
+./docs/marketing/how-folklore-works.md
 ./docs/marketing/influencer-outreach.md
 ./docs/marketing/positioning-draft.md
 ./docs/marketing/positioning-v2.1.md
@@ -781,7 +781,7 @@ exec
 ./src/telegram/commands.ts
 ./src/telegram/digest.ts
 ./tests/auto-forget.test.ts
-./tests/bench-akashik-federation.test.ts
+./tests/bench-folklore-federation.test.ts
 ./tests/bench-auto-forget.test.ts
 ./tests/bench-beta-calibration.test.ts
 ./tests/bench-locomo-real.test.ts
@@ -862,7 +862,7 @@ exec
 ./tests/phase4.rooms.test.ts
 
 exec
-/bin/zsh -lc 'ls -la' in /Users/saharbarak/personal/akashik
+/bin/zsh -lc 'ls -la' in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 total 744
 drwxr-xr-x@  33 saharbarak  staff    1056 May 26 20:13 .
@@ -897,18 +897,18 @@ drwxr-xr-x@   9 saharbarak  staff     288 Apr 29 17:36 src
 drwxr-xr-x@  90 saharbarak  staff    2880 May 26 19:53 tests
 -rw-r--r--@   1 saharbarak  staff     648 Apr 29 17:36 tsconfig.json
 drwxr-xr-x@   3 saharbarak  staff      96 Apr 29 17:36 vendor
-drwxr-xr-x@   6 saharbarak  staff     192 Apr 29 19:55 akashik-rs
+drwxr-xr-x@   6 saharbarak  staff     192 Apr 29 19:55 folklore-rs
 
 codex
-The file map is clear now: there’s a live Akashik/P2P/federation track sitting beside a large amount of legacy retrieval-optimization and phase-era planning material. I’m reading representative files next so the keep/archive/delete calls are based on actual content, not just filenames.
+The file map is clear now: there’s a live Folklore/P2P/federation track sitting beside a large amount of legacy retrieval-optimization and phase-era planning material. I’m reading representative files next so the keep/archive/delete calls are based on actual content, not just filenames.
 exec
-/bin/zsh -lc "sed -n '1,220p' README.md" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' README.md" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
-# Akashik
+# Folklore
 
 **Federated knowledge commons for the open-source community.**
 
-Akashik is a peer-to-peer knowledge graph protocol where every researcher, maintainer, and engineer adds their reading and reasoning, and where every newcomer can query what the community has already learned before re-treading the same path. Each contribution is Ed25519-signed, locally owned, and federated only on demand — so the network's working set grows by what its contributors are actually curious about, not by what a central planner decided to ingest.
+Folklore is a peer-to-peer knowledge graph protocol where every researcher, maintainer, and engineer adds their reading and reasoning, and where every newcomer can query what the community has already learned before re-treading the same path. Each contribution is Ed25519-signed, locally owned, and federated only on demand — so the network's working set grows by what its contributors are actually curious about, not by what a central planner decided to ingest.
 
 ---
 
@@ -916,9 +916,9 @@ Akashik is a peer-to-peer knowledge graph protocol where every researcher, maint
 
 Open source built the freest software stack in history because we shared *code* — CRAN, npm, PyPI, GitHub, arXiv. The infrastructure compounds. But the knowledge *between* the code (what we read, what we figured out together, what we debugged at 3am) has never had the same substrate. Each generation of contributors starts over. The same papers get re-explained in posts that 404 within a year. The same CUDA OOM gets diagnosed in parallel by fifty people next Tuesday.
 
-**Akashik is what** that missing substrate looks like: a federated, cryptographically-attested record the community writes for itself. Not a personal-memory product. Not a team wiki. A shared protocol where contributor reading-hours compound into community progress, signed and attributed, forever.
+**Folklore is what** that missing substrate looks like: a federated, cryptographically-attested record the community writes for itself. Not a personal-memory product. Not a team wiki. A shared protocol where contributor reading-hours compound into community progress, signed and attributed, forever.
 
-**The differentiator is federation, not retrieval.** Single-user memory products already solve personal retrieval; Akashik is not trying to beat them on per-user R@5. The bet is that *cross-peer transfer* of researched-once knowledge is the missing primitive in the OSS knowledge stack, and that a demand-shaped P2P graph is the right way to build it.
+**The differentiator is federation, not retrieval.** Single-user memory products already solve personal retrieval; Folklore is not trying to beat them on per-user R@5. The bet is that *cross-peer transfer* of researched-once knowledge is the missing primitive in the OSS knowledge stack, and that a demand-shaped P2P graph is the right way to build it.
 
 The name borrows from the mythological **Akashic Records** — the perfect referent because it names what we're building: a shared, persistent, accessible record of what the collective has known. The "k" instead of "c" signals the engineering implementation, not the literal myth.
 
@@ -926,7 +926,7 @@ The name borrows from the mythological **Akashic Records** — the perfect refer
 
 ## How it works — the compounding loop
 
-When you ask Akashik something, the system runs through five steps:
+When you ask Folklore something, the system runs through five steps:
 
 1. **Local first.** Query your own peer's graph. Hit? Return. Zero network cost.
 2. **Federation on miss.** Fan out to the peers you share rooms with. Each answers with whatever they've already saved or researched. Results merge via reciprocal-rank fusion.
@@ -942,11 +942,11 @@ Stated formally, for any topic `T` and time `t`:
 
 Compounding is not a marketing claim; it is a property of the architecture. Each peer holds only what it has asked for or contributed — there is no global graph, no central server, and disk cost on every peer scales with that peer's own curiosity rather than with the community's total contribution volume.
 
-Full architecture: [`docs/marketing/how-akashik-works.md`](docs/marketing/how-akashik-works.md).
+Full architecture: [`docs/marketing/how-folklore-works.md`](docs/marketing/how-folklore-works.md).
 
 ---
 
-## Empirical validation — AkashikBench-F
+## Empirical validation — FolkloreBench-F
 
 The Round 5 octopus-discover synthesis identified one benchmark capable of falsifying the federated-commons thesis: a federation-level simulator measuring `web_fallback_rate(t)` over a realistic peer network with offline churn. We built it. First run, on the LoCoMo factual subset:
 
@@ -971,39 +971,39 @@ Results:
 
 **These are simulator numbers, not pilot numbers.** v1 abstracts away per-peer retrieval quality (those are measured separately by the LongMemEval / LoCoMo / BEIR benches in `tests/`) and treats "does peer N hold doc D" as boolean. v2 plugs real retrieval in. The real-pilot validation lives in the 30-day local-AI / agent-tooling ecosystem launch plan — see [`docs/research/octopus-discover/round-5-2026-05-26/`](docs/research/octopus-discover/round-5-2026-05-26/) for the full synthesis.
 
-Bench source: [`tests/bench-akashik-federation.test.ts`](tests/bench-akashik-federation.test.ts).
+Bench source: [`tests/bench-folklore-federation.test.ts`](tests/bench-folklore-federation.test.ts).
 
 ---
 
 ## Quickstart
 
-> The npm package and CLI binary are still named `akashik` during the two-name period. The brand-marketing name is **Akashik**; a coordinated rename of package + repo + DNS is queued behind the public launch. Examples below show both forms.
+> The npm package and CLI binary are still named `folklore` during the two-name period. The brand-marketing name is **Folklore**; a coordinated rename of package + repo + DNS is queued behind the public launch. Examples below show both forms.
 
 Install:
 
 ```bash
-npm install -g akashik
-# (will become: npm install -g akashik)
+npm install -g folklore
+# (will become: npm install -g folklore)
 ```
 
 Run your first peer:
 
 ```bash
-akashik init
-akashik daemon start
+folklore init
+folklore daemon start
 ```
 
 Save what teaches you:
 
 ```bash
-akashik save https://arxiv.org/abs/2406.16678 --room research
-akashik save ./notes/cuda-oom-debug.md --room toolshed
+folklore save https://arxiv.org/abs/2406.16678 --room research
+folklore save ./notes/cuda-oom-debug.md --room toolshed
 ```
 
 Query the record:
 
 ```bash
-akashik ask "how does mxbai-rerank compare to cross-encoder on long contexts?"
+folklore ask "how does mxbai-rerank compare to cross-encoder on long contexts?"
 ```
 
 The query checks your local graph, then federates to peers you share rooms with, then falls back to web research only if neither can answer. The web result lands in your local graph signed by you — the next contributor who asks something similar pulls it from your peer with full attribution.
@@ -1018,17 +1018,17 @@ The query checks your local graph, then federates to peers you share rooms with,
 - **Ed25519-signed contributions with DIDs.** Every record carries the curator's decentralized identifier, room, source URLs, and timestamp. Trust is graph-traversable: follow the chain, see who curated, when, and why. Lineage: AT Protocol's signed-attribution layer applied to research memory rather than social posts.
 - **Commodity hardware.** Xenova ONNX embeddings (384-dim, all-MiniLM-L6-v2), sqlite-vec for vector search, sql.js for cross-platform persistence. A $7/mo VPS, a laptop, or a Raspberry Pi runs a full peer. Reproducible from public sources.
 
-The full synthesis frames Akashik as compositionally novel with prior-art math: *"Freenet-style demand-shaped replication applied to attributed semantic research memory, with AT Protocol-style DID signatures."*
+The full synthesis frames Folklore as compositionally novel with prior-art math: *"Freenet-style demand-shaped replication applied to attributed semantic research memory, with AT Protocol-style DID signatures."*
 
 ---
 
 ## What's next
 
-Active workstreams (planning doc forthcoming at [`docs/PROJECT-PLAN-AKASHIK.md`](docs/PROJECT-PLAN-AKASHIK.md)):
+Active workstreams (planning doc forthcoming at [`docs/PROJECT-PLAN-FOLKLORE.md`](docs/PROJECT-PLAN-FOLKLORE.md)):
 
-- **AkashikBench-F v2** — real per-peer retrieval (not boolean), measure compounding under genuine retrieval-quality variance.
+- **FolkloreBench-F v2** — real per-peer retrieval (not boolean), measure compounding under genuine retrieval-quality variance.
 - **100-peer pilot in the local-AI / agent-tooling ecosystem** — seed contributors to `llama.cpp + ollama`, `vllm-project/vllm`, and `aider` with 50-80 canonical artifacts. Publish the real `web_fallback_rate` curve after 30 days.
-- **Codebase rename** — coordinated `akashik → akashik` migration across npm, GitHub, DNS.
+- **Codebase rename** — coordinated `folklore → folklore` migration across npm, GitHub, DNS.
 - **Read-only public peer endpoint** — "Browse the record" entry point for newcomers, no login required.
 - **GDPR Article 17 tombstones** — reconciling immutable provenance with right-to-erasure via signed deletion records.
 - **Rarity-aware replication quotas** — LOCKSS-style protection against niche-content evaporation; BitTorrent rarest-first weighting on federation fan-out.
@@ -1037,7 +1037,7 @@ Active workstreams (planning doc forthcoming at [`docs/PROJECT-PLAN-AKASHIK.md`]
 
 ## Contributing
 
-Akashik is pre-launch — the federation simulator validates the thesis, the retrieval stack benchmarks at parity with public single-user baselines, and the real pilot is the next milestone. We need:
+Folklore is pre-launch — the federation simulator validates the thesis, the retrieval stack benchmarks at parity with public single-user baselines, and the real pilot is the next milestone. We need:
 
 - Contributors who run a peer in the local-AI / agent-tooling ecosystem during the pilot window.
 - Researchers willing to seed canonical artifacts (papers, debug threads, PRs) into their local graphs.
@@ -1047,29 +1047,29 @@ Open an issue, fork the repo, or DM the maintainer. The project is in flux and t
 
 ## Status
 
-Pre-launch. Simulator-validated, retrieval-benchmarked, pilot pending. Two-name period in effect (`akashik` in code, `Akashik` in marketing). Public protocol spec lands with the rename.
+Pre-launch. Simulator-validated, retrieval-benchmarked, pilot pending. Two-name period in effect (`folklore` in code, `Folklore` in marketing). Public protocol spec lands with the rename.
 
 ## License
 
 MIT. Always open protocol. Your contributions, signed by you. No central server. Ever. Provenance preserved forever.
 
 exec
-/bin/zsh -lc "sed -n '1,220p' package.json" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' package.json" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 {
-  "name": "akashik",
+  "name": "folklore",
   "version": "4.0.0-rc1",
   "description": "OSS P2P agent memory — DID-authored cryptographic envelopes, 48× compressed vectors, 33× faster cached queries via daemon IPC + native Rust client, episodic→semantic consolidation worker, cross-model embedding bridge. CPU-local, zero GPU, zero SaaS. v4 Agent Brain.",
   "type": "module",
   "bin": {
-    "akashik": "./bin/akashik.js"
+    "folklore": "./bin/folklore.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "bootstrap": "bash scripts/bootstrap.sh",
-    "doctor": "node bin/akashik.js doctor",
-    "start": "node bin/akashik.js",
+    "doctor": "node bin/folklore.js doctor",
+    "start": "node bin/folklore.js",
     "test": "node --import tsx --test tests/*.test.ts"
   },
   "files": [
@@ -1141,7 +1141,7 @@ exec
 }
 
 exec
-/bin/zsh -lc "sed -n '1,220p' .gitignore" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' .gitignore" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 # dependencies
 node_modules/
@@ -1160,8 +1160,8 @@ npm-debug.log*
 .env.*
 !.env.example
 
-# akashik runtime state — per-user, never commit
-.akashik/
+# folklore runtime state — per-user, never commit
+.folklore/
 
 # vector store
 vectors.db
@@ -1180,36 +1180,36 @@ __pycache__/
 Thumbs.db
 
 exec
-/bin/zsh -lc 'find akashik-rs -maxdepth 2 -type f | sort | head -n 80' in /Users/saharbarak/personal/akashik
+/bin/zsh -lc 'find folklore-rs -maxdepth 2 -type f | sort | head -n 80' in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
-akashik-rs/.gitignore
-akashik-rs/Cargo.lock
-akashik-rs/Cargo.toml
-akashik-rs/src/lib.rs
-akashik-rs/src/main.rs
+folklore-rs/.gitignore
+folklore-rs/Cargo.lock
+folklore-rs/Cargo.toml
+folklore-rs/src/lib.rs
+folklore-rs/src/main.rs
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/PROJECT-PLAN-AKASHIK.md" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' docs/PROJECT-PLAN-FOLKLORE.md" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
-# Akashik — project plan
+# Folklore — project plan
 
 This is the engineering+launch plan for the next 30-60 days, anchored
 in the Round 5 octopus-discover recommendation (verbatim: "next
-engineering month on AkashikBench-F and federation routing; next
+engineering month on FolkloreBench-F and federation routing; next
 marketing month on a 100-person pilot in the local-AI / agent-tooling
 OSS ecosystem"). The product has pivoted from "agent-memory product"
 to "federated knowledge commons for the open-source community" and
-the brand is now Akashik — the codebase is still `akashik` and
+the brand is now Folklore — the codebase is still `folklore` and
 will remain so during the two-name period. The architecture
-([how-akashik-works.md](./marketing/how-akashik-works.md)) is the
-credibility anchor for the mission; AkashikBench-F is the only
+([how-folklore-works.md](./marketing/how-folklore-works.md)) is the
+credibility anchor for the mission; FolkloreBench-F is the only
 instrument that can falsify or validate the compounding thesis
 empirically.
 
 ## Status snapshot (2026-05-26)
 
-AkashikBench-F was scaffolded today
-([tests/bench-akashik-federation.test.ts](../tests/bench-akashik-federation.test.ts)
+FolkloreBench-F was scaffolded today
+([tests/bench-folklore-federation.test.ts](../tests/bench-folklore-federation.test.ts)
 + [src/domain/federation-sim.ts](../src/domain/federation-sim.ts))
 and produced positive signal on the LoCoMo factual subset:
 `compoundingSlope = -4.74e-5` (negative = network is learning),
@@ -1217,7 +1217,7 @@ and produced positive signal on the LoCoMo factual subset:
 simulated horizon. This is in-simulator only — a pure boolean-set
 abstraction over real retrieval — so it validates dynamics, not
 end-to-end retrieval quality. Real-pilot validation is pending.
-Codebase is still named `akashik`; brand is Akashik; the
+Codebase is still named `folklore`; brand is Folklore; the
 rename PR is a separate workstream queued behind launch. LongMemEval-S
 R@5 = 0.9268 (with E11 enrichment), LoCoMo R@10 = 0.725 (with E11);
 the local read-path is at its practical ceiling and further per-peer
@@ -1226,11 +1226,11 @@ retrieval tuning is explicitly de-prioritised below.
 ## Phase 24 — Federation infrastructure (next engineering month)
 
 The Round 5 verbatim recommendation: spend this month on
-AkashikBench-F + federation routing because validating the
+FolkloreBench-F + federation routing because validating the
 compounding network effect is the only way to prove the product's
 core differentiator. Concrete deliverables:
 
-- **24.1 AkashikBench-F parameter sweep.** Run the existing simulator
+- **24.1 FolkloreBench-F parameter sweep.** Run the existing simulator
   across the grid `shard ∈ {0.02, 0.05, 0.10, 0.20}` ×
   `offline ∈ {0.0, 0.2, 0.5}` × `peers ∈ {5, 10, 25, 50}` ×
   `zipfAlpha ∈ {0.5, 1.0, 1.5}`. For each cell, report
@@ -1241,7 +1241,7 @@ core differentiator. Concrete deliverables:
   offline ≤ 0.5) configurations. Identify the regime boundary
   where compounding fails so we know what we're betting on.
   Deliverable: results table in
-  `docs/research/akashik-bench-f-sweep.md` with a one-paragraph
+  `docs/research/folklore-bench-f-sweep.md` with a one-paragraph
   interpretation per axis.
 
 - **24.2 Niche-evaporation mitigation (LOCKSS-style).** Today's bench
@@ -1290,7 +1290,7 @@ core differentiator. Concrete deliverables:
   - **CLI ↔ daemon IPC auth** (Round 4 finding A): the local
     socket has no workload identity today; a compromised process
     can impersonate the CLI. Add a per-session token in
-    `src/daemon/ipc.ts` written to `~/.akashik/ipc.token`
+    `src/daemon/ipc.ts` written to `~/.folklore/ipc.token`
     with `0600` perms; CLI reads + sends on every call; daemon
     rejects unauth'd connections. Success: integration test
     confirms unauth'd socket connect is rejected with
@@ -1316,7 +1316,7 @@ Per Round 5's smallest-viable launch plan: seed the local-AI /
 agent-tooling ecosystem because their high-frequency debugging
 queries make compounding visible within 30 days. The brutal
 tradeoff is acknowledged in the Round 5 brief: "temporarily
-pigeonholes Akashik as 'niche debugging tool' — but guarantees
+pigeonholes Folklore as 'niche debugging tool' — but guarantees
 high query overlap so compounding shows up fast." Worth it.
 
 - **25.1 Seed content curation.** Assemble 50-80 canonical artifacts
@@ -1324,7 +1324,7 @@ high query overlap so compounding shows up fast." Worth it.
   issues on CUDA OOM (ollama, vllm, llama.cpp), Apple Silicon Metal
   perf threads, vLLM PagedAttention PRs, quantization comparison
   papers (GPTQ, AWQ, GGUF), aider context-window strategies, etc.
-  Each artifact saved via `akashik save --type research` from
+  Each artifact saved via `folklore save --type research` from
   a librarian's peer (so provenance lands signed by a real maintainer,
   not the project itself). Deliverable: `docs/marketing/seed-corpus-pilot.md`
   listing every artifact with its URL, librarian, and room.
@@ -1348,8 +1348,8 @@ high query overlap so compounding shows up fast." Worth it.
   the pilot per Round 5. Recruitment channels: Hacker News (one
   Show HN post), the `r/LocalLLaMA` subreddit, LocalLLM Discords,
   and the maintainers' own audiences. Onboarding artifact is a
-  90-second video walkthrough + `npm install -g akashik` +
-  `akashik share` to join the pilot rooms. Success criterion:
+  90-second video walkthrough + `npm install -g folklore` +
+  `folklore share` to join the pilot rooms. Success criterion:
   ≥ 80 active peers (defined as: ≥ 1 query in past 7 days) by end
   of week 3.
 
@@ -1377,7 +1377,7 @@ phase slot, not a hand-wave:
   with an older schema federates with a peer on v2, malformed
   nodes are dropped silently. Add a `quarantine` table in the
   peer's SQLite, persist rejected envelopes with the parser error,
-  and expose `akashik quarantine list / replay` so operators
+  and expose `folklore quarantine list / replay` so operators
   can recover post-migration. The right time to ship this is
   immediately after the pilot when we'll have actual cross-version
   traffic.
@@ -1413,12 +1413,12 @@ phase slot, not a hand-wave:
   gating.
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/marketing/how-akashik-works.md" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' docs/marketing/how-folklore-works.md" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
-# How Akashik works
+# How Folklore works
 
 The shortest accurate description of the mechanism that makes
-Akashik possible. Written for the reader who has heard "federated
+Folklore possible. Written for the reader who has heard "federated
 knowledge graph" and wants to understand *exactly* what's
 distributed, *what* gets cached, *when* the network reaches out
 to the web, and *who* ends up holding which piece of the record.
@@ -1428,10 +1428,10 @@ copy lives in [`storybrand-messaging-draft.md`](./storybrand-messaging-draft.md)
 
 ## The one-paragraph version
 
-Each Akashik peer holds **only its own information** — what its
+Each Folklore peer holds **only its own information** — what its
 user contributed, what it pulled from other peers in response to
 its user's questions, and what it researched on the web when the
-federation couldn't satisfy a query. When you ask Akashik
+federation couldn't satisfy a query. When you ask Folklore
 something, it asks your local graph first, then asks every peer
 you're federated with for *their two cents*. If the federation
 can't answer with confidence, the harness reaches out to the web,
@@ -1456,7 +1456,7 @@ the network does work.** That compound is the entire mission.
                                     │
                                     ▼
    ─── STEP 1 ─────────────────────────────────────────────────
-       Query A's LOCAL Akashik graph
+       Query A's LOCAL Folklore graph
        Hit?  → return; done. (Cheapest path. Zero network.)
        Miss? → continue.
    ────────────────────────────────────────────────────────────
@@ -1503,7 +1503,7 @@ the network does work.** That compound is the entire mission.
 
 | Bucket | Contents | Source |
 |---|---|---|
-| **Self-contributed** | Things the user explicitly saved (`akashik save <url>`, codebase indexing, manually-typed notes) | The user |
+| **Self-contributed** | Things the user explicitly saved (`folklore save <url>`, codebase indexing, manually-typed notes) | The user |
 | **Pulled** | Nodes received from federated peers in response to the user's own queries | Federation, with provenance |
 | **Researched-on-miss** | Web research results that were fetched on the user's machine because the federation couldn't satisfy a query | Web, attested by the curator |
 | **NOT stored** | Anything other peers saved that this user never asked about | — |
@@ -1526,7 +1526,7 @@ This matters for four reasons:
 
 1. **Provenance lives where the work happened.** The reader who
    queries A's research six months later sees A's DID, A's room,
-   the date, the source — not a faceless "Akashik says". Knowledge
+   the date, the source — not a faceless "Folklore says". Knowledge
    has authors.
 2. **Cost lives where the curiosity was.** A paid the network
    roundtrip + the web fetch. B, C, D who query later pay
@@ -1570,7 +1570,7 @@ Two notes:
   the opt-in is "also cache the room's hot items".
 
 This is identical to the property every decentralized system has:
-**availability follows participation**. Akashik doesn't pretend
+**availability follows participation**. Folklore doesn't pretend
 otherwise.
 
 ## Why this beats every existing alternative
@@ -1586,7 +1586,7 @@ node. All three are wrong for the OSS community as a whole:
 | Full-graph replication on every node | Disk cost compounds linearly with community size; new joiners face a multi-GB-to-multi-TB sync; trivially DoS-able by spam contributions |
 | Per-room private CRDTs (Roam-style multiplayer) | Closed by default; doesn't compound across rooms; no path to community-wide commons |
 
-Akashik's **"each peer holds only what it has asked for or
+Folklore's **"each peer holds only what it has asked for or
 contributed"** model neatly avoids all three. The community's
 knowledge is replicated *to the precision of demand* — popular
 items get cached on many peers, fringe items live on one peer
@@ -1637,23 +1637,23 @@ property of the architecture.
 
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/marketing/storybrand-messaging-draft.md" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' docs/marketing/storybrand-messaging-draft.md" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
-# Akashik — brand messaging, StoryBrand 7-prompt pass
+# Folklore — brand messaging, StoryBrand 7-prompt pass
 
 Draft website copy generated by running the StoryBrand 7-prompt
 workflow (`marketing/storybrand-messaging-engine.md` in the
-`SaharBarak/skills-and-workflows` repo) against Akashik's actual
+`SaharBarak/skills-and-workflows` repo) against Folklore's actual
 mission. Captured 2026-05-26.
 
-**Brand name:** Akashik (formerly project codename `akashik`).
+**Brand name:** Folklore (formerly project codename `folklore`).
 The name borrows from the **Akashic Records** — the mythological
 compendium of all knowledge ever held by the human collective —
 and reframes the idea as concrete, contributor-owned infrastructure:
 a federated, cryptographically-attested record that the open-source
 community writes for itself.
 
-**Mission anchor (the only anchor that's correct):** Akashik is
+**Mission anchor (the only anchor that's correct):** Folklore is
 **the federated knowledge commons for the open-source community
 as a whole**. Not a personal-memory product (mem0/agentmemory/
 ByteRover already do that). Not a team-collaboration tool (Slack/
@@ -1672,7 +1672,7 @@ The Akashic Records reference is an undertone, not a costume.
 ## Prompt 1 — Hero Identifier
 
 **Business (one sentence):**
-> Akashik is a peer-to-peer knowledge graph protocol for the
+> Folklore is a peer-to-peer knowledge graph protocol for the
 > open-source community — a federated, contributor-owned record
 > where every researcher, maintainer, and engineer adds their
 > reading and reasoning, and where every newcomer can query
@@ -1694,7 +1694,7 @@ The Akashic Records reference is an undertone, not a costume.
 > in the community who hits the same wall, to the next
 > generation of contributors who would otherwise re-tread the
 > same path. The open-source ethos has always been about making
-> your work matter beyond yourself; Akashik is the natural
+> your work matter beyond yourself; Folklore is the natural
 > extension to *knowledge* work itself.
 
 **Website opening line (no cleverness, no brand name):**
@@ -1753,8 +1753,8 @@ The Akashic Records reference is an undertone, not a costume.
    contributor who asks a similar question pulls the cached
    research from that "ambitioned" peer — paying nothing for work
    that was done once. The network's working set grows by what
-   the community is curious about. See [how Akashik
-   works](./how-akashik-works.md) for the architecture.
+   the community is curious about. See [how Folklore
+   works](./how-folklore-works.md) for the architecture.
 2. **Every contribution is cryptographically signed** —
    Ed25519-attested decentralized identifiers (DIDs). Knowledge
    compounds *with provenance*: every record in the federation
@@ -1775,7 +1775,7 @@ The Akashic Records reference is an undertone, not a costume.
 > history through distributed collaboration — but the knowledge
 > *above* the code (what we read, what we learned, what we
 > figured out together) never got the same infrastructure.
-> Akashik is the protocol the community has been missing: a
+> Folklore is the protocol the community has been missing: a
 > federated, cryptographically-attested record where every
 > contributor's reading compounds into every other contributor's
 > progress.
@@ -1785,7 +1785,7 @@ The Akashic Records reference is an undertone, not a costume.
 ## Prompt 4 — Clarity Plan Builder
 
 **Process Plan (3 steps, how a contributor joins the federation — each ≤5 words):**
-1. Run an Akashik peer.
+1. Run an Folklore peer.
 2. Save what teaches you.
 3. Federate. Compound. Continue.
 
@@ -1861,14 +1861,14 @@ The Akashic Records reference is an undertone, not a costume.
 
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/research/beat-the-competitors-retrieval-plan.md" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' docs/research/beat-the-competitors-retrieval-plan.md" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
-# How Akashik beats the retrieval leaderboard (forward plan)
+# How Folklore beats the retrieval leaderboard (forward plan)
 
 **Status:** strategic sketch — Phase 24 candidate ratchets
 **Drafted:** 2026-05-21
 **Anchor numbers (Phase 23.7+ measured):**
-| Benchmark | Akashik | Competitor best | Gap |
+| Benchmark | Folklore | Competitor best | Gap |
 |---|---:|---:|---:|
 | LongMemEval-S R@5 (50-distractor, n=500) | **0.9202** | agentmemory 0.952, ByteRover 0.928 | -3pp / -0.6pp |
 | LongMemEval-S R@5 (oracle) | 0.9990 | (at ceiling) | — |
@@ -1904,7 +1904,7 @@ Primitives that exist but are NOT in the bench retrieval path:
 
 | Primitive | Where | Bench-path? | Note |
 |---|---|---|---|
-| Cross-encoder rerank (ms-marco-MiniLM-L-6-v2) | `src/application/ask.ts:436-441` + `src/domain/cross-rerank.ts` | **No** | Gated behind `AKASHIK_RERANK=1`; benches call `searchByRoom` directly, bypass `ask()` |
+| Cross-encoder rerank (ms-marco-MiniLM-L-6-v2) | `src/application/ask.ts:436-441` + `src/domain/cross-rerank.ts` | **No** | Gated behind `FOLKLORE_RERANK=1`; benches call `searchByRoom` directly, bypass `ask()` |
 | Personalized PageRank rerank | `src/application/ask.ts:444` | **No** | Same — only in `ask()` |
 | Mention enrichment (`buildHit`) | `src/application/ask.ts:448` | **No** | Same |
 | Cross-room federated search | `src/application/use-cases.ts` | **No** | Benches scope to one room |
@@ -1951,7 +1951,7 @@ Combined plausible end-state:
   BEIR SciFact NDCG@10   0.7202  →  0.78-0.82   (beats ColBERTv2 0.7522)
 ```
 
-If those land, **Akashik becomes the published-leaderboard leader on LME-S** with a fully open-source, CPU-only, retrieval-only pipeline. No LLM judge, no GPT-4 reasoning loop, no closed-weight model — just a clean hybrid sparse+dense+rerank+graph pipeline that beats the proprietary stacks.
+If those land, **Folklore becomes the published-leaderboard leader on LME-S** with a fully open-source, CPU-only, retrieval-only pipeline. No LLM judge, no GPT-4 reasoning loop, no closed-weight model — just a clean hybrid sparse+dense+rerank+graph pipeline that beats the proprietary stacks.
 
 **E4 / E5 / E6 / E7** are second-wave once E1–E3 are measured. They target the *remaining* loss after the easy wins — by then we'll know which question types are still bleeding.
 
@@ -1968,7 +1968,7 @@ Concrete diff:
 //   const r = await searchByRoom({ graphs, vectors, embedder })({ room, text, k: K });
 //
 // E1 path — pull rerank into the test:
-//   const reranker = process.env.AKASHIK_RERANK === '1'
+//   const reranker = process.env.FOLKLORE_RERANK === '1'
 //     ? crossEncoderFromEnv() : null;
 //   const r0 = await searchByRoom({ graphs, vectors, embedder })({ room, text, k: K * 4 });  // 4x candidates
 //   const matches = r0._unsafeUnwrap();
@@ -1978,7 +1978,7 @@ Concrete diff:
 //     : ok(matches.slice(0, K));
 ```
 
-Run with `AKASHIK_RERANK=1` env on the Hetzner box. Compare against today's 0.9202 number. If lift is real, ship.
+Run with `FOLKLORE_RERANK=1` env on the Hetzner box. Compare against today's 0.9202 number. If lift is real, ship.
 
 **Risk:** cross-encoder adds ~10ms/match latency. With K=5 reranked from 20 candidates, that's 200ms/query × 500 q = 100s added to LME-S run. Cheap.
 
@@ -1986,9 +1986,9 @@ Run with `AKASHIK_RERANK=1` env on the Hetzner box. Compare against today's 0.92
 
 ## 6. Stretch — Phase 24 candidates
 
-Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes Akashik comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
+Once leaderboard-leading on retrieval, the next frontier is **hybrid retrieval + LLM extraction with SQuAD-F1 + LLM-judge as competing axes in the composite**. That makes Folklore comparable to mem0's 92.5 LoCoMo composite — different scoring philosophy, head-to-head. Phase 23.8 already laid the SQuAD-F1 foundation; Phase 24 adds the judge axis.
 
-Beyond that: **federated retrieval** (the unique Akashik bet) — measure how P2P-shared rooms across multiple peers lift recall on out-of-distribution questions, vs single-peer baselines. No public benchmark covers this today; we'd publish one.
+Beyond that: **federated retrieval** (the unique Folklore bet) — measure how P2P-shared rooms across multiple peers lift recall on out-of-distribution questions, vs single-peer baselines. No public benchmark covers this today; we'd publish one.
 
 ---
 
@@ -2049,13 +2049,13 @@ These are Phase 25+ but worth recording so they don't get lost:
 
 - **CI/CD checksum pinning** — `model-checksums.json` for the Xenova ONNX weights to prevent supply-chain attacks (the bge-base defective-conversion incident is the precedent).
 - **2-minute regression smoke bench** — small subset of LME-S / SciFact in CI so quality regressions can't ship silently.
-- **Bus factor on `akashik-rs`** — Rust ARM cross-compile is specialized knowledge; consider TypeScript-only fallback path.
+- **Bus factor on `folklore-rs`** — Rust ARM cross-compile is specialized knowledge; consider TypeScript-only fallback path.
 - **GDPR derived-data semantics** — contextual enrichment + contradiction chains create *derived* personal data that must map back to source turns for delete-by-user compliance.
 
 Source: `~/.claude-octopus/results/probe-synthesis-1779351019.md` — 6 multi-LLM probes synthesized by Gemini-2.5-Pro, 2026-05-21. Full transcript preserved in claude-octopus state.
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/research/performance-prediction-matrix.md" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' docs/research/performance-prediction-matrix.md" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 # Performance prediction matrix — hardware × rerank tier
 
@@ -2171,7 +2171,7 @@ Total wall-time: ~6 hours for all four, spread across Hetzner + Mac. Each one in
 
 The defensible positioning *isn't* "we beat agentmemory on R@5" — that depends on a tier they probably already use and we're catching up to. The defensible positioning is:
 
-> **Akashik is the only retrieval system that adapts to whatever hardware its user has.**
+> **Folklore is the only retrieval system that adapts to whatever hardware its user has.**
 > On a Raspberry Pi we run a fast cross-encoder and hit ~0.94.
 > On a M3 Max we run gpt-oss:20b listwise and hit ~0.98.
 > On a workstation we run anything that fits.
@@ -2182,13 +2182,13 @@ The defensible positioning *isn't* "we beat agentmemory on R@5" — that depends
 That's the story the matrix tells, and it's much stronger than "0.96 vs 0.952" leaderboard chasing.
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/research/energy-based-contradiction-detection.md" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' docs/research/energy-based-contradiction-detection.md" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 # Energy-Based Contradiction Detection
 
 **Status:** sketch (not committed to a phase yet)
 **Filed:** 2026-05-20
-**Author:** Akashik core
+**Author:** Folklore core
 **Supersedes:** the placeholder name "Phase 25" used in earlier conversation — descriptive title from here on
 
 A proposal for replacing the Jaccard-on-tokens contradiction filter in
@@ -2259,7 +2259,7 @@ contradicts(A, B) = argmax e(A, B) == contradict
 
 ### Model choice
 
-Three real options, ranked by what fits Akashik's CPU-only +
+Three real options, ranked by what fits Folklore's CPU-only +
 Xenova-ONNX constraint:
 
 | Model | Params | NLI accuracy (MNLI test) | Quantised ONNX | Notes |
@@ -2293,7 +2293,7 @@ if (verdict.label === 'contradiction' && verdict.confidence >= opts.contradictio
 ```
 
 The fall-back path (Jaccard) stays available behind an env flag:
-`AKASHIK_CONTRADICTION_BACKEND=jaccard|nli`. NLI is the default
+`FOLKLORE_CONTRADICTION_BACKEND=jaccard|nli`. NLI is the default
 once the model is downloaded; Jaccard is the offline-or-degraded
 fallback.
 
@@ -2310,7 +2310,7 @@ for months):
    surfaces two nodes from different peers with the same source URI
    but different content, that's a labelled contradiction pair (with
    the right resolution = whichever the user kept).
-2. **User feedback on `akashik contradictions resolve --prefer
+2. **User feedback on `folklore contradictions resolve --prefer
    peer|local`.** Each resolution is a labelled (A, B, winner) triple
    we can use for adapter fine-tuning via LoRA.
 3. **Synthetic adversarial pairs.** Generate paraphrase pairs +
@@ -2390,7 +2390,7 @@ The trigger conditions, any of:
 2. **Calibration.** DeBERTa-v3-small NLI is well-calibrated on MNLI;
    probably less so on memory-summary domain. May need a small held-
    out calibration set per-peer.
-3. **Cross-language.** Akashik is currently English-only on the
+3. **Cross-language.** Folklore is currently English-only on the
    write-gate side. DeBERTa-v3 is multilingual but NLI checkpoints
    are usually English. If we go multilingual, we need a different
    checkpoint or per-language model. Phase 25.1.
@@ -2408,10 +2408,10 @@ When the phase opens:
 codex
 The research docs confirm the pattern: a lot of material is valuable as historical evidence, but much of it is optimized for “beat mem0 on retrieval” rather than “prove a federated commons compounds.” I’m checking the tests and source paths that embody that old thesis so the cleanup recommendations hit code, not just prose.
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/bench-akashik-federation.test.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' tests/bench-folklore-federation.test.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
- * Bench — AkashikBench-F (federation-level compounding).
+ * Bench — FolkloreBench-F (federation-level compounding).
  *
  * The benchmark the octopus-discover Round 5 synthesis identified
  * as the only one that can falsify or validate the federated-
@@ -2439,7 +2439,7 @@ exec
  *
  * Environment contract (all required to run; otherwise skipped):
  *
- *   AKASHIK_BENCH_F=1
+ *   FOLKLORE_BENCH_F=1
  *     Master gate (off by default so CI stays fast).
  *
  *   LOCOMO_DIR=/path/to/locomo
@@ -2447,18 +2447,18 @@ exec
  *     `bench-locomo-real.test.ts`. Set to a directory that
  *     contains `locomo10.json`.
  *
- *   AKASHIK_BENCH_OUT=/path/to/run.jsonl   (optional)
+ *   FOLKLORE_BENCH_OUT=/path/to/run.jsonl   (optional)
  *     If set, suite appends one `BenchSuiteReport` JSON line.
  *
- *   AKASHIK_BENCH_PEERS=10           (default 10 — Round 5 spec)
- *   AKASHIK_BENCH_STEPS=2000         (default 2000)
- *   AKASHIK_BENCH_OFFLINE=0.2        (default 0.2 — Round 5 spec)
- *   AKASHIK_BENCH_ZIPF=1.0           (default 1.0)
- *   AKASHIK_BENCH_SEED=42            (default 42)
- *   AKASHIK_BENCH_SHARD=0.05         (default 0.05 — 50% web-only
+ *   FOLKLORE_BENCH_PEERS=10           (default 10 — Round 5 spec)
+ *   FOLKLORE_BENCH_STEPS=2000         (default 2000)
+ *   FOLKLORE_BENCH_OFFLINE=0.2        (default 0.2 — Round 5 spec)
+ *   FOLKLORE_BENCH_ZIPF=1.0           (default 1.0)
+ *   FOLKLORE_BENCH_SEED=42            (default 42)
+ *   FOLKLORE_BENCH_SHARD=0.05         (default 0.05 — 50% web-only
  *                                     at 10 peers; gives a strong
  *                                     compounding signal)
- *   AKASHIK_BENCH_WINDOW=100         (default 100)
+ *   FOLKLORE_BENCH_WINDOW=100         (default 100)
  *
  * Why a pure simulator instead of spinning up real peers:
  *
@@ -2544,9 +2544,9 @@ const buildCorpusFromLoCoMo = (locomoPath: string): SimCorpus => {
 
 // ─────────────── bench ─────────────
 
-test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60 * 60 * 1000 }, async (t) => {
-  if (process.env.AKASHIK_BENCH_F !== '1') {
-    t.skip('AKASHIK_BENCH_F not set — skipping AkashikBench-F');
+test('bench: FolkloreBench-F — federation compounding on LoCoMo', { timeout: 60 * 60 * 1000 }, async (t) => {
+  if (process.env.FOLKLORE_BENCH_F !== '1') {
+    t.skip('FOLKLORE_BENCH_F not set — skipping FolkloreBench-F');
     return;
   }
   const dir = process.env.LOCOMO_DIR;
@@ -2564,13 +2564,13 @@ test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60
   assert.ok(corpus.queries.length > 0, 'corpus has zero queries');
   assert.ok(corpus.allDocs.length > 0, 'corpus has zero docs');
 
-  const numPeers = Number(process.env.AKASHIK_BENCH_PEERS ?? 10);
-  const numSteps = Number(process.env.AKASHIK_BENCH_STEPS ?? 2000);
-  const offlineProbability = Number(process.env.AKASHIK_BENCH_OFFLINE ?? 0.2);
-  const zipfAlpha = Number(process.env.AKASHIK_BENCH_ZIPF ?? 1.0);
-  const seed = Number(process.env.AKASHIK_BENCH_SEED ?? 42);
-  const initialShardFraction = Number(process.env.AKASHIK_BENCH_SHARD ?? 0.05);
-  const windowSize = Number(process.env.AKASHIK_BENCH_WINDOW ?? 100);
+  const numPeers = Number(process.env.FOLKLORE_BENCH_PEERS ?? 10);
+  const numSteps = Number(process.env.FOLKLORE_BENCH_STEPS ?? 2000);
+  const offlineProbability = Number(process.env.FOLKLORE_BENCH_OFFLINE ?? 0.2);
+  const zipfAlpha = Number(process.env.FOLKLORE_BENCH_ZIPF ?? 1.0);
+  const seed = Number(process.env.FOLKLORE_BENCH_SEED ?? 42);
+  const initialShardFraction = Number(process.env.FOLKLORE_BENCH_SHARD ?? 0.05);
+  const windowSize = Number(process.env.FOLKLORE_BENCH_WINDOW ?? 100);
 
   // Disjointness invariant: numPeers × initialShardFraction ≤ 1.0
   // — otherwise the simulator's sequential sharding can't allocate
@@ -2581,7 +2581,7 @@ test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60
     console.warn(`  WARN: peers (${numPeers}) × shardFraction (${initialShardFraction}) = ${totalCoverage} > 1.0 — sharding will be uneven`);
   }
 
-  console.log(`AkashikBench-F: ${numPeers} peers × ${numSteps} steps · offline=${offlineProbability} · zipf=${zipfAlpha} · shard=${initialShardFraction} (coverage ${(totalCoverage * 100).toFixed(0)}%) · corpus=${corpus.queries.length} queries, ${corpus.allDocs.length} docs`);
+  console.log(`FolkloreBench-F: ${numPeers} peers × ${numSteps} steps · offline=${offlineProbability} · zipf=${zipfAlpha} · shard=${initialShardFraction} (coverage ${(totalCoverage * 100).toFixed(0)}%) · corpus=${corpus.queries.length} queries, ${corpus.allDocs.length} docs`);
 
   const t0 = performance.now();
   const result = runFederationSim(corpus, {
@@ -2615,7 +2615,7 @@ test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60
   console.log(`  elapsed: ${(elapsedMs).toFixed(1)} ms`);
 
   const report: BenchSuiteReport = {
-    suite: 'akashik-federation',
+    suite: 'folklore-federation',
     metrics: {
       webFallbackRateFirst: firstRate,
       webFallbackRateLast: lastRate,
@@ -2632,7 +2632,7 @@ test('bench: AkashikBench-F — federation compounding on LoCoMo', { timeout: 60
     },
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/bench-real.test.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' tests/bench-real.test.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
  * Real benchmarks — no synthetic fluff.
@@ -2856,211 +2856,211 @@ test('real-bench: IR metrics on labeled corpus (P@5, R@5, MRR, NDCG@5)', async (
     assert.ok(
 
 exec
-/bin/zsh -lc "rg -n \"process\\.env|AKASHIK_|skipIf|describe\\.skip|test\\.skip\" tests src | head -n 200" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "rg -n \"process\\.env|FOLKLORE_|skipIf|describe\\.skip|test\\.skip\" tests src | head -n 200" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
-tests/phase4.rooms.test.ts:143:    // Set AKASHIK_HOME so init writes to our tmp dir
-tests/phase4.rooms.test.ts:144:    const origHome = process.env.AKASHIK_HOME;
-tests/phase4.rooms.test.ts:145:    process.env.AKASHIK_HOME = tmp;
-tests/phase4.rooms.test.ts:172:    process.env.AKASHIK_HOME = origHome;
-src/domain/share-policy.ts:37: *   AKASHIK_REQUIRE_SIGNED_NODES=1
+tests/phase4.rooms.test.ts:143:    // Set FOLKLORE_HOME so init writes to our tmp dir
+tests/phase4.rooms.test.ts:144:    const origHome = process.env.FOLKLORE_HOME;
+tests/phase4.rooms.test.ts:145:    process.env.FOLKLORE_HOME = tmp;
+tests/phase4.rooms.test.ts:172:    process.env.FOLKLORE_HOME = origHome;
+src/domain/share-policy.ts:37: *   FOLKLORE_REQUIRE_SIGNED_NODES=1
 src/domain/share-policy.ts:42:  env: NodeJS.ProcessEnv = process.env,
-src/domain/share-policy.ts:44:  const v = env.AKASHIK_REQUIRE_SIGNED_NODES;
-src/daemon/ipc.ts:18: * Socket lives at `${AKASHIK_HOME}/daemon.sock` — Unix-only.
-src/domain/share-envelope.ts:22: * separate commit behind AKASHIK_REQUIRE_SIGNED_NODES so the
-tests/bench-tier-promotion.test.ts:121:  if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-tier-promotion.test.ts:122:    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
-src/daemon/consolidate-tick.ts:82: * Children inherit AKASHIK_HOME so they hit the same graph.
-src/daemon/consolidate-tick.ts:121:        env: { ...process.env, AKASHIK_HOME: homeDir },
-tests/bench-longmemeval-synth.test.ts:441:    if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-longmemeval-synth.test.ts:442:      appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
-src/domain/errors.ts:543:      return `rerank disabled (AKASHIK_RERANK is not set)`;
-src/domain/errors.ts:582:      return 'fix: check network access; the embedder downloads ~90 MB on first use. Re-run `akashik doctor` to retry, or set `AKASHIK_MODEL_CACHE` to a writable directory.';
-tests/contextual-enrich.test.ts:10: * Xenova model when AKASHIK_BENCH_PUBLIC_REAL is unset, so the
-tests/contextual-enrich.test.ts:132:test('isContextualEnrichEnabled: gated by AKASHIK_BENCH_CONTEXTUAL_ENRICH=1', () => {
-tests/contextual-enrich.test.ts:133:  const prior = process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH;
-tests/contextual-enrich.test.ts:135:    delete process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH;
-tests/contextual-enrich.test.ts:137:    process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH = '0';
-tests/contextual-enrich.test.ts:139:    process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH = '1';
-tests/contextual-enrich.test.ts:143:      delete process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH;
-tests/contextual-enrich.test.ts:145:      process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH = prior;
+src/domain/share-policy.ts:44:  const v = env.FOLKLORE_REQUIRE_SIGNED_NODES;
+src/daemon/ipc.ts:18: * Socket lives at `${FOLKLORE_HOME}/daemon.sock` — Unix-only.
+src/domain/share-envelope.ts:22: * separate commit behind FOLKLORE_REQUIRE_SIGNED_NODES so the
+tests/bench-tier-promotion.test.ts:121:  if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-tier-promotion.test.ts:122:    appendBenchReport(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
+src/daemon/consolidate-tick.ts:82: * Children inherit FOLKLORE_HOME so they hit the same graph.
+src/daemon/consolidate-tick.ts:121:        env: { ...process.env, FOLKLORE_HOME: homeDir },
+tests/bench-longmemeval-synth.test.ts:441:    if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-longmemeval-synth.test.ts:442:      appendBenchReport(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
+src/domain/errors.ts:543:      return `rerank disabled (FOLKLORE_RERANK is not set)`;
+src/domain/errors.ts:582:      return 'fix: check network access; the embedder downloads ~90 MB on first use. Re-run `folklore doctor` to retry, or set `FOLKLORE_MODEL_CACHE` to a writable directory.';
+tests/contextual-enrich.test.ts:10: * Xenova model when FOLKLORE_BENCH_PUBLIC_REAL is unset, so the
+tests/contextual-enrich.test.ts:132:test('isContextualEnrichEnabled: gated by FOLKLORE_BENCH_CONTEXTUAL_ENRICH=1', () => {
+tests/contextual-enrich.test.ts:133:  const prior = process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH;
+tests/contextual-enrich.test.ts:135:    delete process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH;
+tests/contextual-enrich.test.ts:137:    process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH = '0';
+tests/contextual-enrich.test.ts:139:    process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH = '1';
+tests/contextual-enrich.test.ts:143:      delete process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH;
+tests/contextual-enrich.test.ts:145:      process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH = prior;
 src/domain/rerank-tier.ts:6: * and the env-shape from process.env (via a thin reader port to keep
 src/domain/rerank-tier.ts:50: * Subset of `process.env` the picker needs. Pulled through a
-src/domain/rerank-tier.ts:63:   * Master kill-switch — `AKASHIK_RERANK=0` forces `none` tier
+src/domain/rerank-tier.ts:63:   * Master kill-switch — `FOLKLORE_RERANK=0` forces `none` tier
 src/domain/rerank-tier.ts:70:export const rerankEnvFromProcess = (env: NodeJS.ProcessEnv = process.env): RerankEnv => {
-src/domain/rerank-tier.ts:71:  const override = env.AKASHIK_RERANK_TIER as RerankTier | undefined;
-src/domain/rerank-tier.ts:77:    modelOverride: env.AKASHIK_RERANK_MODEL || undefined,
-src/domain/rerank-tier.ts:78:    latencyBudgetMs: env.AKASHIK_RERANK_LATENCY_MS
-src/domain/rerank-tier.ts:79:      ? Number(env.AKASHIK_RERANK_LATENCY_MS)
-src/domain/rerank-tier.ts:81:    headSizeOverride: env.AKASHIK_RERANK_HEAD
-src/domain/rerank-tier.ts:82:      ? Number(env.AKASHIK_RERANK_HEAD)
-src/domain/rerank-tier.ts:84:    disabled: env.AKASHIK_RERANK === '0',
-src/domain/rerank-tier.ts:127: *   1. Explicit env override (`AKASHIK_RERANK_TIER`)
-src/domain/rerank-tier.ts:128: *   2. Master kill-switch (`AKASHIK_RERANK=0`)
-src/domain/rerank-tier.ts:140:      reason: 'AKASHIK_RERANK=0 (master kill-switch)',
-tests/phase29.rust-retrieval-regression.test.ts:12: * This test is opt-in via `AKASHIK_RUST_BIN` env var or a
-tests/phase29.rust-retrieval-regression.test.ts:91:  const candidate = process.env.AKASHIK_RUST_BIN ?? repoBinaryPath();
-tests/phase29.rust-retrieval-regression.test.ts:99:      'akashik-rs embed_server binary not built — build with `cargo build --release --manifest-path akashik-rs/Cargo.toml` or set AKASHIK_RUST_BIN',
-src/infrastructure/summariser.ts:65: * via `AKASHIK_OLLAMA_MODEL` or the OllamaClientOptions.model.
-src/infrastructure/summariser.ts:127: *   1. `AKASHIK_SUMMARISER=fixture` → fixtureSummariser (tests)
-src/infrastructure/summariser.ts:128: *   2. `AKASHIK_SUMMARISER=ollama` OR ollama unset OR default →
-src/infrastructure/summariser.ts:142:  const choice = (process.env.AKASHIK_SUMMARISER ?? '').toLowerCase();
-src/infrastructure/summariser.ts:145:      fallback: process.env.AKASHIK_SUMMARISER_FIXTURE ?? 'fixture-summary',
-tests/bench-real.test.ts:235:    if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-real.test.ts:249:      appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
-src/infrastructure/ollama-client.ts:67: * override via AKASHIK_OLLAMA_URL at the runtime layer.
-src/infrastructure/ollama-client.ts:70:  const baseUrl = (opts.baseUrl ?? process.env.AKASHIK_OLLAMA_URL ?? DEFAULTS.baseUrl).replace(/\/$/, '');
-src/infrastructure/ollama-client.ts:71:  const defaultModel = opts.model ?? process.env.AKASHIK_OLLAMA_MODEL ?? DEFAULTS.model;
-src/domain/contextual-enrich.ts:130: * Env-gate helper. Returns `true` when `AKASHIK_BENCH_CONTEXTUAL_ENRICH=1`,
-src/domain/contextual-enrich.ts:135:  process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH === '1';
-src/cli/commands/onboard.ts:147:  const def = flags.home ?? process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
-src/cli/commands/onboard.ts:158:  process.env.AKASHIK_HOME = chosen;
-src/cli/commands/onboard.ts:162:      `Add to your shell profile so future sessions agree:\n  export AKASHIK_HOME="${chosen}"`,
-src/cli/commands/onboard.ts:197: * `AKASHIK_GITHUB_CLIENT_ID` configured see a clear "skip + how
-src/cli/commands/onboard.ts:204:  const clientId = process.env.AKASHIK_GITHUB_CLIENT_ID;
-src/cli/commands/onboard.ts:214:        '  2. export AKASHIK_GITHUB_CLIENT_ID="Iv1.<your_id>"',
-src/cli/commands/onboard.ts:323:      env: { ...process.env, AKASHIK_HOME: home },
-src/cli/commands/onboard.ts:367:        `The 'akashik trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - AKASHIK_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  akashik trigger --room sessions`,
+src/domain/rerank-tier.ts:71:  const override = env.FOLKLORE_RERANK_TIER as RerankTier | undefined;
+src/domain/rerank-tier.ts:77:    modelOverride: env.FOLKLORE_RERANK_MODEL || undefined,
+src/domain/rerank-tier.ts:78:    latencyBudgetMs: env.FOLKLORE_RERANK_LATENCY_MS
+src/domain/rerank-tier.ts:79:      ? Number(env.FOLKLORE_RERANK_LATENCY_MS)
+src/domain/rerank-tier.ts:81:    headSizeOverride: env.FOLKLORE_RERANK_HEAD
+src/domain/rerank-tier.ts:82:      ? Number(env.FOLKLORE_RERANK_HEAD)
+src/domain/rerank-tier.ts:84:    disabled: env.FOLKLORE_RERANK === '0',
+src/domain/rerank-tier.ts:127: *   1. Explicit env override (`FOLKLORE_RERANK_TIER`)
+src/domain/rerank-tier.ts:128: *   2. Master kill-switch (`FOLKLORE_RERANK=0`)
+src/domain/rerank-tier.ts:140:      reason: 'FOLKLORE_RERANK=0 (master kill-switch)',
+tests/phase29.rust-retrieval-regression.test.ts:12: * This test is opt-in via `FOLKLORE_RUST_BIN` env var or a
+tests/phase29.rust-retrieval-regression.test.ts:91:  const candidate = process.env.FOLKLORE_RUST_BIN ?? repoBinaryPath();
+tests/phase29.rust-retrieval-regression.test.ts:99:      'folklore-rs embed_server binary not built — build with `cargo build --release --manifest-path folklore-rs/Cargo.toml` or set FOLKLORE_RUST_BIN',
+src/infrastructure/summariser.ts:65: * via `FOLKLORE_OLLAMA_MODEL` or the OllamaClientOptions.model.
+src/infrastructure/summariser.ts:127: *   1. `FOLKLORE_SUMMARISER=fixture` → fixtureSummariser (tests)
+src/infrastructure/summariser.ts:128: *   2. `FOLKLORE_SUMMARISER=ollama` OR ollama unset OR default →
+src/infrastructure/summariser.ts:142:  const choice = (process.env.FOLKLORE_SUMMARISER ?? '').toLowerCase();
+src/infrastructure/summariser.ts:145:      fallback: process.env.FOLKLORE_SUMMARISER_FIXTURE ?? 'fixture-summary',
+tests/bench-real.test.ts:235:    if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-real.test.ts:249:      appendFileSync(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
+src/infrastructure/ollama-client.ts:67: * override via FOLKLORE_OLLAMA_URL at the runtime layer.
+src/infrastructure/ollama-client.ts:70:  const baseUrl = (opts.baseUrl ?? process.env.FOLKLORE_OLLAMA_URL ?? DEFAULTS.baseUrl).replace(/\/$/, '');
+src/infrastructure/ollama-client.ts:71:  const defaultModel = opts.model ?? process.env.FOLKLORE_OLLAMA_MODEL ?? DEFAULTS.model;
+src/domain/contextual-enrich.ts:130: * Env-gate helper. Returns `true` when `FOLKLORE_BENCH_CONTEXTUAL_ENRICH=1`,
+src/domain/contextual-enrich.ts:135:  process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH === '1';
+src/cli/commands/onboard.ts:147:  const def = flags.home ?? process.env.FOLKLORE_HOME ?? join(homedir(), '.folklore');
+src/cli/commands/onboard.ts:158:  process.env.FOLKLORE_HOME = chosen;
+src/cli/commands/onboard.ts:162:      `Add to your shell profile so future sessions agree:\n  export FOLKLORE_HOME="${chosen}"`,
+src/cli/commands/onboard.ts:197: * `FOLKLORE_GITHUB_CLIENT_ID` configured see a clear "skip + how
+src/cli/commands/onboard.ts:204:  const clientId = process.env.FOLKLORE_GITHUB_CLIENT_ID;
+src/cli/commands/onboard.ts:214:        '  2. export FOLKLORE_GITHUB_CLIENT_ID="Iv1.<your_id>"',
+src/cli/commands/onboard.ts:323:      env: { ...process.env, FOLKLORE_HOME: home },
+src/cli/commands/onboard.ts:367:        `The 'folklore trigger --room sessions' subprocess exited before the\nwizard's tail window finished. Common causes:\n  - FOLKLORE_HOME mismatch (chosen home: ${home})\n  - claude_sessions source not provisioned (daemon will create it on next boot)\n  - first-run schema migration\n\nRetry manually with:\n  folklore trigger --room sessions`,
 src/cli/commands/onboard.ts:390:    { detached: true, stdio: 'ignore', env: { ...process.env } },
-src/cli/commands/onboard.ts:463:  --home DIR      data home (graph + vectors + model cache); also via $AKASHIK_HOME
-src/cli/commands/onboard.ts:536:      `  · Everything stays under ${process.env.AKASHIK_HOME}`,
-tests/bench-standard.test.ts:225:    if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-standard.test.ts:242:      appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/bench-write-gate.test.ts:161:  if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-write-gate.test.ts:162:    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/share-policy.test.ts:10: *   - sharePolicyModeFromEnv reads AKASHIK_REQUIRE_SIGNED_NODES
-tests/share-policy.test.ts:69:  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '' }), 'soft');
-tests/share-policy.test.ts:70:  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '0' }), 'soft');
-tests/share-policy.test.ts:74:  assert.equal(sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: '1' }), 'strict');
-tests/share-policy.test.ts:76:    sharePolicyModeFromEnv({ AKASHIK_REQUIRE_SIGNED_NODES: 'true' }),
-tests/bench-longmemeval-real.test.ts:26: *   AKASHIK_BENCH_PUBLIC_REAL=1
-tests/bench-longmemeval-real.test.ts:35: *   AKASHIK_BENCH_OUT=/path/to/report.jsonl   (optional)
-tests/bench-longmemeval-real.test.ts:103:  if (process.env.AKASHIK_BENCH_PUBLIC_REAL !== '1') {
-tests/bench-longmemeval-real.test.ts:104:    t.skip('AKASHIK_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
+src/cli/commands/onboard.ts:463:  --home DIR      data home (graph + vectors + model cache); also via $FOLKLORE_HOME
+src/cli/commands/onboard.ts:536:      `  · Everything stays under ${process.env.FOLKLORE_HOME}`,
+tests/bench-standard.test.ts:225:    if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-standard.test.ts:242:      appendFileSync(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/bench-write-gate.test.ts:161:  if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-write-gate.test.ts:162:    appendBenchReport(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/share-policy.test.ts:10: *   - sharePolicyModeFromEnv reads FOLKLORE_REQUIRE_SIGNED_NODES
+tests/share-policy.test.ts:69:  assert.equal(sharePolicyModeFromEnv({ FOLKLORE_REQUIRE_SIGNED_NODES: '' }), 'soft');
+tests/share-policy.test.ts:70:  assert.equal(sharePolicyModeFromEnv({ FOLKLORE_REQUIRE_SIGNED_NODES: '0' }), 'soft');
+tests/share-policy.test.ts:74:  assert.equal(sharePolicyModeFromEnv({ FOLKLORE_REQUIRE_SIGNED_NODES: '1' }), 'strict');
+tests/share-policy.test.ts:76:    sharePolicyModeFromEnv({ FOLKLORE_REQUIRE_SIGNED_NODES: 'true' }),
+tests/bench-longmemeval-real.test.ts:26: *   FOLKLORE_BENCH_PUBLIC_REAL=1
+tests/bench-longmemeval-real.test.ts:35: *   FOLKLORE_BENCH_OUT=/path/to/report.jsonl   (optional)
+tests/bench-longmemeval-real.test.ts:103:  if (process.env.FOLKLORE_BENCH_PUBLIC_REAL !== '1') {
+tests/bench-longmemeval-real.test.ts:104:    t.skip('FOLKLORE_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
 tests/bench-longmemeval-real.test.ts:114:  const explicitFile = process.env.LONGMEMEVAL_FILE;
 tests/bench-longmemeval-real.test.ts:115:  const dir = process.env.LONGMEMEVAL_DIR;
-tests/bench-longmemeval-real.test.ts:140:  // Set `AKASHIK_RERANK=1` to activate; `AKASHIK_RERANK_MODEL`
-tests/bench-longmemeval-real.test.ts:149:  // `AKASHIK_LLM_RERANK=1`. When both are set, LISTWISE WINS
-tests/bench-longmemeval-real.test.ts:153:  const RERANK_HEAD = Number(process.env.AKASHIK_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
-tests/bench-longmemeval-real.test.ts:163:  const KMAX = Number(process.env.AKASHIK_BENCH_LME_KMAX ?? 50);
-tests/bench-longmemeval-real.test.ts:168:    console.log(`  cross-encoder rerank ON · model=${process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
-tests/bench-longmemeval-real.test.ts:172:  // When `AKASHIK_BENCH_CONTEXTUAL_ENRICH=1`, prepend
-tests/bench-longmemeval-real.test.ts:315:    // `AKASHIK_BENCH_PROGRESS_EVERY_N` (default 25). Live tails
-tests/bench-longmemeval-real.test.ts:320:    const PROGRESS_EVERY_N = Number(process.env.AKASHIK_BENCH_PROGRESS_EVERY_N ?? 25);
-tests/bench-longmemeval-real.test.ts:379:    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix)' : 'off'}. T1 diagnostic: R@5/10/20/50 from a single KMAX=${KMAX} retrieval pass. Replaces the 20-session synthetic proxy.`,
-tests/bench-longmemeval-real.test.ts:382:  if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-longmemeval-real.test.ts:383:    appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/rerank-tier.test.ts:61:test('pickRerankTier: AKASHIK_RERANK=0 forces none on any hardware', () => {
-tests/rerank-tier.test.ts:78:  const env = rerankEnvFromProcess({ AKASHIK_RERANK_TIER: 'bogus' });
-tests/rerank-tier.test.ts:152:    AKASHIK_RERANK_TIER: 'llm-listwise-small',
-tests/rerank-tier.test.ts:153:    AKASHIK_RERANK_MODEL: 'qwen2.5:3b',
-tests/rerank-tier.test.ts:154:    AKASHIK_RERANK_LATENCY_MS: '2500',
-tests/rerank-tier.test.ts:155:    AKASHIK_RERANK_HEAD: '40',
-tests/rerank-tier.test.ts:156:    AKASHIK_RERANK: '1',
-tests/bench-locomo-real.test.ts:23: *   AKASHIK_BENCH_LLM_EXTRACTOR=1 swaps the containment metric
-tests/bench-locomo-real.test.ts:31: *   AKASHIK_BENCH_PUBLIC_REAL=1
-tests/bench-locomo-real.test.ts:41: *   AKASHIK_BENCH_OUT=/path/to/report.jsonl   (optional)
-tests/bench-locomo-real.test.ts:222:  if (process.env.AKASHIK_BENCH_PUBLIC_REAL !== '1') {
-tests/bench-locomo-real.test.ts:223:    t.skip('AKASHIK_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
+tests/bench-longmemeval-real.test.ts:140:  // Set `FOLKLORE_RERANK=1` to activate; `FOLKLORE_RERANK_MODEL`
+tests/bench-longmemeval-real.test.ts:149:  // `FOLKLORE_LLM_RERANK=1`. When both are set, LISTWISE WINS
+tests/bench-longmemeval-real.test.ts:153:  const RERANK_HEAD = Number(process.env.FOLKLORE_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
+tests/bench-longmemeval-real.test.ts:163:  const KMAX = Number(process.env.FOLKLORE_BENCH_LME_KMAX ?? 50);
+tests/bench-longmemeval-real.test.ts:168:    console.log(`  cross-encoder rerank ON · model=${process.env.FOLKLORE_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
+tests/bench-longmemeval-real.test.ts:172:  // When `FOLKLORE_BENCH_CONTEXTUAL_ENRICH=1`, prepend
+tests/bench-longmemeval-real.test.ts:315:    // `FOLKLORE_BENCH_PROGRESS_EVERY_N` (default 25). Live tails
+tests/bench-longmemeval-real.test.ts:320:    const PROGRESS_EVERY_N = Number(process.env.FOLKLORE_BENCH_PROGRESS_EVERY_N ?? 25);
+tests/bench-longmemeval-real.test.ts:379:    notes: `Real LongMemEval-S split=${splitName} — ${dataset.length} questions × per-question haystacks via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Source: ${datasetPath}. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.FOLKLORE_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix)' : 'off'}. T1 diagnostic: R@5/10/20/50 from a single KMAX=${KMAX} retrieval pass. Replaces the 20-session synthetic proxy.`,
+tests/bench-longmemeval-real.test.ts:382:  if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-longmemeval-real.test.ts:383:    appendFileSync(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/rerank-tier.test.ts:61:test('pickRerankTier: FOLKLORE_RERANK=0 forces none on any hardware', () => {
+tests/rerank-tier.test.ts:78:  const env = rerankEnvFromProcess({ FOLKLORE_RERANK_TIER: 'bogus' });
+tests/rerank-tier.test.ts:152:    FOLKLORE_RERANK_TIER: 'llm-listwise-small',
+tests/rerank-tier.test.ts:153:    FOLKLORE_RERANK_MODEL: 'qwen2.5:3b',
+tests/rerank-tier.test.ts:154:    FOLKLORE_RERANK_LATENCY_MS: '2500',
+tests/rerank-tier.test.ts:155:    FOLKLORE_RERANK_HEAD: '40',
+tests/rerank-tier.test.ts:156:    FOLKLORE_RERANK: '1',
+tests/bench-locomo-real.test.ts:23: *   FOLKLORE_BENCH_LLM_EXTRACTOR=1 swaps the containment metric
+tests/bench-locomo-real.test.ts:31: *   FOLKLORE_BENCH_PUBLIC_REAL=1
+tests/bench-locomo-real.test.ts:41: *   FOLKLORE_BENCH_OUT=/path/to/report.jsonl   (optional)
+tests/bench-locomo-real.test.ts:222:  if (process.env.FOLKLORE_BENCH_PUBLIC_REAL !== '1') {
+tests/bench-locomo-real.test.ts:223:    t.skip('FOLKLORE_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
 tests/bench-locomo-real.test.ts:226:  const dir = process.env.LOCOMO_DIR;
-tests/bench-locomo-real.test.ts:236:  const useLlmExtractor = process.env.AKASHIK_BENCH_LLM_EXTRACTOR === '1';
-tests/bench-locomo-real.test.ts:239:    t.skip('AKASHIK_BENCH_LLM_EXTRACTOR=1 but no extractor resolvable from env (set AKASHIK_OLLAMA_URL or AKASHIK_BENCH_LLM_EXTRACTOR_FIXTURE=1)');
-tests/bench-locomo-real.test.ts:260:  const RERANK_HEAD = Number(process.env.AKASHIK_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
-tests/bench-locomo-real.test.ts:267:  const KMAX = Number(process.env.AKASHIK_BENCH_LOCOMO_KMAX ?? 50);
-tests/bench-locomo-real.test.ts:272:    console.log(`  cross-encoder rerank ON · model=${process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
-tests/bench-locomo-real.test.ts:415:        // Tunable via `AKASHIK_BENCH_PROGRESS_EVERY_N` (default 25).
-tests/bench-locomo-real.test.ts:416:        const PROGRESS_EVERY_N = Number(process.env.AKASHIK_BENCH_PROGRESS_EVERY_N ?? 25);
-tests/bench-locomo-real.test.ts:474:  // when the extractor was wired in (`AKASHIK_BENCH_LLM_EXTRACTOR=1`).
-tests/bench-locomo-real.test.ts:536:    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix, scoring on raw text)' : 'off'}. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
-tests/bench-locomo-real.test.ts:539:  if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-locomo-real.test.ts:540:    appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/bench-locomo-real.test.ts:565:  // AKASHIK_BENCH_LLM_EXTRACTOR=1 path (squadF1 metric, reported
-tests/error-hints.test.ts:56:  assert.match(h!, /AKASHIK_MODEL_CACHE/);
-tests/bench-locomo-synth.test.ts:44: *   set `AKASHIK_BENCH_LLM_EXTRACTOR=1` to swap the
-tests/bench-locomo-synth.test.ts:479:    if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-locomo-synth.test.ts:480:      appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/bench-scifact-real.test.ts:17: *   AKASHIK_BENCH_PUBLIC_REAL=1
-tests/bench-scifact-real.test.ts:27: *   AKASHIK_BENCH_OUT=/path/to/report.jsonl   (optional)
-tests/bench-scifact-real.test.ts:107:  if (process.env.AKASHIK_BENCH_PUBLIC_REAL !== '1') {
-tests/bench-scifact-real.test.ts:108:    t.skip('AKASHIK_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
+tests/bench-locomo-real.test.ts:236:  const useLlmExtractor = process.env.FOLKLORE_BENCH_LLM_EXTRACTOR === '1';
+tests/bench-locomo-real.test.ts:239:    t.skip('FOLKLORE_BENCH_LLM_EXTRACTOR=1 but no extractor resolvable from env (set FOLKLORE_OLLAMA_URL or FOLKLORE_BENCH_LLM_EXTRACTOR_FIXTURE=1)');
+tests/bench-locomo-real.test.ts:260:  const RERANK_HEAD = Number(process.env.FOLKLORE_RERANK_HEAD ?? (listwiseScorer ? 30 : 20));
+tests/bench-locomo-real.test.ts:267:  const KMAX = Number(process.env.FOLKLORE_BENCH_LOCOMO_KMAX ?? 50);
+tests/bench-locomo-real.test.ts:272:    console.log(`  cross-encoder rerank ON · model=${process.env.FOLKLORE_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → final K=${K}`);
+tests/bench-locomo-real.test.ts:415:        // Tunable via `FOLKLORE_BENCH_PROGRESS_EVERY_N` (default 25).
+tests/bench-locomo-real.test.ts:416:        const PROGRESS_EVERY_N = Number(process.env.FOLKLORE_BENCH_PROGRESS_EVERY_N ?? 25);
+tests/bench-locomo-real.test.ts:474:  // when the extractor was wired in (`FOLKLORE_BENCH_LLM_EXTRACTOR=1`).
+tests/bench-locomo-real.test.ts:536:    notes: `Real LoCoMo factual subset (categories 1/2/3) — ${dataset.length} conversations × ${totalQ} questions via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Harmonic mean of evidence-session recall and answer-token containment in top-${K} retrieved sessions. Rerank=${listwiseScorer ? `llm-listwise:${listwiseScorer.model}` : (reranker ? (process.env.FOLKLORE_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off')} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}, final K=${K}). Enrich=${enrichOn ? 'on (date+session+participants prefix, scoring on raw text)' : 'off'}. Replaces the 4-persona synthetic proxy.${extractor ? ` LLM extractor: ${extractor.model} (SQuAD-F1 / EM reported alongside).` : ''}`,
+tests/bench-locomo-real.test.ts:539:  if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-locomo-real.test.ts:540:    appendFileSync(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/bench-locomo-real.test.ts:565:  // FOLKLORE_BENCH_LLM_EXTRACTOR=1 path (squadF1 metric, reported
+tests/error-hints.test.ts:56:  assert.match(h!, /FOLKLORE_MODEL_CACHE/);
+tests/bench-locomo-synth.test.ts:44: *   set `FOLKLORE_BENCH_LLM_EXTRACTOR=1` to swap the
+tests/bench-locomo-synth.test.ts:479:    if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-locomo-synth.test.ts:480:      appendFileSync(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/bench-scifact-real.test.ts:17: *   FOLKLORE_BENCH_PUBLIC_REAL=1
+tests/bench-scifact-real.test.ts:27: *   FOLKLORE_BENCH_OUT=/path/to/report.jsonl   (optional)
+tests/bench-scifact-real.test.ts:107:  if (process.env.FOLKLORE_BENCH_PUBLIC_REAL !== '1') {
+tests/bench-scifact-real.test.ts:108:    t.skip('FOLKLORE_BENCH_PUBLIC_REAL not set — skipping real-corpus suite');
 tests/bench-scifact-real.test.ts:111:  const dir = process.env.BEIR_SCIFACT_DIR;
-tests/bench-scifact-real.test.ts:152:    // Activated via AKASHIK_RERANK=1; model selectable via
-tests/bench-scifact-real.test.ts:153:    // AKASHIK_RERANK_MODEL (default Xenova/ms-marco-MiniLM-L-6-v2,
-tests/bench-scifact-real.test.ts:160:      console.log(`  cross-encoder rerank ON · model=${process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → NDCG@${K}`);
-tests/bench-scifact-real.test.ts:247:      notes: `Real BEIR SciFact — ${corpus.length} docs × ${queries.length} test queries via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Rerank=${reranker ? (process.env.AKASHIK_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}). Replaces the 30-doc labeled proxy.`,
-tests/bench-scifact-real.test.ts:250:    if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-scifact-real.test.ts:251:      appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/summariser.test.ts:9: *   - summariserFromEnv() respects AKASHIK_SUMMARISER=fixture
+tests/bench-scifact-real.test.ts:152:    // Activated via FOLKLORE_RERANK=1; model selectable via
+tests/bench-scifact-real.test.ts:153:    // FOLKLORE_RERANK_MODEL (default Xenova/ms-marco-MiniLM-L-6-v2,
+tests/bench-scifact-real.test.ts:160:      console.log(`  cross-encoder rerank ON · model=${process.env.FOLKLORE_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2'} · over-retrieve k=${overRetrieveK} → rerank top-${RERANK_HEAD} → NDCG@${K}`);
+tests/bench-scifact-real.test.ts:247:      notes: `Real BEIR SciFact — ${corpus.length} docs × ${queries.length} test queries via Xenova all-MiniLM-L6-v2 (fp32, mean-pooled, 512 max_len). Rerank=${reranker ? (process.env.FOLKLORE_RERANK_MODEL ?? 'Xenova/ms-marco-MiniLM-L-6-v2') : 'off'} (over-retrieve k=${overRetrieveK}, head=${RERANK_HEAD}). Replaces the 30-doc labeled proxy.`,
+tests/bench-scifact-real.test.ts:250:    if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-scifact-real.test.ts:251:      appendFileSync(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/summariser.test.ts:9: *   - summariserFromEnv() respects FOLKLORE_SUMMARISER=fixture
 tests/summariser.test.ts:108:    saved[k] = process.env[k];
 tests/summariser.test.ts:109:    if (env[k] === undefined) delete process.env[k];
 tests/summariser.test.ts:110:    else process.env[k] = env[k];
 tests/summariser.test.ts:116:      if (saved[k] === undefined) delete process.env[k];
 tests/summariser.test.ts:117:      else process.env[k] = saved[k];
-tests/summariser.test.ts:122:test('summariserFromEnv: AKASHIK_SUMMARISER=fixture → fixture adapter', async () => {
-tests/summariser.test.ts:124:    { AKASHIK_SUMMARISER: 'fixture', AKASHIK_SUMMARISER_FIXTURE: 'env-default' },
-tests/summariser.test.ts:135:  await withEnv({ AKASHIK_SUMMARISER: undefined }, () => {
-tests/summariser.test.ts:149:  await withEnv({ AKASHIK_SUMMARISER: undefined }, () => {
-tests/phase18.production-net.test.ts:12: * `AKASHIK_SKIP_SLOW=1`. Unit + structural tiers run always.
-tests/phase18.production-net.test.ts:580:// Slow: opt-out via AKASHIK_SKIP_SLOW=1
-tests/phase18.production-net.test.ts:596:const SKIP_SLOW = process.env['AKASHIK_SKIP_SLOW'] === '1';
-tests/bench-auto-forget.test.ts:185:  if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-auto-forget.test.ts:186:    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
-src/application/federated-search.ts:328:    || process.env.AKASHIK_SEARCH_GOSSIP === '0';
-tests/bench-retention-band.test.ts:130:  if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-retention-band.test.ts:131:    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/bench-akashik-federation.test.ts:38: *   AKASHIK_BENCH_OUT=/path/to/run.jsonl   (optional)
-tests/bench-akashik-federation.test.ts:136:  if (process.env.AKASHIK_BENCH_F !== '1') {
-tests/bench-akashik-federation.test.ts:140:  const dir = process.env.LOCOMO_DIR;
-tests/bench-akashik-federation.test.ts:155:  const numPeers = Number(process.env.AKASHIK_BENCH_PEERS ?? 10);
-tests/bench-akashik-federation.test.ts:156:  const numSteps = Number(process.env.AKASHIK_BENCH_STEPS ?? 2000);
-tests/bench-akashik-federation.test.ts:157:  const offlineProbability = Number(process.env.AKASHIK_BENCH_OFFLINE ?? 0.2);
-tests/bench-akashik-federation.test.ts:158:  const zipfAlpha = Number(process.env.AKASHIK_BENCH_ZIPF ?? 1.0);
-tests/bench-akashik-federation.test.ts:159:  const seed = Number(process.env.AKASHIK_BENCH_SEED ?? 42);
-tests/bench-akashik-federation.test.ts:160:  const initialShardFraction = Number(process.env.AKASHIK_BENCH_SHARD ?? 0.05);
-tests/bench-akashik-federation.test.ts:161:  const windowSize = Number(process.env.AKASHIK_BENCH_WINDOW ?? 100);
-tests/bench-akashik-federation.test.ts:230:  if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-akashik-federation.test.ts:231:    appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
-tests/llm-extractor.test.ts:11: * when `AKASHIK_BENCH_LLM_EXTRACTOR=1` and a reachable Ollama is
-tests/phase16.share-crdt.test.ts:68:/** Create a hermetic tmp dir. Caller must set/restore AKASHIK_HOME and rmSync on teardown. */
-tests/bench-beta-calibration.test.ts:99:  if (process.env.AKASHIK_BENCH_OUT) {
-tests/bench-beta-calibration.test.ts:100:    appendBenchReport(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/summariser.test.ts:122:test('summariserFromEnv: FOLKLORE_SUMMARISER=fixture → fixture adapter', async () => {
+tests/summariser.test.ts:124:    { FOLKLORE_SUMMARISER: 'fixture', FOLKLORE_SUMMARISER_FIXTURE: 'env-default' },
+tests/summariser.test.ts:135:  await withEnv({ FOLKLORE_SUMMARISER: undefined }, () => {
+tests/summariser.test.ts:149:  await withEnv({ FOLKLORE_SUMMARISER: undefined }, () => {
+tests/phase18.production-net.test.ts:12: * `FOLKLORE_SKIP_SLOW=1`. Unit + structural tiers run always.
+tests/phase18.production-net.test.ts:580:// Slow: opt-out via FOLKLORE_SKIP_SLOW=1
+tests/phase18.production-net.test.ts:596:const SKIP_SLOW = process.env['FOLKLORE_SKIP_SLOW'] === '1';
+tests/bench-auto-forget.test.ts:185:  if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-auto-forget.test.ts:186:    appendBenchReport(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
+src/application/federated-search.ts:328:    || process.env.FOLKLORE_SEARCH_GOSSIP === '0';
+tests/bench-retention-band.test.ts:130:  if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-retention-band.test.ts:131:    appendBenchReport(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/bench-folklore-federation.test.ts:38: *   FOLKLORE_BENCH_OUT=/path/to/run.jsonl   (optional)
+tests/bench-folklore-federation.test.ts:136:  if (process.env.FOLKLORE_BENCH_F !== '1') {
+tests/bench-folklore-federation.test.ts:140:  const dir = process.env.LOCOMO_DIR;
+tests/bench-folklore-federation.test.ts:155:  const numPeers = Number(process.env.FOLKLORE_BENCH_PEERS ?? 10);
+tests/bench-folklore-federation.test.ts:156:  const numSteps = Number(process.env.FOLKLORE_BENCH_STEPS ?? 2000);
+tests/bench-folklore-federation.test.ts:157:  const offlineProbability = Number(process.env.FOLKLORE_BENCH_OFFLINE ?? 0.2);
+tests/bench-folklore-federation.test.ts:158:  const zipfAlpha = Number(process.env.FOLKLORE_BENCH_ZIPF ?? 1.0);
+tests/bench-folklore-federation.test.ts:159:  const seed = Number(process.env.FOLKLORE_BENCH_SEED ?? 42);
+tests/bench-folklore-federation.test.ts:160:  const initialShardFraction = Number(process.env.FOLKLORE_BENCH_SHARD ?? 0.05);
+tests/bench-folklore-federation.test.ts:161:  const windowSize = Number(process.env.FOLKLORE_BENCH_WINDOW ?? 100);
+tests/bench-folklore-federation.test.ts:230:  if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-folklore-federation.test.ts:231:    appendFileSync(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
+tests/llm-extractor.test.ts:11: * when `FOLKLORE_BENCH_LLM_EXTRACTOR=1` and a reachable Ollama is
+tests/phase16.share-crdt.test.ts:68:/** Create a hermetic tmp dir. Caller must set/restore FOLKLORE_HOME and rmSync on teardown. */
+tests/bench-beta-calibration.test.ts:99:  if (process.env.FOLKLORE_BENCH_OUT) {
+tests/bench-beta-calibration.test.ts:100:    appendBenchReport(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
 src/cli/commands/daemon.ts:38:      env: { ...process.env },
-src/cli/commands/daemon.ts:183:  // $AKASHIK_HOME/daemon.sock, 0600.
-src/cli/commands/metrics.ts:24:  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
-src/cli/commands/metrics.ts:68: *   - AKASHIK_DENY_ON_TERMINAL=0 (soft persuasion only): some
-src/cli/commands/metrics.ts:71: *   - AKASHIK_DENY_ON_TERMINAL=1 (hard deny): bypass should
-src/cli/commands/metrics.ts:129:    console.log(`  off (AKASHIK_DENY_ON_TERMINAL=0 is the default) or the harness`);
-src/cli/commands/doctor.ts:51:  return process.env.AKASHIK_HOME || join(homedir(), '.akashik');
-src/infrastructure/rust-retrieval.ts:120:   * `$AKASHIK_RUST_BIN` env var or this option.
-src/infrastructure/rust-retrieval.ts:128:  const envBin = process.env.AKASHIK_RUST_BIN;
-src/cli/commands/bench.ts:5: * `AKASHIK_BENCH_OUT` set so each suite appends a
-src/cli/commands/bench.ts:56: * the Hetzner box (with `AKASHIK_BENCH_PUBLIC_REAL=1` and the
-src/cli/commands/bench.ts:101:          env: { ...process.env, AKASHIK_BENCH_OUT: outFile },
-src/cli/commands/peers-rep.ts:34:  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
-src/cli/commands/entity.ts:8: * The registry lives at $AKASHIK_HOME/entities.json. It's the
+src/cli/commands/daemon.ts:183:  // $FOLKLORE_HOME/daemon.sock, 0600.
+src/cli/commands/metrics.ts:24:  process.env.FOLKLORE_HOME ?? join(homedir(), '.folklore');
+src/cli/commands/metrics.ts:68: *   - FOLKLORE_DENY_ON_TERMINAL=0 (soft persuasion only): some
+src/cli/commands/metrics.ts:71: *   - FOLKLORE_DENY_ON_TERMINAL=1 (hard deny): bypass should
+src/cli/commands/metrics.ts:129:    console.log(`  off (FOLKLORE_DENY_ON_TERMINAL=0 is the default) or the harness`);
+src/cli/commands/doctor.ts:51:  return process.env.FOLKLORE_HOME || join(homedir(), '.folklore');
+src/infrastructure/rust-retrieval.ts:120:   * `$FOLKLORE_RUST_BIN` env var or this option.
+src/infrastructure/rust-retrieval.ts:128:  const envBin = process.env.FOLKLORE_RUST_BIN;
+src/cli/commands/bench.ts:5: * `FOLKLORE_BENCH_OUT` set so each suite appends a
+src/cli/commands/bench.ts:56: * the Hetzner box (with `FOLKLORE_BENCH_PUBLIC_REAL=1` and the
+src/cli/commands/bench.ts:101:          env: { ...process.env, FOLKLORE_BENCH_OUT: outFile },
+src/cli/commands/peers-rep.ts:34:  process.env.FOLKLORE_HOME ?? join(homedir(), '.folklore');
+src/cli/commands/entity.ts:8: * The registry lives at $FOLKLORE_HOME/entities.json. It's the
 src/cli/commands/publish.ts:19:  const clientId = process.env.X_CLIENT_ID;
 src/cli/commands/publish.ts:23:    clientSecret: process.env.X_CLIENT_SECRET,
-src/cli/runtime.ts:37:  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
-src/cli/runtime.ts:41: *   AKASHIK_VECTOR_QUANTIZATION=binary-512   → returns 512
-src/cli/runtime.ts:42: *   AKASHIK_VECTOR_QUANTIZATION=binary-256   → returns 256
-src/cli/runtime.ts:53:  const raw = process.env.AKASHIK_VECTOR_QUANTIZATION;
-src/cli/runtime.ts:65: * Backends (selected by `AKASHIK_EMBEDDER_BACKEND`):
-src/cli/runtime.ts:75: *   AKASHIK_EMBEDDER_MODEL   — 'minilm' | 'nomic' | 'bge-base'
-src/cli/runtime.ts:76: *   AKASHIK_RUST_BIN         — path to embed_server binary
-src/cli/runtime.ts:82:  const backend = (process.env.AKASHIK_EMBEDDER_BACKEND ?? 'xenova').toLowerCase();
-src/cli/runtime.ts:91:  // Opt-out via AKASHIK_EMBEDDER_BATCH=off for the serial path
-src/cli/runtime.ts:94:  const batchingEnabled = (process.env.AKASHIK_EMBEDDER_BATCH ?? 'on').toLowerCase() !== 'off';
-src/cli/runtime.ts:95:  const batchSize = parseInt(process.env.AKASHIK_EMBEDDER_BATCH_SIZE ?? '32', 10) || 32;
-src/cli/runtime.ts:96:  const batchWaitMs = parseInt(process.env.AKASHIK_EMBEDDER_BATCH_MS ?? '20', 10) || 20;
-src/cli/runtime.ts:100:      const model = (process.env.AKASHIK_EMBEDDER_MODEL ?? 'minilm').toLowerCase();
-src/cli/runtime.ts:105:          `AKASHIK_EMBEDDER_MODEL='${model}' — supported: minilm, nomic, bge-base`,
-src/cli/runtime.ts:201:        binaryOnly: (process.env.AKASHIK_VECTOR_FP32_DROP ?? '').toLowerCase() === 'true',
-src/cli/commands/consolidate.ts:63:  let model = process.env.AKASHIK_OLLAMA_MODEL ?? 'qwen2.5:1.5b';
-src/cli/commands/consolidate.ts:243:      console.error(`  start it with: ollama serve  (or configure AKASHIK_OLLAMA_URL)`);
-src/cli/commands/consolidate.ts:246:    console.error(`consolidate: ollama ${ping.value} @ ${process.env.AKASHIK_OLLAMA_URL ?? 'http://localhost:11434'}, model=${parsed.model}`);
-src/cli/commands/consolidate.ts:449:  console.log('Set AKASHIK_OLLAMA_URL / AKASHIK_OLLAMA_MODEL to override.');
+src/cli/runtime.ts:37:  process.env.FOLKLORE_HOME ?? join(homedir(), '.folklore');
+src/cli/runtime.ts:41: *   FOLKLORE_VECTOR_QUANTIZATION=binary-512   → returns 512
+src/cli/runtime.ts:42: *   FOLKLORE_VECTOR_QUANTIZATION=binary-256   → returns 256
+src/cli/runtime.ts:53:  const raw = process.env.FOLKLORE_VECTOR_QUANTIZATION;
+src/cli/runtime.ts:65: * Backends (selected by `FOLKLORE_EMBEDDER_BACKEND`):
+src/cli/runtime.ts:75: *   FOLKLORE_EMBEDDER_MODEL   — 'minilm' | 'nomic' | 'bge-base'
+src/cli/runtime.ts:76: *   FOLKLORE_RUST_BIN         — path to embed_server binary
+src/cli/runtime.ts:82:  const backend = (process.env.FOLKLORE_EMBEDDER_BACKEND ?? 'xenova').toLowerCase();
+src/cli/runtime.ts:91:  // Opt-out via FOLKLORE_EMBEDDER_BATCH=off for the serial path
+src/cli/runtime.ts:94:  const batchingEnabled = (process.env.FOLKLORE_EMBEDDER_BATCH ?? 'on').toLowerCase() !== 'off';
+src/cli/runtime.ts:95:  const batchSize = parseInt(process.env.FOLKLORE_EMBEDDER_BATCH_SIZE ?? '32', 10) || 32;
+src/cli/runtime.ts:96:  const batchWaitMs = parseInt(process.env.FOLKLORE_EMBEDDER_BATCH_MS ?? '20', 10) || 20;
+src/cli/runtime.ts:100:      const model = (process.env.FOLKLORE_EMBEDDER_MODEL ?? 'minilm').toLowerCase();
+src/cli/runtime.ts:105:          `FOLKLORE_EMBEDDER_MODEL='${model}' — supported: minilm, nomic, bge-base`,
+src/cli/runtime.ts:201:        binaryOnly: (process.env.FOLKLORE_VECTOR_FP32_DROP ?? '').toLowerCase() === 'true',
+src/cli/commands/consolidate.ts:63:  let model = process.env.FOLKLORE_OLLAMA_MODEL ?? 'qwen2.5:1.5b';
+src/cli/commands/consolidate.ts:243:      console.error(`  start it with: ollama serve  (or configure FOLKLORE_OLLAMA_URL)`);
+src/cli/commands/consolidate.ts:246:    console.error(`consolidate: ollama ${ping.value} @ ${process.env.FOLKLORE_OLLAMA_URL ?? 'http://localhost:11434'}, model=${parsed.model}`);
+src/cli/commands/consolidate.ts:449:  console.log('Set FOLKLORE_OLLAMA_URL / FOLKLORE_OLLAMA_MODEL to override.');
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/bench-standard.test.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' tests/bench-standard.test.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
  * Standardized benchmarks — BEIR/HotPotQA + LOCOMO-style evaluation.
@@ -3252,7 +3252,7 @@ test('BEIR/HotPotQA-style: multi-hop retrieval with real ONNX embeddings', async
     };
 
     console.log(`\n  ╔═══════════════════════════════════════════════════════════╗`);
-    console.log(`  ║  BEIR/HotPotQA-style Benchmark (akashik v1.1)       ║`);
+    console.log(`  ║  BEIR/HotPotQA-style Benchmark (folklore v1.1)       ║`);
     console.log(`  ║  ${Object.keys(CORPUS).length} passages, ${QUERIES.length} queries, real all-MiniLM-L6-v2          ║`);
     console.log(`  ╠═══════════════════════════════════════════════════════════╣`);
     console.log(`  ║  NDCG@10:   ${(overall.ndcg10 * 100).toFixed(1).padStart(6)}%                                   ║`);
@@ -3277,14 +3277,14 @@ test('BEIR/HotPotQA-style: multi-hop retrieval with real ONNX embeddings', async
     console.log(`  ║    Cognee HotPotQA:           NDCG not published         ║`);
     console.log(`  ║    mem0 LOCOMO:               67.1% LLM-as-Judge         ║`);
     console.log(`  ║    mcp-memory-service:        86.0% R@5 (custom)         ║`);
-    console.log(`  ║    akashik (this run):   ${(overall.r5 * 100).toFixed(1)}% R@5, ${(overall.ndcg10 * 100).toFixed(1)}% NDCG@10  ║`);
+    console.log(`  ║    folklore (this run):   ${(overall.r5 * 100).toFixed(1)}% R@5, ${(overall.ndcg10 * 100).toFixed(1)}% NDCG@10  ║`);
     console.log(`  ╚═══════════════════════════════════════════════════════════╝`);
 
     console.log(`\n  Per-query:`);
     for (const r of results) {
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/bench-locomo-real.test.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' tests/bench-locomo-real.test.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
  * Benchmark — real LoCoMo factual subset, harmonic-mean F1 (Phase 23.7).
@@ -3303,12 +3303,12 @@ exec
  * retrieval-only dimension.
  *
  * Per LoCoMo convention, `evidence` is a list of `"D<session>:<turn>"`
- * strings. We collapse to the set of source SESSIONS — akashik
+ * strings. We collapse to the set of source SESSIONS — folklore
  * indexes one node per session, not per turn, so session-level
  * evidence is the right granularity.
  *
  * Optional LLM extractor (env-gated, off by default):
- *   AKASHIK_BENCH_LLM_EXTRACTOR=1 swaps the containment metric
+ *   FOLKLORE_BENCH_LLM_EXTRACTOR=1 swaps the containment metric
  *   for a real Ollama Phi-4-mini extracted answer scored via
  *   SQuAD-style F1. Wired here as a stub — the extractor itself is a
  *   Phase 23.8 follow-up. With the flag off (default) we report the
@@ -3316,7 +3316,7 @@ exec
  *
  * Environment contract:
  *
- *   AKASHIK_BENCH_PUBLIC_REAL=1
+ *   FOLKLORE_BENCH_PUBLIC_REAL=1
  *     Master gate; off by default.
  *
  *   LOCOMO_DIR=/path/to/locomo
@@ -3326,7 +3326,7 @@ exec
  *         git clone https://github.com/snap-research/locomo $LOCOMO_DIR/repo
  *         cp $LOCOMO_DIR/repo/data/locomo10.json $LOCOMO_DIR/
  *
- *   AKASHIK_BENCH_OUT=/path/to/report.jsonl   (optional)
+ *   FOLKLORE_BENCH_OUT=/path/to/report.jsonl   (optional)
  *     Composite-runner sink.
  *
  * Embedder: real Xenova all-MiniLM-L6-v2 (no fixture).
@@ -3508,7 +3508,7 @@ const harmonicMean = (a: number, b: number): number => {
 
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/federated-search-cap-tiers.test.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' tests/federated-search-cap-tiers.test.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
  * Unit tests — federated-search top-N cap + rank-weighted timeout
@@ -3638,7 +3638,7 @@ test('lowRankTimeoutMs applies only to peers beyond topTierCount', async () => {
 });
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/application/use-cases.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' src/application/use-cases.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
  * Application use cases — thin orchestration between domain and infra.
@@ -3862,7 +3862,7 @@ export const exploreRoom =
     const traversalOpts: TraversalOptions = { depth: query.depth ?? 3, room: query.room };
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/application/federated-search.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' src/application/federated-search.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
  * Federated search — fan-out orchestrator for cross-peer semantic search.
@@ -4086,14 +4086,14 @@ const withTimeout = (
 
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/domain/federation-sim.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' src/domain/federation-sim.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
- * Phase 24 (Akashik) — federation simulator (pure domain).
+ * Phase 24 (Folklore) — federation simulator (pure domain).
  *
  * Per the Round 5 octopus-discover synthesis
  * (docs/research/octopus-discover/round-5-2026-05-26/),
- * **AkashikBench-F** is the only benchmark that can falsify or
+ * **FolkloreBench-F** is the only benchmark that can falsify or
  * validate the federated-commons thesis. The current public-corpus
  * benchmarks (LongMemEval, LoCoMo, BEIR) measure *single-peer*
  * retrieval quality, not the compounding the mission claims.
@@ -4310,7 +4310,7 @@ export const runFederationSim = (corpus: SimCorpus, config: SimConfig): SimResul
       if (rng() >= config.offlineProbability) online.push(p);
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/domain/long-term-memory.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' src/domain/long-term-memory.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
  * Long-term memory — tier vocabulary, retention math, and Bayesian
@@ -4534,7 +4534,7 @@ const ACCESS_BONUS = (count: number): number => Math.min(0.2, Math.max(0, count)
 /**
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/domain/cross-rerank.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' src/domain/cross-rerank.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
  * Cross-encoder rerank — pure scoring composition.
@@ -4698,7 +4698,7 @@ const sigmoid = (x: number): number => 1 / (1 + Math.exp(-x));
 const clamp = (lo: number, hi: number, x: number): number => Math.max(lo, Math.min(hi, x));
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/domain/llm-listwise-rerank.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' src/domain/llm-listwise-rerank.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
  * Phase 23.12 — LLM-listwise reranker, domain layer.
@@ -4922,7 +4922,7 @@ const hashString = (s: string): number => {
  * same shape — caps the model's freedom to drift across implementations.
 
 exec
-/bin/zsh -lc "sed -n '1,220p' .planning/HANDOFF.md" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' .planning/HANDOFF.md" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 # Session Handoff — Phase 23.7 / Hetzner OpenClaw
 
@@ -4960,8 +4960,8 @@ essential, git, jq, tmux). OpenClaw `2026.5.18` installed via
 `npm install -g openclaw`; gateway running as a systemd service
 (`openclaw-gateway.service`) on `127.0.0.1:37777` with token auth
 (token in `/etc/openclaw-gateway.env` mode 600). Loopback bind, no
-external exposure. akashik working tree rsynced to
-`/opt/akashik/` (`npm install` complete — 503 packages). All
+external exposure. folklore working tree rsynced to
+`/opt/folklore/` (`npm install` complete — 503 packages). All
 three datasets staged: `/data/scifact` (8 MB), `/data/longmemeval`
 (15 MB `longmemeval_oracle.json`), `/data/locomo` (2.7 MB
 `locomo10.json`). Composite bench currently running in tmux session
@@ -5021,7 +5021,7 @@ Order of operations once `ssh hetzner-root` starts responding (usually 30-60 s a
    - `bench-scifact-real.test.ts` — full BEIR SciFact (5,183 docs × 300 queries), NDCG@10. Replaces the 30-doc proxy currently feeding `beirSciFactNdcg10`.
    - `bench-longmemeval-real.test.ts` — LongMemEval-S oracle split (500 questions, ~3 GB HF download). Recall@5 against gold evidence sessions.
    - `bench-locomo-real.test.ts` — LoCoMo factual subset from `snap-research/locomo` GitHub. F1 via the same harmonic-mean scorer the synthetic suite uses.
-   All three are env-gated (`AKASHIK_BENCH_PUBLIC_REAL=1`) so CI stays fast — they only run on the Hetzner box.
+   All three are env-gated (`FOLKLORE_BENCH_PUBLIC_REAL=1`) so CI stays fast — they only run on the Hetzner box.
 6. **Run + report.** Expected composite jump: 0.9012 → ~0.95 depending on real-corpus reality (BEIR SOTA is 0.7522 not 1.0 so composite can't hit 1.0 on real data).
 
 ## 5. Secrets discipline
@@ -5045,8 +5045,8 @@ Order of operations once `ssh hetzner-root` starts responding (usually 30-60 s a
 | infra | `src/infrastructure/summariser.ts` | NEW — Summariser port + ollama/fixture adapters |
 | application | `src/application/ask.ts` | EDIT — wired cross-encoder rerank between hybrid + PPR |
 | application | `src/application/auto-forget-tick.ts` | NEW — auto-forget orchestrator |
-| cli | `src/cli/commands/gc.ts` | NEW — `akashik gc {list,apply}` |
-| cli | `src/cli/commands/bench.ts` | NEW — `akashik bench memory` |
+| cli | `src/cli/commands/gc.ts` | NEW — `folklore gc {list,apply}` |
+| cli | `src/cli/commands/bench.ts` | NEW — `folklore bench memory` |
 | cli | `src/cli/index.ts` | EDIT — registered `gc` + `bench` |
 | tests | `tests/bench-tier-promotion.test.ts` | NEW — F1 = 1.0 |
 | tests | `tests/bench-beta-calibration.test.ts` | NEW — worst err 0.011 |
@@ -5088,7 +5088,7 @@ Carry these as TodoWrite items on resume:
 6. Verify MCP call works from this Mac
 7. ~~Write 3 real-corpus bench adapters~~ — **DONE 2026-05-20**, files
    landed flat under `tests/` (project test glob is `tests/*.test.ts`, not
-   nested) and all env-gated behind `AKASHIK_BENCH_PUBLIC_REAL=1`:
+   nested) and all env-gated behind `FOLKLORE_BENCH_PUBLIC_REAL=1`:
    - `tests/bench-scifact-real.test.ts` — BEIR SciFact NDCG@10. Needs
      `BEIR_SCIFACT_DIR` pointing at `corpus.jsonl + queries.jsonl +
      qrels/test.tsv`. Floor: NDCG@10 ≥ 0.30.
@@ -5113,9 +5113,9 @@ Carry these as TodoWrite items on resume:
 - The user pinned Codex specifically (not Claude/Gemini) for the remote provider — relevant if `octo:claw` asks which provider to wire.
 - Tailscale is NOT installed — don't suggest it. Reverse-SSH is the agreed transport.
 - All public-corpus adapters MUST be env-gated. CI stays fast; only the Hetzner box runs them.
-- `AKASHIK_BENCH_OUT` is the JSONL append target for any bench file — the composite runner spawns each suite with it set. Document this in any new bench file.
+- `FOLKLORE_BENCH_OUT` is the JSONL append target for any bench file — the composite runner spawns each suite with it set. Document this in any new bench file.
 - The pre-existing 4 test failures (Phase 17 tool-count, Phase 20 deps, Phase 35 P2P E2E, peer-order-builder flake) are NOT in scope to fix — they're project drift, document only.
-- Synthetic LoCoMo scorer: dropped full-summary token-F1 because it was mathematically pinned tiny; replaced with harmonic mean of evidence-recall + answer-token-containment. Documented in suite header. Real-LoCoMo Phase 23.7 adapter should use the same metric — OR opt-in to LLM extractor via `AKASHIK_BENCH_LLM_EXTRACTOR=1`.
+- Synthetic LoCoMo scorer: dropped full-summary token-F1 because it was mathematically pinned tiny; replaced with harmonic mean of evidence-recall + answer-token-containment. Documented in suite header. Real-LoCoMo Phase 23.7 adapter should use the same metric — OR opt-in to LLM extractor via `FOLKLORE_BENCH_LLM_EXTRACTOR=1`.
 
 ## 9. Composite numbers worth quoting
 
@@ -5140,11 +5140,11 @@ writeGateF1               1.0000
 End of handoff.
 
 exec
-/bin/zsh -lc "sed -n '1,220p' .planning/long-term-memory-integration.md" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' .planning/long-term-memory-integration.md" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 # Long-Term Memory Integration Plan
 
-Fold three engineering wins from `rohitg00/agentmemory` into akashik,
+Fold three engineering wins from `rohitg00/agentmemory` into folklore,
 plus add the long-term memory layer we've been missing. P2P-native, not a
 verbatim port.
 
@@ -5171,7 +5171,7 @@ What we're explicitly **not** taking:
 ## Long-term memory model — the four tiers, mapped to our world
 
 agentmemory's tier names are misleading for a P2P system. Here's the
-mapping that actually fits akashik:
+mapping that actually fits folklore:
 
 | Their tier | Their meaning | Our equivalent | New work |
 |---|---|---|---|
@@ -5203,7 +5203,7 @@ src/
                                 via daemon/loop.ts, promotes tiers.
     auto-forget-tick.ts   [NEW] TTL + contradiction + low-value purge
   infrastructure/
-    bm25-index.ts         [NEW] sparse index, persisted to ~/.akashik/bm25.json
+    bm25-index.ts         [NEW] sparse index, persisted to ~/.folklore/bm25.json
     reranker.ts           [NEW] optional Xenova cross-encoder, env-gated
   daemon/
     loop.ts                [edit] register consolidate-tick + auto-forget-tick
@@ -5229,7 +5229,7 @@ via existing interfaces. Same shape as the rest of the repo.
   `search-index.ts`. Persist as JSONL. Stemmer + synonym file optional
   per language.
 - `infrastructure/reranker.ts` — `@xenova/transformers` lazy load.
-  Quantised model. Env flag `AKASHIK_RERANK=1`. Falls open on
+  Quantised model. Env flag `FOLKLORE_RERANK=1`. Falls open on
   load failure (returns input unchanged).
 
 **Application:**
@@ -5285,7 +5285,7 @@ via existing interfaces. Same shape as the rest of the repo.
   retention = clip(0..1, salience × exp(-λ·Δt) + σ·Σ(1/days_since_access))
   ```
   λ = 0.01, σ = 0.3, tier-thresholds hot=0.7 warm=0.4 cold=0.15. Same
-  defaults as theirs, expose via `~/.akashik/config.json`.
+  defaults as theirs, expose via `~/.folklore/config.json`.
 - `domain/contradiction.ts` — Jaccard on shared-concept clusters.
   Threshold 0.9, older loses, audit-logged.
 
@@ -5303,9 +5303,9 @@ via existing interfaces. Same shape as the rest of the repo.
 **Acceptance:**
 - Retention scores written to a new KV scope `retention.json` (parallel
   to `peer-reputation-store.ts` pattern). Surfaced via statusline.
-- Auto-forget dry-run + apply CLI subcommand under `akashik gc`.
+- Auto-forget dry-run + apply CLI subcommand under `folklore gc`.
 - Contradiction detector pages an audit entry to
-  `~/.akashik/audit.jsonl`.
+  `~/.folklore/audit.jsonl`.
 
 ## What this replaces / deprecates
 
@@ -5364,11 +5364,11 @@ addition to the existing path.
 **Decision: BYO with a local default, exactly like `embedders.ts`.**
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/product/BENCHMARKS.md" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' docs/product/BENCHMARKS.md" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 # Benchmarks — full BEIR v1, Phase 25 SOTA + 13 documented null attacks
 
-Real retrieval quality measured against canonical BEIR datasets using Akashik's runtime pipeline. All numbers directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
+Real retrieval quality measured against canonical BEIR datasets using Folklore's runtime pipeline. All numbers directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════╗
@@ -5394,7 +5394,7 @@ Real retrieval quality measured against canonical BEIR datasets using Akashik's 
 | all-MiniLM-L6-v2 (v1 baseline) | 23M | 64.82% | CPU |
 | nomic-embed-text-v1.5 (dense) | 137M | 70.36% | CPU |
 | bge-base-en-v1.5 (dense) | 110M | 74.04% | CPU |
-| **Akashik Phase 25 (hybrid + Rust)** | **137M** | **75.22%** | **CPU, 11ms p50** |
+| **Folklore Phase 25 (hybrid + Rust)** | **137M** | **75.22%** | **CPU, 11ms p50** |
 | monoT5-3B reranker on top | 3B | 76.70% | **GPU** |
 | InRanker-3B (monoT5-distilled) | 3B | 78.31% | **GPU** |
 
@@ -5424,8 +5424,8 @@ Every null is accompanied by a reproduction script in [`scripts/`](scripts/) and
 
 ```bash
 # Phase 25 headline — requires Rust sidecar built
-cd akashik-rs && cargo build --release && cd ..
-AKASHIK_RUST_BIN=$(pwd)/akashik-rs/target/release/embed_server \
+cd folklore-rs && cargo build --release && cd ..
+FOLKLORE_RUST_BIN=$(pwd)/folklore-rs/target/release/embed_server \
   node scripts/bench-beir-rust.mjs scifact --model bge-base
 
 # Wave 2 (pure Node, no Rust)
@@ -5436,7 +5436,7 @@ node scripts/bench-beir-sota.mjs scifact --hybrid --rerank
 
 # Wave 4 / room routing null — requires CQADupStack
 node scripts/bench-room-routing.mjs \
-  --datasets-dir ~/.akashik/bench/cqadupstack/cqadupstack \
+  --datasets-dir ~/.folklore/bench/cqadupstack/cqadupstack \
   --rooms mathematica,webmasters,gaming
 
 # Calibrated qrel rejudge — requires Ollama + gpt-oss:20b
@@ -5491,7 +5491,7 @@ Functional DDD. Every fallible op returns `Result<T, E>`. No classes in domain/a
 12. Phase 38 — **Oracle bulletin board** (Layer A: questions + answers via touch + CRDT, 5 MCP tools)
 13. Phase 39 — **Oracle gossip** (Layer B: real-time pubsub via @libp2p/floodsub, daemon subscribes on boot)
 14. Phase 21–22 — Long-term memory tiers (episodic/semantic/procedural), Bayesian reliability, write-time gate, auto-forget
-15. Phase 23 — **Unified memory bench** (`akashik bench memory`): 8 suites scoring 9 dimensions, composite **0.8597** on real public corpora (Phase 23.7 — Hetzner, 2026-05-20). Synthetic-fallback composite is 0.9107.
+15. Phase 23 — **Unified memory bench** (`folklore bench memory`): 8 suites scoring 9 dimensions, composite **0.8597** on real public corpora (Phase 23.7 — Hetzner, 2026-05-20). Synthetic-fallback composite is 0.9107.
 
 </details>
 
@@ -5501,13 +5501,13 @@ Functional DDD. Every fallible op returns `Result<T, E>`. No classes in domain/a
 
 The long-term memory work shipped in Phase 21/22 (tier vocabulary, Beta(α,β)
 reliability counters, write-time gating, auto-forget) needed a benchmark
-that's stricter than any single public suite. Phase 23 ships `akashik
+that's stricter than any single public suite. Phase 23 ships `folklore
 bench memory` — a runner that scores 9 dimensions across 8 suites and
 emits a single composite score.
 
 Run it:
 ```bash
-akashik bench memory --json
+folklore bench memory --json
 ```
 
 ### Composite — measured 2026-05-20 (Phase 23.6.1 — scorer fix)
@@ -5549,7 +5549,7 @@ This is honest retrieval-only scoring. Per-persona breakdown of the current run 
 | Cara | 0.881 | 0.857 |
 | Dan | 0.948 | 0.875 |
 
-LLM-extractor mode (`AKASHIK_BENCH_LLM_EXTRACTOR=1`) — opt-in upgrade that swaps containment for a real Ollama Phi-4-mini extracted-answer scored via SQuAD F1 against gold — is the next ratchet (Phase 23.7).
+LLM-extractor mode (`FOLKLORE_BENCH_LLM_EXTRACTOR=1`) — opt-in upgrade that swaps containment for a real Ollama Phi-4-mini extracted-answer scored via SQuAD F1 against gold — is the next ratchet (Phase 23.7).
 
 ### Why each suite exists
 
@@ -5562,7 +5562,7 @@ Three families:
 - `longmemeval-synth` — 20-session × 20-query synthetic conversational fixture covering the 5 LongMemEval-S abilities: information extraction, multi-session reasoning, temporal reasoning, knowledge updates, abstention. Real LongMemEval-S oracle adapter (500q, ~115k tokens/Q, 3 GB HF dataset) pending Phase 23.7+.
 - `locomo-synth` — 4-persona × 40-session × 6-month synthetic conversational corpus covering LoCoMo's long-horizon factual recall + temporal/causal reasoning axes. 30 queries with declared evidence-session ground truth; dimension scored on evidence-session retrieval recall (retrieval-only, no answer extractor). Real LoCoMo + extractor pending Phase 23.7+.
 
-**B. Akashik-specific synthetic suites — five gap axes no public benchmark covers:**
+**B. Folklore-specific synthetic suites — five gap axes no public benchmark covers:**
 
 | Axis | Why no public benchmark | What this suite stresses |
 |---|---|---|
@@ -5588,11 +5588,11 @@ Each suite asserts its own floor. A regressing dimension fails the suite, which 
 | `hotpotqa-style` | NDCG@10 ≥ 0.30, MRR ≥ 0.50, R@10 ≥ 0.50 | NDCG@10 high, MRR high, R@10 high |
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/product/VISION.md" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' docs/product/VISION.md" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 # Vision — the agent-memory protocol problem
 
-Akashik is not a vector store with peer sync bolted on. It is an attempt
+Folklore is not a vector store with peer sync bolted on. It is an attempt
 at the protocol that decides whether peer knowledge is good enough for an
 agent to trust, cite, or use *instead of* a live web search. The product
 question:
@@ -5602,7 +5602,7 @@ question:
 
 If that question is weak, the whole P2P story is vibes — sometimes helpful,
 sometimes stale, sometimes wrong, impossible to defend. If it's strong,
-Akashik becomes a serious agent-memory protocol. Full thinking surface
+Folklore becomes a serious agent-memory protocol. Full thinking surface
 (60+ pages, evolving) in
 [`docs/PROTOCOL-QUALITY-QUESTIONS.md`](./docs/PROTOCOL-QUALITY-QUESTIONS.md).
 
@@ -5615,7 +5615,7 @@ Agent systems are stuck on one thing right now:
 
 The failure mode is not only hallucination. It's **premature closure** — an
 agent sees a plausible chunk, forms a plan, and stops searching before it has
-the missing fact that would change the action. Akashik treats this as a
+the missing fact that would change the action. Folklore treats this as a
 protocol problem, not a model problem:
 
 - Context is not evidence.
@@ -5812,15 +5812,15 @@ peer · query is high-risk or time-sensitive.
 ### Minimum bright protocol — v1 milestone
 
 exec
-/bin/zsh -lc "sed -n '1,220p' docs/p2p/P2P-VISION.md" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' docs/p2p/P2P-VISION.md" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
-# P2P Knowledge Graph — akashik v2.0 Vision
+# P2P Knowledge Graph — folklore v2.0 Vision
 
 ## The Idea
 
-Every developer running akashik has a local knowledge graph. Right now these graphs are isolated — your homelab research doesn't connect to mine.
+Every developer running folklore has a local knowledge graph. Right now these graphs are isolated — your homelab research doesn't connect to mine.
 
-**v2.0 makes them connected.** A peer-to-peer network where akashik nodes discover each other, share graph fragments, and build a collective knowledge layer that's bigger than any single user's research.
+**v2.0 makes them connected.** A peer-to-peer network where folklore nodes discover each other, share graph fragments, and build a collective knowledge layer that's bigger than any single user's research.
 
 ```
 Developer A (homelab)          Developer B (ml-papers)
@@ -5843,7 +5843,7 @@ Developer A (homelab)          Developer B (ml-papers)
 ### Discovery
 - Nodes announce themselves on a local network via mDNS/Bonjour
 - Or register with a lightweight coordination server (optional)
-- Or manually add peers: `akashik peer add <address>`
+- Or manually add peers: `folklore peer add <address>`
 
 ### Sharing Protocol
 - Each node exposes a subset of its graph as "public rooms"
@@ -5854,7 +5854,7 @@ Developer A (homelab)          Developer B (ml-papers)
 ### Collective Intelligence
 - Tunnel detection runs ACROSS peers — my homelab connects to your ml-papers
 - Shared discovery loop: if peer B finds a great ArXiv source, peer A gets it suggested
-- Federated search: `akashik ask "vector search" --peers` searches across all connected graphs
+- Federated search: `folklore ask "vector search" --peers` searches across all connected graphs
 
 ### Privacy Model
 - **Opt-in only** — nothing shared by default
@@ -5903,13 +5903,13 @@ Use **Automerge** or **Y.js** for the room-level CRDT:
 ## Use Cases
 
 ### Research Teams
-A team of 5 researchers each tracks different domains. P2P akashik connects their graphs. When researcher A indexes a paper about "efficient attention", researcher B (tracking "GPU optimization") gets a tunnel notification: "your GPU optimization connects to A's attention paper."
+A team of 5 researchers each tracks different domains. P2P folklore connects their graphs. When researcher A indexes a paper about "efficient attention", researcher B (tracking "GPU optimization") gets a tunnel notification: "your GPU optimization connects to A's attention paper."
 
 ### Open Source Communities
 A project maintainer shares their `project-x` room publicly. Contributors connect as peers and get the maintainer's research context (relevant papers, HN discussions, competitor analysis) automatically merged into their local graph.
 
 ### Conference Networks
-At a conference, attendees run akashik in P2P mode. Their graphs auto-discover via local network. The collective graph of 100 attendees, each with 500 nodes, creates a 50K-node searchable knowledge base spanning every talk, paper, and conversation.
+At a conference, attendees run folklore in P2P mode. Their graphs auto-discover via local network. The collective graph of 100 attendees, each with 500 nodes, creates a 50K-node searchable knowledge base spanning every talk, paper, and conversation.
 
 ## Implementation Phases
 
@@ -5936,12 +5936,12 @@ At a conference, attendees run akashik in P2P mode. Their graphs auto-discover v
 
 ## What This Means
 
-akashik goes from "your personal research memory" to "a collective intelligence network for developers." Every peer makes the network smarter. The graph grows faster than any individual could build it.
+folklore goes from "your personal research memory" to "a collective intelligence network for developers." Every peer makes the network smarter. The graph grows faster than any individual could build it.
 
 This is the end state: **a decentralized knowledge graph where every coding agent in the world shares what it learned.**
 
 exec
-/bin/zsh -lc "find .claude-octopus -maxdepth 2 -type f | sort | head -n 100 && printf '\\n---\\n' && find .agents -maxdepth 3 -type f | sort | head -n 100" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "find .claude-octopus -maxdepth 2 -type f | sort | head -n 100 && printf '\\n---\\n' && find .agents -maxdepth 3 -type f | sort | head -n 100" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 .claude-octopus/state.json
 .claude-octopus/state.json.backup
@@ -5961,11 +5961,11 @@ exec
 codex
 The planning tree is strongly historical: it documents how the project got here, but it is not a good live operating surface anymore. I’m doing one more pass over CLI/features and representative older tests so I can separate “still a platform capability” from “artifact of the old personal-memory product thesis.”
 exec
-/bin/zsh -lc "sed -n '1,260p' src/cli/index.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,260p' src/cli/index.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 #!/usr/bin/env node
 /**
- * akashik CLI — subcommand router.
+ * folklore CLI — subcommand router.
  *
  * Phase 0: doctor, version, help.
  * Phase 1: (runtime checks extended in doctor).
@@ -6076,13 +6076,13 @@ const commands: Record<string, CommandFn> = {
   swarm,
   gc,
   bench,
-  // Plural-form alias: `akashik peers rep …` works as well as
-  // `akashik peer rep …`. The subcommand dispatcher handles both.
+  // Plural-form alias: `folklore peers rep …` works as well as
+  // `folklore peer rep …`. The subcommand dispatcher handles both.
   peers: async (args: string[]): Promise<number> => {
     const [sub, ...rest] = args;
     if (sub === 'rep') return peersRep(rest);
     console.error('peers: only `rep` is implemented today (more coming).');
-    console.error('  usage: akashik peers rep [<peer-id>] [--subject <key>] [--json]');
+    console.error('  usage: folklore peers rep [<peer-id>] [--subject <key>] [--json]');
     return sub ? 1 : 1;
   },
 };
@@ -6100,27 +6100,27 @@ async function main(): Promise<number> {
     return (await handler(rest)) ?? 0;
   }
   if (futureCommands.has(cmd)) {
-    console.error(`akashik: '${cmd}' is recognized but not yet implemented (Phase 0 scaffold).`);
+    console.error(`folklore: '${cmd}' is recognized but not yet implemented (Phase 0 scaffold).`);
     console.error(`               see the roadmap — it lands in a later phase.`);
     return 2;
   }
-  console.error(`akashik: unknown command '${cmd}'. run 'akashik help'.`);
+  console.error(`folklore: unknown command '${cmd}'. run 'folklore help'.`);
   return 1;
 }
 
 main()
   .then((code) => process.exit(code))
   .catch((err) => {
-    console.error('akashik: fatal error');
+    console.error('folklore: fatal error');
     console.error(err);
     process.exit(1);
   });
 
 exec
-/bin/zsh -lc "sed -n '1,220p' src/telegram/bot.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' src/telegram/bot.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
- * Telegram bot — long-polling client for akashik.
+ * Telegram bot — long-polling client for folklore.
  *
  * Single-user, runs inside the daemon process. Handles:
  *   - Inbound URLs → auto-ingest into best-matching room
@@ -6152,7 +6152,7 @@ export const loadTelegramConfig = (raw: Record<string, unknown>): TelegramConfig
   return { bot_token: token, chat_id: chatId, enabled };
 };
 
-export interface AkashikBot {
+export interface FolkloreBot {
   readonly sendMessage: (text: string) => ResultAsync<void, GraphError>;
   readonly sendDigest: (markdown: string) => ResultAsync<void, GraphError>;
   readonly stop: () => void;
@@ -6163,9 +6163,9 @@ const URL_RE = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gi;
 export const startBot = (
   config: TelegramConfig,
   runtime: Runtime,
-): ResultAsync<AkashikBot, GraphError> => {
+): ResultAsync<FolkloreBot, GraphError> => {
   if (!config.enabled || !config.bot_token) {
-    return errAsync(GE.readError('telegram', 'bot not configured — run akashik telegram setup'));
+    return errAsync(GE.readError('telegram', 'bot not configured — run folklore telegram setup'));
   }
 
   try {
@@ -6215,7 +6215,7 @@ export const startBot = (
 };
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/bench-longmemeval-synth.test.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' tests/bench-longmemeval-synth.test.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
  * Benchmark — synthetic LongMemEval-style conversational long-term recall.
@@ -6439,7 +6439,7 @@ const QUERIES: readonly SyntheticQuery[] = [
   },
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/bench-locomo-synth.test.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' tests/bench-locomo-synth.test.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
  * Benchmark — synthetic LoCoMo-style factual-recall (Phase 23.6).
@@ -6484,7 +6484,7 @@ exec
  * mean down sharply.
  *
  * Opt-in LLM extractor (Phase 23.7+):
- *   set `AKASHIK_BENCH_LLM_EXTRACTOR=1` to swap the
+ *   set `FOLKLORE_BENCH_LLM_EXTRACTOR=1` to swap the
  *   containment metric for a real Ollama Phi-4-mini extracted
  *   answer scored via SQuAD-style F1. Not wired in this turn —
  *   the scaffolding is documented in the suite registry.
@@ -6663,7 +6663,7 @@ const QUERIES: readonly LocomoQuery[] = [
 /**
 
 exec
-/bin/zsh -lc "sed -n '1,220p' tests/phase39.oracle-gossip-e2e.test.ts" in /Users/saharbarak/personal/akashik
+/bin/zsh -lc "sed -n '1,220p' tests/phase39.oracle-gossip-e2e.test.ts" in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 /**
  * Phase 39 — oracle gossip E2E (Layer B of peer discovery).
@@ -6847,7 +6847,7 @@ describe('Phase 39 — oracle gossip E2E (two real pubsub peers)', () => {
 });
 
 exec
-/bin/zsh -lc 'rg -n "telegram|oracle|onboard|claude-install|personal memory|agent-memory" README.md docs src tests | head -n 200' in /Users/saharbarak/personal/akashik
+/bin/zsh -lc 'rg -n "telegram|oracle|onboard|claude-install|personal memory|agent-memory" README.md docs src tests | head -n 200' in /Users/saharbarak/personal/folklore
  succeeded in 0ms:
 tests/phase17.mcp-tool.test.ts:79:  it('C2: server.ts registers exactly 21 tools (14 Phase-17 + code_graph_query Phase-19 + recent_sessions Phase-20 + 5 oracle tools Phase-38)', () => {
 tests/phase17.mcp-tool.test.ts:86:      `expected 21 tools in Phase 38 (14 Phase-17 + code_graph_query + recent_sessions + oracle_ask + oracle_answer + list_open_questions + oracle_answers + oracle_answerable), found ${matches.length}`,
@@ -6884,10 +6884,10 @@ src/domain/oracle.ts:35: *     oracle_kind:  'answer'
 src/domain/oracle.ts:36: *     question_id:  <oracle-question:xxx> this answer is for
 src/domain/oracle.ts:71:const QUESTION_PREFIX = 'oracle-question:';
 src/domain/oracle.ts:72:const ANSWER_PREFIX = 'oracle-answer:';
-src/domain/oracle.ts:96:    source_file: 'akashik:oracle',
+src/domain/oracle.ts:96:    source_file: 'folklore:oracle',
 src/domain/oracle.ts:98:    room: 'oracle',
 src/domain/oracle.ts:102:    oracle_kind: 'question',
-src/domain/oracle.ts:118:    source_file: 'akashik:oracle',
+src/domain/oracle.ts:118:    source_file: 'folklore:oracle',
 src/domain/oracle.ts:120:    room: 'oracle',
 src/domain/oracle.ts:124:    oracle_kind: 'answer',
 src/domain/oracle.ts:160:  if (n.oracle_kind !== 'question') return undefined;
@@ -6947,7 +6947,7 @@ src/domain/system-rooms.ts:72:  uriPrefixes: ['arxiv:', 'hn:', 'rss:', 'websearc
 src/domain/system-rooms.ts:76: *  here as nodes (schemes oracle-question: / oracle-answer:) and
 src/domain/system-rooms.ts:81:  name: 'oracle',
 src/domain/system-rooms.ts:84:  uriPrefixes: ['oracle-question:', 'oracle-answer:'],
-src/domain/errors.ts:614:      return 'fix: run `akashik identity init` to create your DID, or `akashik onboard` to run the full setup wizard.';
+src/domain/errors.ts:614:      return 'fix: run `folklore identity init` to create your DID, or `folklore onboard` to run the full setup wizard.';
 src/mcp/server.ts:54:} from '../domain/oracle.js';
 src/mcp/server.ts:842:  // ─────────────── oracle_ask ─────────────
 src/mcp/server.ts:843:  // Layer A of the peer-discovery stack — post a question to the oracle
@@ -6992,31 +6992,31 @@ src/infrastructure/oracle-gossip.ts:4: * Thin wrapper over libp2p pubsub for the
 src/infrastructure/oracle-gossip.ts:18: *     1. build the question / answer node via domain/oracle.ts
 src/infrastructure/oracle-gossip.ts:29: *   - Claude-driven answering (oracle_answerable does that)
 src/infrastructure/oracle-gossip.ts:52:/** libp2p pubsub topic for oracle questions + answers. Versioned so we
-src/infrastructure/oracle-gossip.ts:54:export const ORACLE_TOPIC = '/akashik/oracle/1.0.0';
+src/infrastructure/oracle-gossip.ts:54:export const ORACLE_TOPIC = '/folklore/oracle/1.0.0';
 src/infrastructure/oracle-gossip.ts:63:/** Wire envelope. `kind` is redundant with node.oracle_kind but
 src/infrastructure/oracle-gossip.ts:94:      'oracle-gossip: libp2p node was constructed without pubsub. Ensure createNode wires the floodsub service.',
 src/infrastructure/oracle-gossip.ts:110:        throw new Error(`oracle-gossip: message ${json.length}B exceeds ${MAX_MESSAGE_BYTES}B cap`);
 src/infrastructure/oracle-gossip.ts:115:    (e) => GE.writeError('oracle-gossip:publish', (e as Error).message),
 src/infrastructure/oracle-gossip.ts:144: * Subscribe to the oracle topic. Every inbound message is:
 src/infrastructure/oracle-gossip.ts:159:    return errAsync(GE.writeError('oracle-gossip:subscribe', pubsub.message));
-src/cli/commands/onboard.ts:2: * `akashik onboard` — first-run installer + onboarding wizard.
+src/cli/commands/onboard.ts:2: * `folklore onboard` — first-run installer + onboarding wizard.
 src/cli/commands/onboard.ts:49:import { claudeInstall } from './claude-install.js';
 src/cli/commands/onboard.ts:138:    cancel('onboarding cancelled — run again whenever.');
 src/cli/commands/onboard.ts:394:  // LIVENESS PROBE (round-3 UX review — `onboard.ts:339` always logged
-src/cli/commands/onboard.ts:460:const USAGE = `usage: akashik onboard [--yes] [--home DIR] [--no-sessions]
+src/cli/commands/onboard.ts:460:const USAGE = `usage: folklore onboard [--yes] [--home DIR] [--no-sessions]
 src/cli/commands/onboard.ts:473:export const onboard = async (args: readonly string[]): Promise<number> => {
-src/cli/commands/onboard.ts:481:  intro('akashik onboard');
+src/cli/commands/onboard.ts:481:  intro('folklore onboard');
 docs/marketing/positioning-v2.1.md:18:you trust via libp2p. Questions reach peers via an oracle bulletin
 docs/marketing/positioning-v2.1.md:158:entries, oracle answers, room shares — can be wrapped in a signed
 docs/marketing/positioning-v2.1.md:172:(`toolshed`, `research`, `oracle`) every peer advertises by default;
 docs/marketing/positioning-v2.1.md:211:- **Oracle bulletin board** — post a question via `oracle ask`. It
 docs/marketing/positioning-v2.1.md:214:  can plausibly answer see it via `oracle answerable` and respond
 docs/marketing/positioning-v2.1.md:388:- Key points: `toolshed` + `research` always-on + the `oracle`
-docs/marketing/positioning-v2.1.md:391:- Proof: GIF of `akashik oracle ask "..." --live` on peer A,
-docs/marketing/positioning-v2.1.md:392:  `akashik oracle show <qid>` on peer B within 2 s.
+docs/marketing/positioning-v2.1.md:391:- Proof: GIF of `folklore oracle ask "..." --live` on peer A,
+docs/marketing/positioning-v2.1.md:392:  `folklore oracle show <qid>` on peer B within 2 s.
 docs/marketing/storybrand-messaging-draft.md:405:| Desire | Own my personal memory | Share with my team | **Compound community progress** |
 docs/marketing/SITE-REDESIGN-SPEC.md:1050:- The pseudo-terminal output blocks (identity + oracle examples)
-src/cli/commands/oracle.ts:2: * `akashik oracle <sub>` — peer-to-peer Q&A via the oracle system room.
+src/cli/commands/oracle.ts:2: * `folklore oracle <sub>` — peer-to-peer Q&A via the oracle system room.
 src/cli/commands/oracle.ts:5: *   ask "<text>"            post a question to the oracle room; peers see it on next touch
 src/cli/commands/oracle.ts:12: * already gates inbound oracle nodes; secret-gate already redacts them.
 src/cli/commands/oracle.ts:28:} from '../../domain/oracle.js';
@@ -7026,16 +7026,16 @@ src/cli/commands/oracle.ts:52: * configured relay, publish one oracle message ov
 src/cli/commands/oracle.ts:64:    console.error(`oracle --live: identity: ${formatError(idRes.error)}`);
 src/cli/commands/oracle.ts:69:    console.error(`oracle --live: config: ${formatError(cfgRes.error)}`);
 src/cli/commands/oracle.ts:80:    console.error(`oracle --live: libp2p: ${formatError(nodeRes.error)}`);
-src/cli/commands/oracle.ts:93:    pubsub.subscribe('/akashik/oracle/1.0.0');
+src/cli/commands/oracle.ts:93:    pubsub.subscribe('/folklore/oracle/1.0.0');
 src/cli/commands/oracle.ts:123:      console.error(`oracle --live: publish: ${formatError(publishRes.error)}`);
-src/cli/commands/oracle.ts:126:    console.log(`  live:   published to /akashik/oracle/1.0.0 (${dialed} peer(s) dialed)`);
-src/cli/commands/oracle.ts:144:    console.error('oracle ask: missing question — usage: akashik oracle ask "your question" [--live]');
+src/cli/commands/oracle.ts:126:    console.log(`  live:   published to /folklore/oracle/1.0.0 (${dialed} peer(s) dialed)`);
+src/cli/commands/oracle.ts:144:    console.error('oracle ask: missing question — usage: folklore oracle ask "your question" [--live]');
 src/cli/commands/oracle.ts:149:    console.error(`oracle ask: ${formatError(rt.error)}`);
 src/cli/commands/oracle.ts:162:      console.error(`oracle ask: ${formatError(res.error)}`);
 src/cli/commands/oracle.ts:165:    console.log(`oracle ask: posted`);
-src/cli/commands/oracle.ts:169:      ? '  peers subscribed to /akashik/oracle/1.0.0 get it now; others on next touch.'
+src/cli/commands/oracle.ts:169:      ? '  peers subscribed to /folklore/oracle/1.0.0 get it now; others on next touch.'
 src/cli/commands/oracle.ts:170:      : '  peers will see it on their next touch of `oracle`.');
-src/cli/commands/oracle.ts:200:    console.error('oracle answer: usage: akashik oracle answer <question-id> "your answer" [--confidence 0.7] [--live]');
+src/cli/commands/oracle.ts:200:    console.error('oracle answer: usage: folklore oracle answer <question-id> "your answer" [--confidence 0.7] [--live]');
 src/cli/commands/oracle.ts:204:    console.error(`oracle answer: '${qid}' does not look like a question id (expected 'oracle-question:...')`);
 src/cli/commands/oracle.ts:209:    console.error(`oracle answer: ${formatError(rt.error)}`);
 src/cli/commands/oracle.ts:222:      console.error(`oracle answer: ${formatError(res.error)}`);
@@ -7043,7 +7043,7 @@ src/cli/commands/oracle.ts:225:    console.log(`oracle answer: posted`);
 src/cli/commands/oracle.ts:255:    console.error(`oracle list: ${formatError(rt.error)}`);
 src/cli/commands/oracle.ts:262:      console.error(`oracle list: ${formatError(graph.error)}`);
 src/cli/commands/oracle.ts:271:      console.log('oracle list: no questions yet.');
-src/cli/commands/oracle.ts:289:    console.error('oracle show: missing question id — usage: akashik oracle show <qid>');
+src/cli/commands/oracle.ts:289:    console.error('oracle show: missing question id — usage: folklore oracle show <qid>');
 src/cli/commands/oracle.ts:294:    console.error(`oracle show: ${formatError(rt.error)}`);
 src/cli/commands/oracle.ts:301:      console.error(`oracle show: ${formatError(graph.error)}`);
 src/cli/commands/oracle.ts:306:    if (!qNode || qNode.oracle_kind !== 'question') {
@@ -7051,23 +7051,23 @@ src/cli/commands/oracle.ts:307:      console.error(`oracle show: question not fo
 src/cli/commands/oracle.ts:362:    console.error(`oracle answerable: ${formatError(rt.error)}`);
 
 codex
-The stale surface is mostly “leaderboard-era retrieval product” material, plus process debris from the phase-based buildout. The live core now is: federation, provenance, community compounding, AkashikBench-F, and the Akashik story.
+The stale surface is mostly “leaderboard-era retrieval product” material, plus process debris from the phase-based buildout. The live core now is: federation, provenance, community compounding, FolkloreBench-F, and the Folklore story.
 
 **Repo Root**
 
 | file path | action | one-line reason |
 |---|---|---|
-| `README.md` | `KEEP` | This is already the clearest statement of the Akashik pivot and should be the canonical repo entrypoint. |
+| `README.md` | `KEEP` | This is already the clearest statement of the Folklore pivot and should be the canonical repo entrypoint. |
 | `README.md.bak.830lines` | `DELETE` | Pure clutter; backup files do not belong in the working tree. |
 | `.claude-octopus/state.json` | `DELETE` | Runtime state, not product source; this looks accidentally committed. |
 | `.claude-octopus/state.json.backup` | `DELETE` | Same as above, plus even less defensible. |
 | `.gitignore` | `NEEDS-REWRITE` | Add `.claude-octopus/`, likely `demo.tape`, and any other local state/output paths. |
-| `.agents/skills/**` | `DELETE` | These are maintainer workflow assets, not Akashik product code or docs. |
+| `.agents/skills/**` | `DELETE` | These are maintainer workflow assets, not Folklore product code or docs. |
 | `CLAUDE.md` | `KEEP` | Dev instructions are useful internally, but it should stay clearly non-product-facing. |
-| `NEXT_STEPS.md` | `ARCHIVE` | Duplicates planning intent now better expressed in `docs/PROJECT-PLAN-AKASHIK.md`. |
+| `NEXT_STEPS.md` | `ARCHIVE` | Duplicates planning intent now better expressed in `docs/PROJECT-PLAN-FOLKLORE.md`. |
 | `findings.md` | `ARCHIVE` | Likely useful as a historical scratchpad, not as a live source of truth. |
 | `dist/` | `DELETE` | Generated output; if tracked, remove from git and regenerate in CI/builds only. |
-| `akashik-rs/` | `KEEP` | Still valid infrastructure for local retrieval speed, even though it no longer carries the product narrative. |
+| `folklore-rs/` | `KEEP` | Still valid infrastructure for local retrieval speed, even though it no longer carries the product narrative. |
 | `demo/README.md` | `NEEDS-REWRITE` | Demos should sell federation/community compounding, not old single-user memory behavior. |
 
 **.planning**
@@ -7075,19 +7075,19 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | file path | action | one-line reason |
 |---|---|---|
 | `.planning/HANDOFF.md` | `DELETE` | Session-specific Hetzner/OpenClaw handoff is operational residue, not reusable project knowledge. |
-| `.planning/long-term-memory-integration.md` | `ARCHIVE` | Good historical rationale for the old memory stack, but not the current Akashik thesis. |
+| `.planning/long-term-memory-integration.md` | `ARCHIVE` | Good historical rationale for the old memory stack, but not the current Folklore thesis. |
 | `.planning/phases/phase-15/**` | `ARCHIVE` | Historically useful for P2P/security lineage, but phase-by-phase GSD files are not a good live operating surface now. |
 | `.planning/phases/phase-16/**` | `ARCHIVE` | Same: room-sharing history matters, but not as active planning docs. |
 | `.planning/phases/phase-17/**` | `ARCHIVE` | Federation history is valuable, but the phase files are build logs now. |
 | `.planning/phases/phase-18/**` | `ARCHIVE` | Useful provenance, not live strategy. |
 | `.planning/phases/phase-19/**` | `ARCHIVE` | Same. |
 | `.planning/phases/phase-20/**` | `ARCHIVE` | Same. |
-| `.planning/phases/phase-21/21-CONTEXT.md` | `ARCHIVE` | Long-term-memory phase context is now secondary to Akashik federation work. |
+| `.planning/phases/phase-21/21-CONTEXT.md` | `ARCHIVE` | Long-term-memory phase context is now secondary to Folklore federation work. |
 | `.planning/phases/phase-23/23-CONTEXT.md` | `ARCHIVE` | Retrieval bench context matters historically, but not as a live product guide. |
-| `.planning/BENCH-v2.md` | `ARCHIVE` | Strong retrieval research record, but strategically superseded by AkashikBench-F. |
+| `.planning/BENCH-v2.md` | `ARCHIVE` | Strong retrieval research record, but strategically superseded by FolkloreBench-F. |
 | `.planning/BENCH-COMPETITORS.md` | `ARCHIVE` | Useful historical market/retrieval context, but no longer the main battlefield. |
-| `.planning/PROJECT.md` | `DELETE` | Duplicated by newer Akashik docs and likely stale. |
-| `.planning/ROADMAP.md` | `DELETE` | Redundant with `docs/PROJECT-PLAN-AKASHIK.md` unless rewritten completely. |
+| `.planning/PROJECT.md` | `DELETE` | Duplicated by newer Folklore docs and likely stale. |
+| `.planning/ROADMAP.md` | `DELETE` | Redundant with `docs/PROJECT-PLAN-FOLKLORE.md` unless rewritten completely. |
 | `.planning/REQUIREMENTS.md` | `ARCHIVE` | Preserve if you want requirements traceability; otherwise it will confuse current positioning. |
 | `.planning/STATE.md` | `DELETE` | State snapshots age badly and quickly become noise. |
 | `.planning/test-runs/**` | `DELETE` | Ephemeral run logs should not live as first-class repo artifacts. |
@@ -7096,26 +7096,26 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 
 | file path | action | one-line reason |
 |---|---|---|
-| `docs/PROJECT-PLAN-AKASHIK.md` | `KEEP` | This is the right live execution doc for the current arc. |
-| `docs/README.md` | `NEEDS-REWRITE` | Make it a clean docs index around Akashik, not accumulated legacy categories. |
-| `docs/marketing/how-akashik-works.md` | `KEEP` | Best explanation of the compounding mechanism and should remain first-class. |
+| `docs/PROJECT-PLAN-FOLKLORE.md` | `KEEP` | This is the right live execution doc for the current arc. |
+| `docs/README.md` | `NEEDS-REWRITE` | Make it a clean docs index around Folklore, not accumulated legacy categories. |
+| `docs/marketing/how-folklore-works.md` | `KEEP` | Best explanation of the compounding mechanism and should remain first-class. |
 | `docs/marketing/storybrand-messaging-draft.md` | `ARCHIVE` | Preserve the evolution internally, but collapse public-facing messaging to a final version. |
-| `docs/marketing/positioning-v2.1.md` | `NEEDS-REWRITE` | Likely close to the new thesis, but still carries transitional akashik/oracle-era framing. |
+| `docs/marketing/positioning-v2.1.md` | `NEEDS-REWRITE` | Likely close to the new thesis, but still carries transitional folklore/oracle-era framing. |
 | `docs/marketing/positioning-draft.md` | `ARCHIVE` | Draft-stage messaging should not compete with the current story. |
 | `docs/marketing/SOCIAL-LAUNCH.md` | `KEEP` | Launch execution is still relevant post-pivot. |
-| `docs/marketing/how-akashik-works.md` | `KEEP` | Core architecture/message bridge; not stale. |
+| `docs/marketing/how-folklore-works.md` | `KEEP` | Core architecture/message bridge; not stale. |
 | `docs/marketing/growth-sources-plan.md` | `NEEDS-REWRITE` | Keep only if retargeted to OSS-community seeding rather than generic product growth. |
 | `docs/marketing/influencer-outreach.md` | `NEEDS-REWRITE` | Valid only if aligned with the OSS pilot audience; otherwise it will drift. |
-| `docs/product/VISION.md` | `NEEDS-REWRITE` | Still smart, but it frames Akashik as an “agent-memory protocol problem” more than a federated commons. |
+| `docs/product/VISION.md` | `NEEDS-REWRITE` | Still smart, but it frames Folklore as an “agent-memory protocol problem” more than a federated commons. |
 | `docs/product/BENCHMARKS.md` | `NEEDS-REWRITE` | Too retrieval-leaderboard-heavy for the current story; keep the evidence, change the framing. |
-| `docs/product/ROADMAP.md` | `ARCHIVE` | Superseded by the Akashik project plan unless rewritten from scratch. |
+| `docs/product/ROADMAP.md` | `ARCHIVE` | Superseded by the Folklore project plan unless rewritten from scratch. |
 | `docs/product/RELEASE-v4.md` | `ARCHIVE` | Release notes for the old product arc are historical, not live product guidance. |
-| `docs/product/MANIFESTO.md` | `KEEP` | If it aligns with the Akashik commons thesis, this is still valuable narrative glue. |
+| `docs/product/MANIFESTO.md` | `KEEP` | If it aligns with the Folklore commons thesis, this is still valuable narrative glue. |
 | `docs/architecture/ADR-001-v3-memory-protocol.md` | `ARCHIVE` | Good lineage artifact, but no longer the leading architectural reference. |
 | `docs/architecture/ADR-002-v4-agent-brain.md` | `ARCHIVE` | “Agent brain” language is from the prior product identity. |
 | `docs/architecture/V3-PROTOCOL.md` | `ARCHIVE` | Historical protocol layer, not current outward-facing architecture. |
 | `docs/architecture/V4-PROTOCOL.md` | `ARCHIVE` | Same; useful lineage, stale primary framing. |
-| `docs/p2p/P2P-VISION.md` | `ARCHIVE` | Important pivot precursor, but README and Akashik docs supersede it. |
+| `docs/p2p/P2P-VISION.md` | `ARCHIVE` | Important pivot precursor, but README and Folklore docs supersede it. |
 | `docs/p2p/p2p-threat-model.md` | `KEEP` | Security/compliance-adjacent material ages better and matters for future SOC2/GDPR credibility. |
 | `docs/p2p/peer-reputation-design.md` | `KEEP` | Still part of the federation story and operational trust layer. |
 | `docs/p2p/peer-reputation-load-spreading.md` | `KEEP` | Still relevant to live federation scaling. |
@@ -7125,7 +7125,7 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | `docs/research/energy-based-contradiction-detection.md` | `ARCHIVE` | Good forward sketch, but not core to the current launch narrative. |
 | `docs/research/github-star-growth.md` | `KEEP` | Still useful if launch/distribution remains GitHub-centric. |
 | `docs/research/octopus-discover/round-4-2026-05-26/**` | `ARCHIVE` | Preserve as decision provenance; not a day-to-day doc surface. |
-| `docs/research/octopus-discover/round-5-2026-05-26/**` | `KEEP` | This round directly informed the current Akashik plan and AkashikBench-F thesis. |
+| `docs/research/octopus-discover/round-5-2026-05-26/**` | `KEEP` | This round directly informed the current Folklore plan and FolkloreBench-F thesis. |
 | `docs/index.html` | `KEEP` | Keep if this is the public docs/landing surface; otherwise it risks drift and needs synchronization. |
 | `docs/probe.html` | `DELETE` | Looks like an experiment artifact, not durable documentation. |
 
@@ -7133,7 +7133,7 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 
 | file path | action | one-line reason |
 |---|---|---|
-| `tests/bench-akashik-federation.test.ts` | `KEEP` | This is the one benchmark that directly validates the current product thesis. |
+| `tests/bench-folklore-federation.test.ts` | `KEEP` | This is the one benchmark that directly validates the current product thesis. |
 | `tests/bench-locomo-real.test.ts` | `KEEP` | Real-corpus single-peer retrieval still matters as a subsystem health check. |
 | `tests/bench-longmemeval-real.test.ts` | `KEEP` | Same: still useful as retrieval regression evidence, even if no longer the headline. |
 | `tests/bench-scifact-real.test.ts` | `KEEP` | Useful baseline for retrieval quality and hardware comparisons. |
@@ -7143,15 +7143,15 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | `tests/bench-longmemeval-synth.test.ts` | `ARCHIVE` | Same as above; valuable for local speed, not for product claims. |
 | `tests/phase39.oracle-gossip-e2e.test.ts` | `KEEP` | Oracle/pubsub is still a real federation capability, not just old framing fluff. |
 | `tests/federated-search-cap-tiers.test.ts` | `KEEP` | Directly relevant to federation fan-out quality and scaling behavior. |
-| `tests/phase18.production-net.test.ts` | `KEEP` | Networking regressions still matter to Akashik’s core architecture. |
+| `tests/phase18.production-net.test.ts` | `KEEP` | Networking regressions still matter to Folklore’s core architecture. |
 | `tests/phase29.rust-retrieval-regression.test.ts` | `KEEP` | Rust sidecar is still valid infra; keep a regression guard if you keep the sidecar. |
 
 **Src / code**
 
 | file path | action | one-line reason |
 |---|---|---|
-| `src/application/federated-search.ts` | `KEEP` | Core Akashik behavior; this is central, not optional. |
-| `src/domain/federation-sim.ts` | `KEEP` | Core to AkashikBench-F and the compounding thesis. |
+| `src/application/federated-search.ts` | `KEEP` | Core Folklore behavior; this is central, not optional. |
+| `src/domain/federation-sim.ts` | `KEEP` | Core to FolkloreBench-F and the compounding thesis. |
 | `src/application/use-cases.ts` | `KEEP` | Still foundational, but comments/reference text should stop talking like Phase 1 code. |
 | `src/application/ask.ts` | `NEEDS-REWRITE` | Keep the functionality, but align the flow/docs with local→federation→web→save. |
 | `src/domain/long-term-memory.ts` | `ARCHIVE` | Not dead code necessarily, but clearly from the older “agent memory product” center of gravity. |
@@ -7162,11 +7162,11 @@ The stale surface is mostly “leaderboard-era retrieval product” material, pl
 | `src/telegram/commands.ts` | `DELETE` | Same. |
 | `src/domain/oracle.ts` | `KEEP` | The oracle room still fits community knowledge exchange, though it should be presented as secondary to federation-on-query. |
 | `src/cli/commands/onboard.ts` | `NEEDS-REWRITE` | Keep if you want adoption, but the onboarding story should be “join the commons,” not “set up your personal memory.” |
-| `src/cli/index.ts` | `NEEDS-REWRITE` | Command surface has grown into product sprawl; prune or regroup around Akashik’s current core use cases. |
+| `src/cli/index.ts` | `NEEDS-REWRITE` | Command surface has grown into product sprawl; prune or regroup around Folklore’s current core use cases. |
 
-A few clear calls. On the two-name issue: stay two-name only as a short transitional tactic, because the upside is package/install continuity, but the downside is constant cognitive tax across docs, tests, CLI, and benchmarks. I would not do an immediate repo/package rename before the pilot if it risks breaking the working distribution path; on the other hand, I would aggressively remove “akashik” from narrative docs now and schedule one coordinated technical rename once the pilot-facing docs stabilize. On `storybrand-messaging-draft.md`, keep the revision history only in archive form; the public or active doc should be the final message only. On `beat-the-competitors-retrieval-plan.md`, archive and annotate it rather than delete it; its strengths are real technical research and benchmark archaeology, however its competitive frame is now wrong for the product.
+A few clear calls. On the two-name issue: stay two-name only as a short transitional tactic, because the upside is package/install continuity, but the downside is constant cognitive tax across docs, tests, CLI, and benchmarks. I would not do an immediate repo/package rename before the pilot if it risks breaking the working distribution path; on the other hand, I would aggressively remove “folklore” from narrative docs now and schedule one coordinated technical rename once the pilot-facing docs stabilize. On `storybrand-messaging-draft.md`, keep the revision history only in archive form; the public or active doc should be the final message only. On `beat-the-competitors-retrieval-plan.md`, archive and annotate it rather than delete it; its strengths are real technical research and benchmark archaeology, however its competitive frame is now wrong for the product.
 
-If I were Sahar cleaning up right now, the 3 changes I’d make first are: delete repo junk and local state (`README.md.bak.830lines`, `.claude-octopus/*`, tracked `dist/`) because that is pure signal-to-noise drag; archive most of `.planning/` plus the retrieval-era research docs because they preserve history without continuing to steer the present; rewrite `docs/product/BENCHMARKS.md`, `docs/product/VISION.md`, and onboarding/command-facing docs around Akashik’s actual thesis because the biggest current risk is not dead code, it is a codebase and doc surface still telling two different stories.
+If I were Sahar cleaning up right now, the 3 changes I’d make first are: delete repo junk and local state (`README.md.bak.830lines`, `.claude-octopus/*`, tracked `dist/`) because that is pure signal-to-noise drag; archive most of `.planning/` plus the retrieval-era research docs because they preserve history without continuing to steer the present; rewrite `docs/product/BENCHMARKS.md`, `docs/product/VISION.md`, and onboarding/command-facing docs around Folklore’s actual thesis because the biggest current risk is not dead code, it is a codebase and doc surface still telling two different stories.
 2026-05-26T17:35:48.298803Z ERROR codex_core::session: failed to record rollout items: thread 019e6557-a38e-7183-8dfb-0cd38e5abfe7 not found
 tokens used
 215,071

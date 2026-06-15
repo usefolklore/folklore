@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# akashik demo — scene 6 (P2P touch) end-to-end orchestrator.
+# folklore demo — scene 6 (P2P touch) end-to-end orchestrator.
 #
 # Lifecycle (single execution):
 #
@@ -15,7 +15,7 @@
 #
 #   bash demo/scene-touch.sh
 #
-# Honours `AKASHIK_DEMO_KEEP_DAEMONS=1` if you want to keep the
+# Honours `FOLKLORE_DEMO_KEEP_DAEMONS=1` if you want to keep the
 # 5-peer mesh alive after recording (e.g. for manual exploration).
 
 set -euo pipefail
@@ -23,9 +23,9 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 cleanup() {
-  if [[ "${AKASHIK_DEMO_KEEP_DAEMONS:-0}" == "1" ]]; then
+  if [[ "${FOLKLORE_DEMO_KEEP_DAEMONS:-0}" == "1" ]]; then
     echo
-    echo "[scene-touch] AKASHIK_DEMO_KEEP_DAEMONS=1 — leaving 5 daemons up."
+    echo "[scene-touch] FOLKLORE_DEMO_KEEP_DAEMONS=1 — leaving 5 daemons up."
     echo "                tear down later with: bash demo/teardown-p2p.sh"
     return
   fi
@@ -39,10 +39,10 @@ bash demo/setup-p2p.sh
 
 # Surface the peer ids as env vars so the tape can reference them
 # instead of hard-coding (peer ids regenerate every setup run).
-export AKASHIK_DEMO_PEER_B_ID=$(cat "$HOME/.akashik.demo/peer-B-id")
-export AKASHIK_DEMO_PEER_C_ID=$(cat "$HOME/.akashik.demo/peer-C-id")
-export AKASHIK_DEMO_PEER_D_ID=$(cat "$HOME/.akashik.demo/peer-D-id")
-export AKASHIK_DEMO_PEER_E_ID=$(cat "$HOME/.akashik.demo/peer-E-id")
+export FOLKLORE_DEMO_PEER_B_ID=$(cat "$HOME/.folklore.demo/peer-B-id")
+export FOLKLORE_DEMO_PEER_C_ID=$(cat "$HOME/.folklore.demo/peer-C-id")
+export FOLKLORE_DEMO_PEER_D_ID=$(cat "$HOME/.folklore.demo/peer-D-id")
+export FOLKLORE_DEMO_PEER_E_ID=$(cat "$HOME/.folklore.demo/peer-E-id")
 
 echo
 echo "[scene-touch] recording demo/scene-touch.tape → demo/scene-touch.gif"

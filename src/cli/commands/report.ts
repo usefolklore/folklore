@@ -1,8 +1,8 @@
 /**
- * `akashik report [--workspace W|all] [--since DATE] [--no-save]`
+ * `folklore report [--workspace W|all] [--since DATE] [--no-save]`
  *
  * Generates a markdown report from the current graph state and
- * optionally persists it to ~/.akashik/reports/<date>.md.
+ * optionally persists it to ~/.folklore/reports/<date>.md.
  *
  * V5 (Phase 24): no per-room reports. The report covers the global
  * graph. --workspace W|all is accepted for future workspace-scoped

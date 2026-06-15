@@ -1,15 +1,15 @@
 /**
- * `akashik login` — link a verified GitHub identity to your
+ * `folklore login` — link a verified GitHub identity to your
  * local DID via OAuth Device Flow.
  *
- * GitHub is the sole identity provider for akashik. The verified
+ * GitHub is the sole identity provider for folklore. The verified
  * handle, user id, profile URL, and primary verified email go into
- * `~/.akashik/linked-accounts.json`. The OAuth access token NEVER
+ * `~/.folklore/linked-accounts.json`. The OAuth access token NEVER
  * touches disk — we use it once to fetch /user + /user/emails, then
  * drop it.
  *
  * Flow:
- *   1. Read client id from $AKASHIK_GITHUB_CLIENT_ID (or
+ *   1. Read client id from $FOLKLORE_GITHUB_CLIENT_ID (or
  *      config.yaml — env wins).
  *   2. Request a device code from GitHub.
  *   3. Print the user_code prominently + try to open the user's
@@ -18,7 +18,7 @@
  *   5. On grant, fetch /user + /user/emails, persist the attestation.
  *
  * One provider, one command. No `login github` subcommand: the bare
- * `akashik login` runs the only flow that exists.
+ * `folklore login` runs the only flow that exists.
  */
 
 import { spawn } from 'node:child_process';
@@ -29,14 +29,14 @@ import {
   type GitHubOAuthError,
 } from '../../infrastructure/github-oauth.js';
 import { saveLinkedAccount } from '../../infrastructure/linked-accounts.js';
-import { akashikHome } from '../runtime.js';
+import { folkloreHome } from '../runtime.js';
 
 // ─────────────── helpers ──────────────────
 
 const renderOAuthError = (e: GitHubOAuthError): string => {
   switch (e.type) {
     case 'GitHubOAuthMissingClientId':
-      return 'no GitHub OAuth client id configured.\n  → fix: export AKASHIK_GITHUB_CLIENT_ID="<your_app_client_id>" then re-run.\n  → Register a Device Flow OAuth app at https://github.com/settings/applications/new (callback URL is unused; enable Device Flow).';
+      return 'no GitHub OAuth client id configured.\n  → fix: export FOLKLORE_GITHUB_CLIENT_ID="<your_app_client_id>" then re-run.\n  → Register a Device Flow OAuth app at https://github.com/settings/applications/new (callback URL is unused; enable Device Flow).';
     case 'GitHubOAuthRequestFailed':
       return `GitHub returned HTTP ${e.status}: ${e.body.slice(0, 200)}`;
     case 'GitHubOAuthInvalidResponse':
@@ -44,7 +44,7 @@ const renderOAuthError = (e: GitHubOAuthError): string => {
     case 'GitHubOAuthDenied':
       return 'authorisation denied by user.';
     case 'GitHubOAuthExpired':
-      return 'verification code expired before you completed the flow. re-run `akashik login`.';
+      return 'verification code expired before you completed the flow. re-run `folklore login`.';
     case 'GitHubOAuthTimeout':
       return 'timeout waiting for browser confirmation. re-run when ready.';
     case 'GitHubOAuthNetworkError':
@@ -67,7 +67,7 @@ const tryOpenBrowser = (url: string): void => {
 };
 
 const clientIdFromEnv = (): string | null => {
-  const v = process.env.AKASHIK_GITHUB_CLIENT_ID;
+  const v = process.env.FOLKLORE_GITHUB_CLIENT_ID;
   return v && v.trim().length > 0 ? v.trim() : null;
 };
 
@@ -130,7 +130,7 @@ const loginGithub = async (): Promise<number> => {
   }
   const user = userRes.value;
 
-  const persisted = saveLinkedAccount(akashikHome(), 'github', {
+  const persisted = saveLinkedAccount(folkloreHome(), 'github', {
     handle: user.login,
     user_id: String(user.id),
     profile_url: user.html_url,
@@ -151,7 +151,7 @@ const loginGithub = async (): Promise<number> => {
   } else {
     console.log(`  email:      <not granted — re-run with user:email scope to capture>`);
   }
-  console.log(`  recorded:   ~/.akashik/linked-accounts.json`);
+  console.log(`  recorded:   ~/.folklore/linked-accounts.json`);
   console.log('');
   console.log('  Your DID can now claim this handle for signed envelopes + future did:web resolution.');
   return 0;
@@ -159,11 +159,11 @@ const loginGithub = async (): Promise<number> => {
 
 // ─────────────── usage + dispatch ─────────
 
-const USAGE = `usage: akashik login
+const USAGE = `usage: folklore login
 
   Link a verified GitHub identity to your local DID via OAuth Device
   Flow. Persists handle, user id, profile URL, and primary verified
-  email to ~/.akashik/linked-accounts.json. The access token is NEVER
+  email to ~/.folklore/linked-accounts.json. The access token is NEVER
   written to disk.
 
   Setup:
@@ -171,8 +171,8 @@ const USAGE = `usage: akashik login
        https://github.com/settings/applications/new
        (any callback URL works; enable "Device Flow" in app settings)
     2. Export the client id:
-       export AKASHIK_GITHUB_CLIENT_ID="Iv1.<your_id>"
-    3. Re-run: akashik login`;
+       export FOLKLORE_GITHUB_CLIENT_ID="Iv1.<your_id>"
+    3. Re-run: folklore login`;
 
 export const login = async (args: readonly string[]): Promise<number> => {
   if (args.includes('--help') || args.includes('-h')) {
@@ -180,7 +180,7 @@ export const login = async (args: readonly string[]): Promise<number> => {
     return 0;
   }
   if (args.length > 0) {
-    console.error(`login: unexpected argument '${args[0]}'. usage: akashik login`);
+    console.error(`login: unexpected argument '${args[0]}'. usage: folklore login`);
     return 1;
   }
   return loginGithub();

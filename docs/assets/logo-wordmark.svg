@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 64" width="360" height="64" role="img" aria-label="akashik">
-  <title>akashik — wordmark</title>
-  <desc>Sigillum (codex with mystic glyph) followed by the lowercase "akashik" wordmark set in Fraunces serif. For headers, social bios, signatures.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 64" width="360" height="64" role="img" aria-label="folklore">
+  <title>folklore — wordmark</title>
+  <desc>Sigillum (codex with mystic glyph) followed by the lowercase "folklore" wordmark set in Fraunces serif. For headers, social bios, signatures.</desc>
   <defs>
     <style>
       .wm-text {
@@ -57,5 +57,5 @@
           fill="none" stroke="#9c6f1c" stroke-width="1.2" stroke-linecap="round"/>
   </g>
 
-  <text x="80" y="43" class="wm-text">akashik</text>
+  <text x="80" y="43" class="wm-text">folklore</text>
 </svg>

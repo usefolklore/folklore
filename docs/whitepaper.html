@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Akashik: A Cooperative Compounding-Inference Protocol</title>
+<title>Folklore: A Cooperative Compounding-Inference Protocol</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
@@ -117,13 +117,13 @@
 </head>
 <body>
 <div class="paper">
-<div class="titleblock"><h1>Akashik: A Cooperative Compounding-Inference Protocol</h1>
+<div class="titleblock"><h1>Folklore: A Cooperative Compounding-Inference Protocol</h1>
 <p><strong>A peer-to-peer knowledge layer where research compounds across the network.</strong></p>
 <p>Version 0.1 (pre-launch draft) · MIT-licensed protocol</p>
 </div>
 <hr>
 <div class="abstract"><h2>Abstract</h2>
-<p>Large language model agents continuously re-derive the same answers. The same paper is read, the same regression is debugged, and the same retrieval is billed per token thousands of times daily across the open-source community, with each result discarded when the session ends. Akashik is a peer-to-peer protocol designed to make that inference work compound rather than evaporate. Each peer maintains a local graph-RAG over its own code, research, and past sessions; queries fan out to connected peers before reaching the paid web; and every record is signed with a cryptographic identity bound to a verified GitHub handle. We formalize the central claim, &quot;we compound on inference,&quot; as a monotonicity property over R(T,t), the number of peers holding a resolved answer for topic T at time t. The claim is grounded in established cache theory: pooled cooperative capacity under Mandelbrot-Zipf demand, evaluated with Che&#39;s LRU approximation, raises the network&#39;s hit-rate ceiling and collapses the marginal cost of resolving a topic after the first peer pays for it. A 10-peer federation simulator shows the web-fallback rate falling from 17% to 1% over 2,000 steps. We show, however, that this v1 result treats per-peer retrieval as a boolean, which makes part of the decay true by construction rather than an empirical discovery; we therefore present it as a demonstration, not evidence, and specify the v2 experiment, a semantic-satisfaction-threshold sweep, that makes the claim genuinely falsifiable. This paper presents the full system architecture, a formal compounding model, a security architecture and threat model centered on provenance-attested retrieval against context poisoning, the empirical results to date with their limitations, and the open problems that remain.</p>
+<p>Large language model agents continuously re-derive the same answers. The same paper is read, the same regression is debugged, and the same retrieval is billed per token thousands of times daily across the open-source community, with each result discarded when the session ends. Folklore is a peer-to-peer protocol designed to make that inference work compound rather than evaporate. Each peer maintains a local graph-RAG over its own code, research, and past sessions; queries fan out to connected peers before reaching the paid web; and every record is signed with a cryptographic identity bound to a verified GitHub handle. We formalize the central claim, &quot;we compound on inference,&quot; as a monotonicity property over R(T,t), the number of peers holding a resolved answer for topic T at time t. The claim is grounded in established cache theory: pooled cooperative capacity under Mandelbrot-Zipf demand, evaluated with Che&#39;s LRU approximation, raises the network&#39;s hit-rate ceiling and collapses the marginal cost of resolving a topic after the first peer pays for it. A 10-peer federation simulator shows the web-fallback rate falling from 17% to 1% over 2,000 steps. We show, however, that this v1 result treats per-peer retrieval as a boolean, which makes part of the decay true by construction rather than an empirical discovery; we therefore present it as a demonstration, not evidence, and specify the v2 experiment, a semantic-satisfaction-threshold sweep, that makes the claim genuinely falsifiable. This paper presents the full system architecture, a formal compounding model, a security architecture and threat model centered on provenance-attested retrieval against context poisoning, the empirical results to date with their limitations, and the open problems that remain.</p>
 <p><strong>Keywords:</strong> peer-to-peer retrieval, retrieval-augmented generation, cooperative cache theory, federated knowledge, cryptographic provenance, RAG poisoning, trust calibration.</p>
 </div>
 <hr>
@@ -132,7 +132,7 @@
 <p>Open source built the freest software stack in history by sharing code: CRAN, npm, PyPI, GitHub, arXiv. Distribution of artifacts compounds, so each contribution permanently improves what every future engineer starts with. The knowledge <em>between</em> the code has never had the same substrate. What an engineer read, what they figured out at 3am, the synthesis that explained why a fix worked: this dies with the session. The same papers are re-explained in posts that 404 within a year, and the same regression is diagnosed in parallel by many engineers the following week.</p>
 <p>The cost of this redundancy is now metered. Every retrieval-augmented call an LLM agent makes is billed per token, run against the same data that has already been processed many times over. The waste is not only economic. It represents a missed opportunity: inference that could build on prior inference instead restarts from zero each time.</p>
 <h3>1.2 The thesis</h3>
-<p>Akashik&#39;s central claim is that knowledge work can compound the way code distribution does, provided three properties hold:</p>
+<p>Folklore&#39;s central claim is that knowledge work can compound the way code distribution does, provided three properties hold:</p>
 <ol>
 <li>Each peer keeps only its own graph, on its own machine, with no central server.</li>
 <li>Every contribution is signed by a verified human identity, forming an auditable provenance chain.</li>
@@ -143,7 +143,7 @@
 <p>This paper specifies the protocol, formalizes the compounding claim with an explicit statement of when it is a theorem versus an empirical claim, presents the security architecture and threat model, reports the empirical results to date with their limitations, positions the work against prior art, and enumerates open problems. It is a pre-launch draft: the federation result is from a simulator, not a pilot, and we preserve that distinction throughout.</p>
 <p><strong>Contributions.</strong> This paper makes four contributions:</p>
 <ol>
-<li>A specification of the Akashik protocol: a federated, signed, demand-shaped knowledge layer in which each peer runs a local graph-RAG and resolutions transfer across peers (Sections 3 and 4).</li>
+<li>A specification of the Folklore protocol: a federated, signed, demand-shaped knowledge layer in which each peer runs a local graph-RAG and resolutions transfer across peers (Sections 3 and 4).</li>
 <li>A formal model of compounding grounded in cooperative cache theory, with an explicit statement of the conditions under which the monotonicity of R(T,t) is a theorem true by construction versus an empirical claim, and the experiment that makes it falsifiable (Section 5).</li>
 <li>A security architecture and threat model for provenance-attested retrieval, separating what cryptographic provenance guarantees from the semantic accuracy it cannot certify (Section 6).</li>
 <li>A fully specified, runnable safety experiment testing whether provenance metadata lets a consuming model detect and refuse poisoned context, with a stated null hypothesis (Section 7.4).</li>
@@ -206,18 +206,18 @@
 </figure>
 
 <p>The deny pathway is opt-in per project, because a false positive, the graph claiming it has an answer it does not, costs more than a redundant fetch. Only <code>WebSearch</code> and <code>WebFetch</code> are deniable; local tools such as <code>Read</code>, <code>Glob</code>, and <code>Grep</code> are never blocked.</p>
-<p>This creates an apparent tension with the compounding thesis: if the mechanism that cancels the paid web call is off by default, does the default network compound at all? The resolution is that <strong>compounding and hard-denial are separate mechanisms</strong>. Two things occur on every research-shaped call regardless of the deny setting: (1) the local-plus-federated graph is consulted first, and any sufficiently good hit is injected into the model&#39;s context; and (2) on a web fallback, the resolved result is signed and disseminated, growing R(T,t). Knowledge accrual and cross-peer transfer, which constitute the thesis, are therefore <strong>default-on</strong>. What <code>AKASHIK_DENY_WEBSEARCH</code> controls is only whether a satisfied query also hard-cancels the redundant web call to capture the full token saving. The default network still compounds knowledge and serves it as context; the opt-in deny mode converts that compounding into a hard cost reduction once an operator trusts the graph&#39;s coverage. The benchmark in Section 7.2 measures the deny-on regime, representing the upper bound on cost savings; the default regime captures the same knowledge accrual with a softer cost effect.</p>
+<p>This creates an apparent tension with the compounding thesis: if the mechanism that cancels the paid web call is off by default, does the default network compound at all? The resolution is that <strong>compounding and hard-denial are separate mechanisms</strong>. Two things occur on every research-shaped call regardless of the deny setting: (1) the local-plus-federated graph is consulted first, and any sufficiently good hit is injected into the model&#39;s context; and (2) on a web fallback, the resolved result is signed and disseminated, growing R(T,t). Knowledge accrual and cross-peer transfer, which constitute the thesis, are therefore <strong>default-on</strong>. What <code>FOLKLORE_DENY_WEBSEARCH</code> controls is only whether a satisfied query also hard-cancels the redundant web call to capture the full token saving. The default network still compounds knowledge and serves it as context; the opt-in deny mode converts that compounding into a hard cost reduction once an operator trusts the graph&#39;s coverage. The benchmark in Section 7.2 measures the deny-on regime, representing the upper bound on cost savings; the default regime captures the same knowledge accrual with a softer cost effect.</p>
 <p>Per-project tunables:</p>
-<pre><code>AKASHIK_DENY_WEBSEARCH=1     # opt in to the deny pathway (off by default)
-AKASHIK_DENY_THRESHOLD=0.85  # satisfaction floor
-AKASHIK_DENY_MIN_HITS=2      # minimum hits to allow the deny
-AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
+<pre><code>FOLKLORE_DENY_WEBSEARCH=1     # opt in to the deny pathway (off by default)
+FOLKLORE_DENY_THRESHOLD=0.85  # satisfaction floor
+FOLKLORE_DENY_MIN_HITS=2      # minimum hits to allow the deny
+FOLKLORE_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 </code></pre>
 <h3>3.5 Network and transport layer</h3>
 <p>Peer discovery and transport reuse established structured routing primitives. The protocol uses Kademlia-style routing overlays, cryptographic content identifiers (CIDs), and replication intervals to manage the P2P topology. Query distribution and save-back propagation are modeled as a fanned-out gossip protocol with epidemic dissemination dynamics, segmenting nodes into Ignorants, Active Spreaders, and Stiflers, following the SIR rumor-spreading literature discussed in Section 5.1.</p>
 <hr>
 <h2>4. Harness Integration</h2>
-<p>Akashik does not alter how an engineer works. Once installed and running, the interception hook sits in front of the harness&#39;s research-shaped calls without requiring workflow changes.</p>
+<p>Folklore does not alter how an engineer works. Once installed and running, the interception hook sits in front of the harness&#39;s research-shaped calls without requiring workflow changes.</p>
 <table>
 <thead>
 <tr>
@@ -228,17 +228,17 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 </thead>
 <tbody><tr>
 <td>Claude Code</td>
-<td><code>akashik claude install</code> wires <code>PreToolUse</code> + <code>PostToolUse</code> + <code>SessionStart</code> hooks and a <code>CLAUDE.md</code> system-prompt section.</td>
+<td><code>folklore claude install</code> wires <code>PreToolUse</code> + <code>PostToolUse</code> + <code>SessionStart</code> hooks and a <code>CLAUDE.md</code> system-prompt section.</td>
 <td>Implemented</td>
 </tr>
 <tr>
 <td>Any MCP-capable harness</td>
-<td>Register <code>akashik mcp start</code> as an MCP tool server; the harness&#39;s tool-routing layer prefers akashik for query-shaped calls.</td>
+<td>Register <code>folklore mcp start</code> as an MCP tool server; the harness&#39;s tool-routing layer prefers folklore for query-shaped calls.</td>
 <td>Intended integration path</td>
 </tr>
 <tr>
 <td>Anything with a PreToolUse hook</td>
-<td>Point the harness&#39;s <code>PreToolUse</code> config at the reusable <code>akashik-smart-hook.cjs</code>.</td>
+<td>Point the harness&#39;s <code>PreToolUse</code> config at the reusable <code>folklore-smart-hook.cjs</code>.</td>
 <td>Intended integration path</td>
 </tr>
 </tbody></table>
@@ -279,9 +279,9 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <p>This is the crux of honest evaluation. Because the v1 simulator (Section 7.2) treats per-peer retrieval as a boolean (&quot;does peer N hold doc D&quot;), it assumes exact-match retrieval and therefore bakes in part of the decay. The experiment that makes the claim genuinely falsifiable must vary <strong>the semantic satisfaction threshold</strong>: sweep it (for example 0.75 to 0.95 in 0.01 increments) on a continuous semantic-similarity harness to find the point at which natural linguistic variance forces a cache miss and breaks the idealized compounding curve. That is the v2 design (Section 7.3).</p>
 <hr>
 <h2>6. Security Architecture and Threat Model</h2>
-<p>A peer-to-peer RAG network exposes a large attack surface. We separate what the Akashik formalization specifies from what is borrowed from the literature and still needs integration.</p>
+<p>A peer-to-peer RAG network exposes a large attack surface. We separate what the Folklore formalization specifies from what is borrowed from the literature and still needs integration.</p>
 <h3>6.1 Threat model</h3>
-<p><strong>Specified in the Akashik architecture:</strong></p>
+<p><strong>Specified in the Folklore architecture:</strong></p>
 <ul>
 <li><strong>Data poisoning / context injection</strong>: adversaries inject corrupted context into the cooperative cache to hijack downstream outputs.</li>
 <li><strong>Sybil and collective poisoning</strong>: attackers spin up many cheap automated identities to collude, cross-validate, and sign and distribute poisoned reasoning at scale.</li>
@@ -301,7 +301,7 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <li><strong>Chunk-wise perplexity filtering</strong> (Secure-RAG-against-poisoning): flag over-optimized, unnatural text via perplexity difference and perplexity maximum, plus text-similarity filtering.</li>
 <li><strong>Leave-one-out decoding</strong> (RAGuard): temporarily remove each retrieved document and measure answer stability and entropy differential; a document whose removal radically changes the output is flagged as a malicious anomaly.</li>
 </ul>
-<p>Akashik specifies a <strong>three-stage defense</strong> that integrates these ideas. All three stages are <strong>specified in the architecture but not yet implemented or evaluated</strong> (none appears in the empirical results of Section 7):</p>
+<p>Folklore specifies a <strong>three-stage defense</strong> that integrates these ideas. All three stages are <strong>specified in the architecture but not yet implemented or evaluated</strong> (none appears in the empirical results of Section 7):</p>
 <ol>
 <li><strong>Ingestion-level embedding anomaly detection</strong> <em>(specified, not yet implemented)</em>: flag statistical outliers in vector space at save time.</li>
 <li><strong>Retrieval-level adversarial training</strong> <em>(specified, not yet implemented)</em>: train the retriever on synthetic poisons so it down-ranks suspicious passages.</li>
@@ -310,11 +310,11 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <p>The protocol&#39;s distinctive lever is <strong>attestation as a candidate trust signal</strong>. Because every retrieved chunk carries provenance metadata (peer identity, verified handle, source URI, timestamp, grounding artifacts), a consuming LLM could in principle weigh retrieved context against its lineage before treating it as factual grounding, in the spirit of SBOM/AIBOM supply-chain attestation. We state this as a hypothesis, not a guarantee: a cryptographically signed poison is still a poison, and LLMs are known to be susceptible to context-hijacking and sycophancy regardless of metadata. Whether a model can actually weigh a provenance tag against an adversarial payload is an open empirical question, the protocol&#39;s strongest research direction, and the subject of the planned safety experiment in Section 7.4.</p>
 <h3>6.4 Sybil resistance and reputation</h3>
 <p>The literature provides a hard result: <strong>there is no symmetric, Sybil-proof, nontrivial reputation function</strong> (Sybilproof Reputation Mechanisms). A symmetric function cannot distinguish a real trust graph from an exact attacker-made duplicate, so any symmetric system lets an adversary inflate rank with fake nodes. Sybil resistance therefore requires an <strong>asymmetric</strong> approach that propagates trust from pre-trusted seed nodes.</p>
-<p>Akashik adopts this via <strong>EigenTrust</strong>. Local trust is computed from satisfactory versus unsatisfactory transactions, <code>s_ij = sat(i, j) - unsat(i, j)</code>, and global trust is computed recursively with pre-trusted seeds:</p>
+<p>Folklore adopts this via <strong>EigenTrust</strong>. Local trust is computed from satisfactory versus unsatisfactory transactions, <code>s_ij = sat(i, j) - unsat(i, j)</code>, and global trust is computed recursively with pre-trusted seeds:</p>
 <p>\[t^{(k+1)} = (1 - a)\, C^{\top} t^{(k)} + a\, p\]</p>
 <p>where <code>C</code> is the normalized local-trust matrix, <code>p</code> is the distribution over pre-trusted seed peers, and <code>a</code> is the teleport probability back to those seeds. The teleportation forces the trust computation to periodically return to verified foundation peers, so a Sybil cluster cannot inflate its global reputation merely by exchanging trust among its own members.</p>
 <h3>6.5 Revocation and freshness</h3>
-<p>When a signed record is found to be poisoned or becomes stale, the network must be able to retract it. Akashik maps PKI revocation to signed knowledge:</p>
+<p>When a signed record is found to be poisoned or becomes stale, the network must be able to retract it. Folklore maps PKI revocation to signed knowledge:</p>
 <ul>
 <li>Peers periodically poll a <strong>signed Certificate Revocation List (CRL)</strong>, analogous to PKI CRL/OCSP. When a record&#39;s signature serial number appears on the CRL, each peer parses its local graph, prunes the revoked CIDs, and re-runs its personalized-PageRank calculations.</li>
 <li><strong>Cryptographic tombstone protocols</strong> reconcile immutable provenance with the right to be forgotten: a signed deletion record removes content while the chain still verifies.</li>
@@ -326,12 +326,12 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <h3>7.1 Retrieval quality (per-peer)</h3>
 <p>On the full BEIR SciFact benchmark (5,183 documents, 300 queries), the per-peer retrieval stack scores <strong>0.7522 NDCG@10</strong>, CPU-only, with an 11 ms median, no LLM judging an LLM. For reference against published single-user baselines: Pinecone-baseline 0.5840, mem0 0.4410, Letta 0.3150, LangChain-RAG 0.2680 (Figure 3). This establishes that the per-peer retriever is competitive before any federation; the federation question is separate.</p>
 <figure>
-  <img src="figures/fig3-beir.svg" alt="Bar chart of NDCG@10 on BEIR SciFact: akashik 0.7522, Pinecone 0.5840, mem0 0.4410, Letta 0.3150, LangChain 0.2680." />
-  <figcaption><strong>Figure 3.</strong> Per-peer retrieval quality on BEIR SciFact (NDCG@10, CPU-only, 11 ms median). akashik is shown against published single-user baselines.</figcaption>
+  <img src="figures/fig3-beir.svg" alt="Bar chart of NDCG@10 on BEIR SciFact: folklore 0.7522, Pinecone 0.5840, mem0 0.4410, Letta 0.3150, LangChain 0.2680." />
+  <figcaption><strong>Figure 3.</strong> Per-peer retrieval quality on BEIR SciFact (NDCG@10, CPU-only, 11 ms median). folklore is shown against published single-user baselines.</figcaption>
 </figure>
 
-<h3>7.2 Federation simulator (AkashikBench-F)</h3>
-<p>AkashikBench-F is a federation-level simulator measuring <code>web_fallback_rate(t)</code> over a peer network with offline churn. First run, on the LoCoMo factual subset:</p>
+<h3>7.2 Federation simulator (FolkloreBench-F)</h3>
+<p>FolkloreBench-F is a federation-level simulator measuring <code>web_fallback_rate(t)</code> over a peer network with offline churn. First run, on the LoCoMo factual subset:</p>
 <table>
 <thead>
 <tr>
@@ -392,7 +392,7 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <p>The end-state (1%) and the run-average (4.5%) are different quantities and must not be conflated: the curve decays over the run, so the average over all steps is higher than the converged end value. The headline claim is the <em>decay</em> (17% to 1%) and its negative slope, not a single point estimate. Figure 2 plots the decay.</p>
 <figure>
   <img src="figures/fig2-compounding.svg" alt="Line chart of web-fallback rate decaying from 17% at step 0 to about 1% at step 2000." />
-  <figcaption><strong>Figure 2.</strong> Simulated web-fallback rate over 2,000 steps in AkashikBench-F v1 (10 peers, 20% offline churn, Zipfian demand). The curve is a <em>demonstration, not validated evidence</em>: under v1's boolean-retrieval abstraction the decay is partly true by construction (Sections 5.6 and 7.3). The shape is illustrative of the reported endpoints and negative slope.</figcaption>
+  <figcaption><strong>Figure 2.</strong> Simulated web-fallback rate over 2,000 steps in FolkloreBench-F v1 (10 peers, 20% offline churn, Zipfian demand). The curve is a <em>demonstration, not validated evidence</em>: under v1's boolean-retrieval abstraction the decay is partly true by construction (Sections 5.6 and 7.3). The shape is illustrative of the reported endpoints and negative slope.</figcaption>
 </figure>
 
 <h3>7.3 Honest limitations and the v2 design</h3>
@@ -401,7 +401,7 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <h3>7.4 Planned safety experiment: does attestation defend against poisoned retrieval?</h3>
 <p>The architecture&#39;s strongest safety claim, that per-record provenance lets a consuming LLM detect and refuse poisoned context, is currently an aspiration, not a result. This subsection specifies the experiment that would make it a falsifiable empirical contribution. The experiment is not yet run; it is stated here so the claim is operationalized rather than hand-waved.</p>
 <ul>
-<li><strong>Dataset and attack corpus.</strong> The PoisonedRAG benchmark corpus (its published query set and target answers), extended so that each poisoned passage is injected as a federated record carrying a full, valid Akashik provenance chain (a real signing key, a verified handle, a source URI, a timestamp). This models the realistic adversary: not an unsigned blob, but a Sybil or compromised peer that signs its poison.</li>
+<li><strong>Dataset and attack corpus.</strong> The PoisonedRAG benchmark corpus (its published query set and target answers), extended so that each poisoned passage is injected as a federated record carrying a full, valid Folklore provenance chain (a real signing key, a verified handle, a source URI, a timestamp). This models the realistic adversary: not an unsigned blob, but a Sybil or compromised peer that signs its poison.</li>
 <li><strong>Conditions (4 arms, each isolating one effect).</strong> The arms are designed so that the difference between any adjacent pair attributes a single causal factor, avoiding the confound of mixing the LLM&#39;s reasoning with mechanical filtering or with prompt instruction-following.<ol>
 <li><em>Anonymous RAG (baseline):</em> retrieved chunks carry no provenance; the LLM sees text only.</li>
 <li><em>Attested, metadata visible, no instruction:</em> each chunk is prefixed with its provenance (handle, identity age, EigenTrust score, source URI), but the system prompt does <strong>not</strong> tell the model to use it. Arm 2 minus arm 1 isolates whether provenance metadata is <em>intrinsically informative</em> to the model without being prompted.</li>
@@ -413,7 +413,7 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <li><strong>Primary metric.</strong> Attack success rate (fraction of poisoned queries where the model emits the attacker&#39;s target answer), reported as a delta between arms. Secondary: refusal rate, answer-faithfulness delta, and false-positive rate (legitimate signed records wrongly discounted).</li>
 <li><strong>Null hypothesis (the honest framing).</strong> H0: provenance metadata produces no significant reduction in attack success rate versus the anonymous baseline, because a signed poison is still a poison and the model cannot operationalize the trust signal. Rejecting H0 is the safety result; failing to reject it is also a publishable result and would refute the protocol&#39;s central safety claim.</li>
 </ul>
-<p>Figure 5 lays out the design. This is the experiment that converts Akashik from cost-saving infrastructure into a testable claim about trust-calibrated retrieval. It reuses the infrastructure the protocol already builds (signed, attributed records) and an apparatus almost no one else has (a provenance-attested federated retrieval network), which is precisely why it is the protocol&#39;s most defensible research direction.</p>
+<p>Figure 5 lays out the design. This is the experiment that converts Folklore from cost-saving infrastructure into a testable claim about trust-calibrated retrieval. It reuses the infrastructure the protocol already builds (signed, attributed records) and an apparatus almost no one else has (a provenance-attested federated retrieval network), which is precisely why it is the protocol&#39;s most defensible research direction.</p>
 <figure>
   <img src="figures/fig5-experiment.svg" alt="Four-arm experiment design: anonymous baseline, attested without instruction, attested with instruction, and mechanical reputation pre-filter, with delta annotations isolating each effect." />
   <figcaption><strong>Figure 5.</strong> The four-arm provenance-against-poisoning experiment. Each adjacent-arm difference isolates a single causal factor: arm 2 minus arm 1 measures whether provenance is intrinsically informative, arm 3 minus arm 2 measures the value of instructing the model, and arm 4 measures mechanical gating independent of any model reasoning.</figcaption>
@@ -421,19 +421,19 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 
 <hr>
 <h2>8. Related Work and Novelty Positioning</h2>
-<p>Akashik sits at the intersection of several mature fields. The defensible novelty is <strong>demand-shaped cross-peer transfer of resolved RAG inference, with cryptographically attested provenance on every record</strong>. We position against the closest prior art:</p>
+<p>Folklore sits at the intersection of several mature fields. The defensible novelty is <strong>demand-shaped cross-peer transfer of resolved RAG inference, with cryptographically attested provenance on every record</strong>. We position against the closest prior art:</p>
 <ul>
-<li><strong>P2P / DHT / content-addressed storage</strong> (Kademlia, IPFS, BitTorrent DHT): provide routing and content addressing for <em>bytes</em>, not semantic resolution of <em>queries</em>. Akashik reuses Kademlia-style routing but adds a semantic retrieval and satisfaction layer on top.</li>
+<li><strong>P2P / DHT / content-addressed storage</strong> (Kademlia, IPFS, BitTorrent DHT): provide routing and content addressing for <em>bytes</em>, not semantic resolution of <em>queries</em>. Folklore reuses Kademlia-style routing but adds a semantic retrieval and satisfaction layer on top.</li>
 <li><strong>Cooperative web/proxy caching</strong> (the cooperative-caching and LRU-approximation literature): supplies the exact formal model for pooled hit-rate (Section 5), but addresses exact-match object caching, not semantic, embedding-based retrieval with a satisfaction floor.</li>
-<li><strong>Semantic / RAG caching</strong> (GPTCache and successors): caches LLM responses for a single tenant. Akashik&#39;s departure is that the cache is <em>federated and signed across a community</em>, so resolution transfers across peers rather than being trapped in one tenant.</li>
-<li><strong>Centralized multi-tenant semantic gateways</strong> (Cloudflare AI Gateway, Portkey, and similar): this is the <strong>single strongest prior-art threat</strong>, because these gateways already pool semantic cache hits across many users globally, achieving cross-user transfer of resolved inference, which is most of Akashik&#39;s economic claim. The honest distinction is therefore not &quot;we pool across users and they do not&quot;; they do. The distinction is <strong>trust topology</strong>: a centralized gateway is a single trusted operator that sees every query and every cached answer (a privacy and capture surface), and offers no per-record provenance for the consuming model to reason about. Akashik&#39;s claim must be defended on the two axes the centralized gateway cannot match: (a) no central operator that sees or owns the pooled knowledge, and (b) cryptographically attested provenance on every record, which is the substrate for the safety experiment in Section 7.4. If those two axes do not deliver measurable value, a centralized semantic gateway is the simpler design and the decentralization is not justified. This is a load-bearing claim the pilot and the safety experiment must substantiate.</li>
+<li><strong>Semantic / RAG caching</strong> (GPTCache and successors): caches LLM responses for a single tenant. Folklore&#39;s departure is that the cache is <em>federated and signed across a community</em>, so resolution transfers across peers rather than being trapped in one tenant.</li>
+<li><strong>Centralized multi-tenant semantic gateways</strong> (Cloudflare AI Gateway, Portkey, and similar): this is the <strong>single strongest prior-art threat</strong>, because these gateways already pool semantic cache hits across many users globally, achieving cross-user transfer of resolved inference, which is most of Folklore&#39;s economic claim. The honest distinction is therefore not &quot;we pool across users and they do not&quot;; they do. The distinction is <strong>trust topology</strong>: a centralized gateway is a single trusted operator that sees every query and every cached answer (a privacy and capture surface), and offers no per-record provenance for the consuming model to reason about. Folklore&#39;s claim must be defended on the two axes the centralized gateway cannot match: (a) no central operator that sees or owns the pooled knowledge, and (b) cryptographically attested provenance on every record, which is the substrate for the safety experiment in Section 7.4. If those two axes do not deliver measurable value, a centralized semantic gateway is the simpler design and the decentralization is not justified. This is a load-bearing claim the pilot and the safety experiment must substantiate.</li>
 <li><strong>RAG and GraphRAG</strong> (hybrid retrieval, RRF, cross-encoder reranking, personalized PageRank over knowledge graphs): the per-peer stack is standard strong RAG. The novelty is not the retriever; it is the cross-peer federation and attestation around it.</li>
-<li><strong>AI-memory products</strong> (mem0, Letta/MemGPT, Cognee, Zep): single-tenant by architecture. A single-tenant design cannot compound across a community by construction, which is precisely the gap Akashik targets.</li>
-<li><strong>Verifiable provenance</strong> (W3C DIDs, verifiable credentials, SCITT, SBOM/AIBOM, Sigstore): supply the attestation analogues. Akashik applies supply-chain attestation to <em>retrieved LLM context</em>, which is a new application domain for these primitives.</li>
+<li><strong>AI-memory products</strong> (mem0, Letta/MemGPT, Cognee, Zep): single-tenant by architecture. A single-tenant design cannot compound across a community by construction, which is precisely the gap Folklore targets.</li>
+<li><strong>Verifiable provenance</strong> (W3C DIDs, verifiable credentials, SCITT, SBOM/AIBOM, Sigstore): supply the attestation analogues. Folklore applies supply-chain attestation to <em>retrieved LLM context</em>, which is a new application domain for these primitives.</li>
 <li><strong>Reputation and Sybil resistance</strong> (EigenTrust, Sybilproof Reputation Mechanisms): supply the trust layer and the impossibility result that forces an asymmetric, seed-anchored design.</li>
 <li><strong>Information-spread models</strong> (multi-stage SIR, gossip protocols): model the <em>push</em> dissemination of resolved answers, complementary to the <em>pull</em> demand model that governs the cost savings.</li>
 </ul>
-<p>In one sentence: prior art solves routing, single-tenant caching, strong retrieval, and attestation <em>separately</em>; Akashik composes them into a demand-shaped, signed, federated knowledge layer, and the composition (not any single component) is the contribution.</p>
+<p>In one sentence: prior art solves routing, single-tenant caching, strong retrieval, and attestation <em>separately</em>; Folklore composes them into a demand-shaped, signed, federated knowledge layer, and the composition (not any single component) is the contribution.</p>
 <hr>
 <h2>9. Open Problems</h2>
 <ol>
@@ -446,14 +446,14 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 </ol>
 <hr>
 <h2>10. Conclusion</h2>
-<p>Akashik proposes that knowledge work can compound across the open-source community the way code distribution already does, given three properties: local-only graphs, signed provenance on every record, and demand-shaped federation that resolves a topic once for the whole network. We formalized the compounding claim with cooperative cache theory, stated precisely when its monotonicity is a theorem versus an empirical claim, and specified the threshold-sweep experiment that makes it falsifiable. We presented a security architecture in which cryptographic provenance secures the chain of custody and a three-stage semantic-plus-reputation layer addresses the poisoning it cannot, with the open and most interesting question being whether attestation metadata lets an LLM calibrate trust on retrieved context. The per-peer retriever is competitive today (0.7522 NDCG@10 on BEIR SciFact). The federation result (17% to 1% web-fallback in simulation) is <strong>not yet usable as evidence</strong>: under v1&#39;s boolean-retrieval abstraction the decay is partly true by construction (Section 5.6), so we report it as a demonstration that the simulator runs and the curve has the predicted sign, not as a validated claim. It becomes evidence only after the v2 threshold sweep (Section 7.3) shows the curve survives realistic semantic variance. The protocol is MIT-licensed with no central server. The next milestones are the v2 falsification experiment and a 100-peer pilot.</p>
+<p>Folklore proposes that knowledge work can compound across the open-source community the way code distribution already does, given three properties: local-only graphs, signed provenance on every record, and demand-shaped federation that resolves a topic once for the whole network. We formalized the compounding claim with cooperative cache theory, stated precisely when its monotonicity is a theorem versus an empirical claim, and specified the threshold-sweep experiment that makes it falsifiable. We presented a security architecture in which cryptographic provenance secures the chain of custody and a three-stage semantic-plus-reputation layer addresses the poisoning it cannot, with the open and most interesting question being whether attestation metadata lets an LLM calibrate trust on retrieved context. The per-peer retriever is competitive today (0.7522 NDCG@10 on BEIR SciFact). The federation result (17% to 1% web-fallback in simulation) is <strong>not yet usable as evidence</strong>: under v1&#39;s boolean-retrieval abstraction the decay is partly true by construction (Section 5.6), so we report it as a demonstration that the simulator runs and the curve has the predicted sign, not as a validated claim. It becomes evidence only after the v2 threshold sweep (Section 7.3) shows the curve survives realistic semantic variance. The protocol is MIT-licensed with no central server. The next milestones are the v2 falsification experiment and a 100-peer pilot.</p>
 <hr>
 <h2>References</h2>
 <p>The following sources ground this paper. Citations refer to documents collected in the project research notebook.</p>
-<p><strong>Akashik primary documents</strong></p>
+<p><strong>Folklore primary documents</strong></p>
 <ul>
-<li>Technical Formalization and Security Architecture of the Akashik Peer-to-Peer Cooperative Knowledge Protocol.</li>
-<li>The Akashik Protocol: Compounding Intelligence through Federated Retrieval-Augmented Generation.</li>
+<li>Technical Formalization and Security Architecture of the Folklore Peer-to-Peer Cooperative Knowledge Protocol.</li>
+<li>The Folklore Protocol: Compounding Intelligence through Federated Retrieval-Augmented Generation.</li>
 </ul>
 <p><strong>Cache theory and demand modeling</strong></p>
 <ul>
@@ -490,7 +490,7 @@ AKASHIK_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <li>Non-Human Identity Management: Designing and Governing Machine Actors.</li>
 </ul>
 <hr>
-<p><em>Pre-launch draft. The federation result is simulator-derived; the v2 experiment and the 100-peer pilot are pending. Formulas and the isolated-vs-cooperative hit-rate figures are drawn from the Akashik formalization documents; the 43% and 69% values are model illustrations under chosen parameters, not measured production rates.</em></p>
+<p><em>Pre-launch draft. The federation result is simulator-derived; the v2 experiment and the 100-peer pilot are pending. Formulas and the isolated-vs-cooperative hit-rate figures are drawn from the Folklore formalization documents; the 43% and 69% values are model illustrations under chosen parameters, not measured production rates.</em></p>
 
 
 </div>

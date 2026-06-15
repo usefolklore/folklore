@@ -1,5 +1,5 @@
 /**
- * Touch protocol — `/akashik/touch/1.0.0`.
+ * Touch protocol — `/folklore/touch/1.0.0`.
  *
  * Wire: one request frame, one response frame, stream closed.
  *   Request:  TouchRequest    — { type:'touch', protocol_version:5, max_nodes? }
@@ -24,7 +24,7 @@
  *   3. On peer error → surface as TouchError
  *   4. On success → caller merges nodes into local graph (CLI step)
  *
- * The libp2p protocol-path stays at `/akashik/touch/1.0.0`; V5 is enforced
+ * The libp2p protocol-path stays at `/folklore/touch/1.0.0`; V5 is enforced
  * at the envelope layer. Pre-V5 peers receive a clear `protocol-mismatch`
  * response rather than "protocol not handled."
  *
@@ -181,14 +181,14 @@ const handleTouchRequest = async (
     //   (b) absence of `protocol_version === 5`.
     if (rawDecoded.room !== undefined) {
       process.stderr.write(
-        `akashik: peer ${peerIdStr} sent V4 TouchRequest with \`room\` field. This peer speaks V5; see docs/architecture/V5-PROTOCOL.md.\n`,
+        `folklore: peer ${peerIdStr} sent V4 TouchRequest with \`room\` field. This peer speaks V5; see docs/architecture/V5-PROTOCOL.md.\n`,
       );
       await writeResponse(fs, errorResponse('protocol-mismatch'));
       return;
     }
     if (rawDecoded.protocol_version !== TOUCH_PROTOCOL_VERSION) {
       process.stderr.write(
-        `akashik: peer ${peerIdStr} sent TouchRequest with unknown protocol_version=${JSON.stringify(rawDecoded.protocol_version)}; this peer speaks V5 only.\n`,
+        `folklore: peer ${peerIdStr} sent TouchRequest with unknown protocol_version=${JSON.stringify(rawDecoded.protocol_version)}; this peer speaks V5 only.\n`,
       );
       await writeResponse(fs, errorResponse('protocol-mismatch'));
       return;

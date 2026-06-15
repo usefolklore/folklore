@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Parse codebases into a rich, structured code graph stored separately from the research room graph. Codebase is a first-class DDD aggregate root attachable to rooms via M:N join table. Powered by tree-sitter with TypeScript + JavaScript + Python grammars for Phase 19 (Rust/Go deferred to Phase 20). New `akashik codebase` command group mirrors `peer` / `share`. Existing `search`/`ask` tools unchanged; new `code_graph_query` MCP tool provides structured code access. Phase 19 scope is indexing + lexical search only — semantic code embeddings and full design pattern detection defer to Phase 20.
+Parse codebases into a rich, structured code graph stored separately from the research room graph. Codebase is a first-class DDD aggregate root attachable to rooms via M:N join table. Powered by tree-sitter with TypeScript + JavaScript + Python grammars for Phase 19 (Rust/Go deferred to Phase 20). New `folklore codebase` command group mirrors `peer` / `share`. Existing `search`/`ask` tools unchanged; new `code_graph_query` MCP tool provides structured code access. Phase 19 scope is indexing + lexical search only — semantic code embeddings and full design pattern detection defer to Phase 20.
 
 </domain>
 
@@ -14,7 +14,7 @@ Parse codebases into a rich, structured code graph stored separately from the re
 ## Implementation Decisions
 
 ### Storage Strategy
-- **Separate database file: `~/.akashik/code-graph.db`** — distinct lifecycle from `vectors.db` (code graph can be wiped and rebuilt, embeddings cannot). Shares the same `better-sqlite3` driver (no new infra dep)
+- **Separate database file: `~/.folklore/code-graph.db`** — distinct lifecycle from `vectors.db` (code graph can be wiped and rebuilt, embeddings cannot). Shares the same `better-sqlite3` driver (no new infra dep)
 - **4 normalized tables**:
   - `codebases(id PRIMARY KEY, name, root_path, language_summary, indexed_at, node_count, root_sha)`
   - `code_nodes(id PRIMARY KEY, codebase_id FK, kind, name, file_path, start_line, start_col, end_line, end_col, parent_id, language, content_hash, signature_json, extra_json)`
@@ -24,15 +24,15 @@ Parse codebases into a rich, structured code graph stored separately from the re
 - **No vector embeddings in Phase 19** — lexical search only (SQLite FTS5 on `code_nodes.name + signature` or simple LIKE). Semantic code embeddings land in Phase 20 once the schema stabilizes
 
 ### Language Support Scope
-- **Phase 19 languages: TypeScript, JavaScript, Python** — covers akashik itself + the graphify Python sidecar + most modern projects
+- **Phase 19 languages: TypeScript, JavaScript, Python** — covers folklore itself + the graphify Python sidecar + most modern projects
 - **Rust and Go deferred to Phase 20** — grammars exist (`tree-sitter-rust@0.24.0`, tree-sitter-go via WASM) but add dep weight beyond the 3-dep Phase 19 budget
 - **Lazy grammar loading** — `tree-sitter-python` only loads when parsing a `.py` file. Fast startup for TS-only projects, low memory
-- **Extension-based file type detection**: `.ts/.tsx → typescript`, `.js/.jsx/.mjs/.cjs → javascript`, `.py → python`. Override via optional `.akashik/codebase.yaml` in the codebase root
+- **Extension-based file type detection**: `.ts/.tsx → typescript`, `.js/.jsx/.mjs/.cjs → javascript`, `.py → python`. Override via optional `.folklore/codebase.yaml` in the codebase root
 - **Unsupported files skipped with count**: report shows `indexed: 342 files, skipped: 89 (extensions: md, json, lock, png, ...)`. Not an error
 
 ### Attachment Model + CLI Surface
 - **CodebaseId derivation**: deterministic `sha256(abs_path).slice(0, 16)` — stable across re-indexes, short enough to paste in CLI. Also stores a human-readable `name` (defaults to basename of root path)
-- **New CLI command group**: `akashik codebase <sub>` mirroring `peer` / `share` pattern
+- **New CLI command group**: `folklore codebase <sub>` mirroring `peer` / `share` pattern
   - `codebase index <path>` — parse a codebase into code-graph.db
   - `codebase list [--json]` — show all indexed codebases
   - `codebase show <id>` — detail view (node count by kind, edge count, attached rooms)
@@ -44,7 +44,7 @@ Parse codebases into a rich, structured code graph stored separately from the re
 - **M:N attachment via `codebase_rooms` join table** — one codebase → many rooms, one room → many codebases. Detach is non-destructive
 - **Existing `search`/`ask` tools remain UNCHANGED** — they query the research graph only. Two new surfaces:
   - New MCP tool `code_graph_query(codebase_id?, kind?, name_pattern?, limit?)` — Claude calls this explicitly when the task is code-structural
-  - Optional `--with-code` flag on `akashik ask --room <room>` — when set, the room query JOINs attached codebases and merges results with a `_source_type: 'research' | 'code'` annotation
+  - Optional `--with-code` flag on `folklore ask --room <room>` — when set, the room query JOINs attached codebases and merges results with a `_source_type: 'research' | 'code'` annotation
 - **Keep existing `src/infrastructure/sources/codebase.ts`** — the shallow indexer remains in place for backwards compat with the research room graph. Phase 19 adds a parallel deep indexer; the shallow one is NOT removed
 
 ### Parser Output Schema
@@ -82,7 +82,7 @@ Parse codebases into a rich, structured code graph stored separately from the re
 - `src/infrastructure/graph-repository.ts` — `better-sqlite3` setup pattern; Phase 19 opens a second DB handle on `code-graph.db` with the same driver
 - `src/infrastructure/peer-store.ts` — cross-process `.lock` file pattern, version migration pattern — reused for code-graph.db writes where concurrent re-indexing is possible
 - `src/infrastructure/vector-index.ts` — example of `openSqliteVectorIndex` lazy-open ResultAsync pattern; Phase 19 mirrors this as `openCodeGraph`
-- `src/cli/commands/peer.ts` and `src/cli/commands/share.ts` — CLI subcommand pattern for the new `akashik codebase` command group
+- `src/cli/commands/peer.ts` and `src/cli/commands/share.ts` — CLI subcommand pattern for the new `folklore codebase` command group
 - `src/infrastructure/rooms-config.ts` — `RoomId` type that the `codebase_rooms` join table references (no FK constraint — rooms.json is JSON not SQLite, so validation happens at attach time)
 - `src/domain/errors.ts` — `AppError` union pattern; Phase 19 extends with `CodebaseError` (8 variants)
 
@@ -109,7 +109,7 @@ Parse codebases into a rich, structured code graph stored separately from the re
   - `src/cli/commands/ask.ts` — optional `--with-code` flag
 - Existing files NOT touched:
   - `src/infrastructure/sources/codebase.ts` — shallow adapter remains for backwards compat with the research room graph
-  - `src/cli/commands/index-project.ts` — existing `akashik index` stays; Phase 19 is a NEW command, not a replacement
+  - `src/cli/commands/index-project.ts` — existing `folklore index` stays; Phase 19 is a NEW command, not a replacement
 
 </code_context>
 
@@ -118,7 +118,7 @@ Parse codebases into a rich, structured code graph stored separately from the re
 
 - **Dep budget: 3 new deps** — `tree-sitter@0.25.0`, `tree-sitter-typescript@0.23.2`, `tree-sitter-python@0.25.0`. `tree-sitter-rust` and `tree-sitter-go` deferred to Phase 20
 - Tree-sitter is native-compiled (prebuildify prebuilts available for darwin/linux/win × arm64/x64). `better-sqlite3` already requires native compilation, so this is no incremental risk
-- File walking respects `.gitignore` + an optional `.akashik/codebase-ignore` for project-specific excludes
+- File walking respects `.gitignore` + an optional `.folklore/codebase-ignore` for project-specific excludes
 - Parallel parsing via Node `worker_threads` is NOT in Phase 19 — single-threaded is fast enough for 10K files (tree-sitter parses ~1ms per file)
 - Content hash = `sha256(file_content)` stored per node; reindex skips files where all nodes' content_hash matches current content
 - No `design pattern` ML detection, no `semantic code search`, no `call graph query language` — all deferred to Phase 20

@@ -1,4 +1,4 @@
-# akashik — scene 6 — P2P touch across a 5-daemon mesh
+# folklore — scene 6 — P2P touch across a 5-daemon mesh
 #
 # Driven by demo/scene-touch.sh, which spins up peer A + 4 peers
 # (B/C/D/E) and exports their peerIds as env vars. After recording,
@@ -23,7 +23,7 @@ Set WindowBar Colorful
 Set WindowBarSize 30
 
 Hide
-Type "export AKASHIK_HOME=$HOME/.akashik.demo"
+Type "export FOLKLORE_HOME=$HOME/.folklore.demo"
 Enter
 Type "clear"
 Enter
@@ -35,7 +35,7 @@ Type '# 5-daemon mesh: peer A + B + C + D + E, all on 127.0.0.1'
 Enter
 Sleep 600ms
 
-Type 'akashik peer list'
+Type 'folklore peer list'
 Enter
 Sleep 4000ms
 
@@ -48,7 +48,7 @@ Type '# (only peer B has that note locally)'
 Enter
 Sleep 600ms
 
-Type 'akashik ask "open-hardware portable Raman LH2 spectrometer munich" --k 3 --json | jq ".aggregate // .satisfaction.score"'
+Type 'folklore ask "open-hardware portable Raman LH2 spectrometer munich" --k 3 --json | jq ".aggregate // .satisfaction.score"'
 Enter
 Sleep 3500ms
 
@@ -59,7 +59,7 @@ Type '# touch peer B for the chunk it has but A does not'
 Enter
 Sleep 600ms
 
-Type 'akashik touch --peer "$AKASHIK_DEMO_PEER_B_ID" --room research'
+Type 'folklore touch --peer "$FOLKLORE_DEMO_PEER_B_ID" --room research'
 Enter
 Sleep 4500ms
 
@@ -68,7 +68,7 @@ Type '# touch peer D for the NASA Q1 2025 benchmark — different exclusive note
 Enter
 Sleep 600ms
 
-Type 'akashik touch --peer "$AKASHIK_DEMO_PEER_D_ID" --room research'
+Type 'folklore touch --peer "$FOLKLORE_DEMO_PEER_D_ID" --room research'
 Enter
 Sleep 4500ms
 
@@ -79,7 +79,7 @@ Type '# now ask again — the new peer-attributed chunks rank in'
 Enter
 Sleep 600ms
 
-Type 'akashik ask "open-hardware portable Raman LH2 spectrometer munich" --k 3'
+Type 'folklore ask "open-hardware portable Raman LH2 spectrometer munich" --k 3'
 Enter
 Sleep 5000ms
 

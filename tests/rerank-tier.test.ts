@@ -58,7 +58,7 @@ const HW_GPU: HwCapabilities = {
 
 // ─────────────── master kill-switch ─────────────
 
-test('pickRerankTier: AKASHIK_RERANK=0 forces none on any hardware', () => {
+test('pickRerankTier: FOLKLORE_RERANK=0 forces none on any hardware', () => {
   const plan = pickRerankTier(HW_GPU, { disabled: true });
   assert.equal(plan.tier, 'none');
   assert.match(plan.reason, /kill-switch/);
@@ -75,7 +75,7 @@ test('pickRerankTier: explicit override beats hardware default', () => {
 
 test('pickRerankTier: invalid override is ignored, falls back to hw default', () => {
   // Env reader filters invalid values, so test the env-reader path.
-  const env = rerankEnvFromProcess({ AKASHIK_RERANK_TIER: 'bogus' });
+  const env = rerankEnvFromProcess({ FOLKLORE_RERANK_TIER: 'bogus' });
   assert.equal(env.override, undefined);
   const plan = pickRerankTier(HW_CPU, env);
   assert.equal(plan.tier, 'cross-encoder');
@@ -149,11 +149,11 @@ test('pickRerankTier: latency budget that fits everything stays at large', () =>
 
 test('rerankEnvFromProcess: parses all env vars', () => {
   const env = rerankEnvFromProcess({
-    AKASHIK_RERANK_TIER: 'llm-listwise-small',
-    AKASHIK_RERANK_MODEL: 'qwen2.5:3b',
-    AKASHIK_RERANK_LATENCY_MS: '2500',
-    AKASHIK_RERANK_HEAD: '40',
-    AKASHIK_RERANK: '1',
+    FOLKLORE_RERANK_TIER: 'llm-listwise-small',
+    FOLKLORE_RERANK_MODEL: 'qwen2.5:3b',
+    FOLKLORE_RERANK_LATENCY_MS: '2500',
+    FOLKLORE_RERANK_HEAD: '40',
+    FOLKLORE_RERANK: '1',
   });
   assert.equal(env.override, 'llm-listwise-small');
   assert.equal(env.modelOverride, 'qwen2.5:3b');

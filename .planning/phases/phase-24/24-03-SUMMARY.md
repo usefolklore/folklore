@@ -6,7 +6,7 @@ tags: [v5-cutover, wave-1b, federation, search-sync, touch-protocol, share-envel
 dependency_graph:
   requires:
     - phase: phase-24-01
-      provides: "AkashikNodeFields with workspace + private, no room (schema wedge)"
+      provides: "FolkloreNodeFields with workspace + private, no room (schema wedge)"
     - phase: phase-24-02
       provides: "share-store / system-rooms / rooms-config files deleted"
   provides:
@@ -23,7 +23,7 @@ dependency_graph:
 tech-stack:
   added: []
   patterns:
-    - "Envelope-layer V5 enforcement — libp2p protocol-path string (/akashik/{search,touch}/1.0.0) is unchanged; protocol version lives in the JSON envelope as `protocol_version: 5`. Pre-V5 peers receive a clear envelope-parse refusal payload, not 'protocol not handled'."
+    - "Envelope-layer V5 enforcement — libp2p protocol-path string (/folklore/{search,touch}/1.0.0) is unchanged; protocol version lives in the JSON envelope as `protocol_version: 5`. Pre-V5 peers receive a clear envelope-parse refusal payload, not 'protocol not handled'."
     - "Two V5 gates per inbound handler: (1) reject any envelope with a `room` field (pre-V5 signature), (2) reject any envelope without `protocol_version === 5`."
     - "Outbound sender fence — both search and touch initiators assert `protocol_version === 5` before transmit so no V4-shaped envelope can leave this peer even if a caller bypasses the type system."
 key-files:
@@ -44,7 +44,7 @@ key-files:
     - path: "src/application/federated-search.ts"
       change: "Drop FederatedSearchParams.room + FederatedMatch.room; outbound SearchRequest carries protocol_version: 5; askGossip called with null topic; local query routing collapsed to searchHybrid / searchGlobal"
 key-decisions:
-  - "Libp2p protocol-path stays `/akashik/{search,touch}/1.0.0` — V5 is enforced at the envelope layer, not via a new protocol id. Pre-V5 peers get clean refusal payloads rather than 'protocol not handled' transport errors. Documented in commit messages."
+  - "Libp2p protocol-path stays `/folklore/{search,touch}/1.0.0` — V5 is enforced at the envelope layer, not via a new protocol id. Pre-V5 peers get clean refusal payloads rather than 'protocol not handled' transport errors. Documented in commit messages."
   - "ShareEnvelope validates payload shape but no longer requires `n.room` — the underlying ShareableNode.room field is Wave 2/3 cleanup; this layer narrows scope to what the envelope itself controls."
   - "Open Question 5 RESOLVED — peer-pull-telemetry rewritten to per-peer (not deleted). The room dimension was extra; the peer dimension still drives reputation and consensus."
   - "TouchResponseError grows a `protocol-mismatch` variant so V4 initiators see a structured refusal payload alongside the dropped `room-not-shared` (which was only meaningful when rooms existed)."
@@ -198,7 +198,7 @@ All commits on `feat/delete-rooms`. No co-authored commits (per user's global CL
 
 ## Decisions Made
 
-### Libp2p protocol-path stays at `/akashik/{search,touch}/1.0.0`
+### Libp2p protocol-path stays at `/folklore/{search,touch}/1.0.0`
 
 Per the plan's critical constraint #4 — V5 is enforced at the envelope layer, not via a new libp2p protocol id. Pre-V5 peers get clean refusal payloads (`error: 'protocol_mismatch'` for search, `error: 'protocol-mismatch'` for touch) plus a stderr log line pointing at `docs/architecture/V5-PROTOCOL.md`, rather than `protocol not handled` transport-level errors. This is the right tradeoff because the user has no live peers — there's no reason to make pre-V5 transport probes harder than necessary to diagnose, and the refusal payload still carries the version-skew signal where operators look first.
 

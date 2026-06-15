@@ -5,7 +5,7 @@ status: passed
 score: 16/16 must-haves verified
 re_verification: false
 human_verification:
-  - test: "Run two real akashik daemon processes on the same LAN and execute `share room homelab` on Peer A"
+  - test: "Run two real folklore daemon processes on the same LAN and execute `share room homelab` on Peer A"
     expected: "Peer B sees nodes from the shared room within 5 seconds via a libp2p connection"
     why_human: "Requires two physical/VM instances with real libp2p networking; cannot be simulated in-process"
   - test: "Concurrent node additions from Peer A and Peer B simultaneously"
@@ -153,7 +153,7 @@ No blockers or warnings found.
 
 #### 1. Live peer-to-peer sync latency
 
-**Test:** Start daemon on two machines (or VMs) on the same network. Run `akashik peer add <peer-B-multiaddr>` on Peer A. Run `akashik share room homelab` on Peer A. Wait up to 5 seconds.
+**Test:** Start daemon on two machines (or VMs) on the same network. Run `folklore peer add <peer-B-multiaddr>` on Peer A. Run `folklore share room homelab` on Peer A. Wait up to 5 seconds.
 **Expected:** Peer B's graph.json gains the shared room's nodes within one daemon tick interval.
 **Why human:** Requires real libp2p TCP connections across process boundaries. The in-process simulation in SHARE-03 confirms CRDT semantics; the network path through `dialProtocol` + `runStreamSession` needs live infrastructure.
 

@@ -1,4 +1,4 @@
-# P2P Knowledge Graph — Akashik v2.0 Vision
+# P2P Knowledge Graph — Folklore v2.0 Vision
 
 > **Snapshot — v2.0 (pre-V5).** This vision doc was written when
 > rooms were the federation primitive. The federation model has
@@ -12,9 +12,9 @@
 
 ## The Idea
 
-Every developer running Akashik has a local knowledge graph. Right now these graphs are isolated — your homelab research doesn't connect to mine.
+Every developer running Folklore has a local knowledge graph. Right now these graphs are isolated — your homelab research doesn't connect to mine.
 
-**v2.0 makes them connected.** A peer-to-peer network where Akashik nodes discover each other, share graph fragments, and build a collective knowledge layer that's bigger than any single user's research.
+**v2.0 makes them connected.** A peer-to-peer network where Folklore nodes discover each other, share graph fragments, and build a collective knowledge layer that's bigger than any single user's research.
 
 ```
 Developer A (homelab)          Developer B (ml-papers)
@@ -37,7 +37,7 @@ Developer A (homelab)          Developer B (ml-papers)
 ### Discovery
 - Nodes announce themselves on a local network via mDNS/Bonjour
 - Or register with a lightweight coordination server (optional)
-- Or manually add peers: `akashik peer add <address>`
+- Or manually add peers: `folklore peer add <address>`
 
 ### Sharing Protocol
 - Each node exposes a subset of its graph as "public rooms"
@@ -48,7 +48,7 @@ Developer A (homelab)          Developer B (ml-papers)
 ### Collective Intelligence
 - Tunnel detection runs ACROSS peers — my homelab connects to your ml-papers
 - Shared discovery loop: if peer B finds a great ArXiv source, peer A gets it suggested
-- Federated search: `akashik ask "vector search" --peers` searches across all connected graphs
+- Federated search: `folklore ask "vector search" --peers` searches across all connected graphs
 
 ### Privacy Model
 - **Opt-in only** — nothing shared by default
@@ -97,13 +97,13 @@ Use **Automerge** or **Y.js** for the room-level CRDT:
 ## Use Cases
 
 ### Research Teams
-A team of 5 researchers each tracks different domains. P2P Akashik connects their graphs. When researcher A indexes a paper about "efficient attention", researcher B (tracking "GPU optimization") gets a tunnel notification: "your GPU optimization connects to A's attention paper."
+A team of 5 researchers each tracks different domains. P2P Folklore connects their graphs. When researcher A indexes a paper about "efficient attention", researcher B (tracking "GPU optimization") gets a tunnel notification: "your GPU optimization connects to A's attention paper."
 
 ### Open Source Communities
 A project maintainer shares their `project-x` room publicly. Contributors connect as peers and get the maintainer's research context (relevant papers, HN discussions, competitor analysis) automatically merged into their local graph.
 
 ### Conference Networks
-At a conference, attendees run Akashik in P2P mode. Their graphs auto-discover via local network. The collective graph of 100 attendees, each with 500 nodes, creates a 50K-node searchable knowledge base spanning every talk, paper, and conversation.
+At a conference, attendees run Folklore in P2P mode. Their graphs auto-discover via local network. The collective graph of 100 attendees, each with 500 nodes, creates a 50K-node searchable knowledge base spanning every talk, paper, and conversation.
 
 ## Implementation Phases
 
@@ -130,6 +130,6 @@ At a conference, attendees run Akashik in P2P mode. Their graphs auto-discover v
 
 ## What This Means
 
-Akashik goes from "your personal research memory" to "a collective intelligence network for developers." Every peer makes the network smarter. The graph grows faster than any individual could build it.
+Folklore goes from "your personal research memory" to "a collective intelligence network for developers." Every peer makes the network smarter. The graph grows faster than any individual could build it.
 
 This is the end state: **a decentralized knowledge graph where every coding agent in the world shares what it learned.**

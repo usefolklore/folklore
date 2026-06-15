@@ -1,4 +1,4 @@
-# akashik — Senior Data Engineer Audit
+# folklore — Senior Data Engineer Audit
 
 **Lens:** is the ingest → embed → index → serve pipeline production-ready as a data engineer would build it?
 **Scope:** 25 source adapters, daemon tick, graph/vector/code-graph persistence, CI/CD, observability.
@@ -99,7 +99,7 @@
 | Dead-letter handling    | 2/10 | Errors are **logged to stderr** (claude-sessions.ts:316-333) or swallowed into a `SourceRun.error` field (ingest.ts:106-113). No DLQ, no quarantine store, no operator inbox, no replay ability. A bad item is counted as skipped and forgotten. |
 | Metrics                 | 0/10 | **Zero metrics libraries.** grep `metric\|prometheus\|counter\|histogram\|gauge\|opentelemetry` → 0 hits in `src/`. The only counters are `items_seen/new/updated/skipped` on the `SourceRun` value object, which is written to a markdown report and discarded. No time-series, no export. |
 | Traces                  | 0/10 | **Not present.** Zero `opentelemetry`, `tracer`, `span` imports. Error paths use `formatError` for log strings only. |
-| Logs                    | 3/10 | `daemonLog()` appends to `~/.akashik/daemon.log` (loop.ts:118-125). Plain-text, unstructured, no level, no correlation id, no rotation, no shipping. `claude-sessions.ts` uses raw `console.error`. No unified logger port. |
+| Logs                    | 3/10 | `daemonLog()` appends to `~/.folklore/daemon.log` (loop.ts:118-125). Plain-text, unstructured, no level, no correlation id, no rotation, no shipping. `claude-sessions.ts` uses raw `console.error`. No unified logger port. |
 | Lineage                 | 4/10 | Partial: `GraphNode` carries `source_uri`, `source_file`, `fetched_at`, `content_sha256`, `kind`. Chunks add `chunk_index`, `chunk_count`. But there is no ingest-run id, no adapter version, no config snapshot, no git commit of the adapter code at index time. Cannot answer "which config produced this node". |
 | Schema migrations       | 4/10 | Good for `code-graph.db`: `PRAGMA user_version`, explicit `CODE_GRAPH_SCHEMA_VERSION = 1`, forward-compat error on newer (code-graph.ts:34, 141-150). `sessions-state.json` also has a `version` field with reject-on-newer (sessions-state.ts:131-138). **Graph.json has no schema version field** — the `doc_meta.raw_text` column addition in the bench had to be detected via column-exists probe because NetworkX node-link dicts are schemaless. |
 | CI pipeline tests       | 3/10 | `.github/workflows/ci.yml` runs `npm run build` + `npm test` (node --test over tests/*.test.ts) on node 20/22. **Does NOT run any bench script**. `scripts/bench-beir.mjs`, `bench-beir-sota.mjs`, `bench-room-routing.mjs` are not invoked. No NDCG regression gate. No fixture ingest smoke test. |
@@ -136,7 +136,7 @@ fetchItems()     → ResultAsync<readonly ContentItem[], AppError>
 | 1    | `github-trending.ts`   | Inline config parsing (no separate `parseConfig`), try/catch wrapped around `JSON.parse` + map in one blob, string-concat of `q` with `pushed:>${date}` breaks if user supplies their own date filter. No shared GitHub error type — leaks `GraphParseError` from a non-graph context. |
 | 2    | `codebase.ts`          | Walks the filesystem with `readdirSync`/`statSync` directly — no `fs` port, no watermark. Regex-based export/import parsing despite the comment claiming "TypeScript compiler API" (line 7 vs actual line 100). `catch {}` silently drops unreadable files. Every tick re-reads every file; no mtime check. |
 | 3    | `git-log.ts`           | `spawnSync` inside a ResultAsync — synchronous blocking on every git call. `getChangedFiles` is called **per commit** inside a map, serializing N git child processes. No max bytes on stdout. Error type is `GraphReadError` for a git subprocess failure. |
-| 4    | `twitter-search.ts`    | Reads from a user-maintained JSON file `~/.akashik/twitter-cache.json`, treats all failures as empty array, silently drops malformed entries. Is effectively a no-op by default. Comment admits it's a stub. |
+| 4    | `twitter-search.ts`    | Reads from a user-maintained JSON file `~/.folklore/twitter-cache.json`, treats all failures as empty array, silently drops malformed entries. Is effectively a no-op by default. Comment admits it's a stub. |
 | 5    | `codebase.ts` (counted once, but honorable mention: `image-metadata`, `pdf-text`, `audio-transcript`, `image-ocr` are all `stubAdapter` in the registry — they return `okAsync([])`, meaning the pipeline thinks they ran successfully when nothing happened. **That is a silent-failure anti-pattern** for data engineering.) |
 
 **Error-handling styles observed across 25 adapters:** at least **5** distinct shapes:
@@ -207,7 +207,7 @@ Walking the actual code:
 
 ---
 
-## 6. Schema migration strategy — concrete proposal for akashik
+## 6. Schema migration strategy — concrete proposal for folklore
 
 **The bench-discovered bug:** a new `raw_text` column was added to `doc_meta` in a rebuild. Cached databases from prior runs didn't have the column. Reads threw `SqliteError: no such column: raw_text`.
 
@@ -385,7 +385,7 @@ This is ~30 lines of config + 3 small script changes. It catches silent NDCG reg
 - Modify: `DaemonDeps.metrics: MetricsPort`, `DaemonDeps.logger: LoggerPort`
 - Modify: `ingestSource`, `indexNode`, `httpFetcher` to increment counters and record histograms. 10-15 call sites.
 - Modify: `src/daemon/loop.ts:startLoop` — spin up an HTTP server on `config.metrics_port ?? 9090` serving `/metrics`
-- Modify: `akashik doctor` CLI — add a `metrics` subcommand that scrapes `/metrics` locally and prints a summary
+- Modify: `folklore doctor` CLI — add a `metrics` subcommand that scrapes `/metrics` locally and prints a summary
 
 **Effort:** ~1-2 days. prom-client is zero-dep and battle-tested.
 

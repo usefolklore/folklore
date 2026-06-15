@@ -6,7 +6,7 @@ tags: [v5-cutover, wave-2a, share-sync, rooms-deletion, breaking-change, highest
 dependency_graph:
   requires:
     - phase: phase-24-01
-      provides: "AkashikNodeFields with workspace + private, no room (schema wedge)"
+      provides: "FolkloreNodeFields with workspace + private, no room (schema wedge)"
     - phase: phase-24-02
       provides: "share-store.ts deleted (no loadSharedRooms / sharedRoomsPath)"
     - phase: phase-24-03
@@ -44,7 +44,7 @@ key-decisions:
 patterns-established:
   - "Single global Y.Doc per peer (replaces per-room Y.Doc maps). The y-protocols/sync contract still enforces a Y.Map-level convergence guarantee; the partition was always a federation-policy concept, not a CRDT one."
   - "Per-node sharing gate (`node.private === false`) replaces room-membership authorization. Sharing becomes a pure node-attribute filter — no separate authorization registry, no shared-rooms.json."
-  - "Protocol-version negotiation at the envelope layer (not via libp2p protocol-path versioning). The libp2p protocol-path stays /akashik/share/1.0.0; V5 is enforced via `protocol_version: 5` in the SubscribeRequest JSON envelope. Pre-V5 peers receive a clear refusal payload."
+  - "Protocol-version negotiation at the envelope layer (not via libp2p protocol-path versioning). The libp2p protocol-path stays /folklore/share/1.0.0; V5 is enforced via `protocol_version: 5` in the SubscribeRequest JSON envelope. Pre-V5 peers receive a clear refusal payload."
 requirements-completed:
   - "ROOMS-DEL-03 — shared-rooms.json no longer read or written; sharing path filters on node.private === false (collectShareable helper)"
 

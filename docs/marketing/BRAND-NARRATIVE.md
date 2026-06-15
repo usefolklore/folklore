@@ -1,6 +1,6 @@
-# Akashik — Brand Narrative
+# Folklore — Brand Narrative
 
-> The canonical four-act story akashik tells. Locked.
+> The canonical four-act story folklore tells. Locked.
 >
 > Every public artifact (landing page, README hero, social posts,
 > press deck, OG card copy) is a faithful retelling of this arc.
@@ -11,7 +11,7 @@
 
 ## The premise in one sentence
 
-**Open source built the freest software stack in history because we shared code. Akashik is the missing substrate for everything between the code.**
+**Open source built the freest software stack in history because we shared code. Folklore is the missing substrate for everything between the code.**
 
 That sentence is the brand. Everything below is the structure that lets a reader feel it land.
 
@@ -41,9 +41,9 @@ Every generation of contributors starts over. The same CUDA OOM gets diagnosed i
 
 > *We measured what happens when knowledge can flow.*
 
-AkashikBench-F is the only benchmark capable of falsifying the federated-commons thesis: simulate a peer network with offline churn and Zipfian queries, then watch `web_fallback_rate(t)`.
+FolkloreBench-F is the only benchmark capable of falsifying the federated-commons thesis: simulate a peer network with offline churn and Zipfian queries, then watch `web_fallback_rate(t)`.
 
-**The numbers (locked, from `tests/bench-akashik-federation.test.ts`):**
+**The numbers (locked, from `tests/bench-folklore-federation.test.ts`):**
 
 | Metric | Value | The headline |
 |---|---|---|
@@ -64,7 +64,7 @@ AkashikBench-F is the only benchmark capable of falsifying the federated-commons
 
 > *You don't need a new memory product. You need a federation protocol.*
 
-Akashik is not a personal-memory tool. It is not a team wiki. It is the protocol — a peer-to-peer knowledge graph where every contribution is signed by its curator's verified GitHub identity, federated only on demand, and demand-shaped (each peer holds only what it has asked for or contributed). The network's working set grows by what its contributors are curious about, not by what a central planner decided to ingest.
+Folklore is not a personal-memory tool. It is not a team wiki. It is the protocol — a peer-to-peer knowledge graph where every contribution is signed by its curator's verified GitHub identity, federated only on demand, and demand-shaped (each peer holds only what it has asked for or contributed). The network's working set grows by what its contributors are curious about, not by what a central planner decided to ingest.
 
 You plug it into the harness you already use (Claude Code, Codex, Gemini, Hermes, OpenClaw) and the WebSearch your agent was about to make goes through your graph + your peers' graphs first. When the satisfaction floor is cleared (≥ 0.85 score, ≥ 2 hits, decision = `use_memory`), the WebSearch is denied — you use the cached answer for free. When it isn't, the web call proceeds and the result lands in your graph signed by you, so the *next* contributor who asks something similar pulls it from your peer instead.
 
@@ -88,7 +88,7 @@ You plug it into the harness you already use (Claude Code, Codex, Gemini, Hermes
 
 - **No "elevate / seamless / unleash / next-gen / revolutionary."** Every one of these signals AI-written-copy and instantly devalues the page. Use the verb that names the action.
 - **No emojis in copy.** The codex aesthetic does not survive a 🚀.
-- **No "agent memory" framing.** That category is the silo we're contradicting. Akashik is a *federation protocol that happens to give your agent memory as a side effect*, not an agent-memory product.
+- **No "agent memory" framing.** That category is the silo we're contradicting. Folklore is a *federation protocol that happens to give your agent memory as a side effect*, not an agent-memory product.
 
 ---
 
@@ -133,17 +133,17 @@ Each section maps to one act. The reader scrolls through the four-act arc:
 | Social — short post | Act I — Context | "Open source built the freest software stack in history because we shared code. We never built it for what we read and figured out." |
 | OG card | Act IV — Insight | "The globally accumulating knowledge network." |
 | Press one-liner | Act III — Evidence | "Web fallback fell from 17% to 1% in 2,000 sim steps. Federation compounds." |
-| Conference abstract | Act IV — Insight + Act III caveat | "A federation protocol for OSS knowledge. AkashikBench-F validated in simulator; 100-peer pilot is the next milestone." |
+| Conference abstract | Act IV — Insight + Act III caveat | "A federation protocol for OSS knowledge. FolkloreBench-F validated in simulator; 100-peer pilot is the next milestone." |
 
-Anyone writing copy for akashik picks the surface, picks the act it anchors on, then reads the corresponding section above before they type.
+Anyone writing copy for folklore picks the surface, picks the act it anchors on, then reads the corresponding section above before they type.
 
 ---
 
 ## What this document is NOT
 
 - Not a style guide. Style guide is `BRAND-KIT.md` (color + type tokens + spacing).
-- Not a roadmap. Roadmap is `../PROJECT-PLAN-AKASHIK.md`.
+- Not a roadmap. Roadmap is `../PROJECT-PLAN-FOLKLORE.md`.
 - Not a positioning brief. Positioning is `positioning-v2.1.md` (historical, pre-V5).
-- Not technical documentation. Mechanism docs are in the repo README, `how-akashik-works.md`, and `../architecture/V5-PROTOCOL.md`.
+- Not technical documentation. Mechanism docs are in the repo README, `how-folklore-works.md`, and `../architecture/V5-PROTOCOL.md`.
 
 It is the *story*. When the story drifts, the brand drifts. When the brand drifts, the docs drift, and the docs are the brand. This file is the anchor.

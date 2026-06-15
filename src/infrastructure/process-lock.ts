@@ -9,7 +9,7 @@
  * frees OR the deadline expires.
  *
  * Mechanism:
- *   - POSIX exclusive-create on `<home>/akashik.lock` (the same
+ *   - POSIX exclusive-create on `<home>/folklore.lock` (the same
  *     pattern peer-store.ts uses for its short-lived peers.json mutex,
  *     scaled to a top-level write barrier).
  *   - Lock file content: JSON `{ pid, owner, timestamp }`. The `owner`
@@ -67,7 +67,7 @@ export interface AcquireOptions {
 
 // ─────────────── helpers ───────────────
 
-const lockPath = (homeDir: string): string => join(homeDir, 'akashik.lock');
+const lockPath = (homeDir: string): string => join(homeDir, 'folklore.lock');
 
 const readLockInfo = async (path: string): Promise<LockInfo | null> => {
   try {
@@ -104,7 +104,7 @@ const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms
 // ─────────────── acquire / release ───────────────
 
 /**
- * Try to acquire the akashik write lock. Returns a LockHandle on
+ * Try to acquire the folklore write lock. Returns a LockHandle on
  * success. On failure (already held + waitMs exhausted), returns the
  * conflicting LockInfo so the caller can render a useful error.
  */
@@ -158,7 +158,7 @@ export const acquireLock = (
     return errAsync<LockHandle, AppError>(
       PeerError.identityWriteError(
         path,
-        `akashik.lock held by ${result.owner} (pid=${result.pid}); wait or stop the holder`,
+        `folklore.lock held by ${result.owner} (pid=${result.pid}); wait or stop the holder`,
       ),
     );
   });
@@ -190,7 +190,7 @@ const buildHandle = (path: string, owner: string): LockHandle => {
 
 /**
  * Convenience: read the current lock info without acquiring. Used by
- * `akashik status` style commands that want to surface "is anyone
+ * `folklore status` style commands that want to surface "is anyone
  * mutating?" without blocking.
  */
 export const peekLock = (homeDir: string): ResultAsync<LockInfo | null, AppError> =>

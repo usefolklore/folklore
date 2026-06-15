@@ -1,7 +1,7 @@
-# How Akashik works
+# How Folklore works
 
 The shortest accurate description of the mechanism that makes
-Akashik possible. Written for the reader who has heard "federated
+Folklore possible. Written for the reader who has heard "federated
 knowledge graph" and wants to understand *exactly* what's
 distributed, *what* gets cached, *when* the network reaches out
 to the web, and *who* ends up holding which piece of the record.
@@ -11,10 +11,10 @@ copy lives in [`storybrand-messaging-draft.md`](./storybrand-messaging-draft.md)
 
 ## The one-paragraph version
 
-Each Akashik peer holds **only its own information** — what its
+Each Folklore peer holds **only its own information** — what its
 user contributed, what it pulled from other peers in response to
 its user's questions, and what it researched on the web when the
-federation couldn't satisfy a query. When you ask Akashik
+federation couldn't satisfy a query. When you ask Folklore
 something, it asks your local graph first, then asks every peer
 you're federated with for *their two cents*. If the federation
 can't answer with confidence, the harness reaches out to the web,
@@ -39,7 +39,7 @@ the network does work.** That compound is the entire mission.
                                     │
                                     ▼
    ─── STEP 1 ─────────────────────────────────────────────────
-       Query A's LOCAL Akashik graph
+       Query A's LOCAL Folklore graph
        Hit?  → return; done. (Cheapest path. Zero network.)
        Miss? → continue.
    ────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ the network does work.** That compound is the entire mission.
 
 | Bucket | Contents | Source |
 |---|---|---|
-| **Self-contributed** | Things the user explicitly saved (`akashik save <url>`, codebase indexing, manually-typed notes) | The user |
+| **Self-contributed** | Things the user explicitly saved (`folklore save <url>`, codebase indexing, manually-typed notes) | The user |
 | **Pulled** | Nodes received from federated peers in response to the user's own queries | Federation, with provenance |
 | **Researched-on-miss** | Web research results that were fetched on the user's machine because the federation couldn't satisfy a query | Web, attested by the curator |
 | **NOT stored** | Anything other peers saved that this user never asked about | — |
@@ -111,7 +111,7 @@ This matters for four reasons:
 1. **Provenance lives where the work happened.** The reader who
    queries A's research six months later sees A's DID, A's
    verified GitHub handle, the date, the source — not a faceless
-   "Akashik says". Knowledge has authors.
+   "Folklore says". Knowledge has authors.
 2. **Cost lives where the curiosity was.** A paid the network
    roundtrip + the web fetch. B, C, D who query later pay
    nothing. The "ambitioned" framing is the natural answer to
@@ -156,7 +156,7 @@ Two notes:
   network's high-traffic items."
 
 This is identical to the property every decentralized system has:
-**availability follows participation**. Akashik doesn't pretend
+**availability follows participation**. Folklore doesn't pretend
 otherwise.
 
 ## Why this beats every existing alternative
@@ -172,7 +172,7 @@ node. All three are wrong for the OSS community as a whole:
 | Full-graph replication on every node | Disk cost compounds linearly with community size; new joiners face a multi-GB-to-multi-TB sync; trivially DoS-able by spam contributions |
 | Per-workspace closed multiplayer (Roam-style) | Closed by default; doesn't compound across teams; no path to community-wide commons |
 
-Akashik's **"each peer holds only what it has asked for or
+Folklore's **"each peer holds only what it has asked for or
 contributed"** model neatly avoids all three. The community's
 knowledge is replicated *to the precision of demand* — popular
 items get cached on many peers, fringe items live on one peer

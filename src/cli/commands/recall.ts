@@ -1,5 +1,5 @@
 /**
- * `akashik recall <name> [--workspace W|all] [--k N] [--json]`
+ * `folklore recall <name> [--workspace W|all] [--k N] [--json]`
  *
  * Entity-first lookup. Resolves <name> against the entity registry,
  * traverses every `mentions` edge, returns ranked source chunks
@@ -17,7 +17,7 @@
 import { join } from 'node:path';
 import { recall } from '../../application/recall.js';
 import { runFederatedRecall } from '../../application/federated-recall.js';
-import { defaultRuntime, akashikHome, detectWorkspace } from '../runtime.js';
+import { defaultRuntime, folkloreHome, detectWorkspace } from '../runtime.js';
 import { formatError, formatErrorWithHint } from '../../domain/errors.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../../infrastructure/peer-transport.js';
 import { loadPeers } from '../../infrastructure/peer-store.js';
@@ -53,7 +53,7 @@ const parseArgs = (args: readonly string[]): ParsedArgs | string => {
     else if (a === '--peers') peers = true;
     else if (!a.startsWith('-')) query = query ? `${query} ${a}` : a;
   }
-  if (!query) return 'missing name — usage: akashik recall <name> [--workspace W|all] [--k N] [--peers] [--json]';
+  if (!query) return 'missing name — usage: folklore recall <name> [--workspace W|all] [--k N] [--peers] [--json]';
 
   let workspace: string | undefined;
   if (workspaceExplicit) {
@@ -66,10 +66,10 @@ const parseArgs = (args: readonly string[]): ParsedArgs | string => {
 
 export const recallCmd = async (args: readonly string[]): Promise<number> => {
   if (args.includes('--help') || args.includes('-h') || args.includes('help')) {
-    console.log(`usage: akashik recall <name> [--workspace W|all] [--k N] [--peers] [--json]
+    console.log(`usage: folklore recall <name> [--workspace W|all] [--k N] [--peers] [--json]
 
 Entity-first lookup. Resolves <name> against the entity registry
-(\`akashik entity add ...\`) plus heuristic auto-detected
+(\`folklore entity add ...\`) plus heuristic auto-detected
 entities, then walks every \`mentions\` edge in the graph to
 return chunks that reference it.
 
@@ -79,7 +79,7 @@ flags:
                  opt out of the cwd-based pre-filter.
   --k N          max results (default 20)
   --peers        fan out to connected libp2p peers via the
-                 /akashik/recall/1.0.0 protocol
+                 /folklore/recall/1.0.0 protocol
   --json         machine-readable output
 
 Recency decay: uniform ${RECENCY_HALF_LIFE_DAYS}d half-life.`);
@@ -119,9 +119,9 @@ const runRecallFederated = async (
   runtime: import('../runtime.js').Runtime,
   parsed: ParsedArgs,
 ): Promise<number> => {
-  const idPath = join(akashikHome(), 'peer-identity.json');
-  const peersPath = join(akashikHome(), 'peers.json');
-  const cfgPath = join(akashikHome(), 'config.yaml');
+  const idPath = join(folkloreHome(), 'peer-identity.json');
+  const peersPath = join(folkloreHome(), 'peers.json');
+  const cfgPath = join(folkloreHome(), 'config.yaml');
   const cfgRes = await loadConfig(cfgPath);
   if (cfgRes.isErr()) {
     console.error(`recall --peers: ${formatError(cfgRes.error)}`);
@@ -177,7 +177,7 @@ const runRecallFederated = async (
       return 0;
     }
 
-    console.log(`# akashik recall --peers: ${parsed.query}`);
+    console.log(`# folklore recall --peers: ${parsed.query}`);
     console.log(`entity_id:        ${result.entity_id}`);
     if (result.entity) {
       console.log(`local entity:     ${result.entity.label} (${result.entity.type})`);
@@ -193,7 +193,7 @@ const runRecallFederated = async (
     if (result.remote_hits.length === 0) {
       console.log('no peer mentions for this entity.');
       if (result.peers_queried === 0) {
-        console.log('  (no connected peers — dial one with `akashik peer add <multiaddr>`)');
+        console.log('  (no connected peers — dial one with `folklore peer add <multiaddr>`)');
       }
       return 0;
     }
@@ -232,7 +232,7 @@ const runRecall = async (
         return 0;
       }
       console.log(`no entity registered for "${parsed.query}".`);
-      console.log(`  register one with: akashik entity add "${parsed.query}"`);
+      console.log(`  register one with: folklore entity add "${parsed.query}"`);
       console.log(`  or run an ingest — heuristic detection picks up CamelCase identifiers`);
       console.log(`  and URL hosts automatically.`);
       return 0;
@@ -265,7 +265,7 @@ const runRecall = async (
     return 0;
   }
 
-  console.log(`# akashik recall: ${entity.label}`);
+  console.log(`# folklore recall: ${entity.label}`);
   console.log(`entity:  ${entity.id}`);
   console.log(`type:    ${entity.type}`);
   console.log(`aliases: ${entity.aliases.join(', ')}`);
@@ -275,7 +275,7 @@ const runRecall = async (
 
   if (hits.length === 0) {
     console.log('no chunks reference this entity yet — heuristics may not have caught it,');
-    console.log('or no ingest has run since registration. try `akashik trigger`.');
+    console.log('or no ingest has run since registration. try `folklore trigger`.');
     return 0;
   }
 

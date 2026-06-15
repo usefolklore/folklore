@@ -31,7 +31,7 @@ import {
   type SignedEnvelope,
   type VerifiedEnvelope,
 } from './identity-lifecycle.js';
-import { akashikHome } from '../cli/runtime.js';
+import { folkloreHome } from '../cli/runtime.js';
 
 // ─────────────────────── process-cached singleton ─────────────────
 
@@ -49,7 +49,7 @@ let homeOverride: string | null = null;
 export const currentIdentity = (): ResultAsync<ResolvedIdentity, AppError> => {
   if (cached) return okAsync<ResolvedIdentity, AppError>(cached);
   if (!inflight) {
-    const home = homeOverride ?? akashikHome();
+    const home = homeOverride ?? folkloreHome();
     inflight = new Promise<ResolvedIdentity>((resolve, reject) => {
       ensureIdentity(home).then((res) => {
         if (res.isOk()) {

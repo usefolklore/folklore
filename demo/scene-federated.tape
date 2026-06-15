@@ -1,4 +1,4 @@
-# akashik — natural Claude Code session, federated retrieval live.
+# folklore — natural Claude Code session, federated retrieval live.
 # Driven by demo/scene-federated.sh. Output: demo/scene-federated.gif
 
 Output demo/scene-federated.gif
@@ -17,11 +17,11 @@ Set WindowBar Colorful
 Set WindowBarSize 30
 
 Hide
-Type "cd /Users/saharbarak/personal/akashik"
+Type "cd /Users/saharbarak/personal/folklore"
 Enter
-Type "export AKASHIK_HOME=$HOME/.akashik.demo"
+Type "export FOLKLORE_HOME=$HOME/.folklore.demo"
 Enter
-Type "export AKASHIK_PREFETCH_TIMEOUT_MS=15000"
+Type "export FOLKLORE_PREFETCH_TIMEOUT_MS=15000"
 Enter
 Type "clear"
 Enter

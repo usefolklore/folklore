@@ -33,7 +33,7 @@ The `keywords[]` field on `RoomMeta` is load-bearing for cold-start source sugge
 
 ### 4. Mental Model
 
-The user's mental model has two layers, not one. "I am in the `akashik` repo right now" is a workspace fact — always available, automatically true, requires no action. "I am researching knowledge graphs" is a research context fact — it accrues value through curation, it is the thing worth federating. Collapsing these into one axis forces an impossible choice: either the user manages a room per repo (Position B's implicit ask), or they constantly switch the single global default (Position A's current failure mode, evidenced by `default_room: "tlvtech"` being stale).
+The user's mental model has two layers, not one. "I am in the `folklore` repo right now" is a workspace fact — always available, automatically true, requires no action. "I am researching knowledge graphs" is a research context fact — it accrues value through curation, it is the thing worth federating. Collapsing these into one axis forces an impossible choice: either the user manages a room per repo (Position B's implicit ask), or they constantly switch the single global default (Position A's current failure mode, evidenced by `default_room: "tlvtech"` being stale).
 
 Position C maps each layer to the right UX. The workspace filter is invisible and automatic. Room management remains intentional and rare. The query default becomes: `workspace == current_repo AND room == user_default`, or if no default room is set, `workspace == current_repo` alone. This is the query in `src/cli/commands/discover.ts:45`, `report.ts:59`, `viz.ts:64` — all of which already fall back to `defaultRoom(reg.value)`. Adding workspace as a pre-filter requires a one-line change at each call site, not a structural redesign.
 
@@ -67,7 +67,7 @@ Total surface area: two files modified, one small domain change. Ships in a day.
 - Any UI for managing workspace tags explicitly (not needed — they are automatic).
 - Workspace as a federation axis (the niche-evaporation data argues against smaller rooms, not for them).
 - Any change to the `PEER_HELLO` or `ROOM_SYNC` protocol (zero P2P changes in this first cut).
-- The many-to-many repo→room mapping UI (`akashik workspace bind <repo> <room>`) — useful eventually, not needed for v1 value.
+- The many-to-many repo→room mapping UI (`folklore workspace bind <repo> <room>`) — useful eventually, not needed for v1 value.
 
 ### (c) What would change my mind
 

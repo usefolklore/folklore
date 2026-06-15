@@ -1,5 +1,5 @@
 /**
- * `akashik logs <sub>` — local-first network telemetry surface.
+ * `folklore logs <sub>` — local-first network telemetry surface.
  *
  *   tail [n]                  print last n events from today (default 50)
  *   export <path>             write a gzipped NDJSON bundle of all logs
@@ -8,7 +8,7 @@
  *   status                    show shipping config + offset
  *   rotate                    compress yesterday + delete > retention
  *
- * Logs live under ~/.akashik/logs/. Shipping is opt-in; default is
+ * Logs live under ~/.folklore/logs/. Shipping is opt-in; default is
  * local-only, no telemetry leaves the machine without an explicit
  * `enable-shipping` call (matches the P2P-first ethos).
  */
@@ -26,7 +26,7 @@ import {
   getShippingStatus,
   rotate,
 } from '../../infrastructure/log-store.js';
-import { akashikHome } from '../runtime.js';
+import { folkloreHome } from '../runtime.js';
 
 const tail = async (rest: readonly string[]): Promise<number> => {
   const n = rest[0] ? parseInt(rest[0], 10) : 50;
@@ -34,7 +34,7 @@ const tail = async (rest: readonly string[]): Promise<number> => {
     console.error(`logs tail: bad count '${rest[0]}'`);
     return 1;
   }
-  const r = await tailToday(logPaths(akashikHome()), n);
+  const r = await tailToday(logPaths(folkloreHome()), n);
   if (r.isErr()) {
     console.error(`logs tail: ${formatError(r.error)}`);
     return 1;
@@ -50,10 +50,10 @@ const tail = async (rest: readonly string[]): Promise<number> => {
 const exportCmd = async (rest: readonly string[]): Promise<number> => {
   const target = rest[0];
   if (!target) {
-    console.error('logs export: missing <path>. usage: akashik logs export ./akashik-debug.ndjson.gz');
+    console.error('logs export: missing <path>. usage: folklore logs export ./folklore-debug.ndjson.gz');
     return 1;
   }
-  const r = await exportBundle(logPaths(akashikHome()));
+  const r = await exportBundle(logPaths(folkloreHome()));
   if (r.isErr()) {
     console.error(`logs export: ${formatError(r.error)}`);
     return 1;
@@ -68,26 +68,26 @@ const exportCmd = async (rest: readonly string[]): Promise<number> => {
 const enableCmd = async (rest: readonly string[]): Promise<number> => {
   const url = rest[0];
   if (!url) {
-    console.error('logs enable-shipping: missing <url>. usage: akashik logs enable-shipping https://logs.example.com/ingest');
+    console.error('logs enable-shipping: missing <url>. usage: folklore logs enable-shipping https://logs.example.com/ingest');
     return 1;
   }
   if (!/^https?:\/\//.test(url)) {
     console.error(`logs enable-shipping: '${url}' must be http(s)://...`);
     return 1;
   }
-  const r = await enableShipping(logPaths(akashikHome()), url);
+  const r = await enableShipping(logPaths(folkloreHome()), url);
   if (r.isErr()) {
     console.error(`logs enable-shipping: ${formatError(r.error)}`);
     return 1;
   }
   console.log(`✓ shipping enabled → ${url}`);
   console.log('  events POST as application/x-ndjson; daemon ships every tick.');
-  console.log('  disable any time:  akashik logs disable-shipping');
+  console.log('  disable any time:  folklore logs disable-shipping');
   return 0;
 };
 
 const disableCmd = async (): Promise<number> => {
-  const r = await disableShipping(logPaths(akashikHome()));
+  const r = await disableShipping(logPaths(folkloreHome()));
   if (r.isErr()) {
     console.error(`logs disable-shipping: ${formatError(r.error)}`);
     return 1;
@@ -97,7 +97,7 @@ const disableCmd = async (): Promise<number> => {
 };
 
 const status = async (): Promise<number> => {
-  const r = await getShippingStatus(logPaths(akashikHome()));
+  const r = await getShippingStatus(logPaths(folkloreHome()));
   if (r.isErr()) {
     console.error(`logs status: ${formatError(r.error)}`);
     return 1;
@@ -114,7 +114,7 @@ const status = async (): Promise<number> => {
 };
 
 const rotateCmd = async (): Promise<number> => {
-  const r = await rotate(logPaths(akashikHome()));
+  const r = await rotate(logPaths(folkloreHome()));
   if (r.isErr()) {
     console.error(`logs rotate: ${formatError(r.error)}`);
     return 1;
@@ -124,7 +124,7 @@ const rotateCmd = async (): Promise<number> => {
 };
 
 const help = (): number => {
-  console.log('usage: akashik logs <sub>');
+  console.log('usage: folklore logs <sub>');
   console.log('');
   console.log('  tail [n]                 print last n events (default 50)');
   console.log('  export <path>            write gzipped NDJSON bundle of all logs');
@@ -133,7 +133,7 @@ const help = (): number => {
   console.log('  status                   show shipping config + offset');
   console.log('  rotate                   compress yesterday + delete > 30d');
   console.log('');
-  console.log('Logs are local-first (~/.akashik/logs/). Shipping is opt-in; nothing');
+  console.log('Logs are local-first (~/.folklore/logs/). Shipping is opt-in; nothing');
   console.log('leaves the machine until enable-shipping is explicitly called. Free-form');
   console.log('text fields are truncated + secret-scanned at the infrastructure boundary.');
   console.log('User DIDs are SHA-256(did||day) hashed before logging — daily-rotating tag.');

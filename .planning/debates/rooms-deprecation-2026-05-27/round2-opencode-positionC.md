@@ -19,7 +19,7 @@ This is the wrong framing. The right framing: **rooms are tags with a mandatory 
 | Persistence | `RoomRegistry` serialized to disk, loaded on init, maintained across sessions (inferred from `rooms.ts:66` — persistent map) | Tags live on the node. No second persistence layer. |
 | Partition constraint | 1:1 — a node lives in exactly one room | M:N — a node carries N tags. A `p2p-llm` node also tagged `oss:*` gets cross-pollination for free. |
 
-Tag creation is not a user action; it's a *consequence* of save-context. `akashik save --tag "p2p-llm"` doesn't create a tag — it stamps the string. There is no `addTag(tag) → Result<void, RoomError>`. There is no `TagRegistry`. There is no "tag doesn't exist" error path.
+Tag creation is not a user action; it's a *consequence* of save-context. `folklore save --tag "p2p-llm"` doesn't create a tag — it stamps the string. There is no `addTag(tag) → Result<void, RoomError>`. There is no `TagRegistry`. There is no "tag doesn't exist" error path.
 
 Position A's framing ("tags are rooms with extra steps") is backwards. Rooms are tags with **117 extra lines** (`src/domain/rooms.ts` + `src/cli/commands/room.ts`) that produce exactly the three pains the user reports: wrong default, registry maintenance, ceremony.
 
@@ -31,7 +31,7 @@ Position A's framing ("tags are rooms with extra steps") is backwards. Rooms are
 
 ```
 # Before: two CLI commands + registry state
-akashik share room p2p-llm
+folklore share room p2p-llm
 
 # After: one-time policy file, zero daily ceremony
 # share-patterns.json

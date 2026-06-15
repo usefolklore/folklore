@@ -7,17 +7,17 @@
  */
 
 const HELP = `
-akashik — P2P agent memory: local knowledge graph + federated retrieval
+folklore — P2P agent memory: local knowledge graph + federated retrieval
 
 usage:
-  akashik <command> [options]
+  folklore <command> [options]
 
 getting started:
   onboard [--yes]         first-run installer — daemon, hooks, identity
   doctor [--fix]          check runtime prerequisites (and bootstrap with --fix)
   login                   link a verified GitHub identity to your DID (OAuth)
   claude install|uninstall  make Claude Code use the graph automatically (hook + CLAUDE.md)
-  migrate v5              upgrade ~/.akashik/ from V4 (rooms) to V5 (workspace+private)
+  migrate v5              upgrade ~/.folklore/ from V4 (rooms) to V5 (workspace+private)
   update                  check for a signed release manifest + upgrade instructions
 
 ask + save (daily loop):

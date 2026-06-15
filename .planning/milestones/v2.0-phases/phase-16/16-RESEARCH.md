@@ -10,23 +10,23 @@
 ## User Constraints (from CONTEXT.md)
 
 ### Locked Decisions
-- Use **y-protocols/sync** messages directly over a custom libp2p stream handler (`/akashik/share/1.0.0`) — no y-websocket/y-webrtc dep, no broken y-libp2p fork
+- Use **y-protocols/sync** messages directly over a custom libp2p stream handler (`/folklore/share/1.0.0`) — no y-websocket/y-webrtc dep, no broken y-libp2p fork
 - One **Y.Doc per shared room** — isolation, independent sync streams, per-room backpressure
-- Y.Docs persisted as binary files at `~/.akashik/ydocs/<room>.ydoc` using `encodeStateAsUpdate`/`applyUpdate` native format
+- Y.Docs persisted as binary files at `~/.folklore/ydocs/<room>.ydoc` using `encodeStateAsUpdate`/`applyUpdate` native format
 - Atomic writes via tmp+rename (reuse the pattern from peer-store.ts `savePeers`)
 - Debounced observer: Y.Doc changes flush to in-memory graph within 200ms; graph.json saves on its normal cycle — graph.json remains authoritative for search/ask commands
-- Protocol ID: `/akashik/share/1.0.0` (versioned for forward compatibility)
+- Protocol ID: `/folklore/share/1.0.0` (versioned for forward compatibility)
 - One persistent libp2p stream per **(peer, room) pair** — yamux multiplexes them, per-room backpressure is clean
 - Symmetric room negotiation on connect: both sides exchange `SubscribeRequest` listing their locally-shared rooms, reply with the intersection
 - Standard y-protocols **sync step 1 (state vector) + sync step 2 (missing updates)** — no custom diffing
-- `share room X` — creates/loads the Y.Doc, runs `auditRoom` security scan, blocks on any flagged node, registers room in `~/.akashik/shared-rooms.json`, immediately pushes `SubscribeRequest` to all currently-connected peers
+- `share room X` — creates/loads the Y.Doc, runs `auditRoom` security scan, blocks on any flagged node, registers room in `~/.folklore/shared-rooms.json`, immediately pushes `SubscribeRequest` to all currently-connected peers
 - `unshare room X` local effect — removes room from registry, closes active Y.Doc streams, **keeps the local .ydoc file**
 - `unshare room X` remote effect — peers receive a `ROOM_UNSHARED` signal and stop receiving updates but **keep previously-imported nodes**
-- New shared-rooms registry at `~/.akashik/shared-rooms.json` with `version: 1` field (mirrors peers.json schema pattern)
+- New shared-rooms registry at `~/.folklore/shared-rooms.json` with `version: 1` field (mirrors peers.json schema pattern)
 - Secrets scanner runs: **(a)** on `share room X`; **(b)** on every outbound update before pushing to Y.Doc; **(c)** on every inbound update before applying to local Y.Doc — symmetric block-on-match
 - Inbound blocked updates are logged and silently dropped (no back-propagation of the rejection)
-- Node provenance: every imported node carries `_akashik_source_peer: <peerId>` as an extra GraphNode field
-- Append-only audit trail at `~/.akashik/share-log.jsonl` — one JSON line per update
+- Node provenance: every imported node carries `_folklore_source_peer: <peerId>` as an extra GraphNode field
+- Append-only audit trail at `~/.folklore/share-log.jsonl` — one JSON line per update
 - Dep budget: `yjs` + `y-protocols` — 2 new npm deps
 
 ### Claude's Discretion
@@ -50,8 +50,8 @@
 
 | ID | Description | Research Support |
 |----|-------------|-----------------|
-| SHARE-01 | `akashik share room <name>` marks a room as public | shared-rooms.json schema; auditRoom pre-share gate; Y.Doc load/create; SubscribeRequest push to peers |
-| SHARE-02 | `akashik unshare room <name>` makes a room private again | shared-rooms.json mutation; ROOM_UNSHARED signal to peers; stream close; .ydoc file retained |
+| SHARE-01 | `folklore share room <name>` marks a room as public | shared-rooms.json schema; auditRoom pre-share gate; Y.Doc load/create; SubscribeRequest push to peers |
+| SHARE-02 | `folklore unshare room <name>` makes a room private again | shared-rooms.json mutation; ROOM_UNSHARED signal to peers; stream close; .ydoc file retained |
 | SHARE-03 | Shared rooms sync via Y.js CRDT — concurrent edits from multiple peers converge | Y.Doc CRDT semantics; y-protocols sync step 1+2 protocol; update observer; applyUpdate with origin filter |
 | SHARE-04 | Only metadata + embeddings replicate — not raw source text | ShareableNode type boundary already enforced by Phase 15; Y.Map keyed by node.id storing ShareableNode fields only |
 | SHARE-05 | Sync is incremental — only new/changed nodes since last sync | encodeStateVector + encodeStateAsUpdate(doc, peerStateVector) gives only missing deltas natively |
@@ -123,7 +123,7 @@ src/
 │   └── share-sync.ts          # NEW: libp2p handle() registration, stream lifecycle, sync loop
 └── cli/commands/
     └── share.ts               # EXTEND: add 'room' and 'unshare' subcommands
-~/.akashik/
+~/.folklore/
 ├── shared-rooms.json          # registry: { version: 1, rooms: [{ name, sharedAt }] }
 ├── share-log.jsonl            # append-only audit trail
 └── ydocs/
@@ -133,7 +133,7 @@ src/
 ### Pattern 1: y-protocols sync message exchange (the core protocol loop)
 
 **What:** How to initiate sync when a stream opens and keep it live for incremental updates.
-**When to use:** Every time `node.handle()` fires for `/akashik/share/1.0.0` (inbound) or after `node.dialProtocol()` returns (outbound).
+**When to use:** Every time `node.handle()` fires for `/folklore/share/1.0.0` (inbound) or after `node.dialProtocol()` returns (outbound).
 
 ```typescript
 // Source: y-websocket reference impl + y-protocols/sync.js API (verified 2026-04-12)
@@ -145,7 +145,7 @@ import * as Y from 'yjs'
 // PROVIDER SYMBOL — used as transactionOrigin to prevent echo loops.
 // Applying remote updates with this symbol means the 'update' event
 // fires with origin === REMOTE_ORIGIN, which we skip in the outbound handler.
-const REMOTE_ORIGIN = Symbol('akashik-remote')
+const REMOTE_ORIGIN = Symbol('folklore-remote')
 
 // ── Initiate sync (called on both sides when a stream opens) ──────────────
 const sendSyncStep1 = (stream: Stream, doc: Y.Doc): void => {
@@ -224,7 +224,7 @@ const handleStream = async (stream: Stream): Promise<void> => {
 
 // Register inbound handler (call once at startup or first share):
 await node.handle(
-  '/akashik/share/1.0.0',
+  '/folklore/share/1.0.0',
   async (stream, connection) => {
     const peerId = connection.remotePeer.toString()
     await handleShareStream(stream, connection, peerId)
@@ -235,12 +235,12 @@ await node.handle(
 // Open outbound stream to a specific peer for a specific room:
 const stream = await node.dialProtocol(
   peerIdFromString(peerIdStr),   // DialTarget = PeerId | Multiaddr | Multiaddr[]
-  '/akashik/share/1.0.0'
+  '/folklore/share/1.0.0'
 )
 // stream is a Stream — wrap with lpStream for framing
 
 // Unregister (on last room unshared):
-await node.unhandle('/akashik/share/1.0.0')
+await node.unhandle('/folklore/share/1.0.0')
 ```
 
 ### Pattern 4: Y.Doc persistence — load from .ydoc, save atomically

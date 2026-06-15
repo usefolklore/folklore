@@ -1,4 +1,4 @@
-# Data-Engineer Attack Surface — akashik v4 SciFact 75.22% → ?
+# Data-Engineer Attack Surface — folklore v4 SciFact 75.22% → ?
 
 **Date:** 2026-04-19
 **Author:** data-engineer (round 2 — post Round-1 algorithmic NULLs)
@@ -13,9 +13,9 @@ Round 1 asked "can we squeeze more from the same scores?" and the answer was no 
 
 Three structural issues are visible in the data on disk before any model runs:
 
-1. **Qrel sparsity.** `~/.akashik/bench/scifact/scifact/qrels/test.tsv` has 339 positive judgements across 300 queries — 1.13 rel/q mean, 92% of queries have exactly 1 relevant doc. Per-query NDCG@10 is therefore ~binary: either the gold doc is in top-10 (NDCG ≥ 0.387) or it is not (NDCG = 0). At 1.13 rel/q, the dataset is in the regime where **a single missed annotation per query swings NDCG by hundreds of basis points**.
+1. **Qrel sparsity.** `~/.folklore/bench/scifact/scifact/qrels/test.tsv` has 339 positive judgements across 300 queries — 1.13 rel/q mean, 92% of queries have exactly 1 relevant doc. Per-query NDCG@10 is therefore ~binary: either the gold doc is in top-10 (NDCG ≥ 0.387) or it is not (NDCG = 0). At 1.13 rel/q, the dataset is in the regime where **a single missed annotation per query swings NDCG by hundreds of basis points**.
 2. **Single chunking choice never swept.** `scripts/bench-beir-sota.mjs:110-111` and `src/infrastructure/vector-index.ts` both index `title + ". " + body` as ONE atomic chunk per doc. SciFact abstracts are 100-300 tokens; bge-base has 512-token context — so we're not truncating, but we're also not exploiting the fact that the gold sentence inside an abstract is often 1-2 sentences out of 5-10.
-3. **Document-side query generation is absent.** Doc2query / E5-Mistral synthetic-query indexing is the most-cited published lift on BEIR scientific text since 2022. akashik has never indexed synthetic queries.
+3. **Document-side query generation is absent.** Doc2query / E5-Mistral synthetic-query indexing is the most-cited published lift on BEIR scientific text since 2022. folklore has never indexed synthetic queries.
 
 These three are the only NEW failure modes worth chasing. The other seven items in the brief (negative mining, anchor docs, schema-aware BM25F, active learning, cross-corpus pretraining, dedup) are either Round-1-adjacent (negative mining ≈ calibrated LR fusion) or expected-null on a 5,183-doc homogeneous corpus (dedup — visual sample of corpus.jsonl shows no obvious near-dups).
 

@@ -18,14 +18,14 @@ A `subject-scoped federated reputation system` over a P2P retrieval network.
 Each peer records first-hand post-transaction feedback, aggregates it by
 subject, and uses it for peer selection. Six prior works the agents converged on:
 
-| Work                 | What it got right                                                    | What's wrong-fit for Akashik                                   |
+| Work                 | What it got right                                                    | What's wrong-fit for Folklore                                   |
 |----------------------|----------------------------------------------------------------------|----------------------------------------------------------------|
 | **EigenTrust** (Kamvar 2003) | Local feedback + global aggregation; explicit collusion thinking | Single global scalar; "good at libp2p" ≠ "good at lemlist"    |
 | **PeerTrust** (Xiong & Liu 2004) | Multi-factor scoring: feedback, volume, source credibility, context | Heavier than v1 needs; overfits sparse data                |
 | **PowerTrust** (Zhou & Hwang 2007) | Scalable global aggregation via power nodes              | Soft centralization cuts against room-symmetric peer model     |
 | **Beta Reputation** (Jøsang 2002) | Probability + uncertainty (sparse-data handling)         | Wants binary success/failure; we have continuous satisfaction  |
 | **Flow-based reputation** (Škorić 2016) | Combines propagation with explicit uncertainty       | Too much machinery for local-only v1                          |
-| **SybilGuard** (Yu 2008) | Graph-based identity defense                                   | Assumes social trust graph Akashik doesn't have today         |
+| **SybilGuard** (Yu 2008) | Graph-based identity defense                                   | Assumes social trust graph Folklore doesn't have today         |
 
 **Local-only vs gossiped:**
 - **Local-only** is more defensible (Jøsang's "own experience"). Cold-starts badly.
@@ -88,7 +88,7 @@ generator. Don't put the rep math inside the scorer — keep concerns separate.
 > **V5 Update (2026-05-27)** — Pre-V5 this section listed a secondary
 > `room:*` scheme. The Phase 24 rooms-deletion mandate removed the rooms
 > abstraction entirely; `room:*` keys are no longer written by the
-> reputation store, the runtime drops them on load, and `akashik
+> reputation store, the runtime drops them on load, and `folklore
 > migrate v5` permanently flattens them on disk. See
 > `docs/architecture/V5-PROTOCOL.md`.
 
@@ -110,7 +110,7 @@ penalises stale/weakly-independent evidence.
 
 ## 4. Data model
 
-`~/.akashik/peer-reputation.json` — local, atomic temp-write + rename
+`~/.folklore/peer-reputation.json` — local, atomic temp-write + rename
 (mirrors `peer-store.ts:138`):
 
 ```json
@@ -233,8 +233,8 @@ plausibility, **not truthfulness.**
 | 4 | Subject extraction (entity-only — V5; legacy room scheme dropped) | **ADD-NEXT** | `src/domain/subject-key.ts` (new); reads from `mentioned_entities` already on AskHit |
 | 5 | Use rep for **ordering only**, never filtering, with exploration floor | **ADD-NEXT** | `src/application/federated-search.ts:202` |
 | 6 | Surface in CLI + JSON: "answered by peers with rep≥X on subject Y" | **ADD-NEXT** | `src/application/peer-pull-telemetry.ts:81`, `src/infrastructure/telemetry-formatter.ts` |
-| 7 | `akashik peers rep [<peer-id>]` inspect command | **ADD-NEXT** | `src/cli/commands/peers-rep.ts` (new) |
-| 8 | Pull-on-demand wire protocol (signed review summaries) | **ADD-LATER** | New `/akashik/reputation/1.0.0` libp2p protocol |
+| 7 | `folklore peers rep [<peer-id>]` inspect command | **ADD-NEXT** | `src/cli/commands/peers-rep.ts` (new) |
+| 8 | Pull-on-demand wire protocol (signed review summaries) | **ADD-LATER** | New `/folklore/reputation/1.0.0` libp2p protocol |
 | 9 | Pubsub gossip | **SKIP** — until reviewer identity, replay handling, and imported-evidence discount exist | n/a |
 
 ---

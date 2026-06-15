@@ -23,13 +23,13 @@ A git repo is a development artifact. `my-saas-backend` may contain code that sp
 
 `docs/p2p/P2P-VISION.md:33–37` states the privacy model: "Room-level control — mark rooms as public/private." The entire P2P protocol (`docs/architecture/V3-PROTOCOL.md:238–250`) routes `SearchRequest` envelopes through a room field: a peer receiving a request MUST check `shared-rooms.json` and refuse if the room is not shared. This is the access-control gate.
 
-Auto-derived rooms are ungated by definition — the user has not made an explicit decision to share `repo:my-saas-backend` with the network. You either force a share prompt on every new cwd (friction that defeats the stated goal of reducing friction), or you silently create unshared rooms that produce orphan namespaces with zero peers. The AkashikBench-F data in the context is damning here: today **76/103 newly-introduced docs never reach 50% peer coverage**. Auto-deriving rooms would multiply the number of singleton namespaces by the number of repos each developer has checked out, making niche evaporation structurally worse, not better.
+Auto-derived rooms are ungated by definition — the user has not made an explicit decision to share `repo:my-saas-backend` with the network. You either force a share prompt on every new cwd (friction that defeats the stated goal of reducing friction), or you silently create unshared rooms that produce orphan namespaces with zero peers. The FolkloreBench-F data in the context is damning here: today **76/103 newly-introduced docs never reach 50% peer coverage**. Auto-deriving rooms would multiply the number of singleton namespaces by the number of repos each developer has checked out, making niche evaporation structurally worse, not better.
 
 ---
 
 ## Axis 3 — Keywords and source discovery
 
-`src/cli/commands/room.ts:64` shows that keywords drive cold-start source seeding. The `init` command uses them to suggest RSS feeds and web sources appropriate to the room. A repo-derived room has no keywords until the user adds them — meaning `init` has nothing to suggest. Position B's answer is "lazy enrichment": auto-create the room, let the user add keywords later. But "later" does not happen. The user who won't run `akashik room create` will not run `akashik room describe --edit` either. You get a proliferation of empty-keyword rooms that produce worse source recommendations than the current state, where the user at least had to state a purpose at creation time.
+`src/cli/commands/room.ts:64` shows that keywords drive cold-start source seeding. The `init` command uses them to suggest RSS feeds and web sources appropriate to the room. A repo-derived room has no keywords until the user adds them — meaning `init` has nothing to suggest. Position B's answer is "lazy enrichment": auto-create the room, let the user add keywords later. But "later" does not happen. The user who won't run `folklore room create` will not run `folklore room describe --edit` either. You get a proliferation of empty-keyword rooms that produce worse source recommendations than the current state, where the user at least had to state a purpose at creation time.
 
 ---
 
@@ -37,13 +37,13 @@ Auto-derived rooms are ungated by definition — the user has not made an explic
 
 The user's intuition is "I'm in repo X, my research should be scoped to X." That intuition is correct about *query scoping* — it is incorrect about *storage partitioning*. A developer researching authentication patterns for `my-saas-backend` today may reuse those same nodes when working on `my-mobile-app` tomorrow. If nodes were stored in a repo-scoped room, they are invisible across contexts. The current model — a topical room like `security-patterns` that is cwd-independent — is portable in exactly the way a developer's knowledge actually works: domain expertise does not restart at git clone.
 
-The fix to "default_room: tlvtech is stale" (`CONTEXT.md:19`) takes three seconds: `akashik room switch akashik-dev`. That is not a model failure. That is a UX gap in session restore, which is addressable without restructuring the abstraction.
+The fix to "default_room: tlvtech is stale" (`CONTEXT.md:19`) takes three seconds: `folklore room switch folklore-dev`. That is not a model failure. That is a UX gap in session restore, which is addressable without restructuring the abstraction.
 
 ---
 
 ## Axis 5 — Migration
 
-The live registry (`CONTEXT.md:17–20`) has six intentionally named rooms: `akashik-dev`, `p2p-llm`, `tlvtech`, `forge`, `auto-tlv`. These rooms have accumulated reputation scores and, once Phase 24 ships, will have CRDT state vectors and peer associations. The reputation system in `docs/p2p/peer-reputation-design.md:86` stores subjects under `room:*` keys alongside `entity:*` keys — the room IS a first-class subject in the reputation map. A migration to repo-derived rooms does not just move metadata; it destroys accumulated `room:*` reputation signals. There is no clean migration path because repo slugs are not topical — a given `room:p2p-llm` reputation score cannot be mechanically translated into `room:akashik` or `room:akashik` without semantic loss.
+The live registry (`CONTEXT.md:17–20`) has six intentionally named rooms: `folklore-dev`, `p2p-llm`, `tlvtech`, `forge`, `auto-tlv`. These rooms have accumulated reputation scores and, once Phase 24 ships, will have CRDT state vectors and peer associations. The reputation system in `docs/p2p/peer-reputation-design.md:86` stores subjects under `room:*` keys alongside `entity:*` keys — the room IS a first-class subject in the reputation map. A migration to repo-derived rooms does not just move metadata; it destroys accumulated `room:*` reputation signals. There is no clean migration path because repo slugs are not topical — a given `room:p2p-llm` reputation score cannot be mechanically translated into `room:folklore` or `room:folklore` without semantic loss.
 
 ---
 
@@ -61,7 +61,7 @@ Add a `cwd_hint` to the `ask` and `search` commands: detect `git rev-parse --sho
 
 **(b) What to defer**
 
-Any change to `RoomMeta`, `RoomRegistry`, `addRoom()`, or `setDefault()`. Any auto-creation of rooms. Any change to how reputation subjects are keyed. All of that is Phase 25+ territory, after AkashikBench-F has validated that the niche-evaporation fix in Phase 24.2 actually works.
+Any change to `RoomMeta`, `RoomRegistry`, `addRoom()`, or `setDefault()`. Any auto-creation of rooms. Any change to how reputation subjects are keyed. All of that is Phase 25+ territory, after FolkloreBench-F has validated that the niche-evaporation fix in Phase 24.2 actually works.
 
 **(c) What would change my mind**
 

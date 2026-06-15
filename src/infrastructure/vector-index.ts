@@ -105,7 +105,7 @@ export interface SqliteVectorIndexOptions {
    * disabled and the binary search methods return empty results.
    *
    * Phase 3 of the v4 plan: ship the primitive; production toggle lives
-   * behind `AKASHIK_VECTOR_QUANTIZATION=binary-{N}` in the runtime
+   * behind `FOLKLORE_VECTOR_QUANTIZATION=binary-{N}` in the runtime
    * builder.
    */
   readonly binaryDim?: number;
@@ -123,7 +123,7 @@ export interface SqliteVectorIndexOptions {
    * Pre-existing fp32 rows in vec_nodes from prior upserts remain;
    * they're only invisible to binary search until reindexed.
    *
-   * Toggle: `AKASHIK_VECTOR_FP32_DROP=true` env var.
+   * Toggle: `FOLKLORE_VECTOR_FP32_DROP=true` env var.
    */
   readonly binaryOnly?: boolean;
 }

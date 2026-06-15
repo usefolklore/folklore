@@ -5,7 +5,7 @@
  * One chokidar instance per root. Events are debounced 500ms per file
  * so a save burst (e.g. an editor's atomic-write dance) collapses
  * into a single re-ingest. Common noisy paths are excluded
- * (.git, node_modules, dist, .akashik, *.swp, *.tmp).
+ * (.git, node_modules, dist, .folklore, *.swp, *.tmp).
  *
  * Also includes a session-watcher for ~/.claude/projects/**\/*.jsonl
  * → enqueues `ingest:session` jobs on JSONL append. Same debounce
@@ -42,7 +42,7 @@ const FILE_IGNORE: readonly RegExp[] = [
   /\/node_modules\//,
   /\/dist\//,
   /\/build\//,
-  /\/\.akashik\//,
+  /\/\.folklore\//,
   /\.swp$/,
   /\.tmp$/,
   /~$/,
@@ -199,7 +199,7 @@ export const startFileWatchers = (deps: FileWatcherDeps): FileWatcherHandle => {
   }
 
   // Session watcher — flat ~/.claude/projects tree. Always-on since
-  // sessions are universal, not opted-in via `akashik this`.
+  // sessions are universal, not opted-in via `folklore this`.
   const sessionRoot = join(homedir(), '.claude', 'projects');
   const sessionTimer = { handle: null as NodeJS.Timeout | null };
   if (existsSync(sessionRoot)) {

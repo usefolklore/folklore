@@ -1,5 +1,5 @@
 /**
- * `akashik ask "<query>" [--workspace W|all] [--k N] [--peers]`
+ * `folklore ask "<query>" [--workspace W|all] [--k N] [--peers]`
  *
  * Semantic search + formatted context output. Embeds the query, runs
  * k-NN, loads matching nodes from the graph, and prints a structured
@@ -9,7 +9,7 @@
  * workspace pre-filter when cwd is in a git repo. Use `--workspace all`
  * to opt out, or `--workspace <slug>` to override the cwd detection.
  *
- * With --peers: fans out to all connected peers via /akashik/search/1.0.0,
+ * With --peers: fans out to all connected peers via /folklore/search/1.0.0,
  * merges results with _source_peer annotation.
  */
 
@@ -18,10 +18,11 @@ import { formatError, formatErrorWithHint } from '../../domain/errors.js';
 import { executeFederatedAsk, formatFederatedAsk } from '../../application/federated-ask.js';
 import { indexNode } from '../../application/use-cases.js';
 import { ask as askUseCase, type AskResult } from '../../application/ask.js';
-import { defaultRuntime, akashikHome, detectWorkspace } from '../runtime.js';
+import { defaultRuntime, folkloreHome, detectWorkspace } from '../runtime.js';
 import type { Runtime } from '../runtime.js';
 import { loadOrCreateIdentity, createNode } from '../../infrastructure/peer-transport.js';
 import { loadConfig } from '../../infrastructure/config-loader.js';
+import { upsertEdge } from '../../domain/graph.js';
 
 interface ParsedArgs {
   readonly query: string;
@@ -55,7 +56,7 @@ const parseArgs = (args: readonly string[]): ParsedArgs | string => {
     else if (a === '--json') json = true;
     else if (!a.startsWith('-')) query = query ? `${query} ${a}` : a;
   }
-  if (!query) return 'missing query — usage: akashik ask "your question" [--workspace W|all] [--k N] [--peers [--pull]] [--json]';
+  if (!query) return 'missing query — usage: folklore ask "your question" [--workspace W|all] [--k N] [--peers [--pull]] [--json]';
 
   // Resolve workspace: explicit --workspace all → undefined (no filter);
   // explicit slug → that slug; absent → detectWorkspace(cwd) → slug | undefined.
@@ -189,7 +190,7 @@ const HOOK_SCHEMA_VERSION = 2;
 
 const renderAgentContract = (r: AskResult): void => {
   const s = r.satisfaction;
-  console.log(`# akashik agent contract (hook_version: ${HOOK_SCHEMA_VERSION})`);
+  console.log(`# folklore agent contract (hook_version: ${HOOK_SCHEMA_VERSION})`);
   console.log(`action:        ${r.decision}`);
   console.log(`satisfaction:  ${s.score.toFixed(2)}  (range 0.00–1.00)`);
   console.log(
@@ -212,7 +213,7 @@ const renderAskHuman = (r: AskResult): number => {
 
   if (r.resolved_entity && r.recall_result && r.recall_result.hits.length > 0) {
     const e = r.resolved_entity;
-    console.log(`# akashik: "${r.query}" matches entity ${e.id}`);
+    console.log(`# folklore: "${r.query}" matches entity ${e.id}`);
     console.log(`type: ${e.type} | aliases: ${e.aliases.join(', ')} | mentions: ${r.recall_result.total}`);
     console.log('');
     console.log(`## entity recall (top ${r.recall_result.hits.length})`);
@@ -232,7 +233,7 @@ const renderAskHuman = (r: AskResult): number => {
 
   if (r.search_hits.length === 0) {
     if (!r.resolved_entity) {
-      console.log('no results found. try a broader query or run `akashik trigger` to index content first.');
+      console.log('no results found. try a broader query or run `folklore trigger` to index content first.');
     }
     return 0;
   }
@@ -277,9 +278,9 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
   }
   const embedding = embedRes.value;
 
-  const identityPath = join(akashikHome(), 'peer-identity.json');
-  const peersPath = join(akashikHome(), 'peers.json');
-  const configPath = join(akashikHome(), 'config.yaml');
+  const identityPath = join(folkloreHome(), 'peer-identity.json');
+  const peersPath = join(folkloreHome(), 'peers.json');
+  const configPath = join(folkloreHome(), 'config.yaml');
 
   const cfgRes = await loadConfig(configPath);
   if (cfgRes.isErr()) {
@@ -312,7 +313,7 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
     // on its live node (src/application/federated-ask.ts).
     const outcome = await executeFederatedAsk(
       {
-        home: akashikHome(),
+        home: folkloreHome(),
         node,
         vectorIndex: runtime.vectors,
         loadGraph: async () => {
@@ -328,6 +329,22 @@ const askFederated = async (runtime: Runtime, parsed: ParsedArgs): Promise<numbe
             githubUser: runtime.githubUser,
           })({ node: n, text });
           return r.isOk();
+        },
+        cacheEdges: async (edges) => {
+          const loaded = await runtime.graphs.load();
+          if (loaded.isErr()) return 0;
+          let graph = loaded.value;
+          let count = 0;
+          for (const edge of edges) {
+            const next = upsertEdge(graph, edge);
+            if (next.isOk()) {
+              graph = next.value;
+              count++;
+            }
+          }
+          if (count === 0) return 0;
+          const saved = await runtime.graphs.save(graph);
+          return saved.isOk() ? count : 0;
         },
       },
       { query: parsed.query, embedding, k: parsed.k, pull: parsed.pull },

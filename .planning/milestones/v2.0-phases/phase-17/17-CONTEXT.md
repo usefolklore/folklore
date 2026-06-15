@@ -17,7 +17,7 @@ Search across the P2P network and discover peers automatically. Federated search
 - Wire format: **embedding** (384-dim Float32Array from the requester's local ONNX runtime) — not raw query text. Keeps ONNX out of the inbound hot path on responding peers
 - Fan-out: **parallel dial** — send `SearchRequest` to all currently-connected peers via parallel libp2p streams, collect responses with a **2s timeout** per peer. Degraded peers do not block the query
 - Result merging: requester merges local results + all peer responses into one ranked list by cosine distance, annotating each result with `_source_peer: <peerId>` (null for local results)
-- New protocol ID: **`/akashik/search/1.0.0`** — separate from `/akashik/share/1.0.0` so sync and search have independent stream lifecycles
+- New protocol ID: **`/folklore/search/1.0.0`** — separate from `/folklore/share/1.0.0` so sync and search have independent stream lifecycles
 
 ### Peer Discovery Strategy
 - **mDNS enabled by default** (DISC-02) — homelab/LAN case is the primary use. `@libp2p/mdns` auto-adds discovered peers to the libp2p peerStore. Disable via `config.yaml peer.mdns: false`
@@ -26,7 +26,7 @@ Search across the P2P network and discover peers automatically. Federated search
 - Discovered peers auto-persisted to `peers.json` with new field `discovery_method: 'manual' | 'mdns' | 'dht'` — distinguishable from manual adds in `peer list` output
 
 ### MCP Tool + CLI Surface
-- Extend existing `akashik ask` with `--peers` flag (matches FED-01 literal text). `ask` already does embedding + ranking; federated mode adds the fan-out step
+- Extend existing `folklore ask` with `--peers` flag (matches FED-01 literal text). `ask` already does embedding + ranking; federated mode adds the fan-out step
 - New MCP tool **`federated_search(query, limit?, room?)`** — separate from existing `search` so Claude has a clear choice between "my graph" vs. "my graph + peers". Results include `_source_peer` annotation. Registered as the 14th MCP tool
 - Default behavior when **no peers connected**: return local-only results with `peers_queried: 0` in the meta field. No hard error. Same for `ask --peers`
 - Cross-peer tunnel detection (FED-04): run existing `findTunnels` over the combined result set as a synthetic one-shot graph. Surface tunnels as a separate section in output
@@ -35,7 +35,7 @@ Search across the P2P network and discover peers automatically. Federated search
 - **Query privacy** — peers see the embedding and room filter. Embeddings are not plaintext but are correlatable. Document this trade-off explicitly in the `federated_search` tool description and in `peer status` output. Private information retrieval (PIR) is v3+
 - **Inbound search authorization** — peers can request any room but only rooms in the local `shared-rooms.json` respond. Non-shared rooms return an empty result set. No per-peer ACL in Phase 17 (room-level only)
 - **Rate limiting** — token bucket per peer: **10 requests/sec, burst 30**. Configurable via `config.yaml peer.search_rate_limit`. Prevents a peer from DOSing local sqlite-vec with a fast query loop
-- **Audit log** — append to existing `~/.akashik/share-log.jsonl` with new `action: 'search_request' | 'search_response'` entries. Single log file for all P2P activity
+- **Audit log** — append to existing `~/.folklore/share-log.jsonl` with new `action: 'search_request' | 'search_response'` entries. Single log file for all P2P activity
 
 ### Claude's Discretion
 - Exact wire format for `SearchRequest` / `SearchResponse` (likely JSON framed via length-prefixed — same pattern as SubscribeRequest in Phase 16)
@@ -68,7 +68,7 @@ Search across the P2P network and discover peers automatically. Federated search
 - `src/cli/commands/peer.ts` — `peer list` output shows `discovery_method` for discovered peers
 - `src/infrastructure/peer-store.ts` — extend `PeerRecord` with optional `discovery_method` field, migrate via existing `version` field
 - `src/daemon/loop.ts` — discovery runs as part of libp2p node lifecycle (no new tick); federated search is synchronous per CLI/MCP call (no daemon involvement)
-- `~/.akashik/share-log.jsonl` — extend existing audit log with search actions
+- `~/.folklore/share-log.jsonl` — extend existing audit log with search actions
 
 </code_context>
 

@@ -13,7 +13,7 @@
  *   - Files older than `retention_days` (default 30) are deleted.
  *
  * Optional opt-in shipping:
- *   - If `AKASHIK_LOG_SHIP_URL` is set (or stored in state.json),
+ *   - If `FOLKLORE_LOG_SHIP_URL` is set (or stored in state.json),
  *     newly-appended events are POSTed in batches of 100 to that URL
  *     as `application/x-ndjson`. Failure is logged but NEVER blocks
  *     the local append.
@@ -119,7 +119,7 @@ export const appendEvent = (
 
 /**
  * Read the last N lines from today's log. Convenience for the CLI
- * `akashik logs tail` flow. For a streaming watcher the caller
+ * `folklore logs tail` flow. For a streaming watcher the caller
  * should `fs.watch` the file directly.
  */
 export const tailToday = (
@@ -232,7 +232,7 @@ export const shipPending = (
         const body = lines.join('\n') + '\n';
         const resp = await fetchImpl(shipping.endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-ndjson', 'X-Akashik-Schema': '1' },
+          headers: { 'Content-Type': 'application/x-ndjson', 'X-Folklore-Schema': '1' },
           body,
         });
         if (!resp.ok) {

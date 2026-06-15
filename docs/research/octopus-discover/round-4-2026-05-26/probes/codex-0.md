@@ -9,8 +9,8 @@
 PROJECT IDENTITY (changed since last round)
 ================================================================
 
-The project pivoted from "akashik: agent-memory product" to
-"Akashik: federated knowledge commons for the open-source community as a whole."
+The project pivoted from "folklore: agent-memory product" to
+"Folklore: federated knowledge commons for the open-source community as a whole."
 
 The mission is to give the OSS community what it has always lacked:
 a shared, contributor-owned memory substrate where every piece of
@@ -20,13 +20,13 @@ attributed, forever.
 
 The brand name borrows from the Akashic Records mythology, reframed
 as concrete contributor-owned infrastructure. The codebase is still
-called "akashik" internally.
+called "folklore" internally.
 
 ================================================================
 THE MECHANISM (the architectural insight that makes the mission credible)
 ================================================================
 
-Each Akashik peer holds only its own information:
+Each Folklore peer holds only its own information:
   - what its user explicitly contributed
   - what it pulled from other peers in response to its user's queries
   - what it researched on the web when the federation couldn't answer
@@ -37,7 +37,7 @@ user's curiosity.
 
 The compounding loop, in 5 steps:
 
-  STEP 1: Local-first query → A's local Akashik graph
+  STEP 1: Local-first query → A's local Folklore graph
   STEP 2: Federation fan-out → connected peers in shared rooms answer
           with their two cents (what they have)
   STEP 3: If federation can't satisfy → harness reaches the web on
@@ -149,15 +149,15 @@ WHAT'S NEW SINCE ROUND 3
        private-by-default and missing the mission)
      OSS-community-commons framing (correct: matches both the
        architecture AND the mission)
-   Brand renamed to Akashik. New StoryBrand-anchored marketing
-   draft + mechanism doc (docs/marketing/how-akashik-works.md)
+   Brand renamed to Folklore. New StoryBrand-anchored marketing
+   draft + mechanism doc (docs/marketing/how-folklore-works.md)
    capture the compounding loop architecturally and link to it
    from the brand messaging as the credibility anchor.
 
 2. LME-S baseline re-run with NDCG/MRR ladder. Confirmed head
    saturation (NDCG@5 = 0.884, only 4pp room below R@5 = 0.92).
 
-3. The Akashik mechanism (5-step compounding loop, peer-local
+3. The Folklore mechanism (5-step compounding loop, peer-local
    storage, ambitioned-curator model) is now explicitly documented
    as the architectural credibility anchor for the mission claim.
 
@@ -172,11 +172,11 @@ Q1. Given the empirical ceiling on LME-S R@5 (NDCG@5 headroom ~4pp,
     federation rather than tuning per-peer retrieval)? Where should
     the next engineering month go?
 
-Q2. The Akashik mechanism (peer-local + federation-on-query + web-
+Q2. The Folklore mechanism (peer-local + federation-on-query + web-
     on-miss + save-locally + transfer-on-next-ask) — is this
     architecturally novel, or is it a known pattern in disguise?
     Cite prior art. If it IS novel, what's the closest existing
-    research/protocol/system, and what makes Akashik different in
+    research/protocol/system, and what makes Folklore different in
     a defensible way?
 
 Q3. There is NO existing public benchmark for "how much does a
@@ -197,7 +197,7 @@ Q4. The Octopus has flagged "input-order bias" (Round 3) and
           / mem0 0.925 / ByteRover 0.928 — are these defensible
           baselines?)
 
-Q5. The Akashik mission requires the network to actually grow.
+Q5. The Folklore mission requires the network to actually grow.
     What's the smallest-viable launch plan that produces a
     meaningful compounding signal in the first ~30 days post-
     launch? Specifically: who are the first 100 contributors, what
@@ -205,7 +205,7 @@ Q5. The Akashik mission requires the network to actually grow.
     the compounding becomes visible to a new contributor visiting
     the network at day 30?
 
-Q6. The Akashik architecture relies on user curiosity as the
+Q6. The Folklore architecture relies on user curiosity as the
     propagation signal. This is brilliant when curiosity-volume is
     healthy. What happens when:
       (a) the network is dominated by N curators of the same hot
@@ -220,7 +220,7 @@ Q6. The Akashik architecture relies on user curiosity as the
 Q7. The competitor frame (mem0/agentmemory/ByteRover) was the
     wrong frame — they're single-user products and we're a
     federated commons. Who are the REAL existing systems that
-    Akashik competes with / extends / supersedes? Be specific
+    Folklore competes with / extends / supersedes? Be specific
     about systems, not categories. Possibilities to evaluate:
       - Are.na (curated cards, central)
       - Logseq P2P sync (knowledge graph, multi-device same user)
@@ -244,7 +244,7 @@ OUTPUT EXPECTED:
 
   - Direct answers to Q1-Q8
   - For Q2: closest prior-art protocol or research paper, with
-    why Akashik differs
+    why Folklore differs
   - For Q3: a proposed benchmark for measuring federation-level
     compounding, with the metrics and the experimental design
   - For Q5: the smallest-viable launch plan (specific communities,
@@ -262,7 +262,7 @@ OUTPUT EXPECTED:
 ## Output
 ```
 1. **Q1: Next month should not be spent chasing the last 2 points of single-peer `R@5`.**  
-`LongMemEval-S` is telling you the headline number is near its ceiling: `R@50 = 1.0`, `R@5 = 0.9202`, `NDCG@5 = 0.8836`, so the remaining room is mostly intra-top-5 ordering, not missing evidence. That makes further gains partly a marketing question if the goal is leaderboard optics against `agentmemory`, not the highest-leverage engineering question. On the other hand, `LoCoMo` still shows a real ranking problem (`R@30 = 0.993` but `R@3 = 0.392`), so abandoning retrieval work entirely would be premature. The tradeoff is simple: spend maybe `10-20%` of the month on low-risk per-peer improvements like temporal gating, better segmentation, and stronger reranker evaluation; spend the other `80-90%` on federation architecture, compounding instrumentation, and launch-loop proof, because that is where Akashik is differentiated.
+`LongMemEval-S` is telling you the headline number is near its ceiling: `R@50 = 1.0`, `R@5 = 0.9202`, `NDCG@5 = 0.8836`, so the remaining room is mostly intra-top-5 ordering, not missing evidence. That makes further gains partly a marketing question if the goal is leaderboard optics against `agentmemory`, not the highest-leverage engineering question. On the other hand, `LoCoMo` still shows a real ranking problem (`R@30 = 0.993` but `R@3 = 0.392`), so abandoning retrieval work entirely would be premature. The tradeoff is simple: spend maybe `10-20%` of the month on low-risk per-peer improvements like temporal gating, better segmentation, and stronger reranker evaluation; spend the other `80-90%` on federation architecture, compounding instrumentation, and launch-loop proof, because that is where Folklore is differentiated.
 
 2. **Q2: The mechanism is not novel at the primitive level, but it is meaningfully novel in composition.**  
 The closest architectural ancestors are:
@@ -271,10 +271,10 @@ The closest architectural ancestors are:
 - **Hypercore / Dat lineage**: peer-to-peer, append-only logs with sparse/on-demand replication rather than mandatory full replication.[3]
 - **AT Protocol / Bluesky**: user-owned repositories plus decentralized identity and moderation layers, although it relies on relays/app-views that reintroduce index concentration.[4]
 
-What seems defensibly different about Akashik is **query-triggered semantic propagation**. SSB and Hypercore replicate logs/feeds/blocks; AT Proto distributes repos/posts; Akashik proposes that knowledge spreads because someone asked a semantically similar question, then another peer cached the answer locally and can later serve it onward. However, the downside is that this novelty currently lives more in the **retrieval-and-propagation policy** than in the storage primitive. So the strong claim is not “new protocol from first principles”; it is “new local-first knowledge propagation mechanism with explicit attribution and compounding behavior.”
+What seems defensibly different about Folklore is **query-triggered semantic propagation**. SSB and Hypercore replicate logs/feeds/blocks; AT Proto distributes repos/posts; Folklore proposes that knowledge spreads because someone asked a semantically similar question, then another peer cached the answer locally and can later serve it onward. However, the downside is that this novelty currently lives more in the **retrieval-and-propagation policy** than in the storage primitive. So the strong claim is not “new protocol from first principles”; it is “new local-first knowledge propagation mechanism with explicit attribution and compounding behavior.”
 
 3. **Q3: Yes, you should propose a benchmark, because existing IR benchmarks do not test the mission.**  
-A useful benchmark would be something like **`Akashik-CompBench`**:
+A useful benchmark would be something like **`Folklore-CompBench`**:
 - **Setup**: `N` peers, each with only a shard of public OSS artifacts: issues, discussions, postmortems, migration notes, debugging transcripts, docs diffs.
 - **Process**: queries arrive over simulated days. A peer answers locally, then via federation, then via web-on-miss, then caches locally with attribution.
 - **Core metrics**:
@@ -364,7 +364,7 @@ Visible compounding signal by day 30 should be: “new user asks a real troubles
 - Tradeoff: moderation and reputation systems are operationally expensive and politically sensitive.
 
 7. **Q7: The real comparison set is not `mem0` or `agentmemory`. The closest systems are these three.**  
-- **Secure Scuttlebutt**: closest architectural ancestor. It is the best “you are not crazy; this family of ideas exists” reference. Akashik extends it with semantic retrieval and query-triggered transfer.  
+- **Secure Scuttlebutt**: closest architectural ancestor. It is the best “you are not crazy; this family of ideas exists” reference. Folklore extends it with semantic retrieval and query-triggered transfer.  
 - **Are.na**: closest behavioral competitor. People already use it as a shared research memory, but it is centralized and manual rather than federated and retrieval-native.[8]
 - **Bluesky / AT Protocol**: closest federation-governance counterpart. It is relevant for identity, moderation, labels, and interoperability, even though it is not a knowledge graph.[4]
 
@@ -373,7 +373,7 @@ If you force me to name the top `2-3` actual systems that matter most: **Secure 
 8. **Q8: Strongest counter-argument, and the response you should prepare.**  
 **Counter-argument:** “The whole project assumes people will contribute enough high-quality, legally shareable, evidence-backed knowledge for the commons to improve over time. In practice, most saved notes are noisy, duplicative, stale, or private. Without a central editor, the network compounds junk faster than truth, and the result is a decentralized landfill rather than a collective memory.”
 
-**Response:** Akashik should not claim that every saved note becomes durable truth. The system works only if it compounds **attributed, evidence-backed, query-reused** knowledge. That is why the product must privilege provenance, room-scoped trust, replayable evidence, soft moderation labels, and visible transfer events over raw note volume. The point is not “everything anyone saves becomes the record”; it is “the subset of community work that repeatedly proves useful becomes easier to find, reuse, and attribute without requiring a central owner.”
+**Response:** Folklore should not claim that every saved note becomes durable truth. The system works only if it compounds **attributed, evidence-backed, query-reused** knowledge. That is why the product must privilege provenance, room-scoped trust, replayable evidence, soft moderation labels, and visible transfer events over raw note volume. The point is not “everything anyone saves becomes the record”; it is “the subset of community work that repeatedly proves useful becomes easier to find, reuse, and attribute without requiring a central owner.”
 
 **Honest final assessment**  
 The next engineering month should be spent proving the **federation thesis**, not polishing the single-peer benchmark headline. Concretely: build the compounding benchmark and simulator; instrument `web-miss`, `transfer`, `churn`, `attribution`, and `diversity`; ship room-level caching/pinning and provenance primitives; and run a narrow 100-user launch in high-overlap OSS rooms. Keep a smaller retrieval lane for `E10`, segmentation, and better reranker eval on `LoCoMo`, because local ranking still matters. However, the core risk is no longer “can we beat `0.925` on `R@5`?” It is “can we show that knowledge acquired by one contributor becomes faster to retrieve for another contributor over time, without centralization and without the commons collapsing into noise?” That is the month’s real work.
@@ -396,7 +396,7 @@ The next engineering month should be spent proving the **federation thesis**, no
 ```
 OpenAI Codex v0.125.0 (research preview)
 --------
-workdir: /Users/saharbarak/personal/akashik
+workdir: /Users/saharbarak/personal/folklore
 model: gpt-5.4
 provider: openai
 approval: never
@@ -447,8 +447,8 @@ Analyze the problem space: -P FOURTH-ROUND analysis. Prior three octopus-discove
 PROJECT IDENTITY (changed since last round)
 ================================================================
 
-The project pivoted from "akashik: agent-memory product" to
-"Akashik: federated knowledge commons for the open-source community as a whole."
+The project pivoted from "folklore: agent-memory product" to
+"Folklore: federated knowledge commons for the open-source community as a whole."
 
 The mission is to give the OSS community what it has always lacked:
 a shared, contributor-owned memory substrate where every piece of
@@ -458,13 +458,13 @@ attributed, forever.
 
 The brand name borrows from the Akashic Records mythology, reframed
 as concrete contributor-owned infrastructure. The codebase is still
-called "akashik" internally.
+called "folklore" internally.
 
 ================================================================
 THE MECHANISM (the architectural insight that makes the mission credible)
 ================================================================
 
-Each Akashik peer holds only its own information:
+Each Folklore peer holds only its own information:
   - what its user explicitly contributed
   - what it pulled from other peers in response to its user's queries
   - what it researched on the web when the federation couldn't answer
@@ -475,7 +475,7 @@ user's curiosity.
 
 The compounding loop, in 5 steps:
 
-  STEP 1: Local-first query → A's local Akashik graph
+  STEP 1: Local-first query → A's local Folklore graph
   STEP 2: Federation fan-out → connected peers in shared rooms answer
           with their two cents (what they have)
   STEP 3: If federation can't satisfy → harness reaches the web on
@@ -587,15 +587,15 @@ WHAT'S NEW SINCE ROUND 3
        private-by-default and missing the mission)
      OSS-community-commons framing (correct: matches both the
        architecture AND the mission)
-   Brand renamed to Akashik. New StoryBrand-anchored marketing
-   draft + mechanism doc (docs/marketing/how-akashik-works.md)
+   Brand renamed to Folklore. New StoryBrand-anchored marketing
+   draft + mechanism doc (docs/marketing/how-folklore-works.md)
    capture the compounding loop architecturally and link to it
    from the brand messaging as the credibility anchor.
 
 2. LME-S baseline re-run with NDCG/MRR ladder. Confirmed head
    saturation (NDCG@5 = 0.884, only 4pp room below R@5 = 0.92).
 
-3. The Akashik mechanism (5-step compounding loop, peer-local
+3. The Folklore mechanism (5-step compounding loop, peer-local
    storage, ambitioned-curator model) is now explicitly documented
    as the architectural credibility anchor for the mission claim.
 
@@ -610,11 +610,11 @@ Q1. Given the empirical ceiling on LME-S R@5 (NDCG@5 headroom ~4pp,
     federation rather than tuning per-peer retrieval)? Where should
     the next engineering month go?
 
-Q2. The Akashik mechanism (peer-local + federation-on-query + web-
+Q2. The Folklore mechanism (peer-local + federation-on-query + web-
     on-miss + save-locally + transfer-on-next-ask) — is this
     architecturally novel, or is it a known pattern in disguise?
     Cite prior art. If it IS novel, what's the closest existing
-    research/protocol/system, and what makes Akashik different in
+    research/protocol/system, and what makes Folklore different in
     a defensible way?
 
 Q3. There is NO existing public benchmark for "how much does a
@@ -635,7 +635,7 @@ Q4. The Octopus has flagged "input-order bias" (Round 3) and
           / mem0 0.925 / ByteRover 0.928 — are these defensible
           baselines?)
 
-Q5. The Akashik mission requires the network to actually grow.
+Q5. The Folklore mission requires the network to actually grow.
     What's the smallest-viable launch plan that produces a
     meaningful compounding signal in the first ~30 days post-
     launch? Specifically: who are the first 100 contributors, what
@@ -643,7 +643,7 @@ Q5. The Akashik mission requires the network to actually grow.
     the compounding becomes visible to a new contributor visiting
     the network at day 30?
 
-Q6. The Akashik architecture relies on user curiosity as the
+Q6. The Folklore architecture relies on user curiosity as the
     propagation signal. This is brilliant when curiosity-volume is
     healthy. What happens when:
       (a) the network is dominated by N curators of the same hot
@@ -658,7 +658,7 @@ Q6. The Akashik architecture relies on user curiosity as the
 Q7. The competitor frame (mem0/agentmemory/ByteRover) was the
     wrong frame — they're single-user products and we're a
     federated commons. Who are the REAL existing systems that
-    Akashik competes with / extends / supersedes? Be specific
+    Folklore competes with / extends / supersedes? Be specific
     about systems, not categories. Possibilities to evaluate:
       - Are.na (curated cards, central)
       - Logseq P2P sync (knowledge graph, multi-device same user)
@@ -682,7 +682,7 @@ OUTPUT EXPECTED:
 
   - Direct answers to Q1-Q8
   - For Q2: closest prior-art protocol or research paper, with
-    why Akashik differs
+    why Folklore differs
   - For Q3: a proposed benchmark for measuring federation-level
     compounding, with the metrics and the experimental design
   - For Q5: the smallest-viable launch plan (specific communities,
@@ -744,7 +744,7 @@ web search:
 web search: https://automerge.org/
 codex
 1. **Q1: Next month should not be spent chasing the last 2 points of single-peer `R@5`.**  
-`LongMemEval-S` is telling you the headline number is near its ceiling: `R@50 = 1.0`, `R@5 = 0.9202`, `NDCG@5 = 0.8836`, so the remaining room is mostly intra-top-5 ordering, not missing evidence. That makes further gains partly a marketing question if the goal is leaderboard optics against `agentmemory`, not the highest-leverage engineering question. On the other hand, `LoCoMo` still shows a real ranking problem (`R@30 = 0.993` but `R@3 = 0.392`), so abandoning retrieval work entirely would be premature. The tradeoff is simple: spend maybe `10-20%` of the month on low-risk per-peer improvements like temporal gating, better segmentation, and stronger reranker evaluation; spend the other `80-90%` on federation architecture, compounding instrumentation, and launch-loop proof, because that is where Akashik is differentiated.
+`LongMemEval-S` is telling you the headline number is near its ceiling: `R@50 = 1.0`, `R@5 = 0.9202`, `NDCG@5 = 0.8836`, so the remaining room is mostly intra-top-5 ordering, not missing evidence. That makes further gains partly a marketing question if the goal is leaderboard optics against `agentmemory`, not the highest-leverage engineering question. On the other hand, `LoCoMo` still shows a real ranking problem (`R@30 = 0.993` but `R@3 = 0.392`), so abandoning retrieval work entirely would be premature. The tradeoff is simple: spend maybe `10-20%` of the month on low-risk per-peer improvements like temporal gating, better segmentation, and stronger reranker evaluation; spend the other `80-90%` on federation architecture, compounding instrumentation, and launch-loop proof, because that is where Folklore is differentiated.
 
 2. **Q2: The mechanism is not novel at the primitive level, but it is meaningfully novel in composition.**  
 The closest architectural ancestors are:
@@ -753,10 +753,10 @@ The closest architectural ancestors are:
 - **Hypercore / Dat lineage**: peer-to-peer, append-only logs with sparse/on-demand replication rather than mandatory full replication.[3]
 - **AT Protocol / Bluesky**: user-owned repositories plus decentralized identity and moderation layers, although it relies on relays/app-views that reintroduce index concentration.[4]
 
-What seems defensibly different about Akashik is **query-triggered semantic propagation**. SSB and Hypercore replicate logs/feeds/blocks; AT Proto distributes repos/posts; Akashik proposes that knowledge spreads because someone asked a semantically similar question, then another peer cached the answer locally and can later serve it onward. However, the downside is that this novelty currently lives more in the **retrieval-and-propagation policy** than in the storage primitive. So the strong claim is not “new protocol from first principles”; it is “new local-first knowledge propagation mechanism with explicit attribution and compounding behavior.”
+What seems defensibly different about Folklore is **query-triggered semantic propagation**. SSB and Hypercore replicate logs/feeds/blocks; AT Proto distributes repos/posts; Folklore proposes that knowledge spreads because someone asked a semantically similar question, then another peer cached the answer locally and can later serve it onward. However, the downside is that this novelty currently lives more in the **retrieval-and-propagation policy** than in the storage primitive. So the strong claim is not “new protocol from first principles”; it is “new local-first knowledge propagation mechanism with explicit attribution and compounding behavior.”
 
 3. **Q3: Yes, you should propose a benchmark, because existing IR benchmarks do not test the mission.**  
-A useful benchmark would be something like **`Akashik-CompBench`**:
+A useful benchmark would be something like **`Folklore-CompBench`**:
 - **Setup**: `N` peers, each with only a shard of public OSS artifacts: issues, discussions, postmortems, migration notes, debugging transcripts, docs diffs.
 - **Process**: queries arrive over simulated days. A peer answers locally, then via federation, then via web-on-miss, then caches locally with attribution.
 - **Core metrics**:
@@ -846,7 +846,7 @@ Visible compounding signal by day 30 should be: “new user asks a real troubles
 - Tradeoff: moderation and reputation systems are operationally expensive and politically sensitive.
 
 7. **Q7: The real comparison set is not `mem0` or `agentmemory`. The closest systems are these three.**  
-- **Secure Scuttlebutt**: closest architectural ancestor. It is the best “you are not crazy; this family of ideas exists” reference. Akashik extends it with semantic retrieval and query-triggered transfer.  
+- **Secure Scuttlebutt**: closest architectural ancestor. It is the best “you are not crazy; this family of ideas exists” reference. Folklore extends it with semantic retrieval and query-triggered transfer.  
 - **Are.na**: closest behavioral competitor. People already use it as a shared research memory, but it is centralized and manual rather than federated and retrieval-native.[8]
 - **Bluesky / AT Protocol**: closest federation-governance counterpart. It is relevant for identity, moderation, labels, and interoperability, even though it is not a knowledge graph.[4]
 
@@ -855,7 +855,7 @@ If you force me to name the top `2-3` actual systems that matter most: **Secure 
 8. **Q8: Strongest counter-argument, and the response you should prepare.**  
 **Counter-argument:** “The whole project assumes people will contribute enough high-quality, legally shareable, evidence-backed knowledge for the commons to improve over time. In practice, most saved notes are noisy, duplicative, stale, or private. Without a central editor, the network compounds junk faster than truth, and the result is a decentralized landfill rather than a collective memory.”
 
-**Response:** Akashik should not claim that every saved note becomes durable truth. The system works only if it compounds **attributed, evidence-backed, query-reused** knowledge. That is why the product must privilege provenance, room-scoped trust, replayable evidence, soft moderation labels, and visible transfer events over raw note volume. The point is not “everything anyone saves becomes the record”; it is “the subset of community work that repeatedly proves useful becomes easier to find, reuse, and attribute without requiring a central owner.”
+**Response:** Folklore should not claim that every saved note becomes durable truth. The system works only if it compounds **attributed, evidence-backed, query-reused** knowledge. That is why the product must privilege provenance, room-scoped trust, replayable evidence, soft moderation labels, and visible transfer events over raw note volume. The point is not “everything anyone saves becomes the record”; it is “the subset of community work that repeatedly proves useful becomes easier to find, reuse, and attribute without requiring a central owner.”
 
 **Honest final assessment**  
 The next engineering month should be spent proving the **federation thesis**, not polishing the single-peer benchmark headline. Concretely: build the compounding benchmark and simulator; instrument `web-miss`, `transfer`, `churn`, `attribution`, and `diversity`; ship room-level caching/pinning and provenance primitives; and run a narrow 100-user launch in high-overlap OSS rooms. Keep a smaller retrieval lane for `E10`, segmentation, and better reranker eval on `LoCoMo`, because local ranking still matters. However, the core risk is no longer “can we beat `0.925` on `R@5`?” It is “can we show that knowledge acquired by one contributor becomes faster to retrieve for another contributor over time, without centralization and without the commons collapsing into noise?” That is the month’s real work.

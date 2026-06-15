@@ -1,5 +1,5 @@
 /**
- * Peer-pull telemetry — the record emitted every time akashik
+ * Peer-pull telemetry — the record emitted every time folklore
  * answers a query that touches peers, surfaced into the agent session
  * (Claude Code / Codex / Gemini / opencode / any MCP host).
  *

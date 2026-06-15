@@ -1,7 +1,7 @@
 /**
- * `akashik recent-sessions` — Phase 20 CLI surface.
+ * `folklore recent-sessions` — Phase 20 CLI surface.
  *
- * Queries ~/.akashik/graph.json for nodes in the `sessions` room,
+ * Queries ~/.folklore/graph.json for nodes in the `sessions` room,
  * groups them by session_id, aggregates per-session rollups, and prints
  * either a human-readable table or JSON.
  *
@@ -206,7 +206,7 @@ export const recentSessions = async (args: readonly string[]): Promise<number> =
 
   if (rollups.length === 0) {
     console.log(
-      'no recent sessions indexed. run `akashik daemon start` so the claude-sessions adapter can populate the graph.',
+      'no recent sessions indexed. run `folklore daemon start` so the claude-sessions adapter can populate the graph.',
     );
     return 0;
   }

@@ -1,7 +1,7 @@
 /**
  * Fetch sync — targeted node-body pull over libp2p.
  *
- * /akashik/search/1.0.0 returns POINTERS (node_id + metadata); this
+ * /folklore/search/1.0.0 returns POINTERS (node_id + metadata); this
  * protocol returns the BODY (`node.summary`) for specific node ids,
  * so a federated hit can actually be injected into an agent's context
  * and cached locally — the compounding loop. Sibling to recall/touch:
@@ -23,8 +23,8 @@ import type { Libp2p, Stream, Connection } from '@libp2p/interface';
 import { peerIdFromString } from '@libp2p/peer-id';
 import type { SearchError } from '../domain/errors.js';
 import { SearchError as SEARCH_ERR } from '../domain/errors.js';
-import type { Graph } from '../domain/graph.js';
-import { getNode } from '../domain/graph.js';
+import type { Graph, GraphEdge } from '../domain/graph.js';
+import { bfs, getNode } from '../domain/graph.js';
 import { redactNode } from '../domain/secret-gate.js';
 import { buildPatterns } from '../domain/sharing.js';
 import { signNode, type MatchAttestation } from '../domain/match-attestation.js';
@@ -35,17 +35,20 @@ type PatternSet = ReturnType<typeof buildPatterns>;
 
 // ─────────────── constants ────────────────
 
-export const FETCH_PROTOCOL_ID = '/akashik/fetch/1.0.0' as const;
+export const FETCH_PROTOCOL_ID = '/folklore/fetch/1.0.0' as const;
 const PER_PEER_TIMEOUT_MS = 2000;
 const MAX_INBOUND_STREAMS = 16;
 /** Hard cap on ids per request — fetch is targeted, not bulk (touch is bulk). */
 export const MAX_FETCH_IDS = 10;
+/** Bounded subgraph transplant: requested hits plus one-hop context. */
+export const FETCH_SUBGRAPH_DEPTH = 1;
+export const FETCH_SUBGRAPH_MAX_NODES = 48;
 /** Per-node body cap on the wire. */
 const SUMMARY_MAX_CHARS = 4000;
 /** Request frame cap: 10 ids × 512 chars + envelope ≪ 16 KB. */
 const REQ_MAX_BYTES = 16 * 1024;
-/** Response frame cap: 10 nodes × ~5 KB ≈ 50 KB; 128 KB leaves slack. */
-const RESP_MAX_BYTES = 128 * 1024;
+/** Response frame cap: bounded subgraph, 48 nodes × ~5 KB plus edges. */
+const RESP_MAX_BYTES = 512 * 1024;
 /** Stricter than search — fetch reads bodies. */
 const RATE_PER_SEC = 3;
 const RATE_BURST = 6;
@@ -56,6 +59,9 @@ export interface FetchRequest {
   readonly type: 'fetch';
   readonly protocol_version: 5;
   readonly node_ids: readonly string[];
+  /** Include bounded graph neighborhood around requested ids. Default true. */
+  readonly include_neighbors?: boolean;
+  readonly max_nodes?: number;
 }
 
 export interface FetchedNode {
@@ -74,6 +80,8 @@ export interface FetchResponse {
   /** Requested ids that exist AND are shareable. Unknown or private
    *  ids are silently absent — absence is not an error. */
   readonly nodes: readonly FetchedNode[];
+  /** Edges connecting the transmitted nodes. */
+  readonly edges?: readonly GraphEdge[];
 }
 
 export interface FetchError {
@@ -154,6 +162,34 @@ export const projectFetchedNode = (
   return sig.isOk() ? { ...fields, attestation: sig.value } : fields;
 };
 
+export const collectFetchSubgraph = (
+  graph: Graph,
+  req: FetchRequest,
+): { readonly nodeIds: readonly string[]; readonly edges: readonly GraphEdge[] } => {
+  const maxNodes = Math.max(
+    req.node_ids.length,
+    Math.min(FETCH_SUBGRAPH_MAX_NODES, req.max_nodes ?? FETCH_SUBGRAPH_MAX_NODES),
+  );
+  if (req.include_neighbors === false) {
+    return { nodeIds: req.node_ids.slice(0, maxNodes), edges: [] };
+  }
+
+  const sg = bfs(graph, req.node_ids, { depth: FETCH_SUBGRAPH_DEPTH });
+  const nodeIds = sg.nodes.slice(0, maxNodes).map((n) => n.id);
+  const allowed = new Set(nodeIds);
+  const edges = sg.edges.filter((e) => allowed.has(e.source) && allowed.has(e.target));
+  return { nodeIds, edges };
+};
+
+const projectFetchedEdge = (edge: GraphEdge): GraphEdge => ({
+  source: edge.source,
+  target: edge.target,
+  relation: edge.relation,
+  confidence: edge.confidence,
+  source_file: 'peer-subgraph',
+  ...(typeof edge.confidence_score === 'number' ? { confidence_score: edge.confidence_score } : {}),
+});
+
 export const registerFetchProtocol = (deps: FetchRegistryDeps): void => {
   const log = deps.log ?? (() => undefined);
   const limiter: RateLimiter = createRateLimiter(RATE_PER_SEC, RATE_BURST);
@@ -179,15 +215,21 @@ export const registerFetchProtocol = (deps: FetchRegistryDeps): void => {
           return;
         }
         const signedAt = new Date().toISOString();
-        const nodes = req.node_ids
+        const subgraph = collectFetchSubgraph(graph, req);
+        const nodes = subgraph.nodeIds
           .map((id) => projectFetchedNode(graph, id, deps.secretsPatterns, deps.signSeed, signedAt))
           .filter((n): n is FetchedNode => n !== null);
+        const served = new Set(nodes.map((n) => n.node_id));
+        const edges = subgraph.edges
+          .filter((e) => served.has(e.source) && served.has(e.target))
+          .map(projectFetchedEdge);
         await writeFrame(stream, {
           type: 'fetch_ok',
           protocol_version: 5,
           nodes,
+          edges,
         } satisfies FetchResponse);
-        log(`fetch responder ← peer=${peerIdStr.slice(0, 12)} asked=${req.node_ids.length} served=${nodes.length}`);
+        log(`fetch responder ← peer=${peerIdStr.slice(0, 12)} asked=${req.node_ids.length} served=${nodes.length} edges=${edges.length}`);
       } catch (e) {
         log(`fetch responder error: ${(e as Error).message}`);
       } finally {
@@ -235,10 +277,12 @@ export const openFetchStream = (
       );
       try {
         const req: FetchRequest = {
-          type: 'fetch',
-          protocol_version: 5,
-          node_ids: nodeIds.slice(0, MAX_FETCH_IDS),
-        };
+        type: 'fetch',
+        protocol_version: 5,
+        node_ids: nodeIds.slice(0, MAX_FETCH_IDS),
+        include_neighbors: true,
+        max_nodes: FETCH_SUBGRAPH_MAX_NODES,
+      };
         await writeFrame(stream, req);
         return await withTimeout(
           readFrame<FetchWire>(stream, RESP_MAX_BYTES),

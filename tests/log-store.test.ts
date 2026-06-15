@@ -64,7 +64,7 @@ describe('log-event', () => {
     const e = buildEvent('search.outbound', {
       did: 'did:key:z6Mk-x',
       peer_id: 'Qm456',
-      room: 'akashik-dev',
+      room: 'folklore-dev',
       k: 10,
       ms: 25,
       ts: '2026-04-17T10:00:00.000Z',

@@ -35,11 +35,11 @@ const sampleScanMatch = { field: 'label', patternName: 'github-token' } as const
 
 // ─────────────── happy-path hints ─────────
 
-test('GraphReadError ENOENT → hint says run `akashik trigger`', () => {
+test('GraphReadError ENOENT → hint says run `folklore trigger`', () => {
   const e = GraphError.readError('/x/graph.json', 'ENOENT: no such file');
   const h = hintFor(e);
   assert.ok(h !== null);
-  assert.match(h!, /akashik trigger/);
+  assert.match(h!, /folklore trigger/);
 });
 
 test('GraphReadError non-ENOENT → hint says run `doctor --fix`', () => {
@@ -53,7 +53,7 @@ test('ModelLoadError → hint mentions ~90 MB download + cache env var', () => {
   const e = EmbeddingError.modelLoad('all-MiniLM-L6-v2', 'fetch failed');
   const h = hintFor(e);
   assert.ok(h !== null);
-  assert.match(h!, /AKASHIK_MODEL_CACHE/);
+  assert.match(h!, /FOLKLORE_MODEL_CACHE/);
   assert.match(h!, /90 MB/);
 });
 

@@ -49,7 +49,7 @@ By Round 2, both Position A and Position B converged on the same two-step near-t
 **Both agree on Phase 1 (this week / next two weeks):**
 1. Ship workspace-tag read filter + smart write prompt (the unshipped prior SYNTHESIS fix)
 2. Delete `src/cli/commands/room.ts` (171 lines, CRUD CLI)
-3. Add `private: bool` to graph node schema; wire `akashik save --private`
+3. Add `private: bool` to graph node schema; wire `folklore save --private`
 4. Update sharing to filter on `private = false`, making `shared-rooms.json` obsolete for binary case
 
 The disagreement is what happens at Phase 24+ when the wire protocol breaks anyway:
@@ -71,11 +71,11 @@ None of that data exists today. Deciding A vs B now is premature.
 
 1. **Workspace-tag read filter + smart write prompt** — exactly as designed in the prior SYNTHESIS. Statusline already shipped. ~50 lines, 2-3 files.
 2. **Delete `src/cli/commands/room.ts`** entirely. The CRUD CLI surface is gone. The runtime infrastructure (`src/domain/rooms.ts`, `src/infrastructure/rooms-config.ts`) stays for now — but it becomes purely internal, never user-facing.
-3. **Add `node.private: boolean`** (defaults `false`) to the graph node schema. Wire `akashik save --private` to set it.
+3. **Add `node.private: boolean`** (defaults `false`) to the graph node schema. Wire `folklore save --private` to set it.
 4. **Sharing migration:** update the sharing path in `src/cli/commands/share.ts` to use `node.private === false` as the federation filter alongside (or initially instead of) the room enum. `shared-rooms.json` continues to exist for compatibility but is no longer the primary control surface — the per-node flag is.
 5. **Auto-create rooms from workspace context.** When a write command runs in a git repo, if no `--room` flag is set and the default room doesn't match the workspace, auto-create `room: <workspace-slug>` (unshared by default) and route the write there. The user never runs `room create` again.
 
-Net effect: the user runs `akashik save`, gets routed to a workspace-derived room automatically, never sees the registry, never sees the CRUD. The phrase "wrong default room" becomes meaningless because the default *is* the workspace. The phrase "share my data" routes through `--private` at write time, not through `room share` ceremony.
+Net effect: the user runs `folklore save`, gets routed to a workspace-derived room automatically, never sees the registry, never sees the CRUD. The phrase "wrong default room" becomes meaningless because the default *is* the workspace. The phrase "share my data" routes through `--private` at write time, not through `room share` ceremony.
 
 ### (b) What to defer to Phase 24+
 
@@ -98,11 +98,11 @@ Position C (tags) is permanently off the table given the unresolved canonical-au
 
 After this week's ship:
 
-- `akashik save "something"` from `~/personal/akashik` → routed to room `akashik` (auto-created), tagged `workspace: akashik`. User never sees the room machinery.
-- `akashik save "lead info" --private` from anywhere → stored locally, never federates, regardless of room.
-- `akashik ask "..."` from `~/personal/akashik` → returns nodes from this workspace first, no `--room` flag needed.
-- `akashik room` (the CRUD CLI) → command not found. The 171 lines that produced this pain are gone.
-- Statusline still shows `Akashik • akashik` (already shipped this session).
+- `folklore save "something"` from `~/personal/folklore` → routed to room `folklore` (auto-created), tagged `workspace: folklore`. User never sees the room machinery.
+- `folklore save "lead info" --private` from anywhere → stored locally, never federates, regardless of room.
+- `folklore ask "..."` from `~/personal/folklore` → returns nodes from this workspace first, no `--room` flag needed.
+- `folklore room` (the CRUD CLI) → command not found. The 171 lines that produced this pain are gone.
+- Statusline still shows `Folklore • folklore` (already shipped this session).
 
 The user's stated complaints — "wrong default room", "registry maintenance feels imposed", "ceremony without value" — are addressed at the level they were complained about: the visible surface. The Phase 24+ decision about whether rooms exist as invisible infrastructure or vanish entirely is preserved for when there's actual data.
 

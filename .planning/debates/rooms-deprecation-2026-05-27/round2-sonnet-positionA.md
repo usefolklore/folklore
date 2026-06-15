@@ -20,7 +20,7 @@ B has not demonstrated that global-namespace propagation fails worse than room-p
 
 The user wanting `p2p-llm` public and `tlvtech` private on one machine, one DID, one process — that is a real and legitimate case. Two separate instances is not an answer; it is a punishment. I concede this.
 
-The correct answer is a **per-node `private: bool` flag** — a single boolean field on every graph node, defaulting to `false`. The sharing rule becomes: "sync all nodes where `private = false` to trusted peers." The user runs `akashik save --private` for anything they don't want federated. Done.
+The correct answer is a **per-node `private: bool` flag** — a single boolean field on every graph node, defaulting to `false`. The sharing rule becomes: "sync all nodes where `private = false` to trusted peers." The user runs `folklore save --private` for anything they don't want federated. Done.
 
 Compare the surface this replaces: `shared-rooms.json` (a policy file with a maintained list), `src/cli/commands/share.ts:117-231` (room enum, Y.Doc-per-room, TUI picker, audit pipeline gated on room membership), `Y.Doc` files keyed per room. A boolean field on each node is strictly simpler than all of that. The honest objection is "what about multi-tier privacy — some content to some peers, other content to other peers?" That is a real 5% case. We do not ship it now. We reserve it as a future `--share-with <DID>` per-node flag, implemented when we have empirical evidence that binary privacy is insufficient for our actual user base.
 
@@ -66,7 +66,7 @@ If rooms are invisible to users under B's plan, what exactly are they for? B's a
 Do not do the wire-protocol break this week — C is right that it belongs to Phase 24+. Do this:
 
 1. Ship the SYNTHESIS workspace-tag fix (50 lines, zero protocol change) — this is not a concession to B; it's the right unblocking move regardless of where the debate lands.
-2. Add `private: bool` (default `false`) to the graph node schema. Wire `akashik save --private` to set it. Update sharing to filter on this field instead of `shared-rooms.json`. This is ~30 lines and makes `shared-rooms.json` obsolete without a protocol break.
+2. Add `private: bool` (default `false`) to the graph node schema. Wire `folklore save --private` to set it. Update sharing to filter on this field instead of `shared-rooms.json`. This is ~30 lines and makes `shared-rooms.json` obsolete without a protocol break.
 3. Delete `src/cli/commands/room.ts` entirely. The CRUD surface is gone immediately.
 
 Surface area: ~80 lines net-new, ~171 lines deleted, zero protocol change, zero data migration.

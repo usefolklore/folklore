@@ -1,5 +1,5 @@
 /**
- * `akashik hot [--refresh] [--path]`
+ * `folklore hot [--refresh] [--path]`
  *
  * --refresh (default): regenerate hot.md from the current graph and print its location
  * --print              : print the rendered markdown to stdout without writing

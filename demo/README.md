@@ -1,4 +1,4 @@
-# akashik — demo
+# folklore — demo
 
 This directory contains the end-to-end demo: a 15-note research corpus, the script
 that loads it, a manuscript that walks the recording scene-by-scene, and the rendered
@@ -7,7 +7,7 @@ artifacts.
 ## Quickstart
 
 ```bash
-bash demo/setup.sh         # loads the corpus into ~/.akashik.demo
+bash demo/setup.sh         # loads the corpus into ~/.folklore.demo
 vhs demo/screencast.tape   # renders demo/screencast.gif (terminal scenes)
 vhs demo/timing.tape       # renders demo/timing.gif    (headline-only teaser)
 ```
@@ -15,12 +15,12 @@ vhs demo/timing.tape       # renders demo/timing.gif    (headline-only teaser)
 After `setup.sh`, you can also explore by hand:
 
 ```bash
-export AKASHIK_HOME=$HOME/.akashik.demo
+export FOLKLORE_HOME=$HOME/.folklore.demo
 
-akashik ask "ML methods for liquid hydrogen leak detection" --k 3
-akashik recall stanford-cryo-lab
-akashik recall nasa-glenn
-akashik metrics | jq .
+folklore ask "ML methods for liquid hydrogen leak detection" --k 3
+folklore recall stanford-cryo-lab
+folklore recall nasa-glenn
+folklore metrics | jq .
 ```
 
 ## Files
@@ -41,7 +41,7 @@ akashik metrics | jq .
 | `scene-touch.sh`          | One-shot orchestrator: setup → record → teardown via EXIT trap. |
 | `screencast.gif`          | Rendered output (1100×720, ~770 KB).             |
 | `timing.gif`              | Rendered output (1100×480, ~180 KB).             |
-| `scene-claude.gif`        | Side-by-side: Claude alone vs Claude + akashik (1200×800, ~350 KB). |
+| `scene-claude.gif`        | Side-by-side: Claude alone vs Claude + folklore (1200×800, ~350 KB). |
 | `scene-codebase.gif`      | Codebase Q&A — `claude -p` cites `src/daemon/job-queue.ts` directly via the hook (1200×760, ~285 KB). |
 | `scene-touch.gif`         | P2P touch — peer A pulls exclusive notes from peers B and D in a 5-daemon mesh (1200×760, ~640 KB). |
 | `scene-prompt-hook.gif`   | UserPromptSubmit hook — answer arrives before Claude reads the user message (1200×760, ~265 KB). |
@@ -49,7 +49,7 @@ akashik metrics | jq .
 
 ## What the GIFs cover vs what needs live capture
 
-The VHS-rendered GIFs are real recordings of `akashik` running against the
+The VHS-rendered GIFs are real recordings of `folklore` running against the
 real corpus — no faking. They cover scenes that fit a single terminal pane.
 
 | Scene                          | Where covered                |
@@ -71,7 +71,7 @@ bash demo/scene-touch.sh
 ```
 
 Spins up peer A + 4 peers (B/C/D/E) on 127.0.0.1, each in its own
-`~/.akashik.demo*` home with a unique research note. Records the
+`~/.folklore.demo*` home with a unique research note. Records the
 touch + ask flow via VHS. An EXIT trap guarantees every daemon stops
 when the script finishes — even on Ctrl-C or crash. Re-runnable; each
 invocation rebuilds the 5-peer mesh from scratch.

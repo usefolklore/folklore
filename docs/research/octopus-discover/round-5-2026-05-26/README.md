@@ -8,7 +8,7 @@ answers; Round 5 corrects that. Returned exactly what was asked for.
 ## Headline outputs
 
 ### Q1 — Where the next engineering month goes
-> **AkashikBench-F + federation routing.** Stop chasing the final
+> **FolkloreBench-F + federation routing.** Stop chasing the final
 > 3pp of LME-S R@5 — that's a single-user vanity metric. The core
 > differentiator is network compounding; validating it requires
 > measurement infrastructure that doesn't exist yet.
@@ -17,11 +17,11 @@ answers; Round 5 corrects that. Returned exactly what was asked for.
 > **Compositionally novel; the math is Freenet's.**
 > Freenet (Clarke et al. 2001) formalised demand-driven lazy
 > replication with cache fill on miss. AT Protocol contributes
-> the DID identity + signed-attribution layer. Akashik =
+> the DID identity + signed-attribution layer. Folklore =
 > *"Freenet-style demand-shaped replication applied to attributed
 > semantic research memory, with AT Protocol-style DID signatures."*
 
-### Q3 — AkashikBench-F (proposed federation benchmark)
+### Q3 — FolkloreBench-F (proposed federation benchmark)
 > N=10 disjoint peer shards over a frozen OSS corpus (BEIR SciFact
 > or snap-research/locomo). Zipfian query stream. 20% offline
 > churn. On miss, peer fetches from controlled-oracle web corpus,
@@ -53,7 +53,7 @@ answers; Round 5 corrects that. Returned exactly what was asked for.
 > - Week 3: organic debugging queries run
 > - Week 4: publish the `web_fallback_rate` drop
 >
-> Tradeoff: temporarily pigeonholes Akashik as "niche debugging
+> Tradeoff: temporarily pigeonholes Folklore as "niche debugging
 > tool" — but guarantees high query overlap so compounding shows
 > up fast.
 
@@ -66,16 +66,16 @@ answers; Round 5 corrects that. Returned exactly what was asked for.
 
 ### Q7 — REAL competitors (named systems, not categories)
 1. **Are.na** — closest *product* competitor.
-   *Positioning:* "Are.na is what Akashik looks like centralized;
-   Akashik is Are.na where blocks are queryable via vector search,
+   *Positioning:* "Are.na is what Folklore looks like centralized;
+   Folklore is Are.na where blocks are queryable via vector search,
    locally owned, and propagate peer-to-peer."
 2. **AT Protocol (Bluesky)** — closest *protocol* analogue.
    *Positioning:* "AT Protocol solved federated identity for
-   social posts; Akashik is AT Protocol for semantic research
+   social posts; Folklore is AT Protocol for semantic research
    memory with demand-shaped retrieval."
 3. **agentmemory** — closest *current benchmark* rival.
    *Positioning:* "agentmemory wins single-player retrieval;
-   Akashik extends that local memory into cross-peer transfer
+   Folklore extends that local memory into cross-peer transfer
    and network compounding."
 
 ### Q8 — Strongest counter-argument + response
@@ -84,7 +84,7 @@ answers; Round 5 corrects that. Returned exactly what was asked for.
 > of systems that already solve knowledge sharing better (Stack
 > Overflow, GitHub, Google). Because peers are mostly offline
 > laptops, users will miss locally, peers will time out, and
-> Akashik will collapse into a slower 'web search plus personal
+> Folklore will collapse into a slower 'web search plus personal
 > cache'. The federated network effect is a complete illusion."
 
 **Response:**
@@ -102,7 +102,7 @@ answers; Round 5 corrects that. Returned exactly what was asked for.
 ## Final recommendation (verbatim from synthesis)
 
 > "If I were Sahar, the next engineering month I'd spend on
-> **AkashikBench-F and federation routing** because validating
+> **FolkloreBench-F and federation routing** because validating
 > the compounding network effect is the only way to prove the
 > product's core differentiator. The next marketing/launch month
 > I'd spend on a **100-person pilot seeded in the local-AI /
@@ -138,11 +138,11 @@ answers; Round 5 corrects that. Returned exactly what was asked for.
 
 ## Implementation pointers (where the work goes next)
 
-- **AkashikBench-F** → new `tests/bench-akashik-federation.test.ts`
+- **FolkloreBench-F** → new `tests/bench-folklore-federation.test.ts`
   + `src/domain/federation-sim.ts` (in-process N-peer simulator)
 - **`web_fallback_rate` telemetry** → extend `src/domain/metrics.ts`
   (cardinality-safe counter; emits per-room daily)
-- **Pilot launch artifacts** → `docs/marketing/launch-plan-akashik.md`
+- **Pilot launch artifacts** → `docs/marketing/launch-plan-folklore.md`
   with specific GitHub issues / PRs / papers to seed
 - **Counter-argument acknowledgement** → add to
   `docs/marketing/storybrand-messaging-draft.md` Prompt 3 authority

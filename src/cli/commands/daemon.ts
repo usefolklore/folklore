@@ -1,5 +1,5 @@
 /**
- * `akashik daemon <sub>` — background research daemon.
+ * `folklore daemon <sub>` — background research daemon.
  *
  *   start   — fork a detached child that runs the daemon loop
  *   stop    — send SIGTERM to the PID in daemon.pid
@@ -134,7 +134,7 @@ const run = async (): Promise<number> => {
   });
   if (lockRes.isErr()) {
     console.error(`daemon: ${formatError(lockRes.error)}`);
-    console.error(`  another akashik process is already mutating. retry in a moment.`);
+    console.error(`  another folklore process is already mutating. retry in a moment.`);
     return 1;
   }
   const writeLock = lockRes.value;
@@ -172,7 +172,7 @@ const run = async (): Promise<number> => {
     },
   });
 
-  // Phase 41 — file-watcher (registered roots from `akashik this`)
+  // Phase 41 — file-watcher (registered roots from `folklore this`)
   // and Claude session-watcher. Both submit ingest jobs to the queue
   // on file events; debounced so editor save bursts collapse.
   const watchers = startFileWatchers({
@@ -185,7 +185,7 @@ const run = async (): Promise<number> => {
   // the tick loop in the same process so read-only commands like `ask`
   // can reuse the warmed Runtime (sqlite-vec open + ONNX model loaded)
   // instead of paying ~240 ms of cold-start per invocation. Socket at
-  // $AKASHIK_HOME/daemon.sock, 0600.
+  // $FOLKLORE_HOME/daemon.sock, 0600.
   // Late-binding federation holder — filled by the loop once libp2p
   // is listening, read by the IPC ask handler for `ask --peers`.
   const federation: FederationRef = { current: null };
@@ -201,7 +201,7 @@ const run = async (): Promise<number> => {
   // Pre-warm the embedder so the first IPC `ask` isn't the one that
   // eats the 200 ms ONNX load. Best-effort — on failure we just log,
   // the first real query will warm it lazily.
-  void rt.value.embedder.embed('akashik daemon warm').then(
+  void rt.value.embedder.embed('folklore daemon warm').then(
     (r) => {
       if (r.isErr()) console.error(`daemon: embedder pre-warm failed: ${formatError(r.error)}`);
     },

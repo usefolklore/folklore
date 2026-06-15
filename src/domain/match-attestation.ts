@@ -22,7 +22,7 @@ import type { IdentityError } from './errors.js';
 import { signBytes, verifyBytes } from './identity.js';
 
 /** Domain separator — never sign bare user-influenced JSON. */
-const DOMAIN = 'akashik-match:v1:';
+const DOMAIN = 'folklore-match:v1:';
 
 /** The exact transmitted fields the signature covers. */
 export interface AttestedMatchFields {
@@ -105,7 +105,7 @@ export const verifyMatch = (
 // it — a separate domain separator keeps node signatures and match
 // signatures mutually unreplayable.
 
-const NODE_DOMAIN = 'akashik-node:v1:';
+const NODE_DOMAIN = 'folklore-node:v1:';
 
 export interface AttestedNodeFields extends AttestedMatchFields {
   readonly summary?: string;

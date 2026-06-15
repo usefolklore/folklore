@@ -622,6 +622,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
+name = "folklore-bench"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "fastembed",
+ "indicatif",
+ "openssl-sys",
+ "rayon",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "foreign-types"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2932,19 +2945,6 @@ name = "weezl"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a28ac98ddc8b9274cb41bb4d9d4d5c425b6020c50c46f25559911905610b4a88"
-
-[[package]]
-name = "akashik-bench"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "fastembed",
- "indicatif",
- "openssl-sys",
- "rayon",
- "serde",
- "serde_json",
-]
 
 [[package]]
 name = "winapi"

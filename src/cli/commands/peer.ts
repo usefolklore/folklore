@@ -1,5 +1,5 @@
 /**
- * `akashik peer <sub>` — manage P2P peer connections.
+ * `folklore peer <sub>` — manage P2P peer connections.
  *
  * Subcommands:
  *   add <multiaddr>          connect to a remote peer and persist to peers.json
@@ -33,18 +33,18 @@ import {
   setPeerLabel,
   removePeerLabel,
 } from '../../infrastructure/peer-labels.js';
-import { akashikHome } from '../runtime.js';
+import { folkloreHome } from '../runtime.js';
 
-const identityPath = (): string => join(akashikHome(), 'peer-identity.json');
-const peersPath = (): string => join(akashikHome(), 'peers.json');
-const peerLabelsPath = (): string => join(akashikHome(), 'peer-labels.json');
-const configPath = (): string => join(akashikHome(), 'config.yaml');
+const identityPath = (): string => join(folkloreHome(), 'peer-identity.json');
+const peersPath = (): string => join(folkloreHome(), 'peers.json');
+const peerLabelsPath = (): string => join(folkloreHome(), 'peer-labels.json');
+const configPath = (): string => join(folkloreHome(), 'config.yaml');
 
 // ─────────────────────── subcommands ──────────────────────
 
 const add = async (rest: readonly string[]): Promise<number> => {
   if (rest.length === 0) {
-    console.error('peer add: missing <multiaddr>. usage: akashik peer add /ip4/1.2.3.4/tcp/9001');
+    console.error('peer add: missing <multiaddr>. usage: folklore peer add /ip4/1.2.3.4/tcp/9001');
     return 1;
   }
   const rawAddr = rest[0];
@@ -119,7 +119,7 @@ const add = async (rest: readonly string[]): Promise<number> => {
 
 const remove = async (rest: readonly string[]): Promise<number> => {
   if (rest.length === 0) {
-    console.error('peer remove: missing <id>. usage: akashik peer remove <peerId>');
+    console.error('peer remove: missing <id>. usage: folklore peer remove <peerId>');
     return 1;
   }
   const targetId = rest[0];
@@ -190,7 +190,7 @@ const list = async (rest: readonly string[]): Promise<number> => {
   }
 
   if (peers.length === 0) {
-    console.log('no known peers. try `akashik peer add <multiaddr>`.');
+    console.log('no known peers. try `folklore peer add <multiaddr>`.');
     return 0;
   }
   console.log(`known peers (${peers.length}):\n`);
@@ -208,7 +208,7 @@ const list = async (rest: readonly string[]): Promise<number> => {
     if (gh) {
       console.log(`    github:    @${gh} (envelope-pinned)`);
     } else {
-      console.log(`    github:    — (unlabelled; run \`akashik peer label ${p.id.slice(0, 12)}… @handle\`)`);
+      console.log(`    github:    — (unlabelled; run \`folklore peer label ${p.id.slice(0, 12)}… @handle\`)`);
     }
     if (p.label) console.log(`    label:     ${p.label}`);
     console.log('');
@@ -236,9 +236,9 @@ const status = async (): Promise<number> => {
   console.log(`  known peers: ${peerCount}`);
 
   // Daemon-published listen addresses (written on libp2p startup).
-  // This is what another machine pastes into `akashik peer add`.
+  // This is what another machine pastes into `folklore peer add`.
   try {
-    const raw = JSON.parse(readFileSync(join(akashikHome(), 'p2p-addrs.json'), 'utf8')) as { addrs?: string[] };
+    const raw = JSON.parse(readFileSync(join(folkloreHome(), 'p2p-addrs.json'), 'utf8')) as { addrs?: string[] };
     const addrs = Array.isArray(raw.addrs) ? raw.addrs : [];
     if (addrs.length > 0) {
       console.log('  listen addrs (daemon):');
@@ -254,7 +254,7 @@ const status = async (): Promise<number> => {
 // ─────────────────────── label / unlabel ─────────────────
 
 /**
- * `akashik peer label <peer-id> <github-handle>` — registers the
+ * `folklore peer label <peer-id> <github-handle>` — registers the
  * expected GitHub handle for a peer (Phase 26). share-sync looks up
  * this mapping when it receives a signed envelope from <peer-id> and
  * rejects the envelope if payload.github_user doesn't match.
@@ -265,7 +265,7 @@ const status = async (): Promise<number> => {
 const label = async (rest: readonly string[]): Promise<number> => {
   const positional = rest.filter((a) => !a.startsWith('--'));
   if (positional.length < 2) {
-    console.error('peer label: usage: akashik peer label <peer-id> <github-handle> [--note "free text"]');
+    console.error('peer label: usage: folklore peer label <peer-id> <github-handle> [--note "free text"]');
     return 1;
   }
   const [peerId, githubRaw] = positional;
@@ -297,7 +297,7 @@ const label = async (rest: readonly string[]): Promise<number> => {
 const unlabel = async (rest: readonly string[]): Promise<number> => {
   const positional = rest.filter((a) => !a.startsWith('--'));
   if (positional.length < 1) {
-    console.error('peer unlabel: usage: akashik peer unlabel <peer-id>');
+    console.error('peer unlabel: usage: folklore peer unlabel <peer-id>');
     return 1;
   }
   const [peerId] = positional;
@@ -319,7 +319,7 @@ const unlabel = async (rest: readonly string[]): Promise<number> => {
 
 // ─────────────────────── usage ────────────────────────────
 
-const USAGE = `usage: akashik peer <add|remove|list|status|label|unlabel|rep>
+const USAGE = `usage: folklore peer <add|remove|list|status|label|unlabel|rep>
 
 subcommands:
   add <multiaddr>          connect to a remote peer

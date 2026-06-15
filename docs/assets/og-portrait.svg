@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920" role="img" aria-label="akashik — The globally accumulating knowledge network. For AI agents and humans.">
-  <title>akashik — vertical share card (Stories / TikTok / IG portrait)</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920" role="img" aria-label="folklore — The globally accumulating knowledge network. For AI agents and humans.">
+  <title>folklore — vertical share card (Stories / TikTok / IG portrait)</title>
   <defs>
     <style>
       .og-display  { font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; letter-spacing: -0.035em; fill: #e8e8ed; }
@@ -21,7 +21,7 @@
   <g transform="translate(96, 140)">
     <circle cx="18" cy="18" r="18" fill="#34d399"/>
     <circle cx="18" cy="18" r="28" fill="none" stroke="#34d399" stroke-width="1.5" opacity="0.45"/>
-    <text x="64" y="28" class="og-mark" font-size="36">akashik</text>
+    <text x="64" y="28" class="og-mark" font-size="36">folklore</text>
   </g>
 
   <!-- H1 (left-aligned, bigger to fill the canvas) -->
@@ -63,6 +63,6 @@
   </g>
 
   <!-- Footer -->
-  <text class="og-meta" font-size="24" x="96" y="1820">github.com/twocirclestudios/akashik</text>
+  <text class="og-meta" font-size="24" x="96" y="1820">github.com/twocirclestudios/folklore</text>
   <text class="og-meta" font-size="24" x="96" y="1860">MIT  ·  CPU-only  ·  no API key</text>
 </svg>

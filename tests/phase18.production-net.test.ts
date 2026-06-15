@@ -10,9 +10,9 @@
  *
  * Integration tier note: the original 10-peer mesh integration test
  * was deleted after migration off shared CI runners — it pinned a
- * libp2p guarantee rather than an akashik invariant. See the
+ * libp2p guarantee rather than an folklore invariant. See the
  * "Integration tier — REMOVED" block at the bottom of this file for
- * pointers to the tests that DO cover akashik's transport contract.
+ * pointers to the tests that DO cover folklore's transport contract.
  *
  * Runner: node --import tsx --test tests/phase18.production-net.test.ts
  */
@@ -585,13 +585,13 @@ describe('Phase 18 — Unit: syncNodeIntoYDoc bandwidth gate (NET-02)', async ()
 // ephemeral ports, connected them in a ring + cross-link mesh, and
 // asserted every node converged to ≥3 peers within a 10-second window.
 //
-// That contract is libp2p's, not akashik's. Spinning 10 listenPort:0
+// That contract is libp2p's, not folklore's. Spinning 10 listenPort:0
 // nodes on shared CI runners is a port-allocation lottery (we observed
 // 30-40% flake rate on ubuntu-latest under load), and the assertion
 // — "libp2p can build a mesh" — would still pass even if every line of
-// akashik code was deleted. It's a libp2p smoke test.
+// folklore code was deleted. It's a libp2p smoke test.
 //
-// What akashik actually owns at this layer is the createNode config —
+// What folklore actually owns at this layer is the createNode config —
 // mdns:false / listenPort:0 / upnp:false plumbing, the discovery
 // service registration, the floodsub service composition. Those are
 // covered by:
@@ -605,5 +605,5 @@ describe('Phase 18 — Unit: syncNodeIntoYDoc bandwidth gate (NET-02)', async ()
 //     exercising publish + subscribe + reject pathways)
 //
 // If a real multi-node smoke is wanted, run it manually:
-//   AKASHIK_REAL_NET=1 node --import tsx --test tests/phase18-net04.real.ts
+//   FOLKLORE_REAL_NET=1 node --import tsx --test tests/phase18-net04.real.ts
 // (file doesn't exist yet — set up locally when you need it).

@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" width="1200" height="1200" role="img" aria-label="akashik — The globally accumulating knowledge network. For AI agents and humans.">
-  <title>akashik — Open Graph square / LinkedIn carousel cover</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" width="1200" height="1200" role="img" aria-label="folklore — The globally accumulating knowledge network. For AI agents and humans.">
+  <title>folklore — Open Graph square / LinkedIn carousel cover</title>
   <defs>
     <style>
       .og-display  { font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; letter-spacing: -0.035em; fill: #e8e8ed; }
@@ -21,7 +21,7 @@
   <g transform="translate(96, 96)">
     <circle cx="14" cy="14" r="14" fill="#34d399"/>
     <circle cx="14" cy="14" r="22" fill="none" stroke="#34d399" stroke-width="1.3" opacity="0.45"/>
-    <text x="56" y="22" class="og-mark" font-size="32">akashik</text>
+    <text x="56" y="22" class="og-mark" font-size="32">folklore</text>
   </g>
 
   <!-- H1 (left aligned) -->
@@ -60,6 +60,6 @@
   </g>
 
   <!-- Footer -->
-  <text class="og-meta" font-size="20" x="96" y="1140">github.com/twocirclestudios/akashik</text>
+  <text class="og-meta" font-size="20" x="96" y="1140">github.com/twocirclestudios/folklore</text>
   <text class="og-meta" font-size="20" x="1104" y="1140" text-anchor="end">MIT  ·  CPU-only</text>
 </svg>

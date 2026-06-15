@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * akashik UserPromptSubmit hook.
+ * folklore UserPromptSubmit hook.
  *
- * Fires BEFORE Claude reads the user's message. Runs `akashik
+ * Fires BEFORE Claude reads the user's message. Runs `folklore
  * ask` against the prompt text and injects the result into Claude's
  * context AT THE UserPromptSubmit LEVEL — so the LLM sees the
  * retrieval block alongside the user's prompt, with no round-trip
@@ -29,14 +29,14 @@ const { readFileSync, appendFileSync, mkdirSync, existsSync } = require('node:fs
 const { join } = require('node:path');
 const os = require('node:os');
 
-const HOME = process.env.AKASHIK_HOME || join(os.homedir(), '.akashik');
+const HOME = process.env.FOLKLORE_HOME || join(os.homedir(), '.folklore');
 const PROMPT_LOG = join(HOME, 'prompt-prefetch-log.jsonl');
-const PREFETCH_TIMEOUT_MS = Number(process.env.AKASHIK_PREFETCH_TIMEOUT_MS ?? 4500);
+const PREFETCH_TIMEOUT_MS = Number(process.env.FOLKLORE_PREFETCH_TIMEOUT_MS ?? 4500);
 const MIN_PROMPT_LEN = 6;
 const MAX_PROMPT_LEN = 800;
 const MIN_SATISFACTION = 0.55;
-const PREFETCH_PEERS = process.env.AKASHIK_PREFETCH_PEERS !== '0';
-const ENABLED = process.env.AKASHIK_PROMPT_PREFETCH !== '0';
+const PREFETCH_PEERS = process.env.FOLKLORE_PREFETCH_PEERS !== '0';
+const ENABLED = process.env.FOLKLORE_PROMPT_PREFETCH !== '0';
 
 const safe = (fn) => { try { return fn(); } catch { return undefined; } };
 const readPayload = () => safe(() => JSON.parse(readFileSync(0, 'utf8') || '{}')) ?? {};
@@ -52,9 +52,9 @@ const emit = (text, systemMessage) => {
   process.stdout.write(JSON.stringify(payload) + '\n');
 };
 
-const runAkashik = (args, timeoutMs) => {
+const runFolklore = (args, timeoutMs) => {
   try {
-    return execFileSync('akashik', args, {
+    return execFileSync('folklore', args, {
       timeout: timeoutMs,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -90,7 +90,7 @@ const parseAskOutput = (out) => {
   }
 };
 
-const AUTO_PULL_PEER_BODY = process.env.AKASHIK_PREFETCH_AUTO_PULL !== '0';
+const AUTO_PULL_PEER_BODY = process.env.FOLKLORE_PREFETCH_AUTO_PULL !== '0';
 // Distance threshold for triggering an auto-pull. Federation returns
 // MiniLM-384 cosine distances; relevance for genuinely useful hits
 // typically sits in 0.85–1.25 on a hybrid (BM25+vec) scorer. Default
@@ -98,8 +98,8 @@ const AUTO_PULL_PEER_BODY = process.env.AKASHIK_PREFETCH_AUTO_PULL !== '0';
 // errs toward fetching too much rather than too little — the network
 // cost is tiny (metadata + few KB summary) and Claude can ignore
 // irrelevant hits but cannot make up for absent ones.
-const AUTO_PULL_DISTANCE_MAX = Number(process.env.AKASHIK_PREFETCH_AUTO_PULL_DISTANCE ?? 1.30);
-const AUTO_PULL_TIMEOUT_MS = Number(process.env.AKASHIK_PREFETCH_AUTO_PULL_TIMEOUT_MS ?? 8000);
+const AUTO_PULL_DISTANCE_MAX = Number(process.env.FOLKLORE_PREFETCH_AUTO_PULL_DISTANCE ?? 1.30);
+const AUTO_PULL_TIMEOUT_MS = Number(process.env.FOLKLORE_PREFETCH_AUTO_PULL_TIMEOUT_MS ?? 8000);
 
 const localGraphCache = { loaded: false, byId: new Map() };
 const loadLocalGraph = () => {
@@ -124,7 +124,7 @@ const fetchNodeLocal = (id) => {
   return byId.get(id) ?? null;
 };
 
-// peer-labels.json (written by `akashik login` / demo setup)
+// peer-labels.json (written by `folklore login` / demo setup)
 // maps libp2p PeerId → {github, did_short, display}. When a peer hit
 // carries a known PeerId, render it as `github:<handle>` instead of
 // `peer:<short_libp2p_id>`. Fall through to the libp2p form otherwise.
@@ -138,11 +138,11 @@ const loadPeerLabels = () => {
   return peerLabelsCache;
 };
 // Peer identity rendering. The github handle here is the user's
-// OAuth-verified github username (from `akashik login`), not a
+// OAuth-verified github username (from `folklore login`), not a
 // repo path — peer identity is the parallel of a DID anchored in a
 // centrally-credible github account. Render as `@handle` (handle
 // form, not org/repo form) to keep the distinction clean. The DID
-// fragment is reachable via `akashik identity show` if a verifier
+// fragment is reachable via `folklore identity show` if a verifier
 // needs it; not inlined here.
 const formatPeer = (peerId) => {
   if (!peerId || peerId === 'local') return 'local';
@@ -179,7 +179,7 @@ const maybeAutoPullPeerBody = (federatedResult, query) => {
     if (targets.length >= 2) break;
   }
   for (const t of targets) {
-    runAkashik(['touch', t.peer, '--max', '10'], AUTO_PULL_TIMEOUT_MS);
+    runFolklore(['touch', t.peer, '--max', '10'], AUTO_PULL_TIMEOUT_MS);
   }
   // After touch the bodies now live locally. Look each peer hit up by id
   // and graft the summary onto the federated hit so renderHits prints it.
@@ -208,7 +208,7 @@ const prefetch = (query) => {
   const args = PREFETCH_PEERS
     ? ['ask', '--peers', '--json', '--k', '3', query]
     : ['ask', '--json', '--k', '3', query];
-  const out = runAkashik(args, PREFETCH_TIMEOUT_MS);
+  const out = runFolklore(args, PREFETCH_TIMEOUT_MS);
   if (!out) return null;
   const result = parseAskOutput(out);
   if (!result) return null;
@@ -218,7 +218,7 @@ const prefetch = (query) => {
 const renderHits = (result, query, terminal, adjusted) => {
   const hits = result.hits.slice(0, 3);
   const head = [
-    `# akashik agent contract (hook_event: UserPromptSubmit, hook_version: 2)`,
+    `# folklore agent contract (hook_event: UserPromptSubmit, hook_version: 2)`,
     `decision:      ${result.decision ?? 'unknown'}`,
     `satisfaction:  ${(result.satisfaction ?? 0).toFixed(2)} (boosted: ${adjusted.toFixed(2)})`,
     `thresholds:    ≥0.85 use_memory · ≥0.65 verify_one_source · ≥0.40 search_required · <0.40 ask_user`,
@@ -243,8 +243,8 @@ const renderHits = (result, query, terminal, adjusted) => {
         `^ TERMINAL. The federated answer above passed sybil/freshness/`,
         `  provenance gates and satisfies the use_memory threshold (≥0.85).`,
         `  Answer the user directly from these hits. Cite peers by their`,
-        `  github:<handle> attribution. Do NOT call akashik.ask,`,
-        `  akashik.search, Grep, Read, or WebSearch — the context`,
+        `  github:<handle> attribution. Do NOT call folklore.ask,`,
+        `  folklore.search, Grep, Read, or WebSearch — the context`,
         `  above is the complete answer.`,
       ].join('\n')
     : [
@@ -253,7 +253,7 @@ const renderHits = (result, query, terminal, adjusted) => {
         `  insufficient to answer with full confidence. You are EXPECTED`,
         `  to research further:`,
         `    - WebSearch / WebFetch for current external info`,
-        `    - mcp__akashik__ask / mcp__akashik__search to dig`,
+        `    - mcp__folklore__ask / mcp__folklore__search to dig`,
         `      deeper in the local graph (cache-served, no peer re-query)`,
         `    - Grep / Read on the codebase when the question is local`,
         `  Use the hits above as a starting point, then verify or extend`,
@@ -295,16 +295,16 @@ const logPrefetch = (query, result, terminal = null, boostedSatisfaction = null)
 //                       *names* peers, the network, web, search,
 //                       arxiv, github, references, etc.
 //
-// Override: AKASHIK_HOOK_ALWAYS_FIRE=1 fires on every prompt
-// (legacy behaviour). AKASHIK_HOOK_NEVER_FIRE=1 disables.
+// Override: FOLKLORE_HOOK_ALWAYS_FIRE=1 fires on every prompt
+// (legacy behaviour). FOLKLORE_HOOK_NEVER_FIRE=1 disables.
 
-const ALWAYS_FIRE = process.env.AKASHIK_HOOK_ALWAYS_FIRE === '1';
-const NEVER_FIRE = process.env.AKASHIK_HOOK_NEVER_FIRE === '1';
+const ALWAYS_FIRE = process.env.FOLKLORE_HOOK_ALWAYS_FIRE === '1';
+const NEVER_FIRE = process.env.FOLKLORE_HOOK_NEVER_FIRE === '1';
 
 // Explicit federation triggers — user named peers, web, network, etc.
 // These fire even if other heuristics would skip ("ask my peers about X"
 // is intent-clear even though "ask" + a code-noun could look edit-y).
-const EXPLICIT_TRIGGERS = /\b(?:check|ask|query|search|look\s?up|find|fetch|consult|poll|hit|browse|crawl|scrape|look\s+for)\s+(?:the\s+|my\s+|our\s+|in\s+)?(?:net|web|google|bing|duckduckgo|peers?|network|graph|akashik|swarm|community|arxiv|github|huggingface|hf|model\s?hub|registry|crates\.io|npm|pypi|hackernews|reddit|twitter|x\.com)\b/i;
+const EXPLICIT_TRIGGERS = /\b(?:check|ask|query|search|look\s?up|find|fetch|consult|poll|hit|browse|crawl|scrape|look\s+for)\s+(?:the\s+|my\s+|our\s+|in\s+)?(?:net|web|google|bing|duckduckgo|peers?|network|graph|folklore|swarm|community|arxiv|github|huggingface|hf|model\s?hub|registry|crates\.io|npm|pypi|hackernews|reddit|twitter|x\.com)\b/i;
 // Compound-phrase triggers — same scope as EXPLICIT_TRIGGERS but
 // expressed as compound nouns. We deliberately match only the
 // space-separated forms (federated SEARCH, peer NETWORK) so that
@@ -458,7 +458,7 @@ const writePrefetchCache = (query, ctx, sysMsg, terminal) => safe(() => {
 // systemMessage banner — surfaces in Claude Code's TUI as a status
 // line so the watcher sees federation actually firing. Multi-line
 // format:
-//   getting akashik
+//   getting folklore
 //     peers:          4/4 responded
 //     domains:        cryogenic-h2, spectroscopy
 //     question:       "..."
@@ -535,10 +535,10 @@ if (autoPulledCount > 0) boost += 0.08;          // got the bodies
 if (distinctOrigins >= 2) boost += 0.08;         // multi-peer consensus
 if (peerHits.length > 0 && distinctOrigins >= 1) boost += 0.04; // any peer signal
 const adjustedSatisfaction = Math.min(1.0, (result.satisfaction ?? 0) + boost);
-const TERMINAL_THRESHOLD = Number(process.env.AKASHIK_TERMINAL_THRESHOLD ?? 0.85);
+const TERMINAL_THRESHOLD = Number(process.env.FOLKLORE_TERMINAL_THRESHOLD ?? 0.85);
 const terminal = adjustedSatisfaction >= TERMINAL_THRESHOLD;
 const sysMsg = [
-  `getting akashik`,
+  `getting folklore`,
   `  peers:          ${peerLine}`,
   `  domains:        ${domains || '(local-only)'}`,
   `  question:       "${truncQ}"`,
@@ -550,7 +550,7 @@ const sysMsg = [
 const renderedContext = renderHits(result, truncated, terminal, adjustedSatisfaction);
 writePrefetchCache(truncated, renderedContext, sysMsg, terminal);
 // Log the verdict with terminal + boosted satisfaction so
-// `akashik metrics bypass` can compute bypass rates
+// `folklore metrics bypass` can compute bypass rates
 // against ACTUAL terminal verdicts.
 logPrefetch(truncated, result, terminal, adjustedSatisfaction);
 

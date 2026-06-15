@@ -14,7 +14,7 @@ dependency_graph:
     - "24-08 (MCP server room-tools dropped)"
   provides:
     - "Read-side CLI with --workspace pre-filter (ROOMS-DEL-07)"
-    - "akashik save --private flag (ROOMS-DEL-04)"
+    - "folklore save --private flag (ROOMS-DEL-04)"
     - "Workspace-agnostic application layer (room flag removed from public signatures)"
     - "Entity-only subject keys for peer reputation (subjectFromRoom gone)"
     - "Uniform global half-life (DEFAULT_HALF_LIFE_DAYS = 14)"
@@ -181,43 +181,43 @@ git rev-parse --abbrev-ref HEAD                                    -> feat/delet
 
 The compiled bits aren't runnable end-to-end yet (Wave 4 will land the migration command + test cutover), but the parsing layer accepts the new flags:
 
-**`akashik save --private "..."` (verifies --private flag):**
+**`folklore save --private "..."` (verifies --private flag):**
 ```bash
-akashik save --label "test private note" --type concept --private --text "this is a secret rationale"
-# Expected: save: filed concept node [private] workspace=akashik
+folklore save --label "test private note" --type concept --private --text "this is a secret rationale"
+# Expected: save: filed concept node [private] workspace=folklore
 #   id:    concept://2026-05-27/test-private-note
 #   label: test private note
 #   body:  35 chars (embedded)
 # The node persists with private:true and never enters the share-sync stream.
 ```
 
-**`akashik save --room X` (verifies the V5 rejection):**
+**`folklore save --room X` (verifies the V5 rejection):**
 ```bash
-akashik save --room foo --label "x"
+folklore save --room foo --label "x"
 # Expected: save: --room is removed in V5. Use --private to keep this node local,
 #                 --workspace <slug> to override the cwd-detected tag.
 # Exit code 1.
 ```
 
-**`akashik ask --workspace all "..."` (verifies cross-workspace opt-out):**
+**`folklore ask --workspace all "..."` (verifies cross-workspace opt-out):**
 ```bash
-cd /Users/saharbarak/personal/akashik
-akashik ask --workspace all "what is the V5 wire protocol?"
-# Expected: results from every workspace, not pre-filtered to 'akashik'.
-# When --workspace is absent (or 'akashik' explicit), the CLI applies
-#   r.search_hits.filter((h) => h.workspace === 'akashik')
+cd /Users/saharbarak/personal/folklore
+folklore ask --workspace all "what is the V5 wire protocol?"
+# Expected: results from every workspace, not pre-filtered to 'folklore'.
+# When --workspace is absent (or 'folklore' explicit), the CLI applies
+#   r.search_hits.filter((h) => h.workspace === 'folklore')
 # at applyWorkspaceFilter() — verified at the type level + parse level.
 ```
 
-**`akashik ask "..."` (verifies cwd auto-filter):**
+**`folklore ask "..."` (verifies cwd auto-filter):**
 ```bash
-cd /Users/saharbarak/personal/akashik
-akashik ask "v5 wire protocol"
-# detectWorkspace() returns 'akashik' (slugified git toplevel basename);
-# the applyWorkspaceFilter narrows hits to workspace==='akashik'.
+cd /Users/saharbarak/personal/folklore
+folklore ask "v5 wire protocol"
+# detectWorkspace() returns 'folklore' (slugified git toplevel basename);
+# the applyWorkspaceFilter narrows hits to workspace==='folklore'.
 
 cd /tmp
-akashik ask "v5 wire protocol"
+folklore ask "v5 wire protocol"
 # detectWorkspace() returns undefined (not a git repo);
 # no pre-filter applied; results are cross-workspace by default.
 ```
@@ -263,7 +263,7 @@ akashik ask "v5 wire protocol"
 ### Out-of-Scope Issues Found (Not Fixed — Logged for Future Waves)
 
 **1. ShareableNode.room dropped in domain/sharing.ts ahead of plan**
-- The 24-09 plan's Task 4.16 stages ShareableNode.room removal as part of save-note.ts cleanup. I did it inside sharing.ts because the GraphNode-side `node.room` access broke at the type level when AkashikNodeFields no longer carried the field. The auditRoom alias is retained for back-compat with infrastructure/share-sync.ts callers.
+- The 24-09 plan's Task 4.16 stages ShareableNode.room removal as part of save-note.ts cleanup. I did it inside sharing.ts because the GraphNode-side `node.room` access broke at the type level when FolkloreNodeFields no longer carried the field. The auditRoom alias is retained for back-compat with infrastructure/share-sync.ts callers.
 
 **2. `Room` + `nodesInRoom` shims retained in domain/graph.ts**
 - These are deprecated re-exports of `string` and a thin `graph.json.nodes.filter` helper. They exist purely so legacy `import { Room } from '../domain/graph.js'` lines in source-adapter files still compile during the wave-3 rollout. No tsc errors remain that touch them; Wave 4 can drop the shims after the source adapters get their dedicated cleanup wave.
@@ -303,8 +303,8 @@ Branch `feat/delete-rooms`. No co-authored commits (per user's global CLAUDE.md)
 
 - **Wave 3b (24-10):** parallel-track infrastructure + daemon + telegram sweep — already in flight at the time of this plan's execution (commits `0d42934`, `5d7b4b8`).
 - **Wave 4 — Tests:** the V5 acceptance test suite `tests/phase24.rooms-deleted.test.ts` + surgical edits to existing tests that assert on the V4 room shape (phase16.share-crdt, phase18.production-net U16-U20, phase37.share-picker, phase38.oracle, etc.).
-- **Wave 4 — Migration:** `akashik migrate v5` command that strips `room` from existing graph.json nodes, sets `private: false` defaults, infers `workspace` heuristically from repo-basename matches, deletes rooms.json + shared-rooms.json, flattens `peer-reputation.json` subject keys.
-- **Wave 4 — Doctor check:** `akashik doctor` boot-time check that samples nodes for the `room` extension field and prints a "run migrate v5" hint when found.
+- **Wave 4 — Migration:** `folklore migrate v5` command that strips `room` from existing graph.json nodes, sets `private: false` defaults, infers `workspace` heuristically from repo-basename matches, deletes rooms.json + shared-rooms.json, flattens `peer-reputation.json` subject keys.
+- **Wave 4 — Doctor check:** `folklore doctor` boot-time check that samples nodes for the `room` extension field and prints a "run migrate v5" hint when found.
 
 ---
 *Phase: phase-24*

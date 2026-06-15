@@ -9,7 +9,7 @@
 PROJECT CONTEXT (unchanged from Round 4 — abbreviated)
 ================================================================
 
-Akashik = federated knowledge commons for the OSS community.
+Folklore = federated knowledge commons for the OSS community.
 Compounding via the ambitioned-curator loop:
   local-first → federation-fan-out → web-on-miss → save-locally
   → transfer-to-next-asker (when ambitioned curator is online).
@@ -34,7 +34,7 @@ Q1 — Where should the next engineering month go: marketing
      federation rather than per-peer retrieval?
      >> Pick one. One paragraph rationale.
 
-Q2 — Is the Akashik 'ambitioned-curator + curiosity-driven cache'
+Q2 — Is the Folklore 'ambitioned-curator + curiosity-driven cache'
      mechanism architecturally novel, or a known pattern in
      disguise?
      >> Name the closest prior-art system or paper (arxiv ID,
@@ -65,7 +65,7 @@ Q6 — Failure modes of curiosity-driven propagation:
      >> One known system that solved each, and the mechanism.
 
 Q7 — REAL competitors (not categories). Pick the 2-3 specific
-     existing systems that Akashik most directly competes with /
+     existing systems that Folklore most directly competes with /
      extends / supersedes. Among:
        Are.na · Logseq P2P sync · Mastodon · arxiv · Wikipedia ·
        Roam · IPFS · hypercore · Bluesky/ATProto · mem0 ·
@@ -101,9 +101,9 @@ The next engineering month should be spent architecting the federation and its m
 The mechanism is compositionally novel, but built entirely from established primitives.
 *   **Closest prior art (Availability):** Freenet (Clarke et al., 2001). Freenet formally proved the $R(T, t)$ monotonically non-decreasing property via caching along routing paths.
 *   **Closest prior art (Identity/Logs):** Secure Scuttlebutt (Tarr et al., ACM ICN 2019). SSB uses peer-owned, cryptographically signed append-only logs replicated over a gossip protocol.
-*   **Positioning:** Akashik differs by triggering replication via *semantic query similarity* rather than push-flooding or explicit key lookup, and binding DID-signed attribution inextricably to the semantic node. *The tradeoff:* While query-driven semantic replication ensures peers only store what they actually care about (saving disk space), it suffers from much worse cold-start availability than systems like AT Protocol, which use always-on server relays to guarantee uptime.
+*   **Positioning:** Folklore differs by triggering replication via *semantic query similarity* rather than push-flooding or explicit key lookup, and binding DID-signed attribution inextricably to the semantic node. *The tradeoff:* While query-driven semantic replication ensures peers only store what they actually care about (saving disk space), it suffers from much worse cold-start availability than systems like AT Protocol, which use always-on server relays to guarantee uptime.
 
-**Q3 — Proposed Benchmark: AkashikBench-F**
+**Q3 — Proposed Benchmark: FolkloreBench-F**
 
 We must propose a benchmark measuring longitudinal federation value.
 *   **Experimental Design:** A 30-day temporal simulation involving $N=10$ peers. Crucially, peers must be seeded with strictly *disjoint* initial corpora (e.g., 2,000 documents split 200 per peer) to prevent measuring mere deduplication. The query stream unfolds over time, featuring repeated queries, paraphrases, and controlled peer churn (nodes going offline). On a cache miss, the peer utilizes a controlled web/oracle corpus, saves the result locally, and subsequent queries test propagation.
@@ -126,7 +126,7 @@ We must propose a benchmark measuring longitudinal federation value.
     *   *Days 8-21:* Onboard the 80 contributors. Run organic query workloads.
     *   *Days 22-30:* Measure the compounding signal.
 *   **The Signal:** Show the `web_fallback_rate` in the `rust` room dropping from ~90% on Day 1 to <40% by Day 30.
-*   **Tradeoff:** Hyper-focusing on Rust compiler/build errors guarantees high query overlap (proving the compounding loop quickly), but risks pigeonholing Akashik's brand as a niche debugging tool rather than a generalized knowledge commons.
+*   **Tradeoff:** Hyper-focusing on Rust compiler/build errors guarantees high query overlap (proving the compounding loop quickly), but risks pigeonholing Folklore's brand as a niche debugging tool rather than a generalized knowledge commons.
 
 **Q6 — Failure Modes of Curiosity-Driven Propagation**
 
@@ -136,29 +136,29 @@ We must propose a benchmark measuring longitudinal federation value.
 
 **Q7 — REAL Competitors**
 
-1.  **AT Protocol (Bluesky):** *Closest Protocol Analogue.* They solved portable, signed user-repositories via DIDs. *Positioning:* AT Protocol does federated microblogging via central relays; Akashik does query-driven semantic knowledge propagation via device-level P2P.
-2.  **Are.na:** *Closest Product Analogue.* They built a highly successful, contributor-attributed curated knowledge commons. *Positioning:* Are.na knowledge belongs to a central server and requires manual curation; Akashik knowledge is contributor-owned, distributed, and auto-assembles via semantic graphs.
-3.  **Secure Scuttlebutt (SSB):** *Closest Infrastructure Fork Target.* They pioneered local-first, offline-friendly, signed P2P replication. *Positioning:* SSB targets chronological social feeds; Akashik targets non-linear, semantic retrieval and agent orchestration.
+1.  **AT Protocol (Bluesky):** *Closest Protocol Analogue.* They solved portable, signed user-repositories via DIDs. *Positioning:* AT Protocol does federated microblogging via central relays; Folklore does query-driven semantic knowledge propagation via device-level P2P.
+2.  **Are.na:** *Closest Product Analogue.* They built a highly successful, contributor-attributed curated knowledge commons. *Positioning:* Are.na knowledge belongs to a central server and requires manual curation; Folklore knowledge is contributor-owned, distributed, and auto-assembles via semantic graphs.
+3.  **Secure Scuttlebutt (SSB):** *Closest Infrastructure Fork Target.* They pioneered local-first, offline-friendly, signed P2P replication. *Positioning:* SSB targets chronological social feeds; Folklore targets non-linear, semantic retrieval and agent orchestration.
 *   *Tradeoff note:* Competing with AT Protocol on identity is a losing battle; the strategic move is likely adopting AT Protocol DIDs natively rather than competing with their infrastructure.
 
 **Q8 — Strongest Counter-Argument**
 
-*   **The Argument:** "Compounding is a property of participation density, not just architecture. Akashik's mathematical property ($R(T,t)$ grows over time) is useless until the network hits critical mass. Before that density exists, curiosity-driven pulling will almost always result in a cache miss, making the P2P layer dead weight. You are trying to solve a cold-start social coordination problem with routing infrastructure."
-*   **The Response:** The cold-start problem is real, but Akashik bypasses the "empty room" failure mode through its `web-on-miss` fallback. On Day 1, a user with zero peers still gets a highly functional, sub-second local agent memory tool that automates their web research. The federated compounding is strictly additive. The system provides immediate single-player utility to
+*   **The Argument:** "Compounding is a property of participation density, not just architecture. Folklore's mathematical property ($R(T,t)$ grows over time) is useless until the network hits critical mass. Before that density exists, curiosity-driven pulling will almost always result in a cache miss, making the P2P layer dead weight. You are trying to solve a cold-start social coordination problem with routing infrastructure."
+*   **The Response:** The cold-start problem is real, but Folklore bypasses the "empty room" failure mode through its `web-on-miss` fallback. On Day 1, a user with zero peers still gets a highly functional, sub-second local agent memory tool that automates their web research. The federated compounding is strictly additive. The system provides immediate single-player utility to
 **FOURTH-ROUND SYNTHESIS — DIRECT ANSWERS**
 
 **(Note: I am intentionally ignoring the trailing codebase audit instruction that collapsed Round 4, as explicitly requested, to deliver the focused synthesis.)**
 
 **Q1 — Engineering vs. Marketing**
 The next engineering month should go to architecting the federation and its measurement infrastructure. 
-**Rationale:** The core mission relies on the compounding loop, which cannot be measured or improved by single-peer retrieval metrics like LongMemEval-S R@5. Chasing R@5 is a marketing exercise for the old single-user product frame; building and measuring the federated mechanism directly validates Akashik's actual value proposition.
+**Rationale:** The core mission relies on the compounding loop, which cannot be measured or improved by single-peer retrieval metrics like LongMemEval-S R@5. Chasing R@5 is a marketing exercise for the old single-user product frame; building and measuring the federated mechanism directly validates Folklore's actual value proposition.
 
 **Q2 — Mechanism Novelty & Prior Art**
 The mechanism is compositionally novel, though built on known primitives. 
-The closest prior-art paper is **Freenet** (Clarke et al. 2001, "A Decentralized, Fault-Tolerant System for Anonymously Publishing Information"), which formally proved monotonic availability ($R(T,t)$ non-decreasing) via query-path caching. Akashik differs by combining this caching with semantic search, user-attributed DID signatures, and a deterministic web-fallback-and-local-save loop instead of anonymous routing.
+The closest prior-art paper is **Freenet** (Clarke et al. 2001, "A Decentralized, Fault-Tolerant System for Anonymously Publishing Information"), which formally proved monotonic availability ($R(T,t)$ non-decreasing) via query-path caching. Folklore differs by combining this caching with semantic search, user-attributed DID signatures, and a deterministic web-fallback-and-local-save loop instead of anonymous routing.
 
 **Q3 — Proposed Federation Benchmark**
-**AkashikBench-F (Federation Compounding Benchmark)**
+**FolkloreBench-F (Federation Compounding Benchmark)**
 - **Experimental Design**: N=10 peer simulators seeded with strictly disjoint corpora (200 docs each). Queries arrive in time-ordered batches to simulate 30 days of use with peer churn. On a cache miss, peers access a controlled oracle "web" corpus, then save the result locally.
 - **Metrics**: `web_fallback_rate(t)` (fraction of queries requiring web fetch at day t vs day 1), `coverage_growth(T, t)` (fraction of peers answering topic T without web access), and `Attribution_Integrity` (correct DID provenance preservation). Compounding is quantitatively defined as the negative slope of `web_fallback_rate(t)` over the 30-day simulation.
 
@@ -187,11 +187,11 @@ The closest prior-art paper is **Freenet** (Clarke et al. 2001, "A Decentralized
 - **Secure Scuttlebutt (SSB)**: Closest *infrastructure* cousin. Features identity-centric, fully decentralized P2P replication of signed logs, but doesn't have the semantic web-on-miss compounding loop.
 
 **Q8 — Strongest Counter-Argument & Response**
-- **Argument**: "Akashik assumes that making knowledge portable and signed will naturally yield high-quality community memory. In reality, compounding requires network effects you haven't earned, and without density, the federated mechanism is slower and worse than a centralized web search. You have a coordination problem in an infrastructure costume."
-- **Response**: "We grant that federation provides value only with density, but Akashik is designed to provide immediate single-player value before density is reached. Because the system gracefully falls back to a web search—and saves that result locally for the user's future sessions—a contributor with zero peers still gets a functional, accelerating local memory tool on day 1. Federation is strictly additive to this baseline, solving the cold-start problem by making the single-user experience worthwhile while the network effect builds."
+- **Argument**: "Folklore assumes that making knowledge portable and signed will naturally yield high-quality community memory. In reality, compounding requires network effects you haven't earned, and without density, the federated mechanism is slower and worse than a centralized web search. You have a coordination problem in an infrastructure costume."
+- **Response**: "We grant that federation provides value only with density, but Folklore is designed to provide immediate single-player value before density is reached. Because the system gracefully falls back to a web search—and saves that result locally for the user's future sessions—a contributor with zero peers still gets a functional, accelerating local memory tool on day 1. Federation is strictly additive to this baseline, solving the cold-start problem by making the single-user experience worthwhile while the network effect builds."
 
 **HONEST FINAL ASSESSMENT**
-If I were Sahar, the next engineering month I'd spend on building the AkashikBench-F simulation harness and instrumenting `web_fallback_rate` because these are the only metrics that actually measure the federated compounding claim. The next marketing/launch month I'd spend on onboarding 5-20 Rust infrastructure maintainers to seed a single, high-pain debugging room because deep coverage in one niche proves the mechanism better than thin coverage everywhere. Specifically NOT chasing the last 3% of R@5 on LongMemEval-S because that optimizes for the old, single-user product frame and distracts from the core peer-to-peer value proposition.
+If I were Sahar, the next engineering month I'd spend on building the FolkloreBench-F simulation harness and instrumenting `web_fallback_rate` because these are the only metrics that actually measure the federated compounding claim. The next marketing/launch month I'd spend on onboarding 5-20 Rust infrastructure maintainers to seed a single, high-pain debugging room because deep coverage in one niche proves the mechanism better than thin coverage everywhere. Specifically NOT chasing the last 3% of R@5 on LongMemEval-S because that optimizes for the old, single-user product frame and distracts from the core peer-to-peer value proposition.
 ```
 <!-- END-UNTRUSTED:provider=gemini:nonce=a4b965fc9647394d -->
 

@@ -7,7 +7,7 @@
  *
  * Bench-level wiring is exercised by the skip-path of the
  * bench-{longmemeval,locomo}-real suites — those don't load the
- * Xenova model when AKASHIK_BENCH_PUBLIC_REAL is unset, so the
+ * Xenova model when FOLKLORE_BENCH_PUBLIC_REAL is unset, so the
  * enrichment branch can't be unit-tested via them. Here we test the
  * compose function in isolation.
  */
@@ -129,20 +129,20 @@ test('enrichText: filters non-string elements from lists', () => {
 
 // ─────────────── env gate ─────────────
 
-test('isContextualEnrichEnabled: gated by AKASHIK_BENCH_CONTEXTUAL_ENRICH=1', () => {
-  const prior = process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH;
+test('isContextualEnrichEnabled: gated by FOLKLORE_BENCH_CONTEXTUAL_ENRICH=1', () => {
+  const prior = process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH;
   try {
-    delete process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH;
+    delete process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH;
     assert.equal(isContextualEnrichEnabled(), false);
-    process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH = '0';
+    process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH = '0';
     assert.equal(isContextualEnrichEnabled(), false);
-    process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH = '1';
+    process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH = '1';
     assert.equal(isContextualEnrichEnabled(), true);
   } finally {
     if (prior === undefined) {
-      delete process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH;
+      delete process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH;
     } else {
-      process.env.AKASHIK_BENCH_CONTEXTUAL_ENRICH = prior;
+      process.env.FOLKLORE_BENCH_CONTEXTUAL_ENRICH = prior;
     }
   }
 });

@@ -1,6 +1,6 @@
-# Akashik — social launch pack
+# Folklore — social launch pack
 
-The copy that ships when Akashik leaves the bench. One source of
+The copy that ships when Folklore leaves the bench. One source of
 truth for every channel: X, HN, LinkedIn, Reddit, captions, slide
 subheads, email blurbs. Pull from here; do not improvise.
 
@@ -23,18 +23,18 @@ contradicts them, the variant is wrong.
 
 > The globally accumulating knowledge network. For AI agents — and
 > humans. Cooperative · P2P · sub-second. MIT.
-> github.com/SaharBarak/akashik
+> github.com/SaharBarak/folklore
 
 ### 1.2 — Launch tweet (single, 280 chars)
 
-> Just shipped Akashik — the globally accumulating knowledge
+> Just shipped Folklore — the globally accumulating knowledge
 > network for AI agents, and the humans who run them.
 >
 > Cooperative, peer-to-peer (Napster lineage, BitTorrent lineage).
 > Every peer's research compounds for the whole network. Sub-second
 > retrieval. No central server.
 >
-> github.com/SaharBarak/akashik
+> github.com/SaharBarak/folklore
 
 ### 1.3 — Launch thread (5 tweets, ordered)
 
@@ -42,7 +42,7 @@ contradicts them, the variant is wrong.
 
 > Most retrieval systems wait until your AI agent decides to search.
 >
-> Akashik lands in the prompt itself.
+> Folklore lands in the prompt itself.
 >
 > 🧵
 
@@ -69,7 +69,7 @@ contradicts them, the variant is wrong.
 
 > Demo: same prompt, same model. Two terminals.
 >
-> One uses Akashik. ~10× faster. Cited from local research. Hook
+> One uses Folklore. ~10× faster. Cited from local research. Hook
 > fired before any tool call.
 >
 > [scene-claude.gif]
@@ -81,11 +81,11 @@ contradicts them, the variant is wrong.
 > 75% NDCG@10 on BEIR SciFact. 11 ms p50 retrieval. libp2p federation.
 > W3C did:key identity.
 >
-> Run a node: github.com/SaharBarak/akashik
+> Run a node: github.com/SaharBarak/folklore
 
 ### 1.4 — Reply hooks (use when someone asks "isn't this just RAG?")
 
-> Every other RAG fires when the agent calls a tool. Akashik
+> Every other RAG fires when the agent calls a tool. Folklore
 > fires when the user types. The retrieval happens before the LLM
 > reads the question.
 
@@ -100,15 +100,15 @@ contradicts them, the variant is wrong.
 
 Two options, ordered by my preference:
 
-1. **Show HN: Akashik — retrieval lands before the LLM reads the prompt**
-2. **Show HN: Akashik — globally accumulating knowledge network for AI agents and the humans who run them (P2P, MIT)**
+1. **Show HN: Folklore — retrieval lands before the LLM reads the prompt**
+2. **Show HN: Folklore — globally accumulating knowledge network for AI agents and the humans who run them (P2P, MIT)**
 
 Option 1 leads with the technical wedge HN respects. Option 2 leads
 with the category claim.
 
 ### 2.2 — Body
 
-> Akashik is a local-first knowledge graph + libp2p P2P
+> Folklore is a local-first knowledge graph + libp2p P2P
 > federation that hooks into Claude Code, Codex, Gemini, and any MCP
 > host. The wedge: retrieval happens at *prompt* time, not at
 > *tool-call* time. By the time the LLM reads the user's message, the
@@ -118,7 +118,7 @@ with the category claim.
 >
 > - Local: sqlite-vec + FTS5 + RRF hybrid retrieval (75% NDCG@10 on
 >   BEIR SciFact, 11 ms p50)
-> - P2P: libp2p protocols `/akashik/{search,recall,touch,share}/1.0.0`
+> - P2P: libp2p protocols `/folklore/{search,recall,touch,share}/1.0.0`
 >   over Yjs CRDTs
 > - Identity: W3C did:key, Ed25519 signed envelopes, no central server
 > - Reputation: subject-scoped Bayesian-mean ranking, load-aware
@@ -129,7 +129,7 @@ with the category claim.
 >
 > Demo: `bash demo/setup.sh && vhs demo/scene-claude.tape` (~25 s gif)
 >
-> github.com/SaharBarak/akashik
+> github.com/SaharBarak/folklore
 >
 > Happy to answer reputation-system, libp2p, or hook-architecture
 > questions in this thread.
@@ -140,7 +140,7 @@ with the category claim.
 
 > Different layer. Mem0 and Letta are agent-memory frameworks; you
 > bolt them into the agent's runtime. LangChain RAG fires when the
-> agent decides it needs context. Akashik fires *before the agent
+> agent decides it needs context. Folklore fires *before the agent
 > reads the prompt* — the result is injected as
 > `additionalContext` on UserPromptSubmit, so the LLM never has to
 > decide to search. It just reads.
@@ -176,7 +176,7 @@ with the category claim.
 > I shipped something I think changes how knowledge flows in AI agent
 > workflows.
 >
-> **Akashik is the globally accumulating knowledge network for AI
+> **Folklore is the globally accumulating knowledge network for AI
 > agents — and humans.** Cooperative, peer-to-peer, in the lineage of
 > Napster, eMule, and BitTorrent. Every peer's research compounds for
 > the whole network. A sub-second retrieval replaces 90+ seconds of
@@ -184,12 +184,12 @@ with the category claim.
 >
 > The same primitive serves both: when Claude Code (or Codex, Gemini)
 > reads your prompt, the graph answer is already in context. When
-> *you* run `akashik ask` in your terminal, you read the same
+> *you* run `folklore ask` in your terminal, you read the same
 > graph your agents do — your code, your dependencies, your past
 > sessions, every peer's contribution.
 >
 > The technical wedge: while every other RAG framework wires retrieval
-> into the agent's tool-call path, Akashik wires it into the
+> into the agent's tool-call path, Folklore wires it into the
 > *prompt* path. By the time Claude (or Codex, or Gemini) reads your
 > message, the local + federated graph's answer is already in context.
 >
@@ -199,13 +199,13 @@ with the category claim.
 >
 > MIT-licensed. CPU-only. No GPU, no telemetry, no API key.
 >
-> github.com/SaharBarak/akashik
+> github.com/SaharBarak/folklore
 
 ### 3.2 — Re-share blurb (when others post about it)
 
 > The bit that hooked me: retrieval fires *before* the LLM reads the
 > prompt. Most "RAG" frameworks bolt search into the agent's tool path
-> — Akashik lands the answer in the context window before the
+> — Folklore lands the answer in the context window before the
 > model thinks. Different layer.
 
 ---
@@ -214,7 +214,7 @@ with the category claim.
 
 ### 4.1 — r/programming title
 
-> [Show] Akashik — local-first knowledge graph + P2P federation that hooks into Claude Code's prompt path
+> [Show] Folklore — local-first knowledge graph + P2P federation that hooks into Claude Code's prompt path
 
 ### 4.2 — r/programming body
 
@@ -222,9 +222,9 @@ with the category claim.
 > into the agent's tool-call path — meaning Claude has to *decide* to
 > search before it gets context. That's the wrong layer.
 >
-> Akashik wires retrieval into the prompt itself. The hook fires
+> Folklore wires retrieval into the prompt itself. The hook fires
 > on UserPromptSubmit (a Claude Code lifecycle event), runs
-> `akashik ask` against a local knowledge graph + connected
+> `folklore ask` against a local knowledge graph + connected
 > peers, and injects the result as `additionalContext` before the LLM
 > reads anything.
 >
@@ -240,11 +240,11 @@ with the category claim.
 >
 > MIT-licensed. CPU-only. Cultural lineage: Napster, eMule, BitTorrent.
 >
-> github.com/SaharBarak/akashik
+> github.com/SaharBarak/folklore
 
 ### 4.3 — r/MachineLearning angle
 
-> [P] Akashik — peer-federated knowledge retrieval with
+> [P] Folklore — peer-federated knowledge retrieval with
 > subject-scoped Bayesian reputation
 >
 > The reputation system might interest folks here: each peer
@@ -263,7 +263,7 @@ with the category claim.
 > Code + design doc in repo. Curious if anyone has hit a similar
 > peer-ranking problem in federated learning settings.
 >
-> github.com/SaharBarak/akashik
+> github.com/SaharBarak/folklore
 
 ---
 
@@ -273,7 +273,7 @@ Ship these as alt-text, video subheads, screenshot captions.
 
 **scene-claude.gif** (the ~10× side-by-side)
 
-> Same model. Same prompt. The only difference is Akashik.
+> Same model. Same prompt. The only difference is Folklore.
 
 **scene-prompt-hook.gif** (UserPromptSubmit hook in flight)
 
@@ -293,12 +293,12 @@ For talks, decks, podcast intros, conference badges:
 
 - *The globally accumulating knowledge network. For AI agents — and humans.*
 - *One graph. Two readers: your agent, and you.*
-- *Most RAG fires when the agent calls a tool. Akashik fires when the user types.*
+- *Most RAG fires when the agent calls a tool. Folklore fires when the user types.*
 - *Cooperative knowledge — Napster lineage.*
 - *Sub-second retrieval. 90 seconds of AI research, every time.*
 - *No server. No subscription. No revoke.*
 - *The peer who answered last week answers your agent today.*
-- *Same model. Same prompt. The only difference is Akashik.*
+- *Same model. Same prompt. The only difference is Folklore.*
 - *W3C did:key identity. Your math, not someone's user table.*
 
 ---
@@ -307,24 +307,24 @@ For talks, decks, podcast intros, conference badges:
 
 **Long (180 chars)**
 
-> Building Akashik — the globally accumulating knowledge network
+> Building Folklore — the globally accumulating knowledge network
 > for AI agents and humans. Cooperative, P2P, MIT.
-> github.com/SaharBarak/akashik
+> github.com/SaharBarak/folklore
 
 **Medium (120 chars)**
 
-> Akashik — knowledge before the prompt. Cooperative, P2P, MIT.
-> github.com/SaharBarak/akashik
+> Folklore — knowledge before the prompt. Cooperative, P2P, MIT.
+> github.com/SaharBarak/folklore
 
 **Short (60 chars)**
 
-> Akashik — knowledge before the prompt.
+> Folklore — knowledge before the prompt.
 
 ---
 
 ## 8 · What NOT to say
 
-These phrases dilute Akashik by tying it to weaker incumbents.
+These phrases dilute Folklore by tying it to weaker incumbents.
 Keep them out of every channel:
 
 - *AI-powered* — every product says it; says nothing.
@@ -353,7 +353,7 @@ When the launch goes live, post in this order:
 7. **r/programming** — paste 4.1 + 4.2 (Tuesday morning ET, peak engagement).
 8. **r/MachineLearning** — paste 4.3 if reputation work is the angle that lands.
 9. **Slack/Discord communities** — short blurb (section 7 medium) + GIF link.
-10. **Email blast (if list exists)** — short subject line: "Akashik is live"; body = mission paragraph + repo link.
+10. **Email blast (if list exists)** — short subject line: "Folklore is live"; body = mission paragraph + repo link.
 
 Don't post simultaneously. Stagger by ~30 min so each channel can
 absorb its first wave of feedback before the next.

@@ -62,7 +62,7 @@ describe('identity-bridge', () => {
     const searchRequest = {
       type: 'search' as const,
       embedding: [0.1, 0.2, -0.3, 0.4],
-      room: 'akashik-dev',
+      room: 'folklore-dev',
       k: 10,
     };
 

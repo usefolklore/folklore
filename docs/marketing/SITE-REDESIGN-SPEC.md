@@ -1,4 +1,4 @@
-# Akashik — landing page redesign spec
+# Folklore — landing page redesign spec
 
 This document is the single source of truth for the upcoming landing
 page rewrite. Synthesized from a three-agent audit (marketing,
@@ -14,13 +14,13 @@ first; do not improvise during execution.
 
 These apply to every artifact (README, landing page, social pack):
 
-- **GitHub repo (target):** `github.com/twocirclestudios/akashik`
-  (currently `github.com/SaharBarak/akashik`; migration pending)
+- **GitHub repo (target):** `github.com/twocirclestudios/folklore`
+  (currently `github.com/SaharBarak/folklore`; migration pending)
 - **Install path (canonical, npm, homebrew):**
 
   ```bash
-  git clone https://github.com/twocirclestudios/akashik.git
-  cd akashik
+  git clone https://github.com/twocirclestudios/folklore.git
+  cd folklore
   npm install
   npm run bootstrap
   ```
@@ -32,7 +32,7 @@ These apply to every artifact (README, landing page, social pack):
 - **Tighter one-liner (post-npm-publish, future):**
 
   ```bash
-  npx -y akashik init
+  npx -y folklore init
   ```
 
   Pre-publish, the four-line clone-and-bootstrap is the canonical path.
@@ -40,12 +40,12 @@ These apply to every artifact (README, landing page, social pack):
 - **Verbatim hero install strip (use this exact text):**
 
   ```
-  $ git clone https://github.com/twocirclestudios/akashik.git
-  $ cd akashik && npm install && npm run bootstrap
+  $ git clone https://github.com/twocirclestudios/folklore.git
+  $ cd folklore && npm install && npm run bootstrap
   ```
 
-**Migration touchpoints — every reference to `SaharBarak/akashik`
-must flip to `twocirclestudios/akashik` when execution starts.**
+**Migration touchpoints — every reference to `SaharBarak/folklore`
+must flip to `twocirclestudios/folklore` when execution starts.**
 Known files holding the old org:
 
 - `README.md` (multiple star/fork badge URLs + repo links)
@@ -78,7 +78,7 @@ quality dimension by directly competing with the category readers know
 (ChatGPT Deep Research, Claude Research mode — products that take 5–10
 minutes and burn tokens). "11 ms" is the cached-query p50; "Cited" is
 the proof artifact (every match returns provenance); "Zero tokens" is
-the cost reframe — Akashik's retrieval doesn't go through an LLM.
+the cost reframe — Folklore's retrieval doesn't go through an LLM.
 
 What we explicitly rejected and why:
 - *"Retrieval fires before the LLM reads your prompt"* — the founder
@@ -106,7 +106,7 @@ Plus three smaller misses:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ NAV ▸ Akashik   Demo · How it works · Bench · Install   ☆  │
+│ NAV ▸ Folklore   Demo · How it works · Bench · Install   ☆  │
 ├──────────────────────────────────────────────────────────────────┤
 │                                                                   │
 │  ● v4.0 — agent brain: cached queries, native CLI                │
@@ -131,8 +131,8 @@ Plus three smaller misses:
 │   └──────────────────────────────────────────┘                    │
 │   ╔══════════════════════════════════════════╗                    │
 │   ║  $ git clone https://github.com/         ║                    │
-│   ║      twocirclestudios/akashik.git   ║                    │
-│   ║  $ cd akashik && npm install &&     ║                    │
+│   ║      twocirclestudios/folklore.git   ║                    │
+│   ║  $ cd folklore && npm install &&     ║                    │
 │   ║      npm run bootstrap          [⎘ copy] ║                    │
 │   ╚══════════════════════════════════════════╝                    │
 │                                                                   │
@@ -178,25 +178,25 @@ Three install commands surfaced, default `git clone`:
 
 ```bash
 # git clone (default — canonical today)
-$ git clone https://github.com/twocirclestudios/akashik.git
-$ cd akashik && npm install && npm run bootstrap
+$ git clone https://github.com/twocirclestudios/folklore.git
+$ cd folklore && npm install && npm run bootstrap
 
 # npm (post-publish, future)
-$ npx -y akashik init
+$ npx -y folklore init
 
 # Homebrew (post-tap-publish, future)
-$ brew install twocirclestudios/akashik/akashik
+$ brew install twocirclestudios/folklore/folklore
 ```
 
 **CTA row** (RESOLVED — 2 live signals + 1 conversion action; full
 implementation in §2.6):
 
 - Counter A: `· 12 peers online` (clickable, links to repo `/network`
-  page; will be `akashik peer list` JSON output until built)
+  page; will be `folklore peer list` JSON output until built)
 - Counter B: `· 4 domains indexed` (clickable, scrolls to `#arch`
   rooms section)
 - Action: `☆ Star on GitHub` (primary `btn-primary`, emerald fill,
-  links to `https://github.com/twocirclestudios/akashik`)
+  links to `https://github.com/twocirclestudios/folklore`)
 
 The "see it in 60 seconds" CTA from the round-1 draft is **dropped**.
 Demo section sits one scroll below the hero; nav links to `#demo`;
@@ -241,7 +241,7 @@ of `width="600"` was 67 px wider than the column. **Corrected to
 > The graph loaded. The model read it. You paid nothing.
 
 Three short declarative sentences narrating what the gif just showed.
-Beat 1 = the Akashik graph fired. Beat 2 = the LLM read the
+Beat 1 = the Folklore graph fired. Beat 2 = the LLM read the
 context. Beat 3 = the cost reframe — the punchline. The third
 sentence is the gut-punch: it makes the visitor feel the wedge as
 relief, not as a feature.
@@ -270,7 +270,7 @@ the gif loads — zero CLS.
 ### 2.4 What this hero does that the current one doesn't
 
 1. Tells you what it is (H1 — unchanged)
-2. Tells you the *one fact only Akashik has* (claim line — NEW)
+2. Tells you the *one fact only Folklore has* (claim line — NEW)
 3. Tells you the philosophy (sub line — same content, demoted)
 4. Shows you the product working (gif — replaces canvas)
 5. Lowers the install threshold (3-channel install strip — NEW above the fold)
@@ -320,9 +320,9 @@ const block    = document.getElementById('install-code');
 const copyBtn  = document.getElementById('install-copy');
 
 const commands = {
-  git:      '$ git clone https://github.com/twocirclestudios/akashik.git\n$ cd akashik && npm install && npm run bootstrap',
-  npm:      '$ npx -y akashik init',
-  homebrew: '$ brew install twocirclestudios/akashik/akashik',
+  git:      '$ git clone https://github.com/twocirclestudios/folklore.git\n$ cd folklore && npm install && npm run bootstrap',
+  npm:      '$ npx -y folklore init',
+  homebrew: '$ brew install twocirclestudios/folklore/folklore',
 };
 
 let active = 'git';
@@ -419,14 +419,14 @@ trust priming).
 ```html
 <div class="hero-ctas" data-reveal style="--d: 3">
   <a class="counter" id="counter-peers"
-     href="https://github.com/twocirclestudios/akashik">
+     href="https://github.com/twocirclestudios/folklore">
     · <span data-counter="peers">—</span> peers online
   </a>
   <a class="counter" id="counter-domains"
      href="#arch">
     · <span data-counter="domains">—</span> domains indexed
   </a>
-  <a class="btn btn-primary" href="https://github.com/twocirclestudios/akashik">
+  <a class="btn btn-primary" href="https://github.com/twocirclestudios/folklore">
     ☆ Star on GitHub
     <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
       <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.6"
@@ -669,7 +669,7 @@ Anchor: `#how`. Position: between Demo (`#demo`) and Quickstart
 
 ### 4.1 Section header
 
-> **How Akashik hooks into your workflow**
+> **How Folklore hooks into your workflow**
 >
 > Three things make the network compound. None of them are tool-calls.
 
@@ -679,9 +679,9 @@ Anchor: `#how`. Position: between Demo (`#demo`) and Quickstart
 > tool-call path. That means the LLM has to decide it needs context
 > before it gets context.
 >
-> Akashik registers a `UserPromptSubmit` hook with Claude Code
+> Folklore registers a `UserPromptSubmit` hook with Claude Code
 > (Codex, Gemini, and any MCP host work the same way). When you type
-> a message, the hook runs `akashik ask` against your local
+> a message, the hook runs `folklore ask` against your local
 > graph — and injects the top matches as `additionalContext` before
 > the LLM reads a single token of your prompt.
 
@@ -692,12 +692,12 @@ Anchor: `#how`. Position: between Demo (`#demo`) and Quickstart
 > same library failure three days ago. None of that is in any
 > foundation model — it happened after the training cut.
 >
-> Akashik's graph holds it, ranks it by freshness and provenance,
+> Folklore's graph holds it, ranks it by freshness and provenance,
 > and surfaces it in 11 ms p50.
 
 ### 4.4 Step 03 — `Every peer makes the network smarter`
 
-> When your session ends, Akashik indexes your transcript back
+> When your session ends, Folklore indexes your transcript back
 > into the graph. When a peer in your network asks a related question
 > tomorrow, your work answers it — cited, signed, attributed.
 >
@@ -710,8 +710,8 @@ turns visitor-into-user):
 
 ```bash
 # wire it once, globally:
-claude mcp add --scope user akashik -- akashik mcp
-akashik claude install
+claude mcp add --scope user folklore -- folklore mcp
+folklore claude install
 # every project gets it. no per-repo config.
 ```
 
@@ -739,8 +739,8 @@ undersized, the install command still uses the bash form.
 │   You are the next peer. Every query you answer adds to what      │
 │   the whole network knows.                                        │
 │                                                                   │
-│   $ git clone https://github.com/twocirclestudios/akashik.git│
-│   $ cd akashik && npm install && npm run bootstrap           │
+│   $ git clone https://github.com/twocirclestudios/folklore.git│
+│   $ cd folklore && npm install && npm run bootstrap           │
 │                                                                   │
 │   [ ☆ Star on GitHub ]   [ Join Discussions ]                    │
 │                                                                   │
@@ -762,13 +762,13 @@ undersized, the install command still uses the bash form.
 **Install block** (same npm flow as the hero — repeat is intentional, the visitor scrolled here to copy):
 
 ```
-$ git clone https://github.com/twocirclestudios/akashik.git
-$ cd akashik && npm install && npm run bootstrap
+$ git clone https://github.com/twocirclestudios/folklore.git
+$ cd folklore && npm install && npm run bootstrap
 ```
 
 **CTA pair:**
-- Primary: `☆ Star on GitHub` → `https://github.com/twocirclestudios/akashik`
-- Ghost: `Join Discussions` → `https://github.com/twocirclestudios/akashik/discussions`
+- Primary: `☆ Star on GitHub` → `https://github.com/twocirclestudios/folklore`
+- Ghost: `Join Discussions` → `https://github.com/twocirclestudios/folklore/discussions`
   (use Discord URL if/when one exists; until then, GitHub Discussions
   is the default community surface)
 
@@ -776,9 +776,9 @@ $ cd akashik && npm install && npm run bootstrap
 > MIT · no account · no API key · no cloud · CPU-only
 
 **Live signals (small, mono, ink-mute):**
-- `shields.io/github/stars/twocirclestudios/akashik?style=social`
-- `shields.io/github/v/release/twocirclestudios/akashik`
-- (optional) `shields.io/npm/v/akashik` once published
+- `shields.io/github/stars/twocirclestudios/folklore?style=social`
+- `shields.io/github/v/release/twocirclestudios/folklore`
+- (optional) `shields.io/npm/v/folklore` once published
 
 ---
 
@@ -791,7 +791,7 @@ or the section reorder.
 
 Current (`docs/index.html` ~line 1042):
 ```html
-<img src="https://raw.githubusercontent.com/SaharBarak/akashik/main/demo/scene-claude.gif" …>
+<img src="https://raw.githubusercontent.com/SaharBarak/folklore/main/demo/scene-claude.gif" …>
 ```
 
 New:
@@ -801,7 +801,7 @@ New:
      decoding="async"
      width="1000"
      height="auto"
-     alt="Side-by-side: Claude alone (~14s, hedged) vs Claude + Akashik (~1.5s, cited)">
+     alt="Side-by-side: Claude alone (~14s, hedged) vs Claude + Folklore (~1.5s, cited)">
 ```
 
 Same fix applies to the second gif (`scene-prompt-hook.gif`) when it's
@@ -845,7 +845,7 @@ paragraphs, ~120 words total:
 
 1. Keep: "ten thousand people published the thing you actually need
    yesterday, none of whom got asked" paragraph (the inequality framing)
-2. Keep: "Akashik open-sources the knowledge graph itself" close
+2. Keep: "Folklore open-sources the knowledge graph itself" close
 3. Drop: the rest
 
 The full manifesto becomes a separate `docs/manifesto.html` page,
@@ -865,7 +865,7 @@ the next commit until the previous one is approved.
 - Add hero install strip (npm-only)
 - Rewrite CTAs (`See it in 60 seconds`, `Star on GitHub`)
 - Update meta strip (4 stats — keep current)
-- Update repo references to `twocirclestudios/akashik`
+- Update repo references to `twocirclestudios/folklore`
 - Drop Three.js import + scene code (~1000 LOC removed)
 - Hero section only — leave the rest of the page untouched
 
@@ -911,9 +911,9 @@ Commit 3 is polish-only, ships cleanly once 1+2 are accepted.
 These need a one-line answer each. Capturing here so we don't get
 stuck mid-execution:
 
-1. **Repo migration timing.** Is `twocirclestudios/akashik` live
+1. **Repo migration timing.** Is `twocirclestudios/folklore` live
    yet? If not, do we ship the redesign with the new org URLs (links
-   404 until upload) or keep `SaharBarak/akashik` until the move
+   404 until upload) or keep `SaharBarak/folklore` until the move
    is done?
    - Recommended: do the migration FIRST (push to new org), then ship
      redesign with correct URLs. Otherwise we'd ship dead links to HN.
@@ -936,10 +936,10 @@ stuck mid-execution:
    - Recommended: keep `<img>` and accept the 2.2.2 finding for now;
      revisit if we add a third gif or extend to >30 s.
 
-5. **npm package name.** Will we publish as `akashik` or
-   `@twocircle/akashik` (scoped)?
-   - Recommended: try `akashik` first — short, memorable. If
-     taken on npm, fall back to `@twocircle/akashik`.
+5. **npm package name.** Will we publish as `folklore` or
+   `@twocircle/folklore` (scoped)?
+   - Recommended: try `folklore` first — short, memorable. If
+     taken on npm, fall back to `@twocircle/folklore`.
 
 6. **Live-counter polling cadence.** §2.6 (round-3 update) specifies
    the hero counters are LIVE — polling `/api/stats` every 30 s,
@@ -957,12 +957,12 @@ stuck mid-execution:
    URL until a `/network` page exists. Build that page now, or ship
    with the repo-link fallback and add it post-launch?
    - Recommended: ship with repo-link fallback. The page is a
-     cheap follow-up — JSON dump of `akashik peer list --json`
+     cheap follow-up — JSON dump of `folklore peer list --json`
      pretty-printed in a `/network/index.html` static file, regenerated
      by the same cron that writes `/_counters.json`.
 
 8. **Homebrew tap.** §2.5 surfaces `brew install
-   twocirclestudios/akashik/akashik` as one of the three
+   twocirclestudios/folklore/folklore` as one of the three
    install channels. Does the tap exist? If not, do we (a) ship the
    pill with Homebrew shown today and a "coming soon" footnote, or
    (b) hide the Homebrew segment until the tap is published?
@@ -972,11 +972,11 @@ stuck mid-execution:
      for v1; restore Homebrew as a third segment when ready.
 
 9. **Live-demo server hosting.** §11 needs a public `POST /api/ask`
-   endpoint that runs `akashik ask --peers --json` against the
+   endpoint that runs `folklore ask --peers --json` against the
    bootstrap node. Hosted as a Cloudflare Worker (proxying to a Fly.io
    bootstrap host), Vercel Edge function, or a small VPS / Fly.io node
    running the daemon directly?
-   - Recommended: Fly.io node running `akashik daemon` + a thin
+   - Recommended: Fly.io node running `folklore daemon` + a thin
      `/api/ask` HTTP wrapper. Simplest path — the daemon already
      exists; we just expose one method. Cloudflare Worker fronts it
      for rate limiting + TLS + edge cache on `/_graph.json`.
@@ -985,7 +985,7 @@ stuck mid-execution:
     founder's laptop is wrong (uptime, WAN exposure). A dedicated VM
     is right. What's its DID, and is the cost (~$5/mo Fly.io) okay?
     - Recommended: dedicated Fly.io 256 MB shared-cpu instance
-      ($1.94/mo) running `akashik daemon`. Generates a fresh
+      ($1.94/mo) running `folklore daemon`. Generates a fresh
       did:key on first boot, persisted to a Fly volume.
 
 11. **Demo-content room.** §11 suggests loading a `demo-content`
@@ -1082,7 +1082,7 @@ spec?* If the spec is wrong, edit this file before changing the code.
 ## 11 · "Ask the network" — live 3D graph + federated query (NEW section)
 
 This is the section that turns the page from sales artifact into live
-product demo. Visitors don't read about Akashik — they query the
+product demo. Visitors don't read about Folklore — they query the
 real network from the page. Section anchor: `#try`. Position: 3 (between
 the gif demo and "How it works").
 
@@ -1094,7 +1094,7 @@ A two-column live demo:
   knowledge graph (toolshed + research rooms + public demo content).
   Nodes pulse and edges glow when a query touches them.
 - **Right:** a query input + results panel. Visitor types a question.
-  The page fires `POST /api/ask`, the server runs `akashik ask
+  The page fires `POST /api/ask`, the server runs `folklore ask
   --peers --json` against the federation, results stream back with
   per-peer attribution and timing. The graph nodes that answered
   light up.
@@ -1239,7 +1239,7 @@ has more, server-side downsamples to keep the visual readable.
 | Submitted  | input disabled (1.5 s max), shimmer animation under input border |
 | Streaming  | results cards animate in one at a time as `chunks[i]` arrives |
 | Complete   | total-latency line renders at the bottom, input re-enabled, focus restored |
-| Error      | inline message: `couldn't reach the network — try again? (or run `akashik ask` locally)` |
+| Error      | inline message: `couldn't reach the network — try again? (or run `folklore ask` locally)` |
 | Rate-limited | inline message: `you've hit the demo rate limit — install to keep asking` + link to `#install` |
 
 **Suggested-query chips** (below the input on idle, click-to-fill):
@@ -1278,7 +1278,7 @@ The live demo needs two endpoints. Both are public, both rate-limited.
 
 **`POST /api/ask`**
 - Body: `{ "query": "string" }`
-- Runs `akashik ask --peers --json --k 5` server-side against the
+- Runs `folklore ask --peers --json --k 5` server-side against the
   bootstrap node's daemon
 - Returns:
   ```json

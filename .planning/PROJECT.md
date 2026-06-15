@@ -1,4 +1,4 @@
-# akashik
+# folklore
 
 ## What This Is
 
@@ -31,7 +31,7 @@ Your coding agent answers from your actual research and codebase, not its traini
 ### Active
 
 - [ ] Telegram bridge (inbound capture + outbound digests)
-- [ ] npm publish (so users can `npx akashik init`)
+- [ ] npm publish (so users can `npx folklore init`)
 - [ ] CI/CD (GitHub Actions: test on push, build check, auto-release)
 - [ ] More adapters (Reddit, Dev.to, Product Hunt)
 - [ ] Graphify visualization (HTML graph + Leiden clustering via Python sidecar)
@@ -48,9 +48,9 @@ Your coding agent answers from your actual research and codebase, not its traini
 ## Context
 
 - TypeScript + ESM, Node 20+, functional DDD with neverthrow Result monads
-- Graphify vendored as submodule (saharbarak/graphify, akashik branch)
-- Python 3.10+ venv for graphify sidecar at ~/.akashik/venv
-- All runtime state under ~/.akashik/
+- Graphify vendored as submodule (saharbarak/graphify, folklore branch)
+- Python 3.10+ venv for graphify sidecar at ~/.folklore/venv
+- All runtime state under ~/.folklore/
 - 29 commits, 27 tests, 492 nodes in production graph
 - Libraries verified via gh API + ossinsight before selection
 - taste-skill + copywriting skill installed for design + marketing
@@ -75,20 +75,23 @@ Your coding agent answers from your actual research and codebase, not its traini
 | sequenceLazy thunks | Eager ResultAsync map races on shared state | ✓ Good (caught in Phase 2 acceptance test) |
 | PreToolUse hook for graph awareness | Makes Claude use the graph automatically, no explicit ask | ✓ Good |
 
-## Current Milestone: v2.0 P2P Knowledge Graph
+## Current Milestone: v3.0 Folklore Launch
 
-**Goal:** Transform akashik from a single-user tool into a distributed P2P network where nodes share graph fragments, enabling collective intelligence across developers.
+**Goal:** Take the renamed Folklore engine public under the `usefolklore` org with a clean, launch-ready repository and folk-pop product surfaces — strip the inherited tooling cruft, tidy the ML/benchmark code, restructure the repo akashikprotocol-clean, and finish the site, merch, and autonomous meme-agent.
 
 **Target features:**
-- Peer identity + manual peer management (ed25519 keypair, `peer add/remove/list`)
-- Room-level sharing (public/private rooms, Y.js CRDT sync)
-- Federated search (cross-peer semantic search + tunnel detection)
-- Production networking (js-libp2p transport, encryption, mDNS discovery)
+- Model/repo cleanup: strip ruflo/claude-flow cruft; tidy ML/embedding + benchmark code; clean 3-tier model-routing config
+- Clean, org-ready repository structure (src domains, docs, tests, spec, site, examples)
+- Docs: BENCHMARKS page (real BEIR/FolkloreBench-F numbers); extend RFCs
+- Site (folk-pop, Cloudflare Pages): composition + mobile sweep, Guidebook + Platform Culture sections, real Store
+- Merch product designs from the folk art
+- Autonomous Twitter meme-agent scaffold (gen → post → site /store)
 
-**Key libraries (verified via gh API):**
-- Y.js (21.6K stars, pushed Apr 11) — CRDT for room-level state sync
-- js-libp2p (2.5K stars, pushed Apr 11) — P2P networking + transport
-- Hyperswarm (1.3K stars) — DHT-based peer discovery (alternative)
+**Brand:** Folklore · org usefolklore · palette cream #f4ecd8 / ink #1d1813 / pink #ff4f6d / blue #2b3a8c / yellow #f5b921 / teal #1fae8b · Fraunces + Geist Mono · hard sticker shadows, misregistered headers.
+
+**Deploy:** Cloudflare Pages only (`wrangler.toml`, output `site/`).
+
+**Blocked on user (tracked, NOT in execution scope):** higgsfield credit top-up (art animation), GitHub org `usefolklore` creation, Cloudflare auth + usefolklore.com domain, $LORE token launch on bags.fm, X API credentials.
 
 ---
-*Last updated: 2026-04-12 after milestone v2.0 initialization*
+*Last updated: 2026-06-15 after milestone v3.0 initialization*

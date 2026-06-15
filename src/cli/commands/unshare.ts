@@ -1,21 +1,21 @@
 /**
- * `akashik unshare <peer>` — V5 peer-removal command.
+ * `folklore unshare <peer>` — V5 peer-removal command.
  *
  * Removes a peer from peers.json so the daemon's share-sync tick stops
  * opening outbound streams to it. The peer's locally-imported nodes are
  * kept in the graph (they're already on disk and harmless once cut off).
  *
  * Per-topic unsharing does not exist in V5 — to stop sharing a specific
- * node, mark it `private: true` via `akashik save --private`.
+ * node, mark it `private: true` via `folklore save --private`.
  */
 import { join } from 'node:path';
 import { formatError } from '../../domain/errors.js';
 import { loadPeers, mutatePeers, removePeerRecord } from '../../infrastructure/peer-store.js';
-import { akashikHome } from '../runtime.js';
+import { folkloreHome } from '../runtime.js';
 
-const peersPath = (): string => join(akashikHome(), 'peers.json');
+const peersPath = (): string => join(folkloreHome(), 'peers.json');
 
-const USAGE = `usage: akashik unshare <peer-id>
+const USAGE = `usage: folklore unshare <peer-id>
 
 Removes the peer from peers.json so the daemon stops syncing to it.
 Locally-imported nodes from that peer are retained.`;
@@ -42,6 +42,6 @@ export const unshare = async (args: readonly string[]): Promise<number> => {
     return 1;
   }
   console.log(`unshare '${peerId}': removed from peers.json`);
-  console.log("  restart the daemon (`akashik daemon stop && start`) to close any active share streams");
+  console.log("  restart the daemon (`folklore daemon stop && start`) to close any active share streams");
   return 0;
 };

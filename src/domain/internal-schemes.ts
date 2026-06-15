@@ -1,6 +1,6 @@
 /**
  * Internal URI scheme registry — single source of truth for which
- * non-http/https URI prefixes akashik recognises as legitimate
+ * non-http/https URI prefixes folklore recognises as legitimate
  * opaque identifiers rather than network URLs.
  *
  * Used by:
@@ -44,7 +44,7 @@ export const OPAQUE_INTERNAL_PREFIXES = [
   'oracle-answer:',
   // Claude Code capture
   'claude-session:',
-  // User-saved typed notes via `akashik save --type ...`. These
+  // User-saved typed notes via `folklore save --type ...`. These
   // are first-class shareable content — synthesis / concept / decision
   // / source — and produce ids like concept://YYYY-MM-DD/slug. Allow
   // them across the validator so peers can replicate them through

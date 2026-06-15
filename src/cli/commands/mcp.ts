@@ -1,5 +1,5 @@
 /**
- * `akashik mcp start` — start the MCP stdio server.
+ * `folklore mcp start` — start the MCP stdio server.
  *
  * Spawned by Claude Code via `.claude-plugin/plugin.json` or
  * manually by the user for debugging. Runs until the transport

@@ -1,4 +1,4 @@
-# GitHub Star Growth Research — Applied to Akashik
+# GitHub Star Growth Research — Applied to Folklore
 
 ## Sources consulted
 
@@ -20,9 +20,9 @@
 4. **Competitor keywords for discoverability**: "Open-source alternative to Obsidian knowledge graphs + Feedly + Readwise" — SEO + category positioning.
 5. **Quick start in 3 commands**: clone → install → doctor. Then 4 follow-up commands showing real output.
 6. **Feature table with emoji**: Scannable, not walls of text. 10 features, each one line.
-7. **Real-world results with actual output**: Not synthetic demos — the literal output of running Akashik on itself.
+7. **Real-world results with actual output**: Not synthetic demos — the literal output of running Folklore on itself.
 8. **Star history chart**: Dark/light mode responsive, ~15% conversion lift per research.
-9. **CTA at the bottom**: "If Akashik saves you from re-Googling something you already read, give it a star."
+9. **CTA at the bottom**: "If Folklore saves you from re-Googling something you already read, give it a star."
 10. **Contributing with SLA**: "We respond within 48 hours" — credibility signal.
 
 ### Stats that matter (from research)
@@ -37,7 +37,7 @@
 ### Launch checklist (derived from research)
 
 - [ ] README rewritten with hooks (done)
-- [ ] Post on Hacker News (Show HN: Akashik — a knowledge graph Claude Code plugin fed by ArXiv, HN, and your codebase)
+- [ ] Post on Hacker News (Show HN: Folklore — a knowledge graph Claude Code plugin fed by ArXiv, HN, and your codebase)
 - [ ] Post on Reddit r/ClaudeAI, r/MachineLearning, r/opensource
 - [ ] Post on X/Twitter with a thread showing the terminal output
 - [ ] Submit to JS Weekly / Node Weekly

@@ -1,4 +1,4 @@
-# akashik v2.0 — Benchmark Report
+# folklore v2.0 — Benchmark Report
 
 **Run date:** 2026-04-13
 **Machine:** macOS 26.3 (arm64)
@@ -6,7 +6,7 @@
 **Memory:** 32 GB
 **Node:** v25.6.1
 **SQLite:** 3.51.0
-**akashik:** 1.0.0 (v2.0 milestone — 5 phases shipped)
+**folklore:** 1.0.0 (v2.0 milestone — 5 phases shipped)
 
 ---
 
@@ -21,7 +21,7 @@
 | Code graph size | 374 MB (includes FTS indices + WAL) |
 | Indexed codebases | 5 |
 | Room ↔ codebase attaches | 5 |
-| Research rooms | 5 (akashik-dev, p2p-llm, tlvtech, forge, auto-tlv) |
+| Research rooms | 5 (folklore-dev, p2p-llm, tlvtech, forge, auto-tlv) |
 
 ---
 
@@ -43,7 +43,7 @@ Phase coverage:
 
 ## 2. Retrieval Quality — Full BEIR v1 + SOTA Progression
 
-**Methodology correction (2026-04-13):** An earlier version of this report cited a 96.8% NDCG@10 from a 15-passage × 10-query mini-harness. That sample size is too small to produce leaderboard-comparable numbers. We re-ran the benchmark against **full BEIR v1 datasets** using the exact same ONNX pipeline akashik uses at runtime. Every number below is directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
+**Methodology correction (2026-04-13):** An earlier version of this report cited a 96.8% NDCG@10 from a 15-passage × 10-query mini-harness. That sample size is too small to produce leaderboard-comparable numbers. We re-ran the benchmark against **full BEIR v1 datasets** using the exact same ONNX pipeline folklore uses at runtime. Every number below is directly comparable to the [MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
 
 ### SOTA progression — 4 waves, measured
 
@@ -55,7 +55,7 @@ Phase coverage:
 | Wave 3 | + `Xenova/bge-reranker-base` cross-encoder rerank top-100 | 70.38% | **−1.92** | 25,940 ms | ✗ Failed — see §2b |
 | Wave 4 | + Room-aware retrieval (oracle routing, CQADupStack) | — | **+0.34** | 132 ms | ✗ Null — see §2c |
 
-**Wave 2 (72.30%) is the measured CPU-local SOTA ceiling for akashik.** Both Wave 3 and Wave 4 were honest attempts at principled mechanisms from the 2024-2025 literature (MS-MARCO reranker, RouterRetriever-style partition awareness). Both produced measurable null results on standardized benchmarks. They're documented below so readers can verify the claim and avoid the same dead ends.
+**Wave 2 (72.30%) is the measured CPU-local SOTA ceiling for folklore.** Both Wave 3 and Wave 4 were honest attempts at principled mechanisms from the 2024-2025 literature (MS-MARCO reranker, RouterRetriever-style partition awareness). Both produced measurable null results on standardized benchmarks. They're documented below so readers can verify the claim and avoid the same dead ends.
 
 ### Wave 2 context — where 72.30% lands on the real leaderboard
 
@@ -63,7 +63,7 @@ Phase coverage:
 |-------|--------|-----------------|---------|
 | BM25 (Anserini) | — | 66.5 | CPU |
 | nomic-embed-text-v1.5 (dense only) | 137M | ~71 | CPU |
-| **akashik Wave 2 (nomic + BM25 RRF)** | **137M** | **72.30** | **CPU, 36 ms** |
+| **folklore Wave 2 (nomic + BM25 RRF)** | **137M** | **72.30** | **CPU, 36 ms** |
 | E5-base-v2 (dense only) | 109M | 73.1 | CPU |
 | bge-base-en-v1.5 (dense only) | 110M | 74.0 | CPU |
 | bge-large-en-v1.5 (dense only) | 335M | 74.6 | CPU |
@@ -85,7 +85,7 @@ Wave 2 lands **~2 points below the best dense-only encoders** at roughly equival
 
 ### 2d. Xenova ONNX port quality — measured, confirmed defective
 
-**Hypothesis:** the ~10-13 NDCG@10 gap between our Xenova-based bench and published numbers on bge-base (and the smaller ArguAna gap on nomic) is caused by Xenova's own ONNX conversions, not by our pipeline code. To test: run the exact same BEIR benchmark via a completely independent Rust crate (`akashik-rs/`) using `fastembed-rs`, which downloads its own ONNX weights (Qdrant-published) rather than Xenova's.
+**Hypothesis:** the ~10-13 NDCG@10 gap between our Xenova-based bench and published numbers on bge-base (and the smaller ArguAna gap on nomic) is caused by Xenova's own ONNX conversions, not by our pipeline code. To test: run the exact same BEIR benchmark via a completely independent Rust crate (`folklore-rs/`) using `fastembed-rs`, which downloads its own ONNX weights (Qdrant-published) rather than Xenova's.
 
 **Result: confirmed.** Same dataset, same encoder, same RRF-free dense-only cosine retrieval, two independent ONNX ports.
 
@@ -109,7 +109,7 @@ Wave 2 lands **~2 points below the best dense-only encoders** at roughly equival
 | MRR | **0.6111** | 0.6039 |
 | Indexing | **19 docs/sec** | 19 docs/sec |
 
-Quality tied within 0.45 NDCG (noise-level), **throughput identical at 19 docs/sec** — confirming that on correctly-ported weights both runtimes produce equivalent results. Rewriting akashik in Rust is NOT a performance lever at the inference layer; both runtimes drive the same native ONNX Runtime, and the language overhead is negligible.
+Quality tied within 0.45 NDCG (noise-level), **throughput identical at 19 docs/sec** — confirming that on correctly-ported weights both runtimes produce equivalent results. Rewriting folklore in Rust is NOT a performance lever at the inference layer; both runtimes drive the same native ONNX Runtime, and the language overhead is negligible.
 
 **The real Rust win** is elsewhere:
 - **Weight quality selection.** `fastembed` pulls Qdrant-curated ONNX conversions that have been validated. Xenova's library auto-downloads whatever is in the `Xenova/` namespace, which is not quality-gated.
@@ -122,7 +122,7 @@ Quality tied within 0.45 NDCG (noise-level), **throughput identical at 19 docs/s
 
 ### 2e. Phase 24-25 — Rust inference sidecar ships, FULL gate passed
 
-Picked Action item 1(c). Shipped `akashik-rs/src/bin/embed_server.rs` — a long-lived Rust binary speaking stdio JSON-RPC, with a matching TypeScript adapter `rustSubprocessEmbedder` in `src/infrastructure/embedders.ts`. Production akashik now routes embeddings through Rust via `AKASHIK_EMBEDDER_BACKEND=rust` env var — no MCP/CLI/daemon changes, just the encoder port swap.
+Picked Action item 1(c). Shipped `folklore-rs/src/bin/embed_server.rs` — a long-lived Rust binary speaking stdio JSON-RPC, with a matching TypeScript adapter `rustSubprocessEmbedder` in `src/infrastructure/embedders.ts`. Production folklore now routes embeddings through Rust via `FOLKLORE_EMBEDDER_BACKEND=rust` env var — no MCP/CLI/daemon changes, just the encoder port swap.
 
 **Phase 25 gate measured via the full production `searchHybrid` path:**
 
@@ -148,7 +148,7 @@ Picked Action item 1(c). Shipped `akashik-rs/src/bin/embed_server.rs` — a long
 
 **Why 75.22% beats the published 74.04%:** the published number is dense-only; our pipeline stacks BM25 + RRF hybrid on top via the Phase 23 `searchHybrid` port in `src/infrastructure/vector-index.ts`. The +1.2 lift over dense-only matches the typical hybrid gain on SciFact and is reproducible.
 
-**What this means for v2.1:** Path B Phase 25 is a proven, shippable configuration. Users who set `AKASHIK_EMBEDDER_BACKEND=rust AKASHIK_EMBEDDER_MODEL=bge-base` get +11.93 NDCG@10 on SciFact-class workloads with zero changes to the MCP server, CLI, daemon, or P2P layer — just a new env var and a prebuilt Rust binary.
+**What this means for v2.1:** Path B Phase 25 is a proven, shippable configuration. Users who set `FOLKLORE_EMBEDDER_BACKEND=rust FOLKLORE_EMBEDDER_MODEL=bge-base` get +11.93 NDCG@10 on SciFact-class workloads with zero changes to the MCP server, CLI, daemon, or P2P layer — just a new env var and a prebuilt Rust binary.
 
 Phases 27 + 28 + 29 code are committed but pending measurement (RNG tunnel speedup vs TS findTunnels, pilot-centroid routing lift on CQADupStack, CI regression bar on the fixture corpus).
 
@@ -162,7 +162,7 @@ Phases 27 + 28 + 29 code are committed but pending measurement (RNG tunnel speed
 
 One invocation of `scripts/bench-lab.mjs` sweeps **8 Matryoshka dims × 3 quantizations × {dense, hybrid} × 4 BEIR datasets = 192 configurations** using the already-cached Xenova-nomic corpus vectors from the Wave 2 `sota.db` files. Corpus is never re-embedded — the lab only re-embeds queries (~100s total across 4 datasets).
 
-**The original SciFact-only Matryoshka gate** (`scripts/bench-matryoshka.mjs`, Phase 31) was dense-only and returned NULL at every dim below 768. This was misleading: production akashik runs hybrid RRF by default, and the lab shows that BM25 fusion **rescues** truncation loss at almost every dim.
+**The original SciFact-only Matryoshka gate** (`scripts/bench-matryoshka.mjs`, Phase 31) was dense-only and returned NULL at every dim below 768. This was misleading: production folklore runs hybrid RRF by default, and the lab shows that BM25 fusion **rescues** truncation loss at almost every dim.
 
 **Shippable Pareto frontier** (worst-case Δ NDCG@10 across SciFact + ArguAna + FiQA + SciDocs, **hybrid pipeline**):
 
@@ -198,12 +198,12 @@ Numbers in the ArguAna row are dense-ceiling comparisons; ArguAna hybrid at ever
 node scripts/bench-lab.mjs --datasets scifact,arguana,fiqa,scidocs
 
 # Results include per-dataset tables + Pareto frontier + cross-dataset shippable summary
-# Machine-readable JSON: ~/.akashik/bench/lab/results-<timestamp>.json
+# Machine-readable JSON: ~/.folklore/bench/lab/results-<timestamp>.json
 ```
 
 ### 2g. Cross-model embedding bridge gate — PASS at 91.9% retention (Phase 32)
 
-Hypothesis: a linear map W: bge → nomic lets a peer running a BGE embedder retrieve documents indexed under a nomic embedder at ≥85% of native-nomic retrieval quality. If true, akashik peers can federate across heterogeneous encoder choices — the interop claim no OSS P2P memory currently makes.
+Hypothesis: a linear map W: bge → nomic lets a peer running a BGE embedder retrieve documents indexed under a nomic embedder at ≥85% of native-nomic retrieval quality. If true, folklore peers can federate across heterogeneous encoder choices — the interop claim no OSS P2P memory currently makes.
 
 **Method:** 5,183 paired SciFact corpus vectors extracted from existing bench `sota.db` caches (nomic + bge-Xenova, both 768d). Ridge-regularized least squares closed form — W = (XᵀX + λI)⁻¹ XᵀY, λ=0.01 — implemented as pure Float64Array Gauss-Jordan elimination. 12s solve, zero new deps. Training MSE on held-in sample: **1.58×10⁻⁴**.
 
@@ -229,7 +229,7 @@ Hypothesis: a linear map W: bge → nomic lets a peer running a BGE embedder ret
 ```bash
 # Uses existing sota.db caches (both encoders)
 node scripts/bench-bridge.mjs
-# Machine-readable JSON: ~/.akashik/bench/bridge-scifact/results.json
+# Machine-readable JSON: ~/.folklore/bench/bridge-scifact/results.json
 ```
 
 **Next gates** (for the full v3 interop claim):
@@ -249,12 +249,12 @@ Not a retrieval benchmark — infrastructure that makes the memory user-owned ra
 
 **Measured properties** (32 tests, 293-test regression green):
 - did:key encode/decode: W3C-shape stable round-trip, sub-µs
-- Domain separation: `akashik-auth:v1:` vs `akashik-sig:v1:` prefix tags prevent cross-message signature replay
+- Domain separation: `folklore-auth:v1:` vs `folklore-sig:v1:` prefix tags prevent cross-message signature replay
 - Canonical JSON: key-order invariant, deterministic byte identity across runtimes
 - Cross-device verification proven: envelope signed on device A verifies on freshly-imported device B under the same user DID. Export recovery hex → import on new device → memory identity survives.
 
 **Production path:**
-- `akashik identity {init|show|rotate|export|import}` CLI shipped
+- `folklore identity {init|show|rotate|export|import}` CLI shipped
 - `src/application/identity-bridge.ts` exposes the process-wide `signForCurrentDevice` / `verifyIncomingEnvelope` seam for downstream modules (search-sync, share-sync, touch, save, session-ingest) to integrate against
 - Zero new deps — Ed25519 via Node built-in `crypto` (PKCS8/SPKI DER path)
 
@@ -290,7 +290,7 @@ Not a retrieval benchmark — infrastructure that makes the memory user-owned ra
 The category-defining v4 lever: episodic→semantic distillation as a reusable OSS primitive. Pure clustering math + LLM summary + signed envelope wrap, end-to-end. No other OSS memory framework ships this.
 
 **Setup**
-- Corpus: live akashik `sessions` room — 7,002 raw Claude Code transcript entries (`graph.json` snapshot 2026-04-18)
+- Corpus: live folklore `sessions` room — 7,002 raw Claude Code transcript entries (`graph.json` snapshot 2026-04-18)
 - Clusterer: `findClusters` (Phase 4a, `src/domain/consolidated-memory.ts`), greedy seed-grow over cosine
 - Parameters: `similarity_threshold=0.8`, `min_size=5`, `max_size=200`
 - Distiller: local Ollama `qwen2.5:1.5b` via `src/infrastructure/ollama-client.ts`
@@ -322,7 +322,7 @@ Path forward (v4.1):
 
 **What ships in v4.0**
 
-- The consolidation primitive: `akashik consolidate run <room>` works end-to-end.
+- The consolidation primitive: `folklore consolidate run <room>` works end-to-end.
 - The storage gate is **measured PASS at 6.29× on a 7K-entry real corpus.**
 - The 5×-gate threshold from the v4 plan is met. The 10× tentpole aspiration is missed by 38%.
 - Quality preservation is documented as caveat. The gate harness ships so adopters can measure their own corpus; the production retention path that completes the win is v4.1 work.
@@ -374,7 +374,7 @@ node scripts/debug-reranker.mjs                              # one-pair sanity c
 
 ### 2c. Wave 4 — Room-aware retrieval produced a NULL result
 
-**Hypothesis:** akashik's user-curated "rooms" (topic partitions) + cross-room "tunnels" could be a retrieval scoring signal, not just a filter. Per the 2024-2025 literature (RouterRetriever AAAI 2025, HippoRAG NeurIPS 2024, LexBoost SIGIR 2024, MixPR Dec 2024), partition-aware routing has published lift on BEIR (+2.1 to +3.2 NDCG@10) and multi-hop QA (+5 to +14 R@5).
+**Hypothesis:** folklore's user-curated "rooms" (topic partitions) + cross-room "tunnels" could be a retrieval scoring signal, not just a filter. Per the 2024-2025 literature (RouterRetriever AAAI 2025, HippoRAG NeurIPS 2024, LexBoost SIGIR 2024, MixPR Dec 2024), partition-aware routing has published lift on BEIR (+2.1 to +3.2 NDCG@10) and multi-hop QA (+5 to +14 R@5).
 
 **Gate test:** Before engineering a learned router, run the **upper bound** — oracle routing using gold topic labels — on a multi-topic benchmark. If oracle doesn't beat flat hybrid by ≥3 NDCG@10 points, rooms cannot be a retrieval signal in our setup, and engineering a router is wasted effort.
 
@@ -419,16 +419,16 @@ Per-room NDCG@10 breakdown (flat → oracle):
 ```bash
 # Download CQADupStack (5.3 GB)
 curl -fsL -o cqa.zip https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/cqadupstack.zip
-unzip -oq cqa.zip -d ~/.akashik/bench/cqadupstack/
+unzip -oq cqa.zip -d ~/.folklore/bench/cqadupstack/
 
 # Run the gate test
 node scripts/bench-room-routing.mjs \
-  --datasets-dir ~/.akashik/bench/cqadupstack/cqadupstack \
+  --datasets-dir ~/.folklore/bench/cqadupstack/cqadupstack \
   --rooms mathematica,webmasters,gaming \
   --model Xenova/all-MiniLM-L6-v2 --dim 384
 ```
 
-**Strategic conclusion:** After 4 measured waves, **Wave 2 at 72.30% NDCG@10 is the CPU-local SOTA ceiling for akashik on standard BEIR retrieval**. Further engineering should target orthogonal value (UX, security, federated P2P, structured code graph, session persistence) — not encoder stacking or router architectures that don't beat flat hybrid at our parameter budget. The honest story is better than a hypothetical one.
+**Strategic conclusion:** After 4 measured waves, **Wave 2 at 72.30% NDCG@10 is the CPU-local SOTA ceiling for folklore on standard BEIR retrieval**. Further engineering should target orthogonal value (UX, security, federated P2P, structured code graph, session persistence) — not encoder stacking or router architectures that don't beat flat hybrid at our parameter budget. The honest story is better than a hypothetical one.
 
 ### BEIR SciFact (test split) — Model comparison
 
@@ -516,12 +516,12 @@ node scripts/bench-beir.mjs scifact    # ~4 minutes
 node scripts/bench-beir.mjs nfcorpus   # ~3 minutes
 ```
 
-Raw results stored as JSON at `~/.akashik/bench/<dataset>/results.json`. Dataset downloaded from the canonical BEIR v1 source (`public.ukp.informatik.tu-darmstadt.de/thakur/BEIR`) and cached locally.
+Raw results stored as JSON at `~/.folklore/bench/<dataset>/results.json`. Dataset downloaded from the canonical BEIR v1 source (`public.ukp.informatik.tu-darmstadt.de/thakur/BEIR`) and cached locally.
 
 ### Honest assessment of quality claim
 
-1. **akashik matches the published ceiling of its embedding model.** On two BEIR datasets in two distinct domains, our pipeline extracts the retrieval quality `all-MiniLM-L6-v2` is capable of. The pipeline is correctly implemented; we're not leaving quality on the table.
-2. **The embedding model is mid-tier.** `all-MiniLM-L6-v2` is the fast/small tier (23 MB, 80 MB RAM). BGE-Large and E5-Large beat it by 5-10 NDCG points in exchange for 400+ MB RAM and 3-5× slower inference. This is a deliberate tradeoff for the local-first, no-GPU akashik use case.
+1. **folklore matches the published ceiling of its embedding model.** On two BEIR datasets in two distinct domains, our pipeline extracts the retrieval quality `all-MiniLM-L6-v2` is capable of. The pipeline is correctly implemented; we're not leaving quality on the table.
+2. **The embedding model is mid-tier.** `all-MiniLM-L6-v2` is the fast/small tier (23 MB, 80 MB RAM). BGE-Large and E5-Large beat it by 5-10 NDCG points in exchange for 400+ MB RAM and 3-5× slower inference. This is a deliberate tradeoff for the local-first, no-GPU folklore use case.
 3. **No SOTA claim.** We do not beat the BEIR leaderboard. We match the leaderboard for our chosen model. If SOTA were a goal, swapping in BGE-Large or a voyage-ai API embedder would gain ~10 NDCG points at the cost of deployment complexity.
 4. **The previous 96.8% number was small-sample luck** — 15 passages × 10 queries is too small to produce a meaningful NDCG. The mini-harness remains in the test suite as a smoke test, not as a leaderboard number.
 
@@ -543,22 +543,22 @@ Full research in [`BENCH-COMPETITORS.md`](./BENCH-COMPETITORS.md). Key takeaways
 | [MemPalace](https://github.com/milla-jovovich/mempalace) | 44.1K | LongMemEval R@5 | 96.6% raw / 100% reranked | **Inflated** — 96.6% is plain ChromaDB verbatim, not the palace architecture (issue #214) |
 | [plastic-labs/honcho](https://github.com/plastic-labs/honcho) | 2.3K | — | none published | — |
 | [mcp-memory-service](https://github.com/doobidoo/mcp-memory-service) | 1.7K | LongMemEval R@5 | 86.0% session / 80.4% turn | **Reproducible scripts in repo** — closest apples-to-apples |
-| **akashik (Wave 2)** | — | BEIR SciFact (5,183 × 300) | **72.30% NDCG@10, 79.76% R@5** | Full BEIR v1, `bench-beir-sota.mjs --hybrid`, 137M params, CPU 36ms p50 |
+| **folklore (Wave 2)** | — | BEIR SciFact (5,183 × 300) | **72.30% NDCG@10, 79.76% R@5** | Full BEIR v1, `bench-beir-sota.mjs --hybrid`, 137M params, CPU 36ms p50 |
 
 #### LOCOMO benchmark war (disclosure)
 
 mem0, Zep, memobase, Engram, and Letta all cite LOCOMO with **incompatible evaluation setups** — adversarial category inclusion, different system prompts, different LLM judges. **No single vendor's LOCOMO number can be taken at face value without independent replication.** The numbers above are the vendors' own claims, annotated with verification status.
 
-#### Honest assessment of akashik's retrieval claim
+#### Honest assessment of folklore's retrieval claim
 
-- **Wave 2 is measured, not claimed.** 72.30% NDCG@10 on BEIR SciFact is full-benchmark, 5,183 passages × 300 queries, reproducible via `node scripts/bench-beir-sota.mjs scifact --hybrid`. Machine-readable results at `~/.akashik/bench/scifact__nomic-ai-nomic-embed-text-v1-5__hybrid/results.json`.
+- **Wave 2 is measured, not claimed.** 72.30% NDCG@10 on BEIR SciFact is full-benchmark, 5,183 passages × 300 queries, reproducible via `node scripts/bench-beir-sota.mjs scifact --hybrid`. Machine-readable results at `~/.folklore/bench/scifact__nomic-ai-nomic-embed-text-v1-5__hybrid/results.json`.
 - **Leaderboard position:** within ~2 NDCG points of the best dense-only encoders at our parameter budget (bge-base-en-v1.5 = 74.0, E5-base-v2 = 73.1) and 4.4 points below GPU-required reranker stacks (monoT5-3B = 76.7). Competitive for a 137M CPU-local model.
 - **What failed, documented:** Wave 3 (cross-encoder reranker) regressed quality by 1.92 points due to MS-MARCO/scientific-text domain mismatch. Wave 4 (room-aware routing) produced a +0.34 oracle-lift on CQADupStack — statistically null. Both failures are in §2b and §2c of this report.
 - **Prior mini-harness (15 passages × 10 queries, 96.8% NDCG@10) was removed as a reportable number.** It survives as a smoke test in `npm test` only — too small to produce a leaderboard-comparable number.
 
-#### Market niche akashik occupies alone
+#### Market niche folklore occupies alone
 
-No competitor in the table above combines **all five** of: (1) multi-source heterogeneous research ingestion (ArXiv/HN/RSS/URL/codebase/deps/git), (2) native MCP with 15 tools, (3) cross-domain tunnel discovery + recursive source expansion, (4) P2P knowledge sharing via libp2p + Y.js CRDT, (5) structured code graph indexing via tree-sitter. Every other tool ships 1-2 of these; akashik ships all five.
+No competitor in the table above combines **all five** of: (1) multi-source heterogeneous research ingestion (ArXiv/HN/RSS/URL/codebase/deps/git), (2) native MCP with 15 tools, (3) cross-domain tunnel discovery + recursive source expansion, (4) P2P knowledge sharing via libp2p + Y.js CRDT, (5) structured code graph indexing via tree-sitter. Every other tool ships 1-2 of these; folklore ships all five.
 
 #### Code intelligence (Phase 19 comparison)
 
@@ -568,9 +568,9 @@ No competitor in the table above combines **all five** of: (1) multi-source hete
 | [Continue.dev](https://github.com/continuedev/continue) | 32.5K | None published | Recommends voyage-code-3 |
 | [Sourcegraph SCIP](https://github.com/sourcegraph/scip) | 593 | None published | Protocol, not a tool |
 | [LanceDB](https://github.com/lancedb/lancedb) | 9.9K | ANN recall >0.95 on GIST-1M | Infrastructure, not code graph |
-| **akashik codebase** | — | (no standard benchmark) | 16,855 nodes, < 2 ms p99 search, tree-sitter TS/JS/Python |
+| **folklore codebase** | — | (no standard benchmark) | 16,855 nodes, < 2 ms p99 search, tree-sitter TS/JS/Python |
 
-**No code intelligence tool in this category publishes NDCG / R@K retrieval numbers.** Aider reports SWE-bench (task completion, not retrieval). akashik's code graph has no direct apples-to-apples competitor with a published retrieval benchmark.
+**No code intelligence tool in this category publishes NDCG / R@K retrieval numbers.** Aider reports SWE-bench (task completion, not retrieval). folklore's code graph has no direct apples-to-apples competitor with a published retrieval benchmark.
 
 ### 2k. Post-encoder SOTA-attack wave (April 2026) — four NULLs, ceiling locked
 
@@ -584,7 +584,7 @@ Following the successful Phase 25 ceiling at **75.22% NDCG@10**, three specialis
 | (Prior) Qwen2.5:0.5B Contextual Retrieval | original | tested | −1.46 pt | NULL |
 
 **Methodology**
-- All three new gates re-used the cached `~/.akashik/bench/scifact__rust-via-ts__bge-base/vectors.db` corpus embeddings — no re-indexing, apples-to-apples vs the 75.22% Phase 25 baseline.
+- All three new gates re-used the cached `~/.folklore/bench/scifact__rust-via-ts__bge-base/vectors.db` corpus embeddings — no re-indexing, apples-to-apples vs the 75.22% Phase 25 baseline.
 - RRF sweep: train fold (50 queries) for hyperparameter selection, test fold (250) for reporting. Best on TRAIN (k=20, α=0.5) shows +0.17pt on TEST — gap (86% train vs 73% test) signals overfitting.
 - Rocchio: positive-only Rocchio (canonical dense PRF), 2 passes per query (original embed → fused top-5 dense centroid → q' → re-search → fused). Reuses cached corpus.
 - Contextualization: Anthropic's "Contextual Retrieval" prompt with Qwen2.5:3B via Ollama, 5,183 docs × 4-concurrency, 11.2 hours wall clock, then full BEIR pipeline.
@@ -608,7 +608,7 @@ node scripts/sweep-rocchio.mjs 5 0.7 0.3                                  # −0
 
 # Contextual Retrieval (3B)
 node scripts/contextualize-corpus.mjs scifact --model qwen2.5:3b --out scifact-ctx-3b
-AKASHIK_RUST_BIN=$(pwd)/akashik-rs/target/release/embed_server \
+FOLKLORE_RUST_BIN=$(pwd)/folklore-rs/target/release/embed_server \
   node scripts/bench-beir-rust.mjs scifact-ctx-3b --model bge-base       # 75.16% (−0.06pt)
 ```
 
@@ -652,7 +652,7 @@ Cohen's κ = 0.418 (moderate agreement, below the κ ≥ 0.6 substantial-agreeme
 - **Methodology gates the formal claim.** With κ = 0.418, we cannot publish "75.22% is measurement-floor" as a peer-reviewable SOTA result. The judge needs to clear κ ≥ 0.6 first.
 - **Evidence suggests true ceiling is ~77.7%.** The +2.53pt lift comes from the LLM's high-precision (FP=0) additions. With a calibrated judge, the lift could be larger — recall is the loose end, and recall lifts the apparent ceiling further.
 - **The 75.22% is probably measurement-floor, not pipeline-ceiling.** Round 1 + Round 2's nine null attacks were fighting a 2.5–5pt phantom ceiling that comes from qrel sparsity.
-- **Decision-relevant for the v4 thesis:** the akashik pipeline is performing closer to the bge-base + GPU-rerank line (~77–78% on full qrels) than the 75.22% number suggests. We do NOT need a bigger encoder. We need a calibrated qrel.
+- **Decision-relevant for the v4 thesis:** the folklore pipeline is performing closer to the bge-base + GPU-rerank line (~77–78% on full qrels) than the 75.22% number suggests. We do NOT need a bigger encoder. We need a calibrated qrel.
 
 **What ships from §2L:**
 - `scripts/bench-arguana-dense.mjs` — per-task BM25-off fallback for counter-argument workloads (+1.45pt ArguAna soft)
@@ -710,14 +710,14 @@ User went: "go ahead." Discovered `gpt-oss:20b` (13.8 GB) was already loaded loc
 2. **Formal qrel FN-rate audit: 2.8% pool incompleteness at top-15** measured by κ=0.7053 substantial-agreement LLM-as-judge with 100% precision over 129 controls.
 3. **Calibrated ceiling lower bound: ≥75.71% NDCG@10** on instrument-corrected qrels (extrapolated from V3 subset; full-set measurement requires ~11h compute).
 
-**Promotion criterion for full-set V3:** run gpt-oss:20b on all 300 queries × top-20 = 6,000 pairs at 0.12 pair/s = ~14h overnight. If full-set Q⁺ NDCG@10 ≥ 76.5%, the formal SOTA claim becomes "akashik beats published bge-base dense (74.04%) AND nomic v1.5 dense (74.6%) on calibrated SciFact qrels with zero new dependencies and zero GPU." That would be a genuine measurement-anchored SOTA claim — not BEIR-leaderboard but methodology-publishable.
+**Promotion criterion for full-set V3:** run gpt-oss:20b on all 300 queries × top-20 = 6,000 pairs at 0.12 pair/s = ~14h overnight. If full-set Q⁺ NDCG@10 ≥ 76.5%, the formal SOTA claim becomes "folklore beats published bge-base dense (74.04%) AND nomic v1.5 dense (74.6%) on calibrated SciFact qrels with zero new dependencies and zero GPU." That would be a genuine measurement-anchored SOTA claim — not BEIR-leaderboard but methodology-publishable.
 
 **v4 thesis is now MAXIMALLY validated:** the BEIR SOTA chase that the team explicitly refused (per ADR-002) is shown to be a measurement-floor problem, not a pipeline-ceiling problem. The infrastructure claims (60× cold-start, 48× storage, 4-6× throughput, ≥5× session shrinkage, 91.9% bridge, did:key portability) plus the new measurement-instrument claim form the strongest possible negative-results story in OSS agent-memory tooling: every pipeline attack measured + nulled, the underlying cause identified (qrel sparsity) + measured (2.8%), and the apples-to-apples claim against published numbers is honest. No competitor has this rigor.
 
 **What this finally pins down for the v4 thesis:**
 - BENCH 75.22% on SciFact is the measured ceiling against the standard BEIR qrels — apples-to-apples vs literature. **Don't change the headline claim.**
 - The qrel-rejudge wave proves the apparent ceiling has a **0.5–1.1% measurable false-negative tail** and the true pipeline ceiling sits at **76.8–77.7% NDCG@10** on a calibrated qrel set, methodology-bounded.
-- This vindicates v4's pivot away from BEIR-SOTA chase: the akashik pipeline already operates at the bge-base + GPU-rerank line on calibrated qrels. The remaining headroom (3–4pt to bge-large) is encoder-tier-bound, not pipeline-bound.
+- This vindicates v4's pivot away from BEIR-SOTA chase: the folklore pipeline already operates at the bge-base + GPU-rerank line on calibrated qrels. The remaining headroom (3–4pt to bge-large) is encoder-tier-bound, not pipeline-bound.
 - All 12 SOTA attacks across Round 1 + Round 2 + Round 3 are now documented + reproducible. The release ships with the most rigorous SOTA-attack negative-results record in OSS agent-memory tooling.
 
 **The v4 thesis remains intact AND strengthened by §2L:** infrastructure claims unchanged (60× cold-start, 48× storage, 4-6× throughput, ≥5× session shrinkage, 91.9% bridge, did:key portability — all measured); BEIR ceiling claim moves from "75.22% is the real ceiling" to "75.22% is the measured ceiling against a known-incomplete qrel set; the true pipeline ceiling is probably ~77.7%, methodology-bounded." Both framings are honest. The release explicitly does not claim BEIR SOTA either way.
@@ -725,15 +725,15 @@ User went: "go ahead." Discovered `gpt-oss:20b` (13.8 GB) was already loaded loc
 **Reproduction**
 ```bash
 # Track A — ArguAna dense-only re-target (+1.45pt soft)
-AKASHIK_RUST_BIN=$(pwd)/akashik-rs/target/release/embed_server \
+FOLKLORE_RUST_BIN=$(pwd)/folklore-rs/target/release/embed_server \
   node scripts/bench-arguana-dense.mjs
 
 # Track B — qrel rejudge with κ blinding (the instrument finding)
-AKASHIK_RUST_BIN=$(pwd)/akashik-rs/target/release/embed_server \
+FOLKLORE_RUST_BIN=$(pwd)/folklore-rs/target/release/embed_server \
   node scripts/qrel-rejudge.mjs 100 20
 
 # Track C — diagonal Jacobi preconditioning (NULL)
-AKASHIK_RUST_BIN=$(pwd)/akashik-rs/target/release/embed_server \
+FOLKLORE_RUST_BIN=$(pwd)/folklore-rs/target/release/embed_server \
   node scripts/jacobi-preconditioning.mjs
 ```
 
@@ -778,13 +778,13 @@ Each invocation spawns a fresh Node + tsx process, loads TypeScript on the fly, 
 
 | Command | Latency | What it measures |
 |---------|---------|-----------------|
-| `akashik version` | 716 ms | Pure Node + tsx boot |
-| `akashik help` | 707 ms | Same + command routing |
-| `akashik room list` | 719 ms | + rooms.json read |
-| `akashik peer status` | 710 ms | + peer-identity.json read |
-| `akashik peer list --json` | 716 ms | + peers.json read |
-| `akashik codebase list` | 790 ms | + code-graph.db open |
-| `akashik codebase list --json` | 715 ms | |
+| `folklore version` | 716 ms | Pure Node + tsx boot |
+| `folklore help` | 707 ms | Same + command routing |
+| `folklore room list` | 719 ms | + rooms.json read |
+| `folklore peer status` | 710 ms | + peer-identity.json read |
+| `folklore peer list --json` | 716 ms | + peers.json read |
+| `folklore codebase list` | 790 ms | + code-graph.db open |
+| `folklore codebase list --json` | 715 ms | |
 
 **Floor latency: ~700 ms.** Node + tsx startup dominates. Any search / lookup work beyond that is < 15 ms.
 
@@ -820,7 +820,7 @@ All files unchanged → skipped after hash check. Near-zero work.
 
 | Codebase | Files Walked | Duration |
 |----------|--------------|----------|
-| akashik | 116 files | 777 ms (6.7 ms/file including cold-start) |
+| folklore | 116 files | 777 ms (6.7 ms/file including cold-start) |
 | p2p-llm-network | 293 files | 812 ms (2.8 ms/file) |
 | forge | 225 files | 785 ms (3.5 ms/file) |
 | auto-tlv | 260 files | 780 ms (3.0 ms/file) |
@@ -831,7 +831,7 @@ Initial index runs (from session history):
 
 | Codebase | Files | Nodes | Edges | Throughput |
 |----------|-------|-------|-------|------------|
-| akashik | 116 | 3,046 | 9,406 | ~260 files/sec |
+| folklore | 116 | 3,046 | 9,406 | ~260 files/sec |
 | p2p-llm-network | 293 | 5,793 | 18,736 | ~65 files/sec (mixed Python/TS/JS) |
 | forge | 225 | 5,139 | 17,825 | ~75 files/sec |
 | auto-tlv | 260 | 4,200 | 11,965 | ~95 files/sec |
@@ -844,10 +844,10 @@ Tree-sitter parse time per file is ~1-3 ms. The majority of indexing time is SQL
 
 | Command | Peak RSS |
 |---------|----------|
-| `akashik version` | **156 MB** (Node + tsx baseline) |
-| `akashik codebase search run` | **164 MB** (+8 MB for better-sqlite3 handle) |
-| `akashik codebase list` | **159 MB** |
-| `akashik ask "embeddings"` | **312 MB** (+156 MB for ONNX model) |
+| `folklore version` | **156 MB** (Node + tsx baseline) |
+| `folklore codebase search run` | **164 MB** (+8 MB for better-sqlite3 handle) |
+| `folklore codebase list` | **159 MB** |
+| `folklore ask "embeddings"` | **312 MB** (+156 MB for ONNX model) |
 
 Daemon mode (persistent process) would hold one 312 MB allocation and reuse it for every query.
 
@@ -855,7 +855,7 @@ Daemon mode (persistent process) would hold one 312 MB allocation and reuse it f
 
 ## 7. Call Graph Resolution Accuracy
 
-The arrow-function name-capture fix applied this session dramatically improved call graph quality. Post-fix numbers on the akashik codebase:
+The arrow-function name-capture fix applied this session dramatically improved call graph quality. Post-fix numbers on the folklore codebase:
 
 | Confidence Level | Before Fix | After Fix | Improvement |
 |------------------|------------|-----------|-------------|
@@ -867,7 +867,7 @@ Across all 4 indexed TypeScript/JS codebases:
 
 | Codebase | Exact | Heuristic | Unresolved |
 |----------|-------|-----------|------------|
-| akashik | 1,474 | 472 | 4,530 |
+| folklore | 1,474 | 472 | 4,530 |
 | p2p-llm-network | 2,794 | 3,528 | 6,913 |
 | forge | 2,486 | 2,079 | 8,335 |
 | auto-tlv | 521 | 1,362 | 6,138 |
@@ -917,7 +917,7 @@ All 14 patterns regression-tested. Scan runs in O(n×p) where n = chars, p = 14 
 Ran a real cross-project query to prove the graph adds value:
 
 ```
-$ akashik ask "functional DDD neverthrow Result monad"
+$ folklore ask "functional DDD neverthrow Result monad"
 
 ## Forge: Architectural Patterns [chunk 1/6]          — research note
 ## neverthrow@^8.2.0                                  — npm dep
@@ -926,7 +926,7 @@ $ akashik ask "functional DDD neverthrow Result monad"
 ## Auto TLV: internal/enricher/enricher.go            — code file
 ```
 
-**One query surfaces: research notes from forge + npm dep metadata from akashik-dev + Go source code from auto-tlv.** This is exactly the cross-project retrieval the tool is designed for.
+**One query surfaces: research notes from forge + npm dep metadata from folklore-dev + Go source code from auto-tlv.** This is exactly the cross-project retrieval the tool is designed for.
 
 ---
 

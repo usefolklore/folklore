@@ -24,7 +24,7 @@ distinct DDD aggregate root that rooms attach to via an explicit many-to-many jo
 prebuilts) for parsing — one dep covers TypeScript, JavaScript, Python, Rust, and Go grammars via
 separate grammar packages. Persist the code graph in new SQLite tables on the existing
 `better-sqlite3` + `sqlite-vec` database. Model `Codebase` as an aggregate root with a join table
-for room attachment. Do NOT emit SCIP — it is over-engineering for akashik's scope.
+for room attachment. Do NOT emit SCIP — it is over-engineering for folklore's scope.
 
 ---
 
@@ -39,7 +39,7 @@ for room attachment. Do NOT emit SCIP — it is over-engineering for akashik's s
 | CODE-04 | Codebase as separate graph, not mixed into research rooms | New SQLite tables `code_nodes` + `code_edges` + `codebases` + `codebase_rooms`; entirely separate from graph.json |
 | CODE-05 | Codebase attaches to rooms (many-to-many) | `Codebase` aggregate root + `codebase_rooms` join table; rooms query attached codebases at search time |
 | CODE-06 | Incremental indexing — skip unchanged files | SHA-256 of file content stored in `code_nodes.content_hash`; reparse only when hash differs |
-| CODE-07 | Index runs as first step on new project | `akashik index --deep` flag triggers code graph pass; existing room-level ingest unchanged |
+| CODE-07 | Index runs as first step on new project | `folklore index --deep` flag triggers code graph pass; existing room-level ingest unchanged |
 | CODE-08 | Schema captures: language, kind, signature, return type, parameters, line/col, parent | `CodeNode` interface with these fields; stored as JSON columns in SQLite for schema-free extension |
 </phase_requirements>
 
@@ -67,8 +67,8 @@ Total new production deps: tree-sitter core (1) + grammars loaded on demand (3).
 | `@swc/core` 1.15.24 | TS+JS AST only. No Python/Rust/Go. Faster than ts-morph but same language limitation. |
 | `@babel/parser` 7.29.2 | TS+JS only, no semantic types, no cross-language. |
 | `@ast-grep/napi` 0.42.1 | 13,387 stars, Rust-powered, active (pushed 2026-04-11). Better for pattern matching / structural search (like semgrep). Phase 19 needs indexing, not search patterns. **Defer to Phase 20 for design pattern detection.** |
-| `web-tree-sitter` 0.26.8 | WASM variant, 4.5MB. Zero-native but 3-5x slower than native binding. akashik already requires native compilation for `better-sqlite3` — no reason to take the WASM perf penalty. |
-| `scip-typescript` 0.4.0 | 88 stars, last commit Oct 2025. Emitting SCIP is over-engineering — akashik has no Sourcegraph integration and SCIP adds protobuf tooling overhead. Reject. |
+| `web-tree-sitter` 0.26.8 | WASM variant, 4.5MB. Zero-native but 3-5x slower than native binding. folklore already requires native compilation for `better-sqlite3` — no reason to take the WASM perf penalty. |
+| `scip-typescript` 0.4.0 | 88 stars, last commit Oct 2025. Emitting SCIP is over-engineering — folklore has no Sourcegraph integration and SCIP adds protobuf tooling overhead. Reject. |
 
 ### Installation
 
@@ -260,7 +260,7 @@ export interface CodebaseRoomLink {
 ### Pattern 4: Code Graph Persistence via New SQLite Tables (not graph.json)
 
 **What:** Add three new tables to the existing `better-sqlite3` database file at
-`~/.akashik/vectors.db` (or a sibling `code-graph.db` — see trade-off below). Tables:
+`~/.folklore/vectors.db` (or a sibling `code-graph.db` — see trade-off below). Tables:
 `codebases`, `code_nodes`, `code_edges`, `codebase_rooms`.
 
 **Schema (SQLite DDL):**
@@ -323,9 +323,9 @@ CREATE TABLE IF NOT EXISTS codebase_rooms (
 | Add tables to `vectors.db` | One DB connection, simpler runtime | vectors.db is already the vector store; mixing concerns |
 | Separate `code-graph.db` | Clean separation, can delete/rebuild without touching vectors | Two DB connections, slightly more infrastructure code |
 
-**Recommendation: separate `~/.akashik/code-graph.db`.** The code graph has different
+**Recommendation: separate `~/.folklore/code-graph.db`.** The code graph has different
 lifecycle semantics (rebuild from scratch is safe and cheap) vs the vector store (embeddings are
-expensive to regenerate). Keeping them separate means `akashik index --deep --rebuild` can
+expensive to regenerate). Keeping them separate means `folklore index --deep --rebuild` can
 `DROP DATABASE code-graph.db` without touching vectors.
 
 ### Anti-Patterns to Avoid
@@ -450,7 +450,7 @@ The MCP `search` and `ask` tools then return code file nodes intermixed with res
 HN posts, which is confusing and pollutes research queries with file path noise.
 
 **How to avoid:** The new implementation MUST NOT call `ingestSource`. It writes directly to
-`code-graph.db` via `CodeGraphRepository`. The existing `akashik index` command adds a
+`code-graph.db` via `CodeGraphRepository`. The existing `folklore index` command adds a
 `--deep` flag for the new code graph pass. The existing `codebase.ts` behavior (file-level nodes
 in the research graph) can be optionally retained as a lightweight "code presence" indicator but
 must be gated behind a separate flag.
@@ -595,7 +595,7 @@ export interface CodeGraphRepository {
 
 | Old Approach | Current Approach | When Changed | Impact |
 |--------------|------------------|--------------|--------|
-| LSIF (Language Server Index Format) | SCIP (Sourcegraph Code Intelligence Protocol) | 2022 | SCIP supersedes LSIF; but neither is relevant for akashik's local-first scope |
+| LSIF (Language Server Index Format) | SCIP (Sourcegraph Code Intelligence Protocol) | 2022 | SCIP supersedes LSIF; but neither is relevant for folklore's local-first scope |
 | Language Server Protocol (interactive) | Tree-sitter (batch, offline) | 2018-present | LSP is for editor integration; tree-sitter is for offline indexing — they serve different purposes |
 | Regex-based export extraction (current `codebase.ts`) | tree-sitter AST walk | Phase 19 | Enables function/class/method/call graph nodes instead of file-level summaries |
 | All code nodes in `graph.json` | Separate `code-graph.db` SQLite store | Phase 19 | Code and research graphs have different schemas, lifecycles, and query patterns |
@@ -633,7 +633,7 @@ door open, but Phase 19 only populates it via trivial name heuristics (`/Factory
 3. **New SQLite repository** in `src/infrastructure/code-graph-repository.ts` — separate `code-graph.db`
 4. **Incremental indexing** — SHA-256 dirty check, skip unchanged files
 5. **Codebase aggregate root** — `codebases` table + `codebase_rooms` join table
-6. **`akashik index --deep` CLI flag** — triggers code graph pass after existing room ingest
+6. **`folklore index --deep` CLI flag** — triggers code graph pass after existing room ingest
 7. **Two-pass call graph** — first pass builds name→id map, second pass resolves call_expression nodes
 8. **MCP tool `get_code_nodes(codebase_id, kind?)`** — lets Claude query the code graph mid-conversation
 
@@ -690,7 +690,7 @@ Config `workflow.nyquist_validation` is absent — treat as enabled.
 | CODE-04 | CodeGraphRepository writes to code-graph.db, not graph.json | integration | same | ❌ Wave 0 |
 | CODE-05 | attachToRoom / getCodebasesForRoom round-trip | unit | same | ❌ Wave 0 |
 | CODE-06 | Re-index unchanged file → zero new nodes (hash check) | unit | same | ❌ Wave 0 |
-| CODE-07 | `akashik index --deep` exits 0 on akashik repo itself | integration | same | ❌ Wave 0 |
+| CODE-07 | `folklore index --deep` exits 0 on folklore repo itself | integration | same | ❌ Wave 0 |
 | CODE-08 | CodeNode has all required fields populated for a real function | unit | same | ❌ Wave 0 |
 
 **Minimum: 3 assertions per test** (prevents the eager-sequence race pattern from Phase 2).
@@ -714,8 +714,8 @@ Config `workflow.nyquist_validation` is absent — treat as enabled.
      declarations. If gaps are found, the WASM version (`web-tree-sitter` + grammar WASM) can be
      used for TS with the native binding used for Python/Rust — but this is unlikely to be needed.
 
-2. **`akashik index --deep` UX — should it replace the existing shallow indexing or add to it?**
-   - What we know: The existing `akashik index` creates file-level nodes in graph.json for
+2. **`folklore index --deep` UX — should it replace the existing shallow indexing or add to it?**
+   - What we know: The existing `folklore index` creates file-level nodes in graph.json for
      room-based research context.
    - What's unclear: Whether users want the file-level nodes to remain in the research graph after
      the deep index is built (they serve different purposes — the shallow nodes are context for LLM

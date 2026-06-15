@@ -13,8 +13,8 @@ COPY . .
 RUN npm run build
 RUN bash scripts/bootstrap.sh
 
-ENV AKASHIK_HOME=/data
+ENV FOLKLORE_HOME=/data
 VOLUME /data
 
-ENTRYPOINT ["node", "bin/akashik.js"]
+ENTRYPOINT ["node", "bin/folklore.js"]
 CMD ["daemon", "start"]

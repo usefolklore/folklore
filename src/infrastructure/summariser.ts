@@ -62,7 +62,7 @@ export interface Summariser {
  * chat-style data still respect.
  *
  * The model field is whatever `ollamaClient.defaultModel` is — set
- * via `AKASHIK_OLLAMA_MODEL` or the OllamaClientOptions.model.
+ * via `FOLKLORE_OLLAMA_MODEL` or the OllamaClientOptions.model.
  */
 export const ollamaSummariser = (client: OllamaClient): Summariser => ({
   model: client.defaultModel,
@@ -124,8 +124,8 @@ export const fixtureSummariser = (opts: FixtureSummariserOptions = {}): Summaris
  * Resolve the project-wide summariser from environment.
  *
  * Order of precedence:
- *   1. `AKASHIK_SUMMARISER=fixture` → fixtureSummariser (tests)
- *   2. `AKASHIK_SUMMARISER=ollama` OR ollama unset OR default →
+ *   1. `FOLKLORE_SUMMARISER=fixture` → fixtureSummariser (tests)
+ *   2. `FOLKLORE_SUMMARISER=ollama` OR ollama unset OR default →
  *      ollamaSummariser (local, free, privacy-preserving). The caller
  *      passes the OllamaClient so we don't bake a default URL here.
  *   3. (Future) `OPENAI_API_KEY` set → OpenAI adapter — Phase 21C.
@@ -139,10 +139,10 @@ export const fixtureSummariser = (opts: FixtureSummariserOptions = {}): Summaris
 export const summariserFromEnv = (
   opts: { readonly ollama?: OllamaClient } = {},
 ): Summariser | null => {
-  const choice = (process.env.AKASHIK_SUMMARISER ?? '').toLowerCase();
+  const choice = (process.env.FOLKLORE_SUMMARISER ?? '').toLowerCase();
   if (choice === 'fixture') {
     return fixtureSummariser({
-      fallback: process.env.AKASHIK_SUMMARISER_FIXTURE ?? 'fixture-summary',
+      fallback: process.env.FOLKLORE_SUMMARISER_FIXTURE ?? 'fixture-summary',
     });
   }
   if (opts.ollama) return ollamaSummariser(opts.ollama);

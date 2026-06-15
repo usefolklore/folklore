@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="akashik mark — sigillum">
-  <title>akashik — sigillum</title>
-  <desc>An old codex shown head-on, slight 3/4 tilt revealing the spine, with the akashik mystic sigil illuminated in ochre on a sepia-ink cover. The glyph is custom-drawn — a vertical stem with a bindu dot, a chandrabindu crescent, a horizontal stricture, and a descending volute — reading as a mystic mark without claiming any specific lineage.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="folklore mark — sigillum">
+  <title>folklore — sigillum</title>
+  <desc>An old codex shown head-on, slight 3/4 tilt revealing the spine, with the folklore mystic sigil illuminated in ochre on a sepia-ink cover. The glyph is custom-drawn — a vertical stem with a bindu dot, a chandrabindu crescent, a horizontal stricture, and a descending volute — reading as a mystic mark without claiming any specific lineage.</desc>
 
   <!-- Parchment ground (round-rect to match the favicon convention) -->
   <rect width="64" height="64" rx="14" fill="#f3ecd8"/>

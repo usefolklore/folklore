@@ -1,7 +1,7 @@
 /**
  * Share sync — y-protocols sync over libp2p (V5).
  *
- * Single global Y.Doc at `~/.akashik/graph.ydoc`; sharing gate is per-node
+ * Single global Y.Doc at `~/.folklore/graph.ydoc`; sharing gate is per-node
  * `node.private === false`; subscribe envelope carries `{type, protocol_version: 5}`
  * (pre-V5 envelopes with a `rooms` array are rejected); stream + bandwidth-limiter
  * keys are peerId only.
@@ -38,11 +38,11 @@ import { metrics } from '../domain/metrics.js';
 import { classifyInboundShare, sharePolicyModeFromEnv, type SharePolicyMode } from '../domain/share-policy.js';
 import { inProcessIdentityResolver, type IdentityResolver } from './identity-resolver.js';
 
-export const SHARE_PROTOCOL_ID = '/akashik/share/1.0.0' as const;
+export const SHARE_PROTOCOL_ID = '/folklore/share/1.0.0' as const;
 export const SHARE_PROTOCOL_VERSION = 5 as const;
 
 /** Module-level Symbol for echo-loop prevention. */
-export const REMOTE_ORIGIN: unique symbol = Symbol('akashik-share-remote');
+export const REMOTE_ORIGIN: unique symbol = Symbol('folklore-share-remote');
 
 const GRAPH_FLUSH_DEBOUNCE_MS = 150;
 const MAX_INBOUND_STREAMS = 32;
@@ -248,8 +248,8 @@ const buildImportedNode = (peer: string, v: ShareableNode, signedBy?: string): G
   // local reads (`recall`, `recent_sessions`, statusline summaries)
   // continue to attribute foreign nodes correctly.
   ...(v.github_user ? { github_user: v.github_user } : {}),
-  _akashik_source_peer: peer,
-  ...(signedBy ? { _akashik_signed_by: signedBy } : {}),
+  _folklore_source_peer: peer,
+  ...(signedBy ? { _folklore_signed_by: signedBy } : {}),
 } as GraphNode);
 
 const logInbound = (logPath: string, peer: string, nodeId: string, reason: string): void => {

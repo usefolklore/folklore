@@ -9,8 +9,8 @@
 PROJECT IDENTITY (changed since last round)
 ================================================================
 
-The project pivoted from "akashik: agent-memory product" to
-"Akashik: federated knowledge commons for the open-source community as a whole."
+The project pivoted from "folklore: agent-memory product" to
+"Folklore: federated knowledge commons for the open-source community as a whole."
 
 The mission is to give the OSS community what it has always lacked:
 a shared, contributor-owned memory substrate where every piece of
@@ -20,13 +20,13 @@ attributed, forever.
 
 The brand name borrows from the Akashic Records mythology, reframed
 as concrete contributor-owned infrastructure. The codebase is still
-called "akashik" internally.
+called "folklore" internally.
 
 ================================================================
 THE MECHANISM (the architectural insight that makes the mission credible)
 ================================================================
 
-Each Akashik peer holds only its own information:
+Each Folklore peer holds only its own information:
   - what its user explicitly contributed
   - what it pulled from other peers in response to its user's queries
   - what it researched on the web when the federation couldn't answer
@@ -37,7 +37,7 @@ user's curiosity.
 
 The compounding loop, in 5 steps:
 
-  STEP 1: Local-first query → A's local Akashik graph
+  STEP 1: Local-first query → A's local Folklore graph
   STEP 2: Federation fan-out → connected peers in shared rooms answer
           with their two cents (what they have)
   STEP 3: If federation can't satisfy → harness reaches the web on
@@ -149,15 +149,15 @@ WHAT'S NEW SINCE ROUND 3
        private-by-default and missing the mission)
      OSS-community-commons framing (correct: matches both the
        architecture AND the mission)
-   Brand renamed to Akashik. New StoryBrand-anchored marketing
-   draft + mechanism doc (docs/marketing/how-akashik-works.md)
+   Brand renamed to Folklore. New StoryBrand-anchored marketing
+   draft + mechanism doc (docs/marketing/how-folklore-works.md)
    capture the compounding loop architecturally and link to it
    from the brand messaging as the credibility anchor.
 
 2. LME-S baseline re-run with NDCG/MRR ladder. Confirmed head
    saturation (NDCG@5 = 0.884, only 4pp room below R@5 = 0.92).
 
-3. The Akashik mechanism (5-step compounding loop, peer-local
+3. The Folklore mechanism (5-step compounding loop, peer-local
    storage, ambitioned-curator model) is now explicitly documented
    as the architectural credibility anchor for the mission claim.
 
@@ -172,11 +172,11 @@ Q1. Given the empirical ceiling on LME-S R@5 (NDCG@5 headroom ~4pp,
     federation rather than tuning per-peer retrieval)? Where should
     the next engineering month go?
 
-Q2. The Akashik mechanism (peer-local + federation-on-query + web-
+Q2. The Folklore mechanism (peer-local + federation-on-query + web-
     on-miss + save-locally + transfer-on-next-ask) — is this
     architecturally novel, or is it a known pattern in disguise?
     Cite prior art. If it IS novel, what's the closest existing
-    research/protocol/system, and what makes Akashik different in
+    research/protocol/system, and what makes Folklore different in
     a defensible way?
 
 Q3. There is NO existing public benchmark for "how much does a
@@ -197,7 +197,7 @@ Q4. The Octopus has flagged "input-order bias" (Round 3) and
           / mem0 0.925 / ByteRover 0.928 — are these defensible
           baselines?)
 
-Q5. The Akashik mission requires the network to actually grow.
+Q5. The Folklore mission requires the network to actually grow.
     What's the smallest-viable launch plan that produces a
     meaningful compounding signal in the first ~30 days post-
     launch? Specifically: who are the first 100 contributors, what
@@ -205,7 +205,7 @@ Q5. The Akashik mission requires the network to actually grow.
     the compounding becomes visible to a new contributor visiting
     the network at day 30?
 
-Q6. The Akashik architecture relies on user curiosity as the
+Q6. The Folklore architecture relies on user curiosity as the
     propagation signal. This is brilliant when curiosity-volume is
     healthy. What happens when:
       (a) the network is dominated by N curators of the same hot
@@ -220,7 +220,7 @@ Q6. The Akashik architecture relies on user curiosity as the
 Q7. The competitor frame (mem0/agentmemory/ByteRover) was the
     wrong frame — they're single-user products and we're a
     federated commons. Who are the REAL existing systems that
-    Akashik competes with / extends / supersedes? Be specific
+    Folklore competes with / extends / supersedes? Be specific
     about systems, not categories. Possibilities to evaluate:
       - Are.na (curated cards, central)
       - Logseq P2P sync (knowledge graph, multi-device same user)
@@ -244,7 +244,7 @@ OUTPUT EXPECTED:
 
   - Direct answers to Q1-Q8
   - For Q2: closest prior-art protocol or research paper, with
-    why Akashik differs
+    why Folklore differs
   - For Q3: a proposed benchmark for measuring federation-level
     compounding, with the metrics and the experimental design
   - For Q5: the smallest-viable launch plan (specific communities,
@@ -268,15 +268,15 @@ Based on the extensive historical context, benchmarking data, and the strategic 
 **Q1. LME-S Ceiling: Marketing vs. Engineering? Where should the next month go?**
 Pushing the headline LME-S `R@3` from 0.9202 any closer to 1.0 is purely a **marketing exercise**. Your empirical data shows the head is saturated (`R@50 = 1.0000`). Chasing the remaining ~4pp NDCG gap on a 50-distractor benchmark is overfitting to a specific dataset rather than building a product. 
 *   **The Advantage:** Hitting `0.95+` gives you a vanity metric to definitively "beat" centralized tools like `mem0` in blog posts. 
-*   **The Tradeoff/Disadvantage:** Every engineering hour spent squeezing 1pp out of LME-S is an hour stolen from the core Akashik mechanism. Furthermore, optimizing for LME-S ignores the actual engineering fire: the LoCoMo benchmark’s 60pp recall headroom where current rerankers are fundamentally failing.
+*   **The Tradeoff/Disadvantage:** Every engineering hour spent squeezing 1pp out of LME-S is an hour stolen from the core Folklore mechanism. Furthermore, optimizing for LME-S ignores the actual engineering fire: the LoCoMo benchmark’s 60pp recall headroom where current rerankers are fundamentally failing.
 *   **Next Month Focus:** Engineering must pivot to **federation resilience and routing**. The single-node retrieval is "good enough" for an MVP. The network’s ability to actually fan out queries, merge results, and handle offline peers without catastrophic latency is the existential bet.
 
-**Q2. Prior Art & Architectural Novelty of the Akashik Mechanism**
-The Akashik mechanism (local + fan-out + web-on-miss + DID-signed save + transfer) is not entirely novel in its components, but its *composition* is unique.
+**Q2. Prior Art & Architectural Novelty of the Folklore Mechanism**
+The Folklore mechanism (local + fan-out + web-on-miss + DID-signed save + transfer) is not entirely novel in its components, but its *composition* is unique.
 *   **Closest Prior Art (Protocols):**
     *   *Semantic P2P Routing:* **pSearch (Tang et al., 2002)**. pSearch routed queries in a P2P network using latent semantic indexing (LSI) vectors instead of filenames.
     *   *Cooperative Caching:* **Internet Cache Protocol (ICP - RFC 2186)**. ICP was used by proxy servers to ask neighbors, "Do you have this URL?" before fetching it from the origin web server.
-*   **How Akashik Differs (The Novelty):** Akashik replaces the "URL" with a "Semantic LLM context/solved task." It is a cooperative cache for *generative AI problem-solving*, signed cryptographically via W3C `did:key`. 
+*   **How Folklore Differs (The Novelty):** Folklore replaces the "URL" with a "Semantic LLM context/solved task." It is a cooperative cache for *generative AI problem-solving*, signed cryptographically via W3C `did:key`. 
 *   **Balanced Analysis:**
     *   *Strength:* It creates a zero-marginal-cost compounding loop. The network naturally forms a distributed vector database where storage is directly proportional to human utility.
     *   *Weakness/Tradeoff:* ICP and pSearch struggled with latency amplification. A 2-second peer timeout before falling back to a 10-second web fetch creates a frustrating user experience (UX) tail latency. The tradeoff of decentralization is that availability is strictly tied to peer uptime—if the only peer who solved a bug logs off, the network must re-burn tokens to solve it again.
@@ -297,7 +297,7 @@ Existing benchmarks (`NDCG@10`, `MRR`) measure *isolated state*. To measure the 
 *   **(a) Listwise Rerank:** Beyond the input-order bias you fixed via shuffling, you are likely hitting **Length Bias** and **Lost-in-the-Middle (Attention Decay)**. LLMs disproportionately favor longer documents regardless of density, and they fail to attend to relevant documents placed in the middle of a listwise prompt (Liu et al., 2023). 
 *   **(b) Federated Evaluation:** **Sybil Amplification** and **Filter Bubbles**. If 10 peers cache the same wrong answer, simple cosine merging might boost it via false consensus. 
 *   **(c) Write-Path Enrichment (E11):** **Temporal Decay**. Injecting the date/session prefix boosts recall *now*, but as the timestamp ages, strict vector matching will artificially distance the node from new queries, even if the underlying fact remains timeless.
-*   **(d) Competitor Baselines:** Comparing Akashik to `mem0` or `ByteRover` is structurally flawed. They are *global, centralized* state machines. Comparing a centralized graph's recall against a single peer's partitioned state is intellectually dishonest. 
+*   **(d) Competitor Baselines:** Comparing Folklore to `mem0` or `ByteRover` is structurally flawed. They are *global, centralized* state machines. Comparing a centralized graph's recall against a single peer's partitioned state is intellectually dishonest. 
 *   **Compliance Note:** When comparing to enterprise solutions, note that P2P web-search sharing introduces massive GDPR/data-residency risks. If Peer A researches a user's local PII, and the web-miss saves it, Peer B might fetch it. This is a massive enterprise adoption pitfall.
 
 **Q5. Smallest-Viable Launch Plan (Day-30 Signal)**
@@ -323,7 +323,7 @@ You are not competing with `mem0`. You are competing with the systems that hold 
 
 **Q8. The Strongest Counter-Argument & Response**
 *   **The Counter-Argument:** "The Free-Rider Problem will kill this. In any open network, 99% of people consume and 1% produce. When the 99% ping the network for answers, the 1% who actually did the web-on-miss research will be DDoS'd by inbound semantic queries. The network relies on altruistic uptime, but offers no tokenomics or financial incentive to keep your node online to serve strangers. Therefore, availability will collapse."
-*   **The Response:** "Akashik bypasses the traditional free-rider problem because *contribution requires zero friction*. In standard systems, users must stop working to write a forum post. In Akashik, the act of a user privately solving their own problem via an LLM web-miss automatically creates the signed artifact. The cost of serving that artifact to a peer is a negligible background SQLite vector lookup (~11ms). We don't need tokenomics because the byproduct of selfish utility is collective wealth."
+*   **The Response:** "Folklore bypasses the traditional free-rider problem because *contribution requires zero friction*. In standard systems, users must stop working to write a forum post. In Folklore, the act of a user privately solving their own problem via an LLM web-miss automatically creates the signed artifact. The cost of serving that artifact to a peer is a negligible background SQLite vector lookup (~11ms). We don't need tokenomics because the byproduct of selfish utility is collective wealth."
 
 ---
 

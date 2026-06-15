@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# akashik demo — scene "federated" end-to-end orchestrator.
+# folklore demo — scene "federated" end-to-end orchestrator.
 #
 # 1. trap EXIT to guarantee teardown — even on failure or Ctrl-C
 # 2. setup-p2p.sh: 5 daemons up, peer A connected to B/C/D/E,
@@ -18,9 +18,9 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 cleanup() {
-  if [[ "${AKASHIK_DEMO_KEEP_DAEMONS:-0}" == "1" ]]; then
+  if [[ "${FOLKLORE_DEMO_KEEP_DAEMONS:-0}" == "1" ]]; then
     echo
-    echo "[scene-federated] AKASHIK_DEMO_KEEP_DAEMONS=1 — leaving 5 daemons up."
+    echo "[scene-federated] FOLKLORE_DEMO_KEEP_DAEMONS=1 — leaving 5 daemons up."
     echo "                  tear down later with: bash demo/teardown-p2p.sh"
     return
   fi

@@ -12,8 +12,8 @@ dependency_graph:
     - phase: phase-24-06
       provides: "share-sync.ts V5 rewrite — NOT YET LANDED. Wave 2b proceeds in parallel; the CLI surface is independent of share-sync's internal API. Daemon wire-up resolves in Wave 3."
   provides:
-    - "akashik share <peer> [--audit-only] [--json] — peer-only V5 share command"
-    - "akashik unshare <peer> — peer-removal-only V5 unshare command"
+    - "folklore share <peer> [--audit-only] [--json] — peer-only V5 share command"
+    - "folklore unshare <peer> — peer-removal-only V5 unshare command"
     - "src/domain/share-picker.ts removed from disk (166 LOC)"
     - "share/unshare CLI surface free of all V4 vocabulary (rooms, shared-rooms.json, ydoc-per-room)"
   affects:
@@ -64,7 +64,7 @@ completed: 2026-05-27
 
 ## Accomplishments
 
-- **share.ts collapsed from 331 -> 157 lines.** Three subcommands (`audit`, `room`, `ui`) replaced by a single direct shape: `akashik share <peer-id>`. The audit subroutine survives as the default pre-flight output (printed before persisting); `--audit-only` exits early.
+- **share.ts collapsed from 331 -> 157 lines.** Three subcommands (`audit`, `room`, `ui`) replaced by a single direct shape: `folklore share <peer-id>`. The audit subroutine survives as the default pre-flight output (printed before persisting); `--audit-only` exits early.
 - **No V4 vocabulary in either file.** `grep` audit:
   - `share-store` / `loadSharedRooms` / `mutateSharedRooms` / `removeSharedRoom`: 0 matches across both files
   - `--room` flag: 0
@@ -131,7 +131,7 @@ git log --grep="24-07" --oneline                                          -> 2 c
 
 - **Wave 3 (daemon wire-up + 47 surgical edits):** share.ts now provides the peer-intent input; share-sync.ts (24-06 output) reads peers.json and emits outbound streams. The CLI/daemon boundary is clean.
 - **MCP rewrite (24-08):** safe to proceed in parallel — share/unshare have no MCP surface today.
-- **Hooks (24-04, 24-12):** none of the 5 akashik hooks reference share/unshare directly (verified clean).
+- **Hooks (24-04, 24-12):** none of the 5 folklore hooks reference share/unshare directly (verified clean).
 
 **Blockers:** None. The V5 cutover for the share CLI surface is complete and atomic; the daemon's actual networking is the remaining Wave 3 + Wave 2a (24-06) work.
 

@@ -60,7 +60,7 @@ export interface RerankEnv {
   /** Head-size override. */
   readonly headSizeOverride?: number;
   /**
-   * Master kill-switch — `AKASHIK_RERANK=0` forces `none` tier
+   * Master kill-switch — `FOLKLORE_RERANK=0` forces `none` tier
    * regardless of hardware (matches the existing env contract in
    * cross-encoder.ts).
    */
@@ -68,20 +68,20 @@ export interface RerankEnv {
 }
 
 export const rerankEnvFromProcess = (env: NodeJS.ProcessEnv = process.env): RerankEnv => {
-  const override = env.AKASHIK_RERANK_TIER as RerankTier | undefined;
+  const override = env.FOLKLORE_RERANK_TIER as RerankTier | undefined;
   const validOverrides: ReadonlySet<RerankTier> = new Set([
     'none', 'cross-encoder', 'llm-listwise-small', 'llm-listwise-large',
   ]);
   return {
     override: override && validOverrides.has(override) ? override : undefined,
-    modelOverride: env.AKASHIK_RERANK_MODEL || undefined,
-    latencyBudgetMs: env.AKASHIK_RERANK_LATENCY_MS
-      ? Number(env.AKASHIK_RERANK_LATENCY_MS)
+    modelOverride: env.FOLKLORE_RERANK_MODEL || undefined,
+    latencyBudgetMs: env.FOLKLORE_RERANK_LATENCY_MS
+      ? Number(env.FOLKLORE_RERANK_LATENCY_MS)
       : undefined,
-    headSizeOverride: env.AKASHIK_RERANK_HEAD
-      ? Number(env.AKASHIK_RERANK_HEAD)
+    headSizeOverride: env.FOLKLORE_RERANK_HEAD
+      ? Number(env.FOLKLORE_RERANK_HEAD)
       : undefined,
-    disabled: env.AKASHIK_RERANK === '0',
+    disabled: env.FOLKLORE_RERANK === '0',
   };
 };
 
@@ -124,8 +124,8 @@ const DEFAULTS: Readonly<Record<Exclude<RerankTier, 'none'>, TierDefaults>> = {
  * the chosen tier, head size, model, and a human-readable reason.
  *
  * Order of precedence:
- *   1. Explicit env override (`AKASHIK_RERANK_TIER`)
- *   2. Master kill-switch (`AKASHIK_RERANK=0`)
+ *   1. Explicit env override (`FOLKLORE_RERANK_TIER`)
+ *   2. Master kill-switch (`FOLKLORE_RERANK=0`)
  *   3. Hardware-tier-based default with latency-budget gate
  */
 export const pickRerankTier = (
@@ -137,7 +137,7 @@ export const pickRerankTier = (
     return {
       tier: 'none',
       headSize: 0,
-      reason: 'AKASHIK_RERANK=0 (master kill-switch)',
+      reason: 'FOLKLORE_RERANK=0 (master kill-switch)',
       latencyBudgetMs: 0,
     };
   }

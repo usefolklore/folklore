@@ -1,7 +1,7 @@
 /**
  * User-owned decentralized identity (DID wave — Phase 32).
  *
- * This module owns the pure domain layer for akashik's three-tier
+ * This module owns the pure domain layer for folklore's three-tier
  * identity hierarchy:
  *
  *   1. User DID (long-lived)
@@ -505,9 +505,9 @@ export const verifyEnvelope = <T>(
 
 /**
  * Build the authorization message bytes. Fixed format:
- *   `akashik-auth:v1:{device_id}:{hex(device_pub_key)}:{authorized_at}`
+ *   `folklore-auth:v1:{device_id}:{hex(device_pub_key)}:{authorized_at}`
  *
- * The leading domain-separation tag (`akashik-auth:v1:`) prevents
+ * The leading domain-separation tag (`folklore-auth:v1:`) prevents
  * signature confusion attacks where a signature over an authorization
  * message could be replayed as a signature over a payload.
  */
@@ -517,13 +517,13 @@ const buildAuthorizationMessage = (
   authorizedAt: string,
 ): Uint8Array => {
   const hex = toHex(devicePublicKey);
-  const s = `akashik-auth:v1:${deviceId}:${hex}:${authorizedAt}`;
+  const s = `folklore-auth:v1:${deviceId}:${hex}:${authorizedAt}`;
   return new TextEncoder().encode(s);
 };
 
 /**
  * Build the payload-signing message bytes. Fixed format:
- *   `akashik-sig:v1:{device_id}:{signed_at}:{canonical_json(payload)}`
+ *   `folklore-sig:v1:{device_id}:{signed_at}:{canonical_json(payload)}`
  *
  * Same domain separation; different tag from auth messages.
  */
@@ -533,7 +533,7 @@ const canonicalSigningMessage = <T>(
   signedAt: string,
 ): Result<Uint8Array, IdentityError> =>
   canonicalJSON(payload).map((json) => {
-    const s = `akashik-sig:v1:${deviceId}:${signedAt}:${json}`;
+    const s = `folklore-sig:v1:${deviceId}:${signedAt}:${json}`;
     return new TextEncoder().encode(s);
   });
 

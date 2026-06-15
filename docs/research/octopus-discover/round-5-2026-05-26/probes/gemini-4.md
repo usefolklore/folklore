@@ -9,7 +9,7 @@
 PROJECT CONTEXT (unchanged from Round 4 — abbreviated)
 ================================================================
 
-Akashik = federated knowledge commons for the OSS community.
+Folklore = federated knowledge commons for the OSS community.
 Compounding via the ambitioned-curator loop:
   local-first → federation-fan-out → web-on-miss → save-locally
   → transfer-to-next-asker (when ambitioned curator is online).
@@ -34,7 +34,7 @@ Q1 — Where should the next engineering month go: marketing
      federation rather than per-peer retrieval?
      >> Pick one. One paragraph rationale.
 
-Q2 — Is the Akashik 'ambitioned-curator + curiosity-driven cache'
+Q2 — Is the Folklore 'ambitioned-curator + curiosity-driven cache'
      mechanism architecturally novel, or a known pattern in
      disguise?
      >> Name the closest prior-art system or paper (arxiv ID,
@@ -65,7 +65,7 @@ Q6 — Failure modes of curiosity-driven propagation:
      >> One known system that solved each, and the mechanism.
 
 Q7 — REAL competitors (not categories). Pick the 2-3 specific
-     existing systems that Akashik most directly competes with /
+     existing systems that Folklore most directly competes with /
      extends / supersedes. Among:
        Are.na · Logseq P2P sync · Mastodon · arxiv · Wikipedia ·
        Roam · IPFS · hypercore · Bluesky/ATProto · mem0 ·
@@ -105,14 +105,14 @@ Here is the direct, empirically-anchored synthesis answering Q1-Q8 based on the 
 
 ### Q1 — Where should the next engineering month go?
 **Architecting the federation and its measurement infrastructure.** 
-On the one hand, tuning per-peer `R@5` to match `agentmemory`'s 0.952 offers a recognizable marketing metric that early adopters easily understand. However, the severe tradeoff is that it completely ignores Akashik's core differentiator. Your own data shows LME-S head saturation (`R@50 = 1.0`), meaning single-peer optimization suffers diminishing returns. Conversely, building federation-level benchmarks validates the actual "knowledge commons" claim. Therefore, the month must be spent on federation routing and measurement (AkashikBench-F), even though it requires abandoning the easy `R@5` marketing race.
+On the one hand, tuning per-peer `R@5` to match `agentmemory`'s 0.952 offers a recognizable marketing metric that early adopters easily understand. However, the severe tradeoff is that it completely ignores Folklore's core differentiator. Your own data shows LME-S head saturation (`R@50 = 1.0`), meaning single-peer optimization suffers diminishing returns. Conversely, building federation-level benchmarks validates the actual "knowledge commons" claim. Therefore, the month must be spent on federation routing and measurement (FolkloreBench-F), even though it requires abandoning the easy `R@5` marketing race.
 
-### Q2 — Is the Akashik mechanism architecturally novel?
+### Q2 — Is the Folklore mechanism architecturally novel?
 **It is compositionally novel, but builds upon established primitives.**
-The closest architectural analogue for the monotonic availability property is **Freenet** (Clarke et al., 2001, *"A Decentralized, Fault-Tolerant System for Anonymously Publishing Information"*). The identity layer closely mirrors **AT Protocol's** signed personal repositories (AT Protocol Repository Spec). Adopting AT Protocol's DID structure provides immediate interoperability and an established ecosystem; conversely, the disadvantage is inheriting their server-to-server assumptions rather than Akashik's device-level P2P graph. Position Akashik as "AT Protocol for semantic knowledge" fused with "Freenet's monotonic caching"—an emerging approach that adds query-triggered semantic replication, which neither prior system possesses.
+The closest architectural analogue for the monotonic availability property is **Freenet** (Clarke et al., 2001, *"A Decentralized, Fault-Tolerant System for Anonymously Publishing Information"*). The identity layer closely mirrors **AT Protocol's** signed personal repositories (AT Protocol Repository Spec). Adopting AT Protocol's DID structure provides immediate interoperability and an established ecosystem; conversely, the disadvantage is inheriting their server-to-server assumptions rather than Folklore's device-level P2P graph. Position Folklore as "AT Protocol for semantic knowledge" fused with "Freenet's monotonic caching"—an emerging approach that adds query-triggered semantic replication, which neither prior system possesses.
 
 ### Q3 — Propose a benchmark for federation-level compounding
-**AkashikBench-F (Federated Compounding Benchmark)**
+**FolkloreBench-F (Federated Compounding Benchmark)**
 - **Dataset Choice:** 2,000 documents from CQADupStack, strictly partitioned into 10 completely disjoint seed corpora to prevent initial overlap from masking genuine peer transfer.
 - **Simulation Protocol:** Deploy N=10 peer simulators in overlapping rooms. Run a stream of 500 time-ordered queries (incorporating a realistic 20% peer churn/offline rate). On a federation miss, the peer accesses a central 'oracle' (simulated web search), saves the result locally, and subsequent queries test network propagation.
 - **Metrics:** `Web Avoidance Rate` (fraction of queries resolved without the oracle over time) and `Compounding Gain@t` (federated answer success minus isolated-peer success).
@@ -127,7 +127,7 @@ The closest architectural analogue for the monotonic availability property is **
 **Target:** The Rust OSS community (specifically maintainers of top crates like `tokio`, `serde`, `reqwest`).
 **Seed Content:** 200+ specific notes on Rust compiler errors, unsafe patterns from the Rustonomicon, cross-compilation toolchain quirks, and Cargo build cache gotchas.
 **Timeline:** Week 1: 5 'librarian' maintainers seed the initial graph. Week 2-3: Onboard 95 early adopters from the community to generate real query traffic. Week 4: Publish the 30-day `Web Avoidance Rate` drop.
-**Trade-off:** While hyper-focusing on Rust guarantees high query density and fast visible compounding for a niche, the downside is it risks branding Akashik as a language-specific debugging tool rather than a general knowledge commons. Nevertheless, solving the cold-start problem justifies the initial pigeonholing.
+**Trade-off:** While hyper-focusing on Rust guarantees high query density and fast visible compounding for a niche, the downside is it risks branding Folklore as a language-specific debugging tool rather than a general knowledge commons. Nevertheless, solving the cold-start problem justifies the initial pigeonholing.
 
 ### Q6 — Failure modes of curiosity-driven propagation
 - **(a) Popularity Cascade:** A known solution is **Diversity Ranking (TREC FedWeb 2013)**, which weights federation fan-out by inverse document frequency across rooms to ensure source entropy; however, the tradeoff is that diversity penalties can occasionally suppress the genuinely most accurate popular answer.
@@ -135,17 +135,17 @@ The closest architectural analogue for the monotonic availability property is **
 - **(c) Adversarial Misinformation Flood:** A known solution is **Composable Moderation Labels on DIDs (Bluesky/AT Protocol)**, allowing reputation tags to propagate alongside signed nodes; the disadvantage is that maintaining a reliable auth error taxonomy for decentralized moderation is complex, and for B2B/enterprise compliance, "signed forever" conflicts with GDPR erasure requirements.
 
 ### Q7 — REAL competitors
-- **Are.na**: The closest *product* competitor (centralized curation/attribution). Are.na provides a frictionless centralized UX with strong community features; however, Akashik supersedes it by replacing central servers with peer-local federation, prioritizing data sovereignty over immediate onboarding ease.
-- **AT Protocol (Bluesky)**: The closest *protocol* analogue (signed, portable user-owned records). While AT Protocol excels at social broadcasting and identity portability, Akashik extends it by introducing query-driven semantic knowledge propagation.
-- **Secure Scuttlebutt (SSB)**: The closest *infrastructure* cousin (device-level, offline-friendly P2P log replication, ACM ICN 2019). SSB is an established best practice for offline mesh networks, but the tradeoff is that Akashik replaces its pure gossip replication with targeted semantic vector search to reduce bandwidth.
+- **Are.na**: The closest *product* competitor (centralized curation/attribution). Are.na provides a frictionless centralized UX with strong community features; however, Folklore supersedes it by replacing central servers with peer-local federation, prioritizing data sovereignty over immediate onboarding ease.
+- **AT Protocol (Bluesky)**: The closest *protocol* analogue (signed, portable user-owned records). While AT Protocol excels at social broadcasting and identity portability, Folklore extends it by introducing query-driven semantic knowledge propagation.
+- **Secure Scuttlebutt (SSB)**: The closest *infrastructure* cousin (device-level, offline-friendly P2P log replication, ACM ICN 2019). SSB is an established best practice for offline mesh networks, but the tradeoff is that Folklore replaces its pure gossip replication with targeted semantic vector search to reduce bandwidth.
 
 ### Q8 — Strongest counter-argument against the project
 **Counter-argument:** "This is a coordination problem in an infrastructure costume. The federated compounding mechanism is architecturally sound but practically useless without critical mass. Until network density is achieved, users will experience a slower, worse version of web search, leading to churn before compounding materializes."
-**Honest Response:** "We acknowledge that federation value is strictly additive and dependent on density. However, Akashik solves the cold-start problem by providing strict single-player value on day one: the local-first web-fallback loop ensures that even a user with zero peers gets a functional, accumulating local knowledge base. The tradeoff is that early adopters bear the cost of local indexing, but they retain sovereign ownership of their data, and the network effect becomes a progressive enhancement rather than a hard prerequisite."
+**Honest Response:** "We acknowledge that federation value is strictly additive and dependent on density. However, Folklore solves the cold-start problem by providing strict single-player value on day one: the local-first web-fallback loop ensures that even a user with zero peers gets a functional, accumulating local knowledge base. The tradeoff is that early adopters bear the cost of local indexing, but they retain sovereign ownership of their data, and the network effect becomes a progressive enhancement rather than a hard prerequisite."
 
 ***
 
-If I were Sahar, the next engineering month I'd spend on building the AkashikBench-F federation measurement harness and assessing AT Protocol DID compatibility because the project's core claim of monotonic compounding currently lacks empirical proof. The next marketing/launch month I'd spend on seeding the Rust OSS community with 5 'librarians' and 95 early adopters because demonstrating a sharp drop in the `web_fallback_rate` within a single, high-density domain is the only way to prove the architecture works in practice. Specifically NOT tuning the LongMemEval-S R@5 metric because competing on single-peer memory benchmarks completely abandons Akashik's federated differentiator and chases a mathematical ceiling we've already hit.
+If I were Sahar, the next engineering month I'd spend on building the FolkloreBench-F federation measurement harness and assessing AT Protocol DID compatibility because the project's core claim of monotonic compounding currently lacks empirical proof. The next marketing/launch month I'd spend on seeding the Rust OSS community with 5 'librarians' and 95 early adopters because demonstrating a sharp drop in the `web_fallback_rate` within a single, high-density domain is the only way to prove the architecture works in practice. Specifically NOT tuning the LongMemEval-S R@5 metric because competing on single-peer memory benchmarks completely abandons Folklore's federated differentiator and chases a mathematical ceiling we've already hit.
 ```
 <!-- END-UNTRUSTED:provider=gemini:nonce=7a3e574881327e12 -->
 

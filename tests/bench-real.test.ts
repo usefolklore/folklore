@@ -224,12 +224,12 @@ test('real-bench: IR metrics on labeled corpus (P@5, R@5, MRR, NDCG@5)', async (
     );
 
     // Emit BenchSuiteReport for the composite runner (Phase 23).
-    // The 30-item labeled corpus with NDCG@5 is akashik's BEIR
+    // The 30-item labeled corpus with NDCG@5 is folklore's BEIR
     // SciFact proxy until the real 5,183-doc SciFact adapter ships in
     // Phase 23.5. Mapping NDCG@5 → beirSciFactNdcg10 is documented in
     // the report's notes field so the dimension is honest about its
     // source.
-    if (process.env.AKASHIK_BENCH_OUT) {
+    if (process.env.FOLKLORE_BENCH_OUT) {
       const report: BenchSuiteReport = {
         suite: 'dense-retrieval-labeled',
         metrics: {
@@ -243,7 +243,7 @@ test('real-bench: IR metrics on labeled corpus (P@5, R@5, MRR, NDCG@5)', async (
         elapsedMs: 0,
         notes: 'Local 30-item labeled corpus (3-domain tag-based relevance) as BEIR SciFact proxy. Real 5183-doc SciFact adapter pending in Phase 23.5. NDCG@5 reported in lieu of NDCG@10 because the relevance set per query is small (1-3 docs).',
       };
-      appendFileSync(process.env.AKASHIK_BENCH_OUT, JSON.stringify(report) + '\n');
+      appendFileSync(process.env.FOLKLORE_BENCH_OUT, JSON.stringify(report) + '\n');
     }
 
     close();

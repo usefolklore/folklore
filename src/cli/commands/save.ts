@@ -1,5 +1,5 @@
 /**
- * `akashik save --label X [--type T] [--text Y] [--private] [--workspace W]`
+ * `folklore save --label X [--type T] [--text Y] [--private] [--workspace W]`
  *
  * Port of claude-obsidian's `/save` skill — file the current answer,
  * insight, or decision as a typed node that outlives chat history.
@@ -10,10 +10,10 @@
  *
  * Without --text, body is read from stdin — pipe Claude's response in:
  *
- *   akashik save --type concept --label "Touch primitive" \
+ *   folklore save --type concept --label "Touch primitive" \
  *     --text "Asymmetric P2P pull replacing symmetric Y.js intersection rule"
  *
- *   echo "long body..." | akashik save --type synthesis --label "..."
+ *   echo "long body..." | folklore save --type synthesis --label "..."
  *
  * Node IDs are deterministic — `<type>://YYYY-MM-DD/<slug>` — so saving
  * the same title twice in one day idempotently updates the existing node.

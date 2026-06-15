@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 64" width="360" height="64" role="img" aria-label="akashik">
-  <title>akashik — monochrome wordmark</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 64" width="360" height="64" role="img" aria-label="folklore">
+  <title>folklore — monochrome wordmark</title>
   <desc>Single-ink wordmark for stamps, watermarks, embossing, print, and any non-brand surface. Uses currentColor so the ink follows the host text color.</desc>
   <defs>
     <style>
@@ -75,5 +75,5 @@
           fill="none" stroke="currentColor" stroke-width="1.2"/>
   </g>
 
-  <text x="80" y="43" class="wm-text">akashik</text>
+  <text x="80" y="43" class="wm-text">folklore</text>
 </svg>

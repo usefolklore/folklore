@@ -116,7 +116,7 @@ if (parsed.peers) {
 
 ### Task 2b: server.ts — 14th MCP tool federated_search
 
-**Imports added:** `join`, `createNode`, `dialAndTag`, `loadPeers`, `loadConfig`, `runFederatedSearch`, `akashikHome`.
+**Imports added:** `join`, `createNode`, `dialAndTag`, `loadPeers`, `loadConfig`, `runFederatedSearch`, `folkloreHome`.
 
 **Tool registered** after `find_tunnels`, before `sources_list` (grouped with search-flavored tools).
 
@@ -134,7 +134,7 @@ if (parsed.peers) {
 
 **createNode call updated** with `peersPath`, `mdns`, `dhtEnabled` from loaded config — enables `peer:discovery` handler to persist discovered peers to disk.
 
-**Search registration** runs after share registration attempt, independent of share success. Logs `search protocol registered: /akashik/search/1.0.0` on success, or logs failure and continues (`liveSearch = null`).
+**Search registration** runs after share registration attempt, independent of share success. Logs `search protocol registered: /folklore/search/1.0.0` on success, or logs failure and continues (`liveSearch = null`).
 
 **Cleanup order** (verified by line numbers):
 ```
@@ -149,22 +149,22 @@ line 318: liveNode.stop()
 
 ```bash
 # 1. Verify peer list shows discovery column
-akashik peer list
+folklore peer list
 # Expected: "discovery: manual" for any existing peers
 
 # 2. Verify ask --peers runs without error (0 peers = local-only)
-akashik ask "knowledge graph" --peers
+folklore ask "knowledge graph" --peers
 # Expected: "peers_queried: 0" footer, local results shown
 
 # 3. Verify MCP tool count
-akashik mcp start &
+folklore mcp start &
 # (ask Claude Code to call federated_search)
 # Expected: returns JSON with peers_queried, matches, tunnels fields
 
 # 4. Verify daemon log shows search protocol registered
-akashik daemon start
-tail -5 ~/.akashik/daemon.log
-# Expected line: "search protocol registered: /akashik/search/1.0.0"
+folklore daemon start
+tail -5 ~/.folklore/daemon.log
+# Expected line: "search protocol registered: /folklore/search/1.0.0"
 ```
 
 ## Deviations from Plan

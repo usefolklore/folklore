@@ -1,6 +1,6 @@
-# Akashik Data Researcher Audit — Exploratory Data Analysis of the BEIR Corpus
+# Folklore Data Researcher Audit — Exploratory Data Analysis of the BEIR Corpus
 
-**Auditor lens:** Data researcher. Three prior audits covered architecture, pipeline, and geometry; a senior data scientist is covering MLOps. This audit only asks *what does the data actually look like*, and whether the pipeline matches those characteristics. **Every number below was computed from `~/.akashik/bench/` during this audit** — nothing is theoretical.
+**Auditor lens:** Data researcher. Three prior audits covered architecture, pipeline, and geometry; a senior data scientist is covering MLOps. This audit only asks *what does the data actually look like*, and whether the pipeline matches those characteristics. **Every number below was computed from `~/.folklore/bench/` during this audit** — nothing is theoretical.
 
 ---
 
@@ -8,7 +8,7 @@
 
 **Phase 1 — Problem definition.** The user observed: across 4 BEIR datasets, our nomic-embed-v1.5 hybrid numbers land below the BEIR leaderboard. Most gaps are small (~1-3 pts). One is enormous: ArguAna NDCG@10 = **0.3446 vs published 0.4801 (−13.55 pts)**. Goal of this audit: ground-truth the claim that the gap is explained by *dataset characteristics* or *corpus preprocessing* rather than model quality.
 
-**Phase 2 — Data discovery.** Cached datasets at `~/.akashik/bench/{scifact,arguana,nfcorpus,scidocs}/` each contain `queries.jsonl`, `corpus.jsonl`, and `qrels/test.tsv`. Phase 21 hybrid results at `~/.akashik/bench/{ds}__nomic-ai-nomic-embed-text-v1-5__hybrid/results.json` contain `per_query_ndcg10` arrays (for scifact + arguana). The Wave 4 oracle-routing null lives at `~/.akashik/bench/rooms__mathematica-webmasters-gaming__xenova-all-minilm-l6-v2/results.json`. CQADupStack subforums are under `~/.akashik/bench/cqadupstack/cqadupstack/{sf}/`.
+**Phase 2 — Data discovery.** Cached datasets at `~/.folklore/bench/{scifact,arguana,nfcorpus,scidocs}/` each contain `queries.jsonl`, `corpus.jsonl`, and `qrels/test.tsv`. Phase 21 hybrid results at `~/.folklore/bench/{ds}__nomic-ai-nomic-embed-text-v1-5__hybrid/results.json` contain `per_query_ndcg10` arrays (for scifact + arguana). The Wave 4 oracle-routing null lives at `~/.folklore/bench/rooms__mathematica-webmasters-gaming__xenova-all-minilm-l6-v2/results.json`. CQADupStack subforums are under `~/.folklore/bench/cqadupstack/cqadupstack/{sf}/`.
 
 **Phase 3 — Data preparation.** Computed via `python3` the distributions for query length (token count on `\w+`), doc length, qrels-per-query, vocabulary Jaccard between query and gold doc, and zero-gold counts. Full table in section 2.
 
@@ -182,7 +182,7 @@ Secondary: the CQADupStack room-routing gate was never going to show a win on an
 
 ## Appendix — methodology notes
 
-- All statistics computed during this audit via direct `python3` scans of `~/.akashik/bench/`. Nothing extrapolated from documentation.
+- All statistics computed during this audit via direct `python3` scans of `~/.folklore/bench/`. Nothing extrapolated from documentation.
 - Token counts use `re.findall(r"\w+", text.lower())`. This overcounts vs WordPiece/BPE tokenizers (which is what the BM25 pipeline probably uses) but the *ranking* of datasets is preserved, and the >50-token ArguAna finding is robust to the tokenizer choice because no reasonable tokenizer converts a 177-word argument into <50 tokens.
 - Vocabulary Jaccard on CQADupStack computed on the top-5,000 most-frequent tokens per subforum (frequency-weighted overlap would be higher; the reported number is a pessimistic floor).
 - Published NDCG@10 targets sourced from the nomic-embed-v1.5 paper tables — these are a moving target depending on hybrid configuration, so the `-0.8` and `-2.7` gaps should not be over-interpreted.

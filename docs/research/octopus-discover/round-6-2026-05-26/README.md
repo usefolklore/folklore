@@ -1,6 +1,6 @@
 # Octopus discover — Round 6 (2026-05-26 evening, cleanup audit)
 
-Cleanup-audit round run after the Akashik rebrand sweep (rounds 4-5
+Cleanup-audit round run after the Folklore rebrand sweep (rounds 4-5
 delivered the strategy + work plan; this round audits what's no
 longer relevant in the repo). Synthesis fused into actionable
 priority matrix.
@@ -22,7 +22,7 @@ named explicitly:
    `archive/` folder — they actively mislead new contributors by
    presenting the dead positioning as current strategy.
 3. **Rewrite `MANIFESTO.md`, `VISION.md`, `ROADMAP.md`** to the
-   Akashik OSS-commons framing + set up a `akashik` bin
+   Folklore OSS-commons framing + set up a `folklore` bin
    alias for zombie integrations during the two-name period.
 
 ## Priority matrix (verbatim from synthesis)
@@ -37,14 +37,14 @@ named explicitly:
 | Archive synthetic tests (`bench-standard`, `bench-real`, `*synth*`) | Medium | Low | **Medium** |
 | Quarantine `src/telegram/bot.ts` to `legacy/` | Low | Low | **Medium** |
 | Setup shadow traffic validation for federated search | High | High | **Medium** |
-| Coordinated global rename to `akashik` (with bin alias) | High | High | **Low** |
+| Coordinated global rename to `folklore` (with bin alias) | High | High | **Low** |
 
 ## Conflicts + trade-offs surfaced
 
 - **Codebase naming (rename vs two-name):** Full rename cleanly
-  aligns branding but breaks the Rust IPC (`akashik-rs`) and
+  aligns branding but breaks the Rust IPC (`folklore-rs`) and
   legacy zombie integrations. Resolution: tolerate cognitive debt
-  of two-name period; keep `akashik` for code/binaries with
+  of two-name period; keep `folklore` for code/binaries with
   later deprecation-aliased rename.
 - **Experimental rerankers (`cross-rerank.ts`,
   `llm-listwise-rerank.ts`):** Archive/disable rather than delete.

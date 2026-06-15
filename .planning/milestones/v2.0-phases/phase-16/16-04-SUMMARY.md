@@ -27,7 +27,7 @@ key_files:
 decisions:
   - "Block-comment stripping (/\\*[\\s\\S]*?\\*\\/) applied before doesNotMatch assertions — JSDoc mentions of forbidden APIs in production files do not cause false failures"
   - "Uint8ArrayList.subarray structural test uses pipeline pattern (frameIter block + handleInboundFrame signature) rather than proximity-window check — the design is a flatten-in-iterator pattern, not a co-located call"
-  - "No CLI integration tests (share/unshare argv dispatch) — those commands rely on AKASHIK_HOME + loadConfig + graph.json; tested via pure share-store/ydoc-store round-trips which are the actual contracts"
+  - "No CLI integration tests (share/unshare argv dispatch) — those commands rely on FOLKLORE_HOME + loadConfig + graph.json; tested via pure share-store/ydoc-store round-trips which are the actual contracts"
 metrics:
   duration_seconds: 420
   tasks_completed: 1

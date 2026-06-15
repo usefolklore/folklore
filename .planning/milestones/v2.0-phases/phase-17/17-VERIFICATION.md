@@ -117,6 +117,6 @@ All 3 are expected to work given the structural verification — they are deferr
 
 **PASSED — 16/16 must-haves verified**
 
-Phase 17 delivers a complete, tested, architecturally clean federated search + discovery layer. All 9 requirements are covered (with DISC-04 documented as deferred per locked decision). All 7 research pitfalls are locked by both code and tests. The 2 new protocols (`/akashik/search/1.0.0` alongside `/akashik/share/1.0.0`) have independent lifecycles. The CLI, MCP tool, and daemon all share a single libp2p node lifecycle pattern with proper cleanup.
+Phase 17 delivers a complete, tested, architecturally clean federated search + discovery layer. All 9 requirements are covered (with DISC-04 documented as deferred per locked decision). All 7 research pitfalls are locked by both code and tests. The 2 new protocols (`/folklore/search/1.0.0` alongside `/folklore/share/1.0.0`) have independent lifecycles. The CLI, MCP tool, and daemon all share a single libp2p node lifecycle pattern with proper cleanup.
 
 **Ready to proceed to Phase 18 (Production Networking).**

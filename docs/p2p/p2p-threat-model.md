@@ -1,14 +1,14 @@
 # P2P Threat Model — Remote Code Execution + Data Leakage
 
-Scope: the attack surface exposed once an Akashik node accepts data from **untrusted peers** via `share sync` (Y.js CRDT) or `touch` (one-shot pull). This document enumerates concrete paths from a hostile peer to code execution or secret exfiltration, and the mitigations that are (a) shipped, (b) planned, or (c) deferred.
+Scope: the attack surface exposed once an Folklore node accepts data from **untrusted peers** via `share sync` (Y.js CRDT) or `touch` (one-shot pull). This document enumerates concrete paths from a hostile peer to code execution or secret exfiltration, and the mitigations that are (a) shipped, (b) planned, or (c) deferred.
 
-**Threat actor.** A peer on the P2P network who has completed the libp2p handshake and can send arbitrary payloads on `/akashik/share/1.0.0` and `/akashik/touch/1.0.0`. Peers are not authenticated beyond their ed25519 peer identity — there is no external PKI and no "this peer is trusted" claim.
+**Threat actor.** A peer on the P2P network who has completed the libp2p handshake and can send arbitrary payloads on `/folklore/share/1.0.0` and `/folklore/touch/1.0.0`. Peers are not authenticated beyond their ed25519 peer identity — there is no external PKI and no "this peer is trusted" claim.
 
 **Assets.**
 1. `graph.json` — node store. A corrupted node can re-appear on every subsequent query.
 2. `vectors.db` — SQLite file; SQL injection into FTS5 queries is a latent risk.
 3. `~/.claude/projects/*.jsonl` — session transcripts, often contain API keys.
-4. `~/.akashik/*.yaml`, `peer-identity.json` — private key for peer identity.
+4. `~/.folklore/*.yaml`, `peer-identity.json` — private key for peer identity.
 5. Host shell via `node --` subprocess spawning on node content (only if we ever pipe node data into a command).
 
 ## Attack surface, ranked by severity

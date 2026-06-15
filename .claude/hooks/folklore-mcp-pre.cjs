@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * akashik PreToolUse hook for the akashik MCP tool calls.
+ * folklore PreToolUse hook for the folklore MCP tool calls.
  *
- * When Claude invokes `mcp__akashik__*`, Claude Code's TUI shows
- * a bare "Calling akashik..." line. The user wants the rich
+ * When Claude invokes `mcp__folklore__*`, Claude Code's TUI shows
+ * a bare "Calling folklore..." line. The user wants the rich
  * banner from the prompt-submit hook to land HERE too, so the call
  * is annotated with peers/domains/latency context.
  *
@@ -12,7 +12,7 @@
  * to the UserPromptSubmit hook. Two short-circuits:
  *   1. If a fresh prefetch-cache entry exists for the same query,
  *      use that — no peer round-trip.
- *   2. Otherwise fire `akashik ask --peers --json` with a
+ *   2. Otherwise fire `folklore ask --peers --json` with a
  *      tight timeout. Failure paths exit 0 without output so the
  *      tool call proceeds normally.
  *
@@ -27,11 +27,11 @@ const { readFileSync, existsSync } = require('node:fs');
 const { join } = require('node:path');
 const os = require('node:os');
 
-const HOME = process.env.AKASHIK_HOME || join(os.homedir(), '.akashik');
+const HOME = process.env.FOLKLORE_HOME || join(os.homedir(), '.folklore');
 const CACHE_PATH = join(HOME, 'prefetch-cache.jsonl');
 const CACHE_MAX_AGE_MS = 60_000;
-const PREFETCH_TIMEOUT_MS = Number(process.env.AKASHIK_MCP_PRE_TIMEOUT_MS ?? 15000);
-const ENABLED = process.env.AKASHIK_MCP_PRE_HOOK !== '0';
+const PREFETCH_TIMEOUT_MS = Number(process.env.FOLKLORE_MCP_PRE_TIMEOUT_MS ?? 15000);
+const ENABLED = process.env.FOLKLORE_MCP_PRE_HOOK !== '0';
 
 // ─────────────── peer-label resolver (mirrors prompt-submit) ──────
 
@@ -45,7 +45,7 @@ const loadPeerLabels = () => {
   return peerLabelsCache;
 };
 // Peer identity rendering. The github handle here is the user's
-// OAuth-verified github username (from `akashik login`), not a
+// OAuth-verified github username (from `folklore login`), not a
 // repo path — peer identity is the parallel of a DID anchored in a
 // centrally-credible github account. Render as `@handle` (handle
 // form, not org/repo form) to keep the distinction clean.
@@ -119,7 +119,7 @@ const extractTopics = (hits, n = 3) => {
 
 // The PreToolUse hook receives stdin JSON of shape:
 //   {
-//     "tool_name": "mcp__akashik__ask",
+//     "tool_name": "mcp__folklore__ask",
 //     "tool_input": { "query": "...", ... }
 //   }
 // Each MCP tool may use a different field for its query. Pull from
@@ -156,9 +156,9 @@ const readFreshCacheEntry = (query) => {
 
 // ─────────────── quick federated query (no auto-pull) ──────
 
-const runAkashik = (args, timeoutMs) => {
+const runFolklore = (args, timeoutMs) => {
   try {
-    return execFileSync('akashik', args, {
+    return execFileSync('folklore', args, {
       timeout: timeoutMs,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -169,7 +169,7 @@ const runAkashik = (args, timeoutMs) => {
 };
 
 const quickAsk = (query) => {
-  const out = runAkashik(
+  const out = runFolklore(
     ['ask', '--peers', '--json', '--k', '3', query],
     PREFETCH_TIMEOUT_MS,
   );

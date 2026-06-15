@@ -1,6 +1,6 @@
-# akashik — single-frame timing teaser
+# folklore — single-frame timing teaser
 #
-# Shows the headline number — `akashik ask` returning a full
+# Shows the headline number — `folklore ask` returning a full
 # result block + agent contract in well under 1 second on a real
 # 15-note corpus. This is the asset for social posts / README badges
 # where the full screencast is too long.
@@ -24,7 +24,7 @@ Set WindowBar Colorful
 Set WindowBarSize 30
 
 Hide
-Type "export AKASHIK_HOME=$HOME/.akashik.demo"
+Type "export FOLKLORE_HOME=$HOME/.folklore.demo"
 Enter
 Type "clear"
 Enter
@@ -35,6 +35,6 @@ Type '# 15 cryogenic-LH2 research notes loaded locally. cold cache.'
 Enter
 Sleep 800ms
 
-Type 'time akashik ask "who runs quench-detection LSTM research" --k 3 | head -20'
+Type 'time folklore ask "who runs quench-detection LSTM research" --k 3 | head -20'
 Enter
 Sleep 5500ms

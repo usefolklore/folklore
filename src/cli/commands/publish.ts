@@ -1,5 +1,5 @@
 /**
- * `akashik publish <sub>`
+ * `folklore publish <sub>`
  *
  * Subcommands:
  *   auth               authenticate with X/Twitter via OAuth 2.0

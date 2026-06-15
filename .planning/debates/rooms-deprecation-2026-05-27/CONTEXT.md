@@ -6,10 +6,10 @@
 ## Read these first (all required)
 
 1. **Prior debate's context pack** — establishes what rooms are today and how they're used:
-   `/Users/saharbarak/personal/akashik/.planning/debates/rooms-abstraction-2026-05-26/CONTEXT.md`
+   `/Users/saharbarak/personal/folklore/.planning/debates/rooms-abstraction-2026-05-26/CONTEXT.md`
 
 2. **Prior debate's synthesis** — the workspace-tag + smart-prompt design we just landed on (which the user is now rejecting as still too much):
-   `/Users/saharbarak/personal/akashik/.planning/debates/rooms-abstraction-2026-05-26/SYNTHESIS.md`
+   `/Users/saharbarak/personal/folklore/.planning/debates/rooms-abstraction-2026-05-26/SYNTHESIS.md`
 
 3. **Source files for grounding citations:**
    - `src/domain/rooms.ts` (the vocabulary — addRoom, RoomMeta, defaultRoom, validateRoomId)
@@ -38,10 +38,10 @@ Delete `RoomMeta`, `RoomRegistry`, `addRoom`, `setDefault`, `shared-rooms.json`,
 
 1. **What actually pays rent.** For each function rooms serve (topical reputation, granular sharing, prefetch routing, source curation), is rooms NECESSARY or just one implementation? What's the simplest alternative?
 2. **Wire-protocol break.** Deletion/replacement means changing `SearchRequest`, `PEER_HELLO`, `ROOM_SYNC`, reputation envelopes. Migration story? Major version bump?
-3. **The 5 existing user rooms with real data.** What happens to `akashik-dev`, `p2p-llm`, `tlvtech`, `forge`, `auto-tlv` on landing day?
+3. **The 5 existing user rooms with real data.** What happens to `folklore-dev`, `p2p-llm`, `tlvtech`, `forge`, `auto-tlv` on landing day?
 4. **Sharing UX.** Today user shares `p2p-llm` public and keeps `tlvtech` private. Under deletion: how? Two machines? Encryption? Is that simpler or just relocated complexity?
 5. **Reputation key.** Without `room:*`, what's the new key? Effect on Phase 24.2 niche-evaporation math (76/103 docs never reach 50% peer coverage)?
-6. **What the user actually wants.** Underneath the architecture: (i) statusline showed `tlvtech` while working in `akashik`, (ii) registry maintenance feels imposed, (iii) feels like ceremony without value. Does deletion solve that pain, or could a smaller change (workspace-derived default, auto-create, hide CRUD UI) also solve it?
+6. **What the user actually wants.** Underneath the architecture: (i) statusline showed `tlvtech` while working in `folklore`, (ii) registry maintenance feels imposed, (iii) feels like ceremony without value. Does deletion solve that pain, or could a smaller change (workspace-derived default, auto-create, hide CRUD UI) also solve it?
 
 ## Constraints
 - Cite file paths and line numbers. Read whatever you need.

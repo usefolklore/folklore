@@ -4,7 +4,7 @@
  * (graph.json today; vectors.db is sqlite-WAL-locked already).
  *
  * The cross-process lock in src/infrastructure/process-lock.ts
- * keeps OTHER akashik processes off the files; this mutex
+ * keeps OTHER folklore processes off the files; this mutex
  * keeps multiple in-process callers (daemon tick + job worker) off
  * each other. They both go through the same Runtime, so a singleton
  * shared via Runtime.graphMutex is exactly what's needed to close

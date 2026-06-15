@@ -1,14 +1,14 @@
 /**
- * `akashik claude install` / `akashik claude uninstall`
+ * `folklore claude install` / `folklore claude uninstall`
  *
  * Installs a three-layer integration that makes Claude Code route
- * knowledge questions through the akashik graph automatically:
+ * knowledge questions through the folklore graph automatically:
  *
  * 1. PreToolUse smart prefetch (Glob|Grep|Read|WebSearch|WebFetch):
- *    Extracts the query from the tool input, runs `akashik ask
+ *    Extracts the query from the tool input, runs `folklore ask
  *    --json` against the graph, and injects the top-3 hits into the
  *    tool-call context. On a miss, logs the query to
- *    ~/.akashik/miss-log.jsonl so the user can decide whether to
+ *    ~/.folklore/miss-log.jsonl so the user can decide whether to
  *    ingest the topic. This converts "Claude goes to the web" into
  *    "Claude reads its own graph" whenever possible.
  *
@@ -35,11 +35,11 @@ import { fileURLToPath } from 'node:url';
 
 // Script filenames in .claude/hooks/ — the "legacy" one is the Phase 20
 // SessionStart hook; the others are the prefetch + auto-save layer.
-const LEGACY_HOOK_NAME = 'akashik-hook.sh';
-const SMART_HOOK_SH = 'akashik-smart-hook.sh';
-const SMART_HOOK_CJS = 'akashik-smart-hook.cjs';
-const POST_FETCH_SH = 'akashik-post-fetch.sh';
-const POST_FETCH_CJS = 'akashik-post-fetch.cjs';
+const LEGACY_HOOK_NAME = 'folklore-hook.sh';
+const SMART_HOOK_SH = 'folklore-smart-hook.sh';
+const SMART_HOOK_CJS = 'folklore-smart-hook.cjs';
+const POST_FETCH_SH = 'folklore-post-fetch.sh';
+const POST_FETCH_CJS = 'folklore-post-fetch.cjs';
 
 const BUNDLED_SCRIPTS = [SMART_HOOK_SH, SMART_HOOK_CJS, POST_FETCH_SH, POST_FETCH_CJS] as const;
 
@@ -57,7 +57,7 @@ const HOOK_SCRIPT_NAME = LEGACY_HOOK_NAME;
 void HOOK_SCRIPT_NAME;
 
 /** Absolute path to the .claude/hooks/ directory bundled with the installed
- * akashik package. When running from source, resolves to the repo's
+ * folklore package. When running from source, resolves to the repo's
  * own .claude/hooks/. When running from node_modules, resolves to the
  * installed package's .claude/hooks/ (shipped via the "files" entry). */
 const bundledHooksDir = (): string => {
@@ -68,21 +68,21 @@ const bundledHooksDir = (): string => {
 };
 
 const HOOK_SCRIPT = `#!/bin/sh
-# akashik PreToolUse + SessionStart hook.
+# folklore PreToolUse + SessionStart hook.
 # Fires before Glob|Grep|Read (legacy hint) and on SessionStart (Phase 20 — recent session summary).
-GRAPH="\${AKASHIK_HOME:-$HOME/.akashik}/graph.json"
+GRAPH="\${FOLKLORE_HOME:-$HOME/.folklore}/graph.json"
 
 # ── SessionStart branch (Phase 20) ──────────────────────────────────────────
 if [ "\${CLAUDE_HOOK_EVENT:-}" = "SessionStart" ]; then
-  if command -v akashik >/dev/null 2>&1; then
-    RECENT=$(akashik recent-sessions --hours 24 --limit 1 --json 2>/dev/null || echo '{"count":0,"sessions":[]}')
+  if command -v folklore >/dev/null 2>&1; then
+    RECENT=$(folklore recent-sessions --hours 24 --limit 1 --json 2>/dev/null || echo '{"count":0,"sessions":[]}')
     COUNT=$(printf '%s' "$RECENT" | grep -c '"id":' 2>/dev/null || echo 0)
     if [ "$COUNT" -gt 0 ]; then
       SID=$(printf '%s' "$RECENT" | grep -m1 '"id":' | sed 's/.*"id": *"\\([^"]*\\)".*/\\1/')
       STARTED=$(printf '%s' "$RECENT" | grep -m1 '"started_at":' | sed 's/.*"started_at": *"\\([^"]*\\)".*/\\1/')
       FINAL=$(printf '%s' "$RECENT" | grep -m1 '"final_assistant_message":' | sed 's/.*"final_assistant_message": *"\\([^"]*\\)".*/\\1/')
       BRANCH=$(printf '%s' "$RECENT" | grep -m1 '"git_branch":' | sed 's/.*"git_branch": *"\\([^"]*\\)".*/\\1/')
-      MSG="akashik: Previous session $SID (started $STARTED, branch $BRANCH). Last assistant: \${FINAL:-<none>}. Call the recent_sessions MCP tool for the full rollup."
+      MSG="folklore: Previous session $SID (started $STARTED, branch $BRANCH). Last assistant: \${FINAL:-<none>}. Call the recent_sessions MCP tool for the full rollup."
       printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}\\n' "$MSG"
     fi
   fi
@@ -92,12 +92,12 @@ fi
 # ── Legacy PreToolUse branch — unchanged output ──────────────────────────────
 if [ -f "$GRAPH" ]; then
   NODES=$(grep -c '"id"' "$GRAPH" 2>/dev/null || echo 0)
-  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"akashik: Knowledge graph exists ('"$NODES"' nodes). Before searching raw files, consider using the akashik MCP tools: search (semantic k-NN), ask (search + context assembly), get_node (lookup by ID), get_neighbors (graph traversal). These return your indexed research + codebase + external sources in one query."}}'
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"folklore: Knowledge graph exists ('"$NODES"' nodes). Before searching raw files, consider using the folklore MCP tools: search (semantic k-NN), ask (search + context assembly), get_node (lookup by ID), get_neighbors (graph traversal). These return your indexed research + codebase + external sources in one query."}}'
 fi
 `;
 
 // PreToolUse smart-prefetch hook — fires before Glob/Grep/Read/WebSearch/
-// WebFetch. Extracts the query and runs `akashik ask --json` against
+// WebFetch. Extracts the query and runs `folklore ask --json` against
 // the graph; top-3 hits get injected into Claude's context so the outbound
 // tool call is usually unnecessary. Zero hits are logged for later ingest.
 const HOOK_CONFIG_PRE_TOOL_USE = {
@@ -140,8 +140,8 @@ const HOOK_CONFIG_SESSION_START = {
 };
 
 const CLAUDE_MD_SECTION = `
-# akashik
-akashik is a knowledge-graph-first research layer with P2P
+# folklore
+folklore is a knowledge-graph-first research layer with P2P
 federation. A PreToolUse hook prefetches the graph before
 Glob/Grep/Read/WebSearch/WebFetch and injects top matches into your
 context. A PostToolUse hook auto-saves WebSearch / WebFetch results so
@@ -152,7 +152,7 @@ the graph absorbs everything you learn from the web.
 Two graph-level primitives replace the legacy room abstraction:
 
 - **\`private: boolean\`** — defaults to \`false\`. Set with
-  \`akashik save --private\` when a node must never federate.
+  \`folklore save --private\` when a node must never federate.
   Sharing gates on \`private === false\` at the share-sync layer.
 - **\`workspace?: string\`** — populated automatically from the slug
   of the current git repo's basename. Local-only; never enters the
@@ -173,26 +173,26 @@ hit vs re-fetch:
 - If the hit is younger than a reasonable window for its source-URI
   scheme, trust the cache.
 - If the hit is older, prefer a fresh pull — re-run the source's
-  ingest (\`akashik trigger\`) or the original WebFetch / WebSearch
+  ingest (\`folklore trigger\`) or the original WebFetch / WebSearch
   — and let the auto-save hook put the newer version back into the
   graph.
 - If a hit has no \`fetched_at\` at all, treat it as stale of unknown age.
 
-## When to invoke akashik
+## When to invoke folklore
 
-1. Use the akashik MCP tools (\`search\`, \`ask\`, \`get_node\`,
+1. Use the folklore MCP tools (\`search\`, \`ask\`, \`get_node\`,
    \`get_neighbors\`) BEFORE outbound lookups on any research,
    architecture, or "what did I read about X" question.
 2. \`search\` / \`ask\` take a query string. The active workspace is
    applied as a pre-filter automatically when cwd is inside a git repo.
 3. After reasoning through an external result, use
-   \`akashik save --type synthesis --label "..."\` to file the
+   \`folklore save --type synthesis --label "..."\` to file the
    distilled insight alongside the raw source node the auto-save hook
    already captured. Add \`--private\` to keep the synthesis local.
 `;
 
-const CLAUDE_MD_MARKER_START = '<!-- akashik:start -->';
-const CLAUDE_MD_MARKER_END = '<!-- akashik:end -->';
+const CLAUDE_MD_MARKER_START = '<!-- folklore:start -->';
+const CLAUDE_MD_MARKER_END = '<!-- folklore:end -->';
 
 // ─────────────── install ────────────────
 
@@ -236,7 +236,7 @@ const install = (projectDir: string): number => {
 
   const hooks = (settings.hooks ?? {}) as Record<string, unknown[]>;
 
-  // dedupe filter — any owned script name is a akashik entry
+  // dedupe filter — any owned script name is a folklore entry
   const isOwned = (h: unknown): boolean => {
     const s = JSON.stringify(h);
     return OWNED_SCRIPT_NAMES.some((name) => s.includes(name));
@@ -272,9 +272,9 @@ const install = (projectDir: string): number => {
   const section = `\n${CLAUDE_MD_MARKER_START}\n${CLAUDE_MD_SECTION}\n${CLAUDE_MD_MARKER_END}\n`;
   claudeMd = claudeMd.trimEnd() + '\n' + section;
   writeFileSync(claudeMdPath, claudeMd);
-  console.log(`  updated ${claudeMdPath} (akashik section added)`);
+  console.log(`  updated ${claudeMdPath} (folklore section added)`);
 
-  console.log('\nClaude Code will now check the akashik knowledge graph');
+  console.log('\nClaude Code will now check the folklore knowledge graph');
   console.log('before searching raw files. Restart Claude Code to activate.');
   return 0;
 };
@@ -336,7 +336,7 @@ const uninstall = (projectDir: string): number => {
     }
   }
 
-  console.log('\nakashik hooks removed. Restart Claude Code to deactivate.');
+  console.log('\nfolklore hooks removed. Restart Claude Code to deactivate.');
   return 0;
 };
 
@@ -348,10 +348,10 @@ export const claudeInstall = async (args: readonly string[]): Promise<number> =>
 
   switch (sub) {
     case 'install':
-      console.log('akashik claude install\n');
+      console.log('folklore claude install\n');
       return install(projectDir);
     case 'uninstall':
-      console.log('akashik claude uninstall\n');
+      console.log('folklore claude uninstall\n');
       return uninstall(projectDir);
     default:
       console.error(`claude: unknown subcommand '${sub ?? ''}'. try: install | uninstall`);

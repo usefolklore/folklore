@@ -13,7 +13,7 @@
  *
  * Env factory `listwiseScorerFromEnv()` materialises the right adapter
  * based on the rerank-tier picker's plan + the existing
- * `AKASHIK_BENCH_LLM_EXTRACTOR_*` env namespace (extended here
+ * `FOLKLORE_BENCH_LLM_EXTRACTOR_*` env namespace (extended here
  * for the rerank path).
  */
 
@@ -124,9 +124,9 @@ export interface ListwiseFactoryOptions {
 /**
  * Resolve a listwise scorer from environment.
  *
- *   AKASHIK_LLM_RERANK=1       master on/off (off by default)
- *   AKASHIK_LLM_RERANK_MODEL   Ollama tag (default `qwen2.5:1.5b`)
- *   AKASHIK_OLLAMA_URL         endpoint (default localhost:11434)
+ *   FOLKLORE_LLM_RERANK=1       master on/off (off by default)
+ *   FOLKLORE_LLM_RERANK_MODEL   Ollama tag (default `qwen2.5:1.5b`)
+ *   FOLKLORE_OLLAMA_URL         endpoint (default localhost:11434)
  *
  * Returns `null` when the master switch is off — caller passes through
  * to the cross-encoder path (or no rerank).
@@ -134,8 +134,8 @@ export interface ListwiseFactoryOptions {
 export const listwiseScorerFromEnv = (
   opts: ListwiseFactoryOptions = {},
 ): ListwiseScorer | null => {
-  if (process.env.AKASHIK_LLM_RERANK !== '1') return null;
-  const model = opts.model ?? process.env.AKASHIK_LLM_RERANK_MODEL ?? 'qwen2.5:1.5b';
+  if (process.env.FOLKLORE_LLM_RERANK !== '1') return null;
+  const model = opts.model ?? process.env.FOLKLORE_LLM_RERANK_MODEL ?? 'qwen2.5:1.5b';
   const client = opts.client ?? ollamaClient({ model });
   return ollamaListwiseScorer(client, { model });
 };

@@ -1,5 +1,5 @@
 /**
- * Pure Bloom filter — the primitive behind akashik v3's
+ * Pure Bloom filter — the primitive behind folklore v3's
  * federated-search pre-filter (§9.2 of docs/V3-PROTOCOL.md).
  *
  * Each peer publishes a compact filter of its indexed node content at

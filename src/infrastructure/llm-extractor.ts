@@ -93,25 +93,25 @@ export const fixtureLlmExtractor = (opts: FixtureLlmExtractorOptions = {}): LlmE
  * Resolve the project-wide LlmExtractor from environment.
  *
  * Order of precedence:
- *   1. `AKASHIK_BENCH_LLM_EXTRACTOR_FIXTURE=1` → fixtureLlmExtractor
+ *   1. `FOLKLORE_BENCH_LLM_EXTRACTOR_FIXTURE=1` → fixtureLlmExtractor
  *      (deterministic; for offline bench smoke-tests).
- *   2. Default → ollamaLlmExtractor against `AKASHIK_OLLAMA_URL`
+ *   2. Default → ollamaLlmExtractor against `FOLKLORE_OLLAMA_URL`
  *      (default `http://localhost:11434`). Model from
- *      `AKASHIK_BENCH_LLM_EXTRACTOR_MODEL` (default `phi3:mini`).
+ *      `FOLKLORE_BENCH_LLM_EXTRACTOR_MODEL` (default `phi3:mini`).
  *
  * Returns `null` only on misconfiguration; never throws. The bench
  * caller decides how to handle null (fall back to pure-compute
  * containment scoring).
  */
 export const llmExtractorFromEnv = (): LlmExtractor | null => {
-  if (process.env.AKASHIK_BENCH_LLM_EXTRACTOR_FIXTURE === '1') {
+  if (process.env.FOLKLORE_BENCH_LLM_EXTRACTOR_FIXTURE === '1') {
     return fixtureLlmExtractor({
-      fallback: process.env.AKASHIK_BENCH_LLM_EXTRACTOR_FIXTURE_ANSWER ?? '',
+      fallback: process.env.FOLKLORE_BENCH_LLM_EXTRACTOR_FIXTURE_ANSWER ?? '',
     });
   }
 
-  const baseUrl = process.env.AKASHIK_OLLAMA_URL;
-  const model = process.env.AKASHIK_BENCH_LLM_EXTRACTOR_MODEL ?? 'phi3:mini';
+  const baseUrl = process.env.FOLKLORE_OLLAMA_URL;
+  const model = process.env.FOLKLORE_BENCH_LLM_EXTRACTOR_MODEL ?? 'phi3:mini';
   // ollamaClient already defaults baseUrl to localhost — pass through
   // either an explicit override or undefined.
   return ollamaLlmExtractor(

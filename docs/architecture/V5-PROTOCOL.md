@@ -1,7 +1,7 @@
-# Akashik v5 — Wire Protocol
+# Folklore v5 — Wire Protocol
 
 **Version:** 0.5 (draft, supersedes [`V4-PROTOCOL.md`](./V4-PROTOCOL.md))
-**Status:** Reference implementation shipped in Akashik v5.x on `feat/delete-rooms`; spec stabilising ahead of v5.0 tag
+**Status:** Reference implementation shipped in Folklore v5.x on `feat/delete-rooms`; spec stabilising ahead of v5.0 tag
 **Date:** 2026-05-27
 **Audience:** Implementers of cross-agent persistent memory, P2P application authors, anyone building on free LLMs
 
@@ -30,7 +30,7 @@ partners to break.
   pre-filter only. **Local-only — never enters federation, never enters
   reputation.**
 - **`private: boolean`** (default `false`) on every graph node. Sharing
-  becomes a filter on `private === false`. `akashik save --private`
+  becomes a filter on `private === false`. `folklore save --private`
   sets it. **Replaces `shared-rooms.json` entirely** for the binary-privacy
   case.
 
@@ -78,7 +78,7 @@ The `ProtocolMismatchError` family is in `src/domain/errors.ts` —
 
 All envelopes are length-prefixed JSON frames over libp2p streams.
 
-### 3.1 `SearchRequest` / `SearchResponse` — `/akashik/search/1.0.0`
+### 3.1 `SearchRequest` / `SearchResponse` — `/folklore/search/1.0.0`
 
 (see `src/infrastructure/search-sync.ts` for the live definitions)
 
@@ -109,7 +109,7 @@ export interface SearchResponse {
 
 **Removed in V5:** `SearchRequest.room`, `SearchResponse.room`, `PeerMatch.room`.
 
-### 3.2 `RecallRequest` / `RecallResponse` — `/akashik/recall/1.0.0`
+### 3.2 `RecallRequest` / `RecallResponse` — `/folklore/recall/1.0.0`
 
 (see `src/infrastructure/recall-sync.ts`)
 
@@ -145,7 +145,7 @@ export interface RecallError {
 `unauthorized_room` error reason. The responder now applies a per-node
 `node.private === false` gate; rooms-level authorisation is gone.
 
-### 3.3 `TouchRequest` / `TouchResponse` — `/akashik/touch/1.0.0`
+### 3.3 `TouchRequest` / `TouchResponse` — `/folklore/touch/1.0.0`
 
 (see `src/domain/touch.ts`)
 
@@ -172,7 +172,7 @@ authorisation gate, and the special `TouchRoomNotShared` error variant is
 retired from new envelopes (the type alias still exists in
 `src/domain/errors.ts` to keep older error logs decodable).
 
-### 3.4 `SubscribeRequest` — `/akashik/share/2.0.0`
+### 3.4 `SubscribeRequest` — `/folklore/share/2.0.0`
 
 (see `src/infrastructure/share-sync.ts`)
 
@@ -201,16 +201,16 @@ and replay nonce are unchanged from V4.
 ## 4. Single-Y.Doc storage model
 
 V4 maintained a `Map<RoomId, Y.Doc>` keyed by room id; each room had its
-own `~/.akashik/<room>.ydoc` file and a separate CRDT replication
+own `~/.folklore/<room>.ydoc` file and a separate CRDT replication
 boundary. V5 collapses this to a single global Y.Doc at
-`~/.akashik/graph.ydoc`. Convergence at the node-id level is provided
+`~/.folklore/graph.ydoc`. Convergence at the node-id level is provided
 by Y.Map exactly as before — Y.js does not care that the partition layer
 disappeared from above it.
 
 Migration consequences:
 
 - Pre-existing per-room `.ydoc` files are **left in place** by
-  `akashik migrate v5`. They are orphaned but harmless — the V5 boot
+  `folklore migrate v5`. They are orphaned but harmless — the V5 boot
   path creates `graph.ydoc` on first run and never reads the old files. A
   Phase 25+ GC pass may remove them.
 - The single Y.Doc loads faster on cold start (one mmap, one decode) and
@@ -223,9 +223,9 @@ Migration consequences:
 V4 sharing was room-authorisation: a node was shareable if it belonged to a
 room listed in `shared-rooms.json`. V5 sharing is per-node:
 
-- `akashik save --private` sets `private: true` on the new node →
+- `folklore save --private` sets `private: true` on the new node →
   never federates.
-- `akashik save` (no flag) → `private: false` → eligible for
+- `folklore save` (no flag) → `private: false` → eligible for
   federation, subject to secrets-scanner gate and bandwidth limits.
 
 The sharing gate is enforced at four sites:
@@ -250,7 +250,7 @@ Pre-V5 reputation had two parallel subject schemes:
 V5 keeps only `entity:*`. The peer-reputation runtime
 (`src/infrastructure/peer-reputation-store.ts`) deny-lists any
 `room:`-prefixed subject key at both read and write time;
-`akashik migrate v5` flattens the on-disk record so the disk file is
+`folklore migrate v5` flattens the on-disk record so the disk file is
 also V5-clean. See [`peer-reputation-design.md`](../p2p/peer-reputation-design.md)
 § V5 Update for the full rationale — the design always preferred `entity:*`
 as the canonical subject; V5 just retired the room fallback.
@@ -262,15 +262,15 @@ as the primary, audit-stable signal.
 
 ---
 
-## 7. Migration — `akashik migrate v5`
+## 7. Migration — `folklore migrate v5`
 
 V5 ships a one-shot CLI migration that converts a V4 home directory to
 V5. The command is **idempotent** — running it twice prints
 "Already on V5." and exits 0.
 
 ```
-akashik migrate v5            # forward migration
-akashik migrate v5 --rollback # restore graph.json from backup
+folklore migrate v5            # forward migration
+folklore migrate v5 --rollback # restore graph.json from backup
 ```
 
 Behaviour (see `src/cli/commands/migrate.ts`):
@@ -294,7 +294,7 @@ deletions and reputation flattening are **one-way** — the migration
 prints loud warnings about this on the rollback path, and the doctor
 nag persists until the user opts into the forward migration.
 
-The boot path does **not** auto-migrate. `akashik doctor` samples 10
+The boot path does **not** auto-migrate. `folklore doctor` samples 10
 random nodes on every run and prints a yellow nag warning if any carry a
 `room` field or if `rooms.json` / `shared-rooms.json` still exists. This
 is a deliberate "explicit opt-in to a one-way data transform" UX —

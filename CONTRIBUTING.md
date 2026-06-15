@@ -1,4 +1,4 @@
-# Contributing to akashik
+# Contributing to folklore
 
 ## Branch + PR workflow
 
@@ -110,7 +110,7 @@ skipped are documented opt-outs — see each test file's header).
   39) or deleted (Phase 18 NET-04 — libp2p's own contract, not ours).
 
 If you need to add a real-network smoke, gate it behind an opt-in env
-var (e.g. `AKASHIK_REAL_NET=1`) and exclude it from the default CI
+var (e.g. `FOLKLORE_REAL_NET=1`) and exclude it from the default CI
 workflow.
 
 ## Hardening recommendation: flip `enforce_admins: true`
@@ -118,7 +118,7 @@ workflow.
 Once you're comfortable with the PR-only flow, run:
 
 ```bash
-gh api -X PUT repos/SaharBarak/akashik/branches/main/protection \
+gh api -X PUT repos/SaharBarak/folklore/branches/main/protection \
   --input - <<EOF
 { "enforce_admins": true,
   "required_pull_request_reviews": { "required_approving_review_count": 1 },

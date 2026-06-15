@@ -40,7 +40,7 @@ test('relocate: legacy contains only the RELOCATED.txt breadcrumb → noop (idem
   const root = tmpRoot();
   try {
     const legacy = join(root, '.wellinformed');
-    const target = join(root, '.akashik');
+    const target = join(root, '.folklore');
     mkdirSync(legacy, { recursive: true });
     writeFileSync(join(legacy, 'RELOCATED.txt'), 'previous relocate breadcrumb');
     // Target with data (the migrated home). Without the idempotency fix
@@ -48,7 +48,7 @@ test('relocate: legacy contains only the RELOCATED.txt breadcrumb → noop (idem
     mkdirSync(target, { recursive: true });
     writeFileSync(join(target, 'graph.json'), '{"nodes":[]}');
 
-    const r = withEnv({ AKASHIK_LEGACY_HOME: legacy, AKASHIK_HOME: target }, () => relocateDir());
+    const r = withEnv({ FOLKLORE_LEGACY_HOME: legacy, FOLKLORE_HOME: target }, () => relocateDir());
     assert.equal(r.kind, 'noop', `must noop on breadcrumb-only legacy: ${r.message}`);
     assert.match(r.message, /already drained/i);
     // Target data must be untouched.
@@ -62,8 +62,8 @@ test('relocate: legacy absent → noop', () => {
   const root = tmpRoot();
   try {
     const legacy = join(root, '.wellinformed');
-    const target = join(root, '.akashik');
-    const r = withEnv({ AKASHIK_LEGACY_HOME: legacy, AKASHIK_HOME: target }, () => relocateDir());
+    const target = join(root, '.folklore');
+    const r = withEnv({ FOLKLORE_LEGACY_HOME: legacy, FOLKLORE_HOME: target }, () => relocateDir());
     assert.equal(r.kind, 'noop');
     assert.equal(existsSync(target), false);
   } finally {
@@ -75,11 +75,11 @@ test('relocate: legacy with data, target absent → rename + breadcrumb', () => 
   const root = tmpRoot();
   try {
     const legacy = join(root, '.wellinformed');
-    const target = join(root, '.akashik');
+    const target = join(root, '.folklore');
     mkdirSync(legacy, { recursive: true });
     writeFileSync(join(legacy, 'graph.json'), '{"nodes":[]}');
 
-    const r = withEnv({ AKASHIK_LEGACY_HOME: legacy, AKASHIK_HOME: target }, () => relocateDir());
+    const r = withEnv({ FOLKLORE_LEGACY_HOME: legacy, FOLKLORE_HOME: target }, () => relocateDir());
     assert.equal(r.kind, 'relocated');
     assert.ok(existsSync(join(target, 'graph.json')), 'graph.json should be at target');
     assert.ok(existsSync(join(legacy, 'RELOCATED.txt')), 'breadcrumb file should be at legacy');
@@ -93,12 +93,12 @@ test('relocate: legacy + empty target → clear-then-rename', () => {
   const root = tmpRoot();
   try {
     const legacy = join(root, '.wellinformed');
-    const target = join(root, '.akashik');
+    const target = join(root, '.folklore');
     mkdirSync(legacy, { recursive: true });
     writeFileSync(join(legacy, 'graph.json'), '{"nodes":[]}');
     mkdirSync(target, { recursive: true }); // empty target
 
-    const r = withEnv({ AKASHIK_LEGACY_HOME: legacy, AKASHIK_HOME: target }, () => relocateDir());
+    const r = withEnv({ FOLKLORE_LEGACY_HOME: legacy, FOLKLORE_HOME: target }, () => relocateDir());
     assert.equal(r.kind, 'relocated');
     assert.ok(existsSync(join(target, 'graph.json')));
   } finally {
@@ -110,13 +110,13 @@ test('relocate: legacy + non-empty target → aborted (would-clobber)', () => {
   const root = tmpRoot();
   try {
     const legacy = join(root, '.wellinformed');
-    const target = join(root, '.akashik');
+    const target = join(root, '.folklore');
     mkdirSync(legacy, { recursive: true });
     writeFileSync(join(legacy, 'graph.json'), '{"nodes":[]}');
     mkdirSync(target, { recursive: true });
     writeFileSync(join(target, 'something.json'), '{}'); // non-empty target
 
-    const r = withEnv({ AKASHIK_LEGACY_HOME: legacy, AKASHIK_HOME: target }, () => relocateDir());
+    const r = withEnv({ FOLKLORE_LEGACY_HOME: legacy, FOLKLORE_HOME: target }, () => relocateDir());
     assert.equal(r.kind, 'aborted');
     assert.match(r.message, /refusing to merge automatically/);
     // Both should still exist, untouched.
@@ -131,13 +131,13 @@ test('relocate: live daemon pidfile → aborted', () => {
   const root = tmpRoot();
   try {
     const legacy = join(root, '.wellinformed');
-    const target = join(root, '.akashik');
+    const target = join(root, '.folklore');
     mkdirSync(legacy, { recursive: true });
     writeFileSync(join(legacy, 'graph.json'), '{"nodes":[]}');
     // Write our own PID as the daemon pidfile — guaranteed live.
     writeFileSync(join(legacy, 'daemon.pid'), String(process.pid));
 
-    const r = withEnv({ AKASHIK_LEGACY_HOME: legacy, AKASHIK_HOME: target }, () => relocateDir());
+    const r = withEnv({ FOLKLORE_LEGACY_HOME: legacy, FOLKLORE_HOME: target }, () => relocateDir());
     assert.equal(r.kind, 'aborted');
     assert.match(r.message, /daemon still running/);
     assert.equal(existsSync(target), false, 'target must not be created when aborted');
@@ -150,14 +150,14 @@ test('relocate: stale pidfile (dead pid) → proceeds with relocate', () => {
   const root = tmpRoot();
   try {
     const legacy = join(root, '.wellinformed');
-    const target = join(root, '.akashik');
+    const target = join(root, '.folklore');
     mkdirSync(legacy, { recursive: true });
     writeFileSync(join(legacy, 'graph.json'), '{"nodes":[]}');
     // PID 1 should always exist, so use a high impossible-on-test-host PID.
     // 999999999 is virtually guaranteed not to be live; process.kill(_, 0) throws.
     writeFileSync(join(legacy, 'daemon.pid'), '999999999');
 
-    const r = withEnv({ AKASHIK_LEGACY_HOME: legacy, AKASHIK_HOME: target }, () => relocateDir());
+    const r = withEnv({ FOLKLORE_LEGACY_HOME: legacy, FOLKLORE_HOME: target }, () => relocateDir());
     assert.equal(r.kind, 'relocated');
     assert.ok(existsSync(join(target, 'graph.json')));
     // Note: daemon.pid moves along with the rest of legacy/. That's fine —
@@ -172,11 +172,11 @@ test('relocate: breadcrumb is human-readable + identifies target', () => {
   const root = tmpRoot();
   try {
     const legacy = join(root, '.wellinformed');
-    const target = join(root, '.akashik');
+    const target = join(root, '.folklore');
     mkdirSync(legacy, { recursive: true });
     writeFileSync(join(legacy, 'graph.json'), '{}');
 
-    withEnv({ AKASHIK_LEGACY_HOME: legacy, AKASHIK_HOME: target }, () => relocateDir());
+    withEnv({ FOLKLORE_LEGACY_HOME: legacy, FOLKLORE_HOME: target }, () => relocateDir());
     const breadcrumb = readFileSync(join(legacy, 'RELOCATED.txt'), 'utf8');
     assert.match(breadcrumb, /relocated to/);
     assert.ok(breadcrumb.includes(target), 'breadcrumb must name the new target');

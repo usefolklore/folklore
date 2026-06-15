@@ -31,7 +31,7 @@ metrics:
 
 # Phase 17 Plan 02: Protocol + Discovery Infrastructure Summary
 
-One-liner: mDNS/DHT peer discovery wired with explicit dial handler + /akashik/search/1.0.0 protocol (framed JSON, token bucket rate limiter, room auth) + runFederatedSearch orchestrator with parallel 2s-timeout fan-out and findTunnels cross-room pass.
+One-liner: mDNS/DHT peer discovery wired with explicit dial handler + /folklore/search/1.0.0 protocol (framed JSON, token bucket rate limiter, room auth) + runFederatedSearch orchestrator with parallel 2s-timeout fan-out and findTunnels cross-room pass.
 
 ## Tasks Completed
 
@@ -69,7 +69,7 @@ One-liner: mDNS/DHT peer discovery wired with explicit dial handler + /akashik/s
 
 ### Task 2: search-sync.ts (NEW, 508 lines)
 
-**Protocol:** `SEARCH_PROTOCOL_ID = '/akashik/search/1.0.0'`
+**Protocol:** `SEARCH_PROTOCOL_ID = '/folklore/search/1.0.0'`
 
 **Wire format:**
 - `SearchRequest { type:'search', embedding: number[], room?: string, k: number }`

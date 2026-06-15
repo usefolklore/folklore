@@ -1,4 +1,4 @@
-# S2 Geometry Audit — akashik vector architecture
+# S2 Geometry Audit — folklore vector architecture
 
 **Lens:** Google S2 / Hilbert-curve hierarchical spatial indexing
 **Audit date:** 2026-04-13
@@ -9,11 +9,11 @@
 
 ## 1. The unique lens — what S2 brings that the prior agents missed
 
-The previous audits (solution-architect, data-scientist, math/geometry) framed akashik's retrieval problem as "which distance function + which index + which encoder." They proposed HNSW, ScaNN, Voronoi/Delaunay tunnels. Good work. But they all stay inside the **continuous geometric** frame: vectors live in R^{768}, we compute real-valued distances, we build graph structures over points.
+The previous audits (solution-architect, data-scientist, math/geometry) framed folklore's retrieval problem as "which distance function + which index + which encoder." They proposed HNSW, ScaNN, Voronoi/Delaunay tunnels. Good work. But they all stay inside the **continuous geometric** frame: vectors live in R^{768}, we compute real-valued distances, we build graph structures over points.
 
 S2 proposes something structurally different: **throw away the points and keep the cells.** Every embedding becomes a 64-bit integer cell ID. Every proximity query becomes an **integer range scan on a B-tree**. Every room becomes a **prefix** in the cell-ID bit string. Every tunnel becomes a **neighbor-cell lookup** on the 30-level hierarchy. The distance metric is replaced by a cell-containment/adjacency relation, and the index is no longer a specialized vector structure (vec0, HNSW, IVF) — it's the same B-tree SQLite has been shipping since 2004.
 
-Nobody else in the audit chain pointed at the fact that **sqlite-vec's `vec0` virtual table is the weakest link in akashik's stack**: it forces `MATCH ? AND k = ?` which is a full scan dressed up as a virtual-table query ([vector-index.ts:107-113](../../src/infrastructure/vector-index.ts#L107)), it rejects `INSERT OR REPLACE` ([vector-index.ts:90-95](../../src/infrastructure/vector-index.ts#L90)), and its room-filter path is a 10× over-fetch hack ([vector-index.ts:157-165](../../src/infrastructure/vector-index.ts#L157)). An S2-style integer-cell index is the only proposal in the audit series that could **delete vec0 entirely** and replace it with plain `CREATE INDEX idx_cell ON vec_meta(cell_id)`.
+Nobody else in the audit chain pointed at the fact that **sqlite-vec's `vec0` virtual table is the weakest link in folklore's stack**: it forces `MATCH ? AND k = ?` which is a full scan dressed up as a virtual-table query ([vector-index.ts:107-113](../../src/infrastructure/vector-index.ts#L107)), it rejects `INSERT OR REPLACE` ([vector-index.ts:90-95](../../src/infrastructure/vector-index.ts#L90)), and its room-filter path is a 10× over-fetch hack ([vector-index.ts:157-165](../../src/infrastructure/vector-index.ts#L157)). An S2-style integer-cell index is the only proposal in the audit series that could **delete vec0 entirely** and replace it with plain `CREATE INDEX idx_cell ON vec_meta(cell_id)`.
 
 That's the lens: **trade geometry for integers; trade virtual tables for B-trees; trade k-NN for range scans.**
 
@@ -23,7 +23,7 @@ That's the lens: **trade geometry for integers; trade virtual tables for B-trees
 
 This is the fundamental math question, and I'll be honest: **it partially applies, with caveats the literature documents but does not fully resolve.**
 
-**What's true.** The all-MiniLM-L6-v2, nomic-embed-text-v1.5, and bge-base-en-v1.5 encoders all produce L2-normalized outputs, so every vector in akashik lives on the unit hypersphere S^{767} ⊂ R^{768}. The S2 library proper operates on S² (the 2-sphere) via a cube-face projection + quad-tree + Hilbert ordering ([google/s2geometry](https://github.com/google/s2geometry), [S2Vec ArXiv 2025](https://arxiv.org/html/2504.16942v1)). The mathematical machinery of Hilbert curves generalizes trivially to any d-dimensional hypercube [0,1]^d — the Moore/Butz constructions give you d-dim Hilbert curves directly. So "Hilbert-order a high-dim space" is mechanically possible and the literature has been doing it since the 90s ([Lawder & King 2000](https://dl.acm.org/doi/10.1145/373626.373678), [Efficient Neighbor-Finding on Space-Filling Curves, Stuttgart 2017](https://arxiv.org/pdf/1710.06384)).
+**What's true.** The all-MiniLM-L6-v2, nomic-embed-text-v1.5, and bge-base-en-v1.5 encoders all produce L2-normalized outputs, so every vector in folklore lives on the unit hypersphere S^{767} ⊂ R^{768}. The S2 library proper operates on S² (the 2-sphere) via a cube-face projection + quad-tree + Hilbert ordering ([google/s2geometry](https://github.com/google/s2geometry), [S2Vec ArXiv 2025](https://arxiv.org/html/2504.16942v1)). The mathematical machinery of Hilbert curves generalizes trivially to any d-dimensional hypercube [0,1]^d — the Moore/Butz constructions give you d-dim Hilbert curves directly. So "Hilbert-order a high-dim space" is mechanically possible and the literature has been doing it since the 90s ([Lawder & King 2000](https://dl.acm.org/doi/10.1145/373626.373678), [Efficient Neighbor-Finding on Space-Filling Curves, Stuttgart 2017](https://arxiv.org/pdf/1710.06384)).
 
 **What's false.** S2's *quality* — the specific geometric property "near cells ↔ near points" — degrades badly in high dimensions. Space-filling-curve ANN methods (SK-LSH, HD-Index, JSpaceFillingCurve) are **known to not scale past ~30-50 dimensions** without heavy compensation mechanisms (multiple shifted curves, dimensionality reduction, learned rotations). The [VLDB SK-LSH paper](https://dl.acm.org/doi/abs/10.14778/2732939.2732947) and [Stuttgart 2017 survey](https://arxiv.org/pdf/1710.06384) are explicit: d=768 is **outside the operating range** of raw Hilbert-curve ANN. At 768 dimensions the curve "unfolds" in a way that destroys the locality guarantee — two points that are L2-close will frequently end up in opposite halves of the curve.
 
@@ -36,7 +36,7 @@ This is the fundamental math question, and I'll be honest: **it partially applie
 
 ---
 
-## 3. Concrete proposal — Hilbert-ordered cell index for akashik
+## 3. Concrete proposal — Hilbert-ordered cell index for folklore
 
 ### 3.1 Schema
 
@@ -75,7 +75,7 @@ export const toCellId = (v: Vector, rotation: Float32Array): bigint => {
 };
 ```
 
-The rotation matrix is learned once on a bootstrap corpus (`scripts/fit-rotation.mjs`) and persisted to `~/.akashik/rotation.bin`. 4 bits × 16 axes gives ~1.8 × 10^{19} cell IDs, plenty of resolution for a 5K-100K node corpus.
+The rotation matrix is learned once on a bootstrap corpus (`scripts/fit-rotation.mjs`) and persisted to `~/.folklore/rotation.bin`. 4 bits × 16 axes gives ~1.8 × 10^{19} cell IDs, plenty of resolution for a 5K-100K node corpus.
 
 ### 3.3 Query pattern
 
@@ -116,7 +116,7 @@ export const searchByCell = (
 | `upsert` | DELETE+INSERT (OK) | INSERT + index update | Same cost class |
 | `all()` (tunnels) | Full table scan | Full table scan (unchanged) | Only used offline |
 
-For akashik's 2,830 research vectors the asymptotic win is theoretical — n is too small for log n to matter. **The real win is getting off `vec0`.** sqlite-vec 0.1.x is pre-release; it has the upsert problem, the MATCH+k syntax quirk, and an inability to cleanly filter by room. A plain B-tree over cell_id is sqlite since 2004, rock solid, and lets you write normal SQL.
+For folklore's 2,830 research vectors the asymptotic win is theoretical — n is too small for log n to matter. **The real win is getting off `vec0`.** sqlite-vec 0.1.x is pre-release; it has the upsert problem, the MATCH+k syntax quirk, and an inability to cleanly filter by room. A plain B-tree over cell_id is sqlite since 2004, rock solid, and lets you write normal SQL.
 
 ---
 
@@ -149,7 +149,7 @@ export const findTunnelsByCell = (
 };
 ```
 
-**Complexity.** If cells are reasonably balanced the shared-prefix join touches ~O(n · bucket_size) rows, typically O(n · √n) for a well-chosen prefix shift. For akashik's 2,830 vectors that's ~150k rows examined instead of 4M in the naive loop — a **~26× speedup** on findTunnels. At v2.0's projected 100k-node P2P graph the win is ~316×.
+**Complexity.** If cells are reasonably balanced the shared-prefix join touches ~O(n · bucket_size) rows, typically O(n · √n) for a well-chosen prefix shift. For folklore's 2,830 vectors that's ~150k rows examined instead of 4M in the naive loop — a **~26× speedup** on findTunnels. At v2.0's projected 100k-node P2P graph the win is ~316×.
 
 **vs the Voronoi / RNG proposal.** The math-agent audit was correct that Voronoi gives you the *sparsest edge set that preserves neighborhood structure*. But Voronoi-based tunneling requires computing the Delaunay in 768 dims (intractable) or in a reduced space (same reduction as S2). Once you've already reduced to R^{16} for cell IDs, you can either: (a) use cell-prefix join (this proposal — simpler, integer-only), or (b) run a proper Delaunay in R^{16} (scipy-style). Option (a) is within an order-of-magnitude of option (b) on recall and is 100× simpler to implement. **Recommend (a).**
 
@@ -157,7 +157,7 @@ export const findTunnelsByCell = (
 
 ## 5. Room sharding via cell prefix — structural meaning for rooms
 
-This is the most interesting implication for akashik's domain model, and it directly answers a question the Wave 4 benchmark left unresolved.
+This is the most interesting implication for folklore's domain model, and it directly answers a question the Wave 4 benchmark left unresolved.
 
 **Wave 4 finding (BENCH-v2.md §2c):** oracle room-routing beat flat hybrid by only +0.34 NDCG@10 on CQADupStack. Conclusion: rooms don't carry retrieval-useful partition signal in the current architecture. The report closes with: *"Nothing in the literature uses explicitly user-curated partitions + inter-partition edges as a retrieval scoring signal."*
 
@@ -191,7 +191,7 @@ This gives rooms **structural** meaning:
 
 **Retrieval consistency across rooms: big win.** This is the under-discussed axis. Today `searchByRoom` over-fetches 10× from a global KNN and filters — meaning if a room has <10% of its candidates in the global top-50, you silently get worse results. With cell-prefix rooms, `searchByRoom` is *isomorphic to* a smaller global search, with no overfetch gap. Tail rooms (small indexed codebases, niche feeds) should see a **measurable consistency improvement** — less "why is the mathematica room returning gaming results" variance. This is hard to benchmark on BEIR (single-topic) but trivial to measure on CQADupStack. **Recommend running the cell-prefix version against the Wave 4 flat-vs-oracle gate test — I predict it closes the +0.34 oracle gap without needing a learned router.**
 
-**Honest summary.** S2 indexing is not a quality play. It's an **architecture simplification + latency + federation play**. If the goal is "beat bge-base on BEIR," do Phase 22 (encoder swap). If the goal is "make akashik's index scale from 5k to 5M nodes without rewriting vec0," this is the path.
+**Honest summary.** S2 indexing is not a quality play. It's an **architecture simplification + latency + federation play**. If the goal is "beat bge-base on BEIR," do Phase 22 (encoder swap). If the goal is "make folklore's index scale from 5k to 5M nodes without rewriting vec0," this is the path.
 
 ---
 
@@ -209,7 +209,7 @@ Prove the cell-index approach works on the current vectors.db. Acceptance: `sear
 | `src/domain/vectors.ts` | Add `findTunnelsByCell(db, threshold)` alongside existing `findTunnels` for A/B comparison. | +40 |
 | `src/infrastructure/cell-index.ts` | **New.** Alternative `VectorIndex` adapter backed by `vec_nodes` table with `cell_id` integer column, no vec0. Same port interface. | ~220 |
 | `src/infrastructure/vector-index.ts` | Unchanged in spike — run both adapters side by side behind a config flag `indexKind: 'vec0' | 'cell'`. | — |
-| `scripts/fit-rotation.mjs` | **New.** Fit a 768→16 PCA/ITQ rotation on a bootstrap corpus, write to `~/.akashik/rotation.bin`. | ~100 |
+| `scripts/fit-rotation.mjs` | **New.** Fit a 768→16 PCA/ITQ rotation on a bootstrap corpus, write to `~/.folklore/rotation.bin`. | ~100 |
 | `scripts/bench-cell-index.mjs` | **New.** Run SciFact + CQADupStack against both adapters, print latency / NDCG delta / tunnel count. | ~150 |
 | `tests/cell-index.test.ts` | **New.** Port hex tests + adapter contract tests copied from `vector-index.test.ts`, run against cell adapter. | ~250 |
 

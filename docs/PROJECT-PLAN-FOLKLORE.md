@@ -1,8 +1,8 @@
-# Akashik — project plan
+# Folklore — project plan
 
 > **Snapshot — 2026-05-26.** Kept as the historical statement of
 > intent at the start of the v5.0 cycle. Some items below have
-> shipped (rooms abstraction removed; rebrand to `akashik` complete;
+> shipped (rooms abstraction removed; rebrand to `folklore` complete;
 > GitHub-as-primary identity wired with envelope pinning) and the
 > "Phase 24/25" numbering in this doc refers to calendar months of
 > work, not the engineering phase numbers used in the commit history.
@@ -18,19 +18,19 @@
 
 This is the engineering+launch plan for the v5.0 cycle, anchored
 in the smallest-viable launch recommendation: "next engineering
-cycle on AkashikBench-F and federation routing; next marketing
+cycle on FolkloreBench-F and federation routing; next marketing
 cycle on a 100-person pilot in the local-AI / agent-tooling OSS
 ecosystem". The product is positioned as a "federated knowledge
 commons for the open-source community". The architecture
-([how-akashik-works.md](./marketing/how-akashik-works.md)) is the
-credibility anchor for the mission; AkashikBench-F is the only
+([how-folklore-works.md](./marketing/how-folklore-works.md)) is the
+credibility anchor for the mission; FolkloreBench-F is the only
 instrument that can falsify or validate the compounding thesis
 empirically.
 
 ## Status snapshot (2026-05-26)
 
-AkashikBench-F was scaffolded today
-([tests/bench-akashik-federation.test.ts](../tests/bench-akashik-federation.test.ts)
+FolkloreBench-F was scaffolded today
+([tests/bench-folklore-federation.test.ts](../tests/bench-folklore-federation.test.ts)
 + [src/domain/federation-sim.ts](../src/domain/federation-sim.ts))
 and produced positive signal on the LoCoMo factual subset:
 `compoundingSlope = -4.74e-5` (negative = network is learning),
@@ -45,11 +45,11 @@ per-peer retrieval tuning is explicitly de-prioritised below.
 ## Phase 24 — Federation infrastructure (next engineering month)
 
 The Round 5 verbatim recommendation: spend this month on
-AkashikBench-F + federation routing because validating the
+FolkloreBench-F + federation routing because validating the
 compounding network effect is the only way to prove the product's
 core differentiator. Concrete deliverables:
 
-- **24.1 AkashikBench-F parameter sweep.** Run the existing simulator
+- **24.1 FolkloreBench-F parameter sweep.** Run the existing simulator
   across the grid `shard ∈ {0.02, 0.05, 0.10, 0.20}` ×
   `offline ∈ {0.0, 0.2, 0.5}` × `peers ∈ {5, 10, 25, 50}` ×
   `zipfAlpha ∈ {0.5, 1.0, 1.5}`. For each cell, report
@@ -60,7 +60,7 @@ core differentiator. Concrete deliverables:
   offline ≤ 0.5) configurations. Identify the regime boundary
   where compounding fails so we know what we're betting on.
   Deliverable: results table in
-  `docs/research/akashik-bench-f-sweep.md` with a one-paragraph
+  `docs/research/folklore-bench-f-sweep.md` with a one-paragraph
   interpretation per axis.
 
 - **24.2 Niche-evaporation mitigation (LOCKSS-style).** Today's bench
@@ -109,7 +109,7 @@ core differentiator. Concrete deliverables:
   - **CLI ↔ daemon IPC auth** (Round 4 finding A): the local
     socket has no workload identity today; a compromised process
     can impersonate the CLI. Add a per-session token in
-    `src/daemon/ipc.ts` written to `~/.akashik/ipc.token`
+    `src/daemon/ipc.ts` written to `~/.folklore/ipc.token`
     with `0600` perms; CLI reads + sends on every call; daemon
     rejects unauth'd connections. Success: integration test
     confirms unauth'd socket connect is rejected with
@@ -135,7 +135,7 @@ Per Round 5's smallest-viable launch plan: seed the local-AI /
 agent-tooling ecosystem because their high-frequency debugging
 queries make compounding visible within 30 days. The brutal
 tradeoff is acknowledged in the Round 5 brief: "temporarily
-pigeonholes Akashik as 'niche debugging tool' — but guarantees
+pigeonholes Folklore as 'niche debugging tool' — but guarantees
 high query overlap so compounding shows up fast." Worth it.
 
 - **25.1 Seed content curation.** Assemble 50-80 canonical artifacts
@@ -143,7 +143,7 @@ high query overlap so compounding shows up fast." Worth it.
   issues on CUDA OOM (ollama, vllm, llama.cpp), Apple Silicon Metal
   perf threads, vLLM PagedAttention PRs, quantization comparison
   papers (GPTQ, AWQ, GGUF), aider context-window strategies, etc.
-  Each artifact saved via `akashik save --type research` from
+  Each artifact saved via `folklore save --type research` from
   a librarian's peer (so provenance lands signed by a real maintainer,
   not the project itself). Deliverable: `docs/marketing/seed-corpus-pilot.md`
   listing every artifact with its URL, librarian, and room.
@@ -167,8 +167,8 @@ high query overlap so compounding shows up fast." Worth it.
   the pilot per Round 5. Recruitment channels: Hacker News (one
   Show HN post), the `r/LocalLLaMA` subreddit, LocalLLM Discords,
   and the maintainers' own audiences. Onboarding artifact is a
-  90-second video walkthrough + `npm install -g akashik` +
-  `akashik share` to join the pilot rooms. Success criterion:
+  90-second video walkthrough + `npm install -g folklore` +
+  `folklore share` to join the pilot rooms. Success criterion:
   ≥ 80 active peers (defined as: ≥ 1 query in past 7 days) by end
   of week 3.
 
@@ -196,7 +196,7 @@ phase slot, not a hand-wave:
   with an older schema federates with a peer on v2, malformed
   nodes are dropped silently. Add a `quarantine` table in the
   peer's SQLite, persist rejected envelopes with the parser error,
-  and expose `akashik quarantine list / replay` so operators
+  and expose `folklore quarantine list / replay` so operators
   can recover post-migration. The right time to ship this is
   immediately after the pilot when we'll have actual cross-version
   traffic.
@@ -258,9 +258,9 @@ Expanded:
   shift metric X by Y%", we don't do it in this 60-day window. The
   bench is the gate.
 
-- **No premature rebrand-PR (`akashik → akashik` package
+- **No premature rebrand-PR (`folklore → folklore` package
   rename).** The two-name period is fine during launch — pilot
-  participants install `akashik` and read about Akashik;
+  participants install `folklore` and read about Folklore;
   this is normal in rebrand windows. The rename is a single
   coordinated PR queued behind a successful pilot, not in front
   of it.
@@ -316,7 +316,7 @@ forgotten:
   is too centralised).
 
 - **The "ambitioned curator goes offline" worst case.** Acknowledged
-  honestly in `how-akashik-works.md` ("availability follows
+  honestly in `how-folklore-works.md` ("availability follows
   participation"). The pilot will produce empirical data on what
   fraction of niche knowledge is held by exactly one peer; if
   that's the dominant case, the LOCKSS-style replication of
@@ -341,7 +341,7 @@ Concrete, measurable, falsifiable:
   in-process.
 
 - **Phase 24.4 `web_fallback_rate` telemetry ships.** CLI command
-  `akashik metrics fallback --room <room>` returns a per-day
+  `folklore metrics fallback --room <room>` returns a per-day
   series, and the daemon emits zero spurious cardinality.
 
 - **Pilot has ≥ 50 active peers by end of week 3** and the live
@@ -350,7 +350,7 @@ Concrete, measurable, falsifiable:
   Round 5 Q8 counter-argument was right and we publish that
   honestly.
 
-- **AkashikBench-F v2 is at least started.** v1 is boolean-set
+- **FolkloreBench-F v2 is at least started.** v1 is boolean-set
   federation dynamics; v2 plugs in real per-peer retrieval (each
   peer runs the full local read-path on its shard) so we can
   separate "the network compounds knowledge boolean-availably"
@@ -363,11 +363,11 @@ The docs this plan depends on, ranked by load-bearing-ness:
 
 - [docs/research/octopus-discover/round-5-2026-05-26/README.md](./research/octopus-discover/round-5-2026-05-26/README.md)
   — the verbatim engineering-month + marketing-month recommendation
-  and the AkashikBench-F design brief.
+  and the FolkloreBench-F design brief.
 - [docs/research/octopus-discover/round-4-2026-05-26/synthesis.md](./research/octopus-discover/round-4-2026-05-26/synthesis.md)
   — the 8 operational/security launch blockers (A-H) referenced
   in Phase 24.5 and Phase 26.
-- [tests/bench-akashik-federation.test.ts](../tests/bench-akashik-federation.test.ts)
+- [tests/bench-folklore-federation.test.ts](../tests/bench-folklore-federation.test.ts)
   — the first-pass bench harness (positive signal today:
   `compoundingSlope = -4.74e-5`).
 - [src/domain/federation-sim.ts](../src/domain/federation-sim.ts)
@@ -375,7 +375,7 @@ The docs this plan depends on, ranked by load-bearing-ness:
   (`webFallbackRateOverTime`, `compoundingSlope`,
   `propagationHalfLife`) that Phase 24.1 sweeps and Phase 24.4
   productionises.
-- [docs/marketing/how-akashik-works.md](./marketing/how-akashik-works.md)
+- [docs/marketing/how-folklore-works.md](./marketing/how-folklore-works.md)
   — the architectural credibility anchor; the mechanism the pilot
   exists to validate.
 - [docs/marketing/storybrand-messaging-draft.md](./marketing/storybrand-messaging-draft.md)

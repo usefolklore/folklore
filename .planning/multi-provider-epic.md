@@ -7,7 +7,7 @@
 ## Why this is an epic, not a phase
 
 Each provider has its own auth model, plugin store, distribution channel,
-hook architecture, and pricing surface. Shipping akashik as a first-class
+hook architecture, and pricing surface. Shipping folklore as a first-class
 plugin/MCP server inside each one is on the order of weeks per provider,
 not days. Trying to land them in one sweep is how integrations end up
 half-baked. This epic decomposes the work into per-provider phases that
@@ -19,17 +19,17 @@ each ship independently and can be parallelised.
 
 #### A.1 Claude Code plugin store
 
-- **What:** akashik as a first-class entry in the Claude Code plugin
+- **What:** folklore as a first-class entry in the Claude Code plugin
   marketplace (the `claude-plugins-official` org or equivalent).
 - **Effort:** M — plugin manifest, hooks pre-wired, MCP server pre-registered,
   CLAUDE.md snippet auto-inserted. Mostly packaging.
-- **Distribution:** `claude plugin install akashik` one-liner.
+- **Distribution:** `claude plugin install folklore` one-liner.
 - **Gates:** Anthropic's plugin marketplace acceptance criteria + naming.
 
 #### A.2 Anthropic API direct integration
 
 - **What:** MCP server entry that any Anthropic SDK consumer can wire in:
-  `client.beta.messages.create({mcp_servers: [{url: 'akashik mcp', ...}]})`
+  `client.beta.messages.create({mcp_servers: [{url: 'folklore mcp', ...}]})`
 - **Effort:** S — the MCP server already exists. Document the wire-up
   pattern in `docs/integrations/anthropic-sdk.md`.
 - **Distribution:** README docs.
@@ -39,9 +39,9 @@ each ship independently and can be parallelised.
 #### B.1 ChatGPT GPT actions
 
 - **What:** A GPT in the GPT Store backed by an OpenAPI spec that fronts
-  the akashik daemon's HTTP surface.
+  the folklore daemon's HTTP surface.
 - **Effort:** M — daemon needs an HTTP server (currently only stdio MCP +
-  Unix socket IPC). Add a `akashik http-serve --port N` mode.
+  Unix socket IPC). Add a `folklore http-serve --port N` mode.
 - **Distribution:** GPT Store listing.
 
 #### B.2 Codex CLI integration
@@ -52,7 +52,7 @@ each ship independently and can be parallelised.
 
 #### B.3 OpenAI Assistants API
 
-- **What:** Function-calling integration — akashik exposed as a set
+- **What:** Function-calling integration — folklore exposed as a set
   of function tools to any Assistant.
 - **Effort:** M — adapter that translates between MCP tool schemas and
   OpenAI function-calling schemas.
@@ -84,14 +84,14 @@ each ship independently and can be parallelised.
 ### F. Open-weights providers (Ollama, vLLM, LM Studio, etc.)
 
 - **What:** Local-model harnesses don't have native function-calling
-  consistency. Approach: ship a `akashik translate` mode that
+  consistency. Approach: ship a `folklore translate` mode that
   injects the federated context into the system prompt directly.
 - **Effort:** S.
 
 ### G. Generic "any chatbot UI"
 
 - **What:** A Chrome extension that watches the active LLM chat (whatever
-  provider) and injects akashik context client-side, similar to
+  provider) and injects folklore context client-side, similar to
   Memex / Glasp.
 - **Effort:** L — separate browser product. Defer.
 
@@ -99,7 +99,7 @@ each ship independently and can be parallelised.
 
 Every provider integration needs the same five artifacts:
 
-1. **Install command:** `akashik <provider> install`
+1. **Install command:** `folklore <provider> install`
 2. **Config snippet:** auto-generated entry for that provider's MCP/plugin/rules system
 3. **Auth flow:** OAuth where supported, API-key fallback otherwise
 4. **Documentation:** `docs/integrations/<provider>.md` with the wire-up walkthrough
@@ -112,7 +112,7 @@ parallel provider work.
 
 ### P.1 HTTP serve mode
 
-The daemon needs a `akashik http-serve --port N` that exposes the
+The daemon needs a `folklore http-serve --port N` that exposes the
 same surface as the MCP stdio server but over HTTP. Required for ChatGPT
 GPT Actions and any provider without native MCP support. Maps to:
 `POST /ask`, `POST /search`, `GET /node/:id`, `POST /federated_search`.
@@ -132,7 +132,7 @@ function-calling schemas.
 
 ### P.3 Cross-harness identity
 
-Currently `akashik identity init` creates a fresh DID per home.
+Currently `folklore identity init` creates a fresh DID per home.
 Multi-provider means one user DID with N device keys (one per harness
 install). The lifecycle ops in `src/application/identity-lifecycle.ts`
 need a "register-new-device" path that authorizes a fresh device key
@@ -167,23 +167,23 @@ active work. This file is the meta-plan.
 Each provider integration is a content opportunity:
 
 - *"Your ChatGPT GPT now has a peer-to-peer memory layer"*
-- *"Gemini CLI + akashik = federated context on your terminal"*
-- *"One memory, every model: the akashik cross-harness story"*
+- *"Gemini CLI + folklore = federated context on your terminal"*
+- *"One memory, every model: the folklore cross-harness story"*
 
 The cross-harness narrative is the actual differentiator. Memory layers
 that lock you to one provider (mem0 + Anthropic only, Letta + own host,
-etc.) are common. akashik's federation works across providers
+etc.) are common. folklore's federation works across providers
 because the data is yours, the protocol is open, and the integrations
 are thin adapters.
 
 ## Open questions
 
-- **Pricing:** every provider is free for the integration itself (akashik
+- **Pricing:** every provider is free for the integration itself (folklore
   runs locally + on the user's peers). But ChatGPT GPT Actions has minimum
   performance bars — does our HTTP serve mode pass them? Test before listing.
 - **OAuth juggling:** each provider has its own OAuth flow. Cross-provider
   single-sign-on through github OAuth is the cleanest UX. Plumb it through
-  the existing `akashik login` command.
+  the existing `folklore login` command.
 - **API stability:** which providers are likely to break their MCP/plugin
   surface in the next 6 months? Anthropic's is locked. OpenAI's Assistants
   API has been stable since beta. Gemini's CLI is young — expect churn.

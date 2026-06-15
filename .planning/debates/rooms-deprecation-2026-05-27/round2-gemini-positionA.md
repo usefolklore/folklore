@@ -1,4 +1,4 @@
-# Round 2 — Position A: Total Deletion is the Only/Users/saharbarak/personal/akashik/.planning/debates/rooms-deprecation-2026-05-27/round2-gemini-positionA.md
+# Round 2 — Position A: Total Deletion is the Only/Users/saharbarak/personal/folklore/.planning/debates/rooms-deprecation-2026-05-27/round2-gemini-positionA.md
 owever, B clings to rooms for sharing granularity and the Y.Doc CRDT boundary. Meanwhile, Position C proposes renaming rooms to "tags," which merely rebrands the complexity without eliminating it. Let's dismantle both.
 
 ## Rebutting B: Sharing Granularity & Y.Doc Boundaries

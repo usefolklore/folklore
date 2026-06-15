@@ -2,11 +2,11 @@
 
 **Created:** 2026-05-17
 **Status:** planning — not yet executed
-**Goal:** ship akashik as a one-command install into every popular AI coding harness, framed as **"the decentralized cooperative memory & research layer."**
+**Goal:** ship folklore as a one-command install into every popular AI coding harness, framed as **"the decentralized cooperative memory & research layer."**
 
 ## Tier 0 — already integrated
 
-- **Claude Code** — full integration. PreToolUse + UserPromptSubmit + PostToolUse hooks, MCP server registration, status line, `akashik claude install` command.
+- **Claude Code** — full integration. PreToolUse + UserPromptSubmit + PostToolUse hooks, MCP server registration, status line, `folklore claude install` command.
 
 ## Tier 1 — biggest near-term reach
 
@@ -16,14 +16,14 @@ clearest hook-equivalent extension points. Land them next.
 ### 1.1 Cursor
 
 **Surface area:** Rules + `.cursorrules` + MCP support (since Cursor 0.43).
-Cursor has full MCP support; we register the akashik MCP server and
+Cursor has full MCP support; we register the folklore MCP server and
 get all 23 tools immediately. The hook layer needs a different mechanism —
 Cursor doesn't have PreToolUse equivalents; we wire context injection via
-a `.cursorrules` snippet that instructs Cursor's agent to call akashik
+a `.cursorrules` snippet that instructs Cursor's agent to call folklore
 search before WebSearch.
 
 - **Effort:** S (1-2 days)
-- **Deliverables:** `akashik cursor install`, MCP entry in `~/.cursor/mcp.json`, `.cursorrules` snippet generator.
+- **Deliverables:** `folklore cursor install`, MCP entry in `~/.cursor/mcp.json`, `.cursorrules` snippet generator.
 
 ### 1.2 Cline (VSCode extension)
 
@@ -32,14 +32,14 @@ agent loop is open-source and the rules system is the closest analog to
 Claude Code's CLAUDE.md.
 
 - **Effort:** S
-- **Deliverables:** `akashik cline install`, MCP registration, rules snippet.
+- **Deliverables:** `folklore cline install`, MCP registration, rules snippet.
 
 ### 1.3 Continue.dev
 
 **Surface area:** Open-source agent platform. `.continuerc.json` config
 + MCP support + custom slash commands. Their tool-call hooks aren't as
 deep as Claude Code's but they have `customCommands` and `slashCommands`
-that can be used to surface akashik federation.
+that can be used to surface folklore federation.
 
 - **Effort:** M
 - **Deliverables:** Continue plugin package on the marketplace.
@@ -48,11 +48,11 @@ that can be used to surface akashik federation.
 
 **Surface area:** CLI coding assistant. No MCP, no hooks — but Aider
 supports `--read` to add files to the chat context. We wire a wrapper:
-`akashik aider <args>` that runs `akashik ask` first, writes
+`folklore aider <args>` that runs `folklore ask` first, writes
 the result to a temp file, then invokes `aider --read /tmp/wi.md`.
 
 - **Effort:** S
-- **Deliverables:** `akashik aider` shim command.
+- **Deliverables:** `folklore aider` shim command.
 
 ## Tier 2 — second wave
 
@@ -92,7 +92,7 @@ similar to Cursor.
 
 ## The pitch (single sentence per harness)
 
-> *"akashik turns your agent into a peer in a cooperative knowledge
+> *"folklore turns your agent into a peer in a cooperative knowledge
 > graph. Every research lookup your agent does, every codebase fact it
 > learns, every paper it reads — federated to your peers' agents over
 > libp2p, scored, and surfaced in your context before the LLM makes the
@@ -100,14 +100,14 @@ similar to Cursor.
 
 ## Distribution plan
 
-1. Each harness gets a `akashik <harness> install` subcommand that
+1. Each harness gets a `folklore <harness> install` subcommand that
    does the registration in one shot.
 2. README badges: `Cursor ✓` · `Cline ✓` · `Continue ✓` · `Aider ✓` etc.
 3. Per-harness GIF demo on the marketing site.
 4. PRs into each harness's "examples" directory (Cursor MCP gallery,
    Cline community rules, Continue plugin marketplace).
 5. Two short blog posts:
-   - "Plug akashik into your IDE — five harnesses, one command"
+   - "Plug folklore into your IDE — five harnesses, one command"
    - "Decentralized memory across your AI tools" (the cross-harness story)
 
 ## Open questions
@@ -117,7 +117,7 @@ similar to Cursor.
   user DID? Lean toward: one user DID, multiple device keys, one per
   harness instance.
 - **Cache sharing:** when both Cursor and Claude Code run with the same
-  AKASHIK_HOME, they share the prefetch cache + bypass log. Is that
+  FOLKLORE_HOME, they share the prefetch cache + bypass log. Is that
   the right default? Probably yes — gives a unified view across harnesses.
 - **Deny semantics across harnesses:** only Claude Code's hook system
   supports `permissionDecision:'deny'`. Other harnesses get the

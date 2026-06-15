@@ -1,6 +1,6 @@
 # Round 2 — Position B Rebuttal
 
-**Assigned model:Confirmation: The Round 2 rebuttal defending Position B has been successfully written to `/Users/saharbarak/personal/akashik/.planning/debates/rooms-abstraction-2026-05-26/round2-gemini-positionB.md`. It addresses the niche evaporation argument from Position A and the half-measure workspace axis from Position C, ending with restated deliverables (a)/(b)/(c).
+**Assigned model:Confirmation: The Round 2 rebuttal defending Position B has been successfully written to `/Users/saharbarak/personal/folklore/.planning/debates/rooms-abstraction-2026-05-26/round2-gemini-positionB.md`. It addresses the niche evaporation argument from Position A and the half-measure workspace axis from Position C, ending with restated deliverables (a)/(b)/(c).
  cause of the current evaporation crisis.
 
 Niche evaporation occurs today *because* manual, topical rooms are highly idiosyncratic. One user creates `p2p-llm` or `auto-tlv`, while a peer working on the exact same problem names theirs `local-ai-mesh` or `tlv-automation`. These ad-hoc human strings fail to intersect, creating isolated islands of data. 
@@ -11,7 +11,7 @@ Repositories, conversely, are universally recognized, verifiable identities. Whe
 
 Position C proposes adding a local `workspace` tag to filter queries while preserving the global, manual room registry. This is a dangerous half-measure that preserves the exact UX failure we are trying to fix, while silently destroying the federation integrity it claims to protect.
 
-Consider the context: the user is actively working in the `akashik` repository, but their global default room is stale (`default_room: tlvtech`). Under Position C, the user continues to work, unaware of the stale room because the new local `workspace` query filter hides the mismatch from their CLI output. But what happens at write time? They are blindly appending `akashik` knowledge graph research into the `tlvtech` federation room. 
+Consider the context: the user is actively working in the `folklore` repository, but their global default room is stale (`default_room: tlvtech`). Under Position C, the user continues to work, unaware of the stale room because the new local `workspace` query filter hides the mismatch from their CLI output. But what happens at write time? They are blindly appending `folklore` knowledge graph research into the `tlvtech` federation room. 
 
 Position A rightly states that a room is a "claim about a domain of knowledge." Position C guarantees that these claims will be polluted with cross-domain garbage because users will inevitably forget to switch the underlying manual room. If the system auto-filters by workspace, the user has zero feedback that they are polluting a shared namespace. This completely destroys the topical coherence both Position A and C claim to value.
 

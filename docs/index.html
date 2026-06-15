@@ -13,14 +13,14 @@
 
     gtag('config', 'G-YNR9V7CGP2');
   </script>
-  <title>Akashik · we compound on inference</title>
+  <title>Folklore · we compound on inference</title>
   <meta name="description" content="A cooperative knowledge protocol. Each peer supplies the network with reasoning it has already done, so the next peer infers from there, not from zero. Someone already paid to figure it out. Why pay again?" />
   <meta name="theme-color" content="#0a0a0c" />
 
   <meta property="og:type"        content="website" />
-  <meta property="og:title"       content="Akashik · we compound on inference" />
+  <meta property="og:title"       content="Folklore · we compound on inference" />
   <meta property="og:description" content="Each peer supplies the network with reasoning it has already done, so the next peer infers from there, not from zero. Someone already paid to figure it out. Why pay again?" />
-  <meta property="og:url"         content="https://saharbarak.github.io/akashik/" />
+  <meta property="og:url"         content="https://saharbarak.github.io/folklore/" />
   <meta name="twitter:card"       content="summary_large_image" />
 
   <link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230a0a0c"/><circle cx="14" cy="32" r="3.4" fill="%2334d399"/><circle cx="50" cy="14" r="3.4" fill="%23f5f1e6"/><circle cx="50" cy="50" r="3.4" fill="%23f5f1e6"/><path d="M 14 32 L 50 14 M 14 32 L 50 50 M 50 14 L 50 50" stroke="%23f5f1e6" stroke-width="1.4" stroke-opacity="0.5"/></svg>' />
@@ -34,7 +34,7 @@
 
   <style>
     /* ──────────────────────────────────────────────────────────
-       AKASHIK - protocol manifesto. Single static page.
+       FOLKLORE - protocol manifesto. Single static page.
        Reset → tokens → primitives → chapters → join.
        Story-first. Bench is proof, not headline.
        ────────────────────────────────────────────────────────── */
@@ -139,6 +139,9 @@
     }
 
     html {
+      /* clip (not hidden) so no x scroll-container is created;
+         catches the hero's translateZ projection overflow. */
+      overflow-x: clip;
       scroll-behavior: smooth;
       /* Gentle scroll-snap - proximity, not mandatory.
          User can scroll freely; sections snap when close.
@@ -181,6 +184,19 @@
         rgba(0, 0, 0, 0.03) 3px
       );
       mix-blend-mode: multiply;
+    }
+    /* Film grain - static fractal noise on a fixed, non-scrolling
+       layer (never on scroll containers; zero repaint cost). Soft-
+       light at 5% reads as paper texture, not video noise. */
+    .grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 61;
+      opacity: 0.05;
+      mix-blend-mode: soft-light;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 240px 240px;
     }
 
     /* ─────────────────────────────────────────────────────
@@ -304,6 +320,11 @@
        PRIMITIVES
        ──────────────────────────────────────────────────────── */
     .shell {
+      /* width:100% is load-bearing: as an auto-margin flex item
+         inside .chapter, the shell otherwise resolves fit-content
+         against its max-content (the marquee track) and blows out
+         to max-width on narrow viewports. */
+      width: 100%;
       max-width: var(--max-w);
       margin: 0 auto;
       padding: 0 var(--gutter);
@@ -736,9 +757,9 @@
       transition: background 0.2s var(--ease), color 0.2s var(--ease);
     }
     .nav-cta:hover { background: var(--cream); color: var(--ink); }
-    @media (max-width: 720px) {
+    @media (max-width: 920px) {
       .nav-tag { display: none; }
-      .nav-inner { grid-template-columns: auto auto; }
+      .nav-inner { grid-template-columns: auto auto; justify-content: space-between; }
     }
 
     /* ════════════════════════════════════════════════════════
@@ -752,6 +773,49 @@
       height: auto;
       min-height: 100svh;
       overflow: visible;
+    }
+    /* ── hero depth-of-field ───────────────────────────────
+       Two soft light fields drift slowly behind the masthead -
+       warm copper upper-right (behind the scene), deep walnut
+       lower-left. Blur is static; only transform animates. */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(42% 38% at 72% 38%, rgba(200, 153, 104, 0.11), transparent 70%),
+        radial-gradient(50% 44% at 16% 80%, rgba(90, 72, 49, 0.20), transparent 72%);
+      filter: blur(38px);
+      animation: hero-field 26s ease-in-out infinite alternate;
+    }
+    @keyframes hero-field {
+      from { transform: translate3d(-1.5%, -1%, 0) scale(1); }
+      to   { transform: translate3d(1.5%, 1.5%, 0) scale(1.05); }
+    }
+    /* vignette - corners fall away, content plane stays lit */
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(120% 92% at 50% 42%, transparent 58%, rgba(12, 8, 4, 0.5) 100%);
+    }
+    .hero .shell { z-index: 1; }
+    /* hero content arrives with a focus-pull: blurred + low,
+       settling sharp. The stagger (--d) is preserved. */
+    .hero [data-reveal] {
+      transform: translate3d(0, 14px, 0);
+      filter: blur(9px);
+      transition: opacity 0.9s var(--ease), transform 0.9s var(--ease), filter 0.9s var(--ease);
+      transition-delay: var(--d, 0ms);
+    }
+    .hero [data-reveal].in { transform: translate3d(0, 0, 0); filter: blur(0); }
+    @media (prefers-reduced-motion: reduce) {
+      .hero::before { animation: none; }
+      .hero [data-reveal] { filter: none; transform: none; transition: none; }
     }
     .hero-grid {
       display: grid;
@@ -840,8 +904,9 @@
       width: 100%;
       border: 1px solid var(--ink-line);
       font-family: var(--mono);
-      margin-bottom: 0.4rem;
+      margin-bottom: 1.2rem;
     }
+    /* caveat note under the §07 join install widget */
     .hero-install-note {
       font-family: var(--mono);
       font-size: var(--t-n2);
@@ -907,9 +972,30 @@
       align-items: center;
       justify-content: center;
     }
+    /* breathing glow plate behind the scene - the diagram sits on a
+       lit plane while the page around it recedes (depth of field). */
+    .hero-diagram::before {
+      content: '';
+      position: absolute;
+      width: 72%;
+      height: 64%;
+      pointer-events: none;
+      background: radial-gradient(50% 50% at 50% 46%, rgba(200, 153, 104, 0.13), transparent 70%);
+      filter: blur(28px);
+      animation: glow-breathe 8s ease-in-out infinite;
+    }
+    @keyframes glow-breathe {
+      0%, 100% { opacity: 0.65; transform: scale(1); }
+      50%      { opacity: 1;    transform: scale(1.07); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-diagram::before { animation: none; }
+    }
     .hero-diagram svg {
       width: 100%; height: 100%;
       filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.5));
+      shape-rendering: geometricPrecision;
+      text-rendering: geometricPrecision;
     }
     .hero-diagram .pulse {
       transform-origin: center;
@@ -1269,7 +1355,11 @@
 
     /* query-flow pipeline (§03) - the mechanism the panes demonstrate */
     .flow-wrap { width: 100%; margin: 0.1rem 0 0.9rem; }
-    .flow-svg { width: 100%; max-width: 720px; height: auto; display: block; }
+    .flow-svg {
+      width: 100%; max-width: 720px; height: auto; display: block;
+      shape-rendering: geometricPrecision;
+      text-rendering: geometricPrecision;
+    }
     .scene .lede { margin-bottom: 0.8rem; }
     @media (max-width: 760px) { .flow-wrap { display: none; } }
 
@@ -1559,44 +1649,76 @@
       width: 100%;
       margin-top: clamp(1.6rem, 3.4vw, 2.6rem);
       padding-top: clamp(1.2rem, 2.4vw, 1.8rem);
-      border-top: 1px solid var(--ink-line);
+      /* hairline that breathes copper at the center, vanishes at the
+         edges - a ruled shelf, not a hard border. */
+      border-top: 1px solid transparent;
+      border-image: linear-gradient(90deg,
+        transparent 0%, rgba(200, 153, 104, 0.38) 50%, transparent 100%) 1;
     }
     .hh-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
       font-family: var(--mono);
       font-size: var(--t-n2);
-      letter-spacing: 0.18em;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: var(--ink-fade);
+      color: var(--accent);
+      opacity: 0.85;
       white-space: nowrap;
       flex: none;
+    }
+    .hh-label::before {
+      content: '';
+      width: 20px;
+      height: 1px;
+      background: currentColor;
+      opacity: 0.6;
     }
     .hh-viewport {
       position: relative;
       flex: 1;
+      /* width caps are load-bearing: when .hero-harness goes column
+         (align-items:flex-start), the viewport otherwise sizes to
+         the track's max-content and forces horizontal page scroll. */
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
       overflow: hidden;
-      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%);
-      mask-image: linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 9%, #000 91%, transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0, #000 9%, #000 91%, transparent 100%);
     }
     .hh-track {
       display: flex;
       width: max-content;
-      gap: clamp(1.8rem, 3.4vw, 3rem);
-      animation: hh-marquee 34s linear infinite;
+      gap: clamp(2.2rem, 4vw, 3.6rem);
+      animation: hh-marquee 52s linear infinite;
       will-change: transform;
+      transform: translateZ(0);
     }
     .hh-viewport:hover .hh-track { animation-play-state: paused; }
-    /* each item: real brand SVG tinted to one brand tone via mask-image
-       (so the whole strip is a uniform monochrome logo wall) plus its
-       wordmark. Self-hosted in docs/logos. */
+    /* The logo wall rests desaturated and quiet; each item wakes to
+       its own brand colour under the cursor. Restraint at rest,
+       identity on attention. */
     .hw-item {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.55rem;
       font-family: var(--mono);
       font-size: var(--t-n1);
       letter-spacing: 0.01em;
       color: var(--cream-mute);
       white-space: nowrap;
+      opacity: 0.55;
+      filter: saturate(0);
+      transition: opacity 0.35s var(--ease), filter 0.35s var(--ease),
+                  color 0.35s var(--ease), transform 0.35s var(--ease);
+    }
+    .hw-item:hover {
+      opacity: 1;
+      filter: saturate(1);
+      color: var(--cream);
+      transform: translateY(-1px);
     }
     .hw-mark {
       width: 1.25rem;
@@ -1840,9 +1962,92 @@
         to   { opacity: 1; transform: translate3d(0, 0, 0)     scale(1);     filter: blur(0); }
       }
     }
+
+    /* ════════════════════════════════════════════════════════
+       MOBILE - the page becomes a single flowing column.
+       The 100svh chapter cap is a DESKTOP composition device;
+       on small screens it clips stacked content, so every
+       section grows with its content and scroll-snap is off.
+       ════════════════════════════════════════════════════════ */
+    @media (max-width: 920px) {
+      html { scroll-snap-type: none; }
+      .chapter {
+        height: auto;
+        min-height: 100svh;
+        overflow: visible;
+        justify-content: flex-start;
+        padding-top: calc(56px + 1.2rem);
+        padding-bottom: 2.4rem;
+      }
+      /* scene panes stack here (not at 880) so the rotated arrow
+         below always sits between stacked panes, never beside them. */
+      .scene-pair { grid-template-columns: 1fr; }
+      /* scene arrow: between STACKED panes it points down, and the
+         time/distance caption sits beside it instead of vanishing. */
+      .scene-arrow {
+        display: flex;
+        flex-direction: row;
+        gap: 0.9rem;
+        padding: 0.2rem 0;
+      }
+      .scene-arrow svg { transform: rotate(90deg); width: 34px; }
+      .scene-arrow .cap { text-align: left; }
+    }
+
+    @media (max-width: 720px) {
+      /* frames: tighter chrome, content keeps the air */
+      .frame { padding: 2.1rem 0.95rem 1.5rem; }
+      .frame > .legend { left: 0.7rem; font-size: var(--t-n2); letter-spacing: 0.14em; }
+      .frame > .badge { right: 0.7rem; }
+      .frame > .stamp { right: 0.7rem; }
+
+      /* hero: the headline scales with the screen instead of
+         sitting on its desktop floor; everything below goes
+         full-width and stays thumb-reachable. */
+      .hero h1 { font-size: clamp(2.1rem, 10.5vw, 2.9rem); }
+      .hero-grid { gap: 1.2rem; }
+      .hero-sub { max-width: none; }
+      .hero-claims { max-width: none; }
+      .hero-install { max-width: none; display: grid; }
+      .hero-install code { font-size: var(--t-n2); padding: 0.85rem 0.9rem; }
+      .hero-ctas { gap: 1rem; }
+      .btn-pill { padding: 0.8rem 1.4rem; }   /* honest tap target */
+
+      /* the scene: labels must survive the SVG scale-down.
+         CSS sizes SVG text, so bump type before the init script
+         measures the highlight plates. */
+      .nv-handle { font-size: 17px; }
+      .nv-sub    { font-size: 13px; }
+      .nv-ctr    { font-size: 17px; }
+      .nv-count  { font-size: 13.5px; }
+      .nv-plus   { font-size: 13.5px; }
+      .star-foot .star-q,
+      .star-foot .star-phase { min-height: 0; }
+
+      /* depth fields: static on mobile - large animated blurs cost
+         battery; the lighting stays, the drift goes. */
+      .hero::before { animation: none; filter: blur(26px); }
+      .hero-diagram::before { animation: none; }
+
+      /* marquee: full-bleed shelf, label above the strip */
+      .hero-harness { margin-top: 1.4rem; }
+
+      /* editorial columns breathe at phone width */
+      .manifesto-prose { font-size: 0.95rem; line-height: 1.68; }
+      .lede { font-size: var(--t-1); }
+      .scene-pane { font-size: var(--t-n2); }
+      .scene-pane .line { overflow-wrap: break-word; }
+      .prov-record { white-space: pre-wrap; word-break: break-word; }
+      .why-pull { max-width: none; }
+      .join .frame { padding: 2.1rem 0.95rem 2.2rem; }
+      .join-ctas { gap: 1rem; }
+    }
   </style>
 </head>
 <body>
+
+  <!-- film grain - fixed, non-scrolling texture layer -->
+  <div class="grain" aria-hidden="true"></div>
 
   <!-- scroll-progress hairline (CSS scroll-timeline driven) -->
   <div class="scroll-progress" aria-hidden="true"></div>
@@ -1863,10 +2068,10 @@
           <path d="M 5 12 L 19 5 M 5 12 L 19 19 M 19 5 L 19 19"
                 stroke="#ebe0c4" stroke-width="0.9" stroke-opacity="0.5" fill="none"/>
         </svg>
-        <span>akashik</span>
+        <span>folklore</span>
       </a>
       <span class="nav-tag">peer-to-peer cooperative compounding inference protocol</span>
-      <a class="nav-cta magnetic" href="https://github.com/SaharBarak/akashik" rel="noopener">GitHub</a>
+      <a class="nav-cta magnetic" href="https://github.com/SaharBarak/folklore" rel="noopener">GitHub</a>
     </div>
   </nav>
 
@@ -1882,7 +2087,7 @@
         <span class="badge" data-cycle="BOOTSTRAPPING|AWAITING PEER|LISTENING|READY">[v0.1 &middot; <span class="b-cycle">BOOTSTRAPPING</span>]</span>
         <div class="hero-grid">
         <div>
-          <span class="eyebrow" data-reveal>Akashik &middot; cooperative compounding inference protocol</span>
+          <span class="eyebrow" data-reveal>Folklore &middot; cooperative compounding inference protocol</span>
           <h1 id="h1" data-reveal>
             We compound on <em>inference</em>.
           </h1>
@@ -1897,15 +2102,11 @@
           </ul>
 
           <div class="hero-install" role="group" aria-label="install command" data-reveal style="--d: 180ms;">
-            <code id="install-1">$ npm install -g akashik</code>
+            <code id="install-1">$ npm install -g folklore</code>
             <button type="button" class="magnetic" data-copy="install-1" aria-label="copy install command">copy</button>
           </div>
-          <p class="hero-install-note" data-reveal style="--d: 200ms;">
-            <span class="mono"># a local graph-RAG over your code, research, and sessions, federated across the network.</span>
-          </p>
-
           <div class="hero-ctas" data-reveal style="--d: 240ms;">
-            <a class="btn-pill magnetic" href="https://github.com/SaharBarak/akashik" rel="noopener">
+            <a class="btn-pill magnetic" href="https://github.com/SaharBarak/folklore" rel="noopener">
               See the source
             </a>
             <a class="btn-ghost" href="WHITEPAPER.pdf" target="_blank" rel="noopener">Read the white paper &nbsp;&#8599;</a>
@@ -1977,7 +2178,7 @@
         </div>
         </div><!-- /hero-grid -->
 
-        <!-- works-with marquee: harnesses akashik plugs into, scrolling
+        <!-- works-with marquee: harnesses folklore plugs into, scrolling
              continuously. List rendered twice for a seamless -50% loop. -->
         <div class="hero-harness" data-reveal style="--d: 320ms;" aria-label="works with your harness">
           <span class="hh-label">Works with</span>
@@ -1988,7 +2189,7 @@
             </div>
           </div>
         </div>
-        <span class="stamp">akashik &middot; <b>cooperative knowledge</b></span>
+        <span class="stamp">folklore &middot; <b>cooperative knowledge</b></span>
        </div><!-- /frame -->
       </div><!-- /shell -->
     </section>
@@ -2031,10 +2232,10 @@
         </p>
 
         <p class="manifesto-epigraph" data-reveal style="--d: 440ms;">
-          Why &ldquo;akashik&rdquo;? <em>Google it.</em>
+          Why &ldquo;folklore&rdquo;? <em>Google it.</em>
         </p>
 
-        <span class="stamp">akashik &middot; <b>declared</b></span>
+        <span class="stamp">folklore &middot; <b>declared</b></span>
        </div><!-- /frame -->
       </div><!-- /shell -->
     </section>
@@ -2252,7 +2453,7 @@
             <div class="line tool">[debug session &middot; 47 min]</div>
             <div class="line">&gt; root cause: prefix cache page size too small</div>
             <div class="line">&gt; fix: --kv-cache-dtype=fp8 + --block-size=32</div>
-            <div class="line tool">[akashik &middot; auto-saved trace]</div>
+            <div class="line tool">[folklore &middot; auto-saved trace]</div>
             <div class="sig">signed &middot; <b>@you</b> &middot; ed25519&nbsp;3a4b&hellip;</div>
           </article>
 
@@ -2269,7 +2470,7 @@
             <h3>Everyone after skips it.</h3>
             <div class="line you">$ claude</div>
             <div class="line">&gt; vllm long-ctx OOM, prefix cache failure</div>
-            <div class="line tool">[akashik &middot; asked 3 peers &middot; 142 ms &middot; hit: @you&rsquo;s trace]</div>
+            <div class="line tool">[folklore &middot; asked 3 peers &middot; 142 ms &middot; hit: @you&rsquo;s trace]</div>
             <div class="line">&gt; confident answer &mdash; web not needed</div>
             <div class="line">&gt; 0 web calls. injecting the signed trace.</div>
             <div class="line tool">[claude &middot; reading @you&rsquo;s notes]</div>
@@ -2289,7 +2490,7 @@
     <!-- ════════════════════════════════════════════════════════
          04 · PROVENANCE
          The trust moment: anonymous RAG is a poisoning surface;
-         every akashik record is signed by a verified human.
+         every folklore record is signed by a verified human.
          ════════════════════════════════════════════════════════ -->
     <section class="chapter provenance" aria-labelledby="prov-h">
       <div class="shell">
@@ -2319,7 +2520,7 @@
             </svg>
           </div>
           <div class="prov-answer">
-            <div class="prov-label">Akashik&rsquo;s answer</div>
+            <div class="prov-label">Folklore&rsquo;s answer</div>
             <pre class="prov-record" aria-hidden="true">record {
   signed_by: <span class="prov-hl">@verified-human</span>
   identity:  ed25519 3a4b&hellip;
@@ -2456,9 +2657,9 @@
               <rect x="92"  y="25.9" width="28" height="22.1" fill="var(--ink-fade)" opacity="0.4"/>
               <rect x="134" y="32.2" width="28" height="15.8" fill="var(--ink-fade)" opacity="0.4"/>
               <rect x="176" y="34.6" width="28" height="13.4" fill="var(--ink-fade)" opacity="0.4"/>
-              <text x="22" y="56" fill="var(--accent)" font-family="var(--mono)" font-size="8" text-anchor="middle">akashik</text>
+              <text x="22" y="56" fill="var(--accent)" font-family="var(--mono)" font-size="8" text-anchor="middle">folklore</text>
             </svg>
-            <p class="proof-body">NDCG@10 &middot; BEIR SciFact &middot; CPU-only. akashik vs Pinecone, mem0, Letta, LangChain.</p>
+            <p class="proof-body">NDCG@10 &middot; BEIR SciFact &middot; CPU-only. folklore vs Pinecone, mem0, Letta, LangChain.</p>
           </div>
           <div class="proof-cell">
             <div class="proof-name">WAY CHEAPER &middot; COST</div>
@@ -2477,7 +2678,7 @@
         </div>
 
         <p class="proof-foot" data-reveal style="--d: 200ms;">
-          <a href="https://github.com/SaharBarak/akashik/blob/main/tests/bench-akashik-federation.test.ts">bench source &nbsp;&rarr;</a>
+          <a href="https://github.com/SaharBarak/folklore/blob/main/tests/bench-folklore-federation.test.ts">bench source &nbsp;&rarr;</a>
         </p>
         <span class="stamp">benches &middot; <b>reproducible</b></span>
        </div><!-- /frame -->
@@ -2502,7 +2703,7 @@
         </p>
 
         <div class="hero-install join-install" role="group" aria-label="install command" data-reveal style="--d: 140ms;">
-          <code id="install-2">$ npm install -g akashik</code>
+          <code id="install-2">$ npm install -g folklore</code>
           <button type="button" class="magnetic" data-copy="install-2" aria-label="copy install command">copy</button>
         </div>
         <p class="hero-install-note" style="margin-left:auto;margin-right:auto;text-align:center;" data-reveal style="--d: 160ms;">
@@ -2510,12 +2711,12 @@
         </p>
 
         <div class="join-ctas" data-reveal style="--d: 220ms;">
-          <a class="btn-pill magnetic" href="https://github.com/SaharBarak/akashik" rel="noopener">See the source</a>
-          <a class="btn-ghost" href="https://github.com/SaharBarak/akashik#quickstart" rel="noopener">quickstart &nbsp;&rarr;</a>
+          <a class="btn-pill magnetic" href="https://github.com/SaharBarak/folklore" rel="noopener">See the source</a>
+          <a class="btn-ghost" href="https://github.com/SaharBarak/folklore#quickstart" rel="noopener">quickstart &nbsp;&rarr;</a>
         </div>
 
         <p class="join-coda" data-reveal style="--d: 280ms;">Infer once. <em>Compound forever.</em></p>
-        <span class="stamp">akashik &middot; <b>MIT</b></span>
+        <span class="stamp">folklore &middot; <b>MIT</b></span>
        </div><!-- /frame -->
       </div><!-- /shell -->
     </section>
@@ -2525,15 +2726,15 @@
   <!-- ──────── footer ──────── -->
   <footer>
     <div class="shell">
-      <span class="meta">akashik &middot; MIT &middot; no central server, ever</span>
+      <span class="meta">folklore &middot; MIT &middot; no central server, ever</span>
       <span>
         <a href="WHITEPAPER.pdf" target="_blank" rel="noopener">white paper (pdf)</a>
         &nbsp;&middot;&nbsp;
-        <a href="https://github.com/SaharBarak/akashik" rel="noopener">source</a>
+        <a href="https://github.com/SaharBarak/folklore" rel="noopener">source</a>
         &nbsp;&middot;&nbsp;
-        <a href="https://github.com/SaharBarak/akashik/blob/main/README.md" rel="noopener">readme</a>
+        <a href="https://github.com/SaharBarak/folklore/blob/main/README.md" rel="noopener">readme</a>
         &nbsp;&middot;&nbsp;
-        <a href="https://github.com/SaharBarak/akashik/issues" rel="noopener">issues</a>
+        <a href="https://github.com/SaharBarak/folklore/issues" rel="noopener">issues</a>
       </span>
     </div>
   </footer>
@@ -2762,6 +2963,16 @@
           });
         }
       }
+
+      // ─── hero reveals fire at LOAD, not on intersection ───
+      // Everything inside the hero (headline, claims, install,
+      // works-with marquee) is part of the masthead: it arrives
+      // with the page on its --d stagger, never waits for scroll.
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.hero [data-reveal]').forEach((el) => {
+          el.classList.add('in');
+        });
+      });
 
       // ─── hero scene choreography ─────────────────────────
       // The hero SVG plays the protocol's core loop as a scene:

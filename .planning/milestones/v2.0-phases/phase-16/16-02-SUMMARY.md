@@ -12,14 +12,14 @@ dependency_graph:
     - src/domain/errors.ts   # ShareError, formatError
     - src/infrastructure/graph-repository.ts  # GraphRepository port
   provides:
-    - registerShareProtocol   # /akashik/share/1.0.0 on libp2p node
+    - registerShareProtocol   # /folklore/share/1.0.0 on libp2p node
     - openShareStream         # outbound (peer, room) stream dial
     - closeUnsharedStreams     # enforces unshare semantics on each tick
     - syncNodeIntoYDoc        # outbound secrets gate
     - runShareSyncTick        # daemon entrypoint returning { opened }
     - ShareSyncRegistry       # factory + interface for registry object
     - REMOTE_ORIGIN           # exported Symbol for test assertions
-    - SHARE_PROTOCOL_ID       # '/akashik/share/1.0.0'
+    - SHARE_PROTOCOL_ID       # '/folklore/share/1.0.0'
   affects:
     - 16-03  # daemon wiring + CLI consumes all exports from this file
 tech_stack:
@@ -60,13 +60,13 @@ metrics:
 
 # Phase 16 Plan 02: Share Sync Engine Summary
 
-**One-liner:** libp2p y-protocols V1 sync over `/akashik/share/1.0.0` with REMOTE_ORIGIN echo prevention, symmetric secrets scanning via scanNode, and debounced graph.json flush.
+**One-liner:** libp2p y-protocols V1 sync over `/folklore/share/1.0.0` with REMOTE_ORIGIN echo prevention, symmetric secrets scanning via scanNode, and debounced graph.json flush.
 
 ## What Was Built
 
 `src/infrastructure/share-sync.ts` (727 lines) is the central sync engine for Phase 16. It:
 
-1. Registers `/akashik/share/1.0.0` on a libp2p node via `node.handle()` (the `StreamHandler` signature takes `(stream, connection)` as positional args)
+1. Registers `/folklore/share/1.0.0` on a libp2p node via `node.handle()` (the `StreamHandler` signature takes `(stream, connection)` as positional args)
 2. Manages a per-(peer, room) stream registry: `Map<"${peerId}::${room}", StreamEntry>`
 3. Exchanges `SubscribeRequest` JSON frames (first frame on each stream) to negotiate room intersection
 4. Runs y-protocols sync step 1 + 2 (state vector exchange) and then loops on incoming frames
@@ -121,7 +121,7 @@ No regressions. All pre-existing 87 tests continue to pass.
 [ ] src/infrastructure/share-sync.ts — 727 lines — FOUND
 [ ] commit 58cbb3e — FOUND
 [ ] REMOTE_ORIGIN count ≥ 4 — 8 occurrences — PASS
-[ ] Symbol('akashik-share-remote') — 1 — PASS
+[ ] Symbol('folklore-share-remote') — 1 — PASS
 [ ] if (origin === REMOTE_ORIGIN) return — 2 — PASS
 [ ] encoding.length(responseEncoder) > 0 — 1 — PASS
 [ ] .subarray() — 5 occurrences — PASS

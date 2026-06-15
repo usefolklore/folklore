@@ -68,7 +68,7 @@ Three test files covering every Phase 17 requirement and pitfall:
 
 | Requirement | Test(s) | Description |
 |-------------|---------|-------------|
-| FED-01 | structural (Plan 03 Task 1) | `akashik ask --peers` |
+| FED-01 | structural (Plan 03 Task 1) | `folklore ask --peers` |
 | FED-02 | A1, A2, A7 | merge sorted by distance, top-k slice, zero-peers degraded |
 | FED-03 | A3 | `_source_peer` null for local, peerId for remote |
 | FED-04 | A8 | findTunnels over merged synthetic record set |

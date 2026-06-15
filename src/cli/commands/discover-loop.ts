@@ -1,5 +1,5 @@
 /**
- * `akashik discover-loop`
+ * `folklore discover-loop`
  *
  * V5 (Phase 24) STUB. The recursive source-expansion loop was
  * room-keyword-driven; with rooms deleted the engine has no per-room

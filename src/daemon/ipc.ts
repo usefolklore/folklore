@@ -2,7 +2,7 @@
  * Daemon IPC — Unix-socket JSON-line protocol for delegating CLI
  * commands to an already-running daemon.
  *
- * Why: a cold `akashik ask` pays ~700 ms of Node+tsx boot + ~40 ms
+ * Why: a cold `folklore ask` pays ~700 ms of Node+tsx boot + ~40 ms
  * of sqlite-vec reopen + ~200 ms of ONNX model load before the first
  * query can execute (BENCH-v2.md §4). Routing the work to a daemon
  * that holds the Runtime (and a warm ONNX session) hot eliminates the
@@ -15,7 +15,7 @@
  *   request:  { id: number, cmd: string, args: string[] }
  *   response: { id: number, ok: boolean, stdout?: string, stderr?: string, exit?: number }
  *
- * Socket lives at `${AKASHIK_HOME}/daemon.sock` — Unix-only.
+ * Socket lives at `${FOLKLORE_HOME}/daemon.sock` — Unix-only.
  * 0600 permissions guarantee only the user process can connect.
  *
  * Commands not in the handler registry return

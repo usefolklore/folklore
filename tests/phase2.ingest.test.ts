@@ -63,7 +63,7 @@ const rssFixture = (ver: 'v1' | 'v2'): string => `<?xml version="1.0" encoding="
 `;
 
 test('phase 2: generic_rss ingest — fetch, chunk, index, dedup, update', async () => {
-  const tmp = mkdtempSync(join(tmpdir(), 'akashik-phase2-'));
+  const tmp = mkdtempSync(join(tmpdir(), 'folklore-phase2-'));
   try {
     // ── arrange ──
 
@@ -112,7 +112,7 @@ test('phase 2: generic_rss ingest — fetch, chunk, index, dedup, update', async
     assert.equal(s1.items_updated, 0);
     assert.equal(s1.items_skipped, 0);
 
-    // graph should contain 3 nodes with akashik fields set
+    // graph should contain 3 nodes with folklore fields set
     const afterRun1 = (await graphs.load())._unsafeUnwrap();
     assert.equal(afterRun1.json.nodes.length, 3);
     for (const node of afterRun1.json.nodes) {

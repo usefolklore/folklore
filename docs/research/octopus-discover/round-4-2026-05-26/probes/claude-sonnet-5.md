@@ -8,8 +8,8 @@
 PROJECT IDENTITY (changed since last round)
 ================================================================
 
-The project pivoted from "akashik: agent-memory product" to
-"Akashik: federated knowledge commons for the open-source community as a whole."
+The project pivoted from "folklore: agent-memory product" to
+"Folklore: federated knowledge commons for the open-source community as a whole."
 
 The mission is to give the OSS community what it has always lacked:
 a shared, contributor-owned memory substrate where every piece of
@@ -19,13 +19,13 @@ attributed, forever.
 
 The brand name borrows from the Akashic Records mythology, reframed
 as concrete contributor-owned infrastructure. The codebase is still
-called "akashik" internally.
+called "folklore" internally.
 
 ================================================================
 THE MECHANISM (the architectural insight that makes the mission credible)
 ================================================================
 
-Each Akashik peer holds only its own information:
+Each Folklore peer holds only its own information:
   - what its user explicitly contributed
   - what it pulled from other peers in response to its user's queries
   - what it researched on the web when the federation couldn't answer
@@ -36,7 +36,7 @@ user's curiosity.
 
 The compounding loop, in 5 steps:
 
-  STEP 1: Local-first query → A's local Akashik graph
+  STEP 1: Local-first query → A's local Folklore graph
   STEP 2: Federation fan-out → connected peers in shared rooms answer
           with their two cents (what they have)
   STEP 3: If federation can't satisfy → harness reaches the web on
@@ -148,15 +148,15 @@ WHAT'S NEW SINCE ROUND 3
        private-by-default and missing the mission)
      OSS-community-commons framing (correct: matches both the
        architecture AND the mission)
-   Brand renamed to Akashik. New StoryBrand-anchored marketing
-   draft + mechanism doc (docs/marketing/how-akashik-works.md)
+   Brand renamed to Folklore. New StoryBrand-anchored marketing
+   draft + mechanism doc (docs/marketing/how-folklore-works.md)
    capture the compounding loop architecturally and link to it
    from the brand messaging as the credibility anchor.
 
 2. LME-S baseline re-run with NDCG/MRR ladder. Confirmed head
    saturation (NDCG@5 = 0.884, only 4pp room below R@5 = 0.92).
 
-3. The Akashik mechanism (5-step compounding loop, peer-local
+3. The Folklore mechanism (5-step compounding loop, peer-local
    storage, ambitioned-curator model) is now explicitly documented
    as the architectural credibility anchor for the mission claim.
 
@@ -171,11 +171,11 @@ Q1. Given the empirical ceiling on LME-S R@5 (NDCG@5 headroom ~4pp,
     federation rather than tuning per-peer retrieval)? Where should
     the next engineering month go?
 
-Q2. The Akashik mechanism (peer-local + federation-on-query + web-
+Q2. The Folklore mechanism (peer-local + federation-on-query + web-
     on-miss + save-locally + transfer-on-next-ask) — is this
     architecturally novel, or is it a known pattern in disguise?
     Cite prior art. If it IS novel, what's the closest existing
-    research/protocol/system, and what makes Akashik different in
+    research/protocol/system, and what makes Folklore different in
     a defensible way?
 
 Q3. There is NO existing public benchmark for "how much does a
@@ -196,7 +196,7 @@ Q4. The Octopus has flagged "input-order bias" (Round 3) and
           / mem0 0.925 / ByteRover 0.928 — are these defensible
           baselines?)
 
-Q5. The Akashik mission requires the network to actually grow.
+Q5. The Folklore mission requires the network to actually grow.
     What's the smallest-viable launch plan that produces a
     meaningful compounding signal in the first ~30 days post-
     launch? Specifically: who are the first 100 contributors, what
@@ -204,7 +204,7 @@ Q5. The Akashik mission requires the network to actually grow.
     the compounding becomes visible to a new contributor visiting
     the network at day 30?
 
-Q6. The Akashik architecture relies on user curiosity as the
+Q6. The Folklore architecture relies on user curiosity as the
     propagation signal. This is brilliant when curiosity-volume is
     healthy. What happens when:
       (a) the network is dominated by N curators of the same hot
@@ -219,7 +219,7 @@ Q6. The Akashik architecture relies on user curiosity as the
 Q7. The competitor frame (mem0/agentmemory/ByteRover) was the
     wrong frame — they're single-user products and we're a
     federated commons. Who are the REAL existing systems that
-    Akashik competes with / extends / supersedes? Be specific
+    Folklore competes with / extends / supersedes? Be specific
     about systems, not categories. Possibilities to evaluate:
       - Are.na (curated cards, central)
       - Logseq P2P sync (knowledge graph, multi-device same user)
@@ -243,7 +243,7 @@ OUTPUT EXPECTED:
 
   - Direct answers to Q1-Q8
   - For Q2: closest prior-art protocol or research paper, with
-    why Akashik differs
+    why Folklore differs
   - For Q3: a proposed benchmark for measuring federation-level
     compounding, with the metrics and the experimental design
   - For Q5: the smallest-viable launch plan (specific communities,
@@ -263,24 +263,24 @@ Now I have enough to write the full analysis. Here is the fourth-round synthesis
 
 ---
 
-# FOURTH-ROUND ANALYSIS — Akashik / akashik
+# FOURTH-ROUND ANALYSIS — Folklore / folklore
 *Codebase-grounded, empirically-anchored. 2026-05-26.*
 
 ---
 
 ## Codebase Reality Check (before any recommendations)
 
-The stack is TypeScript / DDD with clean layer separation (`domain` → `application` → `infrastructure` → `cli`/`mcp`). Domain layer is pure: immutable graph values, `neverthrow` Result monads throughout, no I/O. Key domain types confirm what the prompt describes: `graph.ts` (immutable GraphNode/GraphEdge), `eval-metrics.ts` (pure `recallAtK`/`ndcgAtK`/`reciprocalRank`), `contextual-enrich.ts` (E11, pure, deterministic), `llm-listwise-rerank.ts` (ports-and-adapters for LLM, shuffle already shipped at commit 1f828b7), `sharing.ts` (SEC-03 boundary: no raw embeddings cross the wire), `oracle.ts` (P2P Q&A as pure graph-node data shape), `federated-search.ts` (Promise.all fan-out with 2000ms per-peer timeout, dedup prefers local). The architecture is sound for the Akashik mission. The retrieval plumbing is well-built. The open question is what to measure next.
+The stack is TypeScript / DDD with clean layer separation (`domain` → `application` → `infrastructure` → `cli`/`mcp`). Domain layer is pure: immutable graph values, `neverthrow` Result monads throughout, no I/O. Key domain types confirm what the prompt describes: `graph.ts` (immutable GraphNode/GraphEdge), `eval-metrics.ts` (pure `recallAtK`/`ndcgAtK`/`reciprocalRank`), `contextual-enrich.ts` (E11, pure, deterministic), `llm-listwise-rerank.ts` (ports-and-adapters for LLM, shuffle already shipped at commit 1f828b7), `sharing.ts` (SEC-03 boundary: no raw embeddings cross the wire), `oracle.ts` (P2P Q&A as pure graph-node data shape), `federated-search.ts` (Promise.all fan-out with 2000ms per-peer timeout, dedup prefers local). The architecture is sound for the Folklore mission. The retrieval plumbing is well-built. The open question is what to measure next.
 
 ---
 
 ## Q1 — Where should the next engineering month go?
 
-**The headline claim first:** continuing to push per-peer R@5 is a marketing question for the OLD product frame, not an engineering question for Akashik.
+**The headline claim first:** continuing to push per-peer R@5 is a marketing question for the OLD product frame, not an engineering question for Folklore.
 
 Here is why. LME-S shows R@50 = 1.0 — the gold is always in the candidate pool; the ceiling is real. The remaining ~4pp NDCG@5 headroom is the gap between ranks 1 and 2-5. On LoCoMo the headroom is 60pp, but the only interventions that produced lift were write-path ones (E11), not read-path ones. Small local LLMs actively regression on LoCoMo after shuffle.
 
-More importantly: Akashik's product claim is not "our single-peer R@5 beats mem0." That was akashik's frame, and the pivot explicitly abandoned it. Akashik's claim is that the compounding loop produces network-level knowledge availability that grows monotonically. That claim cannot be validated by any per-peer retrieval benchmark. The engineering debt is not "push R@5 from 0.920 to 0.940." The engineering debt is "there is no benchmark for what we claim."
+More importantly: Folklore's product claim is not "our single-peer R@5 beats mem0." That was folklore's frame, and the pivot explicitly abandoned it. Folklore's claim is that the compounding loop produces network-level knowledge availability that grows monotonically. That claim cannot be validated by any per-peer retrieval benchmark. The engineering debt is not "push R@5 from 0.920 to 0.940." The engineering debt is "there is no benchmark for what we claim."
 
 **The tradeoff of stopping retrieval tuning:** You leave 60pp of theoretical LoCoMo headroom on the table. However, that headroom requires a larger model than what runs locally (qwen2.5:7b already regressed). Capturing it requires a cloud API call, which reintroduces network dependency and cost per query — counter to the local-first architecture. The tradeoff is: spend a week definitively answering whether a cloud API call on LoCoMo lifts R@3 above bi-encoder (one 50-question spot-check with GPT-4o-mini would settle this), then either ship the cloud reranker as an opt-in tier or close the listwise chapter entirely.
 
@@ -292,13 +292,13 @@ More importantly: Akashik's product claim is not "our single-peer R@5 beats mem0
 
 ---
 
-## Q2 — Is the Akashik mechanism novel or a known pattern?
+## Q2 — Is the Folklore mechanism novel or a known pattern?
 
 It is compositionally novel. Its five components are each known; no prior system assembles them in this specific combination with this specific set of formal properties.
 
 **Prior art, specifically:**
 
-| System | What it shares with Akashik | What's missing |
+| System | What it shares with Folklore | What's missing |
 |---|---|---|
 | **Freenet** (Clarke et al. 2001, "A Decentralized, Fault-Tolerant System for Anonymously Publishing Information") | The monotonic availability property: content becomes MORE available the more it's requested because intermediate nodes cache it on the routing path. Freenet formally proved R(T,t) monotonically non-decreasing under its routing model. | No semantic vector search. No attribution. No satisfaction gate. Anonymous by design — the opposite of DID-signed attribution. |
 | **AT Protocol / Bluesky** | DID-based signed content. Personal Data Servers hold the user's own data. Federation via protocol not central server. | Social posts not knowledge graphs. No semantic search. No query-triggered pull. No satisfaction scoring. |
@@ -306,9 +306,9 @@ It is compositionally novel. Its five components are each known; no prior system
 | **Epidemic/gossip broadcast** (Gnutella, Kazaa) | Pull-on-demand P2P propagation. | Keyword not semantic search. No attribution. Push flooding rather than query-triggered pull. |
 | **Dat / Hypercore Protocol** | Append-only signed content streams, selective replication, P2P. | File-centric not knowledge-graph. No query-triggered pull. No satisfaction gate. |
 
-**What makes Akashik defensibly different:** The mechanism where (a) propagation is triggered by semantic query similarity not by push replication or key lookup, (b) DID-signed attribution is non-separable from the content node (it travels as a graph property, not as metadata that can be stripped), and (c) the satisfaction gate is a protocol-level decision (the `0.85 threshold` in VISION.md) not a UX heuristic — this combination exists nowhere in the prior art literature.
+**What makes Folklore defensibly different:** The mechanism where (a) propagation is triggered by semantic query similarity not by push replication or key lookup, (b) DID-signed attribution is non-separable from the content node (it travels as a graph property, not as metadata that can be stripped), and (c) the satisfaction gate is a protocol-level decision (the `0.85 threshold` in VISION.md) not a UX heuristic — this combination exists nowhere in the prior art literature.
 
-The single most important citation to engage: **Freenet's monotonic availability proof.** Akashik's `R(T,t) = monotonically non-decreasing` is structurally the same claim. You should either cite and extend Freenet's proof to the semantic-search case, or derive your own. Without a formal proof or simulation backing it, "compounding is a property of the architecture, not a marketing claim" is still a marketing claim.
+The single most important citation to engage: **Freenet's monotonic availability proof.** Folklore's `R(T,t) = monotonically non-decreasing` is structurally the same claim. You should either cite and extend Freenet's proof to the semantic-search case, or derive your own. Without a formal proof or simulation backing it, "compounding is a property of the architecture, not a marketing claim" is still a marketing claim.
 
 ---
 
@@ -316,7 +316,7 @@ The single most important citation to engage: **Freenet's monotonic availability
 
 No existing public benchmark measures federated knowledge compounding. This is a real gap and a publishable contribution.
 
-**Proposed: AkashikBench-F (Federation Compounding Benchmark)**
+**Proposed: FolkloreBench-F (Federation Compounding Benchmark)**
 
 **Setup:**
 - N peer simulators (suggest N=10 for first version), each seeded with disjoint corpora: 200 documents each, no overlap by design, topic-stratified (10 topics × 20 docs per peer × 10 peers = 2,000 total documents)
@@ -354,7 +354,7 @@ No existing public benchmark measures federated knowledge compounding. This is a
 
 **(b) Federated retrieval evaluation:**
 
-- **Availability confounding.** Your current bench runs with all peers online. In production, the 2000ms timeout means some peers never respond. Your single-peer benchmarks (LME-S, LoCoMo) don't model this. AkashikBench-F should include a "partial availability" condition: what is federation R@k when 20% of peers are offline?
+- **Availability confounding.** Your current bench runs with all peers online. In production, the 2000ms timeout means some peers never respond. Your single-peer benchmarks (LME-S, LoCoMo) don't model this. FolkloreBench-F should include a "partial availability" condition: what is federation R@k when 20% of peers are offline?
 
 - **Corpus contamination.** If you run multi-peer simulation with overlapping source corpora (e.g., two peers that both indexed the same web page), the federation looks better than it is — you're measuring deduplication handling, not genuine knowledge transfer. Strict corpus disjointness at setup is non-negotiable for valid results.
 
@@ -372,7 +372,7 @@ The 0.952 (agentmemory) / 0.925 (mem0) / 0.928 (ByteRover) numbers are NOT defen
 - mem0 uses OpenAI text-embedding-3-small (1536-dim) with a managed extraction pipeline. Your setup uses a sentence-transformer variant. The numbers are not comparable without controlling for embedding model.
 - The LongMemEval paper's own baseline numbers for "retrieval-only" are lower than all three products' published numbers — suggesting each product tuned for this specific benchmark.
 
-**The real risk:** publishing "akashik 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Akashik launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Akashik can report.
+**The real risk:** publishing "folklore 0.9202 vs mem0 0.925" when the evaluation protocols differ is a credibility trap. The correct framing for Folklore launch is NOT R@5 comparison against single-user products. It's `web_fallback_rate` vs baseline (before federation) — a metric only Folklore can report.
 
 ---
 
@@ -380,16 +380,16 @@ The 0.952 (agentmemory) / 0.925 (mem0) / 0.928 (ByteRover) numbers are NOT defen
 
 **Target community: Rust OSS contributors**
 
-Reasons: small and high-trust (≈5,000 serious contributors globally), terminal-native (CLI fits), deep knowledge-sharing culture (This Week in Rust newsletter has 15k+ subscribers), and the community has a known pain — institutional memory evaporates when maintainers rotate. Akashik's compounding property is precisely the fix.
+Reasons: small and high-trust (≈5,000 serious contributors globally), terminal-native (CLI fits), deep knowledge-sharing culture (This Week in Rust newsletter has 15k+ subscribers), and the community has a known pain — institutional memory evaporates when maintainers rotate. Folklore's compounding property is precisely the fix.
 
 **The 5 librarians (pre-launch, days 0-7):**
 Recruit 5 high-reputation Rust maintainers (maintainers of crates in the top-100 by downloads: tokio, serde, reqwest, anyhow, clap owners). They pre-populate the graph with 50+ notes each: common compiler errors + fixes, unsafe patterns from the rustonomicon, cargo build cache gotchas, cross-compilation toolchain notes. This seeds the graph so day-1 users hit non-zero peer coverage.
 
 **The 20 early adopters (days 8-14):**
-Direct invite to maintainers of top-100 crates by download count. Message: "You already know things that took months to learn. Akashik keeps that knowledge alive for the next person, attributed to you." The attribution model matters here — unlike Confluence/Notion, contributions stay yours.
+Direct invite to maintainers of top-100 crates by download count. Message: "You already know things that took months to learn. Folklore keeps that knowledge alive for the next person, attributed to you." The attribution model matters here — unlike Confluence/Notion, contributions stay yours.
 
 **Public soft launch (days 14-21):**
-Submit a This Week in Rust link. Not a blog post — a concrete demo: "Ask 'how do I handle backpressure in tokio::mpsc?' — watch Akashik answer from peer knowledge instead of web." The demo should show the `_source_peer` field (already in `FederatedMatch`) crediting the actual peer that contributed the answer.
+Submit a This Week in Rust link. Not a blog post — a concrete demo: "Ask 'how do I handle backpressure in tokio::mpsc?' — watch Folklore answer from peer knowledge instead of web." The demo should show the `_source_peer` field (already in `FederatedMatch`) crediting the actual peer that contributed the answer.
 
 **The compounding signal to show at day 30:**
 Instrument and publish `web_fallback_rate` for the `rust` room. The expected curve: day 1 ≈ 80-90% web fallback (sparse graph), day 30 < 40% (librarian + early-adopter knowledge covers the common queries). This is the compounding claim made visible.
@@ -404,7 +404,7 @@ Instrument and publish `web_fallback_rate` for the `rust` room. The expected cur
 
 The risk is real: 80% of pulls gravitating to "React hooks" creates a graph that's useless to a contributor interested in embedded Rust. 
 
-The known solution is **topic diversity indexing**, analogous to Mastodon's local vs. federated timeline split. Akashik's room structure partially mitigates this (niche rooms exist independently), but within a room, hot nodes will crowd out cold ones in search rankings.
+The known solution is **topic diversity indexing**, analogous to Mastodon's local vs. federated timeline split. Folklore's room structure partially mitigates this (niche rooms exist independently), but within a room, hot nodes will crowd out cold ones in search rankings.
 
 Specific mitigation: weight the federation fan-out ordering by inverse document frequency across rooms. Nodes that exist on only one peer get a boost in ranking — scarcity is a signal for uniqueness, not irrelevance. The `peer-reputation-store.ts` infrastructure already exists; extend it to track per-topic peer coverage as a first-class signal.
 
@@ -420,7 +420,7 @@ This is the hardest problem and every federated system has some version of it.
 
 The `peer-reputation.ts` + `peer-reputation-store.ts` infrastructure is the right answer. The specific implementation needed: **confidence propagation with decay**. When peer A's node is propagated to peer B, the confidence score on that node at B is: `A_reputation × A_original_confidence`. If A's reputation later drops (other users flag A's content as wrong), B's copy of A's node should be re-scored automatically. This is analogous to Bluesky's labeling system where labels travel with content and affect all downstream instances.
 
-The asymmetry to be honest about: misinformation spreads faster than corrections in every P2P network studied. Akashik's DID attribution is the correct mitigation (you can identify and quarantine a bad actor's entire contribution graph) but the window between propagation and quarantine is real. Launch comms should acknowledge this explicitly rather than claiming "attribution solves misinformation."
+The asymmetry to be honest about: misinformation spreads faster than corrections in every P2P network studied. Folklore's DID attribution is the correct mitigation (you can identify and quarantine a bad actor's entire contribution graph) but the window between propagation and quarantine is real. Launch comms should acknowledge this explicitly rather than claiming "attribution solves misinformation."
 
 ---
 
@@ -430,21 +430,21 @@ After reviewing the full architecture:
 
 **Primary competitor: AT Protocol (Bluesky)**
 
-This is the most important one. AT Protocol solved federated identity (DIDs), signed content, Personal Data Servers (each user owns their data), and protocol-level federation at scale (millions of users). Their architecture maps almost directly: PDS = Akashik peer, DID = Akashik contributor identity, lexicon record type = Akashik graph node type.
+This is the most important one. AT Protocol solved federated identity (DIDs), signed content, Personal Data Servers (each user owns their data), and protocol-level federation at scale (millions of users). Their architecture maps almost directly: PDS = Folklore peer, DID = Folklore contributor identity, lexicon record type = Folklore graph node type.
 
 The difference: AT Protocol is for microblog posts. There is no semantic search, no query-triggered pull, no satisfaction gate, no knowledge graph structure. But the user base (developers who care about open protocols), the identity infrastructure (DIDs you already want), and the distribution channel (Bluesky developer community) make AT Protocol compatibility a strategic question, not just an intellectual comparison.
 
-**Practical question for the engineering month:** should Akashik use AT Protocol DIDs natively? The `identity-store.ts` and `github-oauth.ts` infrastructure suggests GitHub OAuth DIDs. Assess whether AT Protocol DID anchoring is feasible — if yes, Akashik inherits AT Protocol's identity ecosystem and becomes a knowledge-graph extension of the AT Protocol universe rather than a competing P2P identity system.
+**Practical question for the engineering month:** should Folklore use AT Protocol DIDs natively? The `identity-store.ts` and `github-oauth.ts` infrastructure suggests GitHub OAuth DIDs. Assess whether AT Protocol DID anchoring is feasible — if yes, Folklore inherits AT Protocol's identity ecosystem and becomes a knowledge-graph extension of the AT Protocol universe rather than a competing P2P identity system.
 
 **Secondary competitor: Are.na**
 
-Are.na is the closest product-level analogue. Curated cards, attributed to contributors, topic-organized, designed for thinkers/researchers/OSS community. Are.na is what Akashik would look like centralized. It has ~700k users and genuine community adoption among exactly Akashik's target demographic.
+Are.na is the closest product-level analogue. Curated cards, attributed to contributors, topic-organized, designed for thinkers/researchers/OSS community. Are.na is what Folklore would look like centralized. It has ~700k users and genuine community adoption among exactly Folklore's target demographic.
 
-The competitive differentiation is NOT features — Are.na is polished. The differentiation is: Are.na's knowledge belongs to Are.na's servers. Akashik's knowledge belongs to its contributors. That's a values-level difference that resonates with the OSS community specifically.
+The competitive differentiation is NOT features — Are.na is polished. The differentiation is: Are.na's knowledge belongs to Are.na's servers. Folklore's knowledge belongs to its contributors. That's a values-level difference that resonates with the OSS community specifically.
 
 **Tertiary: Obsidian Publish + Sync**
 
-Not a competitor in the traditional sense — Obsidian is a tool, Akashik is a protocol. But Obsidian's user base (technical writers, researchers, OSS developers who maintain public "digital gardens") is exactly Akashik's first-wave contributor pool. An Obsidian plugin that treats a published Obsidian vault as an Akashik peer would give Akashik instant distribution to Obsidian's 1M+ users without requiring them to change their workflow.
+Not a competitor in the traditional sense — Obsidian is a tool, Folklore is a protocol. But Obsidian's user base (technical writers, researchers, OSS developers who maintain public "digital gardens") is exactly Folklore's first-wave contributor pool. An Obsidian plugin that treats a published Obsidian vault as an Folklore peer would give Folklore instant distribution to Obsidian's 1M+ users without requiring them to change their workflow.
 
 **The three explicitly NOT competitors:** mem0, agentmemory, ByteRover. These are single-user, server-side, API-first products. They are measuring something different (agent context management) and serving a different customer (developers building agents). Continuing to compare against them is a category error now that the identity pivot has happened.
 
@@ -454,13 +454,13 @@ Not a competitor in the traditional sense — Obsidian is a tool, Akashik is a p
 
 **The counter-argument:**
 
-> "This is a coordination problem in an infrastructure costume. Compounding is a property of participation density, not architecture. The mechanism only works when enough peers are online and have already pulled the relevant knowledge — which requires network effects you haven't earned yet. Every federated network (Mastodon, Matrix, Diaspora) has built technically correct architecture and then struggled for years to reach the critical mass where the federated property is actually better than the centralized alternative. Akashik's architectural insight about R(T,t) is correct but irrelevant until you have R(T, t) >> 0 for enough T, which is a community-building problem, not an engineering problem. The next engineering month could be zero effort and the project would succeed faster by spending that month on community seeding and distribution."
+> "This is a coordination problem in an infrastructure costume. Compounding is a property of participation density, not architecture. The mechanism only works when enough peers are online and have already pulled the relevant knowledge — which requires network effects you haven't earned yet. Every federated network (Mastodon, Matrix, Diaspora) has built technically correct architecture and then struggled for years to reach the critical mass where the federated property is actually better than the centralized alternative. Folklore's architectural insight about R(T,t) is correct but irrelevant until you have R(T, t) >> 0 for enough T, which is a community-building problem, not an engineering problem. The next engineering month could be zero effort and the project would succeed faster by spending that month on community seeding and distribution."
 
 This is the strongest version because it doesn't attack the architecture — it grants it's correct — and instead attacks the timing and the assumption that engineering is the constraint.
 
 **Response (one paragraph):**
 
-The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Akashik provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Akashik required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and AkashikBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
+The cold-start problem is real for every network, but it conflates two distinct claims. The first claim — "federation is valuable once you have density" — is trivially true and grants the counter-argument. The second claim — "Folklore provides value before density" — is the actual product bet, and it's defensible: the web-fallback path means a contributor with zero peers still gets a functional local knowledge tool on day 1. Federation value is strictly additive. The counter-argument applies if Folklore required federation to work at all; it doesn't. However, the counter-argument correctly identifies the real risk: if the compounding claim is made at launch but can't be demonstrated (because the network is too sparse), early adopters experience a tool that feels like a slower version of their existing web search. The engineering month is not zero precisely because without `web_fallback_rate` instrumentation and FolkloreBench-F, there is no number to show at launch that makes the compounding claim concrete rather than aspirational. The engineering constraint is measurement, not architecture.
 
 ---
 
@@ -469,11 +469,11 @@ The cold-start problem is real for every network, but it conflates two distinct 
 Three-round pattern:
 - **Write-path interventions work** (E11: +0.66pp LME-S, +1.5pp LoCoMo NDCG@3). Deterministic, composable, zero query-time cost.
 - **Read-path reranking with local LLMs does not beat bi-encoder** on either benchmark, even after fixing the shuffle bias. This is not a bug in the implementation — the implementation is correct. The small-model listwise chapter is empirically closed unless a cloud-API ablation shows the headroom is capturable at all.
-- **The identity pivot is architecturally correct.** The codebase already has all the infrastructure needed for the Akashik mission: federated search with dedup and attribution (`federated-search.ts`), peer reputation (`peer-reputation-store.ts`), oracle P2P Q&A (`oracle.ts`), DID identity (`identity-store.ts`), SEC-03 metadata boundary (`sharing.ts`). None of this needs to be built. What needs to be built is the measurement infrastructure for what the mission claims.
+- **The identity pivot is architecturally correct.** The codebase already has all the infrastructure needed for the Folklore mission: federated search with dedup and attribution (`federated-search.ts`), peer reputation (`peer-reputation-store.ts`), oracle P2P Q&A (`oracle.ts`), DID identity (`identity-store.ts`), SEC-03 metadata boundary (`sharing.ts`). None of this needs to be built. What needs to be built is the measurement infrastructure for what the mission claims.
 
 **The next engineering month, ranked by priority:**
 
-1. **AkashikBench-F harness** — build the N-peer simulation bench described in Q3. This is what validates the mission claim. Without it, launch is vibes. With it, launch is a paper and a credible number.
+1. **FolkloreBench-F harness** — build the N-peer simulation bench described in Q3. This is what validates the mission claim. Without it, launch is vibes. With it, launch is a paper and a credible number.
 
 2. **`web_fallback_rate` as a first-class production metric** — instrument it per room in the telemetry pipeline (`telemetry-formatter.ts` already exists). This is the launch number.
 

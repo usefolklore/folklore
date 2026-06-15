@@ -1,5 +1,5 @@
 /**
- * `akashik gc` — long-term-memory garbage collection.
+ * `folklore gc` — long-term-memory garbage collection.
  *
  * Walks tier nodes (`session://`, `synthesis://`, `decision://`),
  * classifies each via retention scoring, and either reports
@@ -108,7 +108,7 @@ const runSub = async (args: readonly string[], dryRun: boolean): Promise<number>
   const flagsRes = parseFlags(args, dryRun);
   if (typeof flagsRes === 'string') {
     console.error(`gc: ${flagsRes}`);
-    console.error(`  see: akashik gc help`);
+    console.error(`  see: folklore gc help`);
     return 1;
   }
   const flags = flagsRes;
@@ -139,7 +139,7 @@ const runSub = async (args: readonly string[], dryRun: boolean): Promise<number>
 };
 
 const printGcHelp = (): void => {
-  console.log(`akashik gc — long-term memory garbage collection
+  console.log(`folklore gc — long-term memory garbage collection
 
 Subcommands:
   list   [flags]   Dry-run plan: show what would be deleted / demoted
@@ -181,7 +181,7 @@ export const gc = async (args: readonly string[]): Promise<number> => {
       return runSub(rest, false);
     default:
       console.error(`gc: unknown subcommand '${sub}'`);
-      console.error(`  see: akashik gc help`);
+      console.error(`  see: folklore gc help`);
       return 1;
   }
 };

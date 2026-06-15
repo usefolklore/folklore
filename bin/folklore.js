@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * akashik CLI entry (thin shim + optional IPC delegation).
+ * folklore CLI entry (thin shim + optional IPC delegation).
  *
- * Fast path — if `$AKASHIK_HOME/daemon.sock` exists AND the
+ * Fast path — if `$FOLKLORE_HOME/daemon.sock` exists AND the
  * requested command is in the IPC-delegatable set, send the argv over
  * the socket, print the daemon's response, exit. Avoids ~240 ms of
  * sqlite-vec open + ONNX model load that a one-shot CLI would
@@ -39,7 +39,7 @@ const isP2pTeardownNoise = (err) => {
 };
 process.on('uncaughtException', (err) => {
   if (isP2pTeardownNoise(err)) {
-    if (process.env.AKASHIK_DEBUG) process.stderr.write(`[wi] libp2p teardown noise: ${err.message}\n`);
+    if (process.env.FOLKLORE_DEBUG) process.stderr.write(`[wi] libp2p teardown noise: ${err.message}\n`);
     return;
   }
   console.error(err);
@@ -47,7 +47,7 @@ process.on('uncaughtException', (err) => {
 });
 process.on('unhandledRejection', (reason) => {
   if (isP2pTeardownNoise(reason)) {
-    if (process.env.AKASHIK_DEBUG) process.stderr.write(`[wi] libp2p teardown noise: ${reason?.message ?? reason}\n`);
+    if (process.env.FOLKLORE_DEBUG) process.stderr.write(`[wi] libp2p teardown noise: ${reason?.message ?? reason}\n`);
     return;
   }
   console.error(reason);
@@ -67,12 +67,12 @@ const IPC_DELEGATABLE = new Set(['ask', 'stats', 'cache-stats', 'metrics']);
 const IPC_FALLBACK_SENTINEL = '__fallback__';
 const IPC_TIMEOUT_MS = 5000;
 
-const akashikHome = () =>
-  process.env.AKASHIK_HOME ?? join(homedir(), '.akashik');
+const folkloreHome = () =>
+  process.env.FOLKLORE_HOME ?? join(homedir(), '.folklore');
 
 const attemptIpcDelegation = (cmd, args) =>
   new Promise((resolve) => {
-    const sockPath = join(akashikHome(), 'daemon.sock');
+    const sockPath = join(folkloreHome(), 'daemon.sock');
     if (!existsSync(sockPath)) { resolve(null); return; }
 
     const socket = connect(sockPath);
@@ -131,7 +131,7 @@ if (existsSync(distEntry)) {
   });
   process.exit(result.status ?? 1);
 } else {
-  console.error('akashik: no build output and no source found.');
+  console.error('folklore: no build output and no source found.');
   console.error('run `npm install && npm run build` from the project root.');
   process.exit(1);
 }

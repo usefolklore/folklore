@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * akashik CLI — subcommand router.
+ * folklore CLI — subcommand router.
  *
  * Phase 0: doctor, version, help.
  * Phase 1: (runtime checks extended in doctor).
@@ -109,13 +109,13 @@ const commands: Record<string, CommandFn> = {
   gc,
   bench,
   'migrate': migrateCommand,
-  // Plural-form alias: `akashik peers rep …` works as well as
-  // `akashik peer rep …`. The subcommand dispatcher handles both.
+  // Plural-form alias: `folklore peers rep …` works as well as
+  // `folklore peer rep …`. The subcommand dispatcher handles both.
   peers: async (args: string[]): Promise<number> => {
     const [sub, ...rest] = args;
     if (sub === 'rep') return peersRep(rest);
     console.error('peers: only `rep` is implemented today (more coming).');
-    console.error('  usage: akashik peers rep [<peer-id>] [--subject <key>] [--json]');
+    console.error('  usage: folklore peers rep [<peer-id>] [--subject <key>] [--json]');
     return sub ? 1 : 1;
   },
 };
@@ -133,18 +133,18 @@ async function main(): Promise<number> {
     return (await handler(rest)) ?? 0;
   }
   if (futureCommands.has(cmd)) {
-    console.error(`akashik: '${cmd}' is recognized but not yet implemented (Phase 0 scaffold).`);
+    console.error(`folklore: '${cmd}' is recognized but not yet implemented (Phase 0 scaffold).`);
     console.error(`               see the roadmap — it lands in a later phase.`);
     return 2;
   }
-  console.error(`akashik: unknown command '${cmd}'. run 'akashik help'.`);
+  console.error(`folklore: unknown command '${cmd}'. run 'folklore help'.`);
   return 1;
 }
 
 main()
   .then((code) => process.exit(code))
   .catch((err) => {
-    console.error('akashik: fatal error');
+    console.error('folklore: fatal error');
     console.error(err);
     process.exit(1);
   });

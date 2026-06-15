@@ -1,4 +1,4 @@
-# akashik — AI Solution Architect Audit
+# folklore — AI Solution Architect Audit
 
 **Mode:** Analyze (existing codebase)
 **Auditor persona:** AI Solution Architect — 5-phase methodology with decision trees, weighted scoring matrices, and Architecture Decision Records
@@ -9,13 +9,13 @@ The three prior audits covered system structure, data-science methodology, and r
 
 ---
 
-## Phase 1 — What pattern did akashik actually pick?
+## Phase 1 — What pattern did folklore actually pick?
 
 Reading `src/application/use-cases.ts` + `src/mcp/server.ts` + `BENCH-v2.md` together, the pattern is unambiguous:
 
 > **Local-first hybrid dense+lexical retrieval over a heterogeneous unified knowledge graph, exposed as a set of granular MCP tools, with the LLM doing the orchestration.**
 
-There is **no generator in the pipeline**. No LLM is called from akashik's runtime. The `ask` tool assembles a context block and hands it back; Claude Code itself is the reasoner. That's an important clarification: **akashik is not RAG.** It's the R without the G. The G lives one process over, inside Claude.
+There is **no generator in the pipeline**. No LLM is called from folklore's runtime. The `ask` tool assembles a context block and hands it back; Claude Code itself is the reasoner. That's an important clarification: **folklore is not RAG.** It's the R without the G. The G lives one process over, inside Claude.
 
 ```mermaid
 flowchart LR
@@ -23,7 +23,7 @@ flowchart LR
         LLM[LLM turn]
     end
 
-    subgraph MCP["akashik MCP server"]
+    subgraph MCP["folklore MCP server"]
         S[search]
         A[ask]
         GN[get_node]
@@ -65,7 +65,7 @@ flowchart LR
 
 Three properties matter for the rest of this audit:
 
-1. **Retrieval-only.** The LLM-as-reasoner is external. akashik ships ranked nodes, not synthesized answers. Zero hallucination surface of its own.
+1. **Retrieval-only.** The LLM-as-reasoner is external. folklore ships ranked nodes, not synthesized answers. Zero hallucination surface of its own.
 2. **Granular MCP surface (16 tools).** `search`, `ask`, `get_node`, `get_neighbors`, `find_tunnels`, `deep_search`, `code_graph_query`, `recent_sessions` expose *primitives*, not a single `rag_query()` god-tool. The LLM composes them.
 3. **Heterogeneous over homogeneous corpora.** Research, codebase, sessions, and git history live in one graph surface (with a separate code-graph.db for structural queries). That means retrieval quality is evaluated not just on BEIR but on "can the agent stitch a blog post, a function, and a git commit into one answer."
 
@@ -92,22 +92,22 @@ flowchart TD
     Q6 -->|No — no domain-specific<br/>reranker available| HybridBM25[dense + BM25 hybrid RRF<br/>+ MCP tool primitives]
     Q6 -->|Yes — can train/afford| Cross[dense + cross-encoder reranker]
 
-    HybridBM25 -.->|akashik<br/>is here| Current[CURRENT ARCHITECTURE]
+    HybridBM25 -.->|folklore<br/>is here| Current[CURRENT ARCHITECTURE]
 
     style Current fill:#2d4c2d,color:#fff
     style HybridBM25 fill:#1f4d6f,color:#fff
 ```
 
-Walking the tree with akashik's constraints — **external reasoner, CPU-local latency budget, heterogeneous corpus, no ability to train a domain-specific reranker** — the terminal node is exactly where the code is today: **dense + BM25 hybrid RRF, served as granular MCP tool primitives.**
+Walking the tree with folklore's constraints — **external reasoner, CPU-local latency budget, heterogeneous corpus, no ability to train a domain-specific reranker** — the terminal node is exactly where the code is today: **dense + BM25 hybrid RRF, served as granular MCP tool primitives.**
 
 The Wave 3 / Wave 4 benchmark failures in `BENCH-v2.md` are not just negative results — they are *empirical confirmations* that the neighboring branches of this tree are worse for this product:
 
-- **Wave 3** (cross-encoder reranker, MS-MARCO trained) regressed NDCG@10 by 1.92 points and added 25.9s of latency per query. The tree says: only take this branch if you can train a domain-specific reranker; akashik cannot on CPU, so the branch is pruned empirically, not just theoretically.
+- **Wave 3** (cross-encoder reranker, MS-MARCO trained) regressed NDCG@10 by 1.92 points and added 25.9s of latency per query. The tree says: only take this branch if you can train a domain-specific reranker; folklore cannot on CPU, so the branch is pruned empirically, not just theoretically.
 - **Wave 4** (room-aware routing) produced +0.34 NDCG against a 3-point acceptance gate. The tree says: routing only wins when corpora are cleanly separable; oracle-level gold routing couldn't cross the bar, so a learned router categorically cannot.
 
 **Honest verdict:** the pattern choice is correct for the use case. The failure modes published in v2.0 are actually a *moat* — they prove the team refused to pile models without measurement.
 
-The one branch that was **not** fully explored and which the decision tree leaves open: **agentic-RAG with tool calls inside akashik itself** — i.e., letting a small local judge LLM re-rank or expand queries. This is rejected (correctly) today because the external Claude is already the agentic loop; adding a second one inside akashik would be pattern duplication. If akashik ever targets non-Claude hosts without a built-in agentic loop, this branch reopens.
+The one branch that was **not** fully explored and which the decision tree leaves open: **agentic-RAG with tool calls inside folklore itself** — i.e., letting a small local judge LLM re-rank or expand queries. This is rejected (correctly) today because the external Claude is already the agentic loop; adding a second one inside folklore would be pattern duplication. If folklore ever targets non-Claude hosts without a built-in agentic loop, this branch reopens.
 
 ---
 
@@ -162,7 +162,7 @@ The strategic implication: **the largest wins at this point are no longer in the
 ### ADR-001 — Use sqlite-vec flat index instead of HNSW
 
 **Status:** Accepted (Phase 3, v1.x)
-**Context:** akashik needs a local vector store that runs without native compilation, scales to 10K–100K nodes, and supports the "one file you can scp" property that makes local-first tools portable.
+**Context:** folklore needs a local vector store that runs without native compilation, scales to 10K–100K nodes, and supports the "one file you can scp" property that makes local-first tools portable.
 **Decision:** Use `sqlite-vec` with a flat L2 brute-force index. No HNSW, no IVF, no quantization.
 **Alternatives considered:**
 - **HNSW via hnswlib-node:** 150× faster search at 1M+ vectors, but native compilation across macOS/Linux/Win is fragile and the corpus size target is 10K not 1M.
@@ -258,10 +258,10 @@ This is what the v2.1 doc calls "principled gated mechanisms" — the user is ex
 
 ## Analogies table for end users (developers running Claude Code)
 
-| akashik concept | Plain-English analogy |
+| folklore concept | Plain-English analogy |
 |----------------------|------------------------|
 | Room | A folder in your research reading list — homelab has its own feeds and blog posts separate from fundraise. Rooms are namespaces the way Slack channels are namespaces. |
-| Tunnel | An unexpected shortcut between two of your folders. You were reading about embedding quantization in one room; akashik noticed a homelab memory-issue post that's semantically the same idea and flags the link. Like a librarian who remembers you asked about X last week and points out the new book on Y is related. |
+| Tunnel | An unexpected shortcut between two of your folders. You were reading about embedding quantization in one room; folklore noticed a homelab memory-issue post that's semantically the same idea and flags the link. Like a librarian who remembers you asked about X last week and points out the new book on Y is related. |
 | Hybrid retrieval (dense + BM25) | Searching with two flashlights. One flashlight finds things that *mean* your query (dense). The other finds things that *contain* your query's exact words (BM25). Showing both lists back to back catches more than using either alone. |
 | MCP tool surface | A restaurant menu instead of a drive-through speaker. Claude gets 16 specific dishes it can order (search, ask, get_neighbors, deep_search, code_graph_query, recent_sessions, …) instead of shouting one vague order at a window and hoping. |
 | Sessions room | A memory of what Claude was working on yesterday that survives a crash. Like the "last tabs" feature in a browser, but for coding agent context. |

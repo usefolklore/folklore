@@ -13,7 +13,7 @@
 > reference doc.
 
 This document is intentionally unresolved. It is a thinking surface for the
-parts of Akashik that decide whether peer knowledge is good enough for an
+parts of Folklore that decide whether peer knowledge is good enough for an
 agent to trust, cite, or use instead of doing a live search.
 
 The core product question:
@@ -23,7 +23,7 @@ The core product question:
 
 If this question is weak, the whole P2P story becomes vibes: sometimes helpful,
 sometimes stale, sometimes wrong, and impossible to defend. If it is strong,
-Akashik becomes a serious agent-memory protocol.
+Folklore becomes a serious agent-memory protocol.
 
 ## The Decision We Actually Need To Make
 
@@ -210,7 +210,7 @@ against live search outcomes.
 Possible evaluation loop:
 
 1. Agent asks query `Q`.
-2. Akashik retrieves local + peer candidates.
+2. Folklore retrieves local + peer candidates.
 3. Policy decides whether it would skip search.
 4. In shadow mode, still run live search.
 5. Judge whether peer data would have been enough.
@@ -250,7 +250,7 @@ Dataset rows:
 {
   "query": "how do I wire sqlite-vec with FTS5 hybrid search?",
   "task_type": "coding",
-  "room": "akashik-dev",
+  "room": "folklore-dev",
   "local_hits": [],
   "peer_hits": [],
   "live_search_hits": [],
@@ -530,7 +530,7 @@ The failure is not only hallucination. It is premature closure. An agent sees a
 plausible chunk, forms a plan, and stops searching before it has the missing
 fact that would change the action.
 
-Akashik should treat this as a protocol problem:
+Folklore should treat this as a protocol problem:
 
 - Context is not evidence.
 - Relevance is not sufficiency.
@@ -603,7 +603,7 @@ Open questions:
 
 - Can we infer required facts from query type?
 - Should the MCP tool return a "missing facts" list?
-- Can the agent ask Akashik for "coverage" instead of "search"?
+- Can the agent ask Folklore for "coverage" instead of "search"?
 - Is a coverage map more important than top-k ranking?
 
 ## The Coverage Map
@@ -823,7 +823,7 @@ Open questions:
 
 ## From Search Cache To Knowledge Market
 
-If Akashik works, peers are not just caches. They become sources of
+If Folklore works, peers are not just caches. They become sources of
 evidence with different specialties.
 
 This creates incentive and abuse questions:
@@ -1194,7 +1194,7 @@ Candidate metrics:
 
 Open questions:
 
-- Which metrics should be visible in `akashik stats`?
+- Which metrics should be visible in `folklore stats`?
 - Which should be local-only because they reveal peer behavior?
 - Can treatment metrics predict answer quality?
 - What is the healthy duplicate-collapse rate in a real network?

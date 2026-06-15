@@ -1,4 +1,4 @@
-# ADR-001 — Akashik v3 memory protocol design decisions
+# ADR-001 — Folklore v3 memory protocol design decisions
 
 **Status:** accepted
 **Date:** 2026-04-17
@@ -9,7 +9,7 @@
 
 ## Context
 
-Akashik v2 established measured retrieval quality (Phase 25: 75.22% NDCG@10 on SciFact via Rust-fastembed bge-base + hybrid — within ~1.5pt of GPU reranker ceiling). The v3 milestone moves from "a retrieval engine" to "a protocol" — with the specific goal of unlocking cross-model, cross-device, cross-agent portable memory for the free-LLM world.
+Folklore v2 established measured retrieval quality (Phase 25: 75.22% NDCG@10 on SciFact via Rust-fastembed bge-base + hybrid — within ~1.5pt of GPU reranker ceiling). The v3 milestone moves from "a retrieval engine" to "a protocol" — with the specific goal of unlocking cross-model, cross-device, cross-agent portable memory for the free-LLM world.
 
 Several design decisions along the v3 surface were evaluated against alternatives. This ADR records the chosen path and why.
 
@@ -157,7 +157,7 @@ Several design decisions along the v3 surface were evaluated against alternative
 **Why primitives-first:**
 - Each primitive has a clean gate test that ran and produced a measured number (§2f/§2g/§2h of BENCH-v2.md)
 - Breaking the existing 293-test regression suite to rewire protocols is unnecessary given the primitives work
-- Incremental adoption: `/akashik/search/2.0.0` (signed) runs alongside `/akashik/search/1.0.0` (unsigned) during migration
+- Incremental adoption: `/folklore/search/2.0.0` (signed) runs alongside `/folklore/search/1.0.0` (unsigned) during migration
 
 **Trade-offs accepted:**
 - No demo of end-to-end envelope flow in this release. Integration tests for the bridge seam exist but don't cross the libp2p boundary.
@@ -178,7 +178,7 @@ Several design decisions along the v3 surface were evaluated against alternative
 ## Consequences (measured + expected)
 
 **Immediate (v3.0):**
-- Every memory entry Akashik emits can be cryptographically attributed to a user DID
+- Every memory entry Folklore emits can be cryptographically attributed to a user DID
 - Peers running different encoders federate via the bridge registry at 91.9% retention (SciFact)
 - Vector databases shrink 48× with −1.79pt worst-case NDCG@10 across 4 BEIR sets
 - Ed25519-signed recovery hex restores identity on a fresh machine; envelope signed on device A verifies on device B (proven in `tests/identity-lifecycle.test.ts`)

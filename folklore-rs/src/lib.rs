@@ -1,6 +1,6 @@
-//! akashik-bench library — shared modules for the `bench_beir`
+//! folklore-bench library — shared modules for the `bench_beir`
 //! binary (BEIR runner) and the `embed_server` binary (stdio JSON-RPC
-//! embedding server consumed by the TypeScript akashik stack).
+//! embedding server consumed by the TypeScript folklore stack).
 //!
 //! DDD layer boundaries:
 //!   `domain`         — pure functions, no I/O, no mutation beyond the

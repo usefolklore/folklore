@@ -3,9 +3,9 @@
 > **Snapshot.** Research synthesis from the Phase 21–23 CPU-bound
 > retrieval-optimization era (formerly root `findings.md`). Kept as
 > reference; not the current direction — see
-> `docs/PROJECT-PLAN-AKASHIK.md`.
+> `docs/PROJECT-PLAN-FOLKLORE.md`.
 
-This synthesis evaluates 2024-2026 retrieval techniques against the strict constraints of the `akashik` pipeline (CPU-only, ARM Hetzner CAX11 4GB, TypeScript + transformers.js + sqlite-vec), specifically targeting the 10-13pp loss in multi-session and temporal-reasoning questions on LongMemEval-S.
+This synthesis evaluates 2024-2026 retrieval techniques against the strict constraints of the `folklore` pipeline (CPU-only, ARM Hetzner CAX11 4GB, TypeScript + transformers.js + sqlite-vec), specifically targeting the 10-13pp loss in multi-session and temporal-reasoning questions on LongMemEval-S.
 
 ## 1. Late-Interaction CPU Ports
 **Techniques:** ColBERTv2, PLAID, Jina-ColBERT-v2.

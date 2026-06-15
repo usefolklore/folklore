@@ -1,5 +1,5 @@
 /**
- * Config loader — reads ~/.akashik/config.yaml with typed defaults.
+ * Config loader — reads ~/.folklore/config.yaml with typed defaults.
  *
  * The config is optional. If the file doesn't exist, all fields fall
  * back to their defaults. If it exists but is malformed, we return

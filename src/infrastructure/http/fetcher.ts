@@ -46,7 +46,7 @@ export interface HttpFetcherOptions {
  * fresh AbortController and dispatches a new request.
  */
 export const httpFetcher = (opts: HttpFetcherOptions = {}): HttpFetcher => {
-  const userAgent = opts.userAgent ?? 'akashik/0.1 (+https://github.com/saharbarak/akashik)';
+  const userAgent = opts.userAgent ?? 'folklore/0.1 (+https://github.com/saharbarak/folklore)';
   const timeoutMs = opts.timeoutMs ?? 30_000;
   const maxBytes = opts.maxBytes ?? 10 * 1024 * 1024;
 

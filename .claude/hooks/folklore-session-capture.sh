@@ -1,5 +1,5 @@
 #!/bin/sh
-# akashik Session Capture — auto-indexes session context on Stop
+# folklore Session Capture — auto-indexes session context on Stop
 #
 # When Claude Code's Stop hook fires (end of a response), this hook
 # saves a summary of the current session to the knowledge graph.
@@ -9,7 +9,7 @@
 # Implementation: writes a session-note node to graph.json via a
 # lightweight Node script (no full runtime startup — just JSON append).
 
-GRAPH="${AKASHIK_HOME:-$HOME/.akashik}/graph.json"
+GRAPH="${FOLKLORE_HOME:-$HOME/.folklore}/graph.json"
 if [ ! -f "$GRAPH" ]; then exit 0; fi
 
 # Write a session marker node (lightweight — no embedding, just graph).

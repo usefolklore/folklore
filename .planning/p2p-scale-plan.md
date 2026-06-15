@@ -8,7 +8,7 @@
 
 ### Current path
 ```
-prompt → hook → akashik ask --peers --json
+prompt → hook → folklore ask --peers --json
   ↓
   local sqlite-vec query           ≈  5–20 ms
   + per-peer libp2p dialProtocol   ≈  150–250 ms  (5 peers, sequential-ish)
@@ -19,7 +19,7 @@ prompt → hook → akashik ask --peers --json
 ### Plan
 
 1. **Replace per-peer touch dial with gossipsub broadcast** — single
-   `publish(/akashik/ask/1.0.0, q)` reaches all peers in one
+   `publish(/folklore/ask/1.0.0, q)` reaches all peers in one
    round trip. Each peer's daemon subscribes at boot, runs its local
    sqlite-vec query, and replies on a sibling topic. Collector
    times out at 80ms and merges what arrived.
@@ -40,7 +40,7 @@ prompt → hook → akashik ask --peers --json
    satisfaction sub-scores.
 
 ### Acceptance
-- `akashik ask --peers` p50 ≤ 50ms over 10 peers
+- `folklore ask --peers` p50 ≤ 50ms over 10 peers
 - Same query p50 ≤ 150ms over 10k peers (gossipsub propagation
   dominates)
 - No regressions in NDCG@10 on BEIR SciFact
@@ -49,8 +49,8 @@ prompt → hook → akashik ask --peers --json
 
 ### Current behaviour
 Hook returns `additionalContext` with the federated results. Claude
-sometimes still calls `akashik search`, `akashik ask`,
-`akashik get_node` 1–3 more times before responding.
+sometimes still calls `folklore search`, `folklore ask`,
+`folklore get_node` 1–3 more times before responding.
 
 ### Plan
 
@@ -64,14 +64,14 @@ sometimes still calls `akashik search`, `akashik ask`,
    already says "decision: use_memory" when threshold crosses 0.85.
    Add an explicit `terminal: true` field and update the closer
    text from "no additional calls are needed" to "Answer directly.
-   Do not call akashik/Grep/Read/WebSearch — those are
+   Do not call folklore/Grep/Read/WebSearch — those are
    redundant when terminal:true."
-   - File: `.claude/hooks/akashik-prompt-submit.cjs`
+   - File: `.claude/hooks/folklore-prompt-submit.cjs`
 
 3. **Pre-fan to MCP tools.** When the hook fetches federated
    results AND auto-pulls peer bodies, write the assembled context
    to a transient store keyed by prompt hash. Subsequent
-   `mcp__akashik__ask` calls in the same session return the
+   `mcp__folklore__ask` calls in the same session return the
    cached result if hash matches — zero re-query cost.
    - File: `src/mcp/server.ts` (cache layer for `ask` tool)
 
@@ -80,11 +80,11 @@ sometimes still calls `akashik search`, `akashik ask`,
   zero additional MCP/Grep/Read calls.
 - For 0.65 ≤ satisfaction < 0.85, Claude makes ≤ 1 follow-up call.
 
-## 3. 10k simulated peers (`akashik swarm sim`)
+## 3. 10k simulated peers (`folklore swarm sim`)
 
 ### Plan
 
-1. **New mode: `akashik swarm sim --count 10000 --corpus ...`**
+1. **New mode: `folklore swarm sim --count 10000 --corpus ...`**
    Spins up ONE local daemon process that:
    - Registers `count` virtual peer-ids in `peers.json` (no real
      libp2p sockets).
@@ -95,7 +95,7 @@ sometimes still calls `akashik search`, `akashik ask`,
      tagging each response with the virtual peer's id + a
      pre-generated github handle (`github:demo-peer-NNNN`).
 
-2. **Corpus generator: `akashik swarm gen --count 10000
+2. **Corpus generator: `folklore swarm gen --count 10000
    --domain hydrogen-detection`** — produces a JSONL where each
    line is a fake-but-plausible note seeded from real templates
    (HF model evals, GitHub repo references with code-scores, paper
@@ -109,8 +109,8 @@ sometimes still calls `akashik search`, `akashik ask`,
 4. **Peer-labels.json scales up:** Generated alongside the corpus.
 
 ### Acceptance
-- `akashik swarm sim --count 10000` boots in ≤ 10s.
-- `akashik ask --peers "..."` against a 10k swarm:
+- `folklore swarm sim --count 10000` boots in ≤ 10s.
+- `folklore ask --peers "..."` against a 10k swarm:
   - reports `peers_queried: 10000` honestly
   - p50 latency ≤ 200ms (bounded by gossipsub propagation, NOT
     by per-peer dial)

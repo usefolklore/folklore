@@ -4,7 +4,7 @@
  * Determinism, metric correctness, and the boundary behaviours
  * (no peers online → step skipped, every peer online → no
  * federation needed, all peers offline → no events). The full
- * bench harness lives in `tests/bench-akashik-federation.test.ts`.
+ * bench harness lives in `tests/bench-folklore-federation.test.ts`.
  */
 
 import assert from 'node:assert/strict';
