@@ -1,5 +1,15 @@
 # Milestones
 
+## v3.0 Folklore Launch (Shipped: 2026-06-15)
+
+**Phases completed:** 0 phases, 0 plans, 0 tasks
+
+**Key accomplishments:**
+
+- (none recorded)
+
+---
+
 ## v0.x — Foundation (Phases 0-6 + Extras) ✓
 
 **Shipped:** 2026-04-09 to 2026-04-12
@@ -69,6 +79,7 @@
 **Last phase number:** 20
 
 **Stats at close:**
+
 - 313/313 tests pass, zero regressions across all 6 phases
 - 16 MCP tools (added federated_search, code_graph_query, recent_sessions to the 13)
 - 23 source adapters (no new sources — Phase 20 added a new SourceKind for sessions, not new fetchers)
@@ -88,6 +99,7 @@
 Wave 2 lands within ~2 NDCG points of `bge-base-en-v1.5` (74.0) at the same parameter budget. Both Wave 3 and Wave 4 failures are documented in BENCH-v2.md §2b and §2c with reproduction commands so future contributors can verify and avoid the same dead ends. The room/tunnel architecture remains valuable for namespace isolation, permissions, and serendipitous cross-room discovery — explicitly NOT a retrieval quality feature.
 
 **Deferred from v2.0 (candidates for v2.1):**
+
 - Production swap: `src/infrastructure/embedders.ts` still defaults to MiniLM. Migrating to nomic+BM25 hybrid in production lifts end-user retrieval by +7.48 NDCG@10 but requires user vectors.db migration (384d → 768d), nomic ONNX download (~550MB), FTS5 BM25 indexing in the hot path. Non-trivial; benchmarked but not shipped.
 - DHT internet-wide peer discovery (Phase 17 scoped DHT off-by-default for safety)
 - Type-aware call graph via LSP (Phase 19 used tree-sitter syntactic parsing, leaving 70-80% of edges unresolved on bigger codebases)
