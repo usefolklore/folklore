@@ -18,6 +18,41 @@ Real retrieval quality measured against canonical BEIR datasets using Folklore's
 ╚═══════════════════════════════════════════════════════════════════════╝
 ```
 
+### Which number is the headline
+
+Two SciFact NDCG@10 figures live on this page, and they are the **same dataset,
+same hybrid fusion** measured on two pipelines — not two unrelated claims.
+
+- **72.30% NDCG@10 — the honest headline.** This is the pure-Node, CPU-only,
+  no-Rust path: Wave 2 = nomic-embed-text-v1.5 dense (768d, Xenova) + BM25 FTS5
+  hybrid, RRF k=60, on full BEIR SciFact (5,183 docs × 300 queries). It is the
+  number a fresh `git clone` reproduces with **zero extra build steps** — and
+  the same one quoted in [`bench/README.md`](../../bench/README.md) under
+  "Honest headline number."
+- **75.22% NDCG@10 — the optional Rust tier, = the site's `0.7522` LED.** Build
+  the optional Rust `bge-base` sidecar and the *same SciFact dataset, same
+  hybrid RRF fusion* reaches 75.22%. The only thing that changed is the
+  embedder (bge-base via fastembed-rs) and native acceleration. This is exactly
+  the `0.7522` the site's LED displays — Phase 25, same corpus, heavier model.
+
+Both are full-BEIR-SciFact (5,183 × 300), directly comparable to the
+[MTEB BEIR leaderboard](https://huggingface.co/spaces/mteb/leaderboard). The
+retired **96.8%** (v1.1) is **not** comparable — it came from a 15-passage ×
+10-query mini-harness — and is not used anywhere on this page.
+
+Verify either tier yourself (both need `npm run build` first — see
+[`bench/README.md`](../../bench/README.md)):
+
+```bash
+# 72.30% honest headline — pure Node, no Rust, zero extra build steps
+node bench/bench-beir-sota.mjs scifact --hybrid
+
+# 75.22% / 0.7522 LED — same SciFact, same hybrid, optional Rust bge-base sidecar
+cd folklore-rs && cargo build --release && cd ..
+FOLKLORE_RUST_BIN=$(pwd)/folklore-rs/target/release/embed_server \
+  node bench/bench-beir-rust.mjs scifact --model bge-base
+```
+
 ## Value model — compounding graph transfer, not summaries
 
 Folklore's economic claim is not "a peer returns a summary." The valuable
