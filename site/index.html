@@ -561,7 +561,7 @@
     <div class="stamp rv">The Memes</div>
     <h2 class="rv" data-d="1"><span class="mis" data-text="told and retold.">told and <span class="em-pink">retold.</span></span></h2>
     <p class="body rv" data-d="1" style="max-width:50ch">Folk knowledge always spread as memes. Ours are minted by the network and posted to the timeline — drop yours; the best ones make the store.</p>
-    <div class="memegrid rv" data-d="1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;margin-top:44px">
+    <div class="memegrid rv" id="memegrid" data-static="1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;margin-top:44px">
       <div style="border:3px solid var(--ink);background:var(--paper);box-shadow:8px 8px 0 var(--pink);overflow:hidden"><img src="assets/gen/char1.png" alt="folk-pop meme — the teller" style="width:100%;display:block"/></div>
       <div style="border:3px solid var(--ink);background:var(--paper);box-shadow:8px 8px 0 var(--blue);overflow:hidden"><img src="assets/gen/bird.png" alt="folk meme" style="width:100%;display:block"/></div>
       <div style="border:3px solid var(--ink);background:var(--paper);box-shadow:8px 8px 0 var(--teal);overflow:hidden"><img src="assets/gen/sun.png" alt="folk meme" style="width:100%;display:block"/></div>
@@ -607,6 +607,37 @@ function onScroll(){
 }
 addEventListener('scroll',()=>{if(tk)return;tk=true;requestAnimationFrame(onScroll);},{passive:true});
 onScroll();
+/* data-drive the #memes grid from assets/memes.json — static cards are the
+   graceful fallback (file:// fetch rejections / 404 / bad JSON are swallowed,
+   leaving the seeded markup untouched so the section is never blank). */
+(async function loadMemes(){
+  const grid=document.getElementById('memegrid');
+  if(!grid)return;
+  const SHADOWS=['var(--pink)','var(--blue)','var(--teal)','var(--yellow)'];
+  try{
+    const res=await fetch('assets/memes.json',{cache:'no-store'});
+    if(!res.ok)return;                       // keep static fallback
+    const memes=await res.json();
+    if(!Array.isArray(memes)||memes.length===0)return; // empty → keep fallback
+    const frag=document.createDocumentFragment();
+    memes.forEach((m,i)=>{
+      if(!m||typeof m.image!=='string')return;
+      const card=document.createElement('div');
+      card.style.cssText='border:3px solid var(--ink);background:var(--paper);box-shadow:8px 8px 0 '+SHADOWS[i%SHADOWS.length]+';overflow:hidden';
+      const img=document.createElement('img');
+      img.src=m.image;
+      img.alt=(typeof m.alt==='string'&&m.alt)?m.alt:'folk meme';
+      if(typeof m.caption==='string'&&m.caption)img.title=m.caption;
+      img.loading='lazy';
+      img.style.cssText='width:100%;display:block';
+      card.appendChild(img);
+      frag.appendChild(card);
+    });
+    if(!frag.childNodes.length)return;        // nothing renderable → keep fallback
+    grid.replaceChildren(frag);               // swap static cards for live ones
+    grid.removeAttribute('data-static');
+  }catch(e){/* file:// or network/parse error — keep the static fallback */}
+})().catch(()=>{});
 </script>
 </body>
 </html>
