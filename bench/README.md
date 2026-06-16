@@ -43,10 +43,26 @@ hybrid, RRF k=60). The Phase 25 Rust bge-base sidecar path pushes this to
 mini-harness and is not used. See `docs/product/BENCHMARKS.md` for the
 full progression and the 13 documented null attacks.
 
+## Offline / in-sandbox harness
+
+Every runner above needs a BEIR `.zip` download **and** a live HuggingFace
+model pull. In a sealed sandbox both are blocked. `bench-scifact-offline.mjs`
+is the **zero-network** alternative: it runs the production hybrid pipeline
+(`openSqliteVectorIndex` → `searchHybrid`, dense + FTS5 BM25 RRF) over a small
+committed **synthetic** SciFact-style fixture (`eval/fixtures/scifact-mini`,
+40 passages × 18 claim queries). It uses a locally-cached Xenova model if one
+is present, otherwise a deterministic in-repo hashed bag-of-words embedder so
+the harness proves end-to-end with no download (the embedder used is printed in
+the output). The numbers are **not** comparable to the 72.30% BEIR figure —
+they track relative change of the pipeline on a fixed mini-task, giving future
+model swaps and fusion changes a measurable lever. See the fixture's
+`eval/fixtures/scifact-mini/README.md` for provenance.
+
 ## Retrieval quality benchmarks
 
 | Runner | Measures | Reproduce |
 |---|---|---|
+| `bench-scifact-offline.mjs` | Offline hybrid NDCG@10 / Recall@10 — zero network, bundled `eval/fixtures/scifact-mini` fixture, deterministic fallback embedder | `node bench/bench-scifact-offline.mjs` |
 | `bench-beir.mjs` | BEIR NDCG@10 (dense, any BEIR v1 dataset) | `node bench/bench-beir.mjs scifact` |
 | `bench-beir-sota.mjs` | Wave 2 hybrid (dense + BM25 RRF) | `node bench/bench-beir-sota.mjs scifact --hybrid` |
 | `bench-beir-sota.mjs` (rerank null) | Reranker −1.92pt regression | `node bench/bench-beir-sota.mjs scifact --hybrid --rerank` |
