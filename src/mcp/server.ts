@@ -46,6 +46,13 @@ import {
 import { runFederatedSearch } from '../application/federated-search.js';
 import { buildPeerPullTelemetry } from '../application/peer-pull-telemetry.js';
 import { formatTelemetryBlock } from '../infrastructure/telemetry-formatter.js';
+import {
+  computeSatisfaction,
+  decideContract,
+  classifyRisk,
+  ageInDays,
+  type EnrichedMatch,
+} from '../domain/peer-telemetry.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../infrastructure/peer-transport.js';
 import { loadPeers } from '../infrastructure/peer-store.js';
 import { loadConfig } from '../infrastructure/config-loader.js';
@@ -187,11 +194,41 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
         ].join('\n');
       });
 
+      // Agent contract (RFC-0003) — append the explicit breakpoint
+      // decision so an MCP host can route on it (use memory vs verify
+      // vs search) instead of guessing from prose. Enrich the matches
+      // with provenance/age off the graph; local-only, no peers here.
+      const enriched: EnrichedMatch[] = matches.value.map((m) => {
+        const node = getNode(graph.value, m.node_id);
+        const fetched_at = typeof node?.fetched_at === 'string' ? node.fetched_at : undefined;
+        return {
+          node_id: m.node_id,
+          distance: m.distance,
+          source_peer: null,
+          also_from_peers: [],
+          source_uri: typeof node?.source_uri === 'string' ? node.source_uri : undefined,
+          fetched_at,
+          age_days: ageInDays(fetched_at),
+        };
+      });
+      const contract = decideContract(computeSatisfaction(enriched), { risk: classifyRisk(query) });
+      const traceCells = contract.trace
+        .filter((t) => t.observed)
+        .map((t) => `${t.name}=${t.value.toFixed(2)}`)
+        .join(' · ');
+      const contractBlock = [
+        '# folklore contract',
+        `action: ${contract.decision} — ${contract.recommended_action}`,
+        `satisfaction: ${contract.score.toFixed(2)}${contract.risk !== 'low' ? ` · risk: ${contract.risk}` : ''}`,
+        traceCells ? `trace: ${traceCells}` : null,
+        contract.would_shadow_search ? 'note: a verification pass is still advised' : null,
+      ].filter((l): l is string => l !== null).join('\n');
+
       return {
         content: [
           {
             type: 'text' as const,
-            text: `# folklore context for: ${query}\n\n${blocks.join('\n\n---\n\n')}`,
+            text: `# folklore context for: ${query}\n\n${blocks.join('\n\n---\n\n')}\n\n---\n\n${contractBlock}`,
           },
         ],
       };

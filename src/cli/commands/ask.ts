@@ -155,6 +155,16 @@ const renderAskJson = (r: AskResult): number => {
     reranked: r.reranked,
     satisfaction: r.satisfaction.score,
     decision: r.decision,
+    contract: {
+      decision: r.contract.decision,
+      recommended_action: r.contract.recommended_action,
+      risk: r.contract.risk,
+      would_shadow_search: r.contract.would_shadow_search,
+      reasons: r.contract.reasons,
+      penalties: r.contract.penalties,
+      trace: r.contract.trace,
+      summary: r.contract.summary,
+    },
     satisfaction_detail: {
       fresh: r.satisfaction.fresh_count,
       stale: r.satisfaction.stale_count,
@@ -190,21 +200,26 @@ const HOOK_SCHEMA_VERSION = 2;
 
 const renderAgentContract = (r: AskResult): void => {
   const s = r.satisfaction;
+  const c = r.contract;
   console.log(`# folklore agent contract (hook_version: ${HOOK_SCHEMA_VERSION})`);
-  console.log(`action:        ${r.decision}`);
+  console.log(`action:        ${c.decision} — ${c.recommended_action}`);
   console.log(`satisfaction:  ${s.score.toFixed(2)}  (range 0.00–1.00)`);
+  if (c.risk !== 'low') console.log(`risk:          ${c.risk}`);
   console.log(
     `thresholds:    ≥0.85 use_memory · ≥0.65 verify_one_source · ≥0.40 search_required · <0.40 ask_user`,
   );
   console.log(
     `signals:       fresh=${s.fresh_count} stale=${s.stale_count} missing_provenance=${s.missing_provenance_count} observed=${s.observed_components}/5`,
   );
-  if (s.reasons.length > 0) {
-    console.log(`reasons:       ${s.reasons.slice(0, 3).join(' · ')}`);
+  const traceCells = c.trace.filter((t) => t.observed).map((t) => `${t.name}=${t.value.toFixed(2)}`);
+  if (traceCells.length > 0) console.log(`trace:         ${traceCells.join(' · ')}`);
+  if (c.reasons.length > 0) {
+    console.log(`reasons:       ${c.reasons.slice(0, 3).join(' · ')}`);
   }
-  if (s.penalties.length > 0) {
-    console.log(`penalties:     ${s.penalties.slice(0, 3).join(' · ')}`);
+  if (c.penalties.length > 0) {
+    console.log(`penalties:     ${c.penalties.slice(0, 3).join(' · ')}`);
   }
+  if (c.would_shadow_search) console.log(`note:          a verification pass is still advised`);
   console.log('');
 };
 
