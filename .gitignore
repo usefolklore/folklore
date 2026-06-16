@@ -54,4 +54,8 @@ docs/FELLOWS-NARRATIVE.md
 docs/HANDOVER.md
 # Fellows eval — private differentiator until submission; un-ignore at submit
 scripts/fellows-eval/
-eval/
+# Ignore eval working data, but keep the directory traversable so the
+# committed retrieval-quality fixtures below can be un-ignored.
+eval/*
+# ...except committed retrieval-quality fixtures used by bench/ runners.
+!eval/fixtures/
