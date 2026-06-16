@@ -30,6 +30,7 @@ import {
   type EnrichedMatch,
   type PeerPullTelemetry,
 } from '../domain/peer-telemetry.js';
+import { buildCoverageMap } from '../domain/coverage.js';
 
 /**
  * V5 default stale window — 14 days. Pre-V5 system rooms (toolshed/research/
@@ -55,8 +56,14 @@ export const buildPeerPullTelemetry = (
   const { query, result, graph } = params;
   const now = params.now ?? Date.now();
 
+  const coverageHits: { node_id: string; text: string }[] = [];
   const enriched: EnrichedMatch[] = result.matches.map((m) => {
     const node = getNode(graph, m.node_id);
+    // Capture searchable text for the coverage map: node label +
+    // content when local, else the wire-carried label for remote hits.
+    const label = node && typeof node.label === 'string' ? node.label : '';
+    const body = node && typeof node.source_file === 'string' ? node.source_file : '';
+    coverageHits.push({ node_id: m.node_id, text: `${label} ${body}` });
     // Remote hits aren't in the local graph — fall back to the
     // wire-carried metadata the responding peer shipped. Without this,
     // every federated hit scored as provenance-free (0 fresh, 0
@@ -94,6 +101,12 @@ export const buildPeerPullTelemetry = (
   }
 
   const satisfaction = computeSatisfaction(enriched);
+  const contract = decideContract(satisfaction, { risk: classifyRisk(query) });
+  // Coverage map only at borderline decisions — where the extra signal
+  // can scope a constrained next search. Clear calls don't pay for it.
+  const borderline =
+    contract.decision === 'verify_one_source' || contract.decision === 'search_required';
+  const coverage_map = borderline ? buildCoverageMap(query, coverageHits) : null;
 
   return {
     query,
@@ -109,8 +122,8 @@ export const buildPeerPullTelemetry = (
     peers_timed_out: result.peers_timed_out,
     peers_errored: result.peers_errored,
     satisfaction,
-    decision: decideContract(satisfaction, { risk: classifyRisk(query) }).decision,
-    coverage_map: null,
+    decision: contract.decision,
+    coverage_map,
     emitted_at: new Date(now).toISOString(),
   };
 };

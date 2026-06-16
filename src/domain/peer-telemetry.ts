@@ -9,6 +9,8 @@
  * docs/PROTOCOL-QUALITY-QUESTIONS.md catches up.
  */
 
+import type { CoverageMap } from './coverage.js';
+
 // ─────────────── records ───────────────────
 
 /**
@@ -124,11 +126,11 @@ export interface PeerPullTelemetry {
    */
   readonly decision: AgentDecision;
   /**
-   * Reserved for v2's coverage-map output (required_facts /
-   * covered / missing). Always null in v1 — present so consumers
-   * can opt in incrementally.
+   * Query-term coverage map (RFC-0003) — populated only at borderline
+   * decisions (verify_one_source / search_required), where it scopes a
+   * constrained next search; null for clear use_memory / ask_user calls.
    */
-  readonly coverage_map: null;
+  readonly coverage_map: CoverageMap | null;
   readonly emitted_at: string;        // ISO-8601
 }
 

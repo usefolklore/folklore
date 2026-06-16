@@ -69,9 +69,17 @@ export const formatTelemetryBlock = (t: PeerPullTelemetry): string => {
   const flagLine = s.penalties.length > 0 ? ` flags    ${truncQuery(s.penalties.join(' · '), 66)}` : null;
   const shadowLine = c.would_shadow_search ? ` shadow   a verification pass is still advised` : null;
 
+  // Coverage — only present at borderline decisions; name the gap so the
+  // next search is constrained to what's missing.
+  const cov = t.coverage_map;
+  const coverageLine =
+    cov && cov.missing.length > 0
+      ? ` missing  ${truncQuery(cov.missing.map((m) => m.term).join(', '), 64)} (${Math.round(cov.coverage_ratio * 100)}% terms covered)`
+      : null;
+
   return [
     HR_TOP, queryLine, tookLine, dataLine, peersLine,
-    fitLine, actionLine, traceLine, whyLine, flagLine, shadowLine,
+    fitLine, actionLine, traceLine, whyLine, flagLine, coverageLine, shadowLine,
     HR_BOTTOM,
   ].filter((l): l is string => l !== null).join('\n');
 };
