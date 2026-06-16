@@ -1,0 +1,359 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "type": "concept",
+      "label": "Raft leader election and terms",
+      "body": "Raft is a consensus algorithm that elects a single leader per term. Each server starts as a follower; if it hears no heartbeat within the election timeout it becomes a candidate, increments the current term, and requests votes. A candidate wins when it receives votes from a majority of the cluster, after which it sends periodic heartbeats to suppress new elections. Randomized election timeouts make split votes rare. Terms act as a logical clock so that stale leaders step down when they observe a higher term.",
+      "source_uri": "synthetic://distributed/raft-election"
+    },
+    {
+      "type": "concept",
+      "label": "Raft log replication and commit index",
+      "body": "In Raft the leader appends client commands to its log and replicates them to followers via AppendEntries RPCs. An entry is committed once it is stored on a majority of servers, at which point the leader advances its commit index and applies the entry to its state machine. Followers learn the commit index from subsequent AppendEntries and apply entries in order. The log-matching property guarantees that if two logs share an entry at a given index and term, all preceding entries are identical.",
+      "source_uri": "synthetic://distributed/raft-replication"
+    },
+    {
+      "type": "concept",
+      "label": "Paxos proposers acceptors and quorums",
+      "body": "Classic Paxos reaches agreement on a single value through proposers, acceptors, and learners across two phases. In the prepare phase a proposer picks a proposal number and asks a majority of acceptors to promise not to accept lower-numbered proposals. In the accept phase it asks acceptors to accept its value, adopting any value already accepted by a higher-numbered prepare. Overlapping majorities guarantee that once a value is chosen it cannot be unchosen, which is the safety core of the protocol.",
+      "source_uri": "synthetic://distributed/paxos-basic"
+    },
+    {
+      "type": "concept",
+      "label": "Two-phase commit and the blocking problem",
+      "body": "Two-phase commit coordinates an atomic transaction across multiple participants using a coordinator. In the voting phase the coordinator asks each participant to prepare and vote commit or abort; in the decision phase it broadcasts the outcome, which all participants must honor. The protocol's weakness is that if the coordinator crashes after participants have voted but before the decision arrives, participants are blocked holding locks until it recovers, since they cannot unilaterally decide.",
+      "source_uri": "synthetic://distributed/two-phase-commit"
+    },
+    {
+      "type": "concept",
+      "label": "Vector clocks and causal ordering",
+      "body": "A vector clock assigns each process a vector of counters, one per process, that captures causal relationships between events. A process increments its own entry on each local event and merges incoming vectors by taking the element-wise maximum before incrementing. Two events are concurrent when neither vector dominates the other; otherwise the dominating vector happened after. Vector clocks let a distributed system detect causality and conflicting concurrent updates without a global clock.",
+      "source_uri": "synthetic://distributed/vector-clocks"
+    },
+    {
+      "type": "concept",
+      "label": "CRDT convergence via commutative merges",
+      "body": "A conflict-free replicated data type lets replicas accept writes independently and converge without coordination. State-based CRDTs ship their full state and merge via a join that is commutative, associative, and idempotent, so replicas reach the same least-upper-bound regardless of message order or duplication. Operation-based CRDTs ship operations that must commute when concurrent. Common examples include grow-only counters, observed-remove sets, and last-writer-wins registers.",
+      "source_uri": "synthetic://distributed/crdt-convergence"
+    },
+    {
+      "type": "concept",
+      "label": "Gossip protocols and epidemic dissemination",
+      "body": "Gossip protocols spread information by having each node periodically exchange state with a few random peers, so updates propagate exponentially like an epidemic. Anti-entropy gossip reconciles full state to repair missed updates, while rumor-mongering stops forwarding once a message looks sufficiently spread. Gossip scales to large clusters because per-node load stays constant, and it tolerates churn since no node is a single point of failure, at the cost of eventual rather than immediate consistency.",
+      "source_uri": "synthetic://distributed/gossip"
+    },
+    {
+      "type": "concept",
+      "label": "Consistent hashing and virtual nodes",
+      "body": "Consistent hashing maps both keys and servers onto a ring so that adding or removing a server only relocates the keys adjacent to it, rather than reshuffling the whole keyspace. Each physical server is assigned many virtual nodes spread around the ring to even out load and smooth the impact of a server leaving. This is the partitioning scheme behind many distributed caches and key-value stores because it bounds the data movement on membership changes.",
+      "source_uri": "synthetic://distributed/consistent-hashing"
+    },
+    {
+      "type": "concept",
+      "label": "The CAP theorem tradeoff",
+      "body": "The CAP theorem states that a distributed system facing a network partition must choose between consistency and availability; it cannot guarantee both while the partition lasts. A CP system rejects or delays requests it cannot serve consistently, while an AP system keeps serving and reconciles later. When there is no partition a system can offer both, so CAP is really a statement about behavior under partition, not a permanent ceiling on the design.",
+      "source_uri": "synthetic://distributed/cap-theorem"
+    },
+    {
+      "type": "concept",
+      "label": "Quorum reads and writes for tunable consistency",
+      "body": "Quorum-based replication tunes consistency by requiring R replicas to respond to a read and W replicas to acknowledge a write out of N total. When R plus W exceeds N the read and write sets overlap, so a read always sees the latest acknowledged write, giving strong consistency. Lowering R or W trades consistency for lower latency and higher availability. Many key-value stores expose R, W, and N as per-operation knobs.",
+      "source_uri": "synthetic://distributed/quorum-rw"
+    },
+    {
+      "type": "concept",
+      "label": "HNSW graphs for approximate nearest neighbor search",
+      "body": "Hierarchical Navigable Small World graphs index vectors as a multi-layer proximity graph where upper layers are sparse long-range links and the bottom layer holds every point. A search starts at an entry point in the top layer and greedily descends, following the neighbor closest to the query, then refines at the base layer. HNSW gives logarithmic-like query time with high recall, and its build cost and memory grow with the chosen connectivity parameter M.",
+      "source_uri": "synthetic://vector/hnsw"
+    },
+    {
+      "type": "concept",
+      "label": "Product quantization for vector compression",
+      "body": "Product quantization compresses high-dimensional vectors by splitting each vector into subvectors and quantizing each subspace with its own small codebook learned by k-means. A vector becomes a short tuple of codebook indices, shrinking memory dramatically, and distances are approximated by summing precomputed lookup tables. PQ trades a controlled accuracy loss for large memory savings and is often combined with an inverted index to scale nearest-neighbor search to billions of vectors.",
+      "source_uri": "synthetic://vector/product-quantization"
+    },
+    {
+      "type": "concept",
+      "label": "Cosine similarity versus Euclidean distance",
+      "body": "Cosine similarity measures the angle between two vectors and ignores their magnitude, which makes it the default for comparing text embeddings where direction encodes meaning. Euclidean distance measures straight-line separation and is sensitive to magnitude. On L2-normalized vectors the two are monotonically related, so ranking by cosine matches ranking by Euclidean distance. Choosing the metric should match how the embedding model was trained.",
+      "source_uri": "synthetic://vector/cosine-vs-euclidean"
+    },
+    {
+      "type": "concept",
+      "label": "BM25 lexical ranking function",
+      "body": "BM25 is a bag-of-words ranking function that scores a document for a query by summing per-term weights built from term frequency and inverse document frequency. Term frequency saturates so repeated words give diminishing returns, controlled by the k1 parameter, and a length-normalization term b discounts long documents. BM25 remains a strong lexical baseline because it rewards rare query terms and resists keyword stuffing without any training.",
+      "source_uri": "synthetic://retrieval/bm25"
+    },
+    {
+      "type": "concept",
+      "label": "Reciprocal rank fusion of result lists",
+      "body": "Reciprocal rank fusion combines several ranked result lists into one by scoring each document as the sum over lists of one divided by a constant plus its rank in that list. Because it uses only ranks and not raw scores, RRF needs no score calibration across retrievers, which is why it is a popular way to blend a dense vector ranking with a lexical BM25 ranking in hybrid search. The constant dampens the influence of very top ranks.",
+      "source_uri": "synthetic://retrieval/rrf"
+    },
+    {
+      "type": "concept",
+      "label": "Cross-encoder reranking of candidates",
+      "body": "A cross-encoder reranker takes a query and a candidate document together through a single transformer and outputs one relevance score, letting the two attend to each other directly. This is far more accurate than the bi-encoder embeddings used for first-stage retrieval but too slow to run over a whole corpus, so it is applied as a second stage over a small candidate set. The pattern is retrieve cheaply, then rerank the top candidates precisely.",
+      "source_uri": "synthetic://retrieval/cross-encoder"
+    },
+    {
+      "type": "concept",
+      "label": "Inverted index postings lists",
+      "body": "An inverted index maps each term to a postings list of the documents that contain it, optionally with positions and term frequencies. Query evaluation intersects or unions the relevant postings lists, and the lists are kept sorted by document id so intersection is a linear merge. Compression schemes like delta encoding shrink the lists, and skip pointers let the engine jump ahead during intersection. The inverted index is the backbone of classic full-text search.",
+      "source_uri": "synthetic://retrieval/inverted-index"
+    },
+    {
+      "type": "concept",
+      "label": "Personalized PageRank for graph ranking",
+      "body": "Personalized PageRank ranks graph nodes by the stationary distribution of a random walk that, at each step, either follows an outgoing edge or teleports back to a chosen seed set with a fixed restart probability. Concentrating the teleport on seed nodes biases the scores toward the seeds' neighborhood, surfacing nodes that are well connected to them. It is widely used to rerank retrieval candidates by their structural proximity to a query's anchor nodes.",
+      "source_uri": "synthetic://graph/personalized-pagerank"
+    },
+    {
+      "type": "concept",
+      "label": "Dijkstra shortest path with a priority queue",
+      "body": "Dijkstra's algorithm finds shortest paths from a source on a graph with non-negative edge weights by repeatedly extracting the unvisited node with the smallest tentative distance and relaxing its outgoing edges. A binary-heap priority queue gives a running time near the number of edges times the log of the number of nodes. The algorithm fails with negative edges because once a node is finalized its distance is assumed permanent, which negative weights can violate.",
+      "source_uri": "synthetic://graph/dijkstra"
+    },
+    {
+      "type": "concept",
+      "label": "Bloom filters for probabilistic membership",
+      "body": "A Bloom filter is a bit array with several hash functions that tests set membership with no false negatives but a tunable false-positive rate. Inserting an element sets the bits at each hash position; a lookup reports present only if all those bits are set. It cannot delete elements or list contents, and the false-positive rate rises as the array fills, but it uses far less memory than storing the elements, which suits caches and databases avoiding pointless disk reads.",
+      "source_uri": "synthetic://datastruct/bloom-filter"
+    },
+    {
+      "type": "concept",
+      "label": "LSM trees and write amplification",
+      "body": "A log-structured merge tree buffers writes in an in-memory table, flushes it as an immutable sorted file, and merges files in the background through leveled or tiered compaction. This turns random writes into sequential ones, giving high write throughput, but reads may consult several files and compaction causes write amplification as data is rewritten. Bloom filters and block caches mitigate the read cost, making LSM trees the engine behind many write-heavy key-value stores.",
+      "source_uri": "synthetic://storage/lsm-tree"
+    },
+    {
+      "type": "concept",
+      "label": "B-tree indexes for range queries",
+      "body": "A B-tree keeps sorted keys in a balanced multi-way tree where every leaf sits at the same depth, so lookups, inserts, and range scans all cost a logarithmic number of node reads. Wide fan-out keeps the tree shallow, which matters when each node is a disk or page read. Range queries walk a contiguous run of leaves, making B-trees the default index for read-heavy relational workloads where ordered access and point lookups both matter.",
+      "source_uri": "synthetic://storage/btree"
+    },
+    {
+      "type": "concept",
+      "label": "Write-ahead logging for durability",
+      "body": "Write-ahead logging guarantees durability and atomicity by appending a record of every change to a sequential log and flushing it before the corresponding data pages are written in place. After a crash, recovery replays committed log records and rolls back uncommitted ones to restore a consistent state. Because the log is sequential it is fast to write, and checkpoints periodically advance a marker so recovery need not replay from the beginning.",
+      "source_uri": "synthetic://storage/wal"
+    },
+    {
+      "type": "concept",
+      "label": "MVCC snapshot isolation",
+      "body": "Multi-version concurrency control gives each transaction a consistent snapshot by keeping multiple versions of each row tagged with the transaction that created them. Readers see the latest version committed before their snapshot and never block writers, while writers create new versions rather than overwriting. Snapshot isolation prevents many anomalies but can still allow write skew, and old versions must be garbage-collected once no snapshot can see them.",
+      "source_uri": "synthetic://storage/mvcc"
+    },
+    {
+      "type": "concept",
+      "label": "Cache write-through versus write-back",
+      "body": "A write-through cache pushes every write to both the cache and the backing store immediately, keeping them consistent at the cost of write latency. A write-back cache updates only the cache and marks the line dirty, deferring the store write until eviction, which is faster but risks data loss on failure and needs careful flushing. The choice trades durability and simplicity against write performance, and write-back usually pairs with a battery or log to bound the loss window.",
+      "source_uri": "synthetic://caching/write-policies"
+    },
+    {
+      "type": "concept",
+      "label": "LRU cache eviction policy",
+      "body": "Least-recently-used eviction discards the entry that has gone longest without access on the bet that recently used items will be used again. A common implementation pairs a hash map with a doubly linked list so that access moves an entry to the front and eviction removes the tail, both in constant time. LRU works well for workloads with temporal locality but degrades on scans that touch many items once, which pollute the cache.",
+      "source_uri": "synthetic://caching/lru"
+    },
+    {
+      "type": "concept",
+      "label": "Cache stampede and request coalescing",
+      "body": "A cache stampede happens when a popular key expires and many concurrent requests all miss and hit the backing store at once. Mitigations include request coalescing so only one request recomputes the value while others wait, probabilistic early expiration that refreshes a key slightly before it expires, and serving a stale value while a single background job refreshes. The goal is to bound the number of expensive recomputations under load.",
+      "source_uri": "synthetic://caching/stampede"
+    },
+    {
+      "type": "concept",
+      "label": "Token bucket rate limiting",
+      "body": "A token bucket limits request rate by refilling tokens at a steady rate up to a maximum capacity; each request consumes a token and is rejected or queued when the bucket is empty. The capacity sets the allowed burst size while the refill rate sets the sustained rate, so the algorithm permits short bursts but enforces a long-run average. It is cheap to implement with a timestamp and a counter and is common at API gateways.",
+      "source_uri": "synthetic://systems/token-bucket"
+    },
+    {
+      "type": "concept",
+      "label": "Circuit breaker for fault isolation",
+      "body": "A circuit breaker protects a caller from a failing dependency by tracking recent error rates and tripping open once they cross a threshold, after which calls fail fast instead of piling up. After a cooldown it moves to a half-open state that lets a few trial calls through; success closes the breaker and failure reopens it. This prevents cascading failures and gives the downstream service room to recover instead of being hammered.",
+      "source_uri": "synthetic://systems/circuit-breaker"
+    },
+    {
+      "type": "concept",
+      "label": "Idempotency keys for safe retries",
+      "body": "An idempotency key lets a client safely retry a request without causing duplicate side effects: the server records the key with the result of the first execution and, on seeing the same key again, returns the stored result instead of re-running the operation. This is essential for payment and order APIs over unreliable networks, where a client cannot tell whether a timed-out request actually succeeded. Keys are typically scoped and expired after a window.",
+      "source_uri": "synthetic://systems/idempotency-keys"
+    },
+    {
+      "type": "concept",
+      "label": "Exactly-once delivery is effectively at-least-once plus dedup",
+      "body": "True exactly-once message delivery is impossible over an unreliable network, so practical systems achieve exactly-once processing by combining at-least-once delivery with idempotent consumers or a deduplication store keyed by message id. The producer may resend on uncertainty and the consumer discards duplicates, so each effect lands once even though messages arrive more than once. The guarantee is about observable effects, not about the wire.",
+      "source_uri": "synthetic://systems/exactly-once"
+    },
+    {
+      "type": "concept",
+      "label": "Backpressure in streaming pipelines",
+      "body": "Backpressure is the mechanism by which a slow consumer signals an upstream producer to slow down so that unbounded buffering does not exhaust memory. Pull-based streams give the consumer control by requesting items only when ready, while push-based systems add bounded queues that block or drop when full. Without backpressure a fast producer overwhelms a slow stage, so reactive frameworks make demand explicit as a first-class part of the protocol.",
+      "source_uri": "synthetic://systems/backpressure"
+    },
+    {
+      "type": "concept",
+      "label": "Saga pattern for distributed transactions",
+      "body": "A saga implements a long-running business transaction across services as a sequence of local transactions, each with a compensating action that semantically undoes it if a later step fails. Orchestration drives the steps from a central coordinator, while choreography lets each service react to events from the previous one. Sagas trade atomicity for availability: there is no global lock, so intermediate states are visible and compensations must handle partial progress.",
+      "source_uri": "synthetic://systems/saga"
+    },
+    {
+      "type": "concept",
+      "label": "Event sourcing as an append-only log of facts",
+      "body": "Event sourcing stores the full history of state changes as an append-only sequence of immutable events rather than just the current state, which is rebuilt by replaying the events. This yields a complete audit trail, the ability to reconstruct past states, and natural integration with event-driven consumers. The costs are a steeper query model, the need for snapshots so replay stays fast, and the difficulty of changing event schemas after the fact.",
+      "source_uri": "synthetic://systems/event-sourcing"
+    },
+    {
+      "type": "concept",
+      "label": "CQRS read and write model separation",
+      "body": "Command Query Responsibility Segregation splits a system into a write model that validates and applies commands and one or more read models optimized for queries, kept in sync asynchronously. This lets each side scale and be shaped independently, so reads can use denormalized projections while writes stay normalized and consistent. The tradeoff is eventual consistency between the models and the extra machinery to propagate changes from writes to reads.",
+      "source_uri": "synthetic://systems/cqrs"
+    },
+    {
+      "type": "concept",
+      "label": "JWT structure and stateless authentication",
+      "body": "A JSON Web Token packs claims into a base64url-encoded header, payload, and signature, letting a server verify the token without a session store because the signature proves integrity. Stateless verification scales well but means a token cannot be revoked before it expires unless a denylist is consulted, so access tokens are kept short-lived and paired with a refresh token. The payload is signed, not encrypted, so it must not hold secrets.",
+      "source_uri": "synthetic://security/jwt"
+    },
+    {
+      "type": "concept",
+      "label": "OAuth 2.0 authorization code flow",
+      "body": "The OAuth 2.0 authorization code flow lets a third-party app obtain access to a resource without seeing the user's password. The user authenticates at the authorization server and consents, the app receives a short-lived authorization code on the redirect, and it then exchanges that code together with its client secret for an access token over a back channel. PKCE adds a proof to protect public clients that cannot keep a secret, defeating code interception.",
+      "source_uri": "synthetic://security/oauth-code-flow"
+    },
+    {
+      "type": "concept",
+      "label": "Password hashing with salts and slow KDFs",
+      "body": "Passwords should never be stored in plaintext or under a fast hash; instead each password is combined with a unique random salt and run through a deliberately slow key-derivation function such as bcrypt, scrypt, or Argon2. The salt defeats precomputed rainbow tables by making identical passwords hash differently, and the slowness and memory-hardness raise the cost of brute force. A work factor lets defenders increase the cost as hardware improves.",
+      "source_uri": "synthetic://security/password-hashing"
+    },
+    {
+      "type": "concept",
+      "label": "TLS handshake and forward secrecy",
+      "body": "A TLS handshake authenticates the server via its certificate and negotiates a shared session key used for fast symmetric encryption of the rest of the connection. Modern handshakes use an ephemeral Diffie-Hellman exchange so the session key is never sent on the wire and is discarded afterward, giving forward secrecy: compromising the server's long-term key later does not let an attacker decrypt past recorded sessions. TLS 1.3 trims the handshake to one round trip.",
+      "source_uri": "synthetic://security/tls-handshake"
+    },
+    {
+      "type": "concept",
+      "label": "Asymmetric versus symmetric encryption roles",
+      "body": "Symmetric encryption uses one shared key and is fast, so it protects the bulk of data, while asymmetric encryption uses a public and private key pair and is slow, so it is reserved for key exchange and digital signatures. A typical protocol uses asymmetric cryptography to establish or transport a symmetric session key, then switches to symmetric encryption for the payload. The split exploits the strengths of each: asymmetric for trust bootstrapping, symmetric for throughput.",
+      "source_uri": "synthetic://security/sym-vs-asym"
+    },
+    {
+      "type": "concept",
+      "label": "Merkle trees for tamper-evident verification",
+      "body": "A Merkle tree hashes data blocks at the leaves and combines hashes pairwise up to a single root, so any change in any block changes the root. To prove a block belongs to the set, one supplies only the sibling hashes along the path to the root, a logarithmic-size proof. Merkle trees underpin efficient integrity checks in version control, peer-to-peer file sharing, and blockchains, where they let a verifier trust a block without the whole dataset.",
+      "source_uri": "synthetic://security/merkle-tree"
+    },
+    {
+      "type": "concept",
+      "label": "Garbage collection mark and sweep",
+      "body": "Mark-and-sweep garbage collection reclaims unreachable memory in two phases: starting from roots it marks every object reachable by following references, then it sweeps the heap freeing anything unmarked. It handles cycles that reference counting cannot, but a naive collector pauses the program during collection. Generational and concurrent variants reduce pause time by collecting young objects more often and doing most marking alongside the running program.",
+      "source_uri": "synthetic://runtime/gc-mark-sweep"
+    },
+    {
+      "type": "concept",
+      "label": "Reference counting and cycle leaks",
+      "body": "Reference counting frees an object the moment its count of incoming references drops to zero, giving prompt, predictable reclamation without a separate collector pass. Its blind spot is reference cycles: two objects that point at each other keep nonzero counts even when unreachable, so they leak unless a cycle collector or weak references break the loop. Updating counts on every assignment also adds overhead and complicates concurrency.",
+      "source_uri": "synthetic://runtime/reference-counting"
+    },
+    {
+      "type": "concept",
+      "label": "Stack versus heap allocation",
+      "body": "The stack allocates and frees memory in last-in-first-out order as functions are called and return, which is extremely fast and automatic but limited to a known size and lifetime tied to the call frame. The heap allocates blocks of arbitrary size and lifetime managed explicitly or by a garbage collector, which is flexible but slower and prone to fragmentation. Choosing the stack for short-lived fixed-size data and the heap for dynamic data is a core performance decision.",
+      "source_uri": "synthetic://runtime/stack-vs-heap"
+    },
+    {
+      "type": "concept",
+      "label": "Deadlock conditions and avoidance",
+      "body": "A deadlock requires four conditions to hold at once: mutual exclusion on resources, holding one resource while waiting for another, no preemption, and a circular wait among threads. Breaking any one prevents deadlock, so a common discipline is to impose a global lock ordering so a circular wait cannot form. Detection-based approaches instead let deadlocks happen and recover by aborting a victim, while timeouts give a crude escape hatch.",
+      "source_uri": "synthetic://concurrency/deadlock"
+    },
+    {
+      "type": "concept",
+      "label": "Optimistic versus pessimistic locking",
+      "body": "Pessimistic locking acquires a lock before touching data, assuming conflicts are likely, which serializes access but can reduce throughput and risks deadlock. Optimistic concurrency instead lets transactions proceed without locks and checks at commit whether the data changed underneath, using a version number or timestamp, and retries on conflict. Optimistic control shines under low contention where conflicts are rare, while pessimistic control suits hot rows where retries would thrash.",
+      "source_uri": "synthetic://concurrency/optimistic-pessimistic"
+    },
+    {
+      "type": "concept",
+      "label": "Compare-and-swap lock-free updates",
+      "body": "Compare-and-swap is an atomic instruction that writes a new value to a location only if it still holds an expected old value, returning whether it succeeded. Lock-free algorithms build on it by reading a value, computing an update, and retrying the CAS in a loop until it succeeds, which guarantees system-wide progress without locks. The classic hazard is the ABA problem, where a value changes away and back, which version tags or hazard pointers address.",
+      "source_uri": "synthetic://concurrency/compare-and-swap"
+    },
+    {
+      "type": "concept",
+      "label": "Thread pools and bounded work queues",
+      "body": "A thread pool reuses a fixed set of worker threads to run many short tasks, avoiding the cost of creating a thread per task and bounding concurrency so the system is not swamped. Tasks wait in a queue, and sizing the pool near the number of cores suits CPU-bound work while larger pools suit IO-bound work that spends time waiting. A bounded queue plus a rejection policy provides backpressure when submissions outpace completion.",
+      "source_uri": "synthetic://concurrency/thread-pools"
+    },
+    {
+      "type": "concept",
+      "label": "Async event loops and non-blocking IO",
+      "body": "An event loop runs a single thread that repeatedly pulls ready events off a queue and invokes their callbacks, using non-blocking IO so that waiting on the network or disk never stalls the thread. This handles huge numbers of concurrent connections cheaply because idle connections cost only a file descriptor, not a thread. The catch is that any CPU-heavy callback blocks the whole loop, so such work must be offloaded to a worker pool.",
+      "source_uri": "synthetic://concurrency/event-loop"
+    },
+    {
+      "type": "concept",
+      "label": "Container namespaces and cgroups",
+      "body": "Linux containers isolate processes using namespaces, which give each container its own view of process ids, network interfaces, mounts, and users, and cgroups, which cap and account for CPU, memory, and IO. Together they let many containers share one kernel while appearing isolated, which is lighter than a virtual machine because there is no guest kernel. Images are layered filesystems so common layers are shared and only the differences are stored.",
+      "source_uri": "synthetic://infra/containers"
+    },
+    {
+      "type": "concept",
+      "label": "Kubernetes reconciliation control loops",
+      "body": "Kubernetes operates on declarative desired state: a user records the wanted state in objects, and controllers run reconciliation loops that continuously compare actual state to desired and take corrective action to close the gap. A deployment controller, for instance, creates or deletes pods until the running count matches the spec. This level-triggered design is self-healing because the loop keeps converging regardless of how the drift arose, rather than reacting to one-off events.",
+      "source_uri": "synthetic://infra/kubernetes-reconcile"
+    },
+    {
+      "type": "concept",
+      "label": "Blue-green and canary deployments",
+      "body": "Blue-green deployment runs two identical environments and switches all traffic from the old to the new version at once, giving an instant rollback by switching back. Canary deployment instead shifts a small slice of traffic to the new version, watches error and latency metrics, and ramps up only if they stay healthy, limiting the blast radius of a bad release. Both reduce deployment risk compared with replacing the running version in place.",
+      "source_uri": "synthetic://infra/blue-green-canary"
+    },
+    {
+      "type": "concept",
+      "label": "Service mesh sidecar proxies",
+      "body": "A service mesh moves cross-cutting concerns out of application code into a sidecar proxy deployed beside each service instance, which transparently handles mutual TLS, retries, timeouts, and traffic shifting. A control plane configures all the proxies, giving uniform observability and policy without changing the services themselves. The cost is extra latency per hop and operational complexity, so a mesh pays off mainly when there are many services to govern consistently.",
+      "source_uri": "synthetic://infra/service-mesh"
+    },
+    {
+      "type": "concept",
+      "label": "Distributed tracing with spans and context propagation",
+      "body": "Distributed tracing follows one request across services by assigning it a trace id and recording each unit of work as a span with a start time, duration, and parent span. Context propagation passes the trace and parent span ids in request headers so downstream spans attach to the right parent, reconstructing the full call tree. Sampling keeps overhead bounded by recording only a fraction of traces, and the assembled trace reveals where latency accumulates.",
+      "source_uri": "synthetic://observability/distributed-tracing"
+    },
+    {
+      "type": "concept",
+      "label": "Backoff with jitter for retries",
+      "body": "Exponential backoff spaces out retries by waiting an interval that doubles after each failure, which keeps a struggling service from being hammered. Adding random jitter to each interval spreads retries that would otherwise synchronize across many clients after a shared outage, smoothing the recovery thundering herd. Full jitter picks a random wait between zero and the current ceiling, which empirically minimizes both contention and completion time.",
+      "source_uri": "synthetic://systems/backoff-jitter"
+    },
+    {
+      "type": "concept",
+      "label": "Transformer self-attention mechanism",
+      "body": "Self-attention lets each token in a sequence attend to every other token by computing query, key, and value projections, scoring each pair with a scaled dot product of query and key, softmaxing the scores into weights, and summing the values. This captures long-range dependencies in one layer regardless of distance, unlike recurrence. Multiple attention heads learn different relationships in parallel, and the quadratic cost in sequence length is the main scaling bottleneck.",
+      "source_uri": "synthetic://ml/self-attention"
+    },
+    {
+      "type": "concept",
+      "label": "Embedding models map text to dense vectors",
+      "body": "An embedding model encodes a piece of text into a fixed-length dense vector positioned so that semantically similar texts land close together under cosine similarity. These vectors power semantic search and clustering because nearness reflects meaning rather than shared keywords. Quality depends on the training data and objective, and the vector dimension trades expressiveness against storage and search cost; many models also normalize outputs so cosine and dot product agree.",
+      "source_uri": "synthetic://ml/embeddings"
+    },
+    {
+      "type": "concept",
+      "label": "Retrieval-augmented generation grounding",
+      "body": "Retrieval-augmented generation grounds a language model's answer in fetched documents by retrieving passages relevant to the query and placing them in the prompt as context, so the model cites real sources instead of relying solely on parametric memory. This reduces hallucination and lets the system answer about private or fresh data without retraining. The weak points are retrieval quality, which caps the answer, and fitting the right passages inside the context window.",
+      "source_uri": "synthetic://ml/rag-grounding"
+    },
+    {
+      "type": "concept",
+      "label": "K-means clustering by iterative refinement",
+      "body": "K-means partitions points into k clusters by alternating two steps: assign each point to the nearest centroid, then move each centroid to the mean of its assigned points, repeating until assignments stop changing. It minimizes within-cluster squared distance but only finds a local optimum, so the initialization matters and smarter seeding like k-means++ helps. The number of clusters k must be chosen in advance, and the method assumes roughly spherical, similarly sized clusters.",
+      "source_uri": "synthetic://ml/kmeans"
+    }
+  ]
+}
