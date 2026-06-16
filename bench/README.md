@@ -111,6 +111,7 @@ summaries — across a federated stream.
 | `bench-user-value.mjs` | Per-user value model | `node bench/bench-user-value.mjs` |
 | `bench-coldstart-seed.mjs` | Cold-start web-deflection before/after `folklore seed` (real `ask` path, empty vs seeded graph) | `node bench/bench-coldstart-seed.mjs` |
 | `bench-deny-sweep.mjs` | Deny-gate threshold × min-hits sweep with honest false-deny accounting (true-deny on in-corpus vs false-deny on adversarial out-of-corpus) | `node bench/bench-deny-sweep.mjs` |
+| `bench-deny-validate.mjs` | Larger adversarial-by-construction validation of the score-only gate at 0.75 × 1: 59-node synthetic graph, 44 in-corpus + 40 adversarial (30 near-miss / 10 far-miss) questions, near/far false-deny split + nearest-hit distance distribution | `node bench/bench-deny-validate.mjs` |
 | `bench-index-health.mjs` | Local index health diagnostic | `node bench/bench-index-health.mjs` |
 
 ### Deny-gate default: the evidence
@@ -147,6 +148,90 @@ deflection rather than denying everything. Caveat: 12 + 8 questions is a
 *direction*, not a population estimate (~8 points per flipped question);
 adopting the score-only shape means relaxing the hook's `action`
 precondition, which this bench recommends but does not perform.
+
+### Deny-gate validation: the score-only gate is NOT safe to ship as-is
+
+`bench-deny-sweep`'s 0% false-deny rested on one untested assumption: that
+the `d ≤ 1.05` distance pre-filter — not the satisfaction score — keeps
+adversarial queries out of `min_hits`. But that sweep's 8 adversarial
+questions were all topically *far* from the seed corpus, so their nearest
+hit sat well past the cap by construction. The 0% was an artifact of the
+fixture, not a property of the gate: an adversarial query whose nearest
+seeded node lands *inside* the cap would false-deny, and the small set
+never probed that boundary.
+
+`bench-deny-validate.mjs` builds the missing test. It seeds a **59-node
+synthetic validation graph** (`eval/fixtures/deny-validate/corpus.json`,
+durable concepts across distributed systems, vector search, storage,
+security, concurrency, ML) via the same real `folklore seed --file`
+ingest path — the **product seed corpus is untouched**. It then runs
+**44 in-corpus + 40 adversarial** questions
+(`eval/fixtures/deny-validate/questions.json`), where the adversarial set
+is deliberately split into **30 near-miss** (a different, *uncovered*
+facet of a seeded domain — e.g. "three-phase commit" against a corpus
+that only covers two-phase commit — engineered to land near the cap) and
+**10 far-miss** (unrelated domains: espresso, F1, mortgages).
+
+Measured at the recommended cell (score-only, **0.75 × 1**), on the real
+`folklore ask --json` path:
+
+| metric | count | rate |
+| --- | --- | --- |
+| true-deny (in-corpus) | 44 / 44 | **100%** |
+| false-deny (all adversarial) | 23 / 40 | **57%** |
+| false-deny (**near-miss**) | 23 / 30 | **77%** |
+| false-deny (far-miss) | 0 / 10 | **0%** |
+
+Nearest-hit distance vs the `1.05` cap tells the whole story:
+
+| bank | min | median | max | inside cap |
+| --- | --- | --- | --- | --- |
+| in-corpus | 0.49 | 0.76 | 1.01 | — |
+| near-miss | 0.77 | 0.99 | 1.17 | **23 / 30** |
+| far-miss | 1.22 | 1.29 | 1.39 | 0 / 10 |
+
+And satisfaction confirms it cannot help: mean satisfaction is
+**0.77 / 0.75 / 0.75** across in-corpus / near-miss / far-miss — the score
+is structural and does **not** separate relevance, so the distance cap is
+the *sole* guard. The near-miss band straddles the cap (median 0.99,
+max 1.17), so 23 of 30 near-miss questions slipped inside `1.05` and
+false-denied — confident denials on questions memory could not answer
+(three-phase commit, hybrid logical clocks, ARIES recovery, ColBERT,
+DBSCAN, …).
+
+**VERDICT — `SHIP-WITH-GUARD`.** The score-only gate at 0.75 × 1 is *not*
+safe to ship on its own: it leaks badly (77% near-miss false-deny) the
+moment adversarial queries are semantically adjacent rather than random.
+The far-miss 0% reproduces the original sweep, which is exactly why the
+small sweep looked safe and wasn't. Before relying on a score-only gate,
+add a guard:
+
+- a **tighter distance cap** — the in-corpus band tops out at ~1.01 while
+  the near-miss band starts at ~0.77, so the two overlap and no single
+  cap cleanly separates them; tightening helps but cannot fully close the
+  gap on this set;
+- **relevance-aware satisfaction** — let the score reflect best-hit
+  distance, not just freshness/provenance/origins, so a far hit can't
+  ride a structural 0.75;
+- a **multi-origin / `min_hits ≥ 2`** requirement so one close-but-wrong
+  node can't trip the gate (note this also costs in-corpus deflection, as
+  the sweep showed).
+
+Caveat: the corpus is synthetic and the near-miss bank is *engineered* to
+stress the cap, so 77% is a deliberate worst-case probe, not an
+in-the-wild base rate. A leak this size under adversarial proximity is
+nonetheless decisive: the score-only gate's safety margin depends on
+adversarial queries staying topically distant, which is not a safe
+assumption. Repro:
+
+```bash
+node bench/bench-deny-validate.mjs            # table + verdict
+node bench/bench-deny-validate.mjs --json      # + machine-readable summary
+```
+
+(Writes `eval/out/deny-validate-summary.json`. Needs a cached embedder
+model under `~/.folklore` or `~/.akashik`; says so and exits 1 if absent —
+no fabricated numbers. Recommends only — no `src/` or `.claude/` edits.)
 
 ## Full v2 system report
 
