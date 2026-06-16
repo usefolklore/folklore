@@ -11,6 +11,7 @@ import { test } from 'node:test';
 import {
   computeSatisfaction,
   decideContract,
+  classifyRisk,
   ageInDays,
   CONTRACT_THRESHOLDS,
   type EnrichedMatch,
@@ -362,4 +363,48 @@ test('decideContract: threshold band maps to verify / search', () => {
   };
   assert.equal(decideContract({ ...base, score: 0.7 }).decision, 'verify_one_source');
   assert.equal(decideContract({ ...base, score: 0.5 }).decision, 'search_required');
+});
+
+// ─────────── task-risk overlay (RFC-0003) ──
+
+test('classifyRisk: security/financial/medical → high; deps → elevated; else low', () => {
+  assert.equal(classifyRisk('how do I refresh an oauth token securely'), 'high');
+  assert.equal(classifyRisk('CVE in our tls handshake'), 'high');
+  assert.equal(classifyRisk('compute tax on this invoice payment'), 'high');
+  assert.equal(classifyRisk('upgrade libp2p to the latest version'), 'elevated');
+  assert.equal(classifyRisk('migrate the lockfile after the dependency bump'), 'elevated');
+  assert.equal(classifyRisk('reverse a string in python'), 'low');
+});
+
+test('decideContract: high risk forces search even on a deep high score', () => {
+  const s = computeSatisfaction([
+    mk({ distance: 0.1 }),
+    mk({ distance: 0.12, node_id: 'n2', source_peer: 'peerA' }),
+  ]);
+  assert.equal(decideContract(s).decision, 'use_memory'); // low-risk baseline
+  const c = decideContract(s, { risk: 'high' });
+  assert.equal(c.decision, 'search_required');
+  assert.equal(c.risk, 'high');
+  assert.ok(c.reasons.some((r) => r.includes('high-risk')));
+  assert.ok(c.summary.includes('[high risk]'));
+});
+
+test('decideContract: elevated risk demotes use_memory to verify_one_source', () => {
+  const s = computeSatisfaction([
+    mk({ distance: 0.1 }),
+    mk({ distance: 0.12, node_id: 'n2', source_peer: 'peerA' }),
+  ]);
+  const c = decideContract(s, { risk: 'elevated' });
+  assert.equal(c.decision, 'verify_one_source');
+  assert.equal(c.risk, 'elevated');
+});
+
+test('decideContract: risk overlay never UPGRADES a low decision', () => {
+  // a low score already at search_required stays there under high risk
+  const s: SatisfactionScore = {
+    score: 0.5, fresh_count: 0, stale_count: 0, unsigned_count: 0,
+    missing_provenance_count: 0, distinct_origins: 1, reasons: [], penalties: [],
+    components: [], observed_components: 4,
+  };
+  assert.equal(decideContract(s, { risk: 'high' }).decision, 'search_required');
 });

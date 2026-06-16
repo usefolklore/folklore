@@ -89,9 +89,22 @@ interface AgentContract {
   penalties: readonly string[];       // negatives that held it down
   trace: readonly ComponentTrace[];   // the per-component breakdown
   would_shadow_search: boolean;       // false only for a confident use_memory
-  summary: string;                    // one-line: found · score · lead reason → action
+  risk: TaskRisk;                     // 'low' | 'elevated' | 'high'
+  summary: string;                    // one-line: [risk] found · score · lead reason → action
 }
 ```
+
+### Task-risk overlay
+
+The same score must not authorise the same skip everywhere. `decideContract` accepts a `risk` tier and raises the breakpoint accordingly:
+
+| Risk | Trigger (keyword heuristic, `classifyRisk()`) | Effect |
+|---|---|---|
+| `low` | default | breakpoint table unchanged |
+| `elevated` | upgrade / migrate / version / dependency / deprecation / rollback | a top-tier `use_memory` is demoted to `verify_one_source` — freshness matters, drift is silent |
+| `high` | security / auth / crypto / TLS / medical / legal / financial / payment | `use_memory` **and** `verify_one_source` become `search_required` — peer/cached memory is context only; a live or primary source is required |
+
+The classifier is a deterministic keyword match (no LLM), so a denial's risk tier is reproducible and argued-about, like the rest of the scorer. The overlay only ever *escalates* — it never upgrades a low-confidence decision — and it records the reason it fired in `reasons`. Callers derive risk from the query text (`ask`, peer-pull, and the telemetry formatter all pass `classifyRisk(query)`).
 
 `would_shadow_search` is the bad-skip instrumentation hook: every escalating decision is worth a shadow web search to measure whether the skip *would* have been wrong, which becomes the training signal for future weight tuning. `AgentDecision` follows a growth promise — existing values keep their semantics, callers default-route on unknown.
 
@@ -107,7 +120,7 @@ This is the same shape across surfaces: it flows into MCP `ask` responses, the s
 ## Open questions
 
 1. **Weights.** The aggregate is currently an equal-weight average over observed components. Should weights be learned from shadow-search outcomes, and should they be global, per-source-type, or per-workspace?
-2. **Task risk.** The same score should not authorise the same skip everywhere. Should the contract overlay a task-risk signal (coding vs security vs financial) so high-risk tasks require a higher breakpoint?
+2. **Task risk.** *(v1 shipped — see the Task-risk overlay above.)* A deterministic keyword classifier raises the breakpoint for elevated/high-risk queries. Still open: should the MCP host pass an authoritative task-risk signal instead of inferring it from query text, and should the tiers be learned rather than keyword-matched? Should users configure "never skip" workspaces or source types?
 3. **Coverage map.** `PeerPullTelemetry.coverage_map` is reserved (`null` today). Should the contract carry a required-facts / covered / missing map for borderline queries, recommending a *constrained* next search rather than a blanket `search_required`?
 4. **Conflict.** Should contradicting peer claims surface as a first-class field that forces verification, rather than being averaged into a single score?
 5. **Calibration.** What `would_shadow_search` sampling rate, and what BadSkipRate target, should gate any change to the default thresholds?

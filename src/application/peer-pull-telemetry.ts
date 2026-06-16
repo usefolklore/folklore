@@ -25,6 +25,7 @@ import { getNode } from '../domain/graph.js';
 import {
   computeSatisfaction,
   decideContract,
+  classifyRisk,
   ageInDays,
   type EnrichedMatch,
   type PeerPullTelemetry,
@@ -108,7 +109,7 @@ export const buildPeerPullTelemetry = (
     peers_timed_out: result.peers_timed_out,
     peers_errored: result.peers_errored,
     satisfaction,
-    decision: decideContract(satisfaction).decision,
+    decision: decideContract(satisfaction, { risk: classifyRisk(query) }).decision,
     coverage_map: null,
     emitted_at: new Date(now).toISOString(),
   };

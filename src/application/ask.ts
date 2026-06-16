@@ -41,6 +41,7 @@ import { recall, type RecallResult } from './recall.js';
 import {
   computeSatisfaction,
   decideContract,
+  classifyRisk,
   type AgentDecision,
   type EnrichedMatch,
   type SatisfactionScore,
@@ -275,7 +276,7 @@ export const ask =
             const shallowEvidence = search_hits.length === 0 && recallHits.length > 0;
             return {
               satisfaction,
-              decision: decideContract(satisfaction, { shallowEvidence }).decision,
+              decision: decideContract(satisfaction, { shallowEvidence, risk: classifyRisk(params.query) }).decision,
             };
           };
 
