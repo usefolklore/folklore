@@ -27,6 +27,20 @@ const os = require('node:os');
 
 const HOME = process.env.FOLKLORE_HOME || join(os.homedir(), '.folklore');
 const GRAPH_PATH = join(HOME, 'graph.json');
+
+// Resolve the folklore engine: FOLKLORE_BIN → repo-local dist build →
+// `folklore` on PATH. The hook ships in-repo, so a global install is not
+// guaranteed during local dev; falling back to dist keeps auto-save live.
+const resolveEngine = () => {
+  const bin = process.env.FOLKLORE_BIN;
+  if (bin && existsSync(bin)) return { cmd: bin, pre: [] };
+  const repoRoot = process.env.CLAUDE_PROJECT_DIR || join(__dirname, '..', '..');
+  const distCli = join(repoRoot, 'dist', 'cli', 'index.js');
+  if (existsSync(distCli)) return { cmd: process.execPath, pre: [distCli] };
+  return { cmd: 'folklore', pre: [] };
+};
+const ENGINE = resolveEngine();
+
 const SAVE_TIMEOUT_MS = 8000;
 const MAX_BODY_BYTES = 32_000;
 // V5: web fetches land in the global graph; public (not --private).
@@ -65,7 +79,7 @@ const sourceUriFor = (toolName, ti) => {
 const saveToGraph = (label, body, sourceUri) => new Promise((resolve) => {
   const args = ['save', '--type', 'source', '--label', label];
   if (sourceUri) args.push('--source-uri', sourceUri);
-  const child = spawn('folklore', args, {
+  const child = spawn(ENGINE.cmd, [...ENGINE.pre, ...args], {
     stdio: ['pipe', 'ignore', 'ignore'],
     timeout: SAVE_TIMEOUT_MS,
   });

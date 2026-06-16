@@ -101,12 +101,27 @@ const queryFromInput = (toolName, ti) => {
   return ''; // Read: path is not a semantic query
 };
 
+// Resolve the folklore engine. The hook ships inside the repo, so a global
+// `folklore` on PATH is NOT guaranteed (the common case during local dev) —
+// falling back to the repo's built CLI keeps the prefetch/deny gate live
+// without a global install. Precedence: explicit FOLKLORE_BIN override →
+// repo-local dist build → `folklore` on PATH.
+const resolveEngine = () => {
+  const bin = process.env.FOLKLORE_BIN;
+  if (bin && existsSync(bin)) return { cmd: bin, pre: [] };
+  const repoRoot = process.env.CLAUDE_PROJECT_DIR || join(__dirname, '..', '..');
+  const distCli = join(repoRoot, 'dist', 'cli', 'index.js');
+  if (existsSync(distCli)) return { cmd: process.execPath, pre: [distCli] };
+  return { cmd: 'folklore', pre: [] };
+};
+const ENGINE = resolveEngine();
+
 const prefetch = (query) => {
   try {
     const args = PREFETCH_PEERS
       ? ['ask', '--peers', '--pull', '--json', '--k', '3', query]
       : ['ask', '--json', '--k', '3', query];
-    const out = execFileSync('folklore', args, {
+    const out = execFileSync(ENGINE.cmd, [...ENGINE.pre, ...args], {
       timeout: PREFETCH_TIMEOUT_MS,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
