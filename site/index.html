@@ -880,19 +880,16 @@
 <section id="join" class="tx-dots">
   <div class="wrap">
     <div class="stamp rv">Chapter the Sixth — Join the Telling</div>
-    <h2 class="rv" data-d="1"><span class="mis" data-text="one command to a peer.">one command to a <span class="em-pink">peer.</span></span></h2>
+    <h2 class="rv" data-d="1"><span class="mis" data-text="one command. that's all.">one command. <span class="em-pink">that's all.</span></span></h2>
+    <p class="body rv" data-d="1">Install wires up the daemon, the hook, your signed identity, and network auto-discovery — then you just keep using your agent. The graph answers first, new findings file themselves, peers show up on their own.</p>
     <div class="insc rv" data-d="1">
-      <pre><span class="c"># install + onboard — daemon, hooks, identity</span>
+      <pre><span class="c"># the whole setup — daemon, hook, identity, auto-discovery</span>
 <span class="p">$</span> npm install -g @usefolklore/folklore
-<span class="p">$</span> folklore onboard
 
-<span class="c"># set down what teaches you</span>
-<span class="p">$</span> folklore save --type synthesis --label "mxbai on long ctx" \
-    --text "Cross-encoder wins under 512 tokens; mxbai degrades slower past 2k."
-
-<span class="c"># join a peer, ask the network</span>
-<span class="p">$</span> folklore peer add /ip4/203.0.113.7/tcp/4001/p2p/12D3KooW...
-<span class="p">$</span> folklore ask "mxbai-rerank vs cross-encoder?" --peers</pre>
+<span class="c"># that's it. nothing to onboard, nothing to wire by hand.</span>
+<span class="c"># keep asking your agent exactly as before — every WebSearch</span>
+<span class="c"># hits your graph and the network's first, and every new</span>
+<span class="c"># answer is filed automatically for the next reader.</span></pre>
     </div>
   </div>
 </section>
