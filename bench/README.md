@@ -110,7 +110,43 @@ summaries — across a federated stream.
 | `bench-value-model.mjs` | Demand economics with subgraph transfer | `node bench/bench-value-model.mjs` |
 | `bench-user-value.mjs` | Per-user value model | `node bench/bench-user-value.mjs` |
 | `bench-coldstart-seed.mjs` | Cold-start web-deflection before/after `folklore seed` (real `ask` path, empty vs seeded graph) | `node bench/bench-coldstart-seed.mjs` |
+| `bench-deny-sweep.mjs` | Deny-gate threshold × min-hits sweep with honest false-deny accounting (true-deny on in-corpus vs false-deny on adversarial out-of-corpus) | `node bench/bench-deny-sweep.mjs` |
 | `bench-index-health.mjs` | Local index health diagnostic | `node bench/bench-index-health.mjs` |
+
+### Deny-gate default: the evidence
+
+`bench-deny-sweep.mjs` answers "what `FOLKLORE_DENY_THRESHOLD` /
+`FOLKLORE_DENY_MIN_HITS` default actually trades web-trips-avoided against
+false-denials?" It seeds a fresh graph (real `folklore seed`), probes the
+real `folklore ask --json` path once per question, then replays the grid
+`{0.70, 0.75, 0.80, 0.85} × {1, 2, 3}` against two gate variants. Each cell
+reports **true-deny** (web trip correctly avoided on the 12 in-corpus
+questions) and **false-deny** (web trip wrongly blocked on 8 adversarial
+out-of-corpus questions). It recommends only — it does **not** edit
+`.claude/settings.json` or any `src/` file.
+
+The honest finding (measured, not assumed): the **shipped** gate is **0%
+true-deny in every cell**. Turning `FOLKLORE_DENY_THRESHOLD` down is inert,
+because the gate also requires `action === 'use_memory'`, and that decision
+is governed by a *fixed* `0.85` breakpoint in `CONTRACT_THRESHOLDS` plus a
+single-origin shallow-evidence demotion — seeded nodes land at satisfaction
+~0.75 and never reach `use_memory`. The knob the cold-start track wanted to
+turn is gated shut upstream of itself.
+
+A **score-only** variant (deny on `satisfaction ≥ threshold ∧
+surviving_hits ≥ min_hits`, dropping the `use_memory` precondition but
+keeping the hook's own `d ≤ 1.05` relevance pre-filter) is what unlocks
+deflection: **threshold 0.75 × min_hits 1 → 92% true-deny on in-corpus,
+0% false-deny on out-of-corpus**. False-deny stays at 0 because the
+*distance* filter, not the satisfaction score, is the relevance guard — the
+adversarial questions return the same ~0.75 satisfaction but their nearest
+hit sits well past the `1.05` cap, so they never count toward `min_hits`.
+Raising `min_hits` to 2 collapses true-deny to 17% on this corpus (most
+seeded answers have one surviving hit), so the lever genuinely costs
+deflection rather than denying everything. Caveat: 12 + 8 questions is a
+*direction*, not a population estimate (~8 points per flipped question);
+adopting the score-only shape means relaxing the hook's `action`
+precondition, which this bench recommends but does not perform.
 
 ## Full v2 system report
 
