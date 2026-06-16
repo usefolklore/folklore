@@ -47,8 +47,19 @@ export interface EnrichedMatch {
  * This is the load-bearing explainability surface: a denial must be
  * traceable back to exactly which components drove the score.
  */
+export type ComponentName = 'retrieval' | 'freshness' | 'provenance' | 'consensus' | 'signature';
+
+/** The five scorer components, in stable trace order. */
+export const COMPONENT_NAMES: readonly ComponentName[] = [
+  'retrieval',
+  'freshness',
+  'provenance',
+  'consensus',
+  'signature',
+] as const;
+
 export interface ComponentTrace {
-  readonly name: 'retrieval' | 'freshness' | 'provenance' | 'consensus' | 'signature';
+  readonly name: ComponentName;
   readonly value: number;             // 0.0 — 1.0
   readonly observed: boolean;
   readonly weight: number;            // 0.0 — 1.0 (0 when unobserved)
@@ -364,6 +375,215 @@ export const computeSatisfaction = (
     components: trace,
     observed_components: observed.length,
   };
+};
+
+// ─────────────── learned component weights (RFC-0003 OQ#5 R&D) ──
+
+/**
+ * A per-component weight vector. Always carries all five components so
+ * downstream aggregation is total; weights are non-negative and sum to 1.
+ */
+export type ComponentWeights = Readonly<Record<ComponentName, number>>;
+
+/**
+ * The hand-tuned baseline: equal weight across all five components. This
+ * is the exact behaviour `computeSatisfaction` ships today — it splits the
+ * weight equally across the OBSERVED components, which for a full result
+ * set is 1/5 each. `learnWeights` returns THIS unchanged whenever there is
+ * not enough labelled signal to do better, so the default stays identical.
+ */
+export const DEFAULT_COMPONENT_WEIGHTS: ComponentWeights = {
+  retrieval: 0.2,
+  freshness: 0.2,
+  provenance: 0.2,
+  consensus: 0.2,
+  signature: 0.2,
+} as const;
+
+/**
+ * A single labelled training row for the weight learner: per-component
+ * values plus a binary `satisfied` target. `satisfied=true` means the
+ * decision was vindicated (good_skip / good_search), `false` means it was
+ * wrong (bad_skip). Receipts whose outcome is `unlabelled` are NOT training
+ * rows — the caller must drop them before calling, and `learnWeights` also
+ * defends against them. This keeps the honesty invariant at the type level:
+ * a row only exists when a real label exists.
+ */
+export interface LabeledSample {
+  /** Component value in [0,1] keyed by name; missing key = unobserved. */
+  readonly values: Partial<Record<ComponentName, number>>;
+  readonly satisfied: boolean;
+}
+
+export interface LearnWeightsOptions {
+  /**
+   * Minimum labelled samples required before learning at all. Below this,
+   * the degenerate fallback returns DEFAULT_COMPONENT_WEIGHTS. Default 8 —
+   * enough that a Fisher ratio isn't dominated by a single row.
+   */
+  readonly minSamples?: number;
+  /**
+   * Minimum samples in EACH class (satisfied / unsatisfied). A separation
+   * statistic is meaningless when one class is empty or tiny. Default 3.
+   */
+  readonly minPerClass?: number;
+  /** Floor weight kept for every component so none is fully zeroed. Default 0.02. */
+  readonly floor?: number;
+}
+
+export interface LearnWeightsResult {
+  readonly weights: ComponentWeights;
+  /** True when real learning happened; false when the fallback fired. */
+  readonly learned: boolean;
+  /** Human-readable reason the fallback fired (empty when learned). */
+  readonly fallback_reason: string;
+  /** How many labelled samples were actually used. */
+  readonly samples_used: number;
+}
+
+const meanOf = (xs: readonly number[]): number =>
+  xs.length === 0 ? 0 : xs.reduce((a, b) => a + b, 0) / xs.length;
+
+const varianceOf = (xs: readonly number[], mu: number): number =>
+  xs.length === 0 ? 0 : xs.reduce((a, b) => a + (b - mu) * (b - mu), 0) / xs.length;
+
+/**
+ * Derive component weights from labelled samples — the calibration the
+ * hand-tuned equal split is a placeholder for. Pure, deterministic,
+ * dependency-free.
+ *
+ * Method — a Fisher-style discriminant score per component. For each
+ * component we look only at the rows where it was observed, split them by
+ * the `satisfied` label, and measure how cleanly its value separates the
+ * two classes:
+ *
+ *     fisher(c) = (mean_sat − mean_unsat)² / (var_sat + var_unsat + ε)
+ *
+ * A component whose value is high for satisfied decisions and low for
+ * unsatisfied ones (or vice-versa) gets a large ratio → it earns weight.
+ * A component that looks the same in both classes (no discriminative
+ * power) gets ~0 → it earns almost nothing. The raw ratios are floored,
+ * then L1-normalised to a proper weight vector that sums to 1. This is a
+ * standard, defensible, closed-form feature-importance estimator — no
+ * iteration, no learning rate, fully reproducible from the same input.
+ *
+ * Fallback (returns DEFAULT_COMPONENT_WEIGHTS, `learned=false`) when:
+ *  - fewer than `minSamples` labelled rows, or
+ *  - either class has fewer than `minPerClass` rows, or
+ *  - every component is degenerate (no separation anywhere) — there is
+ *    no signal to prefer one component over another, so the honest answer
+ *    is the equal split, not a vector hallucinated from noise.
+ */
+export const learnWeights = (
+  samples: readonly LabeledSample[],
+  opts?: LearnWeightsOptions,
+): LearnWeightsResult => {
+  const minSamples = opts?.minSamples ?? 8;
+  const minPerClass = opts?.minPerClass ?? 3;
+  const floor = opts?.floor ?? 0.02;
+
+  const fallback = (reason: string): LearnWeightsResult => ({
+    weights: DEFAULT_COMPONENT_WEIGHTS,
+    learned: false,
+    fallback_reason: reason,
+    samples_used: samples.length,
+  });
+
+  if (samples.length < minSamples) {
+    return fallback(`only ${samples.length} labelled samples (need ≥ ${minSamples})`);
+  }
+  const sat = samples.filter((s) => s.satisfied);
+  const unsat = samples.filter((s) => !s.satisfied);
+  if (sat.length < minPerClass || unsat.length < minPerClass) {
+    return fallback(
+      `class imbalance: ${sat.length} satisfied / ${unsat.length} unsatisfied (need ≥ ${minPerClass} each)`,
+    );
+  }
+
+  const EPS = 1e-6;
+  const fisher: Record<ComponentName, number> = {
+    retrieval: 0,
+    freshness: 0,
+    provenance: 0,
+    consensus: 0,
+    signature: 0,
+  };
+  for (const name of COMPONENT_NAMES) {
+    const sVals = sat
+      .map((s) => s.values[name])
+      .filter((v): v is number => v !== undefined);
+    const uVals = unsat
+      .map((s) => s.values[name])
+      .filter((v): v is number => v !== undefined);
+    // Need both classes represented for THIS component to separate it.
+    if (sVals.length === 0 || uVals.length === 0) {
+      fisher[name] = 0;
+      continue;
+    }
+    const muS = meanOf(sVals);
+    const muU = meanOf(uVals);
+    const between = (muS - muU) * (muS - muU);
+    const within = varianceOf(sVals, muS) + varianceOf(uVals, muU);
+    fisher[name] = between / (within + EPS);
+  }
+
+  const rawTotal = COMPONENT_NAMES.reduce((a, n) => a + fisher[n], 0);
+  if (rawTotal <= EPS) {
+    return fallback('no component separates satisfied from unsatisfied — degenerate signal');
+  }
+
+  // Floor each component so none is fully zeroed (keeps the aggregator
+  // total even when a component briefly looks useless), then L1-normalise.
+  const floored: Record<ComponentName, number> = {
+    retrieval: 0,
+    freshness: 0,
+    provenance: 0,
+    consensus: 0,
+    signature: 0,
+  };
+  for (const n of COMPONENT_NAMES) floored[n] = fisher[n] / rawTotal + floor;
+  const flTotal = COMPONENT_NAMES.reduce((a, n) => a + floored[n], 0);
+  const weights: ComponentWeights = {
+    retrieval: floored.retrieval / flTotal,
+    freshness: floored.freshness / flTotal,
+    provenance: floored.provenance / flTotal,
+    consensus: floored.consensus / flTotal,
+    signature: floored.signature / flTotal,
+  };
+
+  return {
+    weights,
+    learned: true,
+    fallback_reason: '',
+    samples_used: samples.length,
+  };
+};
+
+/**
+ * Re-aggregate a computed satisfaction trace under a learned weight
+ * vector. Pure. The default scorer averages observed components equally;
+ * this lets a caller (behind a flag — see `scoreWithWeights`) re-weight
+ * the SAME observed component values without recomputing them.
+ *
+ * Only observed components contribute (the honesty rule the base scorer
+ * already enforces — unknown signals get zero weight, never a prior). The
+ * learned weights are renormalised over just the observed set so the
+ * result stays in [0,1] regardless of which signals were visible.
+ */
+export const reweightScore = (
+  components: readonly ComponentTrace[],
+  weights: ComponentWeights,
+): number => {
+  const observed = components.filter((c) => c.observed);
+  if (observed.length === 0) return 0;
+  const wTotal = observed.reduce((a, c) => a + weights[c.name], 0);
+  if (wTotal <= 0) {
+    // Every observed component had zero learned weight — fall back to the
+    // equal average rather than dividing by zero.
+    return observed.reduce((a, c) => a + c.value, 0) / observed.length;
+  }
+  const blended = observed.reduce((a, c) => a + c.value * weights[c.name], 0) / wTotal;
+  return clamp01(blended);
 };
 
 // ─────────────── agent contract (RFC-0003) ──
