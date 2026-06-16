@@ -31,6 +31,18 @@ const os = require('node:os');
 
 const HOME = process.env.FOLKLORE_HOME || join(os.homedir(), '.folklore');
 const PROMPT_LOG = join(HOME, 'prompt-prefetch-log.jsonl');
+
+// Resolve the folklore engine: FOLKLORE_BIN → repo-local dist build →
+// `folklore` on PATH (no global install required during local dev).
+const resolveEngine = () => {
+  const bin = process.env.FOLKLORE_BIN;
+  if (bin && existsSync(bin)) return { cmd: bin, pre: [] };
+  const repoRoot = process.env.CLAUDE_PROJECT_DIR || join(__dirname, '..', '..');
+  const distCli = join(repoRoot, 'dist', 'cli', 'index.js');
+  if (existsSync(distCli)) return { cmd: process.execPath, pre: [distCli] };
+  return { cmd: 'folklore', pre: [] };
+};
+const ENGINE = resolveEngine();
 const PREFETCH_TIMEOUT_MS = Number(process.env.FOLKLORE_PREFETCH_TIMEOUT_MS ?? 4500);
 const MIN_PROMPT_LEN = 6;
 const MAX_PROMPT_LEN = 800;
@@ -54,7 +66,7 @@ const emit = (text, systemMessage) => {
 
 const runFolklore = (args, timeoutMs) => {
   try {
-    return execFileSync('folklore', args, {
+    return execFileSync(ENGINE.cmd, [...ENGINE.pre, ...args], {
       timeout: timeoutMs,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
