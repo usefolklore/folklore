@@ -1,0 +1,26 @@
+<svg width="256" height="256" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Folklore — signed constellation">
+  <!-- Concept 3: Signed Constellation.
+       A small knowledge-graph constellation; the anchoring node is a wax seal —
+       every node signed by a named hand. Graph + provenance + federation. -->
+  <!-- edges (the federated links) -->
+  <g stroke="#1d1813" stroke-width="3" stroke-linecap="round">
+    <path d="M32 33L14 14"/>
+    <path d="M32 33L52 12"/>
+    <path d="M32 33L13 44"/>
+    <path d="M32 33L50 46"/>
+    <path d="M14 14L13 44"/>
+    <path d="M52 12L50 46"/>
+  </g>
+  <!-- peer nodes -->
+  <circle cx="14" cy="14" r="4.5" fill="#2b3a8c" stroke="#1d1813" stroke-width="2.5"/>
+  <circle cx="52" cy="12" r="4.5" fill="#f5b921" stroke="#1d1813" stroke-width="2.5"/>
+  <circle cx="13" cy="44" r="4.5" fill="#1fae8b" stroke="#1d1813" stroke-width="2.5"/>
+  <circle cx="50" cy="46" r="4.5" fill="#2b3a8c" stroke="#1d1813" stroke-width="2.5"/>
+  <!-- center: the wax seal — signed by a named hand -->
+  <g transform="translate(32 33)">
+    <path d="M0-11l3.1 2.2 3.7-.9 1.3 3.6 3.5 1.6-1.6 3.5.9 3.7-3.7.9-2.2 3.1-3.1-2.2-3.7.9-1.6-3.5-3.5-1.6 1.6-3.5-.9-3.7 3.7-.9 1.6-3.5z"
+          fill="#ff4f6d" stroke="#1d1813" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M-3 1q3 3 6 0" fill="none" stroke="#f4ecd8" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="0" cy="-3" r="1.6" fill="#f4ecd8"/>
+  </g>
+</svg>

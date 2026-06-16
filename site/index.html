@@ -14,7 +14,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image" content="https://usefolklore.sh/assets/gen/og.png" />
 <meta name="twitter:site" content="@usefolklore" />
-<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%231d1813"/><path d="M16 16h32a3 3 0 0 1 3 3v20a3 3 0 0 1-3 3H30l-9 8v-8h-5a3 3 0 0 1-3-3V19a3 3 0 0 1 3-3z" fill="none" stroke="%23f4ecd8" stroke-width="3" stroke-linejoin="round"/><path d="M33 20c2 5-4 7-4 11a4 4 0 0 0 8 0c0-2-1-3-1-3 3 2 5 4 5 8a8 8 0 1 1-16 0c0-6 6-8 8-16z" fill="%23ff4f6d"/></svg>' />
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%231d1813"/><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="%23ff4f6d"/><g stroke="%23f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="%23f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="%23f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg>' />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
@@ -27,9 +27,9 @@
     --wrap:1320px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth;scroll-snap-type:y proximity;scroll-padding-top:70px}
+  html{scroll-behavior:smooth;scroll-snap-type:y proximity;scroll-padding-top:70px;overflow-x:hidden;max-width:100%}
   body{background:var(--paper);color:var(--ink);font-family:var(--serif);font-weight:430;line-height:1.6;
-    -webkit-font-smoothing:antialiased;overflow-x:hidden}
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;max-width:100%}
   ::selection{background:var(--pink);color:var(--paper)}
   a{color:inherit;text-decoration:none}
   /* cross-document page transitions (View Transitions API) */
@@ -144,7 +144,10 @@
   .hero .lede{max-width:34ch}
   .herogrid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(32px,5vw,72px);align-items:center;width:100%}
   .herocol-art img,.herocol-art video{width:100%;display:block;border:3px solid var(--ink);box-shadow:14px 14px 0 var(--blue);aspect-ratio:16/9;object-fit:cover}
-  @media(max-width:900px){.herogrid{grid-template-columns:1fr;gap:30px}.herocol-art{max-width:460px}}
+  @media(max-width:900px){.herogrid{grid-template-columns:1fr;gap:30px}.herocol-art{max-width:460px}
+    /* mobile: top-align the hero so the eyebrow clears the fixed header bar instead of tucking under it */
+    .hero{justify-content:flex-start;padding-top:104px;min-height:100svh}
+    .hero .est{margin-bottom:18px;letter-spacing:.18em;font-size:12px;overflow-wrap:anywhere}}
   .cta-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:26px}
   .btn{font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:.03em;padding:17px 30px;
     border:3px solid var(--ink);box-shadow:7px 7px 0 var(--ink);transition:.12s;cursor:pointer}
@@ -164,7 +167,8 @@
   @keyframes cue{0%{transform:translateY(-5px);opacity:.25}50%{transform:translateY(5px);opacity:1}100%{transform:translateY(-5px);opacity:.25}}
 
   /* marquee */
-  .marq{border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);background:var(--blue);color:var(--paper);overflow:hidden;padding:18px 0;position:relative;z-index:3}
+  .marq{border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);background:var(--blue);color:var(--paper);overflow:hidden;max-width:100%;padding:18px 0;position:relative;z-index:3;scrollbar-width:none;-ms-overflow-style:none}
+  .marq::-webkit-scrollbar{display:none}
   .track{display:flex;gap:44px;white-space:nowrap;width:max-content;animation:slide 28s linear infinite;font-weight:800;font-size:1.7rem;font-style:italic;text-transform:lowercase}
   .track i{color:var(--yellow);font-style:normal}
   .track .bi{width:.82em;height:.82em;vertical-align:-.06em;margin-right:.3em;fill:var(--paper)}
@@ -259,6 +263,14 @@
   #store .store-more a:hover{color:var(--blue)}
   @media(max-width:760px){#store .shop{grid-template-columns:1fr 1fr}}
   @media(max-width:480px){#store .shop{grid-template-columns:1fr}}
+  /* store teaser marquee — same mechanism as #memes: continuous left flow, clone-for-seamless-loop, pause on hover */
+  .store-carousel{overflow:hidden;width:100%;max-width:100%;scrollbar-width:none;-ms-overflow-style:none}
+  .store-carousel::-webkit-scrollbar{display:none}
+  #store .shop.flow{display:flex;width:max-content;grid-template-columns:none;gap:0;margin-top:18px;
+    animation:meme-marquee var(--sdur,34s) linear infinite}
+  .store-carousel:hover #store .shop.flow{animation-play-state:paused}
+  #store .shop.flow .prod{flex:0 0 clamp(220px,72vw,300px);margin:0 8px;box-sizing:border-box}
+  @media(prefers-reduced-motion:reduce){#store .shop.flow{width:auto;flex-wrap:wrap;animation:none}#store .shop.flow .prod{flex-basis:clamp(220px,72vw,300px)}}
   /* compact $LORE strip — single horizontal row; full block lives on /store */
   .lorestrip{display:flex;align-items:center;gap:clamp(16px,2.4vw,28px);margin-top:16px;
     border:3px solid var(--ink);background:var(--paper);padding:clamp(12px,1.6vw,18px) clamp(16px,2.2vw,26px);box-shadow:8px 8px 0 var(--yellow)}
@@ -341,30 +353,30 @@
   @keyframes cur-blink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
 
   /* ── mechanism carousel: one step in focus, auto-advancing, sticker-framed ── */
-  .mech{margin-top:clamp(14px,2.6vh,30px)}
-  .mech-stage{overflow:hidden;border:3px solid var(--ink);background:var(--paper-2);box-shadow:10px 10px 0 var(--ink);
+  .mech{margin-top:clamp(14px,2.6vh,30px);max-width:100%}
+  .mech-stage{overflow:hidden;max-width:100%;border:3px solid var(--ink);background:var(--paper-2);box-shadow:10px 10px 0 var(--ink);
     background-image:radial-gradient(rgba(29,24,19,.08) 1.4px,transparent 1.5px);background-size:22px 22px}
-  .mech-track{list-style:none;display:flex;margin:0;padding:0;transition:transform .55s cubic-bezier(.16,1,.3,1)}
-  .mech-slide{flex:0 0 100%;min-width:100%;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;
+  .mech-track{list-style:none;display:flex;margin:0;padding:0;width:100%;transition:transform .55s cubic-bezier(.16,1,.3,1)}
+  .mech-slide{flex:0 0 100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;
     column-gap:clamp(18px,3vw,40px);row-gap:8px;align-items:center;padding:clamp(20px,3.4vh,40px) clamp(22px,4vw,56px)}
   .mech-slide .mech-num{grid-row:1 / span 2;font-weight:900;font-style:italic;font-size:clamp(2.4rem,6vw,4rem);line-height:.8;align-self:start}
   .mech-slide.s1 .mech-num{color:var(--pink)}.mech-slide.s2 .mech-num{color:var(--blue)}
   .mech-slide.s3 .mech-num{color:var(--yellow)}.mech-slide.s4 .mech-num{color:var(--teal)}
   .mech-diag{grid-column:1;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:center;gap:7px;align-self:center;justify-self:center}
   /* place number above, diagram below in the left rail */
-  .mech-slide{grid-template-columns:96px 1fr}
+  .mech-slide{grid-template-columns:96px minmax(0,1fr)}
   .mech-slide .mech-num{grid-column:1;grid-row:1;text-align:center;justify-self:center}
   .mech-slide .mech-diag{grid-column:1;grid-row:2}
   .mech-slide h4{grid-column:2;grid-row:1;align-self:end;font-weight:800;font-size:clamp(1.3rem,2.6vw,2rem);line-height:1.04}
-  .mech-slide p{grid-column:2;grid-row:2;align-self:start;font-size:clamp(.95rem,1.3vw,1.15rem);font-weight:470;line-height:1.5;max-width:42ch}
+  .mech-slide p{grid-column:2;grid-row:2;align-self:start;font-size:clamp(.95rem,1.3vw,1.15rem);font-weight:470;line-height:1.5;max-width:42ch;min-width:0;overflow-wrap:anywhere}
   .mech-diag svg{width:clamp(64px,9vw,84px);height:auto;display:block}
   .mech-tag{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
     background:var(--paper);border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);padding:3px 7px;line-height:1.1;white-space:nowrap}
   @media(max-width:620px){
-    .mech-slide{grid-template-columns:1fr;row-gap:10px;text-align:center;justify-items:center}
+    .mech-slide{grid-template-columns:minmax(0,1fr);row-gap:10px;text-align:center;justify-items:center}
     .mech-slide .mech-num,.mech-slide .mech-diag,.mech-slide h4,.mech-slide p{grid-column:1}
     .mech-slide .mech-num{grid-row:1}.mech-slide .mech-diag{grid-row:2}.mech-slide h4{grid-row:3;align-self:auto}
-    .mech-slide p{grid-row:4;align-self:auto}
+    .mech-slide p{grid-row:4;align-self:auto;max-width:100%}
   }
   .mech-dots{display:flex;gap:10px;justify-content:center;margin-top:16px}
   .mech-dot{width:13px;height:13px;border:2.5px solid var(--ink);background:var(--paper);border-radius:50%;cursor:pointer;padding:0;transition:.18s}
@@ -374,7 +386,8 @@
   @media(prefers-reduced-motion:reduce){.mech-track{transition:none}}
 
   /* ── meme marquee: continuous right-to-left flow of all memes ── */
-  .meme-carousel{margin-top:clamp(28px,4vh,44px);overflow:hidden}
+  .meme-carousel{margin-top:clamp(28px,4vh,44px);overflow:hidden;max-width:100%;scrollbar-width:none;-ms-overflow-style:none}
+  .meme-carousel::-webkit-scrollbar{display:none}
   .meme-track{list-style:none;display:flex;margin:0;padding:6px 0;width:max-content}
   .meme-track.flow{animation:meme-marquee var(--mdur,40s) linear infinite}
   .meme-carousel:hover .meme-track.flow{animation-play-state:paused}
@@ -508,7 +521,7 @@
 <header>
   <div class="wrap head">
     <a class="brand" href="#top">
-      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M12 12h40a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H30l-12 10v-10h-6a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4z" fill="none" stroke="#1d1813" stroke-width="3" stroke-linejoin="round"/><path d="M32 17c2 6-4 8-4 13a4 4 0 0 0 8 0c0-2-1-3-1-3 3 2 5 5 5 9a8 8 0 1 1-16 0c0-7 6-9 8-19z" fill="#ff4f6d" stroke="#1d1813" stroke-width="2" stroke-linejoin="round"/><path d="M32 31c1 3-2 4-2 7a2 2 0 0 0 4 0c0-2-1-2-1-3 2 5-1 6-1 6" fill="#f5b921"/></svg>
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d" stroke="#1d1813" stroke-width="2.4" stroke-linejoin="round"/><path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/><g stroke="#1d1813" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#1d1813"><circle cx="12" cy="38" r="4"/><path d="M5 52c0-4.5 3-7.5 7-7.5s7 3 7 7.5z"/></g><g fill="#1d1813"><circle cx="52" cy="38" r="4"/><path d="M45 52c0-4.5 3-7.5 7-7.5s7 3 7 7.5z"/></g></svg>
       folklore
     </a>
     <nav class="hlinks">
@@ -955,10 +968,11 @@
       <h2 class="rv" data-d="1">wear the <span class="em-blue">commons.</span></h2>
       <a class="store-browse rv" data-d="1" href="/store">Browse the full store →</a>
     </div>
-    <div class="shop">
+    <div class="store-carousel" id="store-carousel">
+    <div class="shop" id="store-shop">
       <div class="prod rv" data-d="1">
         <span class="soon">Drops to peers first</span>
-        <div class="shot"><img src="assets/gen/merch-tee.png" alt="Never-Research-Twice tee — folk-pop speech-bubble print on charcoal cotton"/></div>
+        <div class="shot"><img src="assets/gen/merch-tee.png" alt="Never-Research-Twice tee — folk-pop campfire-and-gathered-folk print on charcoal cotton"/></div>
         <h4>Never-Research-Twice Tee</h4>
         <p class="desc">The mark on heavyweight cotton. Hand-drawn folk-pop print, signed by the commons.</p>
         <p class="spec">Heavyweight 100% cotton · screen-printed front · S–3XL · ink on dark</p>
@@ -982,7 +996,7 @@
       </div>
       <div class="prod rv" data-d="3">
         <span class="soon">Drops to peers first</span>
-        <div class="shot"><img src="assets/gen/merch-pin.png" alt="The Hearth enamel pin — folk-pop speech-bubble, hard enamel, gold edges"/></div>
+        <div class="shot"><img src="assets/gen/merch-pin.png" alt="The Hearth enamel pin — folk-pop campfire and gathered folk, hard enamel, gold edges"/></div>
         <h4>The Teller Enamel Pin</h4>
         <p class="desc">A hard-enamel pin of the teller — the named hand that signs the lore. Wear the folk on your jacket.</p>
         <p class="spec">Hard enamel · 1.25in · gold plating · double rubber clutch backing</p>
@@ -992,6 +1006,7 @@
           <a class="buy" href="#store" data-buy="enamel-pin" aria-disabled="true" role="button">Buy</a>
         </div>
       </div>
+    </div>
     </div>
     <p class="store-more rv" data-d="3">Prints, posters, pins &amp; more — <a href="/store">browse the full store →</a></p>
     <div class="lorestrip rv" data-d="1">
@@ -1112,6 +1127,39 @@ function initMemeCarousel(){
   track.style.setProperty('--mdur',Math.max(24,originals.length*7)+'s');
   track.classList.add('flow');
 }
+
+/* ── store teaser marquee: on mobile, flow the featured cards left like #memes;
+   desktop keeps the 3-up grid. Clone the card set once for a seamless -50% loop. ── */
+(function initStoreCarousel(){
+  const track=document.getElementById('store-shop');
+  if(!track)return;
+  const mq=window.matchMedia('(max-width:760px)');
+  const reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  let cloned=false;
+  function enable(){
+    if(track.classList.contains('flow'))return;
+    if(!cloned){
+      const originals=Array.prototype.slice.call(track.children);
+      if(!originals.length)return;
+      originals.forEach((el)=>{const c=el.cloneNode(true);c.setAttribute('aria-hidden','true');track.appendChild(c);});
+      track.style.setProperty('--sdur',Math.max(24,originals.length*11)+'s');
+      cloned=true;
+    }
+    track.classList.add('flow');
+  }
+  function disable(){
+    track.classList.remove('flow');
+    if(cloned){                                   // drop the clones so desktop grid is clean
+      const half=track.children.length/2;
+      for(let k=track.children.length-1;k>=half;k--)track.children[k].remove();
+      cloned=false;
+    }
+  }
+  function apply(){ mq.matches?enable():disable(); }
+  apply();
+  if(reduceMotion)return;                          // CSS already handles the static reduced-motion layout
+  (mq.addEventListener?mq.addEventListener('change',apply):mq.addListener(apply));
+})();
 
 /* ── mechanism carousel: auto-advancing step focus, dots, hover-pause ── */
 (function(){

@@ -8,8 +8,13 @@ window.FOLKLORE = {
     // "production" for live_ tokens, "sandbox" for test_ tokens.
     environment: "production",
     // Map each store product to its Paddle price id (starts with pri_).
-    // Empty string = checkout stays "Coming soon" for that product (Drop 01 not live yet).
-    // TODO(launch): fill in pri_ ids per product to enable Paddle checkout.
+    // Empty string = checkout stays "Coming soon" for that product.
+    // PAYMENT PLAN (decided): DIGITAL-FIRST. Paddle's AUP forbids physical
+    // goods — it's a Merchant of Record for digital only. At launch fill
+    // pri_ ids for the DIGITAL SKUs ONLY (wallpaper-pack, texture-pack,
+    // lore-badge, commons-zine, numbered-edition); leave every physical SKU
+    // empty so it stays "Coming soon" (physical → a separate POD checkout
+    // later). Stripe/Link is unavailable to Israel-based sellers.
     priceIds: {
       // hero bundle
       "commons-kit": "",
