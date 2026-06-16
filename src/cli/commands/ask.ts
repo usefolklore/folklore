@@ -118,18 +118,34 @@ export const ask = async (args: readonly string[]): Promise<number> => {
 // ─────────────── workspace filter ─────────
 
 /**
- * Pre-filter search/recall hits to those tagged with the given workspace.
+ * Pre-filter search/recall hits to those visible in the given workspace.
  * Applied at the CLI boundary AFTER the application-layer query returns.
  * Per the plan (Wave 2 vector-index simplification): the index stays
  * workspace-blind; filtering is a read-site concern.
+ *
+ * Visibility rule: a hit passes when it carries the active workspace tag
+ * OR when it carries no workspace tag at all. Untagged nodes are global
+ * reference material — seed-corpus concepts, auto-saved web sources, any
+ * cross-repo knowledge — and were never captured "inside" one repo, so
+ * scoping them out of every other repo is what kept the cold-start graph
+ * silent on the live hook path (the prefetch runs `ask` without
+ * `--workspace all`, detecting the current repo). Repo-tagged notes stay
+ * scoped to their repo; only the genuinely global, untagged nodes leak
+ * across. `--workspace all` (workspace === undefined) still bypasses the
+ * filter entirely.
  */
+export const isWorkspaceVisible = (
+  hitWorkspace: string | undefined,
+  active: string,
+): boolean => hitWorkspace === undefined || hitWorkspace === active;
+
 const applyWorkspaceFilter = (r: AskResult, workspace: string | undefined): AskResult => {
   if (!workspace) return r;
-  const search_hits = r.search_hits.filter((h) => h.workspace === workspace);
+  const search_hits = r.search_hits.filter((h) => isWorkspaceVisible(h.workspace, workspace));
   const recall_result = r.recall_result
     ? {
         ...r.recall_result,
-        hits: r.recall_result.hits.filter((h) => h.workspace === workspace),
+        hits: r.recall_result.hits.filter((h) => isWorkspaceVisible(h.workspace, workspace)),
       }
     : undefined;
   return { ...r, search_hits, recall_result };
