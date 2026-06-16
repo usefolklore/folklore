@@ -110,10 +110,29 @@ The classifier is a deterministic keyword match (no LLM), so a denial's risk tie
 
 This is the same shape across surfaces: it flows into MCP `ask` responses, the smart-hook `additionalContext`, and CLI block output, so an agent (or a human reading a denial) gets the decision boundary, not just prose context.
 
+### Coverage map (borderline only)
+
+At a borderline decision (`verify_one_source` / `search_required`) the protocol attaches a **query-term coverage map** to the telemetry record (`coverage_map`, null otherwise). v1 is deliberately a no-LLM heuristic: it reports which salient terms of the query appear in the retrieved evidence and which are missing, so a thin result scopes a *constrained* next search instead of a blanket one.
+
+```ts
+interface CoverageMap {
+  query: string;
+  method: 'heuristic-terms';          // names the method so callers don't over-trust it
+  required_terms: string[];           // salient query terms (quoted phrases + content words)
+  covered:  { term; covered: true;  evidence: string[] }[];   // node_ids containing the term
+  missing:  { term; covered: false; evidence: [] }[];
+  coverage_ratio: number;             // covered / required
+  recommended_action: string;         // "search only for the missing terms: …"
+}
+```
+
+The honest framing matters: this measures term *presence*, not understanding. It is a transparent first cut standing in for the LLM-backed required-facts extraction that OQ#3 asks about. Computed only near a breakpoint so clear calls don't pay for it.
+
 ## Reference implementation
 
 - Scorer + trace: `src/domain/peer-telemetry.ts` — `computeSatisfaction()`.
-- Contract: `src/domain/peer-telemetry.ts` — `decideContract()`, `CONTRACT_THRESHOLDS`.
+- Contract: `src/domain/peer-telemetry.ts` — `decideContract()`, `CONTRACT_THRESHOLDS`, `classifyRisk()`.
+- Coverage map: `src/domain/coverage.ts` — `buildCoverageMap()`, `extractQueryTerms()`.
 - Callers (deduped onto the contract): `src/application/ask.ts`, `src/application/peer-pull-telemetry.ts`.
 - Narrative reference: [`../p2p/satisfaction-scoring.md`](../p2p/satisfaction-scoring.md).
 
@@ -121,7 +140,7 @@ This is the same shape across surfaces: it flows into MCP `ask` responses, the s
 
 1. **Weights.** The aggregate is currently an equal-weight average over observed components. Should weights be learned from shadow-search outcomes, and should they be global, per-source-type, or per-workspace?
 2. **Task risk.** *(v1 shipped — see the Task-risk overlay above.)* A deterministic keyword classifier raises the breakpoint for elevated/high-risk queries. Still open: should the MCP host pass an authoritative task-risk signal instead of inferring it from query text, and should the tiers be learned rather than keyword-matched? Should users configure "never skip" workspaces or source types?
-3. **Coverage map.** `PeerPullTelemetry.coverage_map` is reserved (`null` today). Should the contract carry a required-facts / covered / missing map for borderline queries, recommending a *constrained* next search rather than a blanket `search_required`?
+3. **Coverage map.** *(v1 shipped — see the Coverage map above.)* A no-LLM query-term coverage map attaches at borderline decisions and scopes a constrained next search. Still open: should "required facts" be extracted semantically (LLM/NLP) rather than as query terms, and should covered/missing carry per-fact confidence? Should it also attach on the local `ask` path, not just federated peer-pull?
 4. **Conflict.** Should contradicting peer claims surface as a first-class field that forces verification, rather than being averaged into a single score?
 5. **Calibration.** What `would_shadow_search` sampling rate, and what BadSkipRate target, should gate any change to the default thresholds?
 
