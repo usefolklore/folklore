@@ -42,6 +42,7 @@ import {
   computeSatisfaction,
   decideContract,
   classifyRisk,
+  type AgentContract,
   type AgentDecision,
   type EnrichedMatch,
   type SatisfactionScore,
@@ -77,7 +78,10 @@ export interface AskResult {
   readonly recall_result?: RecallResult;
   readonly reranked: boolean;
   readonly satisfaction: SatisfactionScore;
+  /** Back-compat alias for `contract.decision`. */
   readonly decision: AgentDecision;
+  /** The full RFC-0003 agent contract (decision + risk + trace + summary). */
+  readonly contract: AgentContract;
 }
 
 // ─────────────── deps ─────────────────────
@@ -260,7 +264,7 @@ export const ask =
 
           const buildSatisfaction = (
             recallHits: readonly RecallResult['hits'][number][] = [],
-          ): { satisfaction: SatisfactionScore; decision: AgentDecision } => {
+          ): { satisfaction: SatisfactionScore; contract: AgentContract } => {
             const merged: EnrichedMatch[] = [
               ...recallHits.map(recallHitToEnriched),
               ...search_hits.map((h) => toEnriched(h)),
@@ -274,21 +278,23 @@ export const ask =
             }
             const satisfaction = computeSatisfaction(enrichedAll);
             const shallowEvidence = search_hits.length === 0 && recallHits.length > 0;
-            return {
-              satisfaction,
-              decision: decideContract(satisfaction, { shallowEvidence, risk: classifyRisk(params.query) }).decision,
-            };
+            const contract = decideContract(satisfaction, {
+              shallowEvidence,
+              risk: classifyRisk(params.query),
+            });
+            return { satisfaction, contract };
           };
 
           if (!resolvedEntity) {
-            const { satisfaction, decision } = buildSatisfaction();
+            const { satisfaction, contract } = buildSatisfaction();
             return okAsync<AskResult, AppError>({
               query: params.query,
               k: params.k,
               search_hits,
               reranked: true,
               satisfaction,
-              decision,
+              decision: contract.decision,
+              contract,
             });
           }
 
@@ -297,7 +303,7 @@ export const ask =
             { query: resolvedEntity.id, limit: params.k },
           );
           if (recallRes.isErr()) {
-            const { satisfaction, decision } = buildSatisfaction();
+            const { satisfaction, contract } = buildSatisfaction();
             return okAsync<AskResult, AppError>({
               query: params.query,
               k: params.k,
@@ -305,10 +311,11 @@ export const ask =
               resolved_entity: resolvedEntity,
               reranked: true,
               satisfaction,
-              decision,
+              decision: contract.decision,
+              contract,
             });
           }
-          const { satisfaction, decision } = buildSatisfaction(recallRes.value.hits);
+          const { satisfaction, contract } = buildSatisfaction(recallRes.value.hits);
           return okAsync<AskResult, AppError>({
             query: params.query,
             k: params.k,
@@ -317,7 +324,8 @@ export const ask =
             recall_result: recallRes.value,
             reranked: true,
             satisfaction,
-            decision,
+            decision: contract.decision,
+            contract,
           });
           });
         }),

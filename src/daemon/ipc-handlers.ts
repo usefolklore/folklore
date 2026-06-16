@@ -262,6 +262,16 @@ const makeAskHandler = (federation?: FederationRef): IpcHandler<Runtime> => asyn
       // as the CLI output for consistency.
       satisfaction: r.satisfaction.score,
       decision: r.decision,
+      contract: {
+        decision: r.contract.decision,
+        recommended_action: r.contract.recommended_action,
+        risk: r.contract.risk,
+        would_shadow_search: r.contract.would_shadow_search,
+        reasons: r.contract.reasons,
+        penalties: r.contract.penalties,
+        trace: r.contract.trace,
+        summary: r.contract.summary,
+      },
       satisfaction_detail: {
         fresh: r.satisfaction.fresh_count,
         stale: r.satisfaction.stale_count,
