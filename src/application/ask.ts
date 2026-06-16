@@ -40,6 +40,7 @@ import { searchGlobal } from './use-cases.js';
 import { recall, type RecallResult } from './recall.js';
 import {
   computeSatisfaction,
+  decideContract,
   type AgentDecision,
   type EnrichedMatch,
   type SatisfactionScore,
@@ -99,20 +100,6 @@ export interface AskParams {
 /** Overfetch factor when applying recency rerank — search returns
  * k * factor; rerank promotes age-favored hits; we slice to k. */
 const RERANK_OVERFETCH = 4;
-
-/**
- * Pick the agent action from satisfaction.score.
- */
-const pickDecision = (
-  s: SatisfactionScore,
-  opts?: { readonly shallowEvidence?: boolean },
-): AgentDecision => {
-  const shallow = (opts?.shallowEvidence ?? false) || s.observed_components < 4;
-  if (s.score >= 0.85) return shallow ? 'verify_one_source' : 'use_memory';
-  if (s.score >= 0.65) return 'verify_one_source';
-  if (s.score >= 0.40) return 'search_required';
-  return 'ask_user';
-};
 
 const toEnriched = (h: AskHit, fetchedAt?: string): EnrichedMatch => ({
   node_id: h.node_id,
@@ -288,7 +275,7 @@ export const ask =
             const shallowEvidence = search_hits.length === 0 && recallHits.length > 0;
             return {
               satisfaction,
-              decision: pickDecision(satisfaction, { shallowEvidence }),
+              decision: decideContract(satisfaction, { shallowEvidence }).decision,
             };
           };
 

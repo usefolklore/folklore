@@ -37,6 +37,21 @@ export interface EnrichedMatch {
   readonly stale_after_days?: number;
 }
 
+/**
+ * One row of the satisfaction trace — a single scorer component, its
+ * value in [0,1], whether its underlying signal was observable, and the
+ * weight it carried in the aggregate (0 when unobserved, since the
+ * aggregator drops unobserved components rather than averaging a prior).
+ * This is the load-bearing explainability surface: a denial must be
+ * traceable back to exactly which components drove the score.
+ */
+export interface ComponentTrace {
+  readonly name: 'retrieval' | 'freshness' | 'provenance' | 'consensus' | 'signature';
+  readonly value: number;             // 0.0 — 1.0
+  readonly observed: boolean;
+  readonly weight: number;            // 0.0 — 1.0 (0 when unobserved)
+}
+
 export interface SatisfactionScore {
   readonly score: number;             // 0.0 — 1.0
   readonly fresh_count: number;
@@ -46,6 +61,8 @@ export interface SatisfactionScore {
   readonly distinct_origins: number;
   readonly reasons: readonly string[];
   readonly penalties: readonly string[];
+  /** Per-component breakdown — the satisfaction trace (RFC-0003). */
+  readonly components: readonly ComponentTrace[];
   /**
    * How many of the five components (retrieval, freshness, provenance,
    * consensus, signature) had observable input. Drives the decision-
@@ -314,6 +331,25 @@ export const computeSatisfaction = (
   const penalty = Math.min(penaltyTotal, 0.4);
   const score = clamp01(base - penalty);
 
+  // Trace — each component's value, observability, and the weight it
+  // carried in the aggregate (equal split across observed components,
+  // 0 for unobserved). Order is stable for deterministic rendering.
+  const weight = observed.length === 0 ? 0 : 1 / observed.length;
+  const trace: ComponentTrace[] = (
+    [
+      ['retrieval', components.retrieval],
+      ['freshness', components.freshness],
+      ['provenance', components.provenance],
+      ['consensus', components.consensus],
+      ['signature', components.signature],
+    ] as const
+  ).map(([name, c]) => ({
+    name,
+    value: Math.round(c.value * 100) / 100,
+    observed: c.observed,
+    weight: c.observed ? Math.round(weight * 100) / 100 : 0,
+  }));
+
   return {
     score: Math.round(score * 100) / 100,
     fresh_count,
@@ -323,7 +359,108 @@ export const computeSatisfaction = (
     distinct_origins,
     reasons,
     penalties,
+    components: trace,
     observed_components: observed.length,
+  };
+};
+
+// ─────────────── agent contract (RFC-0003) ──
+
+/**
+ * The explicit decision contract handed to the agent for every
+ * breakpoint — the protocol's answer to "context is not evidence."
+ * Instead of returning top-k chunks, Folklore returns a recommendation
+ * the agent can act on, with the reasoning that produced it. JSON-safe;
+ * the same shape flows into MCP responses, the smart-hook
+ * additionalContext, and CLI output.
+ *
+ * Stability: `decision` follows the AgentDecision growth promise
+ * (existing values keep their semantics; default-route on unknown).
+ */
+export interface AgentContract {
+  readonly decision: AgentDecision;
+  /** Imperative next move for the agent, e.g. "use memory; no web search needed". */
+  readonly recommended_action: string;
+  readonly score: number;
+  /** Positive evidence that lifted the score (mirrors satisfaction.reasons). */
+  readonly reasons: readonly string[];
+  /** Negative signals that held it down (mirrors satisfaction.penalties). */
+  readonly penalties: readonly string[];
+  /** The per-component satisfaction trace that produced the score. */
+  readonly trace: readonly ComponentTrace[];
+  /**
+   * Whether a shadow web search would still be worth running to measure
+   * a possible bad-skip. False only for a confident `use_memory`; true
+   * for every escalating decision — the doc's bad-skip instrumentation.
+   */
+  readonly would_shadow_search: boolean;
+  /** One-line human contract: what was found, how fresh, the call. */
+  readonly summary: string;
+}
+
+/** Thresholds for the score → decision breakpoint table (RFC-0003). */
+export const CONTRACT_THRESHOLDS = {
+  use_memory: 0.85,
+  verify_one_source: 0.65,
+  search_required: 0.4,
+} as const;
+
+const ACTION_TEXT: Record<AgentDecision, string> = {
+  use_memory: 'use memory; no web search needed',
+  verify_one_source: 'use memory, but verify one source before acting',
+  search_required: 'treat memory as hints; run a live search',
+  refetch: 're-fetch the cited source before trusting it',
+  consensus_check: 'evidence is single-origin; seek an independent source',
+  ask_user: 'confidence is below the floor; ask the user',
+  unknown: 'no decision could be derived',
+};
+
+/**
+ * Map a satisfaction score to an explicit agent contract. The single
+ * source of truth for the breakpoint decision — both the local `ask`
+ * path and the federated peer-pull path route through here so a denial
+ * is computed and explained one way.
+ *
+ * `shallow` (fewer than 4 of 5 components observed, or a caller-supplied
+ * `shallowEvidence` flag — e.g. recall-only hits with no live search)
+ * demotes a top-tier `use_memory` to `verify_one_source`: consensus is a
+ * local carve-out and signature is unobservable on a stand-alone node,
+ * so a high score from one or two signals is not defensible enough to
+ * deny outright.
+ */
+export const decideContract = (
+  s: SatisfactionScore,
+  opts?: { readonly shallowEvidence?: boolean },
+): AgentContract => {
+  const shallow = (opts?.shallowEvidence ?? false) || s.observed_components < 4;
+  let decision: AgentDecision;
+  if (s.score >= CONTRACT_THRESHOLDS.use_memory) {
+    decision = shallow ? 'verify_one_source' : 'use_memory';
+  } else if (s.score >= CONTRACT_THRESHOLDS.verify_one_source) {
+    decision = 'verify_one_source';
+  } else if (s.score >= CONTRACT_THRESHOLDS.search_required) {
+    decision = 'search_required';
+  } else {
+    decision = 'ask_user';
+  }
+
+  const would_shadow_search = decision !== 'use_memory';
+  const found =
+    s.distinct_origins > 0
+      ? `${s.distinct_origins} origin${s.distinct_origins === 1 ? '' : 's'}, ${s.fresh_count} fresh`
+      : 'no evidence';
+  const lead = s.reasons[0] ?? (s.penalties[0] ? `held back: ${s.penalties[0]}` : 'thin evidence');
+  const summary = `${found} · score ${s.score.toFixed(2)} · ${lead} → ${ACTION_TEXT[decision]}`;
+
+  return {
+    decision,
+    recommended_action: ACTION_TEXT[decision],
+    score: s.score,
+    reasons: s.reasons,
+    penalties: s.penalties,
+    trace: s.components,
+    would_shadow_search,
+    summary,
   };
 };
 

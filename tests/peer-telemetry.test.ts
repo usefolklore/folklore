@@ -10,7 +10,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   computeSatisfaction,
+  decideContract,
   ageInDays,
+  CONTRACT_THRESHOLDS,
   type EnrichedMatch,
   type PeerPullTelemetry,
 } from '../src/domain/peer-telemetry.js';
@@ -279,4 +281,73 @@ test('formatTelemetryBlock omits timeout/error counters when zero', () => {
   const out = formatTelemetryBlock(clean);
   assert.ok(!out.includes('timeout'));
   assert.ok(!out.includes('error'));
+});
+
+// ─────────── satisfaction trace (RFC-0003) ─
+
+test('computeSatisfaction emits a 5-row component trace; unobserved rows carry weight 0', () => {
+  // one local hit, no age, no signature → freshness + signature unobserved
+  const s = computeSatisfaction([mk({ age_days: undefined, has_signature: undefined })]);
+  assert.equal(s.components.length, 5);
+  const byName = Object.fromEntries(s.components.map((c) => [c.name, c]));
+  assert.equal(byName.freshness.observed, false);
+  assert.equal(byName.freshness.weight, 0);
+  assert.equal(byName.signature.observed, false);
+  assert.equal(byName.signature.weight, 0);
+  // observed rows split the weight equally and sum to ~1
+  const total = s.components.reduce((a, c) => a + c.weight, 0);
+  assert.ok(Math.abs(total - 1) < 0.05, `weights should sum to ~1, got ${total}`);
+});
+
+// ─────────── decideContract (RFC-0003) ─────
+
+test('decideContract: deep high-confidence evidence → use_memory, no shadow search', () => {
+  // 4 observed components (retrieval/freshness/provenance/consensus), all strong
+  const s = computeSatisfaction([
+    mk({ distance: 0.1 }),
+    mk({ distance: 0.15, node_id: 'n2', source_peer: 'peerA' }),
+  ]);
+  const c = decideContract(s);
+  assert.ok(s.observed_components >= 4, 'fixture should be deep');
+  assert.ok(s.score >= CONTRACT_THRESHOLDS.use_memory, `score ${s.score}`);
+  assert.equal(c.decision, 'use_memory');
+  assert.equal(c.would_shadow_search, false);
+  assert.ok(c.summary.includes(s.score.toFixed(2)));
+  assert.equal(c.trace.length, 5);
+});
+
+test('decideContract: shallow evidence demotes a high score to verify_one_source', () => {
+  // 3 observed (no age, no signature) → shallow even at a high base score
+  const s = computeSatisfaction([mk({ distance: 0.1, age_days: undefined, has_signature: undefined })]);
+  const c = decideContract(s);
+  assert.ok(s.observed_components < 4, 'fixture should be shallow');
+  assert.ok(s.score >= CONTRACT_THRESHOLDS.use_memory, `score ${s.score}`);
+  assert.equal(c.decision, 'verify_one_source');
+  assert.equal(c.would_shadow_search, true);
+});
+
+test('decideContract: caller shallowEvidence flag forces demotion even when deep', () => {
+  const s = computeSatisfaction([mk({ distance: 0.1 }), mk({ distance: 0.15, node_id: 'n2', source_peer: 'peerA' })]);
+  const c = decideContract(s, { shallowEvidence: true });
+  assert.equal(c.decision, 'verify_one_source');
+});
+
+test('decideContract: low score floors to ask_user', () => {
+  const s: SatisfactionScore = {
+    score: 0.2, fresh_count: 0, stale_count: 0, unsigned_count: 0,
+    missing_provenance_count: 0, distinct_origins: 1, reasons: [], penalties: [],
+    components: [], observed_components: 4,
+  };
+  const c = decideContract(s);
+  assert.equal(c.decision, 'ask_user');
+  assert.equal(c.would_shadow_search, true);
+});
+
+test('decideContract: threshold band maps to verify / search', () => {
+  const base = {
+    fresh_count: 0, stale_count: 0, unsigned_count: 0, missing_provenance_count: 0,
+    distinct_origins: 2, reasons: [], penalties: [], components: [], observed_components: 4,
+  };
+  assert.equal(decideContract({ ...base, score: 0.7 }).decision, 'verify_one_source');
+  assert.equal(decideContract({ ...base, score: 0.5 }).decision, 'search_required');
 });
