@@ -10,6 +10,13 @@
 import { appendFileSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import type { ShadowReceipt } from '../domain/shadow-receipt.js';
+import { receiptsToSamples } from '../domain/shadow-receipt.js';
+import {
+  learnWeights,
+  DEFAULT_COMPONENT_WEIGHTS,
+  type LearnWeightsResult,
+  type LearnWeightsOptions,
+} from '../domain/peer-telemetry.js';
 
 const FILE = 'shadow-receipts.jsonl';
 const MAX_RECEIPTS = 1000;
@@ -55,4 +62,33 @@ export const readShadowReceipts = (home: string): ShadowReceipt[] => {
   } catch {
     return [];
   }
+};
+
+/**
+ * Load learned satisfaction weights from the local receipt store.
+ *
+ * Flag-gated: returns the hand-tuned `DEFAULT_COMPONENT_WEIGHTS` unchanged
+ * unless `FOLKLORE_LEARN_WEIGHTS=1` is set, so default behaviour is
+ * byte-for-byte identical to today. Even when enabled, the underlying pure
+ * `learnWeights` falls back to the constants whenever the labelled signal
+ * is too thin / degenerate (see its contract) — so enabling the flag on a
+ * cold store is also a no-op until enough receipts are labelled.
+ *
+ * Best-effort I/O: any read failure degrades to the constant weights.
+ */
+export const loadLearnedWeights = (
+  home: string,
+  opts?: LearnWeightsOptions & { readonly enabled?: boolean },
+): LearnWeightsResult => {
+  const enabled = opts?.enabled ?? process.env.FOLKLORE_LEARN_WEIGHTS === '1';
+  if (!enabled) {
+    return {
+      weights: DEFAULT_COMPONENT_WEIGHTS,
+      learned: false,
+      fallback_reason: 'FOLKLORE_LEARN_WEIGHTS not enabled',
+      samples_used: 0,
+    };
+  }
+  const samples = receiptsToSamples(readShadowReceipts(home));
+  return learnWeights(samples, opts);
 };
