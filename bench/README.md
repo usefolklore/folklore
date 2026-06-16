@@ -109,6 +109,7 @@ summaries — across a federated stream.
 | `bench-subgraph-transfer.mjs` | Bounded subgraph payload per hit | `node bench/bench-subgraph-transfer.mjs` |
 | `bench-value-model.mjs` | Demand economics with subgraph transfer | `node bench/bench-value-model.mjs` |
 | `bench-user-value.mjs` | Per-user value model | `node bench/bench-user-value.mjs` |
+| `bench-coldstart-seed.mjs` | Cold-start web-deflection before/after `folklore seed` (real `ask` path, empty vs seeded graph) | `node bench/bench-coldstart-seed.mjs` |
 | `bench-index-health.mjs` | Local index health diagnostic | `node bench/bench-index-health.mjs` |
 
 ## Full v2 system report

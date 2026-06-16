@@ -300,6 +300,45 @@ const stepClaudeInstall = async (projectDir: string): Promise<void> => {
 };
 
 /**
+ * Seed the fresh graph with the bundled curated concept corpus so the
+ * network-before-web gate answers from the very first session instead of
+ * staying silent until web traffic warms the graph. This is the cold-
+ * start fix: without it, a fresh install deflects ~0% of web searches.
+ *
+ * Spawned as a child `folklore seed` so it picks up the chosen
+ * FOLKLORE_HOME and the compiled embedder without re-wiring the runtime
+ * inside the wizard. Idempotent — re-running onboard never duplicates
+ * seed nodes. Fail-soft: a seed error logs a hint but never aborts
+ * onboarding (the graph still works, just cold).
+ */
+const stepSeed = async (home: string): Promise<void> => {
+  const sp = spinner();
+  sp.start('seeding the graph with a curated concept corpus');
+  const dist = join(dirname(process.argv[1]), '..', 'dist', 'cli', 'index.js');
+  const entry = existsSync(dist) ? dist : process.argv[1];
+  const r = spawnSync(process.execPath, [entry, 'seed', '--json'], {
+    env: { ...process.env, FOLKLORE_HOME: home },
+    encoding: 'utf8',
+  });
+  if (r.status === 0) {
+    let seeded = 0;
+    let skipped = 0;
+    try {
+      const parsed = JSON.parse(r.stdout) as { seeded?: number; skipped?: number };
+      seeded = parsed.seeded ?? 0;
+      skipped = parsed.skipped ?? 0;
+    } catch { /* keep zeros — the human line below still reads sensibly */ }
+    sp.stop(
+      seeded > 0
+        ? `seeded ${seeded} concept node(s) — the graph answers from turn one`
+        : `graph already seeded (${skipped} node(s) present) — nothing to do`,
+    );
+  } else {
+    sp.stop("seed skipped — run 'folklore seed' once to warm the cold-start graph");
+  }
+};
+
+/**
  * Sessions ingest is a long, file-heavy walk over ~/.claude/projects.
  * We launch it detached so the wizard never blocks, then either tail
  * progress for a few seconds or hand control back with a status command.
@@ -506,32 +545,35 @@ export const onboard = async (args: readonly string[]): Promise<number> => {
     'privacy contract',
   );
 
-  log.step('1/8 · choose data home');
+  log.step('1/10 · choose data home');
   const home = await stepHome(flags);
   void runtimePaths();
 
-  log.step('2/8 · check runtime');
+  log.step('2/10 · check runtime');
   stepDoctor();
 
-  log.step('3/9 · create P2P identity');
+  log.step('3/10 · create P2P identity');
   const peerId = await stepIdentity(home);
 
-  log.step('4/9 · link GitHub identity (optional)');
+  log.step('4/10 · link GitHub identity (optional)');
   await stepLoginGithub(flags, home);
 
-  log.step('5/9 · sharing primitives');
+  log.step('5/10 · sharing primitives');
   await stepSystemRooms(home);
 
-  log.step('6/9 · wire Claude Code hooks');
+  log.step('6/10 · wire Claude Code hooks');
   await stepClaudeInstall(projectDir);
 
-  log.step('7/9 · past Claude sessions');
+  log.step('7/10 · seed cold-start corpus');
+  await stepSeed(home);
+
+  log.step('8/10 · past Claude sessions');
   await stepIngestSessions(flags, home);
 
-  log.step('8/9 · start daemon');
+  log.step('9/10 · start daemon');
   await stepDaemon(home);
 
-  log.step('9/9 · P2P status');
+  log.step('10/10 · P2P status');
   await stepP2pStatus(home, peerId);
 
   note(
