@@ -14,7 +14,24 @@
  * bounded local jsonl; nothing here does I/O.
  */
 
-import { classifyRisk, type AgentDecision, type TaskRisk, type PeerPullTelemetry } from './peer-telemetry.js';
+import {
+  classifyRisk,
+  type AgentDecision,
+  type TaskRisk,
+  type PeerPullTelemetry,
+  type ComponentTrace,
+  type LabeledSample,
+  type ComponentName,
+} from './peer-telemetry.js';
+
+/**
+ * The outcome label a receipt can carry. `unlabelled` is the only value
+ * ever written at capture time — every other value requires a real
+ * downstream signal (human review, or the abstaining auto-judge in
+ * `judgeReceipt`). The honesty invariant: NEVER infer an outcome without
+ * a genuine signal; a fabricated label is worse than an honest blank.
+ */
+export type ShadowOutcome = 'unlabelled' | 'good_skip' | 'bad_skip' | 'good_search';
 
 export interface ShadowReceipt {
   readonly emitted_at: string;          // ISO-8601
@@ -29,10 +46,20 @@ export interface ShadowReceipt {
   readonly coverage_ratio: number | null;
   readonly missing_terms: readonly string[];
   /**
+   * The per-component satisfaction trace captured at decision time — the
+   * feature vector the weight learner (`learnWeights`) trains on. Optional
+   * for backward compatibility: receipts written before this field existed
+   * (or by a caller that doesn't supply telemetry components) omit it, and
+   * the learner safely ignores them. Carries values + observability only;
+   * the captured `weight` is the equal-split weight in force at the time,
+   * useful for drift inspection.
+   */
+  readonly components?: readonly ComponentTrace[];
+  /**
    * Ground-truth label, filled later by a human/LLM pass — never inferred
    * at write time. `unlabelled` until then.
    */
-  readonly outcome: 'unlabelled' | 'good_skip' | 'bad_skip' | 'good_search';
+  readonly outcome: ShadowOutcome;
 }
 
 /** Derive a receipt from a finished peer-pull telemetry record. Pure. */
@@ -50,8 +77,101 @@ export const buildShadowReceipt = (
   distinct_origins: t.satisfaction.distinct_origins,
   coverage_ratio: t.coverage_map ? t.coverage_map.coverage_ratio : null,
   missing_terms: t.coverage_map ? t.coverage_map.missing.map((m) => m.term) : [],
+  components: t.satisfaction.components,
   outcome: 'unlabelled',
 });
+
+// ─────────── shadow auto-judge (OQ#5, honest) ───────────
+
+/**
+ * The abstaining auto-judge. RFC-0003 OQ#5 asks "did a live search find a
+ * required fact the skip missed?" — but we only ever have a real signal
+ * for that when a coverage map exists AND the agent actually shadow-ran a
+ * search. Absent a genuine signal this MUST return `null` (no label) — the
+ * honesty invariant. It NEVER manufactures `good_skip`/`bad_skip` from the
+ * score alone, because the score is exactly what we're trying to calibrate.
+ *
+ * The one signal we can read honestly, without a model, is the coverage
+ * map the borderline decisions already carry:
+ *
+ *  - A `use_memory` skip with FULL term coverage (ratio 1, nothing missing)
+ *    is a defensible `good_skip` — every required term was present in the
+ *    evidence, so skipping the web didn't drop a known-required fact.
+ *  - An escalating decision (would_shadow_search) that DID run the live
+ *    search — signalled by the caller passing `liveSearchFoundMissing` —
+ *    yields `bad_skip` if the live search surfaced a term the memory was
+ *    missing, else `good_search` (the escalation was warranted but memory
+ *    wasn't actually wrong about a fact, just thin).
+ *
+ * Everything else abstains. The caller owns the live-search signal; the
+ * judge never invents it.
+ */
+export const judgeReceipt = (
+  r: ShadowReceipt,
+  signal?: {
+    /** True iff a real live search ran and surfaced a term memory lacked. */
+    readonly liveSearchFoundMissing?: boolean;
+  },
+): ShadowOutcome | null => {
+  // Already labelled by a human/earlier pass — never overwrite.
+  if (r.outcome !== 'unlabelled') return null;
+
+  // A confident skip with provably-complete coverage is an honest good_skip:
+  // the coverage map is a real signal, not the score.
+  if (
+    r.decision === 'use_memory' &&
+    r.coverage_ratio === 1 &&
+    r.missing_terms.length === 0
+  ) {
+    return 'good_skip';
+  }
+
+  // An escalating decision can only be judged when the caller actually ran
+  // the live search and reports back. No report → abstain (honest blank).
+  if (r.would_shadow_search && signal && signal.liveSearchFoundMissing !== undefined) {
+    return signal.liveSearchFoundMissing ? 'bad_skip' : 'good_search';
+  }
+
+  // No genuine signal → abstain. NEVER fabricate from the score.
+  return null;
+};
+
+/**
+ * Map a binary `satisfied` target onto a receipt's outcome label. The
+ * decision was vindicated (`good_skip`, `good_search`) → satisfied; it was
+ * wrong (`bad_skip`) → unsatisfied. `unlabelled` rows have no target and
+ * are excluded by `receiptsToSamples`.
+ */
+const OUTCOME_TO_SATISFIED: Readonly<Record<ShadowOutcome, boolean | null>> = {
+  good_skip: true,
+  good_search: true,
+  bad_skip: false,
+  unlabelled: null,
+};
+
+/**
+ * Project labelled receipts into the learner's `LabeledSample` rows. Pure.
+ * Receipts without a component trace, or still `unlabelled`, are dropped —
+ * the learner only ever sees rows backed by a real label AND real features,
+ * so it cannot learn from a fabricated or empty signal (honesty invariant).
+ */
+export const receiptsToSamples = (
+  receipts: readonly ShadowReceipt[],
+): readonly LabeledSample[] => {
+  const out: LabeledSample[] = [];
+  for (const r of receipts) {
+    const satisfied = OUTCOME_TO_SATISFIED[r.outcome];
+    if (satisfied === null) continue;          // unlabelled → not a training row
+    if (!r.components || r.components.length === 0) continue; // no features
+    const values: Partial<Record<ComponentName, number>> = {};
+    for (const c of r.components) {
+      if (c.observed) values[c.name] = c.value; // unobserved → omitted, not zero
+    }
+    if (Object.keys(values).length === 0) continue; // nothing observable
+    out.push({ values, satisfied });
+  }
+  return out;
+};
 
 export interface ShadowSummary {
   readonly total: number;
