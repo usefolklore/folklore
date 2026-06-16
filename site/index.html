@@ -255,7 +255,7 @@
   .store-carousel{overflow:hidden;width:100%;max-width:100%;scrollbar-width:none;-ms-overflow-style:none}
   .store-carousel::-webkit-scrollbar{display:none}
   /* mobile: carousels run edge-to-edge — break out of the wrap gutter (scrollbar-safe: no 100vw) */
-  @media(max-width:760px){.store-carousel,.meme-carousel{width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}}
+  @media(max-width:760px){.store-carousel{width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}}
   #store .shop.flow{display:flex;width:max-content;grid-template-columns:none;gap:0;margin-top:18px;
     animation:meme-marquee var(--sdur,34s) linear infinite}
   .store-carousel:hover #store .shop.flow{animation-play-state:paused}
@@ -376,16 +376,23 @@
   .mech-dot:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
   @media(prefers-reduced-motion:reduce){.mech-track{transition:none}}
 
-  /* ── meme marquee: continuous right-to-left flow of all memes ── */
-  .meme-carousel{margin-top:clamp(28px,4vh,44px);overflow:hidden;max-width:100%;scrollbar-width:none;-ms-overflow-style:none}
+  /* ── meme marquee: continuous right-to-left flow of all memes; full-bleed at every width ── */
+  .meme-carousel{margin-top:clamp(28px,4vh,44px);overflow:hidden;width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);scrollbar-width:none;-ms-overflow-style:none}
   .meme-carousel::-webkit-scrollbar{display:none}
   .meme-track{list-style:none;display:flex;margin:0;padding:6px 0;width:max-content}
   .meme-track.flow{animation:meme-marquee var(--mdur,40s) linear infinite}
   .meme-carousel:hover .meme-track.flow{animation-play-state:paused}
   @keyframes meme-marquee{to{transform:translateX(-50%)}}
   .meme-slide{flex:0 0 clamp(230px,25vw,320px);padding:0 11px;box-sizing:border-box}
-  .meme-card{border:3px solid var(--ink);background:var(--paper);overflow:hidden;line-height:0}
+  .meme-card{position:relative;border:3px solid var(--ink);background:var(--paper);overflow:hidden;line-height:0}
   .meme-card img{width:100%;display:block;aspect-ratio:1/1;object-fit:cover}
+  /* owner wallet — slides up on hover/focus, links to the holder on-chain */
+  .meme-owner{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.02em;line-height:1;padding:9px 11px;
+    background:rgba(29,24,19,.93);color:var(--paper);transform:translateY(101%);transition:transform .25s cubic-bezier(.16,1,.3,1)}
+  .meme-card:hover .meme-owner,.meme-card:focus-within .meme-owner{transform:translateY(0)}
+  .meme-owner .ow-w{opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .meme-owner .ow-go{color:var(--yellow);white-space:nowrap}
   .meme-slide:nth-child(4n+1) .meme-card{box-shadow:8px 8px 0 var(--pink)}
   .meme-slide:nth-child(4n+2) .meme-card{box-shadow:8px 8px 0 var(--blue)}
   .meme-slide:nth-child(4n+3) .meme-card{box-shadow:8px 8px 0 var(--teal)}
@@ -986,13 +993,14 @@
     <h2 class="rv" data-d="1"><span class="mis" data-text="told and retold.">told and <span class="em-pink">retold.</span></span></h2>
     <p class="body rv" data-d="1" style="max-width:50ch">Folk knowledge always spread as memes. Ours are minted by the network and posted to the timeline — drop yours; the best ones make the store.</p>
     <div class="meme-carousel rv" id="meme-carousel" data-d="1">
+      <!-- TODO: replace placeholder owner wallets/links with real mint holders -->
       <ul class="meme-track" id="memegrid" data-static="1">
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-stonesoup.png" loading="lazy" alt="folk meme — villagers and robots sharing one cauldron"/></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-signed.png" loading="lazy" alt="folk meme — signed node welcomed, anonymous scroll turned away"/></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-zeroweb.png" loading="lazy" alt="folk meme — agent walking past the web toll booth"/></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-reread.png" loading="lazy" alt="folk meme — re-reading the same papers vs resting by the fire"/></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-amnesia.png" loading="lazy" alt="folk meme — agent amnesia"/></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-coinrain.png" loading="lazy" alt="folk meme — $LORE rain"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-stonesoup.png" loading="lazy" alt="folk meme — villagers and robots sharing one cauldron"/><a class="meme-owner" href="https://solscan.io/account/7gKp3mRtWqYz2nLvBhCdEfGjHkUaXsNrQ4tPuVwM5dFh" target="_blank" rel="noopener" aria-label="View owner wallet on Solscan"><span class="ow-w">owner 7gKp…5dFh</span><span class="ow-go">view ↗</span></a></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-signed.png" loading="lazy" alt="folk meme — signed node welcomed, anonymous scroll turned away"/><a class="meme-owner" href="https://solscan.io/account/9aBcDeFgHjKmNpQrStUvWxYz23456789AbCdEfGhJkLm" target="_blank" rel="noopener" aria-label="View owner wallet on Solscan"><span class="ow-w">owner 9aBc…JkLm</span><span class="ow-go">view ↗</span></a></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-zeroweb.png" loading="lazy" alt="folk meme — agent walking past the web toll booth"/><a class="meme-owner" href="https://solscan.io/account/4Hn8sQ2wErTyUaSdFgHjKzXcVbNmQwRtYuPaSdFgHjKp" target="_blank" rel="noopener" aria-label="View owner wallet on Solscan"><span class="ow-w">owner 4Hn8…HjKp</span><span class="ow-go">view ↗</span></a></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-reread.png" loading="lazy" alt="folk meme — re-reading the same papers vs resting by the fire"/><a class="meme-owner" href="https://solscan.io/account/6JmWqYz2nLvBhCdEfGjHkUaXsNrQ4tPuVwM5dFh7gKp3" target="_blank" rel="noopener" aria-label="View owner wallet on Solscan"><span class="ow-w">owner 6JmW…gKp3</span><span class="ow-go">view ↗</span></a></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-amnesia.png" loading="lazy" alt="folk meme — agent amnesia"/><a class="meme-owner" href="https://solscan.io/account/8XsNrQ4tPuVwM5dFh7gKp3mRtWqYz2nLvBhCdEfGjHkU" target="_blank" rel="noopener" aria-label="View owner wallet on Solscan"><span class="ow-w">owner 8XsN…jHkU</span><span class="ow-go">view ↗</span></a></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-coinrain.png" loading="lazy" alt="folk meme — $LORE rain"/><a class="meme-owner" href="https://solscan.io/account/5dFh7gKp3mRtWqYz2nLvBhCdEfGjHkUaXsNrQ4tPuVwM" target="_blank" rel="noopener" aria-label="View owner wallet on Solscan"><span class="ow-w">owner 5dFh…uVwM</span><span class="ow-go">view ↗</span></a></div></li>
       </ul>
       <div class="mech-dots" id="meme-dots" role="tablist" aria-label="Meme carousel"></div>
     </div>
