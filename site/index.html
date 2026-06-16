@@ -255,10 +255,7 @@
   .store-carousel{overflow:hidden;width:100%;max-width:100%;scrollbar-width:none;-ms-overflow-style:none}
   .store-carousel::-webkit-scrollbar{display:none}
   /* mobile: carousels run edge-to-edge — break out of the wrap gutter (scrollbar-safe: no 100vw) */
-  @media(max-width:760px){
-    .store-carousel{width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}
-    /* memes: align left edge with the content gutter, bleed only off the right */
-    .meme-carousel{width:calc(100vw - clamp(24px,5vw,80px));max-width:none;margin-left:0;margin-right:0}}
+  @media(max-width:760px){.store-carousel,.meme-carousel{width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}}
   #store .shop.flow{display:flex;width:max-content;grid-template-columns:none;gap:0;margin-top:18px;
     animation:meme-marquee var(--sdur,34s) linear infinite}
   .store-carousel:hover #store .shop.flow{animation-play-state:paused}
