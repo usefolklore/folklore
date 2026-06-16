@@ -408,3 +408,49 @@ test('decideContract: risk overlay never UPGRADES a low decision', () => {
   };
   assert.equal(decideContract(s, { risk: 'high' }).decision, 'search_required');
 });
+
+// ─────────── relevance gate (RFC-0003: relevance-aware satisfaction) ─
+// The trust components (freshness/provenance/consensus) describe how much to
+// believe a source, NOT whether it answers the query. The gate damps the
+// trust aggregate by retrieval relevance (embedding proximity + optional
+// lexical coverage) so a trustworthy-but-off-topic hit can't score high.
+
+test('relevance gate: an off-topic far hit scores far below a close hit at equal trust', () => {
+  const near = computeSatisfaction([mk({ distance: 0.4 })]);
+  const far = computeSatisfaction([mk({ distance: 1.15 })]);
+  // Same trust signals (fresh, provenance, local) — only proximity differs.
+  assert.ok(near.score > 0.85, `near should stay high, got ${near.score}`);
+  assert.ok(far.score < 0.5, `far should be damped, got ${far.score}`);
+  assert.ok(near.score - far.score > 0.3, 'gate must open a real gap by proximity');
+});
+
+test('relevance gate: lexical coverage separates a near-miss from a real answer', () => {
+  const hit = mk({ distance: 0.6 }); // same embedding proximity for both
+  const covered = computeSatisfaction([hit], { coverageRatio: 1 });
+  const uncovered = computeSatisfaction([hit], { coverageRatio: 0 });
+  assert.ok(
+    covered.score - uncovered.score > 0.2,
+    `coverage must damp an uncovered (near-miss) hit: ${covered.score} vs ${uncovered.score}`,
+  );
+});
+
+test('relevance gate: recall-only results (placeholder distance 0) are not damped', () => {
+  // distance 0 is a recall placeholder (unknown distance), not a true exact
+  // match — it must NOT be read as max relevance, and with no real distance
+  // and no coverage the gate is a no-op so a trusted recall hit stays high.
+  const s = computeSatisfaction([mk({ distance: 0 })]);
+  assert.ok(s.score >= 0.9, `trusted recall-only hit should stay high, got ${s.score}`);
+});
+
+test('relevance gate: a fully-irrelevant hit retains a nonzero floor, not zero', () => {
+  const s = computeSatisfaction([mk({ distance: 2.0 })]);
+  assert.ok(s.score > 0, 'floor keeps weak evidence nonzero');
+  assert.ok(s.score < 0.4, `irrelevant hit must be heavily damped, got ${s.score}`);
+});
+
+test('relevance gate: retrieval carries 0 linear weight (enters multiplicatively)', () => {
+  const s = computeSatisfaction([mk({ distance: 0.4 })]);
+  const retrieval = s.components.find((c) => c.name === 'retrieval');
+  assert.ok(retrieval, 'retrieval row present in trace');
+  assert.equal(retrieval?.weight, 0, 'retrieval is the gate, not a linear term');
+});

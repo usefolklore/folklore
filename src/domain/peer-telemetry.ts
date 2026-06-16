@@ -194,13 +194,21 @@ const computeComponents = (results: readonly EnrichedMatch[]): Components => {
     return { retrieval: NIL, freshness: NIL, provenance: NIL, consensus: NIL, signature: NIL };
   }
 
-  // Retrieval — top-3 average of (1 − distance), clamped to [0,1].
-  // Always observed when any results exist.
-  const top3 = results.slice(0, 3);
-  const retrieval: Component = {
-    value: top3.reduce((acc, r) => acc + clamp01(1 - r.distance), 0) / top3.length,
-    observed: true,
-  };
+  // Retrieval — top-3 average of (1 − distance) over hits that carry a
+  // REAL distance. Recall hits arrive with distance 0 as a PLACEHOLDER
+  // (unknown distance, not a true exact match), so they're excluded from
+  // the relevance estimate; if no hit carries a real (positive, finite)
+  // distance, retrieval is unobserved and the score falls back to the
+  // trust components alone (preserves the recall-only path).
+  const distanced = results.filter((r) => r.distance > 0 && Number.isFinite(r.distance));
+  const top3 = distanced.slice(0, 3);
+  const retrieval: Component =
+    top3.length === 0
+      ? NIL
+      : {
+          value: top3.reduce((acc, r) => acc + clamp01(1 - r.distance), 0) / top3.length,
+          observed: true,
+        };
 
   // Freshness — observed iff at least one result has a known age.
   const fresh = results.filter((r) => {
@@ -255,8 +263,53 @@ const computeComponents = (results: readonly EnrichedMatch[]): Components => {
   return { retrieval, freshness, provenance, consensus, signature };
 };
 
+// ─────────────── relevance gate (RFC-0003 OQ: relevance-aware satisfaction) ──
+
+/** A fully-irrelevant hit still retains this fraction of its trust score —
+ *  a topically-adjacent neighbour can be weak evidence, not zero. */
+const REL_FLOOR = 0.3;
+/** Embedding distance at/below which proximity relevance is full. */
+const D_NEAR = 0.5;
+/** Embedding distance at/above which proximity relevance is nil. */
+const D_FAR = 1.2;
+/** Lexical coverage carries more weight than raw proximity because it is the
+ *  stronger discriminator for topically-adjacent near-misses (same domain,
+ *  different answer) — those sit close in embedding space but miss the
+ *  query's specific terms. */
+const COVERAGE_WEIGHT = 0.6;
+
+/**
+ * Relevance gate in [REL_FLOOR, 1]. The trust components
+ * (freshness/provenance/consensus) describe how trustworthy a source is, NOT
+ * whether it answers the query — so a fresh, well-provenanced LOCAL node scores
+ * ~0.75 on trust alone even when it is topically off. This gate damps the
+ * aggregate by retrieval relevance: embedding proximity of the closest real
+ * hit, fused with optional lexical query-term coverage. With NO relevance
+ * signal (recall-only / no distances and no coverage) it returns 1 — gating is
+ * a no-op, preserving prior behaviour.
+ */
+const relevanceGate = (
+  bestDistance: number | undefined,
+  coverageRatio: number | undefined,
+): number => {
+  if (bestDistance === undefined && coverageRatio === undefined) return 1;
+  const dRel =
+    bestDistance === undefined
+      ? undefined
+      : clamp01((D_FAR - bestDistance) / (D_FAR - D_NEAR));
+  const cRel = coverageRatio === undefined ? undefined : clamp01(coverageRatio);
+  let rel: number;
+  if (dRel !== undefined && cRel !== undefined) {
+    rel = COVERAGE_WEIGHT * cRel + (1 - COVERAGE_WEIGHT) * dRel;
+  } else {
+    rel = (dRel ?? cRel) as number;
+  }
+  return REL_FLOOR + (1 - REL_FLOOR) * rel;
+};
+
 export const computeSatisfaction = (
   results: readonly EnrichedMatch[],
+  opts?: { readonly coverageRatio?: number },
 ): SatisfactionScore => {
   const reasons: string[] = [];
   const penalties: string[] = [];
@@ -267,6 +320,23 @@ export const computeSatisfaction = (
   // can't be inflated by counting "I don't know" priors as positive
   // evidence. With only retrieval observed, a 0.7 retrieval result
   // scores 0.7 base instead of the previous (0.7 + 0.5 + 0 + 0.5 + 0.5)/5 = 0.44.
+  // Base is the TRUST aggregate — how much to believe the source. Retrieval
+  // relevance is intentionally EXCLUDED here and applied multiplicatively as
+  // the relevance gate below ("trust × relevance"), so a trustworthy but
+  // off-topic hit can't inflate the score. provenance and consensus are
+  // always observed, so the trust set is never empty for a non-empty result.
+  const trustObserved = [
+    components.freshness,
+    components.provenance,
+    components.consensus,
+    components.signature,
+  ].filter((c) => c.observed);
+  const base =
+    trustObserved.length === 0
+      ? components.retrieval.observed
+        ? components.retrieval.value
+        : 0
+      : trustObserved.reduce((s, c) => s + c.value, 0) / trustObserved.length;
   const observed = [
     components.retrieval,
     components.freshness,
@@ -274,8 +344,6 @@ export const computeSatisfaction = (
     components.consensus,
     components.signature,
   ].filter((c) => c.observed);
-  const base =
-    observed.length === 0 ? 0 : observed.reduce((s, c) => s + c.value, 0) / observed.length;
 
   // Tally diagnostics
   const fresh_count = results.filter((r) => {
@@ -342,12 +410,24 @@ export const computeSatisfaction = (
     penaltyTotal += 0.1;
   }
   const penalty = Math.min(penaltyTotal, 0.4);
-  const score = clamp01(base - penalty);
+
+  // Relevance gate — damp the trust-heavy aggregate by how relevant the
+  // closest real hit actually is. Best (= smallest) real distance among the
+  // results; recall placeholders (distance 0) are excluded.
+  const distancedHits = results.filter((r) => r.distance > 0 && Number.isFinite(r.distance));
+  const bestDistance =
+    distancedHits.length === 0
+      ? undefined
+      : distancedHits.reduce((m, r) => (r.distance < m ? r.distance : m), Infinity);
+  const relGate = relevanceGate(bestDistance, opts?.coverageRatio);
+  const score = clamp01((base - penalty) * relGate);
 
   // Trace — each component's value, observability, and the weight it
   // carried in the aggregate (equal split across observed components,
   // 0 for unobserved). Order is stable for deterministic rendering.
-  const weight = observed.length === 0 ? 0 : 1 / observed.length;
+  // Trust components split the linear weight equally; retrieval carries 0
+  // linear weight because it enters multiplicatively as the relevance gate.
+  const trustWeight = trustObserved.length === 0 ? 0 : 1 / trustObserved.length;
   const trace: ComponentTrace[] = (
     [
       ['retrieval', components.retrieval],
@@ -360,7 +440,8 @@ export const computeSatisfaction = (
     name,
     value: Math.round(c.value * 100) / 100,
     observed: c.observed,
-    weight: c.observed ? Math.round(weight * 100) / 100 : 0,
+    weight:
+      name === 'retrieval' ? 0 : c.observed ? Math.round(trustWeight * 100) / 100 : 0,
   }));
 
   return {

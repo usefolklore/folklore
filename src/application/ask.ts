@@ -47,6 +47,7 @@ import {
   type EnrichedMatch,
   type SatisfactionScore,
 } from '../domain/peer-telemetry.js';
+import { extractQueryTerms } from '../domain/coverage.js';
 
 // ─────────────── result shape ─────────────
 
@@ -276,7 +277,22 @@ export const ask =
               seen.add(m.node_id);
               enrichedAll.push(m);
             }
-            const satisfaction = computeSatisfaction(enrichedAll);
+            // Lexical query-term coverage over the search hits' text — the
+            // relevance signal that separates a topically-adjacent near-miss
+            // (same domain, different terms) from a real answer. Fed into the
+            // satisfaction relevance gate. Undefined when there are no search
+            // hits (recall-only path) or the query has no extractable terms,
+            // so the gate falls back to embedding proximity alone.
+            const qTerms = extractQueryTerms(params.query);
+            const hitText = search_hits
+              .map((h) => `${h.label} ${h.summary ?? ''}`)
+              .join('\n')
+              .toLowerCase();
+            const coverageRatio =
+              qTerms.length === 0 || search_hits.length === 0
+                ? undefined
+                : qTerms.filter((t) => hitText.includes(t.toLowerCase())).length / qTerms.length;
+            const satisfaction = computeSatisfaction(enrichedAll, { coverageRatio });
             const shallowEvidence = search_hits.length === 0 && recallHits.length > 0;
             const contract = decideContract(satisfaction, {
               shallowEvidence,
