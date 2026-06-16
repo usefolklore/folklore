@@ -53,6 +53,7 @@ daemon + ops:
   jobs <sub>              background job queue — list | clear
   logs <sub>              daemon log inspection + export bundle
   metrics                 daemon counters/gauges/histograms snapshot (JSON)
+  shadow                  shadow-search calibration receipts summary (RFC-0003)
   cache-stats             L1/L2 query cache hit rates
   gc                      prune dead vectors + compact stores
   lint                    validate graph invariants

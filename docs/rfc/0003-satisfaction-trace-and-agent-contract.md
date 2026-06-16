@@ -128,11 +128,16 @@ interface CoverageMap {
 
 The honest framing matters: this measures term *presence*, not understanding. It is a transparent first cut standing in for the LLM-backed required-facts extraction that OQ#3 asks about. Computed only near a breakpoint so clear calls don't pay for it.
 
+### Shadow-search receipts (calibration)
+
+The thresholds are only defensible if we can measure how often a skip was wrong. Opt-in via `FOLKLORE_SHADOW_SEARCH=1`: every federated breakpoint decision is logged as a `ShadowReceipt` (decision, score, risk, would_shadow_search, result_count, coverage_ratio, missing_terms, `outcome: 'unlabelled'`) to a bounded local jsonl. `folklore shadow` aggregates them — skip rate, would-shadow rate, mean coverage, by-decision counts, and **BadSkipRate over labelled receipts only**. v1 deliberately does **not** infer the `outcome` label: a fabricated "bad skip" is worse than an honest "unlabelled". The auto-judge (run the search anyway, decide if peer data would have sufficed) is the open part of OQ#5 — the receipt log is the substrate it will train on.
+
 ## Reference implementation
 
 - Scorer + trace: `src/domain/peer-telemetry.ts` — `computeSatisfaction()`.
 - Contract: `src/domain/peer-telemetry.ts` — `decideContract()`, `CONTRACT_THRESHOLDS`, `classifyRisk()`.
 - Coverage map: `src/domain/coverage.ts` — `buildCoverageMap()`, `extractQueryTerms()`.
+- Shadow receipts: `src/domain/shadow-receipt.ts` + `src/infrastructure/shadow-receipt-store.ts`; report via `folklore shadow`.
 - Callers (deduped onto the contract): `src/application/ask.ts`, `src/application/peer-pull-telemetry.ts`.
 - Narrative reference: [`../p2p/satisfaction-scoring.md`](../p2p/satisfaction-scoring.md).
 
@@ -142,7 +147,7 @@ The honest framing matters: this measures term *presence*, not understanding. It
 2. **Task risk.** *(v1 shipped — see the Task-risk overlay above.)* A deterministic keyword classifier raises the breakpoint for elevated/high-risk queries. Still open: should the MCP host pass an authoritative task-risk signal instead of inferring it from query text, and should the tiers be learned rather than keyword-matched? Should users configure "never skip" workspaces or source types?
 3. **Coverage map.** *(v1 shipped — see the Coverage map above.)* A no-LLM query-term coverage map attaches at borderline decisions and scopes a constrained next search. Still open: should "required facts" be extracted semantically (LLM/NLP) rather than as query terms, and should covered/missing carry per-fact confidence? Should it also attach on the local `ask` path, not just federated peer-pull?
 4. **Conflict.** Should contradicting peer claims surface as a first-class field that forces verification, rather than being averaged into a single score?
-5. **Calibration.** What `would_shadow_search` sampling rate, and what BadSkipRate target, should gate any change to the default thresholds?
+5. **Calibration.** *(v1 substrate shipped — see Shadow-search receipts above.)* The receipt log + `folklore shadow` report exist; still open: the auto-judge that labels `outcome` (run the search anyway and decide if peer data sufficed), the sampling rate, and the BadSkipRate target that gates a threshold change (the doc proposes <2% for low-risk coding).
 
 ## Drawbacks & alternatives
 
