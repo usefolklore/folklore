@@ -458,7 +458,7 @@ export const decideContract = (
     score: s.score,
     reasons: s.reasons,
     penalties: s.penalties,
-    trace: s.components,
+    trace: s.components ?? [],
     would_shadow_search,
     summary,
   };

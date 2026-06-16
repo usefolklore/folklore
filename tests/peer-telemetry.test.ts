@@ -219,6 +219,13 @@ const sampleTelemetry: PeerPullTelemetry = {
     distinct_origins: 3,
     reasons: ['top hit very close'],
     penalties: [],
+    components: [
+      { name: 'retrieval', value: 0.82, observed: true, weight: 0.25 },
+      { name: 'freshness', value: 0.8, observed: true, weight: 0.25 },
+      { name: 'provenance', value: 1, observed: true, weight: 0.25 },
+      { name: 'consensus', value: 1, observed: true, weight: 0.25 },
+      { name: 'signature', value: 0, observed: false, weight: 0 },
+    ],
     observed_components: 4,
   },
   decision: 'verify_one_source',
@@ -226,18 +233,23 @@ const sampleTelemetry: PeerPullTelemetry = {
   emitted_at: '2026-04-29T12:00:00Z',
 };
 
-test('formatTelemetryBlock renders all six lines plus borders', () => {
+test('formatTelemetryBlock renders the stats lines plus the agent contract', () => {
   const out = formatTelemetryBlock(sampleTelemetry);
   const lines = out.split('\n');
-  assert.equal(lines.length, 8); // top + 6 + bottom (query/took/data/peers/fit/action)
+  // top + query/took/data/peers/fit/action + trace + why + shadow + bottom
+  // (no flags line — sampleTelemetry has no penalties).
   assert.match(lines[0], /^─+ folklore peer pull/);
   assert.match(lines[1], /query.*vector search sqlite/);
   assert.match(lines[2], /took.*820ms.*340ms local.*80ms merge/);
   assert.match(lines[3], /data.*4\.2 KB.*12 results.*3 unique sources/);
   assert.match(lines[4], /peers.*2\/4 responded.*6 alive.*1 timeout.*1 error/);
   assert.match(lines[5], /fit.*0\.78 satisfaction.*4 fresh.*1 stale.*0 unsigned/);
-  assert.match(lines[6], /action.*verify_one_source/);
-  assert.match(lines[7], /^─+$/);
+  assert.match(lines[6], /action.*verify_one_source.*verify one source/);
+  assert.ok(out.includes(' trace    '), 'has a component trace line');
+  assert.ok(out.includes(' why      '), 'has a reasons line');
+  assert.ok(out.includes(' shadow   '), 'verify_one_source advises a shadow pass');
+  assert.ok(!out.includes(' flags    '), 'no penalties → no flags line');
+  assert.match(lines[lines.length - 1], /^─+$/);
 });
 
 test('decision picker maps satisfaction.score to the right v1 action', () => {
