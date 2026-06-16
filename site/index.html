@@ -343,38 +343,31 @@
 
   @keyframes cur-blink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
 
-  /* ── mechanism carousel: one step in focus, auto-advancing, sticker-framed ── */
-  .mech{margin-top:clamp(14px,2.6vh,30px);max-width:100%}
-  .mech-stage{overflow:hidden;max-width:100%;border:3px solid var(--ink);background:var(--paper-2);box-shadow:10px 10px 0 var(--ink);
-    background-image:radial-gradient(rgba(29,24,19,.08) 1.4px,transparent 1.5px);background-size:22px 22px}
-  .mech-track{list-style:none;display:flex;margin:0;padding:0;width:100%;transition:transform .55s cubic-bezier(.16,1,.3,1)}
-  .mech-slide{flex:0 0 100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;
-    column-gap:clamp(18px,3vw,40px);row-gap:8px;align-items:center;padding:clamp(20px,3.4vh,40px) clamp(22px,4vw,56px)}
-  .mech-slide .mech-num{grid-row:1 / span 2;font-weight:900;font-style:italic;font-size:clamp(2.4rem,6vw,4rem);line-height:.8;align-self:start}
-  .mech-slide.s1 .mech-num{color:var(--pink)}.mech-slide.s2 .mech-num{color:var(--blue)}
-  .mech-slide.s3 .mech-num{color:var(--yellow)}.mech-slide.s4 .mech-num{color:var(--teal)}
-  .mech-diag{grid-column:1;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:center;gap:7px;align-self:center;justify-self:center}
-  /* place number above, diagram below in the left rail */
-  .mech-slide{grid-template-columns:96px minmax(0,1fr)}
-  .mech-slide .mech-num{grid-column:1;grid-row:1;text-align:center;justify-self:center}
-  .mech-slide .mech-diag{grid-column:1;grid-row:2}
-  .mech-slide h4{grid-column:2;grid-row:1;align-self:end;font-weight:800;font-size:clamp(1.3rem,2.6vw,2rem);line-height:1.04}
-  .mech-slide p{grid-column:2;grid-row:2;align-self:start;font-size:clamp(.95rem,1.3vw,1.15rem);font-weight:470;line-height:1.5;max-width:42ch;min-width:0;overflow-wrap:anywhere}
-  .mech-diag svg{width:clamp(64px,9vw,84px);height:auto;display:block}
-  .mech-tag{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  /* ── mechanism: the four steps as one connected pipeline, all in view ── */
+  .mech-flow{list-style:none;margin:clamp(16px,2.6vh,32px) 0 0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(14px,1.7vw,22px)}
+  .mstep{position:relative;display:flex;flex-direction:column;gap:11px;box-sizing:border-box;border:3px solid var(--ink);background:var(--paper-2);
+    padding:clamp(15px,1.6vw,20px);background-image:radial-gradient(rgba(29,24,19,.07) 1.4px,transparent 1.5px);background-size:20px 20px}
+  .mstep.s1{box-shadow:8px 8px 0 var(--pink)}.mstep.s2{box-shadow:8px 8px 0 var(--blue)}
+  .mstep.s3{box-shadow:8px 8px 0 var(--yellow)}.mstep.s4{box-shadow:8px 8px 0 var(--teal)}
+  .mstep-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .mstep-n{font-weight:900;font-style:italic;font-size:clamp(1.9rem,2.8vw,2.6rem);line-height:.8}
+  .mstep.s1 .mstep-n{color:var(--pink)}.mstep.s2 .mstep-n{color:var(--blue)}
+  .mstep.s3 .mstep-n{color:var(--yellow)}.mstep.s4 .mstep-n{color:var(--teal)}
+  .mstep-tag{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
     background:var(--paper);border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);padding:3px 7px;line-height:1.1;white-space:nowrap}
-  @media(max-width:620px){
-    .mech-slide{grid-template-columns:minmax(0,1fr);row-gap:10px;text-align:center;justify-items:center}
-    .mech-slide .mech-num,.mech-slide .mech-diag,.mech-slide h4,.mech-slide p{grid-column:1}
-    .mech-slide .mech-num{grid-row:1}.mech-slide .mech-diag{grid-row:2}.mech-slide h4{grid-row:3;align-self:auto}
-    .mech-slide p{grid-row:4;align-self:auto;max-width:100%}
-  }
-  .mech-dots{display:flex;gap:10px;justify-content:center;margin-top:16px}
-  .mech-dot{width:13px;height:13px;border:2.5px solid var(--ink);background:var(--paper);border-radius:50%;cursor:pointer;padding:0;transition:.18s}
-  .mech-dot:hover{background:var(--yellow)}
-  .mech-dot[aria-selected="true"]{background:var(--pink);box-shadow:2px 2px 0 var(--ink)}
-  .mech-dot:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-  @media(prefers-reduced-motion:reduce){.mech-track{transition:none}}
+  .mstep-diag{display:flex;align-items:center;min-height:64px}
+  .mstep-diag svg{width:clamp(56px,5vw,72px);height:auto;display:block}
+  .mstep h4{font-weight:800;font-size:clamp(1.1rem,1.5vw,1.35rem);line-height:1.06}
+  .mstep p{font-size:clamp(.86rem,1vw,.98rem);font-weight:470;line-height:1.46;color:var(--ink);margin:0}
+  /* sequence connector — arrow sitting in the gap toward the next step */
+  .mstep:not(:last-child)::after{content:"→";position:absolute;right:calc(-0.5 * clamp(14px,1.7vw,22px));top:50%;transform:translate(50%,-50%);
+    font-family:var(--mono);font-weight:700;font-size:18px;color:var(--ink);opacity:.5;z-index:2;pointer-events:none}
+  @media(max-width:900px){.mech-flow{grid-template-columns:repeat(2,1fr)}
+    /* 2×2: only the vertical hops (1→3, 2→4 sit side-by-side) read cleanly as down-arrows */
+    .mstep:not(:last-child)::after{content:"↓";right:auto;left:50%;top:auto;bottom:calc(-0.5 * clamp(14px,1.7vw,22px));transform:translate(-50%,50%)}
+    .mstep:nth-child(2)::after{content:none}}
+  @media(max-width:560px){.mech-flow{grid-template-columns:1fr}
+    .mstep:nth-child(2)::after{content:"↓"}}
 
   /* ── meme marquee: continuous right-to-left flow of all memes; full-bleed at every width ── */
   .meme-carousel{margin-top:clamp(28px,4vh,44px);overflow:hidden;width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);scrollbar-width:none;-ms-overflow-style:none}
@@ -649,91 +642,77 @@
   <div class="wrap">
     <div class="stamp rv">Chapter the Fourth — The Mechanism</div>
     <h2 class="rv" data-d="1"><span class="mis" data-text="a graph that earns the deny.">a graph that earns the <span class="em-blue">deny.</span></span></h2>
-    <div class="mech rv" data-d="1">
-      <div class="mech-stage" id="mech-stage" aria-live="off">
-        <ol class="mech-track" id="mech-track">
+    <ol class="mech-flow rv" data-d="1">
 
-          <li class="mech-slide s1" aria-roledescription="step" aria-label="Step 1 of 4: Intercept">
-            <div class="mech-num">i</div>
-            <div class="mech-diag" aria-hidden="true">
-              <svg viewBox="0 0 80 80" fill="none">
-                <!-- net catching an outbound WebSearch arrow -->
-                <path d="M10 40h40" stroke="#1d1813" stroke-width="3" stroke-linecap="round"/>
-                <path d="M44 32l8 8-8 8" stroke="#1d1813" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M56 18a18 18 0 0 1 0 44" stroke="#ff4f6d" stroke-width="3" stroke-linecap="round"/>
-                <path d="M56 26v28M50 30v20M62 30v20" stroke="#ff4f6d" stroke-width="2"/>
-                <circle cx="14" cy="40" r="4" fill="#1d1813"/>
-              </svg>
-              <span class="mech-tag">WebSearch</span>
-            </div>
-            <h4>Intercept</h4>
-            <p>A hook catches every WebSearch and WebFetch before it leaves. Local tools never touched.</p>
-          </li>
+      <li class="mstep s1">
+        <div class="mstep-head"><span class="mstep-n">i</span><span class="mstep-tag">WebSearch</span></div>
+        <div class="mstep-diag" aria-hidden="true">
+          <svg viewBox="0 0 80 80" fill="none">
+            <!-- net catching an outbound WebSearch arrow -->
+            <path d="M10 40h40" stroke="#1d1813" stroke-width="3" stroke-linecap="round"/>
+            <path d="M44 32l8 8-8 8" stroke="#1d1813" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M56 18a18 18 0 0 1 0 44" stroke="#ff4f6d" stroke-width="3" stroke-linecap="round"/>
+            <path d="M56 26v28M50 30v20M62 30v20" stroke="#ff4f6d" stroke-width="2"/>
+            <circle cx="14" cy="40" r="4" fill="#1d1813"/>
+          </svg>
+        </div>
+        <h4>Intercept</h4>
+        <p>A hook catches every WebSearch and WebFetch before it leaves. Local tools never touched.</p>
+      </li>
 
-          <li class="mech-slide s2" aria-roledescription="step" aria-label="Step 2 of 4: Ask the graph">
-            <div class="mech-num">ii</div>
-            <div class="mech-diag" aria-hidden="true">
-              <svg viewBox="0 0 80 80" fill="none">
-                <!-- magnifier over a 3-node cluster -->
-                <line x1="30" y1="34" x2="46" y2="30" stroke="#2b3a8c" stroke-width="2.4"/>
-                <line x1="30" y1="34" x2="40" y2="48" stroke="#2b3a8c" stroke-width="2.4"/>
-                <line x1="46" y1="30" x2="40" y2="48" stroke="#2b3a8c" stroke-width="2.4"/>
-                <circle cx="30" cy="34" r="5" fill="#2b3a8c"/>
-                <circle cx="46" cy="30" r="5" fill="#1fae8b"/>
-                <circle cx="40" cy="48" r="5" fill="#f5b921"/>
-                <circle cx="44" cy="40" r="17" stroke="#1d1813" stroke-width="3"/>
-                <path d="M56 52l12 12" stroke="#1d1813" stroke-width="4" stroke-linecap="round"/>
-              </svg>
-              <span class="mech-tag">your graph first</span>
-            </div>
-            <h4>Ask the graph</h4>
-            <p>Hybrid recall, cross-encoder rerank, graph PPR — your pages first, then the network's.</p>
-          </li>
+      <li class="mstep s2">
+        <div class="mstep-head"><span class="mstep-n">ii</span><span class="mstep-tag">your graph first</span></div>
+        <div class="mstep-diag" aria-hidden="true">
+          <svg viewBox="0 0 80 80" fill="none">
+            <!-- magnifier over a 3-node cluster -->
+            <line x1="30" y1="34" x2="46" y2="30" stroke="#2b3a8c" stroke-width="2.4"/>
+            <line x1="30" y1="34" x2="40" y2="48" stroke="#2b3a8c" stroke-width="2.4"/>
+            <line x1="46" y1="30" x2="40" y2="48" stroke="#2b3a8c" stroke-width="2.4"/>
+            <circle cx="30" cy="34" r="5" fill="#2b3a8c"/>
+            <circle cx="46" cy="30" r="5" fill="#1fae8b"/>
+            <circle cx="40" cy="48" r="5" fill="#f5b921"/>
+            <circle cx="44" cy="40" r="17" stroke="#1d1813" stroke-width="3"/>
+            <path d="M56 52l12 12" stroke="#1d1813" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h4>Ask the graph</h4>
+        <p>Hybrid recall, cross-encoder rerank, graph PPR — your pages first, then the network's.</p>
+      </li>
 
-          <li class="mech-slide s3" aria-roledescription="step" aria-label="Step 3 of 4: Deny, or pass">
-            <div class="mech-num">iii</div>
-            <div class="mech-diag" aria-hidden="true">
-              <svg viewBox="0 0 80 80" fill="none">
-                <!-- gate: served-from-memory check vs branch to web -->
-                <path d="M40 14v18" stroke="#1d1813" stroke-width="3" stroke-linecap="round"/>
-                <circle cx="40" cy="36" r="6" fill="#f5b921" stroke="#1d1813" stroke-width="2.5"/>
-                <path d="M34 50l6 6 8-12" stroke="#1fae8b" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M46 38l16 8" stroke="#1d1813" stroke-width="2" stroke-dasharray="3 3"/>
-                <text x="64" y="52" font-family="var(--mono)" font-size="9" font-weight="700" fill="#ff4f6d">web</text>
-              </svg>
-              <span class="mech-tag">≥ 0.85 · 2 hits</span>
-            </div>
-            <h4>Deny, or pass</h4>
-            <p>Score 0.85 with two hits or more, served from memory. Fall short, the fetch proceeds.</p>
-          </li>
+      <li class="mstep s3">
+        <div class="mstep-head"><span class="mstep-n">iii</span><span class="mstep-tag">≥ 0.85 · 2 hits</span></div>
+        <div class="mstep-diag" aria-hidden="true">
+          <svg viewBox="0 0 80 80" fill="none">
+            <!-- gate: served-from-memory check vs branch to web -->
+            <path d="M40 14v18" stroke="#1d1813" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="40" cy="36" r="6" fill="#f5b921" stroke="#1d1813" stroke-width="2.5"/>
+            <path d="M34 50l6 6 8-12" stroke="#1fae8b" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M46 38l16 8" stroke="#1d1813" stroke-width="2" stroke-dasharray="3 3"/>
+            <text x="64" y="52" font-family="var(--mono)" font-size="9" font-weight="700" fill="#ff4f6d">web</text>
+          </svg>
+        </div>
+        <h4>Deny, or pass</h4>
+        <p>Score 0.85 with two hits or more, served from memory. Fall short, the fetch proceeds.</p>
+      </li>
 
-          <li class="mech-slide s4" aria-roledescription="step" aria-label="Step 4 of 4: Set it down">
-            <div class="mech-num">iv</div>
-            <div class="mech-diag" aria-hidden="true">
-              <svg viewBox="0 0 80 80" fill="none">
-                <!-- a page filed & signed: signature squiggle + check -->
-                <rect x="22" y="14" width="36" height="46" rx="3" fill="#fff" stroke="#1d1813" stroke-width="3"/>
-                <line x1="29" y1="26" x2="48" y2="26" stroke="#1d1813" stroke-width="2"/>
-                <line x1="29" y1="34" x2="44" y2="34" stroke="#1d1813" stroke-width="2"/>
-                <path d="M29 46c4-5 7 4 10-1s6 2 10-2" stroke="#1fae8b" stroke-width="2.6" stroke-linecap="round"/>
-                <circle cx="56" cy="54" r="11" fill="#1fae8b" stroke="#1d1813" stroke-width="2.5"/>
-                <path d="M51 54l3.4 3.4L62 50" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <span class="mech-tag">signed · filed</span>
-            </div>
-            <h4>Set it down</h4>
-            <p>Whatever the web returns is filed and signed, so the next reader pays nothing.</p>
-          </li>
+      <li class="mstep s4">
+        <div class="mstep-head"><span class="mstep-n">iv</span><span class="mstep-tag">signed · filed</span></div>
+        <div class="mstep-diag" aria-hidden="true">
+          <svg viewBox="0 0 80 80" fill="none">
+            <!-- a page filed & signed: signature squiggle + check -->
+            <rect x="22" y="14" width="36" height="46" rx="3" fill="#fff" stroke="#1d1813" stroke-width="3"/>
+            <line x1="29" y1="26" x2="48" y2="26" stroke="#1d1813" stroke-width="2"/>
+            <line x1="29" y1="34" x2="44" y2="34" stroke="#1d1813" stroke-width="2"/>
+            <path d="M29 46c4-5 7 4 10-1s6 2 10-2" stroke="#1fae8b" stroke-width="2.6" stroke-linecap="round"/>
+            <circle cx="56" cy="54" r="11" fill="#1fae8b" stroke="#1d1813" stroke-width="2.5"/>
+            <path d="M51 54l3.4 3.4L62 50" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h4>Set it down</h4>
+        <p>Whatever the web returns is filed and signed, so the next reader pays nothing.</p>
+      </li>
 
-        </ol>
-      </div>
-      <div class="mech-dots" id="mech-dots" role="tablist" aria-label="Mechanism steps">
-        <button class="mech-dot" data-i="0" role="tab" aria-label="Step 1 — Intercept"></button>
-        <button class="mech-dot" data-i="1" role="tab" aria-label="Step 2 — Ask the graph"></button>
-        <button class="mech-dot" data-i="2" role="tab" aria-label="Step 3 — Deny, or pass"></button>
-        <button class="mech-dot" data-i="3" role="tab" aria-label="Step 4 — Set it down"></button>
-      </div>
-    </div>
+    </ol>
   </div>
 </section>
 
@@ -1128,36 +1107,6 @@ function initMemeCarousel(){
   (mq.addEventListener?mq.addEventListener('change',apply):mq.addListener(apply));
 })();
 
-/* ── mechanism carousel: auto-advancing step focus, dots, hover-pause ── */
-(function(){
-  const stage=document.getElementById('mech-stage');
-  const track=document.getElementById('mech-track');
-  const dotsWrap=document.getElementById('mech-dots');
-  if(!stage||!track||!dotsWrap)return;
-  const dots=Array.prototype.slice.call(dotsWrap.querySelectorAll('.mech-dot'));
-  const n=track.children.length;
-  const reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-  let i=0,timer=null;
-  const DUR=1800;
-  function go(k){
-    i=(k+n)%n;
-    track.style.transform='translateX(-'+(i*100)+'%)';
-    dots.forEach((d,j)=>d.setAttribute('aria-selected',j===i?'true':'false'));
-  }
-  function start(){ if(reduceMotion||timer)return; timer=setInterval(()=>go(i+1),DUR); }
-  function stop(){ if(timer){clearInterval(timer);timer=null;} }
-  dots.forEach((d)=>d.addEventListener('click',()=>{ stop(); go(+d.dataset.i); start(); }));
-  stage.addEventListener('mouseenter',stop);
-  stage.addEventListener('mouseleave',start);
-  dotsWrap.addEventListener('mouseenter',stop);
-  dotsWrap.addEventListener('mouseleave',start);
-  go(0);
-  if(reduceMotion)return;            // reduced motion: show first slide, no auto-advance
-  // only run while the section is on/near screen
-  if('IntersectionObserver' in window){
-    new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting?start():stop()),{threshold:.25}).observe(stage);
-  }else{ start(); }
-})();
 </script>
 </body>
 </html>
