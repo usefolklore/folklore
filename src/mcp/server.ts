@@ -53,6 +53,8 @@ import {
   ageInDays,
   type EnrichedMatch,
 } from '../domain/peer-telemetry.js';
+import { buildShadowReceipt } from '../domain/shadow-receipt.js';
+import { appendShadowReceipt } from '../infrastructure/shadow-receipt-store.js';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../infrastructure/peer-transport.js';
 import { loadPeers } from '../infrastructure/peer-store.js';
 import { loadConfig } from '../infrastructure/config-loader.js';
@@ -356,6 +358,13 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
         const telemetry = graphRes.isOk()
           ? buildPeerPullTelemetry({ query, result, graph: graphRes.value })
           : null;
+
+        // Shadow-search calibration (RFC-0003 OQ#5) — opt-in via
+        // FOLKLORE_SHADOW_SEARCH=1. Log the breakpoint decision + coverage
+        // to a bounded local jsonl for later labelling; never blocks.
+        if (telemetry && process.env.FOLKLORE_SHADOW_SEARCH === '1') {
+          appendShadowReceipt(folkloreHome(), buildShadowReceipt(telemetry));
+        }
 
         return okJson({
           query,

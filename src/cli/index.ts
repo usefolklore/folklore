@@ -49,6 +49,7 @@ import { recallCmd } from './commands/recall.js';
 import { entity } from './commands/entity.js';
 import { evalCmd } from './commands/eval.js';
 import { metricsCmd } from './commands/metrics.js';
+import { shadowCmd } from './commands/shadow.js';
 import { login } from './commands/login.js';
 import { peersRep } from './commands/peers-rep.js';
 import { swarm } from './commands/swarm.js';
@@ -104,6 +105,7 @@ const commands: Record<string, CommandFn> = {
   entity,
   eval: evalCmd,
   metrics: metricsCmd,
+  shadow: shadowCmd,
   login,
   swarm,
   gc,
