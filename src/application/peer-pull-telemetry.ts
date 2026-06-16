@@ -24,11 +24,10 @@ import type { Graph } from '../domain/graph.js';
 import { getNode } from '../domain/graph.js';
 import {
   computeSatisfaction,
+  decideContract,
   ageInDays,
-  type AgentDecision,
   type EnrichedMatch,
   type PeerPullTelemetry,
-  type SatisfactionScore,
 } from '../domain/peer-telemetry.js';
 
 /**
@@ -109,21 +108,8 @@ export const buildPeerPullTelemetry = (
     peers_timed_out: result.peers_timed_out,
     peers_errored: result.peers_errored,
     satisfaction,
-    decision: pickDecision(satisfaction),
+    decision: decideContract(satisfaction).decision,
     coverage_map: null,
     emitted_at: new Date(now).toISOString(),
   };
-};
-
-/**
- * v1 decision picker — pure threshold over satisfaction.score.
- * v2 will overlay task-risk + coverage-map signals; this function
- * exists so v1 ships a stable `decision` field that v2 can refine
- * without breaking the agent surface.
- */
-const pickDecision = (s: SatisfactionScore): AgentDecision => {
-  if (s.score >= 0.85) return 'use_memory';
-  if (s.score >= 0.65) return 'verify_one_source';
-  if (s.score >= 0.40) return 'search_required';
-  return 'ask_user';
 };
