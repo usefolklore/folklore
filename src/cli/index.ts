@@ -56,6 +56,7 @@ import { swarm } from './commands/swarm.js';
 import { gc } from './commands/gc.js';
 import { bench } from './commands/bench.js';
 import { migrateCommand } from './commands/migrate.js';
+import { seed } from './commands/seed.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -110,6 +111,7 @@ const commands: Record<string, CommandFn> = {
   swarm,
   gc,
   bench,
+  seed,
   'migrate': migrateCommand,
   // Plural-form alias: `folklore peers rep …` works as well as
   // `folklore peer rep …`. The subcommand dispatcher handles both.

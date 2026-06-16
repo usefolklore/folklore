@@ -14,6 +14,7 @@ usage:
 
 getting started:
   onboard [--yes]         first-run installer — daemon, hooks, identity
+  seed [--force|--dry-run]  seed a fresh graph with a curated concept corpus (warm cold-start)
   doctor [--fix]          check runtime prerequisites (and bootstrap with --fix)
   login                   link a verified GitHub identity to your DID (OAuth)
   claude install|uninstall  make Claude Code use the graph automatically (hook + CLAUDE.md)
