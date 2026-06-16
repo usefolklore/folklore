@@ -7,7 +7,16 @@
  * Pure function. Deterministic. No I/O.
  */
 
-import type { PeerPullTelemetry } from '../domain/peer-telemetry.js';
+import { decideContract, type PeerPullTelemetry } from '../domain/peer-telemetry.js';
+
+/** Single-letter codes for the trace line, in scorer order. */
+const TRACE_CODE: Record<string, string> = {
+  retrieval: 'r',
+  freshness: 'f',
+  provenance: 'p',
+  consensus: 'c',
+  signature: 's',
+};
 
 const HR_TOP    = '─── folklore peer pull ─────────────────────────────────';
 const HR_BOTTOM = '─────────────────────────────────────────────────────────────';
@@ -40,12 +49,30 @@ export const formatTelemetryBlock = (t: PeerPullTelemetry): string => {
 
   const s = t.satisfaction;
   const fitLine = ` fit      ${s.score.toFixed(2)} satisfaction · ${s.fresh_count} fresh · ${s.stale_count} stale · ${s.unsigned_count} unsigned`;
-  // Decision line is the explicit agent contract (v1 placeholder for
-  // the protocol-quality breakpoint shape — see
-  // docs/PROTOCOL-QUALITY-QUESTIONS.md). Stable surface across v1→v2.
-  const actionLine = ` action   ${t.decision}`;
 
-  return [HR_TOP, queryLine, tookLine, dataLine, peersLine, fitLine, actionLine, HR_BOTTOM].join('\n');
+  // Agent contract (RFC-0003) — the explicit breakpoint decision plus
+  // the reasoning that produced it, so a deny is traceable. Derived from
+  // the satisfaction on the record; the canonical explanation surface
+  // across hook / MCP / CLI.
+  const c = decideContract(s);
+  const actionLine = ` action   ${c.decision} — ${c.recommended_action}`;
+
+  // Trace: observed components only, short codes (keeps the line < 80).
+  const traceCells = c.trace
+    .filter((row) => row.observed)
+    .map((row) => `${TRACE_CODE[row.name] ?? row.name} ${row.value.toFixed(2)}`);
+  const traceLine = traceCells.length > 0 ? ` trace    ${traceCells.join(' · ')}` : null;
+
+  // Why / flags — bounded to one line each so the block stays compact.
+  const whyLine = s.reasons.length > 0 ? ` why      ${truncQuery(s.reasons.join(' · '), 66)}` : null;
+  const flagLine = s.penalties.length > 0 ? ` flags    ${truncQuery(s.penalties.join(' · '), 66)}` : null;
+  const shadowLine = c.would_shadow_search ? ` shadow   a verification pass is still advised` : null;
+
+  return [
+    HR_TOP, queryLine, tookLine, dataLine, peersLine,
+    fitLine, actionLine, traceLine, whyLine, flagLine, shadowLine,
+    HR_BOTTOM,
+  ].filter((l): l is string => l !== null).join('\n');
 };
 
 /**
