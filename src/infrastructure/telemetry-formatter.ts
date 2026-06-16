@@ -7,7 +7,7 @@
  * Pure function. Deterministic. No I/O.
  */
 
-import { decideContract, type PeerPullTelemetry } from '../domain/peer-telemetry.js';
+import { decideContract, classifyRisk, type PeerPullTelemetry } from '../domain/peer-telemetry.js';
 
 /** Single-letter codes for the trace line, in scorer order. */
 const TRACE_CODE: Record<string, string> = {
@@ -54,8 +54,9 @@ export const formatTelemetryBlock = (t: PeerPullTelemetry): string => {
   // the reasoning that produced it, so a deny is traceable. Derived from
   // the satisfaction on the record; the canonical explanation surface
   // across hook / MCP / CLI.
-  const c = decideContract(s);
-  const actionLine = ` action   ${c.decision} — ${c.recommended_action}`;
+  const c = decideContract(s, { risk: classifyRisk(t.query) });
+  const riskTag = c.risk === 'low' ? '' : ` [${c.risk} risk]`;
+  const actionLine = ` action   ${c.decision} — ${c.recommended_action}${riskTag}`;
 
   // Trace: observed components only, short codes (keeps the line < 80).
   const traceCells = c.trace

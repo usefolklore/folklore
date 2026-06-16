@@ -367,6 +367,35 @@ export const computeSatisfaction = (
 // ─────────────── agent contract (RFC-0003) ──
 
 /**
+ * Task risk tier — the same satisfaction score should not authorise the
+ * same skip everywhere (RFC-0003 OQ#2, the doc's "Breakpoints By Risk"
+ * table). Higher risk raises the breakpoint: peer/cached memory is
+ * treated as context, not as a final answer.
+ *
+ * - `low`      : routine coding/recall — skip search at a high score.
+ * - `elevated` : version/dependency/upgrade work — verify a source even
+ *                at a high score (freshness matters, drift is silent).
+ * - `high`     : security, auth/crypto, medical, legal, financial — never
+ *                skip on memory alone; a live/primary source is required.
+ */
+export type TaskRisk = 'low' | 'elevated' | 'high';
+
+const HIGH_RISK = /\b(securit|vulnerab|\bcve\b|exploit|auth|oauth|password|secret|token|crypto|encrypt|tls|ssl|medical|health|dosage|symptom|legal|lawsuit|liabilit|compliance|gdpr|hipaa|financ|tax|invest|payment|kyc|aml)/i;
+const ELEVATED_RISK = /\b(upgrade|migrat|version|dependenc|deprecat|breaking change|bump|lockfile|release note|patch|rollback)/i;
+
+/**
+ * Classify a query's task risk from its text. Deterministic keyword
+ * heuristic — no LLM — so a denial's risk tier is reproducible and
+ * argued-about, matching the rest of the transparent scorer. High beats
+ * elevated beats low.
+ */
+export const classifyRisk = (query: string): TaskRisk => {
+  if (HIGH_RISK.test(query)) return 'high';
+  if (ELEVATED_RISK.test(query)) return 'elevated';
+  return 'low';
+};
+
+/**
  * The explicit decision contract handed to the agent for every
  * breakpoint — the protocol's answer to "context is not evidence."
  * Instead of returning top-k chunks, Folklore returns a recommendation
@@ -394,6 +423,8 @@ export interface AgentContract {
    * for every escalating decision — the doc's bad-skip instrumentation.
    */
   readonly would_shadow_search: boolean;
+  /** The task-risk tier that shaped the decision (default `low`). */
+  readonly risk: TaskRisk;
   /** One-line human contract: what was found, how fresh, the call. */
   readonly summary: string;
 }
@@ -430,8 +461,9 @@ const ACTION_TEXT: Record<AgentDecision, string> = {
  */
 export const decideContract = (
   s: SatisfactionScore,
-  opts?: { readonly shallowEvidence?: boolean },
+  opts?: { readonly shallowEvidence?: boolean; readonly risk?: TaskRisk },
 ): AgentContract => {
+  const risk: TaskRisk = opts?.risk ?? 'low';
   const shallow = (opts?.shallowEvidence ?? false) || s.observed_components < 4;
   let decision: AgentDecision;
   if (s.score >= CONTRACT_THRESHOLDS.use_memory) {
@@ -444,22 +476,38 @@ export const decideContract = (
     decision = 'ask_user';
   }
 
+  // Task-risk overlay (RFC-0003 OQ#2). The score is necessary but not
+  // sufficient at higher risk: raise the breakpoint so memory can't be
+  // the final word where being wrong is expensive.
+  const reasons = [...s.reasons];
+  if (risk === 'elevated' && decision === 'use_memory') {
+    decision = 'verify_one_source';
+    reasons.push('elevated-risk task — verifying a source despite a high score');
+  } else if (risk === 'high' && (decision === 'use_memory' || decision === 'verify_one_source')) {
+    // High-risk: peer/cached memory is context only — require a live or
+    // primary source. Never silently skip on memory alone.
+    decision = 'search_required';
+    reasons.push('high-risk task — memory is context only, a fresh source is required');
+  }
+
   const would_shadow_search = decision !== 'use_memory';
   const found =
     s.distinct_origins > 0
       ? `${s.distinct_origins} origin${s.distinct_origins === 1 ? '' : 's'}, ${s.fresh_count} fresh`
       : 'no evidence';
-  const lead = s.reasons[0] ?? (s.penalties[0] ? `held back: ${s.penalties[0]}` : 'thin evidence');
-  const summary = `${found} · score ${s.score.toFixed(2)} · ${lead} → ${ACTION_TEXT[decision]}`;
+  const lead = reasons[0] ?? (s.penalties[0] ? `held back: ${s.penalties[0]}` : 'thin evidence');
+  const riskTag = risk === 'low' ? '' : `[${risk} risk] `;
+  const summary = `${riskTag}${found} · score ${s.score.toFixed(2)} · ${lead} → ${ACTION_TEXT[decision]}`;
 
   return {
     decision,
     recommended_action: ACTION_TEXT[decision],
     score: s.score,
-    reasons: s.reasons,
+    reasons,
     penalties: s.penalties,
     trace: s.components ?? [],
     would_shadow_search,
+    risk,
     summary,
   };
 };
