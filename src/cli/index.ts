@@ -58,6 +58,7 @@ import { bench } from './commands/bench.js';
 import { migrateCommand } from './commands/migrate.js';
 import { seed } from './commands/seed.js';
 import { pruneVectors } from './commands/prune-vectors.js';
+import { weights } from './commands/weights.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -114,6 +115,7 @@ const commands: Record<string, CommandFn> = {
   bench,
   seed,
   'prune-vectors': pruneVectors,
+  weights,
   'migrate': migrateCommand,
   // Plural-form alias: `folklore peers rep …` works as well as
   // `folklore peer rep …`. The subcommand dispatcher handles both.

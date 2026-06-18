@@ -55,6 +55,7 @@ daemon + ops:
   logs <sub>              daemon log inspection + export bundle
   metrics                 daemon counters/gauges/histograms snapshot (JSON)
   shadow                  shadow-search calibration receipts summary (RFC-0003)
+  weights                 learned satisfaction-component weights report (RFC-0003)
   cache-stats             L1/L2 query cache hit rates
   gc                      auto-forget node retention (session/synthesis/decision tiers)
   prune-vectors           drop orphaned vectors (vec_meta rows absent from graph.json)
