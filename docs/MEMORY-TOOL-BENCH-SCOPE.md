@@ -187,6 +187,21 @@ and/or a server folklore does not. Two honest ways to handle it:
 
 ---
 
+- **Axis D — latency + cost: MEASURED.** `bench/bench-memtool-latency.py`.
+  **D1 retrieval latency (matched MiniLM):** LangChain in-proc **p50 8.57 ms**, cosine
+  in-proc **p50 10.95 ms**, folklore CLI end-to-end **p50 811 ms**. The 811 ms is **Node
+  process boot via the CLI, NOT retrieval and NOT folklore's production path** — its
+  retrieval CORE is the documented **11 ms** median (≈ cosine's 10.95), and production
+  calls go through MCP/daemon-IPC (no per-call boot). Honest framing: at the retrieval
+  core, latency is parity (all MiniLM-bound); compare cores not transports.
+  **D2 write cost (structural):** folklore / LangChain / cosine writes = a free local
+  embed (CPU ms, no LLM, no key); **mem0 / Letta run an LLM extraction PER WRITE**
+  (tokens / GPU-seconds) — a real cost that never shows in retrieval latency but
+  dominates ingest at scale, and is borne only by the LLM-memory tools.
+  **D3 paid web/API trips saved (derived from measured hit-rates):** single-user cache
+  ~53% of repeat/paraphrase trips saved; folklore federated @64 peers **~97%** vs the
+  silo tools flat **~31%**. The cost win compounds with federation.
+
 ## Verdict (P0–P3 complete)
 
 On the axes that matter, honestly measured/structural:
