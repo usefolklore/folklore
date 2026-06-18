@@ -466,6 +466,24 @@ test('relevance gate: vec_distance overrides a rerank-rewritten ranking distance
   );
 });
 
+test('freshness gate: an ancient hit scores well below a fresh one at equal trust+relevance', () => {
+  const fresh = computeSatisfaction([mk({ age_days: 0, distance: 0.3 })]);
+  const ancient = computeSatisfaction([mk({ age_days: 90, distance: 0.3 })]);
+  assert.ok(
+    fresh.score > ancient.score + 0.15,
+    `age must gate multiplicatively: fresh ${fresh.score} vs ancient ${ancient.score}`,
+  );
+});
+
+test('freshness gate: unknown age is a no-op (recall / no-timestamp path unaffected)', () => {
+  const known = computeSatisfaction([mk({ age_days: 0, distance: 0.3 })]);
+  const unknown = computeSatisfaction([mk({ age_days: undefined, distance: 0.3 })]);
+  assert.ok(
+    Math.abs(known.score - unknown.score) < 0.02,
+    `no age → no freshness damping: ${known.score} vs ${unknown.score}`,
+  );
+});
+
 test('relevance gate: falls back to distance when vec_distance is absent (recall path)', () => {
   // No vec_distance (recall / peer hits) → behaviour is unchanged: the gate
   // reads `distance` exactly as before.
