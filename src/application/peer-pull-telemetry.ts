@@ -101,7 +101,10 @@ export const buildPeerPullTelemetry = (
   }
 
   const satisfaction = computeSatisfaction(enriched);
-  const contract = decideContract(satisfaction, { risk: classifyRisk(query) });
+  const contract = decideContract(satisfaction, {
+    risk: classifyRisk(query),
+    energyGate: process.env.FOLKLORE_ENERGY_GATE === '1',
+  });
   // Coverage map only at borderline decisions — where the extra signal
   // can scope a constrained next search. Clear calls don't pay for it.
   const borderline =

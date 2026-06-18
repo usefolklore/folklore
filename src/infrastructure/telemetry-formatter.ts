@@ -54,7 +54,10 @@ export const formatTelemetryBlock = (t: PeerPullTelemetry): string => {
   // the reasoning that produced it, so a deny is traceable. Derived from
   // the satisfaction on the record; the canonical explanation surface
   // across hook / MCP / CLI.
-  const c = decideContract(s, { risk: classifyRisk(t.query) });
+  const c = decideContract(s, {
+    risk: classifyRisk(t.query),
+    energyGate: process.env.FOLKLORE_ENERGY_GATE === '1',
+  });
   const riskTag = c.risk === 'low' ? '' : ` [${c.risk} risk]`;
   const actionLine = ` action   ${c.decision} — ${c.recommended_action}${riskTag}`;
 

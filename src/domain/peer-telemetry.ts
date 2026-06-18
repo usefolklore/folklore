@@ -10,6 +10,7 @@
  */
 
 import type { CoverageMap } from './coverage.js';
+import { energyGate, type EnergyGateVerdict, type EnergyGateParams } from './energy-gate.js';
 
 // ─────────────── records ───────────────────
 
@@ -101,6 +102,13 @@ export interface SatisfactionScore {
    * carve-out and signature is unobservable on a stand-alone node).
    */
   readonly observed_components: number;
+  /**
+   * Energy-based admission verdict over the hits' embedding similarities
+   * (docs/research/energy-based-inference.md §3). Always computed; only
+   * consulted by `decideContract` when the energy gate is enabled. Absent
+   * when there are no real-distance hits (recall-only path).
+   */
+  readonly energy?: EnergyGateVerdict;
 }
 
 /**
@@ -336,7 +344,7 @@ const relevanceGate = (
 
 export const computeSatisfaction = (
   results: readonly EnrichedMatch[],
-  opts?: { readonly coverageRatio?: number },
+  opts?: { readonly coverageRatio?: number; readonly energy?: EnergyGateParams },
 ): SatisfactionScore => {
   const reasons: string[] = [];
   const penalties: string[] = [];
@@ -454,6 +462,17 @@ export const computeSatisfaction = (
   const relGate = relevanceGate(bestDistance, opts?.coverageRatio);
   const score = clamp01((base - penalty) * relGate);
 
+  // Energy-based admission verdict over the real-distance hits' similarities
+  // (sim = 1 − embedding distance). Always computed; decideContract consults
+  // it only when the energy gate is enabled. Absent on the recall-only path.
+  const energy: EnergyGateVerdict | undefined =
+    distancedHits.length === 0
+      ? undefined
+      : energyGate(
+          distancedHits.map((r) => 1 - relevanceDistanceOf(r)),
+          opts?.energy,
+        );
+
   // Trace — each component's value, observability, and the weight it
   // carried in the aggregate (equal split across observed components,
   // 0 for unobserved). Order is stable for deterministic rendering.
@@ -478,6 +497,7 @@ export const computeSatisfaction = (
 
   return {
     score: Math.round(score * 100) / 100,
+    energy,
     fresh_count,
     stale_count,
     unsigned_count,
@@ -796,12 +816,27 @@ const ACTION_TEXT: Record<AgentDecision, string> = {
  */
 export const decideContract = (
   s: SatisfactionScore,
-  opts?: { readonly shallowEvidence?: boolean; readonly risk?: TaskRisk },
+  opts?: {
+    readonly shallowEvidence?: boolean;
+    readonly risk?: TaskRisk;
+    /**
+     * Use the energy-based admission verdict (energy-gate.ts) for the
+     * use_memory breakpoint instead of `score ≥ 0.85`. Default false →
+     * the score-threshold gate is unchanged. Falls back to the score
+     * threshold when no energy verdict is present (recall-only path).
+     */
+    readonly energyGate?: boolean;
+  },
 ): AgentContract => {
   const risk: TaskRisk = opts?.risk ?? 'low';
   const shallow = (opts?.shallowEvidence ?? false) || s.observed_components < 4;
+  // The use_memory breakpoint: the energy gate (when enabled and a verdict is
+  // present) replaces the unreachable 0.85 score threshold; lower tiers still
+  // use the score so escalation behaviour is preserved.
+  const useMemoryAdmit =
+    opts?.energyGate && s.energy ? s.energy.admit : s.score >= CONTRACT_THRESHOLDS.use_memory;
   let decision: AgentDecision;
-  if (s.score >= CONTRACT_THRESHOLDS.use_memory) {
+  if (useMemoryAdmit) {
     decision = shallow ? 'verify_one_source' : 'use_memory';
   } else if (s.score >= CONTRACT_THRESHOLDS.verify_one_source) {
     decision = 'verify_one_source';
