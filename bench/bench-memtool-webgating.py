@@ -284,11 +284,71 @@ def at_budgets(curve):
     return out
 
 
+def _stat(xs):
+    xs=[x for x in xs if x is not None]
+    if not xs: return None
+    return {"min":round(min(xs),4),"mean":round(sum(xs)/len(xs),4),"max":round(max(xs),4),"runs":len(xs)}
+
+
+def run_variance(tools, repeats):
+    """Re-run each tool over `repeats` varied-seed streams and aggregate. For
+    deterministic tools (cosine/langchain) this confirms stream-stability; for
+    mem0 (LLM-mediated writes) it characterizes the run-to-run nondeterminism
+    honestly instead of reporting one cherry-picked number."""
+    agg={}
+    for key in tools:
+        cls=ADAPTERS.get(key)
+        if not cls: agg[key]={"status":"unknown adapter"}; continue
+        ad=cls()
+        if not ad.available(): agg[key]={"status":"unavailable — skipped","kind":ad.kind}; continue
+        fb05=[]; corr_at_low=[]
+        for i in range(repeats):
+            stream=build_stream(seed=7+i)
+            try:
+                sw=sweep_tool(ad,stream); b=at_budgets(sw["curve"])
+                pt=b.get("0.05"); fb05.append(pt["fallback_rate"] if pt else None)
+                low=min(sw["curve"],key=lambda p:p["tau"])
+                corr_at_low.append(low["correct_serve_rate"])
+            except Exception as e:
+                agg[key]={"status":f"error: {e}","kind":ad.kind}; fb05=None; break
+        if fb05 is None: continue
+        agg[key]={"kind":ad.kind,"name":ad.name,
+                  "fallback_at_FA<=0.05":_stat(fb05),
+                  "correct_serve_at_low_tau":_stat(corr_at_low)}
+    return agg
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--tools",default="cosine,langchain,mem0,folklore")
+    ap.add_argument("--repeats",type=int,default=1)
     ap.add_argument("--json",action="store_true")
     a=ap.parse_args()
+    tools=[t.strip() for t in a.tools.split(",") if t.strip()]
+
+    if a.repeats>1:
+        agg=run_variance(tools,a.repeats)
+        out={"benchmark":"memory-tools","phase":"P1-variance","axis":"web_gating",
+             "embedder":EMBED_MODEL,"repeats":a.repeats,
+             "metric":"fallback@FA<=0.05 and correct-serve@low-tau, aggregated over varied-seed runs",
+             "note":"Deterministic tools (cosine/langchain) should show min==max. mem0 spread = "
+                    "intrinsic LLM-write nondeterminism. No single number is published for a tool "
+                    "whose min!=max — the range IS the honest result.","results":agg}
+        outdir=Path.home()/".folklore"/"bench"/"memory-tools"; outdir.mkdir(parents=True,exist_ok=True)
+        (outdir/"p1-variance.json").write_text(json.dumps(out,indent=2)+"\n")
+        if a.json: print(json.dumps(out,indent=2)); return
+        print(f"\nMemory-Tool Benchmark — P1 web-gating VARIANCE ({a.repeats} varied-seed runs)\n")
+        print(f"  {'tool':<22} {'fallback@FA<=0.05 (min/mean/max)':<34} correct-serve@low-tau")
+        for key,r in agg.items():
+            if "fallback_at_FA<=0.05" in r and r["fallback_at_FA<=0.05"]:
+                s=r["fallback_at_FA<=0.05"]; c=r["correct_serve_at_low_tau"]
+                print(f"  {r['name']:<22} {s['min']}/{s['mean']}/{s['max']:<10}            {c['min']}–{c['max']}")
+            else:
+                print(f"  {key:<22} {r.get('status','-')}")
+        print(f"\n  deterministic tools: min==max. mem0 spread = LLM-write nondeterminism (honest range).")
+        print(f"  snapshot -> {outdir/'p1-variance.json'}\n")
+        return
+
     stream=build_stream(); distinct=len(NEEDS); floor=round(distinct/len(stream),4)
     out={"benchmark":"memory-tools","phase":"P1","axis":"web_gating",
          "metric":"fallback-rate at matched false-accept (swept threshold)",

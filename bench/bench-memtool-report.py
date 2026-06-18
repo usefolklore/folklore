@@ -101,15 +101,16 @@ def main():
           "gating runs on a large populated graph in production. The decisive, *valid* comparisons "
           "are P2 (provenance) and P3 (federation).")
         w("")
-        if "mem0" in p1.get("results", {}) and "at_false_accept_budget" in p1["results"]["mem0"]:
-            w("**mem0 (now runnable on py3.13) is MEASURED but NONDETERMINISTIC.** Every mem0 "
-              "write goes through an LLM (Ollama qwen2.5:7b) that extracts/dedups facts, so "
-              "recall swings run-to-run — two identical sweeps gave correct-serve 0.72 and 0.0. "
-              "No stable single number without multi-seed averaging; we do not cherry-pick the "
-              "favorable run. Stable truth: mem0 is a single-user similarity cache with "
-              "LLM-mediated (costly, nondeterministic) writes and no provenance/federation — the "
-              "same column as LangChain, which measured deterministically at the cosine proxy.")
-            w("")
+        w("**mem0 (now runnable on py3.13) is MEASURED but NONDETERMINISTIC.** Every mem0 write "
+          "goes through an LLM (Ollama qwen2.5:7b) that extracts/dedups facts. A 4-seed variance "
+          "pass: cosine and LangChain are perfectly stable (fallback@FA≤0.05 = 0.4688, min==max); "
+          "mem0 ranges 0.906–1.0 with correct-serve just 0–9% — both nondeterministic AND worse "
+          "here. Balanced read (not 'mem0 is bad'): (1) LLM-mediated writes → nondeterministic + "
+          "costly per write; (2) mem0 targets *conversational* memory, not Q→A paraphrase-cache "
+          "recall, so this micro-harness underserves it. Honest claim: mem0 is a single-user, "
+          "LLM-mediated, nondeterministic store with no provenance/federation — the deterministic "
+          "similarity-cache column is owned by LangChain==cosine. No cherry-picking, either way.")
+        w("")
 
     # provenance detail
     if p2:
