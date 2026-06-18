@@ -181,6 +181,14 @@ Three claims, each falsifiable, each on disk.
 
 Bench source: [`tests/bench-folklore-federation.test.ts`](tests/bench-folklore-federation.test.ts).
 
+**Gated correctly.** The deny-on-confidence gate is the mechanism — it has to deny the web
+when the graph truly holds the answer, and *not* deny when it doesn't. On a labelled probe
+set (59 corpus nodes; 44 in-corpus, 40 adversarial, 30 near-miss, 10 far-miss), the gate
+denies **84.1%** of answerable queries (true-deny) at a **2.5%** false-deny rate — and
+**0%** on far-miss probes, so a clearly out-of-corpus question is never wrongly gated.
+Compounding view: across 64 peers the cooperative cache-hit rate is **90.2%** vs **18.4%**
+for isolated local graphs — 4.9× more graph hits before any web trip.
+
 **Sharing inference trees, measured on real corpora.** Beyond the simulator: when
 peers share their resolved *(question → verified-doc)* trees, a new query
 retrieves by matching the network's answered questions (query↔query, far stronger
