@@ -67,7 +67,15 @@ function checkNode(): Check {
   };
 }
 
-/** probe for any python >= 3.10 — matches bootstrap.sh order */
+/**
+ * probe for any python >= 3.10 — matches bootstrap.sh order.
+ *
+ * OPTIONAL: the graphify sidecar (ingest schema-validation + `folklore viz`)
+ * uses Python, but the core path — MCP server, `ask`, the energy/deny gate,
+ * vectors via better-sqlite3 + sqlite-vec, the MiniLM embedder via Xenova —
+ * is pure Node. A Node-only install is fully functional, so a missing Python
+ * is a [WARN], never a blocker.
+ */
 function checkHostPython(): Check {
   const candidates = ['python3.13', 'python3.12', 'python3.11', 'python3.10', 'python3'];
   for (const bin of candidates) {
@@ -78,19 +86,19 @@ function checkHostPython(): Check {
     const [maj, min] = r.stdout.trim().split('.').map(Number);
     if (maj >= 3 && min >= 10) {
       return {
-        name: 'Python >= 3.10',
+        name: 'Python >= 3.10 (optional sidecar)',
         ok: true,
         detail: `${bin} ${r.stdout.trim()}`,
-        blocking: true,
+        blocking: false,
       };
     }
   }
   return {
-    name: 'Python >= 3.10',
+    name: 'Python >= 3.10 (optional sidecar)',
     ok: false,
-    detail: 'no python >= 3.10 on PATH (graphify sidecar needs it)',
-    blocking: true,
-    fix: 'install Python 3.10+ (e.g. `brew install python@3.12`)',
+    detail: 'no python >= 3.10 on PATH — graphify sidecar disabled (core runs on Node alone)',
+    blocking: false,
+    fix: 'only if you want the ingest/viz sidecar: install Python 3.10+ (e.g. `brew install python@3.12`)',
   };
 }
 
@@ -111,11 +119,11 @@ function checkGraphifySubmodule(): Check {
   const pkg = join(repoRoot(), 'vendor', 'graphify', 'graphify', '__init__.py');
   const ok = existsSync(pyproject) && existsSync(pkg);
   return {
-    name: 'graphify submodule',
+    name: 'graphify submodule (optional)',
     ok,
-    detail: ok ? 'vendor/graphify present' : 'vendor/graphify is missing or empty',
-    blocking: true,
-    fix: 'run `git submodule update --init --recursive`',
+    detail: ok ? 'vendor/graphify present' : 'vendor/graphify absent — sidecar disabled (core runs on Node alone)',
+    blocking: false,
+    fix: 'only for the sidecar: `git submodule update --init --recursive`',
   };
 }
 
@@ -123,11 +131,11 @@ function checkVenv(): Check {
   const py = venvPython();
   const ok = existsSync(py);
   return {
-    name: 'folklore venv',
+    name: 'folklore venv (optional)',
     ok,
-    detail: ok ? py : `missing ${py}`,
-    blocking: true,
-    fix: 'run `folklore doctor --fix` (or `scripts/bootstrap.sh`)',
+    detail: ok ? py : `no venv at ${py} — sidecar disabled (core runs on Node alone)`,
+    blocking: false,
+    fix: 'only for the sidecar: `folklore doctor --fix` (or `scripts/bootstrap.sh`)',
   };
 }
 
@@ -135,11 +143,11 @@ function checkGraphifyImport(): Check {
   const py = venvPython();
   if (!existsSync(py)) {
     return {
-      name: 'graphify importable',
+      name: 'graphify importable (optional)',
       ok: false,
-      detail: 'skipped — venv missing',
-      blocking: true,
-      fix: 'run `folklore doctor --fix`',
+      detail: 'skipped — venv missing (sidecar disabled; core runs on Node alone)',
+      blocking: false,
+      fix: 'only for the sidecar: `folklore doctor --fix`',
     };
   }
   const r = spawnSync(
@@ -149,39 +157,39 @@ function checkGraphifyImport(): Check {
   );
   if (r.status !== 0) {
     return {
-      name: 'graphify importable',
+      name: 'graphify importable (optional)',
       ok: false,
       detail: (r.stderr || 'import failed').trim().split('\n').slice(-1)[0],
-      blocking: true,
-      fix: 'run `folklore doctor --fix` to reinstall graphify into the venv',
+      blocking: false,
+      fix: 'only for the sidecar: `folklore doctor --fix` to reinstall graphify into the venv',
     };
   }
   const got = (r.stdout || '').trim();
   return {
-    name: 'graphify importable',
+    name: 'graphify importable (optional)',
     ok: true,
     detail: `OPTIONAL_NODE_FIELDS = ${got}`,
-    blocking: true,
+    blocking: false,
   };
 }
 
 function checkSchemaPatch(importCheck: Check): Check {
   if (!importCheck.ok) {
     return {
-      name: 'folklore schema patch',
+      name: 'folklore schema patch (optional)',
       ok: false,
-      detail: 'skipped — graphify not importable',
-      blocking: true,
+      detail: 'skipped — graphify not importable (sidecar disabled)',
+      blocking: false,
     };
   }
   const expected = EXPECTED_OPTIONAL_NODE_FIELDS.join(',');
   const got = importCheck.detail.replace('OPTIONAL_NODE_FIELDS = ', '');
   return {
-    name: 'folklore schema patch',
+    name: 'folklore schema patch (optional)',
     ok: got === expected,
     detail: got === expected ? 'room/wing/source_uri/fetched_at/embedding_id' : `got ${got}, expected ${expected}`,
-    blocking: true,
-    fix: 'submodule is on an older commit — run `git submodule update --init --remote`',
+    blocking: false,
+    fix: 'only for the sidecar: submodule on older commit — `git submodule update --init --remote`',
   };
 }
 
