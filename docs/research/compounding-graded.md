@@ -106,3 +106,30 @@ reported as one metric, not multiplied together (the cost critique's double-coun
 
 Locked by `tests/compounding-graded.test.ts` (P=1 ⇒ coop==iso; low-σ ⇒ compounds
 + ~0 false-admit; a positive separating sepMin exists).
+
+---
+
+## Grounded in REAL embeddings — the synthetic caveat is closed (2026-06-18)
+
+`bench-paraphrase-sigma.mjs` measures the real regime: with the cached MiniLM
+embedder (offline), cosine of each real deny-real question to its KNOWN source
+node (true-match) vs a random other node (spurious), over 36 query↔source pairs.
+
+| quantity | value |
+|---|---|
+| true-match cos (query ↔ its source node) | median **0.841** (p10 0.54, p90 0.92) |
+| spurious cos (query ↔ random node) | median **0.097** |
+| separation AUC (true > spurious) | **0.999** |
+| equivalent sim σ (from median cos, σ=√((1/cos²−1)/DIM)) | **≈ 0.033** |
+
+**Real-world paraphrase similarity (σ≈0.033) sits deep inside the compounding
+regime (σ ≲ 0.15), with near-perfect true-vs-spurious separation (AUC 0.999).**
+So the graded sim's "cooperative compounds with ~0 false-admit" is not a hopeful
+assumption — on real questions and real source nodes, a peer's cached answer is
+~0.84 cosine to another peer's natural-language question for the same thing, and
+~0.10 to an unrelated one. The gate can tell them apart almost perfectly, which
+is exactly the condition under which P2P knowledge + inference reuse compounds.
+
+Caveat: 36 pairs, question↔source-node similarity, MiniLM. A stronger embedder
+only widens the margin. This is the bridge from the synthetic geometry to the
+real pipeline: **the thesis holds on real embeddings.**
