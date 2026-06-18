@@ -50,6 +50,15 @@ const SIGMA = flag('sigma', 0.35); // paraphrase noise stdev
 const ALPHA = 0.9; // Zipf exponent
 const ZIPF_Q = 5; // Mandelbrot plateau (flattened head)
 const TOPK = 5; // candidate hits fed to the gate
+const CHURN = flag('churn', 0); // fraction of peers offline per step
+const SWEEP = args.includes('--sweep-peers');
+// Labeled token-cost model for LLM inference reuse: a fresh resolution costs a
+// research inference (~web fetch + synthesis); a memory hit costs a cheap
+// recall. compute-saved = correct reuses × (research − recall). ONE projection,
+// not double-counted with web-trip count.
+const C_RESEARCH = 8000;
+const C_RECALL = 200;
+const pct = (x) => `${(x * 100).toFixed(1)}%`;
 
 // ── deterministic RNG (mulberry32) ──
 let _s = 0x9e3779b9 >>> 0;
@@ -115,21 +124,20 @@ const touch = (peer, k) => {
 // Top-K cosine sims of a query vector against a set of cached (k→vec) maps,
 // plus the cached topic id of the single best hit (for ground-truth scoring).
 const candidateSims = (qv, caches) => {
-  let best = -Infinity;
-  let bestK = -1;
-  const sims = [];
+  // Dedup by topic id (mirrors federated search dedup by node_id +
+  // also_from_peers): the SAME replicated node from many peers is ONE hit, not
+  // TOPK identical copies — otherwise duplicates flood the top-K and collapse
+  // the separation guard (Δ between top-1 and top-2 → 0).
+  const bestPerTopic = new Map();
   for (const cache of caches) {
     for (const [k, vec] of cache) {
       const s = cos(qv, vec);
-      sims.push(s);
-      if (s > best) {
-        best = s;
-        bestK = k;
-      }
+      const cur = bestPerTopic.get(k);
+      if (cur === undefined || s > cur) bestPerTopic.set(k, s);
     }
   }
-  sims.sort((a, b) => b - a);
-  return { top: sims.slice(0, TOPK), bestK };
+  const sims = [...bestPerTopic.values()].sort((a, b) => b - a);
+  return { top: sims.slice(0, TOPK) };
 };
 
 // ── calibrate the admission threshold τ to THIS sim's geometry ──
@@ -175,22 +183,26 @@ const calibrate = (T = 0.1) => {
   return { tau: tau.cut, sepMin: sm.cut, tpr: tau.tpr, fpr: tau.fpr, sepTpr: sm.tpr, sepFpr: sm.fpr };
 };
 
-const runArm = (cooperative, tau, sepMin) => {
+const runArm = (cooperative, tau, sepMin, churn = 0, peerCount = P) => {
   _s = 0x12345678 >>> 0; // reset RNG per arm for a fair, identical query stream
-  const peers = Array.from({ length: P }, mkPeer);
+  const peers = Array.from({ length: peerCount }, mkPeer);
   const BUCKETS = 20;
   const perBucket = Math.ceil(STEPS / BUCKETS);
   const fallbackSeries = new Array(BUCKETS).fill(0);
   const bucketCount = new Array(BUCKETS).fill(0);
   let hits = 0;
   let falseAdmits = 0;
+  let correct = 0;
   let webPaid = 0;
 
   for (let t = 0; t < STEPS; t++) {
-    const issuing = peers[Math.floor(rnd() * P)];
+    const issuing = peers[Math.floor(rnd() * peerCount)];
     const k = drawTopic();
     const qv = query(k);
-    const caches = cooperative ? peers.map((p) => p.map) : [issuing.map];
+    // churn: a fraction of peers are offline this step (issuing peer always up)
+    const caches = cooperative
+      ? peers.filter((p) => p === issuing || rnd() >= churn).map((p) => p.map)
+      : [issuing.map];
     const { top } = candidateSims(qv, caches);
     const verdict = top.length > 0 ? energyGate(top, { tau, sepMin }) : { admit: false };
     // Ground truth: is the queried topic's TRUE answer actually in the cache?
@@ -205,10 +217,20 @@ const runArm = (cooperative, tau, sepMin) => {
       // exact id match" — under cache crowding a synonym can be numerically
       // closest while the true answer is still present and correct.
       if (!present) falseAdmits++;
+      else correct++;
     } else {
       webPaid++;
       fallbackSeries[b]++;
-      touch(issuing, k); // pay web → deposit the TRUE answer; compounding
+      // pay web → deposit the TRUE answer. ISOLATED: only the issuing peer
+      // caches. COOPERATIVE: CRDT sync propagates the node to all currently-
+      // reachable (online) peers — so shared knowledge is REPLICATED, not
+      // single-homed, and survives churn (the degradation-dynamics durability
+      // mechanism: replication factor > 1).
+      if (cooperative) {
+        for (const p of peers) if (p === issuing || rnd() >= churn) touch(p, k);
+      } else {
+        touch(issuing, k);
+      }
     }
   }
   const series = fallbackSeries.map((f, i) => (bucketCount[i] ? f / bucketCount[i] : 0));
@@ -217,37 +239,70 @@ const runArm = (cooperative, tau, sepMin) => {
     fallback_end: series[series.length - 1],
     hit_rate: hits / STEPS,
     false_admit_rate: hits > 0 ? falseAdmits / hits : 0,
+    correct_resolves: correct,
+    correct_resolve_rate: correct / STEPS,
     web_paid: webPaid,
     series,
   };
 };
 
 const cal = calibrate();
-const iso = runArm(false, cal.tau, cal.sepMin);
-const coop = runArm(true, cal.tau, cal.sepMin);
 
-if (JSON_OUT) {
-  console.log(JSON.stringify({ params: { P, STEPS, K, CAP, DIM, SIGMA }, isolated: iso, cooperative: coop }, null, 2));
+// ── R(T,t) peer sweep: compounding scales with peer count ──
+if (SWEEP) {
+  const Ps = [1, 2, 4, 8, 16, 32];
+  const rows = Ps.map((p) => {
+    const r = runArm(true, cal.tau, cal.sepMin, CHURN, p);
+    return { p, ...r, compute_saved_tok: r.correct_resolves * (C_RESEARCH - C_RECALL) };
+  });
+  if (JSON_OUT) {
+    console.log(JSON.stringify({ params: { STEPS, K, CAP, DIM, SIGMA, CHURN }, calibration: cal, sweep: rows }, null, 2));
+    process.exit(0);
+  }
+  console.log(`bench-compounding-graded: R(T,t) peer sweep — dim ${DIM}, σ=${SIGMA}, churn ${pct(CHURN)}, ${STEPS} steps`);
+  console.log(`  calibrated τ=${cal.tau.toFixed(3)} / sepMin=${cal.sepMin.toFixed(3)} (true-match TPR ${pct(cal.tpr)})\n`);
+  console.log('  peers   web-fallback-end   correct-resolve   false-admit   compute-saved');
+  for (const r of rows) {
+    console.log(
+      `  ${String(r.p).padStart(5)}   ${pct(r.fallback_end).padStart(13)}   ${pct(r.correct_resolve_rate).padStart(13)}   ${pct(r.false_admit_rate).padStart(9)}   ${(r.compute_saved_tok / 1e6).toFixed(2).padStart(8)} Mtok`,
+    );
+  }
+  const grows = rows[rows.length - 1].correct_resolve_rate > rows[0].correct_resolve_rate + 0.05;
+  console.log('');
+  console.log(
+    grows
+      ? `R(T,t) GROWS with peers: correct-resolve ${pct(rows[0].correct_resolve_rate)} (P=1) → ${pct(rows[rows.length - 1].correct_resolve_rate)} (P=32); web-fallback falls, compute reused rises. Compounding scales.`
+      : `No R(T,t) growth at σ=${SIGMA} — paraphrase noise caps reuse regardless of peer count.`,
+  );
   process.exit(0);
 }
 
-const pct = (x) => `${(x * 100).toFixed(1)}%`;
-console.log(`bench-compounding-graded: ${P} peers, ${STEPS} steps, ${K} topics, cap ${CAP}, dim ${DIM}, σ=${SIGMA}`);
+const iso = runArm(false, cal.tau, cal.sepMin, CHURN);
+const coop = runArm(true, cal.tau, cal.sepMin, CHURN);
+
+if (JSON_OUT) {
+  console.log(JSON.stringify({ params: { P, STEPS, K, CAP, DIM, SIGMA, CHURN }, calibration: cal, isolated: iso, cooperative: coop }, null, 2));
+  process.exit(0);
+}
+
+const savedTok = (r) => r.correct_resolves * (C_RESEARCH - C_RECALL);
+console.log(`bench-compounding-graded: ${P} peers, ${STEPS} steps, ${K} topics, cap ${CAP}, dim ${DIM}, σ=${SIGMA}, churn ${pct(CHURN)}`);
 console.log('  (graded retrieval — real energy gate over cosine sims of noised paraphrase queries)');
-console.log(`  calibrated admission τ=${cal.tau.toFixed(3)} (warmup: true-match TPR ${pct(cal.tpr)} / wrong-match FPR ${pct(cal.fpr)})\n`);
+console.log(`  calibrated τ=${cal.tau.toFixed(3)} (TPR ${pct(cal.tpr)}/FPR ${pct(cal.fpr)}), sepMin=${cal.sepMin.toFixed(3)}\n`);
 console.log(`                       isolated      cooperative`);
 console.log(`  web-fallback start   ${pct(iso.fallback_start).padStart(8)}     ${pct(coop.fallback_start).padStart(8)}`);
 console.log(`  web-fallback end     ${pct(iso.fallback_end).padStart(8)}     ${pct(coop.fallback_end).padStart(8)}`);
-console.log(`  hit rate (resolved)  ${pct(iso.hit_rate).padStart(8)}     ${pct(coop.hit_rate).padStart(8)}`);
+console.log(`  correct-resolve rate ${pct(iso.correct_resolve_rate).padStart(8)}     ${pct(coop.correct_resolve_rate).padStart(8)}   (admit AND answer present — genuine reuse)`);
 console.log(`  false-admit rate     ${pct(iso.false_admit_rate).padStart(8)}     ${pct(coop.false_admit_rate).padStart(8)}   (wrong topic admitted — the honest cost)`);
 console.log(`  web trips paid       ${String(iso.web_paid).padStart(8)}     ${String(coop.web_paid).padStart(8)}`);
+console.log(`  compute saved        ${(savedTok(iso) / 1e6).toFixed(2).padStart(6)} M    ${(savedTok(coop) / 1e6).toFixed(2).padStart(6)} M tok   (correct reuses × ${C_RESEARCH - C_RECALL}/reuse; one projection)`);
 console.log('');
-const compounds = coop.fallback_end < iso.fallback_end - 0.02;
+const compounds = coop.fallback_end < iso.fallback_end - 0.02 && coop.correct_resolve_rate > iso.correct_resolve_rate;
 const cheaper = iso.web_paid > 0 ? (iso.web_paid / Math.max(1, coop.web_paid)).toFixed(2) : 'n/a';
 if (compounds) {
-  console.log(`VERDICT: COMPOUNDS — cooperative web-fallback (${pct(coop.fallback_end)}) decays below isolated (${pct(iso.fallback_end)}).`);
-  console.log(`  ${cheaper}× fewer paid web trips cooperatively, under GRADED retrieval. false-admit ${pct(coop.false_admit_rate)}.`);
+  console.log(`VERDICT: COMPOUNDS — cooperative correct-resolve ${pct(coop.correct_resolve_rate)} vs isolated ${pct(iso.correct_resolve_rate)}, web-fallback ${pct(coop.fallback_end)} vs ${pct(iso.fallback_end)}.`);
+  console.log(`  ${cheaper}× fewer paid web trips, ${((savedTok(coop) - savedTok(iso)) / 1e6).toFixed(2)} M extra tokens reused cooperatively. false-admit ${pct(coop.false_admit_rate)}.`);
 } else {
-  console.log(`VERDICT: NO compounding gap at σ=${SIGMA} — cooperative end ${pct(coop.fallback_end)} vs isolated ${pct(iso.fallback_end)}.`);
-  console.log(`  At this paraphrase noise the gate can't resolve shared answers; the boolean sim would have hidden this.`);
+  console.log(`VERDICT: NO genuine compounding gap at σ=${SIGMA} — cooperative correct-resolve ${pct(coop.correct_resolve_rate)} vs isolated ${pct(iso.correct_resolve_rate)}.`);
+  console.log(`  The honest gate pays web rather than false-resolving; the boolean sim would have hidden this.`);
 }
