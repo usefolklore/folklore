@@ -107,9 +107,13 @@ export interface AskParams {
  * k * factor; rerank promotes age-favored hits; we slice to k. */
 const RERANK_OVERFETCH = 4;
 
-const toEnriched = (h: AskHit, fetchedAt?: string): EnrichedMatch => ({
+const toEnriched = (h: AskHit, fetchedAt?: string, vecDistance?: number): EnrichedMatch => ({
   node_id: h.node_id,
   distance: h.distance,
+  // True cosine distance from the original vector search (before PPR/recency
+  // rerank rewrote `distance`). The satisfaction relevance gate needs this;
+  // h.distance is a centrality-blended ranking distance, not a relevance one.
+  vec_distance: vecDistance,
   source_peer: null,
   also_from_peers: [],
   source_uri: h.source_uri,
@@ -239,6 +243,15 @@ export const ask =
         .andThen((graph) => {
           const nowMs = Date.now();
 
+          // Snapshot the TRUE cosine distance per node from the raw vector
+          // search, BEFORE cross-encoder / PPR / recency rerank overwrite
+          // `distance` with a ranking score. The satisfaction relevance gate
+          // reads this (via EnrichedMatch.vec_distance) so off-topic but
+          // high-centrality hits can't masquerade as relevant.
+          const cosineByNode = new Map<string, number>(
+            matches.map((m) => [m.node_id, m.distance]),
+          );
+
           const docTextOf = (m: Match): string | undefined => {
             const n = getNode(graph, m.node_id);
             const label = typeof n?.label === 'string' ? n.label : '';
@@ -268,7 +281,7 @@ export const ask =
           ): { satisfaction: SatisfactionScore; contract: AgentContract } => {
             const merged: EnrichedMatch[] = [
               ...recallHits.map(recallHitToEnriched),
-              ...search_hits.map((h) => toEnriched(h)),
+              ...search_hits.map((h) => toEnriched(h, undefined, cosineByNode.get(h.node_id))),
             ];
             const seen = new Set<string>();
             const enrichedAll: EnrichedMatch[] = [];

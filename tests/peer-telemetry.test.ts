@@ -448,6 +448,35 @@ test('relevance gate: a fully-irrelevant hit retains a nonzero floor, not zero',
   assert.ok(s.score < 0.4, `irrelevant hit must be heavily damped, got ${s.score}`);
 });
 
+test('relevance gate: vec_distance overrides a rerank-rewritten ranking distance', () => {
+  // The bug: pprRerank rewrites `distance = 1 - fused`, so a high-centrality
+  // hub lands near 0 even for an off-topic query — making the relevance gate
+  // read it as maximally relevant. vec_distance carries the TRUE cosine so the
+  // gate damps it correctly. Here `distance` looks close (0.05) but the real
+  // embedding distance is far (1.15) → the hit must be damped, not trusted.
+  const masquerading = computeSatisfaction([mk({ distance: 0.05, vec_distance: 1.15 })]);
+  const honestClose = computeSatisfaction([mk({ distance: 0.05, vec_distance: 0.4 })]);
+  assert.ok(
+    masquerading.score < 0.5,
+    `off-topic hub (far cosine) must be damped despite small rank-distance, got ${masquerading.score}`,
+  );
+  assert.ok(
+    honestClose.score - masquerading.score > 0.3,
+    'a genuinely-close hit must outscore a high-centrality masquerader',
+  );
+});
+
+test('relevance gate: falls back to distance when vec_distance is absent (recall path)', () => {
+  // No vec_distance (recall / peer hits) → behaviour is unchanged: the gate
+  // reads `distance` exactly as before.
+  const withFallback = computeSatisfaction([mk({ distance: 1.15 })]);
+  const explicit = computeSatisfaction([mk({ distance: 1.15, vec_distance: 1.15 })]);
+  assert.ok(
+    Math.abs(withFallback.score - explicit.score) < 0.01,
+    `absent vec_distance must equal using distance: ${withFallback.score} vs ${explicit.score}`,
+  );
+});
+
 test('relevance gate: retrieval carries 0 linear weight (enters multiplicatively)', () => {
   const s = computeSatisfaction([mk({ distance: 0.4 })]);
   const retrieval = s.components.find((c) => c.name === 'retrieval');

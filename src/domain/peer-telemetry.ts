@@ -21,7 +21,22 @@ import type { CoverageMap } from './coverage.js';
  */
 export interface EnrichedMatch {
   readonly node_id: string;
+  /**
+   * Ranking distance — may have been REWRITTEN by graph rerank
+   * (`pprRerank` sets `distance = 1 − fused`, blending vector similarity
+   * with graph centrality). Good for ordering, but NOT a pure relevance
+   * signal: a high-centrality hub lands near 0 even for an off-topic
+   * query. Use `vec_distance` for relevance.
+   */
   readonly distance: number;
+  /**
+   * True embedding (cosine/L2) distance from the original vector search,
+   * BEFORE any reranker rewrote `distance`. This is the relevance signal
+   * the satisfaction scorer's retrieval component + relevance gate must
+   * use. Undefined on the recall path (no vector distance) — the scorer
+   * then falls back to `distance`.
+   */
+  readonly vec_distance?: number;
   /** null = local, peerId string = arrived from this peer */
   readonly source_peer: string | null;
   /** other peers that returned the same node (deduped) */
@@ -168,6 +183,15 @@ export interface PeerPullTelemetry {
 const clamp01 = (n: number): number => (n < 0 ? 0 : n > 1 ? 1 : n);
 
 /**
+ * The distance to use for RELEVANCE (retrieval component + relevance gate):
+ * the true embedding distance when present, else the (possibly rerank-
+ * rewritten) ranking distance. Keeps the recall path — which has no vector
+ * distance — behaving exactly as before.
+ */
+const relevanceDistanceOf = (r: EnrichedMatch): number =>
+  r.vec_distance !== undefined && Number.isFinite(r.vec_distance) ? r.vec_distance : r.distance;
+
+/**
  * One scorer component — `value` is in [0,1]; `observed=false` means
  * the underlying signal is missing (no age, no signature info, etc.).
  * The aggregator drops unobserved components instead of averaging
@@ -200,13 +224,16 @@ const computeComponents = (results: readonly EnrichedMatch[]): Components => {
   // the relevance estimate; if no hit carries a real (positive, finite)
   // distance, retrieval is unobserved and the score falls back to the
   // trust components alone (preserves the recall-only path).
-  const distanced = results.filter((r) => r.distance > 0 && Number.isFinite(r.distance));
+  const distanced = results.filter(
+    (r) => relevanceDistanceOf(r) > 0 && Number.isFinite(relevanceDistanceOf(r)),
+  );
   const top3 = distanced.slice(0, 3);
   const retrieval: Component =
     top3.length === 0
       ? NIL
       : {
-          value: top3.reduce((acc, r) => acc + clamp01(1 - r.distance), 0) / top3.length,
+          value:
+            top3.reduce((acc, r) => acc + clamp01(1 - relevanceDistanceOf(r)), 0) / top3.length,
           observed: true,
         };
 
@@ -414,11 +441,16 @@ export const computeSatisfaction = (
   // Relevance gate — damp the trust-heavy aggregate by how relevant the
   // closest real hit actually is. Best (= smallest) real distance among the
   // results; recall placeholders (distance 0) are excluded.
-  const distancedHits = results.filter((r) => r.distance > 0 && Number.isFinite(r.distance));
+  const distancedHits = results.filter(
+    (r) => relevanceDistanceOf(r) > 0 && Number.isFinite(relevanceDistanceOf(r)),
+  );
   const bestDistance =
     distancedHits.length === 0
       ? undefined
-      : distancedHits.reduce((m, r) => (r.distance < m ? r.distance : m), Infinity);
+      : distancedHits.reduce((m, r) => {
+          const d = relevanceDistanceOf(r);
+          return d < m ? d : m;
+        }, Infinity);
   const relGate = relevanceGate(bestDistance, opts?.coverageRatio);
   const score = clamp01((base - penalty) * relGate);
 
