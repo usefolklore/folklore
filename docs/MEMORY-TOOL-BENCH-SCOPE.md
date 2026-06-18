@@ -108,6 +108,37 @@ and/or a server folklore does not. Two honest ways to handle it:
   plain cosine cache already does; folklore's structural advantage is FEDERATION (the
   cache is shared across peers — P3) and PROVENANCE/poison-defense (P2), which the
   single-user tools cannot do at all. Web-gating parity ≠ the differentiator.
+
+  **P1 v2 — fair metric (fallback @ matched false-accept, swept threshold). RESULT
+  + verdict that web-gating is the WRONG head-to-head for folklore:**
+  Sweeping the hit threshold and reporting the best fallback-rate that holds
+  false-accept ≤ budget, on the 32-event toy stream:
+
+  | tool | FA≤0 | FA≤0.05 |
+  |---|---|---|
+  | cosine-cache (proxy) | 0.6875 | 0.4688 |
+  | LangChain (measured) | 0.6875 | 0.4688 (≈ proxy → proxy validated twice) |
+  | folklore (measured) | 1.0 | 1.0 |
+
+  folklore reads 1.0 — but this is a **measured metric/regime mismatch, not a clean
+  defeat, and is NOT publishable as "folklore loses web-gating":**
+  - Diagnostic confirms folklore's TOP hit is correct (an RRF paraphrase → `nid:rrf_fusion`),
+    but at `satisfaction 0.42` with native decision `search_required`. Its satisfaction
+    is calibrated for a populated graph + the deny pipeline, **not cosine-comparable**
+    and not meaningfully sweepable as a 0–1 threshold; the scores are compressed
+    (0.42 for a *correct* match) so no swept τ separates correct from spurious-neighbor.
+  - The competitors ARE cosine caches (LangChain == the cosine proxy exactly), so they
+    sweep naturally; folklore's gate does not. Forcing it onto that axis mismeasures it.
+  - Publishing the 1.0 as a folklore loss would inflate the competitors via a rigged
+    regime — the inverse of weak-baseline inflation, equally dishonest. Declined.
+
+  **Verdict:** single-user web-gating on a synthetic micro-graph is **not a valid
+  head-to-head** for folklore (favors cosine-cache tools; mismeasures folklore's gate;
+  folklore's real regime is a large populated graph, which breaks the matched-control).
+  The honest, structurally-meaningful comparisons are **P2 (provenance/poison-defense)**
+  and **P3 (federation)** — axes the single-user tools cannot perform at all. The
+  harness (`bench/bench-memtool-webgating.py`) stays as the reproducible source of the
+  cosine/LangChain numbers; mem0 run still pending but deprioritised behind P2/P3.
 - **P2 — provenance (axis B):** displaced-poison flip-ASR, folklore provenance
   ranking vs plain RAG ranking.
 - **P3 — federation (axis C):** folklore N-peer compounding vs the structural
