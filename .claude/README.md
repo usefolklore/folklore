@@ -13,6 +13,15 @@ fails closed: if the graph is missing, the binary isn't on `PATH`, or a probe
 times out, the hook exits 0 with no output so Claude's original tool call
 proceeds normally.
 
+`folklore claude install` reproduces this exact block in any project's
+`.claude/` (`settings.json` is the source of truth it matches): all four hook
+events, the `statusLine`, and the gate env flags, plus the bundled scripts. It
+is idempotent and `folklore claude uninstall` removes only what it owns. For
+**other harnesses** — Cursor, Cline, Windsurf, Zed, Gemini CLI, opencode, Roo
+Code, Claude Desktop — the integration is the MCP server, not these hooks: run
+`folklore harness install` to register `folklore mcp start` in each one's native
+config. `folklore onboard` runs both for you.
+
 ## Shipped hooks
 
 | File | Event | What it does |
@@ -21,9 +30,13 @@ proceeds normally.
 | `hooks/folklore-mcp-pre.cjs` | PreToolUse (`mcp__folklore__.*`) | Pre-call guard for Folklore's own MCP tools. |
 | `hooks/folklore-post-fetch.sh` → `.cjs` | PostToolUse (`WebSearch`/`WebFetch`) | Auto-saves the fetched result into the global graph as a `source` note, so the next session (yours or a peer's) hits the graph instead of the web. |
 | `hooks/folklore-prompt-submit.cjs` | UserPromptSubmit | Runs `folklore ask` against the prompt text and injects the retrieval block before Claude even reads the prompt — often preventing a WebSearch from being attempted at all. |
-| `hooks/folklore-session-start.sh`, `hooks/folklore-hook.sh` | SessionStart | Session bootstrap / context priming. |
-| `hooks/folklore-session-capture.sh` | session capture | Captures session activity for later ingest. |
-| `hooks/folklore-post-edit.sh` | post-edit | Post-edit helper. |
+| `hooks/folklore-hook.sh` | SessionStart | Session bootstrap — surfaces the previous session's last message + branch (`folklore recent-sessions`). This is the one the installer wires for SessionStart. |
+
+The installer wires exactly the five entries above (the four hook events +
+`statusLine` + env). Three scripts in `hooks/` are **present but not wired** —
+`folklore-session-start.sh`, `folklore-session-capture.sh`,
+`folklore-post-edit.sh` — vestigial from earlier phases, kept for reference but
+absent from `settings.json` and never installed.
 
 Supporting assets:
 
