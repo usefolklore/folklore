@@ -159,41 +159,52 @@ class LangChainCache(Adapter):
 
 class Mem0Cache(Adapter):
     name = "mem0 (measured)"; kind = "MEASURED"
-    def __init__(self): self.m=None; self.uid="bench"
+    def __init__(self): self.m=None; self.uid="bench"; self.id2nid={}
+    # vector_store dims MUST match the embedder (MiniLM=384); mem0 defaults the
+    # qdrant collection to 1536 (OpenAI) -> a 384 query then crashes on shape
+    # mismatch. fresh in-memory collection avoids stale-dim reuse across runs.
     _CFG={"llm":{"provider":"ollama","config":{"model":OLLAMA_MODEL,"ollama_base_url":"http://localhost:11434"}},
-          "embedder":{"provider":"huggingface","config":{"model":EMBED_MODEL}}}
+          "embedder":{"provider":"huggingface","config":{"model":EMBED_MODEL}},
+          "vector_store":{"provider":"qdrant","config":{"embedding_model_dims":384,"on_disk":False,"collection_name":"memtool_bench"}}}
     def available(self):
         # Must actually INSTANTIATE — mem0ai 2.x uses PEP-604 `X | None` and
-        # fails to even build its config on Python < 3.10. A bare `import mem0`
-        # passes there but construction throws; if we only checked the import we
-        # would silently run with empty memory and report a bogus 1.0 fallback.
+        # fails to build its config on Python < 3.10. A bare `import mem0` passes
+        # there but construction throws; checking only the import would silently
+        # run with empty memory and report a bogus 1.0 fallback.
         try:
             import requests
             requests.get("http://localhost:11434/api/tags", timeout=3)
             from mem0 import Memory
-            Memory.from_config(self._CFG)  # raises on py<3.10
+            Memory.from_config(self._CFG)  # raises on py<3.10 / missing ollama pkg
             return True
         except Exception as e:
             self._err = repr(e)[:200]; return False
     def reset(self):
         from mem0 import Memory
+        self.id2nid={}
         try: self.m=Memory.from_config(self._CFG)
         except Exception: self.m=None
     def remember(self, q, nid):
         if self.m is None: return
-        try: self.m.add(f"[nid:{nid}] Q: {q}\nA: {CANON[nid]}", user_id=self.uid)
+        # mem0 LLM-rewrites the stored text, so a tag in the text is unreliable.
+        # Map the add-returned memory id(s) -> need_id instead (exact).
+        try:
+            res=self.m.add(f"{q} — {CANON[nid]}", user_id=self.uid)
+            items=res.get("results",[]) if isinstance(res,dict) else (res or [])
+            for it in items:
+                if isinstance(it,dict) and it.get("id"): self.id2nid[it["id"]]=nid
         except Exception: pass
     def lookup(self, q):
         if self.m is None: return (None,None)
         try:
-            res=self.m.search(q,user_id=self.uid,limit=1)
+            # mem0 2.x: search() takes filters={'user_id':...}, not user_id=.
+            res=self.m.search(q, filters={"user_id": self.uid}, limit=1)
             hits=res.get("results",res) if isinstance(res,dict) else res
             if not hits: return (None,None)
-            mem=hits[0].get("memory","") or ""
-            score=hits[0].get("score")
-            nid=None
-            if "[nid:" in mem: nid=mem.split("[nid:",1)[1].split("]",1)[0]
-            return (nid, float(score) if score is not None else 1.0)
+            top=hits[0]
+            nid=self.id2nid.get(top.get("id"))
+            score=top.get("score")
+            return (nid, float(score) if score is not None else None)
         except Exception: return (None,None)
 
 

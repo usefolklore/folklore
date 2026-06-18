@@ -42,7 +42,7 @@ in folklore's favour. State the footprint each tool needs to run at all.
 | Tool | pip | Runs offline / CPU-only? | Blocker for a real run here |
 |------|-----|--------------------------|-----------------------------|
 | folklore | n/a (this repo) | ✅ yes | none |
-| mem0 (`mem0ai 2.0.0`) | ✅ visible | ❌ needs an LLM | **BLOCKED here:** mem0ai 2.x uses PEP-604 `X \| None` → fails to construct on Python 3.9 (sandbox default). `python3.13` is present but has no torch/sentence-transformers (heavy install, deferred). LLM parity itself is solved (Ollama qwen2.5:7b is up, key-free) — only the interpreter/ML-stack is missing. |
+| mem0 (`mem0ai 2.0.0`) | ✅ visible | ❌ needs an LLM | **NOW RUNNABLE** (was blocked) on `python3.13` after clearing 4 real layers: PEP-604 needs ≥3.10; `pip install ollama` (mem0's Ollama provider pkg); `vector_store.embedding_model_dims=384` (mem0 defaults qdrant to 1536/OpenAI → shape crash with MiniLM); `search(filters={'user_id':…})` not `user_id=` (2.x API). LLM = local Ollama qwen2.5:7b, key-free. CAVEAT: recall is **nondeterministic** — mem0's writes are LLM-mediated, so correct-serve swung **0.0–0.72 across two identical runs**; no stable single number without multi-seed averaging. |
 | LangChain RAG (`langchain 0.3.30`) | ✅ visible | ⚠️ retrieval yes; "memory" varies | vector store + embeddings; LLM only if we score answer quality |
 | Zep (`zep-python 2.0.2`) | ✅ visible | ❌ client for a Zep server | needs a running Zep server (Docker) |
 | Letta | ⚠️ unresolved (`letta` pip name TBD) | ❌ agent server + LLM | server + LLM key |
@@ -151,6 +151,18 @@ and/or a server folklore does not. Two honest ways to handle it:
   the similarity-cache column is covered, and mem0 lands in the same column structurally
   (no provenance, no federation). The ✅-vs-❌ that matters is P2/P3, which don't need
   mem0 to run.
+
+  **UPDATE — mem0 is now RUNNABLE + measured (py3.13), and the result is honestly
+  NONDETERMINISTIC.** After clearing the 4 blockers (see feasibility table), mem0
+  ran the web-gating sweep. Two identical runs gave **different** outcomes:
+  one ~0.4375 fallback @FA≤0.05 (correct-serve 0.72), the next 1.0 (correct-serve 0.0 —
+  mem0's LLM `add` extracted/dedup'd to nothing retrievable). The swing is intrinsic:
+  **every mem0 write goes through an LLM, so recall is nondeterministic** and also pays
+  a token/GPU cost per write (axis D2). Honest conclusion: a single mem0 number is not
+  publishable without multi-seed averaging; what IS stable is that mem0 is a single-user
+  similarity cache with LLM-mediated, nondeterministic writes and no provenance/federation
+  — structurally the same column as LangChain (which measured deterministically at the
+  cosine proxy). We do NOT cherry-pick mem0's favorable run.
 - **P2 — provenance (axis B): MEASURED, folklore WINS — the right head-to-head.**
   `bench/bench-memtool-poison.py` — 8 target queries, each with a trusted CORRECT
   doc + an untrusted POISON doc crafted to mirror the query wording (the realistic

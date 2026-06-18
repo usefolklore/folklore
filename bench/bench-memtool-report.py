@@ -101,6 +101,15 @@ def main():
           "gating runs on a large populated graph in production. The decisive, *valid* comparisons "
           "are P2 (provenance) and P3 (federation).")
         w("")
+        if "mem0" in p1.get("results", {}) and "at_false_accept_budget" in p1["results"]["mem0"]:
+            w("**mem0 (now runnable on py3.13) is MEASURED but NONDETERMINISTIC.** Every mem0 "
+              "write goes through an LLM (Ollama qwen2.5:7b) that extracts/dedups facts, so "
+              "recall swings run-to-run — two identical sweeps gave correct-serve 0.72 and 0.0. "
+              "No stable single number without multi-seed averaging; we do not cherry-pick the "
+              "favorable run. Stable truth: mem0 is a single-user similarity cache with "
+              "LLM-mediated (costly, nondeterministic) writes and no provenance/federation — the "
+              "same column as LangChain, which measured deterministically at the cosine proxy.")
+            w("")
 
     # provenance detail
     if p2:
@@ -163,10 +172,12 @@ def main():
             res = "n/a (this repo)" if not t.get("pkg") else (f"yes ({f.get('version')})" if f.get("resolvable") else "no")
             w(f"| {t['name']} | {t.get('pkg') or '—'} | {res} |")
     w("")
-    w("Blockers: **mem0 measured** needs Python ≥3.10 + torch/sentence-transformers; the sandbox "
-      "`python3` is 3.9 (mem0ai 2.x uses PEP-604), and `python3.13` lacks the ML stack — deferred. "
-      "**Letta** pip name unresolved here. **LangChain (measured)** == the cosine proxy exactly, so "
-      "the similarity-cache column is covered; mem0 lands in that same column structurally.")
+    w("Notes: **mem0** is now RUNNABLE on `python3.13` (after `pip install ollama`, "
+      "`embedding_model_dims=384`, and the 2.x `search(filters=…)` API) — but its recall is "
+      "NONDETERMINISTIC (LLM-mediated writes; correct-serve swung 0.0–0.72 across identical runs), "
+      "so no stable single number is published. **Letta** pip name unresolved here. **LangChain "
+      "(measured)** == the cosine proxy exactly, so the similarity-cache column is covered "
+      "deterministically; mem0 sits in that same column structurally (no provenance / federation).")
     w("")
     w("_Honest benches only: matched embedder (all-MiniLM-L6-v2) across tools, labeled measured vs "
       "simulator, no weak-baseline inflation, blockers flagged not faked._")
