@@ -106,6 +106,18 @@ const BUILT_IN_PATTERNS: ReadonlyArray<{ readonly name: string; readonly re: Reg
     { name: 'api-key-kv',        re: /api[_-]?key\s*[=:]\s*["']?[a-zA-Z0-9._-]{10,}/gi },
     { name: 'env-token',         re: /[A-Z_]{3,}_TOKEN=[^\s"']{8,}/g },
     { name: 'env-secret',        re: /[A-Z_]{3,}_SECRET=[^\s"']{8,}/g },
+    // Defense-in-depth additions (privacy critique): more vendors + a
+    // vendor-agnostic secret-keyed-assignment catch. All precise (no entropy
+    // heuristic, so legit high-entropy content in shared notes isn't mangled).
+    { name: 'gitlab-pat',        re: /glpat-[A-Za-z0-9_-]{20}/g },
+    { name: 'jwt',               re: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g },
+    { name: 'npm-token',         re: /npm_[A-Za-z0-9]{36}/g },
+    { name: 'sendgrid-key',      re: /SG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}/g },
+    { name: 'stripe-restricted', re: /rk_live_[a-zA-Z0-9]{24}/g },
+    { name: 'slack-webhook',     re: /https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9/]+/g },
+    { name: 'basic-auth-url',    re: /https?:\/\/[^\s:@/]+:[^\s:@/]+@[^\s]+/g },
+    // Vendor-agnostic: a secret-named key assigned a credential-shaped value.
+    { name: 'secret-assignment', re: /(?:client_secret|secret_key|access_token|refresh_token|private_token|auth_token|session_token|app_secret)\s*[=:]\s*["']?[A-Za-z0-9._\-+/]{12,}/gi },
   ]);
 
 /**
