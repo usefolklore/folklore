@@ -90,9 +90,24 @@ and/or a server folklore does not. Two honest ways to handle it:
   Pinecone 2, mem0 1, Letta/Zep 0. Feasibility (2026-06-19): mem0ai 2.0.0, langchain
   0.3.30, zep-python 2.0.2, pinecone-client 6.0.0 resolvable; **`letta` NOT resolvable
   in this sandbox** → Letta stays structural-only, excluded from P1 measured runs.
-- **P1 — web-gating (axis A), local-LLM parity:** wire mem0 + LangChain to a local
-  Ollama model; run the repeated/paraphrased stream; measure fallback rate + trips
-  saved. Folklore vs the two that install cleanly.
+- **P1 — web-gating (axis A): MEASURED, partial, honest.**
+  `bench/bench-memtool-webgating.py` — 32-event stream (8 needs × repeats/paraphrases),
+  matched embedder all-MiniLM-L6-v2, each tool as a web-cache, metric = web-fallback
+  rate (lower better, floor 0.25). **Result @ threshold 0.55:** cosine-proxy **0.4375**,
+  LangChain (measured) **0.4375** (identical → proxy validated), folklore (measured)
+  **0.50** (more conservative). mem0 pending (Ollama qwen2.5:7b, slow LLM-per-write).
+  **HONEST READ — not a folklore win:** on single-user *raw hit-rate* folklore ≈ a
+  semantic cache, slightly worse at this operating point. Two caveats make the bare
+  number misleading and BOTH must be fixed before any "vs mem0" claim:
+  (1) **No false-accept axis.** Fallback-rate alone rewards reckless caching — a low
+  threshold serves more (incl. WRONG) memories and looks "better". folklore's gate is
+  calibrated for low false-accept; the fair metric is fallback-rate **at matched
+  false-accept** (the existing `bench-vcache-compare` methodology). Next pass: track
+  serve-WRONG-need + sweep thresholds.
+  (2) **Wrong axis for folklore's edge.** Single-user cache hit-rate is something a
+  plain cosine cache already does; folklore's structural advantage is FEDERATION (the
+  cache is shared across peers — P3) and PROVENANCE/poison-defense (P2), which the
+  single-user tools cannot do at all. Web-gating parity ≠ the differentiator.
 - **P2 — provenance (axis B):** displaced-poison flip-ASR, folklore provenance
   ranking vs plain RAG ranking.
 - **P3 — federation (axis C):** folklore N-peer compounding vs the structural
