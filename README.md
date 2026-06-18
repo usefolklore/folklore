@@ -56,7 +56,7 @@ folklore ask "how does mxbai-rerank compare to cross-encoder on long contexts?"
 # → answered from your own graph if you've researched it; otherwise fetched + saved for next time
 ```
 
-Retrieval quality is benchmarked, not asserted: **0.7522 NDCG@10** on full BEIR SciFact, CPU-only, 11 ms median — ahead of Pinecone-baseline (0.5840), mem0 (0.4410), Letta (0.3150), and LangChain-RAG (0.2680). No LLM grading an LLM.
+Retrieval quality is benchmarked, not asserted: **0.7522 NDCG@10** on full BEIR SciFact, CPU-only, 11 ms median — ahead of standard published BEIR SciFact retrievers (E5-base 0.737, E5-large 0.723, SPLADE 0.699, ColBERT 0.671, BM25 0.665); only a 3B GPU reranker (InRanker, 0.783) scores higher. No LLM grading an LLM.
 
 ## Day N: together
 
@@ -87,7 +87,7 @@ And against the memory tools you might compare it to:
 | Federated across peers | ✅ | ❌ | ❌ | — |
 | Signed provenance per record | ✅ | ❌ | ❌ | ❌ |
 | CPU-only, no API keys | ✅ | ⚠️ | ⚠️ | ❌ |
-| Benchmarked retrieval (BEIR) | 0.7522 | 0.44 / 0.32 | 0.27 | — |
+| Benchmarked retrieval (BEIR SciFact) | 0.7522 | not published | not published | — |
 
 ---
 
@@ -166,7 +166,7 @@ Three claims, each falsifiable, each on disk.
 
 **Faster.** Federation-hit P50 ≈ 140 ms, against 1–2 s for a paid endpoint. Roughly an order of magnitude, every time after the first.
 
-**More complete.** 0.7522 NDCG@10 on full BEIR SciFact, CPU-only, 11 ms median — vs Pinecone-baseline 0.5840, mem0 0.4410, Letta 0.3150, LangChain-RAG 0.2680. No LLM judging an LLM.
+**More complete.** 0.7522 NDCG@10 on full BEIR SciFact, CPU-only, 11 ms median — vs published BEIR SciFact retrievers E5-base 0.737, E5-large 0.723, SPLADE 0.699, ColBERT 0.671, BM25 0.665; only a 3B GPU reranker (InRanker-3b, 0.783) scores higher. No LLM judging an LLM.
 
 **Cheaper.** FolkloreBench-F simulates `web_fallback_rate(t)` over a realistic peer network with offline churn. First run, LoCoMo factual subset:
 

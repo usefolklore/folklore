@@ -324,9 +324,9 @@ FOLKLORE_PREFETCH_PEERS=0     # local-only, skip federated fan-out
 <hr>
 <h2>7. Empirical Validation</h2>
 <h3>7.1 Retrieval quality (per-peer)</h3>
-<p>On the full BEIR SciFact benchmark (5,183 documents, 300 queries), the per-peer retrieval stack scores <strong>0.7522 NDCG@10</strong>, CPU-only, with an 11 ms median, no LLM judging an LLM. For reference against published single-user baselines: Pinecone-baseline 0.5840, mem0 0.4410, Letta 0.3150, LangChain-RAG 0.2680 (Figure 3). This establishes that the per-peer retriever is competitive before any federation; the federation question is separate.</p>
+<p>On the full BEIR SciFact benchmark (5,183 documents, 300 queries), the per-peer retrieval stack scores <strong>0.7522 NDCG@10</strong>, CPU-only, with an 11 ms median, no LLM judging an LLM. For reference against published BEIR SciFact retrieval baselines: E5-base 0.737, E5-large 0.723, SPLADE 0.699, ColBERT 0.671, BM25 0.665; only a 3B GPU reranker (InRanker) scores higher at 0.783 (Figure 3). This establishes that the per-peer retriever leads the production-grade single-vector pack before any federation; the federation question is separate.</p>
 <figure>
-  <img src="figures/fig3-beir.svg" alt="Bar chart of NDCG@10 on BEIR SciFact: folklore 0.7522, Pinecone 0.5840, mem0 0.4410, Letta 0.3150, LangChain 0.2680." />
+  <img src="figures/fig3-beir.svg" alt="Bar chart of NDCG@10 on BEIR SciFact: folklore 0.7522, E5-base 0.737, E5-large 0.723, SPLADE 0.699, ColBERT 0.671, BM25 0.665." />
   <figcaption><strong>Figure 3.</strong> Per-peer retrieval quality on BEIR SciFact (NDCG@10, CPU-only, 11 ms median). folklore is shown against published single-user baselines.</figcaption>
 </figure>
 
