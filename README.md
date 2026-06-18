@@ -135,6 +135,28 @@ export FOLKLORE_PREFETCH_PEERS=0      # local-only; skip federated fan-out
 
 The deny pathway is opt-in by design: a false positive (graph says "I've got it" when it doesn't) costs more than a redundant fetch. You turn it on per project once you trust your graph's coverage.
 
+**On calibration (honest note).** A single fixed `satisfaction_score ≥ 0.85` is a
+blunt instrument: on a real, mixed personal graph the composite satisfaction
+score is compressed and rarely reaches 0.85, so the fixed-threshold gate tends
+to stay quiet. The calibrated alternative is the **energy gate** — it scores
+admission as a free energy over the hits' embedding similarities
+(`−E(q) = T·logsumexp(simᵢ/T)`), so several moderate hits *accumulate* evidence
+instead of being clamped under a ceiling, plus a separation guard that rejects
+the "two-close-answers blur together" case.
+
+```bash
+export FOLKLORE_ENERGY_GATE=1   # calibrated admission instead of the fixed 0.85 score gate
+```
+
+On a labeled real-query set (36 in-corpus / 22 out-of-corpus over the live graph,
+`bench/bench-energy-gate.mjs`) the energy score separates in- from out-of-corpus
+at **AUC 0.78** (the fixed composite manages ~0.52) and fires at **57% true-admit
+/ 0% false-admit** at the fitted operating point. It is still opt-in and the
+defaults are fitted on a small set — re-fit with the bench as your graph grows.
+Run `folklore doctor` any time to see whether the hooks resolve and the
+graph/vector stores are in sync (a degraded memory layer is reported loudly, not
+silently).
+
 ---
 
 ## Proof
