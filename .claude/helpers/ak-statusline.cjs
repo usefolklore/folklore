@@ -6,7 +6,7 @@
  * Reads directly from ~/.folklore/ files — no server needed.
  *
  * Output format (ANSI colored):
- * ┃ folklore • homelab │ 📊 154 nodes  30 edges │ 🔍 154 vectors │ 📡 4 sources │ 🏠 1 room │ 🤖 MCP 11 tools
+ * ┃ folklore • homelab │ 📊 154 nodes  30 edges │ 🔍 154 vectors │ 📡 4 sources │ 🤖 MCP 11 tools
  *
  * Performance: reads 3 small JSON files, no spawns, < 50ms.
  */
@@ -124,16 +124,10 @@ function readJson(filePath) {
 
 function getGraphStats() {
   const graph = readJson(path.join(HOME, 'graph.json'));
-  if (!graph) return { nodes: 0, edges: 0, rooms: new Set() };
+  if (!graph) return { nodes: 0, edges: 0 };
   const nodes = Array.isArray(graph.nodes) ? graph.nodes.length : 0;
   const edges = Array.isArray(graph.links) ? graph.links.length : 0;
-  const rooms = new Set();
-  if (Array.isArray(graph.nodes)) {
-    for (const n of graph.nodes) {
-      if (n.room) rooms.add(n.room);
-    }
-  }
-  return { nodes, edges, rooms };
+  return { nodes, edges };
 }
 
 function getVectorCount() {
@@ -154,15 +148,6 @@ function getSourceCount() {
   const sources = readJson(path.join(HOME, 'sources.json'));
   if (!Array.isArray(sources)) return 0;
   return sources.filter(s => s.enabled !== false).length;
-}
-
-function getRoomInfo() {
-  const registry = readJson(path.join(HOME, 'rooms.json'));
-  if (!registry || !Array.isArray(registry.rooms)) return { count: 0, default: null };
-  return {
-    count: registry.rooms.length,
-    default: registry.default_room || (registry.rooms[0] ? registry.rooms[0].id : null),
-  };
 }
 
 function getDaemonStatus() {
@@ -273,7 +258,6 @@ function main() {
   const graphStats = getGraphStats();
   const vectorEstimate = getVectorCount();
   const sourceCount = getSourceCount();
-  const roomInfo = getRoomInfo();
   const daemonSt = getDaemonStatus();
   const lastTrigger = getLastTrigger();
   const kinds = getNodeKindBreakdown(graph ? graph.nodes : []);
@@ -301,13 +285,10 @@ function main() {
     const idColor = identity.source === 'auth' ? c.cyan : c.dim;
     rightLabel = `${idColor}${icon} ${identity.handle}${c.reset}`;
   } else {
-    const repoRoom = getRepoRoom();
-    const registryHasRepoRoom = repoRoom && Array.isArray(graph?.nodes)
-      ? graphStats.rooms.has(repoRoom)
-      : false;
-    const roomLabel = repoRoom || roomInfo.default || 'no room';
-    const roomMarker = repoRoom && !registryHasRepoRoom ? `${c.dim}*${c.reset}` : '';
-    rightLabel = `${c.cyan}${roomLabel}${c.reset}${roomMarker}`;
+    // No verified identity — fall back to the repo/workspace basename so
+    // the panel still says something useful in a fresh checkout.
+    const wsLabel = getRepoRoom() || 'unlinked';
+    rightLabel = `${c.cyan}${wsLabel}${c.reset}`;
   }
   parts.push(`${c.brightPurple}Folklore${c.reset} ${c.dim}•${c.reset} ${rightLabel}`);
 
@@ -323,10 +304,6 @@ function main() {
 
   // Sources
   parts.push(`📡 ${c.brightYellow}${sourceCount}${c.reset} sources`);
-
-  // Rooms
-  const roomCountStr = `${c.orange}${roomInfo.count}${c.reset}`;
-  parts.push(`🏠 ${roomCountStr} room${roomInfo.count !== 1 ? 's' : ''}`);
 
   // Daemon
   const daemonIcon = daemonSt === 'on' ? `${c.brightGreen}●${c.reset}` : `${c.dim}○${c.reset}`;
