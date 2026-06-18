@@ -16,7 +16,7 @@
 import { join } from 'node:path';
 import { formatError, formatErrorWithHint } from '../../domain/errors.js';
 import { executeFederatedAsk, formatFederatedAsk } from '../../application/federated-ask.js';
-import { indexNode } from '../../application/use-cases.js';
+import { indexNode, recordResolvedQuery } from '../../application/use-cases.js';
 import { ask as askUseCase, type AskResult } from '../../application/ask.js';
 import { defaultRuntime, folkloreHome, detectWorkspace } from '../runtime.js';
 import type { Runtime } from '../runtime.js';
@@ -107,6 +107,27 @@ export const ask = async (args: readonly string[]): Promise<number> => {
     // Apply workspace pre-filter at the CLI boundary (V5: application
     // layer is workspace-agnostic; CLI is the only filter site).
     const filtered = applyWorkspaceFilter(result.value, parsed.workspace);
+
+    // P2P inference-tree reuse (FOLKLORE_QUERY_REUSE): record this resolved
+    // query → its top verified answer docs as a searchable resolved-query node,
+    // so a future (paraphrased) query inherits the answer. Best-effort: never
+    // fails the ask. Default off → no write, no behaviour change.
+    if (process.env.FOLKLORE_QUERY_REUSE === '1') {
+      const answerDocIds = filtered.search_hits
+        .map((h) => h.node_id)
+        .filter((id) => !id.startsWith('resolved-query://'))
+        .slice(0, 2);
+      if (answerDocIds.length > 0) {
+        const rec = await recordResolvedQuery({
+          graphs: runtime.graphs,
+          vectors: runtime.vectors,
+          embedder: runtime.embedder,
+          githubUser: runtime.githubUser,
+        })({ query: parsed.query, answerDocIds });
+        if (rec.isErr()) console.error(`ask: query-reuse record skipped — ${formatErrorWithHint(rec.error)}`);
+      }
+    }
+
     return parsed.json
       ? renderAskJson(filtered)
       : renderAskHuman(filtered);
@@ -188,6 +209,10 @@ const renderAskJson = (r: AskResult): number => {
       distinct_origins: r.satisfaction.distinct_origins,
       reasons: r.satisfaction.reasons,
       penalties: r.satisfaction.penalties,
+      // Energy-based admission verdict (docs/research/energy-based-inference.md).
+      // Exposed so calibration benches (bench-energy-gate) can read the
+      // free-energy / separation distribution without re-running the scorer.
+      energy: r.satisfaction.energy ?? null,
     },
   };
   if (r.resolved_entity) {
