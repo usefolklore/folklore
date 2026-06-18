@@ -233,7 +233,19 @@ For any topic `T` and time `t`, let `R(T, t)` be the number of peers holding res
 ```bash
 npm install -g @usefolklore/folklore
 
-folklore onboard        # daemon, hooks, identity — one pass
+folklore onboard        # one pass: daemon, all hooks, statusline, identity,
+                        # + registers the MCP server in every harness it detects
+```
+
+That's the whole install. No Python, no submodule, no GitHub app required — the
+core (MCP server, `ask`, the energy/deny gate, vectors, the MiniLM embedder) is
+pure Node. GitHub identity and the Python ingest/viz sidecar are both optional and
+can be added later (`folklore login`, `folklore doctor --fix`). To wire other
+coding harnesses at any time:
+
+```bash
+folklore harness list       # show every MCP target + whether it's detected
+folklore harness install    # register the folklore MCP server in each detected one
 ```
 
 Save what teaches you:
@@ -260,11 +272,17 @@ folklore ask "how does mxbai-rerank compare to cross-encoder on long contexts?" 
 
 You don't change how you work. Once Folklore is installed and your daemon is running, every research-shaped tool call is intercepted first. The harness asks Folklore before it asks the web.
 
+Folklore is harness-agnostic and provider-agnostic: the MCP server exposes the
+same `search` / `ask` / `get_node` / `get_neighbors` tools to any MCP-capable
+harness, behind whatever LLM it drives — Anthropic, OpenAI, Gemini, Llama,
+Mistral, DeepSeek, Ollama, Grok. The provider is the harness's; Folklore is the
+retrieval layer underneath.
+
 | Harness | How it wires in |
 |---|---|
-| **Claude Code** | `folklore claude install` wires `PreToolUse` + `PostToolUse` + `SessionStart` hooks and adds a CLAUDE.md section. One command. |
-| **Codex / Gemini / Hermes / OpenClaw** | Register `folklore mcp start` as an MCP server. The harness's tool-routing then prefers Folklore for query-shaped calls. |
-| **Anything with a PreToolUse hook** | Same pattern. `folklore-smart-hook.cjs` is reusable — point your harness's `PreToolUse` config at it. |
+| **Claude Code** | `folklore claude install` — wires the full surface in one command: `PreToolUse` (graph prefetch + MCP-pre), `PostToolUse` (auto-save), `UserPromptSubmit` (prefetch), `SessionStart` (last-session context), the statusline panel, the gate env flags, and a CLAUDE.md section. |
+| **Cursor · Cline · Windsurf · Zed · Gemini CLI · opencode · Roo Code · Claude Desktop** | `folklore harness install` — detects each and registers `folklore mcp start` in its native config (`mcpServers` / `context_servers` / `mcp`). The harness's tool-routing then prefers Folklore for query-shaped calls. |
+| **Anything else that speaks MCP** | `folklore harness install --all`, or add `folklore mcp start` to its MCP config by hand. For harnesses with a `PreToolUse` hook, `folklore-smart-hook.cjs` is reusable too. |
 
 ---
 
