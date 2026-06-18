@@ -160,16 +160,24 @@ class LangChainCache(Adapter):
 class Mem0Cache(Adapter):
     name = "mem0 (measured)"; kind = "MEASURED"
     def __init__(self): self.m=None; self.uid="bench"
+    _CFG={"llm":{"provider":"ollama","config":{"model":OLLAMA_MODEL,"ollama_base_url":"http://localhost:11434"}},
+          "embedder":{"provider":"huggingface","config":{"model":EMBED_MODEL}}}
     def available(self):
+        # Must actually INSTANTIATE — mem0ai 2.x uses PEP-604 `X | None` and
+        # fails to even build its config on Python < 3.10. A bare `import mem0`
+        # passes there but construction throws; if we only checked the import we
+        # would silently run with empty memory and report a bogus 1.0 fallback.
         try:
-            import mem0, requests  # noqa
-            requests.get("http://localhost:11434/api/tags", timeout=3); return True
-        except Exception: return False
+            import requests
+            requests.get("http://localhost:11434/api/tags", timeout=3)
+            from mem0 import Memory
+            Memory.from_config(self._CFG)  # raises on py<3.10
+            return True
+        except Exception as e:
+            self._err = repr(e)[:200]; return False
     def reset(self):
         from mem0 import Memory
-        cfg={"llm":{"provider":"ollama","config":{"model":OLLAMA_MODEL,"ollama_base_url":"http://localhost:11434"}},
-             "embedder":{"provider":"huggingface","config":{"model":EMBED_MODEL}}}
-        try: self.m=Memory.from_config(cfg)
+        try: self.m=Memory.from_config(self._CFG)
         except Exception: self.m=None
     def remember(self, q, nid):
         if self.m is None: return
