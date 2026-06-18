@@ -310,6 +310,7 @@ export const ask =
             const contract = decideContract(satisfaction, {
               shallowEvidence,
               risk: classifyRisk(params.query),
+              energyGate: process.env.FOLKLORE_ENERGY_GATE === '1',
             });
             return { satisfaction, contract };
           };
