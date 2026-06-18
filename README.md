@@ -180,6 +180,28 @@ Three claims, each falsifiable, each on disk.
 
 Bench source: [`tests/bench-folklore-federation.test.ts`](tests/bench-folklore-federation.test.ts).
 
+**Sharing inference trees, measured on real corpora.** Beyond the simulator: when
+peers share their resolved *(question → verified-doc)* trees, a new query
+retrieves by matching the network's answered questions (query↔query, far stronger
+than query↔doc for the same need) and inherits the verified answer. Measured on
+real BEIR sets with real relevance judgments — recall@1 at a **matched ≤2%
+false-accept** budget vs a proper single-node semantic cache (vCache-style),
+always-paraphrase (no exact-query cache):
+
+| corpus | single-node cache | federated tree-sharing | federation gain |
+|---|---|---|---|
+| SciFact | 81.5% | **98.2%** | **+20.5%** |
+| NFCorpus | 77.3% | **97.6%** | **+26.2%** |
+| FiQA | 66.0% | **94.5%** | **+43.3%** |
+
+Same decision rule, same error budget — the gain is purely federation coverage
+(the answer is more likely already in the pooled trees). And one subject-match
+prefetches the whole subject subtree, so the next 4–8 questions land pre-answered.
+Honest scope: this is **federated semantic-cache reuse**, not a cold-retrieval
+SOTA claim (the cold path here is MiniLM); it needs a warm pool (a peer must have
+answered it first). Bench: [`bench/bench-vcache-compare.mjs`](bench/bench-vcache-compare.mjs),
+write-up: [`docs/research/inference-tree-sharing.md`](docs/research/inference-tree-sharing.md).
+
 ### The math
 
 For any topic `T` and time `t`, let `R(T, t)` be the number of peers holding resolved reasoning for `T`. Under Folklore's mechanism `R(T, t)` is **monotonically non-decreasing** — once anyone reasons through `T`, every later peer starts from that conclusion, not from zero. Compounding is a property of the architecture, not a marketing claim.
