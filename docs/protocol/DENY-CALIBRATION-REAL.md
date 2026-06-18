@@ -261,3 +261,46 @@ cache is absent, or there is no `graph.json` — it never fabricates a number.
   *cosine-like* non-zero distance is unremarkable. Any future fix must address
   this before re-measuring.
 ```
+
+---
+
+## Post-fix update (2026-06-18) — the signal bug is fixed; separation still pending
+
+The load-bearing diagnosis above (relevance gate fed a PPR rank-distance, not
+cosine) was acted on in commit `80836d8`: `EnrichedMatch.vec_distance` now carries
+the true embedding distance, snapshotted from the raw vector search before any
+reranker rewrites `distance`, and the scorer's retrieval component + relevance gate
+read it (falling back to `distance` on the recall path).
+
+Re-running this harness on the real graph after the fix:
+
+- In-corpus vs out-of-corpus satisfaction medians moved **0.37 / 0.38 → 0.35 / 0.33**.
+  The important change is the **sign**: pre-fix, out-of-corpus scored *higher* than
+  in-corpus (the bug — off-topic high-centrality hubs read as maximally relevant);
+  post-fix the order is corrected (in-corpus higher). The gate now damps off-topic
+  hubs as intended.
+- **But separation is still ~0.02 — the gate does not fire on real data, and
+  `use_memory` stays 0.85.** Recalibrating the threshold remains the wrong move
+  (the score-only sweep already proved no cut separates the classes).
+
+Why the fix is necessary but not sufficient:
+1. **The trust base dominates.** Satisfaction is `(trust_base − penalty) × relevance`;
+   the trust aggregate (freshness/provenance/consensus/signature) sits in a similar
+   band for in- and out-of-corpus hits on this graph, so even a correct relevance
+   gate only moves the product a little.
+2. **The embedding proximity itself barely separates** these queries — MiniLM-384
+   over paraphrased-title queries does not pull target nodes sharply closer than
+   off-topic ones. A stronger embedder tier (nomic / bge, currently sandbox-blocked)
+   or a coverage component that actually discriminates is needed.
+
+Recommended next levers (in priority order), tracked against the critique synthesis
+and `docs/research/deny-gate-calibration.md`:
+1. Replace the `COVERAGE_WEIGHT` substring (`includes()`) coverage with token-set
+   overlap and re-sweep the weight — lexical coverage is the stronger discriminator
+   when embeddings are weak.
+2. Wire `age_days` into the relevance gate multiplicatively + unify the staleness
+   window (7d doc / 14d scorer / 30d reputation today).
+3. Stand up the shadow-search auto-judge (RFC-0003 OQ#5) to generate labeled
+   good/bad-skip outcomes on real traffic → feed `learnWeights` + a learned
+   threshold, replacing every hand-set constant.
+4. Re-run this harness after each; treat AUC on the labeled set as the gate.
