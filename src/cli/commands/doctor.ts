@@ -274,8 +274,87 @@ function checkV5SchemaReadiness(): Check {
   };
 }
 
+/**
+ * Hook engine resolvable — the silent-failure the dev critique flagged
+ * (commit 1f53b25): all four .claude hooks called `folklore` on PATH, which
+ * isn't there, so every prefetch/deny/auto-save silently no-op'd and nobody
+ * noticed. This mirrors the hooks' resolver (FOLKLORE_BIN → repo dist → PATH)
+ * and reports LOUDLY when none resolves.
+ */
+function checkHookEngine(): Check {
+  const envBin = process.env.FOLKLORE_BIN;
+  const envOk = Boolean(envBin && existsSync(envBin));
+  const distCli = join(repoRoot(), 'dist', 'cli', 'index.js');
+  const distOk = existsSync(distCli);
+  const onPath = spawnSync('command', ['-v', 'folklore'], { encoding: 'utf8', shell: true });
+  const pathOk = onPath.status === 0 && (onPath.stdout || '').trim().length > 0;
+  const ok = envOk || distOk || pathOk;
+  const how = envOk ? 'FOLKLORE_BIN' : distOk ? 'repo dist/cli/index.js' : pathOk ? 'folklore on PATH' : 'none';
+  return {
+    name: 'hook engine resolvable',
+    ok,
+    detail: ok
+      ? `resolves via ${how}`
+      : 'NO engine — FOLKLORE_BIN unset, dist/ not built, folklore not on PATH; hooks will silently no-op',
+    blocking: false,
+    fix: 'run `npm run build`, add folklore to PATH, or set FOLKLORE_BIN',
+  };
+}
+
+/**
+ * Graph↔vector store drift — the two stores are written by separate paths
+ * with no cross-store transaction (dev critique). Surfaces the orphan rate
+ * (vec_meta rows whose node_id no longer resolves in graph.json) by reusing
+ * the tested `prune-vectors --dry-run`. Orphans depress retrieval; left
+ * unchecked they look identical to a healthy store.
+ */
+function checkStoreDrift(): Check {
+  const home = folkloreHome();
+  const vectors = join(home, 'vectors.db');
+  const graph = join(home, 'graph.json');
+  if (!existsSync(vectors) || !existsSync(graph)) {
+    return { name: 'graph↔vector drift', ok: true, detail: 'no store yet — nothing to reconcile', blocking: false };
+  }
+  const cli = join(repoRoot(), 'dist', 'cli', 'index.js');
+  if (!existsSync(cli)) {
+    return { name: 'graph↔vector drift', ok: false, detail: 'skipped — dist not built', blocking: false, fix: 'run `npm run build`' };
+  }
+  const r = spawnSync('node', [cli, 'prune-vectors', '--dry-run', '--json'], {
+    encoding: 'utf8',
+    env: { ...process.env, FOLKLORE_HOME: home },
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  if (r.status !== 0) {
+    return { name: 'graph↔vector drift', ok: false, detail: 'could not probe vectors.db', blocking: false };
+  }
+  try {
+    // prune-vectors --json pretty-prints the whole object to stdout (node
+    // warnings go to stderr), so parse the entire stdout, not the last line.
+    const d = JSON.parse((r.stdout || '').trim()) as {
+      scanned: number;
+      orphans: number;
+      resolved: number;
+    };
+    const rate = d.scanned ? (d.resolved / d.scanned) * 100 : 100;
+    const ok = d.orphans === 0;
+    return {
+      name: 'graph↔vector drift',
+      ok,
+      detail: ok
+        ? `${d.scanned} vectors, 100% resolve in graph`
+        : `${d.orphans}/${d.scanned} orphaned vectors (${rate.toFixed(1)}% resolve)`,
+      blocking: false,
+      fix: 'run `folklore prune-vectors` to drop orphaned vectors',
+    };
+  } catch {
+    return { name: 'graph↔vector drift', ok: false, detail: 'could not parse prune-vectors output', blocking: false };
+  }
+}
+
 function render(c: Check): string {
-  const mark = c.ok ? '[ ok ]' : c.blocking ? '[fail]' : '[skip]';
+  // Non-blocking failures render [WARN] (not [skip]) — a dead memory layer
+  // must not look like a quiet healthy one (dev critique).
+  const mark = c.ok ? '[ ok ]' : c.blocking ? '[FAIL]' : '[WARN]';
   const line = `${mark} ${c.name.padEnd(28)} ${c.detail}`;
   if (!c.ok && c.fix) return `${line}\n       fix: ${c.fix}`;
   return line;
@@ -312,6 +391,8 @@ export async function doctor(args: string[]): Promise<number> {
     graphImport,
     checkSchemaPatch(graphImport),
     checkV5SchemaReadiness(),
+    checkHookEngine(),
+    checkStoreDrift(),
   ];
 
   console.log('folklore doctor\n');
@@ -319,11 +400,16 @@ export async function doctor(args: string[]): Promise<number> {
   console.log('');
 
   const blocking = checks.filter((c) => !c.ok && c.blocking);
+  const warnings = checks.filter((c) => !c.ok && !c.blocking);
   if (blocking.length === 0) {
-    console.log('all checks pass — phase 1 runtime is healthy.');
+    if (warnings.length === 0) {
+      console.log('all checks pass — runtime is healthy.');
+      return 0;
+    }
+    console.log(`runtime OK, but ${warnings.length} warning(s) — see [WARN] above (memory layer may be degraded).`);
     return 0;
   }
-  console.log(`${blocking.length} blocking issue(s).`);
+  console.log(`${blocking.length} blocking issue(s)${warnings.length ? ` + ${warnings.length} warning(s)` : ''}.`);
   if (!args.includes('--fix')) {
     console.log("run 'folklore doctor --fix' to bootstrap the venv + graphify install.");
   }
