@@ -192,22 +192,24 @@ const stepIdentity = async (home: string): Promise<string | null> => {
 };
 
 /**
- * MANDATORY GitHub OAuth link (Phase 26 stage B). folklore communication
- * and identity are GitHub-anchored — every node is tagged github_user
- * at write time, federation envelopes pin the peer's claimed handle —
- * so a fresh install MUST link an account before the wizard advances.
+ * OPTIONAL GitHub identity link. folklore's graph works fully offline —
+ * GitHub anchoring only matters once you federate (peers verify the
+ * handle a node claims against your signing key). So onboarding NEVER
+ * blocks on it: a fresh local install must be a single, frictionless
+ * command. Linking is offered, and skipped cleanly when it can't run.
  *
- * Three abort paths:
- *   - No FOLKLORE_GITHUB_CLIENT_ID  → process.exit(1) with setup steps
- *   - User declines the prompt     → process.exit(1) with re-run hint
- *   - OAuth flow fails             → process.exit(1) with retry hint
+ * Three skip paths (all continue onboarding — none abort):
+ *   - No FOLKLORE_GITHUB_CLIENT_ID  → note how to link later, continue
+ *   - User declines the prompt     → note `folklore login` later, continue
+ *   - OAuth flow fails             → warn, continue (graph still works)
  *
  * Idempotent: if linked-accounts.json already has a github entry, the
  * step short-circuits with "already linked" and proceeds. Re-running
  * onboard never re-triggers an OAuth round-trip the user doesn't need.
  *
  * The actual OAuth flow lives in src/cli/commands/login.ts; this step
- * calls it via the same dispatcher the standalone command uses.
+ * calls it via the same dispatcher the standalone command uses. Link
+ * any time later with `folklore login`.
  */
 const stepLoginGithub = async (flags: Flags, home: string): Promise<void> => {
   // Idempotency: skip cleanly when already linked.
@@ -223,21 +225,18 @@ const stepLoginGithub = async (flags: Flags, home: string): Promise<void> => {
   if (!clientId || clientId.trim().length === 0) {
     note(
       [
-        'folklore identity is GitHub-anchored — every node you author is',
-        'tagged with your verified handle, and peers verify that handle',
-        'against your local signing key before accepting your nodes.',
-        '',
-        'No GitHub login = no shared graph. To finish onboarding:',
+        'Skipping GitHub link — your graph works fully offline without it.',
+        'You only need it to FEDERATE (peers verify the handle a node claims',
+        'against your signing key). To link later, when you want to share:',
         '  1. Register a Device Flow OAuth app:',
         '     https://github.com/settings/applications/new',
         '     (any callback URL; enable "Device Flow" in app settings)',
         '  2. export FOLKLORE_GITHUB_CLIENT_ID="Iv1.<your_id>"',
-        '  3. Re-run `folklore onboard`',
+        '  3. folklore login',
       ].join('\n'),
-      'GitHub login required — FOLKLORE_GITHUB_CLIENT_ID not set',
+      'GitHub identity (optional) — not configured, skipped',
     );
-    cancel('onboarding cannot proceed without a GitHub identity.');
-    process.exit(1);
+    return;
   }
 
   // --yes auto-confirms login (CI path). Interactive: explicit confirm.
@@ -245,13 +244,13 @@ const stepLoginGithub = async (flags: Flags, home: string): Promise<void> => {
     ? true
     : ensure(
         await confirm({
-          message: `Link your GitHub identity now via ${clientId.slice(0, 8)}…?`,
+          message: `Link your GitHub identity now via ${clientId.slice(0, 8)}…? (optional — needed only to federate)`,
           initialValue: true,
         }),
       );
   if (!proceed) {
-    cancel('GitHub link declined — onboarding aborted. Re-run when you\'re ready to link.');
-    process.exit(1);
+    log.info('GitHub link skipped — run `folklore login` whenever you want to federate.');
+    return;
   }
 
   // Defer to the standalone login command so the flow + persistence
@@ -260,8 +259,7 @@ const stepLoginGithub = async (flags: Flags, home: string): Promise<void> => {
   const { login } = await import('./login.js');
   const exit = await login([]);
   if (exit !== 0) {
-    cancel('GitHub login failed — onboarding aborted. Run `folklore login` to retry.');
-    process.exit(1);
+    log.warn('GitHub login did not complete — continuing. Your graph still works locally; retry with `folklore login`.');
   }
 };
 
