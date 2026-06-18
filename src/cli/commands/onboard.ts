@@ -46,6 +46,7 @@ import { loadPeers } from '../../infrastructure/peer-store.js';
 import { isRunning, readPid } from '../../daemon/loop.js';
 import { runtimePaths } from '../runtime.js';
 import { claudeInstall } from './claude-install.js';
+import { harness } from './harness.js';
 
 // ─────────────── flags ─────────────────────
 
@@ -297,6 +298,21 @@ const stepClaudeInstall = async (projectDir: string): Promise<void> => {
     process.stdout.write = stdoutWrite;
   }
   sp2.stop('Claude Code wired (prefetch + MCP-pre + auto-save + prompt prefetch + session summary + statusline + gates)');
+
+  // Other harnesses speak MCP, not Claude Code hooks. Register the folklore
+  // MCP server into every *detected* harness (Cursor, Cline, Windsurf, Zed,
+  // Gemini CLI, opencode, Roo, Claude Desktop) so the graph's tools are
+  // available there too — whatever LLM provider that harness drives.
+  const sp3 = spinner();
+  sp3.start('registering the folklore MCP server in other detected harnesses');
+  const restore = process.stdout.write.bind(process.stdout);
+  process.stdout.write = (() => true) as typeof process.stdout.write;
+  try {
+    await harness(['install']);
+  } finally {
+    process.stdout.write = restore;
+  }
+  sp3.stop('other harnesses checked — run `folklore harness list` to see what was wired');
 };
 
 /**

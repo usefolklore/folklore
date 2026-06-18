@@ -21,6 +21,7 @@ import { daemon } from './commands/daemon.js';
 import { discoverCmd } from './commands/discover.js';
 import { indexProject } from './commands/index-project.js';
 import { claudeInstall } from './commands/claude-install.js';
+import { harness } from './commands/harness.js';
 import { discoverLoopCmd } from './commands/discover-loop.js';
 import { publish } from './commands/publish.js';
 import { viz } from './commands/viz.js';
@@ -80,6 +81,7 @@ const commands: Record<string, CommandFn> = {
   discover: discoverCmd,
   index: indexProject,
   claude: claudeInstall,
+  harness,
   'discover-loop': discoverLoopCmd,
   publish,
   viz,
