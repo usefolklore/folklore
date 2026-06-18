@@ -6,7 +6,32 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { extractQueryTerms, buildCoverageMap, type CoverageHit } from '../src/domain/coverage.js';
+import {
+  extractQueryTerms,
+  buildCoverageMap,
+  coverageRatio,
+  type CoverageHit,
+} from '../src/domain/coverage.js';
+
+// ─────────── coverageRatio (token-set, not substring) ─────────────
+
+test('coverageRatio: whole-token match, no substring bleed', () => {
+  assert.equal(coverageRatio(['cat'], 'this is about category theory'), 0);
+  assert.equal(coverageRatio(['category'], 'this is about category theory'), 1);
+});
+
+test('coverageRatio: fraction of query terms present as whole tokens', () => {
+  assert.equal(coverageRatio(['vllm', 'oom', 'paging'], 'vllm hits an oom under load'), 2 / 3);
+});
+
+test('coverageRatio: quoted multi-word phrase keeps substring semantics', () => {
+  assert.equal(coverageRatio(['energy based model'], 'an energy based model scores configs'), 1);
+  assert.equal(coverageRatio(['energy based model'], 'energy and a based guess of the model'), 0);
+});
+
+test('coverageRatio: no query terms → undefined (gate falls back to proximity)', () => {
+  assert.equal(coverageRatio([], 'anything'), undefined);
+});
 
 // ─────────── extractQueryTerms ─────────────
 

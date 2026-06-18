@@ -77,6 +77,40 @@ export const extractQueryTerms = (query: string): readonly string[] => {
   return terms.slice(0, MAX_TERMS);
 };
 
+/** Tokenize text into a set of content tokens (same alphabet as query terms). */
+const tokenize = (text: string): ReadonlySet<string> =>
+  new Set(
+    text
+      .toLowerCase()
+      .split(/[^a-z0-9.+#-]+/)
+      .filter((t) => t.length > 0),
+  );
+
+/**
+ * Fraction of query terms covered by the hit text — the lexical relevance
+ * signal fed into the satisfaction relevance gate.
+ *
+ * Token-set membership, NOT substring: a single term is covered iff it
+ * appears as a WHOLE token in the hit text (so "cat" no longer matches
+ * "category" — the token-boundary-blindness the QoS critique flagged, which
+ * rewarded lexically-overlapping-but-wrong near-misses). Multi-word quoted
+ * phrases keep substring matching, since a quoted phrase is an explicit
+ * contiguous-intent signal. Returns undefined when there are no query terms
+ * (the gate then falls back to embedding proximity alone).
+ */
+export const coverageRatio = (
+  queryTerms: readonly string[],
+  hitText: string,
+): number | undefined => {
+  if (queryTerms.length === 0) return undefined;
+  const tokens = tokenize(hitText);
+  const lower = hitText.toLowerCase();
+  const covered = queryTerms.filter((t) =>
+    t.includes(' ') ? lower.includes(t) : tokens.has(t),
+  ).length;
+  return covered / queryTerms.length;
+};
+
 /**
  * Build a query-term coverage map over the retrieved hits. Pure.
  */
