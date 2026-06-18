@@ -875,10 +875,11 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
     <div class="proofrow">
     <div class="bars" id="bars">
       <div class="bar me"><span class="nm">Folklore</span><span class="tr"><span class="fl" style="--w:75.2%"></span></span><span class="v">0.7522</span></div>
-      <div class="bar"><span class="nm">Pinecone base</span><span class="tr"><span class="fl" style="--w:58.4%"></span></span><span class="v">0.5840</span></div>
-      <div class="bar"><span class="nm">mem0</span><span class="tr"><span class="fl" style="--w:44.1%"></span></span><span class="v">0.4410</span></div>
-      <div class="bar"><span class="nm">Letta</span><span class="tr"><span class="fl" style="--w:31.5%"></span></span><span class="v">0.3150</span></div>
-      <div class="bar"><span class="nm">LangChain RAG</span><span class="tr"><span class="fl" style="--w:26.8%"></span></span><span class="v">0.2680</span></div>
+      <div class="bar"><span class="nm">E5-base</span><span class="tr"><span class="fl" style="--w:73.7%"></span></span><span class="v">0.7370</span></div>
+      <div class="bar"><span class="nm">E5-large</span><span class="tr"><span class="fl" style="--w:72.3%"></span></span><span class="v">0.7230</span></div>
+      <div class="bar"><span class="nm">SPLADE</span><span class="tr"><span class="fl" style="--w:69.9%"></span></span><span class="v">0.6990</span></div>
+      <div class="bar"><span class="nm">ColBERT</span><span class="tr"><span class="fl" style="--w:67.1%"></span></span><span class="v">0.6710</span></div>
+      <div class="bar"><span class="nm">BM25</span><span class="tr"><span class="fl" style="--w:66.5%"></span></span><span class="v">0.6650</span></div>
     </div>
     <div class="curve-wrap rv" data-d="1" aria-label="Web-fallback rate decays from 17% to 1% over 2000 queries as the graph compounds.">
       <svg class="curve-chart" viewBox="0 0 420 270" aria-hidden="true">
@@ -905,7 +906,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       </svg>
     </div>
     </div>
-    <p class="body rv" style="margin-top:18px;font-size:.98rem;font-style:italic;opacity:.8;max-width:60ch">CPU-only retrieval. NDCG is real BEIR SciFact; poison-defense is real displaced-poison retrieval (Haiku agent, Opus judge). Compounding &amp; token figures are simulator-grade — the hundred-peer pilot is next.</p>
+    <p class="body rv" style="margin-top:18px;font-size:.98rem;font-style:italic;opacity:.8;max-width:64ch">CPU-only retrieval, full stack (hybrid + cross-encoder + graph PPR), on full BEIR SciFact. Baselines are published BEIR SciFact NDCG@10 (BM25, ColBERT, SPLADE, E5) — Folklore leads the production-grade pack; a 3B GPU reranker (InRanker) tops it at 0.783. Poison-defense is real displaced-poison retrieval (Haiku agent, Opus judge). Compounding &amp; token figures are simulator-grade — the hundred-peer pilot is next.</p>
   </div>
 </section>
 
