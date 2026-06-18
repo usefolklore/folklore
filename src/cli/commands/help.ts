@@ -17,7 +17,8 @@ getting started:
   seed [--force|--dry-run]  seed a fresh graph with a curated concept corpus (warm cold-start)
   doctor [--fix]          check runtime prerequisites (and bootstrap with --fix)
   login                   link a verified GitHub identity to your DID (OAuth)
-  claude install|uninstall  make Claude Code use the graph automatically (hook + CLAUDE.md)
+  claude install|uninstall  make Claude Code use the graph automatically (hooks + CLAUDE.md)
+  harness list|install    register the folklore MCP server in other harnesses (Cursor/Cline/Zed/…)
   migrate v5              upgrade ~/.folklore/ from V4 (rooms) to V5 (workspace+private)
   update                  check for a signed release manifest + upgrade instructions
 

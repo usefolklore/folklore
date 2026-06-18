@@ -1,14 +1,14 @@
 {
-  "name": "akashik",
+  "name": "folklore",
   "version": "0.0.1",
-  "description": "Queryable, embeddings-backed knowledge graph fed by a research daemon and your daily scroll (via Telegram). Rooms-scoped, shared tools.",
+  "description": "Knowledge-graph-first, network-before-web research layer with P2P federation. Your coding agent answers from your actual research and codebase, not its training data. Works in any MCP-capable harness.",
   "engines": {
     "claudeCode": ">=1.0.0"
   },
   "mcpServers": {
-    "akashik": {
+    "folklore": {
       "command": "npx",
-      "args": ["--yes", "akashik", "mcp", "start"],
+      "args": ["--yes", "folklore", "mcp", "start"],
       "env": {}
     }
   }
