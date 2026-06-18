@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-06-18T06:54:57.020Z",
+  "graph": "/Users/saharbarak/.folklore/graph.json",
+  "graph_nodes": 21134,
+  "seed": 1318,
+  "in_corpus_count": 36,
+  "in_corpus_strata": {
+    "arxiv": 18,
+    "web": 18
+  },
+  "out_of_corpus_count": 22,
+  "label_method": {
+    "in_corpus": "natural recall question derived from a real node label; node id recorded as provenance; answerability is structural (the node exists), satisfaction is measured by the bench not assumed",
+    "out_of_corpus": "topic absent from a software-research corpus; reason recorded; absence confirmed at bench time by nearest-hit distance"
+  }
+}
