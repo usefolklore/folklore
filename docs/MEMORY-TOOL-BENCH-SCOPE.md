@@ -139,8 +139,21 @@ and/or a server folklore does not. Two honest ways to handle it:
   and **P3 (federation)** — axes the single-user tools cannot perform at all. The
   harness (`bench/bench-memtool-webgating.py`) stays as the reproducible source of the
   cosine/LangChain numbers; mem0 run still pending but deprioritised behind P2/P3.
-- **P2 — provenance (axis B):** displaced-poison flip-ASR, folklore provenance
-  ranking vs plain RAG ranking.
+- **P2 — provenance (axis B): MEASURED, folklore WINS — the right head-to-head.**
+  `bench/bench-memtool-poison.py` — 8 target queries, each with a trusted CORRECT
+  doc + an untrusted POISON doc crafted to mirror the query wording (the realistic
+  displaced-poison attack). Matched all-MiniLM-L6-v2; identical corpus + retrieval;
+  the ONLY variable is provenance. Metric = flip-ASR (top-1 retrieved is the poison).
+  **Result:** similarity-only ranking (= mem0/LangChain/RAG, which carry no
+  provenance field) **flip-ASR 0.625**; folklore provenance-demotion drops it to
+  **0.125 @0.2** and **0.0 @0.4**. Competitors **structurally cannot leave the 0.625
+  column** — they have no signed-source field to rank on. Direction matches the live
+  Fellows LLM eval (Haiku/Opus, model-grade): 58.9% → 2.4% with provenance ranking.
+  Honest labels: MEASURED on real embeddings; the trust signal (trusted/untrusted)
+  models signed-source / verified-github-handle in production; n=8 micro-harness
+  corroborating the lever's direction, not a full attack matrix. The demotion
+  magnitude is a free parameter — the point is that ANY real provenance signal cuts
+  flip-ASR sharply while the competitors have ZERO such signal.
 - **P3 — federation (axis C):** folklore N-peer compounding vs the structural
   single-user ceiling of the silos.
 
