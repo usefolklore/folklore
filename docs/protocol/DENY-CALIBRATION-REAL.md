@@ -304,3 +304,35 @@ and `docs/research/deny-gate-calibration.md`:
    good/bad-skip outcomes on real traffic → feed `learnWeights` + a learned
    threshold, replacing every hand-set constant.
 4. Re-run this harness after each; treat AUC on the labeled set as the gate.
+
+---
+
+## Benchmark refresh (2026-06-18) — after the three scorer fixes
+
+Re-ran `bench-deny-real` + `bench-energy-gate` after: the relevance-gate signal
+fix (`80836d8`, true cosine not PPR distance), token-set coverage (`2b109e8`),
+and the freshness gate (`a8bca26`). Net effect on the **composite satisfaction**
+distribution (the score any threshold sits against):
+
+| metric | before fixes | after fixes |
+|---|---|---|
+| in-corpus median satisfaction | 0.35 | **0.34** |
+| out-of-corpus median satisfaction | 0.38 (≥ in — the bug) | **0.13** |
+| in−out separation | ~0 (overlapping) | **0.21** |
+
+The fixes work: off-topic out-of-corpus hits now score **correctly low** (0.13)
+instead of masquerading at/above in-corpus. That is real separation where there
+was none.
+
+**But the fixed `0.85` score threshold still cannot fire** — the composite tops
+out near ~0.5, so VARIANT A (shipped score gate) reaches 0% true-deny, and the
+best score-only cell is τ=0.75 / minHits 3 → only 11% true-deny. A *fixed*
+score threshold is the wrong instrument for a compressed composite.
+
+**The energy gate is the shipped path.** On the same fixtures the energy
+admission `−E(q)` separates at **AUC = 0.78** with the fitted operating point
+**τ=−0.016 → 57% true-admit / 0% false-admit** on −E (43%/0% with the sepMin
+guard). So: the scorer fixes opened the separation; the energy gate
+(`FOLKLORE_ENERGY_GATE=1`) is what converts that separation into a gate that
+actually fires. Other benches (compounding, scifact-offline, index-health) are
+retrieval/economic and unaffected by these scorer changes.
