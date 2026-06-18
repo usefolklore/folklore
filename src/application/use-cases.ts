@@ -21,6 +21,7 @@ import {
   upsertNode as upsertNodePure,
 } from '../domain/graph.js';
 import { type Match } from '../domain/vectors.js';
+import { makeResolvedQueryNode } from '../domain/query-reuse.js';
 import type { GraphRepository } from '../infrastructure/graph-repository.js';
 import type { VectorIndex } from '../infrastructure/vector-index.js';
 import type { Embedder } from '../infrastructure/embedders.js';
@@ -115,6 +116,19 @@ export const indexNode =
             .andThen((next) => deps.graphs.save(next).mapErr((e): AppError => e).map(() => next));
         }),
       );
+
+/**
+ * Record a resolved-query node (P2P inference-tree reuse). Stores the QUESTION
+ * (embedded → query↔query-searchable) linked to its verified answer-doc node
+ * ids, so a later paraphrase retrieves it and inherits the verified docs. Gated
+ * by the caller (FOLKLORE_QUERY_REUSE). Reuses indexNode, so it embeds, upserts
+ * to the vector index, and persists to the graph exactly like any other node —
+ * and federates over the existing CRDT. See domain/query-reuse.ts.
+ */
+export const recordResolvedQuery =
+  (deps: UseCaseDeps) =>
+  (cmd: { readonly query: string; readonly answerDocIds: readonly NodeId[] }): ResultAsync<Graph, AppError> =>
+    indexNode(deps)({ node: makeResolvedQueryNode(cmd.query, cmd.answerDocIds), text: cmd.query });
 
 // ─────────────────────── searchGlobal ─────────────────────
 

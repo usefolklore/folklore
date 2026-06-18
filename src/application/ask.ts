@@ -48,6 +48,7 @@ import {
   type SatisfactionScore,
 } from '../domain/peer-telemetry.js';
 import { extractQueryTerms, coverageRatio } from '../domain/coverage.js';
+import { expandResolvedQueries } from '../domain/query-reuse.js';
 
 // ─────────────── result shape ─────────────
 
@@ -270,7 +271,14 @@ export const ask =
           const pprRes = pprRerank(graph, xMatches);
           const ranked: readonly Match[] = pprRes.isOk() ? pprRes.value : xMatches;
 
-          const enriched = ranked.map((m) => buildHit(m, graph, deps.entityRegistry, nowMs));
+          // P2P inference-tree reuse (FOLKLORE_QUERY_REUSE): expand any match on
+          // a resolved-query node ("someone already answered this") into its
+          // verified answer docs at the query↔query distance. Default off →
+          // unchanged retrieval. See domain/query-reuse.ts.
+          const reused: readonly Match[] =
+            process.env.FOLKLORE_QUERY_REUSE === '1' ? expandResolvedQueries(ranked, graph) : ranked;
+
+          const enriched = reused.map((m) => buildHit(m, graph, deps.entityRegistry, nowMs));
 
           // V5: uniform global half-life — always rerank.
           const reranked = rerankByRecencyAdapter(enriched);
