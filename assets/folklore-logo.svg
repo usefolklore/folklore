@@ -1,15 +1,11 @@
-<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Folklore">
-  <rect width="256" height="256" rx="56" fill="#f4ecd8"/>
-  <!-- the voice of the people: one speech, composed of the folk -->
-  <path d="M44 70 h168 a16 16 0 0 1 16 16 v74 a16 16 0 0 1 -16 16 h-96 l-40 34 v-34 h-32 a16 16 0 0 1 -16 -16 v-74 a16 16 0 0 1 16 -16 z" fill="#1d1813"/>
-  <!-- the folk: many, deciding together; a majority in ink, a few voices in colour -->
-  <g>
-    <circle cx="86" cy="108" r="13" fill="#ff4f6d"/>
-    <circle cx="128" cy="108" r="13" fill="#f4ecd8"/>
-    <circle cx="170" cy="108" r="13" fill="#2fb6a3"/>
-    <circle cx="107" cy="146" r="13" fill="#f5b921"/>
-    <circle cx="149" cy="146" r="13" fill="#5a6fd6"/>
-    <circle cx="65" cy="146" r="13" fill="#f4ecd8"/>
-    <circle cx="191" cy="146" r="13" fill="#f4ecd8"/>
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Folklore — gathered hearth">
+  <rect width="256" height="256" rx="56" fill="#1d1813"/>
+  <!-- campfire + folk gathered: scaled from the brand mark, padded for round-crop safety -->
+  <g transform="translate(30,30) scale(3.0625)">
+    <path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d"/>
+    <path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/>
+    <g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g>
+    <g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g>
+    <g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g>
   </g>
 </svg>
