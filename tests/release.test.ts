@@ -72,6 +72,7 @@ const signManifest = (
     project_did: body.project_did,
   };
   if (body.min_supported_version !== undefined) obj.min_supported_version = body.min_supported_version;
+  if (body.force_upgrade !== undefined) obj.force_upgrade = body.force_upgrade;
   const keys = Object.keys(obj).sort();
   const parts: string[] = [];
   for (const k of keys) parts.push(`${JSON.stringify(k)}:${JSON.stringify(obj[k])}`);
@@ -362,6 +363,75 @@ describe('update-checker — checkForUpdate flow', () => {
     const fakeFetch: typeof fetch = (async () => { throw new Error('ENOTFOUND'); }) as typeof fetch;
     const r = await checkForUpdate(home, '3.0.0', fakeFetch);
     assert.ok(r.isErr());
+  });
+});
+
+describe('update-checker — force_upgrade flag', () => {
+  const configFor = (did: string) =>
+    configureUpdates(home, {
+      project_did: did as unknown as Parameters<typeof configureUpdates>[1]['project_did'],
+      manifest_url: 'http://test.invalid/latest.json',
+      check_interval_seconds: 86400,
+      channel: 'stable',
+      auto_check_enabled: false,
+    });
+
+  it('surfaces force_upgrade:true on a verified, eligible, force-signed manifest', async () => {
+    const project = newProject();
+    await configFor(project.identity.did);
+    const m = signManifest({
+      schema: 1, version: '3.1.0', channel: 'stable',
+      released_at: '2026-04-17T00:00:00.000Z',
+      tarball_url: 'https://x', tarball_sha256: 'a'.repeat(64),
+      force_upgrade: true,
+      notes: 'mandatory security fix', project_did: project.identity.did,
+    }, project.privateKey);
+    const fakeFetch: typeof fetch = (async () => ({ ok: true, status: 200, json: async () => m } as Response)) as typeof fetch;
+    const r = await checkForUpdate(home, '3.0.0', fakeFetch);
+    assert.ok(r.isOk());
+    if (r.isOk()) {
+      assert.equal(r.value.upgrade_eligible, true);
+      assert.equal(r.value.force_upgrade, true);
+    }
+  });
+
+  it('force_upgrade is part of the signed body — flipping it post-sign breaks verification', async () => {
+    const project = newProject();
+    await configFor(project.identity.did);
+    const m = signManifest({
+      schema: 1, version: '3.1.0', channel: 'stable',
+      released_at: '2026-04-17T00:00:00.000Z',
+      tarball_url: 'https://x', tarball_sha256: 'a'.repeat(64),
+      force_upgrade: false,
+      notes: 'normal release', project_did: project.identity.did,
+    }, project.privateKey);
+    // A hostile mirror flips the flag without re-signing.
+    const tampered = { ...m, force_upgrade: true };
+    const fakeFetch: typeof fetch = (async () => ({ ok: true, status: 200, json: async () => tampered } as Response)) as typeof fetch;
+    const r = await checkForUpdate(home, '3.0.0', fakeFetch);
+    assert.ok(r.isOk());
+    if (r.isOk()) {
+      assert.equal(r.value.upgrade_available, false, 'tampered manifest must fail signature verification');
+      assert.equal(r.value.force_upgrade, false, 'force must never be honoured on an unverified manifest');
+    }
+  });
+
+  it('force_upgrade is false on a non-forced manifest', async () => {
+    const project = newProject();
+    await configFor(project.identity.did);
+    const m = signManifest({
+      schema: 1, version: '3.1.0', channel: 'stable',
+      released_at: '2026-04-17T00:00:00.000Z',
+      tarball_url: 'https://x', tarball_sha256: 'a'.repeat(64),
+      notes: 'no force field', project_did: project.identity.did,
+    }, project.privateKey);
+    const fakeFetch: typeof fetch = (async () => ({ ok: true, status: 200, json: async () => m } as Response)) as typeof fetch;
+    const r = await checkForUpdate(home, '3.0.0', fakeFetch);
+    assert.ok(r.isOk());
+    if (r.isOk()) {
+      assert.equal(r.value.upgrade_eligible, true);
+      assert.equal(r.value.force_upgrade, false);
+    }
   });
 });
 

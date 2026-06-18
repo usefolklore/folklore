@@ -392,7 +392,21 @@ export const RerankError = {
   disabled:  (): RerankError => ({ type: 'RerankDisabled' }),
 } as const;
 
-export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError | TouchError | IdentityError | ConsolidationError | RerankError;
+/**
+ * Self-update / installer errors. The check+verify path reuses PeerError
+ * (read/parse); these cover the install step proper — detecting the install
+ * method and running the package-manager swap.
+ */
+export type UpdateError =
+  | { readonly type: 'UpdateMethodUnknown'; readonly message: string }
+  | { readonly type: 'UpdateInstallFailed'; readonly command: string; readonly code: number; readonly message: string };
+
+export const UpdateError = {
+  methodUnknown: (message: string): UpdateError => ({ type: 'UpdateMethodUnknown', message }),
+  installFailed: (command: string, code: number, message: string): UpdateError => ({ type: 'UpdateInstallFailed', command, code, message }),
+} as const;
+
+export type AppError = GraphError | VectorError | EmbeddingError | PeerError | ScanError | ShareError | SearchError | CodebaseError | NetError | SessionError | TouchError | IdentityError | ConsolidationError | RerankError | UpdateError;
 
 /** Render a tagged error as a one-line human-readable string. */
 export const formatError = (e: AppError): string => {
@@ -537,6 +551,10 @@ export const formatError = (e: AppError): string => {
       return `rerank inference failed: ${e.message}`;
     case 'RerankDisabled':
       return `rerank disabled (FOLKLORE_RERANK is not set)`;
+    case 'UpdateMethodUnknown':
+      return `update install: ${e.message}`;
+    case 'UpdateInstallFailed':
+      return `update install failed (${e.command}) exit ${e.code}: ${e.message}`;
   }
 };
 
