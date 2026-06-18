@@ -83,9 +83,13 @@ and/or a server folklore does not. Two honest ways to handle it:
 
 ## Phased plan
 
-- **P0 — capability matrix (no LLM needed):** formalise the README table into a
-  reproducible structural comparison (which tool can even do A/B/C). Cheap, honest,
-  shippable first.
+- **P0 — capability matrix (no LLM needed): DONE.** `bench/bench-memory-tools.mjs`
+  — reproducible structural matrix + live pip-feasibility probe. Result (structural,
+  not measured): Folklore 5/6 (only `no_server` ❌ — it runs a local daemon) and the
+  **only** tool with web_gating + provenance + federation by design; LangChain RAG 3,
+  Pinecone 2, mem0 1, Letta/Zep 0. Feasibility (2026-06-19): mem0ai 2.0.0, langchain
+  0.3.30, zep-python 2.0.2, pinecone-client 6.0.0 resolvable; **`letta` NOT resolvable
+  in this sandbox** → Letta stays structural-only, excluded from P1 measured runs.
 - **P1 — web-gating (axis A), local-LLM parity:** wire mem0 + LangChain to a local
   Ollama model; run the repeated/paraphrased stream; measure fallback rate + trips
   saved. Folklore vs the two that install cleanly.
