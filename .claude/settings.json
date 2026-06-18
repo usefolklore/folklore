@@ -76,6 +76,8 @@
   },
   "env": {
     "FOLKLORE_ENERGY_GATE": "1",
-    "FOLKLORE_QUERY_REUSE": "1"
+    "FOLKLORE_QUERY_REUSE": "1",
+    "FOLKLORE_DENY_WEBSEARCH": "1",
+    "FOLKLORE_PREFETCH_PEERS": "0"
   }
 }

@@ -351,14 +351,20 @@ const main = () => {
       hits.length >= DENY_MIN_HITS &&
       (energyGateOn || (typeof score === 'number' && score >= DENY_THRESHOLD));
     if (shouldDeny) {
+      // Cite the gate that actually drove the deny. Under the energy gate the
+      // composite `score` is low-by-design (it's a trust score), so quoting it
+      // next to a deny reads as a contradiction — cite the decision + hits.
+      const conf = energyGateOn
+        ? `energy-gate: use-memory, ${hits.length} hits`
+        : `satisfaction ${(score ?? 0).toFixed(2)}, ${hits.length} hits`;
       const reason =
-        `folklore: indexed context already answers this (satisfaction ${score.toFixed(2)}, ${hits.length} hits). ` +
+        `folklore: indexed context already answers this (${conf}). ` +
         `Use the injected context above instead of ${toolName}. ` +
         `Override with FOLKLORE_DENY_WEBSEARCH=0 if a fresh source is genuinely needed.`;
       emit(
         appendTelemetry(renderHits(hits, query, peersMeta)),
         { permissionDecision: 'deny', permissionDecisionReason: reason },
-        `denied ${toolName} — memory answers it (sat ${score.toFixed(2)}, ${hits.length} hits)`,
+        `denied ${toolName} — answered from memory (${hits.length} hits)`,
       );
       process.exit(0);
     }
