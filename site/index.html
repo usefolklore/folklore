@@ -225,7 +225,11 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   .bar .tr{height:12px;border:2px solid var(--ink);background:var(--paper)}
   .bar .fl{height:100%;width:var(--w,0);transition:width 1.1s cubic-bezier(.16,1,.3,1);background:var(--ink)}
   .has-js .bars:not(.in) .fl{width:0}
-  .bar.me .fl{background:var(--pink)}
+  /* baselines sit back; Folklore is the solid-black lead bar */
+  .bar:not(.me) .fl{opacity:.32}
+  .bar.me .fl{background:var(--ink);opacity:1}
+  .bars-foot{font-family:var(--mono);font-size:.78rem;opacity:.62;margin-top:12px;max-width:560px;line-height:1.5}
+  .bars-foot b{font-weight:700;opacity:.85}
   .bar .v{font-family:var(--mono);font-size:.9rem;text-align:right;font-weight:600}
 
   /* inscription */
@@ -850,12 +854,13 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
     </div>
     <div class="proofrow">
     <div class="bars" id="bars">
-      <div class="bar me"><span class="nm">Folklore</span><span class="tr"><span class="fl" style="--w:75.2%"></span></span><span class="v">0.7522</span></div>
+      <div class="bar me"><span class="nm">Folklore <small style="font-family:var(--mono);font-size:.62rem;font-weight:700;opacity:.6">CPU</small></span><span class="tr"><span class="fl" style="--w:75.2%"></span></span><span class="v">0.7522</span></div>
       <div class="bar"><span class="nm">E5-base</span><span class="tr"><span class="fl" style="--w:73.7%"></span></span><span class="v">0.7370</span></div>
       <div class="bar"><span class="nm">E5-large</span><span class="tr"><span class="fl" style="--w:72.3%"></span></span><span class="v">0.7230</span></div>
       <div class="bar"><span class="nm">SPLADE</span><span class="tr"><span class="fl" style="--w:69.9%"></span></span><span class="v">0.6990</span></div>
       <div class="bar"><span class="nm">ColBERT</span><span class="tr"><span class="fl" style="--w:67.1%"></span></span><span class="v">0.6710</span></div>
       <div class="bar"><span class="nm">BM25</span><span class="tr"><span class="fl" style="--w:66.5%"></span></span><span class="v">0.6650</span></div>
+      <p class="bars-foot"># Folklore leads the CPU / production-grade retrievers. The overall top score is <b>InRanker-3b — 0.783</b>, a 3&nbsp;B-parameter GPU cross-encoder reranker (different weight class); it beats every CPU baseline here. Folklore claims the CPU lead, not the GPU crown.</p>
     </div>
     <div class="curve-wrap rv" data-d="1" aria-label="Web-fallback rate decays from 17% to 1% over 2000 queries as the graph compounds.">
       <svg class="curve-chart" viewBox="0 0 420 270" aria-hidden="true">
