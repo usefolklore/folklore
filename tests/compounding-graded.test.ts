@@ -90,3 +90,34 @@ describe('compounding on a REAL IR corpus (SciFact, real qrels)', () => {
     );
   });
 });
+
+const TREE = join(ROOT, 'bench', 'bench-inference-tree-sharing.mjs');
+const SUBTREE = join(ROOT, 'bench', 'bench-subject-tree-prefetch.mjs');
+
+describe('P2P inference-tree sharing — massive retrieval lift, honest', () => {
+  it('paraphrase-generalized: ≥80% recall@1 lift with ZERO hurt (no gaming)', { skip: realSkip }, () => {
+    // --always-paraphrase rules out exact-query cache; the gain must come from
+    // matching a PARAPHRASE to a prior answered question and inheriting its
+    // verified doc. hurt=0 means it never degrades retrieval.
+    const r = spawnSync('node', [TREE, '--json', '--dataset', 'scifact', '--k', '1', '--always-paraphrase', '--steps', '1500'], {
+      encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 180_000,
+    });
+    if (r.status !== 0) throw new Error(`tree bench failed: ${r.stderr}`);
+    const d = JSON.parse(r.stdout.trim());
+    assert.ok(d.improvement >= 0.8, `expected ≥80% recall@1 lift, got ${(d.improvement * 100).toFixed(0)}%`);
+    assert.equal(d.hurt, 0, `tree-sharing must not hurt retrieval, got ${d.hurt}`);
+  });
+
+  it('subtree prefetch pre-answers the follow-up questions (next 4–8)', { skip: realSkip }, () => {
+    const r = spawnSync('node', [SUBTREE, '--json', '--dataset', 'scifact', '--session', '8', '--steps', '300'], {
+      encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 180_000,
+    });
+    if (r.status !== 0) throw new Error(`subtree bench failed: ${r.stderr}`);
+    const d = JSON.parse(r.stdout.trim());
+    assert.ok(
+      d.follow.subtree > d.follow.baseline * 1.8,
+      `follow-up subtree recall should ≫ baseline: ${d.follow.subtree} vs ${d.follow.baseline}`,
+    );
+    assert.equal(d.follow.hurt, 0, `subtree prefetch must not hurt, got ${d.follow.hurt}`);
+  });
+});
