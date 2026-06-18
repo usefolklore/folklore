@@ -338,13 +338,18 @@ const main = () => {
     // Optional denial path — gated on env flag + tool type +
     // confidence threshold + hit count. When all four align, we
     // deny the WebSearch/WebFetch and rely on the injected context.
+    // When the energy gate is on, the `use_memory` decision IS the calibrated
+    // gate (decideContract already ran it) — so trust the decision rather than
+    // re-checking the legacy 0.85 composite score, which never fires on a real
+    // graph (the bug that made deny inert). Without the energy gate, keep the
+    // old score gate.
+    const energyGateOn = process.env.FOLKLORE_ENERGY_GATE === '1';
     const shouldDeny =
       DENY_WEBSEARCH &&
       DENIABLE_TOOLS.has(toolName) &&
       action === 'use_memory' &&
-      typeof score === 'number' &&
-      score >= DENY_THRESHOLD &&
-      hits.length >= DENY_MIN_HITS;
+      hits.length >= DENY_MIN_HITS &&
+      (energyGateOn || (typeof score === 'number' && score >= DENY_THRESHOLD));
     if (shouldDeny) {
       const reason =
         `folklore: indexed context already answers this (satisfaction ${score.toFixed(2)}, ${hits.length} hits). ` +
