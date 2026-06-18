@@ -2,44 +2,42 @@
 """
 bench-memtool-webgating.py — Memory-Tool Benchmark, P1 (web-gating, MEASURED).
 
-Honest, apples-to-apples: how well does each memory layer act as a semantic
-cache IN FRONT OF the web, on a stream of repeated + paraphrased needs? The
-metric is the web-fallback rate — the fraction of queries that still hit the
-web because memory didn't serve them. Lower is better.
+Honest, apples-to-apples: each memory layer cast (charitably) as a semantic
+cache IN FRONT OF the web, on a stream of repeated + paraphrased needs.
 
-This is the CHARITABLE framing for the competitors: mem0 / LangChain / Zep do
-not gate the web at all in normal use (they are stores, not gates). We cast
-them as a cache anyway and measure their recall on paraphrases. Folklore does
-this natively via its retrieval + energy/deny gate.
+THE FAIR METRIC (v2): fallback-rate ALONE is rigged — a reckless cache with a
+low threshold serves more queries (incl. the WRONG memory) and looks "better".
+So we sweep the hit threshold and track TWO rates per tool:
+  - fallback_rate   = queries not served from memory  (lower = better coverage)
+  - false_accept    = served the WRONG need's memory   (lower = better fidelity)
+and report each tool's fallback-rate AT A MATCHED false-accept budget. This is
+the `bench-vcache-compare` "matched error" methodology applied across tools.
 
 MATCHED CONTROLS:
-  - Same embedder family across every tool: all-MiniLM-L6-v2 (folklore uses the
-    Xenova ONNX port of the same model; competitors use the sentence-transformers
-    port). State this; it is the fair control.
-  - Same query stream, same canonical answers, same hit threshold band swept.
-  - Local LLM parity for tools that need one (mem0): Ollama qwen2.5:7b — key-free.
-  - Labels: every adapter is MEASURED (real tool) or PROXY (cosine cache) — never
-    blended. Folklore runs its REAL gate via `node dist/cli/index.js ask --json`
-    against an ISOLATED temp graph seeded only with the stream's cold answers.
+  - Same embedder family everywhere: all-MiniLM-L6-v2 (folklore = Xenova ONNX
+    port of the same model; competitors = sentence-transformers port).
+  - Same stream, same canonical answers, same swept threshold band.
+  - Local-LLM parity for tools that need one (mem0): Ollama qwen2.5:7b, key-free.
+  - Labels: MEASURED (real tool) vs PROXY (cosine cache). Folklore runs its REAL
+    retrieval via `node dist/cli/index.js ask --json` against an ISOLATED temp
+    graph seeded only with the stream's cold answers; its swept score = the
+    pipeline `satisfaction`, matched need = the top hit's tagged need_id.
 
-Floor: every distinct need must be fetched once (cold). A perfect cache serves
-every later paraphrase from memory -> fallback rate == distinct_needs/total.
+Floor: every distinct need must be fetched once -> min fallback = distinct/total.
 
 Run:  python3 bench/bench-memtool-webgating.py
-      python3 bench/bench-memtool-webgating.py --tools cosine,langchain
-      python3 bench/bench-memtool-webgating.py --threshold 0.55 --json
+      python3 bench/bench-memtool-webgating.py --tools cosine,langchain,folklore
+      python3 bench/bench-memtool-webgating.py --json
 """
-import argparse, json, os, subprocess, sys, tempfile, shutil
+import argparse, json, os, subprocess, tempfile, shutil
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 OLLAMA_MODEL = "qwen2.5:7b"
+SWEEP = [round(0.30 + 0.025 * i, 3) for i in range(0, 23)]  # 0.30 .. 0.85
+FA_BUDGETS = [0.0, 0.02, 0.05]  # report fallback at these false-accept ceilings
 
-# ── query stream: distinct needs, each with paraphrases (incl. the original) ──
-# Hand-written so the test is deterministic and inspectable. First phrasing of
-# each need is the "cold" form that seeds memory; the rest are paraphrases that
-# a good cache should serve without a web trip.
 NEEDS = [
     ("rerank_long_ctx", "How does mxbai-rerank compare to a cross-encoder on long contexts?",
      ["Is mxbai-rerank better than cross-encoders for long inputs?",
@@ -74,25 +72,18 @@ NEEDS = [
       "Cross-encoder quality on inputs longer than 512 tokens?",
       "Token-limit effects on cross-encoder reranking accuracy?"]),
 ]
-CANONICAL_ANSWER = {nid: f"[resolved answer for {nid}]" for nid, _, _ in NEEDS}
+CANON = {nid: f"[resolved answer for {nid}]" for nid, _, _ in NEEDS}
 
 
 def build_stream(seed=7):
     import random
     rng = random.Random(seed)
-    events = []  # (need_id, phrasing, is_cold_form)
-    for nid, original, paras in NEEDS:
-        events.append((nid, original, True))
-        for p in paras:
-            events.append((nid, p, False))
-    # interleave so cold forms and paraphrases are mixed (realistic stream),
-    # but a need's cold form must precede its paraphrases.
     by_need = {}
-    for e in events:
-        by_need.setdefault(e[0], []).append(e)
-    order = list(by_need.keys())
-    rng.shuffle(order)
-    stream, queues = [], {k: list(v) for k, v in by_need.items()}
+    for nid, original, paras in NEEDS:
+        by_need[nid] = [(nid, original)] + [(nid, p) for p in paras]
+    order = list(by_need.keys()); rng.shuffle(order)
+    queues = {k: list(v) for k, v in by_need.items()}
+    stream = []
     while any(queues.values()):
         rng.shuffle(order)
         for nid in order:
@@ -101,241 +92,222 @@ def build_stream(seed=7):
     return stream
 
 
-# ─────────────────────────── adapters ───────────────────────────
+# ── adapters: lookup -> (matched_need_id|None, score 0..1|None) WITHOUT thresholding
 class Adapter:
     name = "base"; kind = "PROXY"
     def available(self): return False
     def reset(self): ...
-    def remember(self, q, a): ...
-    def lookup(self, q):  # -> (hit: bool, score: float|None)
-        return (False, None)
+    def remember(self, q, nid): ...
+    def lookup(self, q): return (None, None)
 
 
 class CosineCache(Adapter):
-    """PROXY: the retrieval-layer cache decision mem0/LangChain reduce to —
-    embed query, nearest stored need, cosine >= threshold."""
     name = "cosine-cache (proxy)"; kind = "PROXY"
-    def __init__(self, threshold):
-        self.threshold = threshold; self._model = None; self.store = []
+    def __init__(self): self._m=None; self.store=[]
     def available(self):
         try:
-            from sentence_transformers import SentenceTransformer  # noqa
+            import sentence_transformers  # noqa
             return True
-        except Exception:
-            return False
-    def _m(self):
-        if self._model is None:
+        except Exception: return False
+    def _model(self):
+        if self._m is None:
             from sentence_transformers import SentenceTransformer
-            self._model = SentenceTransformer(EMBED_MODEL)
-        return self._model
-    def reset(self): self.store = []
+            self._m = SentenceTransformer(EMBED_MODEL)
+        return self._m
+    def reset(self): self.store=[]
     def _emb(self, q):
         import numpy as np
-        v = self._m().encode([q], normalize_embeddings=True)[0]
-        return np.asarray(v, dtype="float32")
-    def remember(self, q, a): self.store.append((self._emb(q), a))
+        return np.asarray(self._model().encode([q], normalize_embeddings=True)[0], dtype="float32")
+    def remember(self, q, nid): self.store.append((self._emb(q), nid))
     def lookup(self, q):
         import numpy as np
-        if not self.store: return (False, None)
-        qv = self._emb(q)
-        best = max(float(np.dot(qv, sv)) for sv, _ in self.store)
-        return (best >= self.threshold, best)
+        if not self.store: return (None, None)
+        qv=self._emb(q); best=-1.0; bnid=None
+        for sv,nid in self.store:
+            s=float(np.dot(qv,sv))
+            if s>best: best,bnid=s,nid
+        return (bnid, best)
 
 
 class LangChainCache(Adapter):
-    """MEASURED: real LangChain in-memory vector store + HF MiniLM embeddings,
-    similarity_search_with_score used as the cache-hit decision."""
     name = "langchain (measured)"; kind = "MEASURED"
-    def __init__(self, threshold):
-        self.threshold = threshold; self.vs = None; self._emb = None
+    def __init__(self): self.vs=None; self._emb=None
     def available(self):
         try:
-            import langchain_huggingface, langchain_community  # noqa
+            import faiss, langchain_community  # noqa
             return True
-        except Exception:
-            try:
-                import langchain_community  # noqa
-                return True
-            except Exception:
-                return False
+        except Exception: return False
     def _embedder(self):
         if self._emb is None:
-            try:
-                from langchain_huggingface import HuggingFaceEmbeddings
-            except Exception:
-                from langchain_community.embeddings import HuggingFaceEmbeddings
-            self._emb = HuggingFaceEmbeddings(model_name=EMBED_MODEL,
-                                              encode_kwargs={"normalize_embeddings": True})
+            try: from langchain_huggingface import HuggingFaceEmbeddings
+            except Exception: from langchain_community.embeddings import HuggingFaceEmbeddings
+            self._emb=HuggingFaceEmbeddings(model_name=EMBED_MODEL, encode_kwargs={"normalize_embeddings":True})
         return self._emb
-    def reset(self):
+    def reset(self): self.vs=None
+    def remember(self, q, nid):
         from langchain_community.vectorstores import FAISS
-        # seed with a throwaway doc; FAISS needs >=1 text to init
-        self.vs = None; self._seed_pending = True
-    def remember(self, q, a):
-        from langchain_community.vectorstores import FAISS
-        if self.vs is None:
-            self.vs = FAISS.from_texts([q], self._embedder(), metadatas=[{"a": a}])
-        else:
-            self.vs.add_texts([q], metadatas=[{"a": a}])
+        if self.vs is None: self.vs=FAISS.from_texts([q], self._embedder(), metadatas=[{"nid":nid}])
+        else: self.vs.add_texts([q], metadatas=[{"nid":nid}])
     def lookup(self, q):
-        if self.vs is None: return (False, None)
-        # FAISS returns L2 distance on normalized vecs; cos = 1 - d^2/2
-        docs = self.vs.similarity_search_with_score(q, k=1)
-        if not docs: return (False, None)
-        _, dist = docs[0]
-        cos = 1.0 - (float(dist) ** 2) / 2.0
-        return (cos >= self.threshold, cos)
+        if self.vs is None: return (None,None)
+        docs=self.vs.similarity_search_with_score(q,k=1)
+        if not docs: return (None,None)
+        d,dist=docs[0]
+        cos=1.0-(float(dist)**2)/2.0
+        return (d.metadata.get("nid"), cos)
 
 
 class Mem0Cache(Adapter):
-    """MEASURED: real mem0 with local Ollama (qwen2.5:7b) + MiniLM embedder,
-    key-free. mem0.search hit used as the cache decision."""
     name = "mem0 (measured)"; kind = "MEASURED"
-    def __init__(self, threshold):
-        self.threshold = threshold; self.m = None; self.uid = "bench"
+    def __init__(self): self.m=None; self.uid="bench"
     def available(self):
         try:
-            import mem0  # noqa
-            import requests
-            requests.get("http://localhost:11434/api/tags", timeout=3)
-            return True
-        except Exception:
-            return False
+            import mem0, requests  # noqa
+            requests.get("http://localhost:11434/api/tags", timeout=3); return True
+        except Exception: return False
     def reset(self):
         from mem0 import Memory
-        cfg = {
-            "llm": {"provider": "ollama", "config": {"model": OLLAMA_MODEL,
-                    "ollama_base_url": "http://localhost:11434"}},
-            "embedder": {"provider": "huggingface",
-                         "config": {"model": EMBED_MODEL}},
-        }
-        try:
-            self.m = Memory.from_config(cfg)
-        except Exception as e:
-            self.m = None; self._err = str(e)
-    def remember(self, q, a):
+        cfg={"llm":{"provider":"ollama","config":{"model":OLLAMA_MODEL,"ollama_base_url":"http://localhost:11434"}},
+             "embedder":{"provider":"huggingface","config":{"model":EMBED_MODEL}}}
+        try: self.m=Memory.from_config(cfg)
+        except Exception: self.m=None
+    def remember(self, q, nid):
         if self.m is None: return
-        try: self.m.add(f"Q: {q}\nA: {a}", user_id=self.uid)
+        try: self.m.add(f"[nid:{nid}] Q: {q}\nA: {CANON[nid]}", user_id=self.uid)
         except Exception: pass
     def lookup(self, q):
-        if self.m is None: return (False, None)
+        if self.m is None: return (None,None)
         try:
-            res = self.m.search(q, user_id=self.uid, limit=1)
-            hits = res.get("results", res) if isinstance(res, dict) else res
-            if not hits: return (False, None)
-            score = hits[0].get("score")
-            if score is None: return (True, None)  # mem0 returned a memory
-            return (float(score) >= self.threshold, float(score))
-        except Exception:
-            return (False, None)
+            res=self.m.search(q,user_id=self.uid,limit=1)
+            hits=res.get("results",res) if isinstance(res,dict) else res
+            if not hits: return (None,None)
+            mem=hits[0].get("memory","") or ""
+            score=hits[0].get("score")
+            nid=None
+            if "[nid:" in mem: nid=mem.split("[nid:",1)[1].split("]",1)[0]
+            return (nid, float(score) if score is not None else 1.0)
+        except Exception: return (None,None)
 
 
 class FolkloreGate(Adapter):
-    """MEASURED: folklore's REAL retrieval + gate, isolated temp graph seeded
-    only with the stream's cold answers. Hit = ask --json decides use_memory."""
     name = "folklore (measured)"; kind = "MEASURED"
-    def __init__(self, threshold):
-        self.threshold = threshold; self.home = None
-        self.cli = REPO / "dist" / "cli" / "index.js"
-    def available(self):
-        return self.cli.exists()
+    def __init__(self): self.home=None; self.cli=REPO/"dist"/"cli"/"index.js"
+    def available(self): return self.cli.exists()
     def reset(self):
-        if self.home and Path(self.home).exists(): shutil.rmtree(self.home, ignore_errors=True)
-        self.home = tempfile.mkdtemp(prefix="folklore-memtool-")
-    def _run(self, args):
-        env = dict(os.environ, FOLKLORE_HOME=self.home,
-                   FOLKLORE_DENY_WEBSEARCH="0", FOLKLORE_PREFETCH_PEERS="0")
-        return subprocess.run(["node", str(self.cli), *args], env=env,
-                              capture_output=True, text=True, timeout=120)
-    def remember(self, q, a):
-        self._run(["save", "--label", q[:60], "--text", f"{q} {a}", "--private"])
-    def lookup(self, q):
-        r = self._run(["ask", q, "--json"])
-        try:
-            d = json.loads(r.stdout)
-        except Exception:
-            return (False, None)
-        sat = d.get("satisfaction"); dec = d.get("decision") or d.get("action")
-        if dec is not None:
-            return (str(dec).startswith("use_memory"), sat)
-        if sat is not None:
-            return (float(sat) >= self.threshold, float(sat))
-        return (False, None)
+        if self.home and Path(self.home).exists(): shutil.rmtree(self.home,ignore_errors=True)
+        self.home=tempfile.mkdtemp(prefix="folklore-memtool-")
+    def _run(self,args):
+        env=dict(os.environ,FOLKLORE_HOME=self.home,FOLKLORE_DENY_WEBSEARCH="0",FOLKLORE_PREFETCH_PEERS="0")
+        return subprocess.run(["node",str(self.cli),*args],env=env,capture_output=True,text=True,timeout=120)
+    def remember(self,q,nid):
+        self._run(["save","--label",f"nid:{nid}","--text",f"{q} {CANON[nid]}","--private"])
+    def lookup(self,q):
+        r=self._run(["ask",q,"--json"])
+        try: d=json.loads(r.stdout)
+        except Exception: return (None,None)
+        sat=d.get("satisfaction")
+        nid=None
+        hits=d.get("hits") or d.get("results") or d.get("matches") or []
+        if hits and isinstance(hits,list):
+            top=hits[0]
+            lbl=(top.get("label") or top.get("title") or top.get("id") or "") if isinstance(top,dict) else str(top)
+            if "nid:" in lbl: nid=lbl.split("nid:",1)[1].split()[0].strip().strip('"')
+        return (nid, float(sat) if sat is not None else None)
 
 
-ADAPTERS = {
-    "cosine": CosineCache, "langchain": LangChainCache,
-    "mem0": Mem0Cache, "folklore": FolkloreGate,
-}
+ADAPTERS={"cosine":CosineCache,"langchain":LangChainCache,"mem0":Mem0Cache,"folklore":FolkloreGate}
 
 
-def run_tool(adapter, stream):
+def sweep_tool(adapter, stream):
+    """One streaming pass collecting (true_nid, matched_nid, score) per event;
+    then evaluate every threshold offline (memory grows identically regardless
+    of threshold because we always remember on a content-novel need)."""
     adapter.reset()
-    total = fallbacks = served = 0
-    for nid, phrasing, _cold in stream:
-        total += 1
-        hit, _score = adapter.lookup(phrasing)
-        if hit:
-            served += 1
-        else:
-            fallbacks += 1
-            adapter.remember(phrasing, CANONICAL_ANSWER[nid])
-    return {"total": total, "fallbacks": fallbacks, "served_from_memory": served,
-            "fallback_rate": round(fallbacks / total, 4)}
+    trace=[]  # (true_nid, matched_nid, score, is_first_sight)
+    seen=set()
+    for true_nid, phrasing in stream:
+        first = true_nid not in seen
+        m_nid, score = adapter.lookup(phrasing)
+        trace.append((true_nid, m_nid, score, first))
+        # seed memory on first sight of a need (the cold web fetch), so later
+        # paraphrases can be served. Always remember first-sight; this is
+        # threshold-independent and identical across the sweep.
+        if first:
+            adapter.remember(phrasing, true_nid); seen.add(true_nid)
+    n=len(trace)
+    curve=[]
+    for tau in SWEEP:
+        fb=fa=corr=0
+        for true_nid, m_nid, score, first in trace:
+            hit = (score is not None) and (m_nid is not None) and (score>=tau)
+            if first:
+                # cold: even if a (spurious) hit clears tau, real systems fetch
+                # because nothing was stored yet -> count as fallback, and if it
+                # "hit" something it's a false-accept signal.
+                if hit and m_nid!=true_nid: fa+=1
+                fb+=1
+                continue
+            if not hit: fb+=1
+            elif m_nid==true_nid: corr+=1
+            else: fa+=1; fb+=1  # wrong memory served = still a real miss
+        curve.append({"tau":tau,"fallback_rate":round(fb/n,4),
+                      "false_accept_rate":round(fa/n,4),"correct_serve_rate":round(corr/n,4)})
+    return {"n":n,"curve":curve}
+
+
+def at_budgets(curve):
+    out={}
+    for b in FA_BUDGETS:
+        ok=[p for p in curve if p["false_accept_rate"]<=b]
+        best=min(ok,key=lambda p:p["fallback_rate"]) if ok else None
+        out[str(b)]= ({"tau":best["tau"],"fallback_rate":best["fallback_rate"],
+                       "false_accept_rate":best["false_accept_rate"]} if best else None)
+    return out
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--tools", default="cosine,langchain,mem0,folklore")
-    ap.add_argument("--threshold", type=float, default=0.55)
-    ap.add_argument("--json", action="store_true")
-    args = ap.parse_args()
-
-    stream = build_stream()
-    distinct = len({nid for nid, _, _ in NEEDS})
-    floor = round(distinct / len(stream), 4)
-
-    out = {"benchmark": "memory-tools", "phase": "P1", "axis": "web_gating",
-           "embedder": EMBED_MODEL, "ollama_model": OLLAMA_MODEL,
-           "threshold": args.threshold, "stream_len": len(stream),
-           "distinct_needs": distinct, "fallback_rate_floor": floor,
-           "note": "Lower fallback_rate = better. Floor = every need fetched once. "
-                   "Competitors cast charitably as a web-cache (they do not gate the "
-                   "web natively). MEASURED = real tool; PROXY = matched-embedder cosine cache.",
-           "results": {}}
-
-    for key in [t.strip() for t in args.tools.split(",") if t.strip()]:
-        cls = ADAPTERS.get(key)
-        if cls is None:
-            out["results"][key] = {"status": "unknown adapter"}; continue
-        ad = cls(args.threshold)
-        if not ad.available():
-            out["results"][key] = {"status": "unavailable (dep/model missing) — skipped",
-                                   "kind": ad.kind}
-            continue
+    ap=argparse.ArgumentParser()
+    ap.add_argument("--tools",default="cosine,langchain,mem0,folklore")
+    ap.add_argument("--json",action="store_true")
+    a=ap.parse_args()
+    stream=build_stream(); distinct=len(NEEDS); floor=round(distinct/len(stream),4)
+    out={"benchmark":"memory-tools","phase":"P1","axis":"web_gating",
+         "metric":"fallback-rate at matched false-accept (swept threshold)",
+         "embedder":EMBED_MODEL,"ollama_model":OLLAMA_MODEL,"stream_len":len(stream),
+         "distinct_needs":distinct,"fallback_rate_floor":floor,"fa_budgets":FA_BUDGETS,
+         "note":"Lower fallback at a matched (low) false-accept budget = better. "
+                "Raw fallback alone is rigged (reckless caching wins it). MEASURED=real tool, PROXY=cosine cache. "
+                "This axis is single-user web-gating; folklore's structural edge (federation, provenance) is P2/P3.",
+         "results":{}}
+    for key in [t.strip() for t in a.tools.split(",") if t.strip()]:
+        cls=ADAPTERS.get(key)
+        if not cls: out["results"][key]={"status":"unknown adapter"}; continue
+        ad=cls()
+        if not ad.available(): out["results"][key]={"status":"unavailable — skipped","kind":ad.kind}; continue
         try:
-            r = run_tool(ad, stream); r["kind"] = ad.kind; r["name"] = ad.name
-            out["results"][key] = r
+            sw=sweep_tool(ad,stream)
+            out["results"][key]={"kind":ad.kind,"name":ad.name,"n":sw["n"],
+                                 "at_false_accept_budget":at_budgets(sw["curve"]),"curve":sw["curve"]}
         except Exception as e:
-            out["results"][key] = {"status": f"error: {e}", "kind": ad.kind}
-
-    outdir = Path.home() / ".folklore" / "bench" / "memory-tools"
-    outdir.mkdir(parents=True, exist_ok=True)
-    (outdir / "p1-webgating.json").write_text(json.dumps(out, indent=2) + "\n")
-
-    if args.json:
-        print(json.dumps(out, indent=2)); return
-    print(f"\nMemory-Tool Benchmark — P1 web-gating (MEASURED where available)")
-    print(f"  embedder={EMBED_MODEL}  threshold={args.threshold}  stream={len(stream)} events  floor={floor}\n")
-    print(f"  {'tool':<22} {'kind':<9} {'fallback_rate':>13}  served/total")
-    for key, r in out["results"].items():
-        if "fallback_rate" in r:
-            print(f"  {r.get('name',key):<22} {r['kind']:<9} {r['fallback_rate']:>13}  {r['served_from_memory']}/{r['total']}")
+            out["results"][key]={"status":f"error: {e}","kind":ad.kind}
+    outdir=Path.home()/".folklore"/"bench"/"memory-tools"; outdir.mkdir(parents=True,exist_ok=True)
+    (outdir/"p1-webgating.json").write_text(json.dumps(out,indent=2)+"\n")
+    if a.json: print(json.dumps(out,indent=2)); return
+    print(f"\nMemory-Tool Benchmark — P1 web-gating (fallback @ matched false-accept)")
+    print(f"  embedder={EMBED_MODEL}  stream={len(stream)}  floor={floor}\n")
+    print(f"  {'tool':<22} {'kind':<9} " + "  ".join(f"FA<={b}:fb" for b in FA_BUDGETS))
+    for key,r in out["results"].items():
+        if "at_false_accept_budget" in r:
+            cells=[]
+            for b in FA_BUDGETS:
+                pt=r["at_false_accept_budget"][str(b)]
+                cells.append(f"{pt['fallback_rate']}@{pt['tau']}" if pt else "n/a")
+            print(f"  {r['name']:<22} {r['kind']:<9} " + "  ".join(f"{c:>11}" for c in cells))
         else:
             print(f"  {key:<22} {r.get('kind',''):<9} {r['status']}")
-    print(f"\n  floor (perfect cache) = {floor}.  Lower fallback_rate is better.")
-    print(f"  snapshot -> {outdir / 'p1-webgating.json'}\n")
+    print(f"\n  cells = best fallback_rate @ the tau that holds false-accept <= budget. floor={floor}.")
+    print(f"  snapshot -> {outdir/'p1-webgating.json'}\n")
 
 
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
