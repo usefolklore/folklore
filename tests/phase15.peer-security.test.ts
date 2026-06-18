@@ -51,7 +51,7 @@ const TEST_STRIPE = 'sk_live_' + 'abcdefghijklmnopqrstuvwx';
 
 // ─────────────────────── SEC-01: all 14 secret patterns detected ──────────
 
-describe('SEC-01: secrets scanner detects all 14 built-in patterns', () => {
+describe('SEC-01: secrets scanner detects all 22 built-in patterns', () => {
   const secretSamples: Array<{
     patternName: string;
     field: 'label' | 'source_uri';
@@ -131,6 +131,34 @@ describe('SEC-01: secrets scanner detects all 14 built-in patterns', () => {
       field: 'label',
       value: `AWS_SECRET=${TEST_AWS_KEY_ALT}`,
     },
+    { patternName: 'gitlab-pat', field: 'label', value: `pat ${'glpat-' + 'a'.repeat(20)}` },
+    {
+      patternName: 'jwt',
+      field: 'label',
+      value: `tok eyJ${'a'.repeat(15)}.${'b'.repeat(15)}.${'c'.repeat(15)}`,
+    },
+    { patternName: 'npm-token', field: 'label', value: `npm ${'npm_' + 'a'.repeat(36)}` },
+    {
+      patternName: 'sendgrid-key',
+      field: 'label',
+      value: `SG.${'a'.repeat(22)}.${'b'.repeat(43)}`,
+    },
+    { patternName: 'stripe-restricted', field: 'label', value: `rk_live_${'a'.repeat(24)}` },
+    {
+      patternName: 'slack-webhook',
+      field: 'source_uri',
+      value: 'https://hooks.slack.com/services/T00000000/B00000000/abcdefghijklmnop',
+    },
+    {
+      patternName: 'basic-auth-url',
+      field: 'source_uri',
+      value: 'https://user:p4ssw0rdValue@example.com/resource',
+    },
+    {
+      patternName: 'secret-assignment',
+      field: 'label',
+      value: 'client_secret=abcdef1234567890ABCDEF',
+    },
   ];
 
   for (const { patternName, field, value } of secretSamples) {
@@ -147,14 +175,14 @@ describe('SEC-01: secrets scanner detects all 14 built-in patterns', () => {
     });
   }
 
-  test('buildPatterns returns exactly 14 built-in patterns', () => {
-    assert.equal(patterns.length, 14);
+  test('buildPatterns returns exactly 22 built-in patterns', () => {
+    assert.equal(patterns.length, 22);
   });
 
   test('buildPatterns merges custom patterns with built-ins', () => {
     const custom = buildPatterns([{ name: 'custom', pattern: 'CUSTOM_\\d+' }]);
-    assert.equal(custom.length, 15);
-    assert.equal(custom[14].name, 'custom');
+    assert.equal(custom.length, 23);
+    assert.equal(custom[22].name, 'custom');
   });
 
   // Bearer-token false-positive guard: legitimate research prose about
