@@ -30,6 +30,11 @@ benchmarked tool; the spec just documents what it already does.
 - **75.22% NDCG@10** on the same dataset with the optional Rust sidecar
   (bge-base-en-v1.5) — above published bge-base dense, with no GPU.
 - **11 ms p50** end-to-end retrieval. **137M params.** Zero GPU, zero cloud.
+- **+20–43% recall@1** from sharing inference trees peer-to-peer — vs a proper
+  single-node semantic cache, at a matched ≤2% false-accept budget, on real BEIR
+  sets (SciFact +20.5%, NFCorpus +26.2%, FiQA +43.3%). Federated semantic-cache
+  reuse: a peer inherits the verified answer to any question the network already
+  resolved.
 - 13 documented null attacks — every dead end is published with a repro
   script, because a documented null beats a hypothetical positive.
 

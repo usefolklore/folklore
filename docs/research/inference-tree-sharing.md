@@ -100,9 +100,15 @@ recall-vs-error curve — so the comparison is apples-to-apples:
 |---|---|---|---|---|
 | SciFact | 46.6% | 81.5% @ 0.5% FA | **98.2% @ 0.1% FA** | **+20.5%** |
 | NFCorpus | 46.7% | 77.3% @ 0.5% FA | **97.6% @ 0.1% FA** | **+26.2%** |
+| FiQA | 35.2% | 66.0% @ 0.0% FA | **94.5% @ 0.0% FA** | **+43.3%** |
+
+The federation advantage is **largest on the hardest corpus** (FiQA, weakest cold
+retrieval at 35.2% → +43.3%): the worse direct query→doc retrieval is, the more
+pooling answered questions across peers fills the gap. Consistent across all
+three, with 0–0.1% false-accept.
 
 **The defensible claim: federated inference-tree sharing beats a proper
-single-node semantic cache by +20–26% recall@1 at the same error budget.** Both
+single-node semantic cache by +20–43% recall@1 at the same error budget.** Both
 caches use the identical error-bounded decision rule (threshold from the curve at
 ≤2% false-accept); the delta is purely **federation coverage** — pooling answered-
 question trees across peers means the answer is far more likely to already be in
