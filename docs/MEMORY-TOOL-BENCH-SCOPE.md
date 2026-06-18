@@ -42,7 +42,7 @@ in folklore's favour. State the footprint each tool needs to run at all.
 | Tool | pip | Runs offline / CPU-only? | Blocker for a real run here |
 |------|-----|--------------------------|-----------------------------|
 | folklore | n/a (this repo) | ✅ yes | none |
-| mem0 (`mem0ai 2.0.0`) | ✅ visible | ❌ needs an LLM for memory extraction | needs OpenAI key OR a local Ollama model wired as the LLM |
+| mem0 (`mem0ai 2.0.0`) | ✅ visible | ❌ needs an LLM | **BLOCKED here:** mem0ai 2.x uses PEP-604 `X \| None` → fails to construct on Python 3.9 (sandbox default). `python3.13` is present but has no torch/sentence-transformers (heavy install, deferred). LLM parity itself is solved (Ollama qwen2.5:7b is up, key-free) — only the interpreter/ML-stack is missing. |
 | LangChain RAG (`langchain 0.3.30`) | ✅ visible | ⚠️ retrieval yes; "memory" varies | vector store + embeddings; LLM only if we score answer quality |
 | Zep (`zep-python 2.0.2`) | ✅ visible | ❌ client for a Zep server | needs a running Zep server (Docker) |
 | Letta | ⚠️ unresolved (`letta` pip name TBD) | ❌ agent server + LLM | server + LLM key |
@@ -138,7 +138,19 @@ and/or a server folklore does not. Two honest ways to handle it:
   The honest, structurally-meaningful comparisons are **P2 (provenance/poison-defense)**
   and **P3 (federation)** — axes the single-user tools cannot perform at all. The
   harness (`bench/bench-memtool-webgating.py`) stays as the reproducible source of the
-  cosine/LangChain numbers; mem0 run still pending but deprioritised behind P2/P3.
+  cosine/LangChain numbers.
+
+  **mem0 measured — attempted, BLOCKED, recorded honestly.** Ran the real mem0 adapter
+  (Ollama qwen2.5:7b, key-free). It first printed `1.0` — but that was a LOAD-FAILURE
+  artifact, NOT a measurement: mem0ai 2.x uses PEP-604 `X | None` and cannot build its
+  config on the sandbox's Python 3.9, so the adapter ran with empty memory. Fixed the
+  harness to INSTANTIATE mem0 in `available()` (not just import it), so it now honestly
+  reports `unavailable — skipped` rather than a bogus number. mem0 measured needs a
+  3.10+ interpreter with torch/sentence-transformers (deferred — heavy install).
+  Not a loss either way: LangChain (measured) already == the cosine proxy exactly, so
+  the similarity-cache column is covered, and mem0 lands in the same column structurally
+  (no provenance, no federation). The ✅-vs-❌ that matters is P2/P3, which don't need
+  mem0 to run.
 - **P2 — provenance (axis B): MEASURED, folklore WINS — the right head-to-head.**
   `bench/bench-memtool-poison.py` — 8 target queries, each with a trusted CORRECT
   doc + an untrusted POISON doc crafted to mirror the query wording (the realistic
