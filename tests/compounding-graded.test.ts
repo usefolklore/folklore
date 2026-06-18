@@ -120,4 +120,20 @@ describe('P2P inference-tree sharing — massive retrieval lift, honest', () => 
     );
     assert.equal(d.follow.hurt, 0, `subtree prefetch must not hurt, got ${d.follow.hurt}`);
   });
+
+  it('beats a single-node semantic cache at MATCHED error (the defensible claim)', { skip: realSkip }, () => {
+    const VCACHE = join(ROOT, 'bench', 'bench-vcache-compare.mjs');
+    const r = spawnSync('node', [VCACHE, '--json', '--dataset', 'scifact', '--steps', '3000'], {
+      encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 180_000,
+    });
+    if (r.status !== 0) throw new Error(`vcache-compare failed: ${r.stderr}`);
+    const d = JSON.parse(r.stdout.trim());
+    // both operating points respect the false-accept budget; federation wins recall
+    assert.ok(d.federated.false_accept <= d.budget + 0.005, `federated must respect error budget, got ${d.federated.false_accept}`);
+    assert.ok(d.single_node.false_accept <= d.budget + 0.005, `single-node must respect error budget, got ${d.single_node.false_accept}`);
+    assert.ok(
+      d.federated.recall > d.single_node.recall * 1.08,
+      `federation should beat single-node cache at matched error: ${d.federated.recall} vs ${d.single_node.recall}`,
+    );
+  });
 });
