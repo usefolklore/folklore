@@ -847,7 +847,9 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   source:    arxiv.org/abs/…
   fetched:   2026-06-09T…
 }</pre>
-        <p class="prov-body"><strong>Signed by a verified GitHub identity</strong>, with an auditable chain: who curated it, what they grounded on, when. Trust becomes a property the model can read.</p>
+        <p class="prov-stat">59%&nbsp;→&nbsp;2%</p>
+        <p class="prov-body"><strong>Signed by a verified GitHub identity</strong>, with an auditable chain: who curated it, what they grounded on, when. Provenance ranking keeps only signed gold and drops unsigned poison — cutting flip-ASR from <strong>58.9% to 2.4%</strong> (24.8&times;) on the displaced-poison matrix. Trust becomes a property the model can read.</p>
+        <p class="prov-cite">measured · Haiku agent, Opus judge · BEIR SciFact</p>
       </div>
     </div>
   </div>
@@ -863,6 +865,9 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       <div class="led"><div class="n">+43<small>%</small></div><div class="k">recall@1, peer-shared</div></div>
       <div class="led"><div class="n">11<small>ms</small></div><div class="k">median retrieval</div></div>
       <div class="led"><div class="n">~140<small>ms</small></div><div class="k">federation-hit P50</div></div>
+      <div class="led"><div class="n">24.8<small>×</small></div><div class="k">poison flip-ASR cut · provenance rank</div></div>
+      <div class="led"><div class="n">9.1<small>×</small></div><div class="k">fewer paid web trips · 200k queries</div></div>
+      <div class="led"><div class="n">77<small>%</small></div><div class="k">fewer model-input tokens · transfer</div></div>
     </div>
     <div class="proofrow">
     <div class="bars" id="bars">
@@ -897,7 +902,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       </svg>
     </div>
     </div>
-    <p class="body rv" style="margin-top:18px;font-size:.98rem;font-style:italic;opacity:.8;max-width:60ch">CPU-only. No model judging a model. Simulator figures — the hundred-peer pilot is next.</p>
+    <p class="body rv" style="margin-top:18px;font-size:.98rem;font-style:italic;opacity:.8;max-width:60ch">CPU-only retrieval. NDCG is real BEIR SciFact; poison-defense is real displaced-poison retrieval (Haiku agent, Opus judge). Compounding &amp; token figures are simulator-grade — the hundred-peer pilot is next.</p>
   </div>
 </section>
 

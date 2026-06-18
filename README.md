@@ -12,6 +12,7 @@ A local-first memory + research layer for AI agents. It works alone on day one �
 
 ![tests](https://img.shields.io/badge/tests-942%20passing-brightgreen)
 ![BEIR SciFact NDCG@10](https://img.shields.io/badge/BEIR%20SciFact%20NDCG%4010-0.7522-blue)
+![poison defense](https://img.shields.io/badge/poison%20flip--ASR-58.9%25%E2%86%922.4%25-blue)
 ![runtime](https://img.shields.io/badge/runtime-CPU--only-orange)
 ![spec](https://img.shields.io/badge/spec-0.1.0--draft-blue)
 ![status](https://img.shields.io/badge/status-pre--launch-yellow)
@@ -202,6 +203,17 @@ SOTA claim (the cold path here is MiniLM); it needs a warm pool (a peer must hav
 answered it first). Bench: [`bench/bench-vcache-compare.mjs`](bench/bench-vcache-compare.mjs),
 write-up: [`docs/research/inference-tree-sharing.md`](docs/research/inference-tree-sharing.md).
 
+**Safer.** Anonymous retrieval is a poisoning surface — PoisonedRAG shows 5 injected
+documents can drive a 97% attack success rate. Folklore signs every record, and the
+provenance ranker keeps only signed gold while dropping unsigned poison. On a
+gold-displaced poison matrix (BEIR SciFact, Haiku agent, Opus judge, 2,957 judged
+cells across A1/A2/A3 attacks × rates {0,25,50,75}), baseline flip-ASR is **58.9%**;
+with provenance ranking it falls to **2.4%** — a **24.8× reduction** — and total
+attack-effect (flip + induced doubt) drops **83.8% → 9.8%** (8.58×). This is the same
+lighter model with and without the protocol; it does not yet claim Haiku+protocol beats
+Opus alone (the displaced head-to-head is queued). Eval harness is `claude -p`-driven,
+no API key, no temperature-0.
+
 ### The math
 
 For any topic `T` and time `t`, let `R(T, t)` be the number of peers holding resolved reasoning for `T`. Under Folklore's mechanism `R(T, t)` is **monotonically non-decreasing** — once anyone reasons through `T`, every later peer starts from that conclusion, not from zero. Compounding is a property of the architecture, not a marketing claim.
@@ -262,7 +274,7 @@ You don't change how you work. Once Folklore is installed and your daemon is run
 
 - **Now.** CPU-only retrieval at public-baseline parity; federation simulator validating the compounding thesis; the Claude Code integration.
 - **Next.** FolkloreBench-F v2 (real per-peer retrieval, no boolean abstraction). 100-peer pilot in the local-AI / agent-tooling ecosystem; publish the real `web_fallback_rate` curve after 30 days of live traffic.
-- **Then.** Provenance-attested retrieval against adversarial context — does the signature chain let an LLM detect and refuse poisoned retrieval? Rarity-aware replication so niche knowledge survives its sole holder going offline.
+- **Then.** Provenance-attested retrieval against adversarial context — first result in (provenance ranking cuts poison flip-ASR 58.9% → 2.4%, see Proof); next, the Haiku+protocol vs Opus-alone head-to-head, and rarity-aware replication so niche knowledge survives its sole holder going offline.
 - **After.** Read-only public peer endpoint ("browse the network", no install). The protocol spec, published once people are already using the tool.
 
 ---
