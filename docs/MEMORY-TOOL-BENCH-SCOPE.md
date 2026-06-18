@@ -154,8 +154,42 @@ and/or a server folklore does not. Two honest ways to handle it:
   corroborating the lever's direction, not a full attack matrix. The demotion
   magnitude is a free parameter — the point is that ANY real provenance signal cuts
   flip-ASR sharply while the competitors have ZERO such signal.
-- **P3 — federation (axis C):** folklore N-peer compounding vs the structural
-  single-user ceiling of the silos.
+- **P3 — federation (axis C): DONE, folklore WINS (structural).**
+  `bench/bench-memtool-federation.py` — shared 8-need pool, paraphrased query stream,
+  matched all-MiniLM-L6-v2 recall (cosine≥0.55); only variable = shared vs siloed
+  memory; sweep peer count N. **Result (cooperative cache hit-rate):**
+
+  | peers | silo (competitors) | federated (folklore) | lift |
+  |---|---|---|---|
+  | 1 | 0.375 | 0.375 | 1.0× |
+  | 8 | 0.31 | 0.80 | 2.55× |
+  | 64 | 0.31 | **0.97** | **3.15×** |
+
+  The silo curve is **flat in N** — a single-user tool gains nothing from more users,
+  by construction; folklore compounds to 0.97 as the commons warms. Same SHAPE as
+  folklore's measured cooperative-cache result (90.2% @64 vs 18% alone; absolute
+  differs because this is a toy 8-need pool). LABEL: SIMULATOR (peer behaviour +
+  CRDT sharing modeled — folklore's real sync is Y.js; the silo assumption IS what
+  single-user tools are); recall decision MEASURED on real MiniLM. mem0/Letta/
+  LangChain/Zep cannot share memory across users → they are the silo column.
+
+---
+
+## Verdict (P0–P3 complete)
+
+On the axes that matter, honestly measured/structural:
+
+| axis | folklore | mem0 / LangChain / Zep / Pinecone |
+|---|---|---|
+| capability (P0) | 5/6, only one with web-gate + provenance + federation | 0–3/6 |
+| web-gating (P1) | ≈ parity on single-user hit-rate (NOT a win; wrong axis) | cosine-cache parity |
+| provenance / poison (P2) | flip-ASR 0.625 → **0.0** | **0.625, structurally pinned** (no provenance) |
+| federation (P3) | **0.97 @64 peers (3.15× lift)** | **flat ~0.31** (single-user, can't share) |
+
+The honest competitive story is NOT "folklore retrieves better" (web-gating is parity;
+BEIR is capped). It is: **folklore is the only one that carries provenance and
+federates** — and on those two axes the competitors don't lose by a number, they
+**can't play at all**. That is the defensible "vs mem0/Letta/RAG" claim.
 
 ## Open questions
 
