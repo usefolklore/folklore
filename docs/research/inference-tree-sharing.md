@@ -83,3 +83,43 @@ corpora with real relevance judgments, paraphrase-generalized, with zero
 degradation. The reach is bounded by warm-pool coverage and embedder paraphrase
 similarity, both of which only improve as the network grows and embedders get
 stronger.
+
+---
+
+## Making it DEFENSIBLE — vs a real single-node cache, at matched error (2026-06-18)
+
+The +107–171% headline above is relative to **weak cold MiniLM retrieval** — an
+inflated baseline (a reviewer's first objection). The honest competitor is a
+proper **single-node semantic cache** (vCache-style: query→verified-answer cache
+with an error-bounded acceptance threshold). `bench-vcache-compare.mjs` compares
+three systems on the identical real stream (always-paraphrase, no exact cache),
+each at a **matched ≤2% false-accept operating point** read off the full
+recall-vs-error curve — so the comparison is apples-to-apples:
+
+| corpus | COLD direct | SINGLE-NODE cache (vCache-like) | FEDERATED tree-sharing | fed vs single |
+|---|---|---|---|---|
+| SciFact | 46.6% | 81.5% @ 0.5% FA | **98.2% @ 0.1% FA** | **+20.5%** |
+| NFCorpus | 46.7% | 77.3% @ 0.5% FA | **97.6% @ 0.1% FA** | **+26.2%** |
+
+**The defensible claim: federated inference-tree sharing beats a proper
+single-node semantic cache by +20–26% recall@1 at the same error budget.** Both
+caches use the identical error-bounded decision rule (threshold from the curve at
+≤2% false-accept); the delta is purely **federation coverage** — pooling answered-
+question trees across peers means the answer is far more likely to already be in
+the shared pool. That is the real, honest P2P value, not a weak-baseline artifact.
+
+### What this is and is NOT (honest)
+
+- It is **NOT a SOTA retrieval result.** Cold retrieval here is MiniLM, below
+  SOTA retrievers (BGE/nomic/ColBERT/SPLADE). Tree-sharing does not improve cold
+  quality — it reuses verified prior answers. It is a **federated semantic-cache /
+  reuse** result, and on that axis it beats the strong single-node baseline by
+  +20–26% at matched error.
+- The **composition is genuinely unoccupied** (per energy-based-inference.md): no
+  prior system does cross-peer verified-inference-tree reuse + subject-subtree
+  prefetch (vCache federates nothing; MeanCache federates the embedder, not the
+  value; PLT is single-node).
+- Still open for a full SOTA-class write-up: (1) a **strong cold baseline** (the
+  Rust bge-base sidecar — HF-blocked in this sandbox), so the lift is over a
+  strong retriever; (2) **NDCG@10** alongside recall@1; (3) head-to-head vs the
+  published vCache implementation, not just a faithful re-impl of its rule.
