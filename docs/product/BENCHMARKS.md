@@ -111,6 +111,23 @@ the v2 semantic-satisfaction-threshold sweep shows the curve survives realistic
 retrieval variance. Read the 17%→1% number as "the simulator behaves as the
 model predicts," never as "production peers cut web calls 17× in the field."
 
+**Update (the v2 semantic sweep, now done).** `bench-compounding-graded.mjs`
+replaces the boolean abstraction with GRADED retrieval through the real energy
+gate: topics are vectors, queries are noised paraphrases, a peer resolves only if
+the shipped admission gate clears over the cosine similarities — so paraphrase
+misses and near-miss false-admits (which boolean cannot show) are in scope, and
+ground truth is known so false-admit is reported. Result (DIM=384, 16 peers, 20%
+churn): cooperative correct-resolve **62.2%** vs isolated **36.3%**, **1.68×**
+fewer web trips, **+8.07 M tokens of LLM inference reused**, **0% false-admit** —
+and it requires the Hopfield separation guard + CRDT replication to hold (single
+static thresholds false-resolve; single-homed knowledge dies under churn). The
+compounding gap is **bounded by retrieval precision**, not unlimited. And
+`bench-paraphrase-sigma.mjs` grounds it in REAL embeddings: real questions sit at
+median cos **0.841** to their source node vs **0.097** to unrelated ones
+(separation AUC **0.999**, equivalent σ≈0.033) — deep inside the regime where the
+graded sim compounds. So the thesis now has semantic-variance evidence on real
+embeddings, not just the boolean curve. See `docs/research/compounding-graded.md`.
+
 ### Claims not allowed yet
 
 - Do not claim natural user-question web deflection until the read path
