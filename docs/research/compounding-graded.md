@@ -68,3 +68,41 @@ boolean 17%→1%. The compounding *rate* is a function of embedder paraphrase
 robustness (σ) and federated cache size (spurious-neighbour density), both
 measurable. Next: sweep peer count P to chart R(T,t) growth, add offline churn,
 and re-run on real text embeddings (not synthetic vectors) to fix the real-world σ.
+
+---
+
+## Update — peer-count scaling, churn, replication, and inference reuse (2026-06-18)
+
+Extended the sim with a peer sweep, offline churn, CRDT-style replication, and an
+LLM-inference-cost dimension. Two corrections to the model surfaced (both now
+fixed, both faithful to the real protocol):
+
+1. **Dedup by topic id.** The federated read must dedup the same node returned by
+   many peers (real: `also_from_peers`). Without it, replicated copies flood the
+   top-K → the separation guard sees Δ=0 between identical copies → rejects
+   everything. Fixed: best-sim-per-topic before the gate.
+2. **CRDT replication.** Cooperative deposits propagate to all *reachable* peers
+   (Y.js sync), not just the issuing peer. Single-homed knowledge degrades under
+   churn (the degradation-dynamics durability point); replication survives it.
+
+**Headline (DIM=384, σ=0.10, 16 peers, 20% churn):** cooperative correct-resolve
+**62.2%** vs isolated **36.3%**, web-fallback **32%** vs **50%**, **1.68× fewer
+web trips**, **+8.07 M tokens of LLM inference reused**, **0% false-admit**. Both
+knowledge AND inference compound, and it survives realistic churn.
+
+**Peer scaling (R(T,t)):**
+- *No churn, full replication:* correct-resolve is ~flat across P — every peer
+  converges to the full shared cache (that's what CRDT convergence *means*; the
+  benefit is the cooperative-vs-isolated gap, realized at any P≥2).
+- *With 20% churn:* correct-resolve GROWS with peers (55.7% at P=1 → ~63% at
+  P=32) — more peers = more online replicas = resilience. This is the
+  replication-factor benefit the durability analysis predicted, shown empirically.
+
+**Inference-cost model (labeled, no double-count):** compute-saved = correct
+reuses × (research − recall) tokens, one projection at 8000/200. The cooperative
+*extra* tokens reused over isolated is the federation's inference-compounding
+value. Web-trip count and token-savings are the SAME events under two units —
+reported as one metric, not multiplied together (the cost critique's double-count).
+
+Locked by `tests/compounding-graded.test.ts` (P=1 ⇒ coop==iso; low-σ ⇒ compounds
++ ~0 false-admit; a positive separating sepMin exists).
