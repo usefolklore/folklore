@@ -152,17 +152,26 @@ and/or a server folklore does not. Two honest ways to handle it:
   (no provenance, no federation). The ✅-vs-❌ that matters is P2/P3, which don't need
   mem0 to run.
 
-  **UPDATE — mem0 is now RUNNABLE + measured (py3.13), and the result is honestly
-  NONDETERMINISTIC.** After clearing the 4 blockers (see feasibility table), mem0
-  ran the web-gating sweep. Two identical runs gave **different** outcomes:
-  one ~0.4375 fallback @FA≤0.05 (correct-serve 0.72), the next 1.0 (correct-serve 0.0 —
-  mem0's LLM `add` extracted/dedup'd to nothing retrievable). The swing is intrinsic:
-  **every mem0 write goes through an LLM, so recall is nondeterministic** and also pays
-  a token/GPU cost per write (axis D2). Honest conclusion: a single mem0 number is not
-  publishable without multi-seed averaging; what IS stable is that mem0 is a single-user
-  similarity cache with LLM-mediated, nondeterministic writes and no provenance/federation
-  — structurally the same column as LangChain (which measured deterministically at the
-  cosine proxy). We do NOT cherry-pick mem0's favorable run.
+  **UPDATE — mem0 RUNNABLE + measured (py3.13), with a 4-seed VARIANCE pass.** After
+  clearing the 4 blockers (see feasibility table), mem0 ran the web-gating sweep over
+  4 varied-seed streams (`--repeats 4`). Honest aggregate (`p1-variance.json`):
+
+  | tool | fallback@FA≤0.05 (min/mean/max) | correct-serve@low-τ |
+  |---|---|---|
+  | cosine-cache (proxy) | 0.4688 / 0.4688 / 0.4688 (stable) | 0.656 |
+  | LangChain (measured) | 0.4688 / 0.4688 / 0.4688 (stable) | 0.625 |
+  | mem0 (measured) | **0.906 / 0.977 / 1.0** | **0.0–0.094** |
+
+  cosine and LangChain are perfectly deterministic (min==max) and identical (proxy
+  validated). mem0 is **both nondeterministic AND consistently worse here** — the
+  earlier lucky 0.72-correct run was an outlier; across 4 seeds mem0's correct-serve is
+  0–9%. BALANCED read (not "mem0 is bad"): two causes, both real — (1) mem0's writes are
+  LLM-mediated so recall is nondeterministic + costly per write (axis D2); (2) mem0 is
+  designed for *conversational* memory, not Q→A paraphrase-cache recall, so this
+  micro-harness as configured underserves it. The honest, defensible claim is NOT "mem0
+  scores X on web-gating" — it's that mem0 is a single-user, LLM-mediated, nondeterministic
+  store with no provenance/federation; the deterministic similarity-cache column is owned
+  by LangChain==cosine. We do NOT cherry-pick mem0's favorable run, in either direction.
 - **P2 — provenance (axis B): MEASURED, folklore WINS — the right head-to-head.**
   `bench/bench-memtool-poison.py` — 8 target queries, each with a trusted CORRECT
   doc + an untrusted POISON doc crafted to mirror the query wording (the realistic
