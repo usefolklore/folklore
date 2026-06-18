@@ -73,5 +73,9 @@
       "Read(./.env)",
       "Read(./.env.*)"
     ]
+  },
+  "env": {
+    "FOLKLORE_ENERGY_GATE": "1",
+    "FOLKLORE_QUERY_REUSE": "1"
   }
 }

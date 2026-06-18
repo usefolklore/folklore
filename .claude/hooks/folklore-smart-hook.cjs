@@ -56,13 +56,17 @@ const GAP_MIN = Number(process.env.FOLKLORE_GAP_MIN ?? 0.02);
 // FOLKLORE_PREFETCH_PEERS=0 to force local-only.
 const PREFETCH_PEERS = process.env.FOLKLORE_PREFETCH_PEERS !== '0';
 
-const emit = (text, decision) => {
+const emit = (text, decision, userMsg) => {
   const out = {
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
       additionalContext: text,
     },
   };
+  // systemMessage is the USER-visible line in Claude Code (additionalContext
+  // goes only to the model). Set it on the substantive paths (hits / deny) so
+  // the user actually SEES folklore consult the graph — not on idle Reads.
+  if (userMsg) out.systemMessage = `🪶 folklore — ${userMsg}`;
   if (decision && decision.permissionDecision) {
     out.hookSpecificOutput.permissionDecision = decision.permissionDecision;
     if (decision.permissionDecisionReason) {
@@ -349,16 +353,28 @@ const main = () => {
       emit(
         appendTelemetry(renderHits(hits, query, peersMeta)),
         { permissionDecision: 'deny', permissionDecisionReason: reason },
+        `denied ${toolName} — memory answers it (sat ${score.toFixed(2)}, ${hits.length} hits)`,
       );
       process.exit(0);
     }
-    emit(appendTelemetry(renderHits(hits, query, peersMeta)));
+    const sat = typeof score === 'number' ? score.toFixed(2) : '—';
+    emit(
+      appendTelemetry(renderHits(hits, query, peersMeta)),
+      undefined,
+      `${hits.length} graph hit(s) · sat ${sat} · ${action ?? 'use memory'}`,
+    );
   } else {
     logMiss(toolName, query);
     const peerNote = peersMeta.peers_queried > 0
       ? ` (network checked: ${peersMeta.peers_responded}/${peersMeta.peers_queried} peer(s) responded, none had a match)`
       : '';
-    emit(appendTelemetry(`folklore: no indexed context for "${query.slice(0, 80)}"${peerNote}. Miss logged to ${MISS_LOG}. Proceeding with ${toolName} — consider saving the result back with \`folklore save\` or a PostToolUse hook once reasoning is done.`));
+    emit(
+      appendTelemetry(`folklore: no indexed context for "${query.slice(0, 80)}"${peerNote}. Miss logged to ${MISS_LOG}. Proceeding with ${toolName} — consider saving the result back with \`folklore save\` or a PostToolUse hook once reasoning is done.`),
+      undefined,
+      // Show on web tools only (so the user sees folklore checked + missed);
+      // silent on local Read/Grep/Glob misses to avoid per-file spam.
+      DENIABLE_TOOLS.has(toolName) ? `no graph match — searching web for "${query.slice(0, 48)}"` : undefined,
+    );
   }
   process.exit(0);
 };
