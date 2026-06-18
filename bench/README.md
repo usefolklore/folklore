@@ -105,7 +105,9 @@ summaries — across a federated stream.
 
 | Runner | Measures | Reproduce |
 |---|---|---|
-| `bench-compounding.mjs` | 64-peer compounding stream (paid web trips) | `node bench/bench-compounding.mjs` |
+| `bench-compounding.mjs` | 64-peer compounding stream, **boolean** retrieval (superseded — see graded below) | `node bench/bench-compounding.mjs` |
+| `bench-compounding-graded.mjs` | **Graded** compounding through the real energy gate — paraphrase misses + false-admit; churn, CRDT replication, inference-cost. `--sweep-peers` for R(T,t) | `node bench/bench-compounding-graded.mjs` |
+| `bench-paraphrase-sigma.mjs` | Real-embedding paraphrase regime (query↔source cos) → maps to the graded-sim σ | `node bench/bench-paraphrase-sigma.mjs` |
 | `bench-subgraph-transfer.mjs` | Bounded subgraph payload per hit | `node bench/bench-subgraph-transfer.mjs` |
 | `bench-value-model.mjs` | Demand economics with subgraph transfer | `node bench/bench-value-model.mjs` |
 | `bench-user-value.mjs` | Per-user value model | `node bench/bench-user-value.mjs` |

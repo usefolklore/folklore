@@ -6,6 +6,13 @@
  * paid network trip happens) collapses as peers join. "Pull once, local
  * forever" — for the network, not just one node.
  *
+ * NOTE — BOOLEAN retrieval (a peer holds the exact topic id or not). This
+ * overstates compounding (every paraphrase is a perfect hit). The HONEST
+ * successor is `bench-compounding-graded.mjs`, which resolves through the real
+ * energy gate over cosine similarities of noised-paraphrase queries (so
+ * paraphrase misses + false-admits are in scope), and `bench-paraphrase-sigma.mjs`
+ * which grounds the noise level in real embeddings. Prefer those for claims.
+ *
  * The model (per the folklore formalization + the cooperative-caching
  * literature): query demand is heavy-tailed (Mandelbrot-Zipf), caches
  * are LRU, and the cooperative hit-rate follows Che's approximation with
