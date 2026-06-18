@@ -248,7 +248,7 @@ const computeComponents = (results: readonly EnrichedMatch[]): Components => {
   // Freshness — observed iff at least one result has a known age.
   const fresh = results.filter((r) => {
     if (r.age_days === undefined) return false;
-    const limit = r.stale_after_days ?? 14;
+    const limit = r.stale_after_days ?? DEFAULT_STALE_AFTER_DAYS;
     return r.age_days <= limit;
   }).length;
   const ageKnown = results.filter((r) => r.age_days !== undefined).length;
@@ -342,6 +342,27 @@ const relevanceGate = (
   return REL_FLOOR + (1 - REL_FLOOR) * rel;
 };
 
+// ─────────────── freshness gate (data-aging: φ = e^{−μ·age}) ──
+//
+// One unified staleness window (was 7d in CLAUDE.md / 14d in this scorer /
+// 30d in reputation — the QoS + degradation critiques flagged the drift).
+/** The single staleness half-life, in days. Aligns the scorer to the doc. */
+export const DEFAULT_STALE_AFTER_DAYS = 7;
+/** A maximally-stale hit keeps this fraction — old evidence is weak, not nil. */
+const FRESH_FLOOR = 0.3;
+/**
+ * Freshness gate in [FRESH_FLOOR, 1] from the freshest hit's age. Applied
+ * MULTIPLICATIVELY (like the relevance gate) so age actually gates the score
+ * instead of being averaged into the trust base, where a perfect-but-ancient
+ * hit still scored high (QoS critique). Half-life = DEFAULT_STALE_AFTER_DAYS.
+ * Unknown age → 1 (no-op), preserving the recall / no-timestamp path.
+ */
+const freshnessGate = (bestAgeDays: number | undefined): number => {
+  if (bestAgeDays === undefined) return 1;
+  const decay = Math.pow(0.5, Math.max(0, bestAgeDays) / DEFAULT_STALE_AFTER_DAYS);
+  return FRESH_FLOOR + (1 - FRESH_FLOOR) * decay;
+};
+
 export const computeSatisfaction = (
   results: readonly EnrichedMatch[],
   opts?: { readonly coverageRatio?: number; readonly energy?: EnergyGateParams },
@@ -360,8 +381,10 @@ export const computeSatisfaction = (
   // the relevance gate below ("trust × relevance"), so a trustworthy but
   // off-topic hit can't inflate the score. provenance and consensus are
   // always observed, so the trust set is never empty for a non-empty result.
+  // Freshness is NOT in the trust base — it enters multiplicatively as the
+  // freshness gate below (trust × relevance × freshness), mirroring how
+  // retrieval became the relevance gate. Trust = how believable the source is.
   const trustObserved = [
-    components.freshness,
     components.provenance,
     components.consensus,
     components.signature,
@@ -383,12 +406,12 @@ export const computeSatisfaction = (
   // Tally diagnostics
   const fresh_count = results.filter((r) => {
     if (r.age_days === undefined) return false;
-    const limit = r.stale_after_days ?? 14;
+    const limit = r.stale_after_days ?? DEFAULT_STALE_AFTER_DAYS;
     return r.age_days <= limit;
   }).length;
   const stale_count = results.filter((r) => {
     if (r.age_days === undefined) return false;
-    const limit = r.stale_after_days ?? 14;
+    const limit = r.stale_after_days ?? DEFAULT_STALE_AFTER_DAYS;
     return r.age_days > limit;
   }).length;
   const unsigned_count = results.filter((r) => r.has_signature === false).length;
@@ -460,7 +483,13 @@ export const computeSatisfaction = (
           return d < m ? d : m;
         }, Infinity);
   const relGate = relevanceGate(bestDistance, opts?.coverageRatio);
-  const score = clamp01((base - penalty) * relGate);
+  // Freshness gate from the freshest hit's age (multiplicative — see
+  // freshnessGate). Unknown age → 1 (no-op), so the recall / no-timestamp
+  // path is unchanged.
+  const ages = results.map((r) => r.age_days).filter((a): a is number => a !== undefined);
+  const bestAge = ages.length === 0 ? undefined : Math.min(...ages);
+  const freshGate = freshnessGate(bestAge);
+  const score = clamp01((base - penalty) * relGate * freshGate);
 
   // Energy-based admission verdict over the real-distance hits' similarities
   // (sim = 1 − embedding distance). Always computed; decideContract consults
@@ -492,7 +521,13 @@ export const computeSatisfaction = (
     value: Math.round(c.value * 100) / 100,
     observed: c.observed,
     weight:
-      name === 'retrieval' ? 0 : c.observed ? Math.round(trustWeight * 100) / 100 : 0,
+      // retrieval and freshness carry 0 LINEAR weight — both enter
+      // multiplicatively (relevance gate, freshness gate), not in the trust base.
+      name === 'retrieval' || name === 'freshness'
+        ? 0
+        : c.observed
+          ? Math.round(trustWeight * 100) / 100
+          : 0,
   }));
 
   return {
