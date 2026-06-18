@@ -21,8 +21,16 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BENCH = join(ROOT, 'bench', 'bench-compounding-graded.mjs');
+const REAL_BENCH = join(ROOT, 'bench', 'bench-compounding-real.mjs');
 const DIST_GATE = join(ROOT, 'dist', 'domain', 'energy-gate.js');
 const skip = !existsSync(DIST_GATE) ? 'dist not built (run `npm run build`)' : false;
+// The full real-corpus run needs the cached embedder + the SciFact dataset.
+const HOME = process.env.FOLKLORE_HOME || join(process.env.HOME ?? '', '.folklore');
+const SCIFACT = join(HOME, 'bench', 'scifact', 'scifact', 'corpus.jsonl');
+const realSkip =
+  skip || !existsSync(join(HOME, 'models')) || !existsSync(SCIFACT)
+    ? 'needs cached embedder + ~/.folklore/bench/scifact'
+    : false;
 
 const run = (args: string[]): any => {
   const r = spawnSync('node', [BENCH, '--json', ...args], {
@@ -60,5 +68,25 @@ describe('compounding-graded sim invariants', () => {
     const d = run(['--peers', '16', '--steps', '1500', '--dim', '384', '--sigma', '0.1']);
     assert.ok(d.calibration.sepMin > 0, 'a positive separating sepMin must exist');
     assert.ok(d.calibration.tpr >= 0.8, `true-match TPR should be high, got ${d.calibration.tpr}`);
+  });
+});
+
+describe('compounding on a REAL IR corpus (SciFact, real qrels)', () => {
+  it('cooperative compounds on SciFact with low false-admit', { skip: realSkip }, () => {
+    const r = spawnSync('node', [REAL_BENCH, '--json', '--dataset', 'scifact', '--steps', '4000'], {
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      timeout: 180_000,
+    });
+    if (r.status !== 0) throw new Error(`real bench failed: ${r.stderr}`);
+    const d = JSON.parse(r.stdout.trim());
+    assert.ok(
+      d.cooperative.correct_resolve_rate > d.isolated.correct_resolve_rate + 0.03,
+      `coop should reuse more on real corpus: ${d.cooperative.correct_resolve_rate} vs ${d.isolated.correct_resolve_rate}`,
+    );
+    assert.ok(
+      d.cooperative.false_admit_rate <= 0.15,
+      `false-admit should stay low on SciFact, got ${d.cooperative.false_admit_rate}`,
+    );
   });
 });
