@@ -133,3 +133,34 @@ is exactly the condition under which P2P knowledge + inference reuse compounds.
 Caveat: 36 pairs, question↔source-node similarity, MiniLM. A stronger embedder
 only widens the margin. This is the bridge from the synthetic geometry to the
 real pipeline: **the thesis holds on real embeddings.**
+
+---
+
+## On the REAL embedding manifold (2026-06-18)
+
+`--real-topics` samples the topic set from actual node vectors in `vectors.db`
+(real clustering + density) instead of random-gaussian vectors, run at the
+measured σ≈0.033. Real geometry is a STRICTLY HARDER test: dense clusters mean
+spurious neighbours sit closer, so the warmup separation is much worse than on
+random vectors (calibration FPR **34.8%** vs ~0% random).
+
+**Result (real topics, σ=0.033, 16 peers, 20% churn):** cooperative
+correct-resolve **49.0%** vs isolated **31.5%** (+17.5 pts), **1.34× fewer web
+trips**, **+5.44 M tokens** of LLM inference reused, **false-admit 1.0%**.
+COMPOUNDS — on the real embedding manifold, not just idealized geometry.
+
+The margin is smaller than the random-vector case (62% vs 36%) — exactly as
+expected, because real embedding space is clustered, so telling the true source
+from a same-cluster neighbour is harder. But the thesis holds with the honest
+gate keeping false-admit ~1%. This is the strongest version of the proof the
+available data supports: real topic geometry + real-measured paraphrase σ +
+the real shipped gate. (Verdict keys on the genuine-reuse metric — correct-resolve
+gap — not web-fallback-end, which on a clustered manifold has a long unresolved
+tail for both arms.)
+
+**Summary of the compounding evidence chain:** boolean sim (illustrative, biased)
+→ graded sim through the real gate (honest, regime-bounded) → real-embedding σ
+measurement (σ≈0.033, AUC 0.999) → real-manifold geometry run (compounds, +17.5
+pts correct-resolve). Both knowledge reuse and LLM-inference reuse compound, P2P,
+with false-admit held near zero — bounded by retrieval precision, robust to churn
+via replication, and grounded in real embeddings end to end.

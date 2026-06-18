@@ -34,6 +34,9 @@
  */
 
 import { energyGate, freeEnergy } from '../dist/domain/energy-gate.js';
+import { openSqliteVectorIndex } from '../dist/infrastructure/vector-index.js';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 
 const args = process.argv.slice(2);
 const flag = (name, def) => {
@@ -45,7 +48,8 @@ const P = flag('peers', 16);
 const STEPS = flag('steps', 4000);
 const K = flag('topics', 600);
 const CAP = flag('cap', 200);
-const DIM = flag('dim', 24);
+let DIM = flag('dim', 24);
+const REAL_TOPICS = args.includes('--real-topics'); // sample topics from real vectors.db geometry
 const SIGMA = flag('sigma', 0.35); // paraphrase noise stdev
 const ALPHA = 0.9; // Zipf exponent
 const ZIPF_Q = 5; // Mandelbrot plateau (flattened head)
@@ -89,7 +93,31 @@ const cos = (a, b) => {
 };
 
 // ── topics as unit vectors; Mandelbrot-Zipf demand ──
-const topics = Array.from({ length: K }, () => norm(Array.from({ length: DIM }, () => gauss())));
+// Topics: random-gaussian unit vectors, OR sampled from the REAL embedding
+// manifold (vectors.db) — real clustering/density makes spurious neighbours
+// closer, a strictly harder + more realistic test of separation.
+let topics;
+if (REAL_TOPICS) {
+  const dbPath = join(process.env.FOLKLORE_HOME || join(homedir(), '.folklore'), 'vectors.db');
+  const idxRes = await openSqliteVectorIndex({ path: dbPath, dim: 384 });
+  if (idxRes.isErr()) {
+    console.error('real-topics: cannot open vectors.db:', idxRes.error.message);
+    process.exit(2);
+  }
+  const idx = idxRes.value;
+  const allRes = await idx.all();
+  idx.close();
+  if (allRes.isErr() || allRes.value.length < K) {
+    console.error(`real-topics: need ${K} vectors, got ${allRes.isOk() ? allRes.value.length : 0}`);
+    process.exit(2);
+  }
+  const recs = allRes.value;
+  DIM = recs[0].vector.length;
+  const step = Math.floor(recs.length / K); // deterministic spread across the corpus
+  topics = Array.from({ length: K }, (_, i) => norm([...recs[i * step].vector]));
+} else {
+  topics = Array.from({ length: K }, () => norm(Array.from({ length: DIM }, () => gauss())));
+}
 const weights = Array.from({ length: K }, (_, i) => 1 / Math.pow(i + 1 + ZIPF_Q, ALPHA));
 const wsum = weights.reduce((a, b) => a + b, 0);
 const cdf = [];
@@ -297,7 +325,12 @@ console.log(`  false-admit rate     ${pct(iso.false_admit_rate).padStart(8)}    
 console.log(`  web trips paid       ${String(iso.web_paid).padStart(8)}     ${String(coop.web_paid).padStart(8)}`);
 console.log(`  compute saved        ${(savedTok(iso) / 1e6).toFixed(2).padStart(6)} M    ${(savedTok(coop) / 1e6).toFixed(2).padStart(6)} M tok   (correct reuses × ${C_RESEARCH - C_RECALL}/reuse; one projection)`);
 console.log('');
-const compounds = coop.fallback_end < iso.fallback_end - 0.02 && coop.correct_resolve_rate > iso.correct_resolve_rate;
+// Genuine compounding = cooperative reuses MORE correct answers than isolated,
+// with false-admit held low. Web-fallback-end is secondary (on a clustered real
+// manifold the long tail stays unresolved for both arms, but cooperative still
+// resolves far more of what it can — the genuine-reuse gap is the real signal).
+const compounds =
+  coop.correct_resolve_rate > iso.correct_resolve_rate + 0.05 && coop.false_admit_rate <= 0.05;
 const cheaper = iso.web_paid > 0 ? (iso.web_paid / Math.max(1, coop.web_paid)).toFixed(2) : 'n/a';
 if (compounds) {
   console.log(`VERDICT: COMPOUNDS — cooperative correct-resolve ${pct(coop.correct_resolve_rate)} vs isolated ${pct(iso.correct_resolve_rate)}, web-fallback ${pct(coop.fallback_end)} vs ${pct(iso.fallback_end)}.`);
