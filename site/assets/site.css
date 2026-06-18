@@ -111,7 +111,7 @@ h2{font-family:var(--serif);font-weight:700;font-size:clamp(1.8rem,3.4vw,2.6rem)
 /* store gutters: keep clear side breathing room on the product grid at
    every width (sits on top of the .wrap padding) so cards never hug the
    edge on mobile/desktop, and the middle gaps stay generous. */
-.catsec,.catsec-head,.lore-block,.drop,.trust .wrap,.announce .wrap{padding-inline:clamp(4px,2vw,18px)}
+.catsec,.catsec-head,.drop,.trust .wrap,.announce .wrap{padding-inline:clamp(4px,2vw,18px)}
 .prod{border:3px solid var(--ink);background:var(--paper);display:flex;flex-direction:column;transition:transform .12s,box-shadow .12s}
 .prod:nth-child(4n+1){box-shadow:8px 8px 0 var(--pink)}
 .prod:nth-child(4n+2){box-shadow:8px 8px 0 var(--blue)}
@@ -151,15 +151,7 @@ h2{font-family:var(--serif);font-weight:700;font-size:clamp(1.8rem,3.4vw,2.6rem)
 .badge.yellow{background:var(--yellow);color:var(--ink)}
 .badge.pink{background:var(--pink);color:var(--paper)}
 
-/* $LORE holder-perks block */
-.lore-block{display:grid;grid-template-columns:1.3fr 1fr;gap:clamp(30px,5vw,70px);align-items:center;margin-top:clamp(48px,8vh,80px);border:3px solid var(--ink);background:var(--paper);padding:clamp(24px,4vw,44px);box-shadow:12px 12px 0 var(--yellow)}
-.lore-block .coinwrap{display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden}
-.lore-block .coinwrap img{width:min(70%,220px);max-width:220px;height:auto;aspect-ratio:1/1;border-radius:50%;border:3px solid var(--ink);box-shadow:10px 10px 0 var(--ink);display:block;margin:0 auto}
-.lore-perks{display:flex;flex-direction:column;gap:12px;margin-top:20px}
-.lore-perk{display:flex;gap:12px;align-items:flex-start;font-size:1rem;line-height:1.45}
-.lore-perk .pp{font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:var(--teal);color:var(--paper);border:2px solid var(--ink);padding:5px 8px;white-space:nowrap;flex:none}
 .fineprint{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:18px;max-width:52ch;line-height:1.6}
-@media(max-width:760px){.lore-block{grid-template-columns:1fr;gap:30px}.lore-block .coinwrap{order:-1}}
 
 /* social proof */
 .proof{margin-top:clamp(48px,8vh,80px);border:3px solid var(--ink);background:var(--paper-2);padding:clamp(24px,4vw,40px);
@@ -243,15 +235,6 @@ footer{border-top:3px solid var(--ink);padding:46px 0 62px;background:var(--yell
 .foot{display:flex;gap:26px;flex-wrap:wrap;align-items:center;font-family:var(--mono);font-size:13px;font-weight:600}
 .foot a{border-bottom:2px solid var(--ink)}.foot a:hover{color:var(--paper)}
 .foot .r{margin-left:auto}
-
-/* $LORE live worth widget */
-.loreworth{margin-top:18px;font-family:var(--mono)}
-.lw-pre{font-size:13px;color:var(--muted)}
-.lw-mc{font-family:var(--serif);font-weight:700;font-size:clamp(2rem,4vw,3rem);line-height:1;letter-spacing:-.02em}
-.lw-lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:4px}
-.lw-row{display:flex;gap:12px;align-items:baseline;margin-top:10px;font-size:13px}
-.lw-price{font-weight:600}
-.lw-ch.up{color:var(--teal)}.lw-ch.dn{color:var(--pink)}
 
 /* legal pages */
 .legal{max-width:760px;margin:0 auto}

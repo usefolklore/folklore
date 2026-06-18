@@ -48,10 +48,5 @@ window.FOLKLORE = {
       "numbered-edition": "",
       "phygital-print": ""
     }
-  },
-  lore: {
-    // $LORE SPL token mint address from bags.fm at launch. Empty = "not launched yet".
-    mint: "",
-    chain: "solana"
   }
 };

@@ -256,7 +256,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   #store .prod .spec{display:none}            /* teaser: drop fulfilment line; full /store keeps it */
   #store .prod .desc{-webkit-line-clamp:2}
   #store .shop{grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,2vw,24px);margin-top:18px}
-  /* teaser cards: cap the shot so the whole row + $LORE strip clears one viewport */
+  /* teaser cards: cap the shot so the whole row clears one viewport */
   #store .prod{padding:12px;gap:7px}
   #store .prod .shot{aspect-ratio:3/2}
   #store .stamp{margin-bottom:14px}
@@ -277,16 +277,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   .store-carousel:hover #store .shop.flow{animation-play-state:paused}
   #store .shop.flow .prod{flex:0 0 clamp(220px,72vw,300px);margin:0 8px;box-sizing:border-box}
   @media(prefers-reduced-motion:reduce){#store .shop.flow{width:auto;flex-wrap:wrap;animation:none}#store .shop.flow .prod{flex-basis:clamp(220px,72vw,300px)}}
-  /* compact $LORE strip — single horizontal row; full block lives on /store */
-  .lorestrip{display:flex;flex-wrap:wrap;align-items:center;gap:clamp(16px,2.4vw,28px);margin-top:16px;box-sizing:border-box;max-width:100%;
-    border:3px solid var(--ink);background:var(--paper);padding:clamp(12px,1.6vw,18px) clamp(16px,2.2vw,26px);box-shadow:8px 8px 0 var(--yellow)}
-  .lorestrip .lorecoin{width:clamp(60px,7vw,82px);height:clamp(60px,7vw,82px);flex:none;border-radius:50%;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink)}
-  .lorestrip .loretext{flex:1 1 260px;min-width:0}
-  .lorestrip h3{font-weight:800;font-size:clamp(1.1rem,1.8vw,1.45rem);line-height:1.1;margin-bottom:5px}
-  .lorestrip .disc{font-family:var(--mono);font-size:11px;font-weight:600;opacity:.62;line-height:1.5;max-width:56ch;margin:0}
-  .lorestrip .lorebtn{flex:none;padding:12px 20px;font-size:13px;box-shadow:5px 5px 0 var(--ink)}
-  @media(max-width:760px){.lorestrip{flex-wrap:wrap;text-align:center;justify-content:center}.lorestrip .loretext{flex-basis:100%;min-width:0}.lorestrip .disc{max-width:none;overflow-wrap:anywhere}
-    #store .store-more a{white-space:normal}}
+  @media(max-width:760px){#store .store-more a{white-space:normal}}
   .prod:nth-child(1) .shot{box-shadow:6px 6px 0 var(--pink)}
   .prod:nth-child(2) .shot{box-shadow:6px 6px 0 var(--blue)}
   .prod:nth-child(3) .shot{box-shadow:6px 6px 0 var(--teal)}
@@ -326,14 +317,6 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   .buy{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.03em;padding:11px 20px;
     border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);background:var(--ink);color:var(--paper);cursor:not-allowed;opacity:.92}
   .buy[aria-disabled="true"]{pointer-events:none}
-  /* $LORE block inside the shop */
-  .lore{display:grid;grid-template-columns:minmax(auto,46ch) auto;justify-content:center;gap:clamp(40px,7vw,120px);align-items:center;
-    margin-top:18px;border:3px solid var(--ink);background:var(--paper);padding:clamp(20px,3vw,40px);box-shadow:10px 10px 0 var(--yellow)}
-  .lore h3{font-weight:800;font-size:clamp(1.3rem,2.2vw,1.8rem);line-height:1.05;margin-bottom:10px}
-  .lore .disc{font-family:var(--mono);font-size:11px;font-weight:600;opacity:.6;margin-top:12px;max-width:42ch}
-  .lore .coinwrap{display:flex;align-items:center;justify-content:center}
-  .lore .coinwrap img{width:clamp(150px,18vw,210px);border-radius:50%;border:3px solid var(--ink);box-shadow:9px 9px 0 var(--ink);display:block}
-  @media(max-width:760px){.lore{grid-template-columns:1fr;gap:28px;justify-content:stretch}.lore .coinwrap{order:-1}}
 
   footer{border-top:3px solid var(--ink);padding:56px 0 76px;background:var(--yellow);position:relative;z-index:3}
   .foot-support{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:34px;padding-bottom:30px;border-bottom:2px solid var(--ink)}
@@ -401,13 +384,6 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   .meme-slide{flex:0 0 clamp(230px,25vw,320px);padding:0 11px;box-sizing:border-box}
   .meme-card{position:relative;border:3px solid var(--ink);background:var(--paper);overflow:hidden;line-height:0}
   .meme-card img{width:100%;display:block;aspect-ratio:1/1;object-fit:cover}
-  /* owner wallet — slides up on hover/focus, links to the holder on-chain */
-  .meme-owner{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:10px;
-    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.02em;line-height:1;padding:9px 11px;
-    background:rgba(29,24,19,.93);color:var(--paper);transform:translateY(101%);transition:transform .25s cubic-bezier(.16,1,.3,1)}
-  .meme-card:hover .meme-owner,.meme-card:focus-within .meme-owner{transform:translateY(0)}
-  .meme-owner .ow-w{opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .meme-owner .ow-go{color:var(--yellow);white-space:nowrap}
   .meme-slide:nth-child(4n+1) .meme-card{box-shadow:8px 8px 0 var(--pink)}
   .meme-slide:nth-child(4n+2) .meme-card{box-shadow:8px 8px 0 var(--blue)}
   .meme-slide:nth-child(4n+3) .meme-card{box-shadow:8px 8px 0 var(--teal)}
@@ -989,14 +965,6 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
     </div>
     </div>
     <p class="store-more rv" data-d="3">Prints, posters, pins &amp; more — <a href="/store">browse the full store →</a></p>
-    <div class="lorestrip rv" data-d="1">
-      <img class="lorecoin" src="assets/gen/coin.png" alt="$LORE coin"/>
-      <div class="loretext">
-        <h3>$LORE — minted on <span class="em-teal">bags.fm.</span></h3>
-        <p class="disc">A community memecoin for the commons — for the culture, not the chart. Not financial advice.</p>
-      </div>
-      <a class="btn btn-primary lorebtn" href="https://bags.fm">Get $LORE</a>
-    </div>
   </div>
 </section>
 
@@ -1005,20 +973,19 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   <div class="wrap">
     <div class="stamp rv">The Memes</div>
     <h2 class="rv" data-d="1"><span class="mis" data-text="told and retold.">told and <span class="em-pink">retold.</span></span></h2>
-    <p class="body rv" data-d="1" style="max-width:50ch">Folk knowledge always spread as memes. Ours are minted by the network and posted to the timeline — drop yours; the best ones make the store.</p>
+    <p class="body rv" data-d="1" style="max-width:50ch">Folk knowledge always spread as memes. They spread peer to peer — drop yours; the best ones make the store.</p>
     <div class="meme-carousel rv" id="meme-carousel" data-d="1">
-      <!-- TODO: replace placeholder owner wallets/links with real mint holders -->
       <ul class="meme-track" id="memegrid" data-static="1">
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-stonesoup.png" loading="lazy" alt="folk meme — villagers and robots sharing one cauldron"/><a class="meme-owner" href="https://solscan.io/account/7gKp3mRtWqYz2nLvBhCdEfGjHkUaXsNrQ4tPuVwM5dFh" target="_blank" rel="noopener" aria-label="View owner wallet on Solscan"><span class="ow-w">owner 7gKp…5dFh</span><span class="ow-go">view ↗</span></a></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-signed.png" loading="lazy" alt="folk meme — signed node welcomed, anonymous scroll turned away"/><a class="meme-owner" href="https://solscan.io/account/9aBcDeFgHjKmNpQrStUvWxYz23456789AbCdEfGhJkLm" target="_blank" rel="noopener" aria-label="View owner wallet on Solscan"><span class="ow-w">owner 9aBc…JkLm</span><span class="ow-go">view ↗</span></a></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-zeroweb.png" loading="lazy" alt="folk meme — agent walking past the web toll booth"/><a class="meme-owner" href="https://solscan.io/account/4Hn8sQ2wErTyUaSdFgHjKzXcVbNmQwRtYuPaSdFgHjKp" target="_blank" rel="noopener" aria-label="View owner wallet on Solscan"><span class="ow-w">owner 4Hn8…HjKp</span><span class="ow-go">view ↗</span></a></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-reread.png" loading="lazy" alt="folk meme — re-reading the same papers vs resting by the fire"/><a class="meme-owner" href="https://solscan.io/account/6JmWqYz2nLvBhCdEfGjHkUaXsNrQ4tPuVwM5dFh7gKp3" target="_blank" rel="noopener" aria-label="View owner wallet on Solscan"><span class="ow-w">owner 6JmW…gKp3</span><span class="ow-go">view ↗</span></a></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-amnesia.png" loading="lazy" alt="folk meme — agent amnesia"/><a class="meme-owner" href="https://solscan.io/account/8XsNrQ4tPuVwM5dFh7gKp3mRtWqYz2nLvBhCdEfGjHkU" target="_blank" rel="noopener" aria-label="View owner wallet on Solscan"><span class="ow-w">owner 8XsN…jHkU</span><span class="ow-go">view ↗</span></a></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-coinrain.png" loading="lazy" alt="folk meme — $LORE rain"/><a class="meme-owner" href="https://solscan.io/account/5dFh7gKp3mRtWqYz2nLvBhCdEfGjHkUaXsNrQ4tPuVwM" target="_blank" rel="noopener" aria-label="View owner wallet on Solscan"><span class="ow-w">owner 5dFh…uVwM</span><span class="ow-go">view ↗</span></a></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-stonesoup.png" loading="lazy" alt="folk meme — villagers and robots sharing one cauldron"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-signed.png" loading="lazy" alt="folk meme — signed node welcomed, anonymous scroll turned away"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-zeroweb.png" loading="lazy" alt="folk meme — agent walking past the web toll booth"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-reread.png" loading="lazy" alt="folk meme — re-reading the same papers vs resting by the fire"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-amnesia.png" loading="lazy" alt="folk meme — agent amnesia"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-coinrain.png" loading="lazy" alt="folk meme — stone soup for machines"/></div></li>
       </ul>
       <div class="mech-dots" id="meme-dots" role="tablist" aria-label="Meme carousel"></div>
     </div>
-    <p class="rv" data-d="2" style="font-family:var(--mono);font-size:13px;font-weight:600;margin-top:24px;opacity:.7">more minting · follow <a href="https://x.com/usefolklore" style="border-bottom:2px solid var(--ink)">@usefolklore</a></p>
+    <p class="rv" data-d="2" style="font-family:var(--mono);font-size:13px;font-weight:600;margin-top:24px;opacity:.7">more memes · follow <a href="https://x.com/usefolklore" style="border-bottom:2px solid var(--ink)">@usefolklore</a></p>
   </div>
 </section>
 
