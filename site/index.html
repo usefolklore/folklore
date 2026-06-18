@@ -90,6 +90,8 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   .hcta{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.04em;background:var(--blue);color:var(--paper);
     border:2px solid var(--ink);padding:9px 16px;box-shadow:3px 3px 0 var(--ink);transition:.12s}
   .hcta:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink);background:var(--pink)}
+  .ghstars{display:inline-flex;align-items:center;margin-left:8px;padding:1px 7px;border-radius:999px;background:rgba(244,236,216,.22);font-size:11px;line-height:1.6}
+  .ghstars b{font-weight:800}
   /* mobile nav disclosure */
   .mnav{display:none;margin-left:auto;position:relative}
   .mnav>summary{list-style:none;cursor:pointer;font-size:20px;line-height:1;width:42px;height:42px;display:flex;align-items:center;justify-content:center;
@@ -151,7 +153,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   .rule{height:4px;background:var(--ink);margin:18px 0;max-width:140px}
 
   /* hero */
-  .hero{min-height:calc(100svh - 86px);display:flex;flex-direction:column;justify-content:center;padding-top:70px}
+  .hero{min-height:calc(100svh - 86px);display:flex;flex-direction:column;justify-content:flex-start;padding-top:clamp(104px,15vh,168px)}
   .hero .est{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--blue);margin-bottom:30px}
   .hero h1{max-width:14ch;margin-bottom:20px;font-size:clamp(2.4rem,4.6vw,4.4rem)}
   .hero .lede{max-width:34ch}
@@ -333,6 +335,14 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   @media(max-width:760px){.lore{grid-template-columns:1fr;gap:28px;justify-content:stretch}.lore .coinwrap{order:-1}}
 
   footer{border-top:3px solid var(--ink);padding:56px 0 76px;background:var(--yellow);position:relative;z-index:3}
+  .foot-support{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:34px;padding-bottom:30px;border-bottom:2px solid var(--ink)}
+  .foot-support-label{font-family:var(--serif);font-weight:800;font-size:1.1rem;letter-spacing:-.01em}
+  .support-btn{display:inline-flex;align-items:center;gap:8px;border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink);border-radius:12px;padding:7px 14px;background:var(--paper);font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.02em;transition:transform .12s ease,box-shadow .12s ease}
+  .support-btn:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
+  .support-btn.bmc{background:#ffdd00;padding:6px 12px}
+  .support-btn.bmc img{height:30px;width:auto;display:block}
+  .support-btn.patreon{background:var(--pink);color:var(--paper)}
+  .support-btn.patreon svg{width:17px;height:17px;fill:currentColor}
   .foot{display:flex;gap:28px;flex-wrap:wrap;align-items:center;font-family:var(--mono);font-size:14px;font-weight:600}
   .foot a{border-bottom:2px solid var(--ink);transition:.15s}.foot a:hover{color:var(--paper)}
   .foot .r{margin-left:auto;font-weight:700}
@@ -532,7 +542,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       <a href="#proof">Proof</a><a href="/store">Store</a><a href="/blog">Blog</a>
       <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore/tree/main/docs/rfc">RFC</a>
     </nav>
-    <a class="hcta" href="https://github.com/usefolklore/folklore">GitHub</a>
+    <a class="hcta" href="https://github.com/usefolklore/folklore">GitHub<span class="ghstars" id="gh-stars" hidden>★&nbsp;<b>—</b></span></a>
     <details class="mnav">
       <summary aria-label="Menu" role="button">☰</summary>
       <div class="mnav-panel">
@@ -1000,6 +1010,16 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 
 <div class="folkband"></div>
 <footer>
+  <div class="wrap foot-support">
+    <span class="foot-support-label">fund the commons</span>
+    <a class="support-btn bmc" href="https://www.buymeacoffee.com/saharbarak" target="_blank" rel="noopener noreferrer" data-ga="buymeacoffee" aria-label="Buy me a coffee">
+      <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" loading="lazy"/>
+    </a>
+    <a class="support-btn patreon" href="https://www.patreon.com/bePatron?u=111653068" target="_blank" rel="noopener noreferrer" data-ga="patreon" aria-label="Support on Patreon">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M0 .48h4.227v23.04H0zM15.385.48c-4.764 0-8.641 3.88-8.641 8.65 0 4.755 3.877 8.623 8.641 8.623 4.75 0 8.615-3.868 8.615-8.623C24 4.36 20.136.48 15.385.48z"/></svg>
+      <span>Patreon</span>
+    </a>
+  </div>
   <div class="wrap foot">
     <a href="/store">Store</a>
     <a href="/blog">Blog</a>
@@ -1117,6 +1137,14 @@ function initMemeCarousel(){
   if(reduceMotion)return;                          // CSS already handles the static reduced-motion layout
   (mq.addEventListener?mq.addEventListener('change',apply):mq.addListener(apply));
 })();
+/* live GitHub stars in the nav CTA */
+(function(){var s=document.getElementById('gh-stars');if(!s)return;
+  fetch('https://api.github.com/repos/usefolklore/folklore',{headers:{Accept:'application/vnd.github+json'}})
+   .then(function(r){return r.ok?r.json():null;})
+   .then(function(d){if(!d||typeof d.stargazers_count!=='number')return;
+     var n=d.stargazers_count,t=n>=1000?(n/1000).toFixed(1).replace(/\.0$/,'')+'k':String(n);
+     s.querySelector('b').textContent=t;s.hidden=false;})
+   .catch(function(){});})();
 
 </script>
 </body>
