@@ -47,7 +47,7 @@ import {
   type EnrichedMatch,
   type SatisfactionScore,
 } from '../domain/peer-telemetry.js';
-import { extractQueryTerms } from '../domain/coverage.js';
+import { extractQueryTerms, coverageRatio } from '../domain/coverage.js';
 
 // ─────────────── result shape ─────────────
 
@@ -297,15 +297,10 @@ export const ask =
             // hits (recall-only path) or the query has no extractable terms,
             // so the gate falls back to embedding proximity alone.
             const qTerms = extractQueryTerms(params.query);
-            const hitText = search_hits
-              .map((h) => `${h.label} ${h.summary ?? ''}`)
-              .join('\n')
-              .toLowerCase();
-            const coverageRatio =
-              qTerms.length === 0 || search_hits.length === 0
-                ? undefined
-                : qTerms.filter((t) => hitText.includes(t.toLowerCase())).length / qTerms.length;
-            const satisfaction = computeSatisfaction(enrichedAll, { coverageRatio });
+            const hitText = search_hits.map((h) => `${h.label} ${h.summary ?? ''}`).join('\n');
+            // Token-set coverage (not substring) — see coverage.ts coverageRatio.
+            const coverage = search_hits.length === 0 ? undefined : coverageRatio(qTerms, hitText);
+            const satisfaction = computeSatisfaction(enrichedAll, { coverageRatio: coverage });
             const shallowEvidence = search_hits.length === 0 && recallHits.length > 0;
             const contract = decideContract(satisfaction, {
               shallowEvidence,
