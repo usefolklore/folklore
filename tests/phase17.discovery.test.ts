@@ -72,10 +72,18 @@ describe('Phase 17: discovery — mDNS wiring (DISC-02) + Pitfalls 1, 2', () => 
     );
   });
 
-  it("D4 (DISC-02): peer:discovery handler persists with discovery_method: 'mdns'", () => {
+  it("D4 (DISC-02): peer:discovery handler labels non-bootstrap peers as 'mdns'", () => {
+    // The handler now computes `method` (mdns vs bootstrap, since both emit the
+    // same peer:discovery event) and persists it via mutatePeers. The
+    // non-bootstrap branch MUST still resolve to 'mdns' — that is the DISC-02
+    // invariant this test protects.
     assert.ok(
-      src.includes("discovery_method: 'mdns'"),
-      "peer:discovery handler must persist with discovery_method:'mdns' via mutatePeers",
+      src.includes('discovery_method: method'),
+      'peer:discovery handler must persist the computed discovery_method via mutatePeers',
+    );
+    assert.ok(
+      /\?\s*'bootstrap'\s*:\s*'mdns'/.test(src),
+      "non-bootstrap discovery must be labelled 'mdns' (DISC-02)",
     );
   });
 

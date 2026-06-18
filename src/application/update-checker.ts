@@ -48,6 +48,14 @@ export interface UpdateConfig {
   readonly channel: string;
   /** Whether the daemon should auto-check on its tick. */
   readonly auto_check_enabled: boolean;
+  /**
+   * Whether the daemon may AUTO-INSTALL a signed `force_upgrade` release
+   * without operator confirmation. Distinct from auto_check_enabled: checking
+   * (read-only) is cheap and safe; installing (runs `npm install -g`) is RCE
+   * and must be opted into separately. Optional for back-compat with configs
+   * written before force-push existed → treated as false.
+   */
+  readonly auto_install_force?: boolean;
 }
 
 export interface UpdateState {
@@ -123,6 +131,12 @@ export interface UpdateCheckResult {
   readonly latest_version: string;
   readonly upgrade_available: boolean;
   readonly upgrade_eligible: boolean;
+  /**
+   * True iff the verified+eligible manifest carries `force_upgrade: true`.
+   * Always false for unverified, ineligible, or wrong-channel manifests —
+   * a force flag only means something once the signature and gates pass.
+   */
+  readonly force_upgrade: boolean;
   readonly manifest: ReleaseManifest | null;
   readonly checked_at: string;
   readonly notes: string | null;
@@ -166,6 +180,7 @@ export const checkForUpdate = (
           latest_version: manifest.version,
           upgrade_available: false,
           upgrade_eligible: false,
+          force_upgrade: false,
           manifest: null,
           checked_at: checkedAt,
           notes: manifest.notes,
@@ -188,6 +203,9 @@ export const checkForUpdate = (
         latest_version: manifest.version,
         upgrade_available: verifyOnly.isOk(),
         upgrade_eligible: evalRes.isOk(),
+        // Force only counts on a verified+eligible manifest — never trust the
+        // raw flag on an unverified or gated manifest.
+        force_upgrade: evalRes.isOk() && manifest.force_upgrade === true,
         manifest: verifyOnly.isOk() ? manifest : null,
         checked_at: checkedAt,
         notes: manifest.notes,

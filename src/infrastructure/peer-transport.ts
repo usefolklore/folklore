@@ -18,6 +18,7 @@ import { tcp } from '@libp2p/tcp';
 import { noise } from '@libp2p/noise';
 import { yamux } from '@libp2p/yamux';
 import { mdns } from '@libp2p/mdns';
+import { bootstrap } from '@libp2p/bootstrap';
 import { kadDHT } from '@libp2p/kad-dht';
 import { circuitRelayTransport } from '@libp2p/circuit-relay-v2';
 import { dcutr } from '@libp2p/dcutr';
@@ -86,6 +87,14 @@ export interface TransportConfig {
   readonly mdns?: boolean;
   /** kad-dht wiring. Default false. Set true via PeerConfig.dht.enabled. */
   readonly dhtEnabled?: boolean;
+  /**
+   * WAN seed peers for @libp2p/bootstrap discovery. Unlike mDNS (LAN-only
+   * multicast), these are explicit multiaddrs to peers reachable across the
+   * internet — the seed that lets a fresh node find the swarm without being
+   * on the same network. Empty default → no bootstrap discovery. Sourced
+   * from config.yaml `peer.dht.bootstrap_peers`.
+   */
+  readonly bootstrapPeers?: readonly string[];
   /** Path to peers.json for peer:discovery persistence. REQUIRED when mdns is true. */
   readonly peersPath?: string;
   /**
@@ -215,13 +224,19 @@ export const createNode = (
       const host = cfg.listenHost ?? '127.0.0.1';
       const mdnsEnabled = cfg.mdns !== false;   // default true per DISC-02
       const dhtOn = cfg.dhtEnabled === true;    // default false per DISC-03
+      const bootstrapList = (cfg.bootstrapPeers ?? []).filter((a) => a.length > 0);
+      const bootstrapEnabled = bootstrapList.length > 0;
 
-      // Build peerDiscovery array conditionally. mDNS failures in Docker/WSL
-      // (multicast not forwarded) must not crash createNode — wrap in try.
-      let peerDiscovery: ReturnType<typeof mdns>[] = [];
+      // Build peerDiscovery array conditionally. mDNS (LAN) and bootstrap
+      // (WAN seed) are independent and compose — a node can run both. mDNS
+      // failures in Docker/WSL (multicast not forwarded) must not crash
+      // createNode — wrap in try. Both emit the same `peer:discovery` event,
+      // handled once below.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const peerDiscovery: any[] = [];
       if (mdnsEnabled) {
         try {
-          peerDiscovery = [mdns({ interval: 20000 })];
+          peerDiscovery.push(mdns({ interval: 20000 }));
         } catch (e) {
           // Pitfall 2 (17-RESEARCH.md): Docker bridge / WSL2 non-mirrored
           // multicast bind failure. Log and continue without mDNS.
@@ -231,7 +246,19 @@ export const createNode = (
             `Continuing without LAN discovery. ` +
             `Use manual 'peer add' or enable Docker --network host / WSL2 mirrored mode.\n`,
           );
-          peerDiscovery = [];
+        }
+      }
+      if (bootstrapEnabled) {
+        try {
+          // @libp2p/bootstrap emits peer:discovery for each seed addr at
+          // startup; the shared handler below dials + persists them. timeout
+          // bounds the initial resolve so a dead seed doesn't stall boot.
+          peerDiscovery.push(bootstrap({ list: [...bootstrapList], timeout: 5000 }));
+        } catch (e) {
+          process.stderr.write(
+            `folklore: bootstrap discovery init failed (${(e as Error).message}). ` +
+            `Continuing without WAN seed discovery.\n`,
+          );
         }
       }
 
@@ -304,18 +331,29 @@ export const createNode = (
       });
       await node.start();
 
-      // Pitfall 1 (17-RESEARCH.md): mDNS peer:discovery only populates peerStore.
-      // We MUST explicitly (a) persist with discovery_method:'mdns' AND (b) dial.
-      // Both sides — persist is safe (atomic lock), dial is best-effort.
-      // NOTE: we do NOT set minConnections — no auto-dial; this explicit handler is required.
-      if (mdnsEnabled && cfg.peersPath) {
+      // Pitfall 1 (17-RESEARCH.md): mDNS/bootstrap peer:discovery only populates
+      // peerStore. We MUST explicitly (a) persist with the right discovery_method
+      // AND (b) dial. Both sides — persist is safe (atomic lock), dial is
+      // best-effort. NOTE: we do NOT set minConnections — no auto-dial; this
+      // explicit handler is required. Registered when EITHER mDNS (LAN) or
+      // bootstrap (WAN) is active, since both emit the same event.
+      if ((mdnsEnabled || bootstrapEnabled) && cfg.peersPath) {
         const peersPath = cfg.peersPath;
+        // Seed peerIds extracted from bootstrap multiaddrs (the /p2p/<id> tail)
+        // so a discovered peer originating from the seed list is labelled
+        // 'bootstrap' rather than 'mdns'.
+        const bootstrapPeerIds = new Set(
+          bootstrapList
+            .map((a) => /\/p2p\/([^/]+)/.exec(a)?.[1])
+            .filter((id): id is string => typeof id === 'string'),
+        );
         node.addEventListener('peer:discovery', (evt: CustomEvent<PeerInfo>) => {
           // Defensive: evt.detail type is inferred from libp2p; runtime check.
           const detail = evt.detail;
           if (!detail || !detail.id || !Array.isArray(detail.multiaddrs)) return;
           const peerIdStr = detail.id.toString();
           const addrs = detail.multiaddrs.map((m) => m.toString());
+          const method = bootstrapPeerIds.has(peerIdStr) ? 'bootstrap' : 'mdns';
 
           // Persist the discovery via the locked peers.json mutation path.
           // Best-effort: failures here must not break the event loop.
@@ -324,7 +362,7 @@ export const createNode = (
               id: peerIdStr,
               addrs,
               addedAt: new Date().toISOString(),
-              discovery_method: 'mdns',
+              discovery_method: method,
             }),
           ).match(
             () => undefined,

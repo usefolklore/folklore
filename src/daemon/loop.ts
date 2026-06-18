@@ -87,6 +87,8 @@ import {
 import { readFileSync as nodeReadFileSync, existsSync as nodeExistsSync } from 'node:fs';
 import type { Match } from '../domain/vectors.js';
 import { runConsolidateTick } from './consolidate-tick.js';
+import { tickUpdateCheck, loadUpdateConfig } from '../application/update-checker.js';
+import { installUpgrade, readPackageVersion } from '../application/update-installer.js';
 import {
   createHealthTracker,
   type HealthTracker,
@@ -177,6 +179,58 @@ export const daemonLog = (homePath: string, msg: string): void => {
     // best-effort
   }
 };
+
+// ─────────────── self-update tick ───────────────
+
+/**
+ * Self-update stage of the daemon tick. Interval-throttled and config-gated
+ * inside tickUpdateCheck — a no-op unless the operator ran
+ * `folklore update enable-auto`. Behaviour by verdict:
+ *
+ *   - not eligible / unavailable → silent (or a single info line)
+ *   - eligible, NOT forced       → log "upgrade available", recommend-only
+ *   - eligible AND force_upgrade AND auto_install_force consent
+ *                                → install now via npm, log a FORCE banner
+ *
+ * The install is the only place the daemon mutates the host outside its home
+ * dir, so the bar is deliberately high: signed force flag (only the project
+ * DID can set it) AND local consent (`enable-force`). Never fatal to the tick.
+ */
+const runUpdateTick = (homePath: string): ResultAsync<void, AppError> =>
+  tickUpdateCheck(homePath, readPackageVersion())
+    .andThen((res) => {
+      if (!res) return okAsync<void, AppError>(undefined);
+      if (!res.upgrade_eligible) {
+        if (res.upgrade_available) {
+          daemonLog(homePath, `update: signature OK but gated (latest=${res.latest_version})`);
+        }
+        return okAsync<void, AppError>(undefined);
+      }
+      if (!res.force_upgrade) {
+        daemonLog(homePath, `update: upgrade available → folklore@${res.latest_version} (run 'folklore update install')`);
+        return okAsync<void, AppError>(undefined);
+      }
+      // Forced + eligible. Gate on local consent before any install.
+      return loadUpdateConfig(homePath).andThen((cfg) => {
+        if (!cfg?.auto_install_force) {
+          daemonLog(homePath, `update: FORCE release folklore@${res.latest_version} pending — run 'folklore update enable-force' to auto-install, or 'folklore update install' now`);
+          return okAsync<void, AppError>(undefined);
+        }
+        daemonLog(homePath, `update: ⚠ FORCE installing folklore@${res.latest_version} (signed force_upgrade + auto_install_force consent)`);
+        return installUpgrade(res.latest_version)
+          .map((outcome) => {
+            daemonLog(homePath, `update: ✓ force-installed folklore@${outcome.installed_version} via ${outcome.command} — restart daemon to run new version`);
+          })
+          .orElse((e): ResultAsync<void, AppError> => {
+            daemonLog(homePath, `update: force-install failed: ${formatError(e)}`);
+            return okAsync<void, AppError>(undefined);
+          });
+      });
+    })
+    .orElse((e): ResultAsync<void, AppError> => {
+      daemonLog(homePath, `update tick error: ${formatError(e)}`);
+      return okAsync<void, AppError>(undefined);
+    });
 
 // ─────────────── one tick ───────────────
 
@@ -286,7 +340,16 @@ export const runOneTick = (deps: DaemonDeps): ResultAsync<TickResult, AppError> 
           daemonLog(deps.homePath, `hot cache error: ${formatError(e)}`);
           return okAsync<TickResult, AppError>(tickResult);
         });
-    });
+    })
+    .andThen((tickResult) =>
+      // Self-update check. Interval-throttled inside tickUpdateCheck (no-op
+      // unless auto_check_enabled and the interval has elapsed). On a signed,
+      // eligible force_upgrade AND operator consent (auto_install_force), the
+      // daemon installs without confirmation — the whole point of "force
+      // push". Otherwise it only logs availability. All failures are
+      // non-fatal to the tick.
+      runUpdateTick(deps.homePath).map(() => tickResult),
+    );
 
 /**
  * V5 per-source tick. Hydrates each descriptor via the source
@@ -439,6 +502,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
             listenHost: cfgRes.value.peer.listen_host,
             mdns: cfgRes.value.peer.mdns,
             dhtEnabled: cfgRes.value.peer.dht.enabled,
+            bootstrapPeers: cfgRes.value.peer.dht.bootstrap_peers, // WAN seed discovery
             peersPath: join(deps.homePath, 'peers.json'), // enables peer:discovery persistence
             relays: cfgRes.value.peer.relays,
             upnp: cfgRes.value.peer.upnp,

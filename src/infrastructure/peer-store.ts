@@ -108,15 +108,16 @@ export interface PeerRecord {
   /**
    * How this peer was discovered. Optional for backward compatibility with
    * pre-Phase 17 peers.json files (absence means 'manual' — the only pre-17 path).
-   *   - 'manual' : `folklore peer add <multiaddr>`
-   *   - 'mdns'   : libp2p mDNS peer:discovery event
-   *   - 'dht'    : kad-dht FIND_NODE response (Phase 17 wiring, off by default)
+   *   - 'manual'    : `folklore peer add <multiaddr>`
+   *   - 'mdns'      : libp2p mDNS peer:discovery event (LAN)
+   *   - 'dht'       : kad-dht FIND_NODE response (Phase 17 wiring, off by default)
+   *   - 'bootstrap' : @libp2p/bootstrap seed-list peer:discovery event (WAN)
    *
    * Pitfall 6 (17-RESEARCH.md): This field is OPTIONAL. Strict type assertions
    * on legacy files would fail — keep it optional and treat absence as 'manual'
    * in `peer list` rendering.
    */
-  readonly discovery_method?: 'manual' | 'mdns' | 'dht';
+  readonly discovery_method?: 'manual' | 'mdns' | 'dht' | 'bootstrap';
 }
 
 export interface PeersFile {

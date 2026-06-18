@@ -27,6 +27,22 @@ tunnels:
   min_cluster_size: 3            # need ≥3 similar nodes to form a tunnel
   similarity_threshold: 0.80
 
+peer:
+  # P2P federation. All keys optional — these are the defaults.
+  port: 0                        # 0 = OS-assigned. Set a fixed port (e.g. 4001) for WAN reachability.
+  listen_host: 127.0.0.1         # set 0.0.0.0 to accept remote peer connections
+  mdns: true                     # LAN auto-discovery (multicast). Local network only.
+  dht:
+    enabled: false               # kad-dht (client mode); off by default
+    # WAN seed peers for @libp2p/bootstrap discovery — how a fresh node finds
+    # the swarm across the internet (mDNS is LAN-only). Each entry is a full
+    # multiaddr including the /p2p/<peerId> tail. Discovered peers are
+    # auto-dialled and persisted to peers.json with discovery_method:'bootstrap'.
+    bootstrap_peers: []
+    # - /ip4/203.0.113.10/tcp/4001/p2p/12D3KooW...
+  relays: []                     # circuit-relay-v2 multiaddrs for NAT traversal
+  upnp: true                     # UPnP port mapping (no-op on 127.0.0.1)
+
 sources:
   # Phase 3 — shared source registry.
   enabled:

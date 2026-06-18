@@ -24,6 +24,7 @@ import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { formatError } from '../../domain/errors.js';
 import { configureUpdates, loadUpdateConfig, loadUpdateState, checkForUpdate } from '../../application/update-checker.js';
+import { installUpgrade } from '../../application/update-installer.js';
 import { folkloreHome } from '../runtime.js';
 
 const currentVersion = (): string => {
@@ -105,15 +106,60 @@ const check = async (): Promise<number> => {
     return 0;
   }
   console.log('verdict:         ✓ upgrade eligible');
+  if (res.force_upgrade) {
+    console.log('force:           ⚠ MANDATORY — signed force_upgrade flag set');
+  }
   console.log('');
   console.log('Notes:');
   console.log(res.notes ?? '(no release notes)');
   console.log('');
   console.log('To install:');
-  console.log(`  npm update -g folklore   # if installed via npm`);
+  console.log(`  folklore update install   # verifies signature, then runs npm install -g`);
+  console.log(`  npm update -g folklore    # or do it yourself`);
   console.log(`  # or download tarball + verify sha256:`);
   console.log(`  curl -fsSL ${res.manifest!.tarball_url} -o /tmp/folklore.tgz`);
   console.log(`  echo '${res.manifest!.tarball_sha256}  /tmp/folklore.tgz' | shasum -a 256 -c -`);
+  return 0;
+};
+
+/**
+ * `folklore update install` — verify-then-install. Re-runs the signed check
+ * (never trusts a stale verdict), and only on an eligible manifest invokes the
+ * installer. The signature gate is re-established here, immediately before the
+ * binary swap, so there is no TOCTOU window between deciding and installing.
+ */
+const install = async (): Promise<number> => {
+  const v = currentVersion();
+  console.log(`current version: ${v}`);
+  console.log('checking + verifying signature...');
+  const r = await checkForUpdate(folkloreHome(), v);
+  if (r.isErr()) {
+    console.error(`update install: ${formatError(r.error)}`);
+    return 1;
+  }
+  const res = r.value;
+  if (!res.upgrade_available) {
+    console.error('update install: ✗ manifest signature did not verify under pinned DID — refusing to install');
+    return 1;
+  }
+  if (!res.upgrade_eligible) {
+    console.log(`update install: nothing to do (${res.error ? res.error.type : 'already up-to-date'})`);
+    return 0;
+  }
+  console.log(`installing folklore@${res.latest_version}${res.force_upgrade ? ' (mandatory)' : ''}...`);
+  const ir = await installUpgrade(res.latest_version);
+  if (ir.isErr()) {
+    console.error(`update install: ${formatError(ir.error)}`);
+    // Method-unknown is not a hard failure — print the manual path.
+    if (ir.error.type === 'UpdateMethodUnknown') {
+      console.log('');
+      console.log('Manual install:');
+      console.log(`  npm install -g folklore@${res.latest_version}`);
+    }
+    return 1;
+  }
+  console.log(`✓ installed folklore@${ir.value.installed_version} via ${ir.value.command}`);
+  console.log('  restart the daemon to run the new version: folklore daemon stop && folklore daemon start');
   return 0;
 };
 
@@ -137,6 +183,7 @@ const status = async (): Promise<number> => {
   console.log(`manifest URL:     ${cfg.value.manifest_url}`);
   console.log(`channel:          ${cfg.value.channel}`);
   console.log(`auto-check:       ${cfg.value.auto_check_enabled ? 'enabled' : 'disabled'}`);
+  console.log(`auto-force-inst:  ${cfg.value.auto_install_force ? 'enabled ⚠' : 'disabled'}`);
   console.log(`interval:         ${cfg.value.check_interval_seconds}s`);
   console.log(`last checked:     ${state.value.last_checked_at ?? '(never)'}`);
   console.log(`last seen:        ${state.value.last_seen_version ?? '(none)'}`);
@@ -156,19 +203,45 @@ const setAuto = async (enabled: boolean): Promise<number> => {
   return 0;
 };
 
+/**
+ * Toggle auto-install of signed force_upgrade releases. This is the consent
+ * gate for remote-triggered installs: even a valid signed force manifest will
+ * NOT auto-install unless the operator has run `enable-force` on this machine.
+ */
+const setForce = async (enabled: boolean): Promise<number> => {
+  const cfg = await loadUpdateConfig(folkloreHome());
+  if (cfg.isErr()) { console.error(`${formatError(cfg.error)}`); return 1; }
+  if (!cfg.value) {
+    console.error('not configured. run: folklore update configure --did ... --url ...');
+    return 1;
+  }
+  if (enabled) {
+    console.log('⚠ enabling auto-install of signed force_upgrade releases.');
+    console.log('  The daemon will run `npm install -g folklore` without confirmation');
+    console.log('  when a release signed by the pinned project DID sets force_upgrade.');
+  }
+  const r = await configureUpdates(folkloreHome(), { ...cfg.value, auto_install_force: enabled });
+  if (r.isErr()) { console.error(`${formatError(r.error)}`); return 1; }
+  console.log(`auto-force-install ${enabled ? 'enabled' : 'disabled'}.`);
+  return 0;
+};
+
 const help = (): number => {
   console.log('usage: folklore update <sub>');
   console.log('');
   console.log('  configure --did <did:key> --url <url> [--channel stable] [--interval 86400]');
   console.log('  check               fetch manifest, verify signature under pinned DID');
+  console.log('  install             verify signature, then npm install -g the new version');
   console.log('  status              show config + last-checked + last-seen');
   console.log('  enable-auto         daemon will auto-check on each tick');
   console.log('  disable-auto        stop auto-checking');
+  console.log('  enable-force        daemon may auto-INSTALL signed force_upgrade releases ⚠');
+  console.log('  disable-force       require manual install even for force releases (default)');
   console.log('');
   console.log('All releases must be Ed25519-signed under the pinned project DID. The');
   console.log('CLI verifies signatures locally — no implicit trust in download URLs.');
-  console.log('Install step is left to the operator (npm update / brew upgrade / etc.)');
-  console.log('— v3.0 ships verify-and-recommend, not auto-install.');
+  console.log('`install` is gated on that signature; force auto-install additionally');
+  console.log('requires `enable-force` consent on this machine.');
   return 0;
 };
 
@@ -177,10 +250,13 @@ export const update = async (args: string[]): Promise<number> => {
   switch (sub) {
     case 'configure':       return configure(rest);
     case 'check':           return check();
+    case 'install':         return install();
     case 'status':
     case undefined:         return status();
     case 'enable-auto':     return setAuto(true);
     case 'disable-auto':    return setAuto(false);
+    case 'enable-force':    return setForce(true);
+    case 'disable-force':   return setForce(false);
     case 'help':
     case '--help':
     case '-h':              return help();

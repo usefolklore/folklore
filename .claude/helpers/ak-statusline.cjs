@@ -150,6 +150,16 @@ function getSourceCount() {
   return sources.filter(s => s.enabled !== false).length;
 }
 
+function getPeerCount() {
+  // Discovered peers from ~/.folklore/peers.json — the persistent
+  // swarm roster written by the P2P layer at handshake time. This is
+  // the standing count (who folklore knows about), distinct from the
+  // per-query `peers_responded/peers_queried` the federation block shows.
+  const peers = readJson(path.join(HOME, 'peers.json'));
+  if (!peers || !Array.isArray(peers.peers)) return 0;
+  return peers.peers.length;
+}
+
 function getDaemonStatus() {
   const pidPath = path.join(HOME, 'daemon.pid');
   if (!fs.existsSync(pidPath)) return 'off';
@@ -258,6 +268,7 @@ function main() {
   const graphStats = getGraphStats();
   const vectorEstimate = getVectorCount();
   const sourceCount = getSourceCount();
+  const peerCount = getPeerCount();
   const daemonSt = getDaemonStatus();
   const lastTrigger = getLastTrigger();
   const kinds = getNodeKindBreakdown(graph ? graph.nodes : []);
@@ -304,6 +315,10 @@ function main() {
 
   // Sources
   parts.push(`📡 ${c.brightYellow}${sourceCount}${c.reset} sources`);
+
+  // Discovered peers — standing swarm roster (persistent)
+  const peerColor = peerCount > 0 ? c.brightCyan : c.dim;
+  parts.push(`🌐 ${peerColor}${peerCount}${c.reset} peer${peerCount === 1 ? '' : 's'}`);
 
   // Daemon
   const daemonIcon = daemonSt === 'on' ? `${c.brightGreen}●${c.reset}` : `${c.dim}○${c.reset}`;

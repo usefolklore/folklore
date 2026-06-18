@@ -61,6 +61,14 @@ export interface ReleaseManifest {
   readonly tarball_url: string;
   readonly tarball_sha256: string;           // 64-hex
   readonly min_supported_version?: string;   // optional minimum to upgrade FROM
+  /**
+   * Mandatory-upgrade flag. When true AND the manifest verifies + is eligible,
+   * an auto-update-enabled client is permitted to install WITHOUT operator
+   * confirmation. Because it lives inside the signed body, only the holder of
+   * the pinned project DID can mandate an upgrade — a hostile mirror cannot
+   * forge `force_upgrade: true`. Absent/false → recommend-only (the default).
+   */
+  readonly force_upgrade?: boolean;
   readonly notes: string;
   readonly project_did: DID;
   readonly signature_hex: string;            // 128-hex Ed25519 sig
@@ -118,6 +126,9 @@ const canonicalManifestJSON = (m: Omit<ReleaseManifest, 'signature_hex'>): strin
     project_did: m.project_did,
   };
   if (m.min_supported_version !== undefined) obj.min_supported_version = m.min_supported_version;
+  // Included in the signed body only when set — keeps signatures of existing
+  // (pre-force) manifests valid and unchanged.
+  if (m.force_upgrade !== undefined) obj.force_upgrade = m.force_upgrade;
   const keys = Object.keys(obj).sort();
   const parts: string[] = [];
   for (const k of keys) parts.push(`${JSON.stringify(k)}:${JSON.stringify(obj[k])}`);
