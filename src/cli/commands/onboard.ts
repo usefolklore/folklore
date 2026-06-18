@@ -287,7 +287,7 @@ const stepClaudeInstall = async (projectDir: string): Promise<void> => {
   }
 
   const sp2 = spinner();
-  sp2.start('wiring PreToolUse / PostToolUse / SessionStart hooks');
+  sp2.start('wiring hooks (PreToolUse + MCP-pre + PostToolUse + UserPromptSubmit + SessionStart), statusLine + env');
   // claudeInstall prints to stdout — silence it under the spinner.
   const stdoutWrite = process.stdout.write.bind(process.stdout);
   process.stdout.write = (() => true) as typeof process.stdout.write;
@@ -296,7 +296,7 @@ const stepClaudeInstall = async (projectDir: string): Promise<void> => {
   } finally {
     process.stdout.write = stdoutWrite;
   }
-  sp2.stop('Claude Code hooks wired (smart prefetch + auto-save + session summary)');
+  sp2.stop('Claude Code wired (prefetch + MCP-pre + auto-save + prompt prefetch + session summary + statusline + gates)');
 };
 
 /**
