@@ -187,6 +187,18 @@ and/or a server folklore does not. Two honest ways to handle it:
   corroborating the lever's direction, not a full attack matrix. The demotion
   magnitude is a free parameter — the point is that ANY real provenance signal cuts
   flip-ASR sharply while the competitors have ZERO such signal.
+
+  **P2 SCALED to a real BEIR corpus** (`bench/bench-memtool-poison-scifact.py`,
+  scifact-mini: 40 real trusted docs + 18 real queries, each with a query-mirroring
+  untrusted poison): similarity-only (mem0/LangChain/RAG) **flip-ASR 1.0 — fully
+  poisoned** (a verbatim-mirroring poison out-cosines all 40 real docs every time);
+  folklore provenance-demotion 1.0 → 0.44 @0.3 → **0.0 @0.5**. The defense HOLDS at
+  scale but needs stronger demotion (0.5 vs the toy's 0.4) because the poison's cosine
+  edge is larger. Honest caveat: this poison is near-worst-case (verbatim query mirror),
+  so sim-only 1.0 is the threat CEILING, not a typical figure — real flip-ASR sits
+  between the toy's 0.625 and this 1.0 depending on poison craft. The structural truth
+  is sharper at scale: a no-provenance tool has NO defense lever at any corpus size;
+  folklore's lever still drives flip-ASR to 0.
 - **P3 — federation (axis C): DONE, folklore WINS (structural).**
   `bench/bench-memtool-federation.py` — shared 8-need pool, paraphrased query stream,
   matched all-MiniLM-L6-v2 recall (cosine≥0.55); only variable = shared vs siloed
