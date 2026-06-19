@@ -1,7 +1,9 @@
 # Memory-Tool Benchmark — Scope (v0, draft)
 
-_Status: scoping. No numbers here are measured yet; this defines WHAT to measure
-and HOW to keep it honest. Measured results land in `docs/BENCHMARKS-RESULTS.md`._
+_Reproduce the whole suite with one command: `bash bench/bench-memtool.sh` (or
+`--fast` to skip the slow mem0 + folklore-CLI runs). It runs every harness and
+regenerates `docs/MEMORY-TOOL-BENCH-RESULTS.md`. Individual harnesses are listed
+in that runner. Honest labels (measured / simulator / structural) throughout._
 
 ## Why this benchmark exists
 
