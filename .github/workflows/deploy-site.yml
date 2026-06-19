@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy site/ to Cloudflare Pages (project: folklore)
+      - name: "Deploy site/ to Cloudflare Pages (project: folklore)"
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
