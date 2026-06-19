@@ -224,7 +224,11 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   .bar .nm{font-style:italic}.bar.me .nm{font-style:normal;font-weight:800}
   .bar .tr{height:12px;border:2px solid var(--ink);background:var(--paper)}
   .bar .fl{height:100%;width:var(--w,0);transition:width 1.1s cubic-bezier(.16,1,.3,1);background:var(--ink)}
-  .has-js .bars:not(.in) .fl{width:0}
+  /* Reveal-grow as enhancement only: zero the fill PRE-reveal, but never leave it
+     stuck at 0 — once #bars gets .in (IntersectionObserver) it animates to --w, and
+     if JS/observer never fire the bars are filled by default. (Was: a hard
+     :not(.in) gate that left every bar empty when the reveal didn't apply.) */
+  .has-js .bars.reveal-pending .fl{width:0}
   /* baselines sit back; Folklore is the solid-black lead bar */
   .bar:not(.me) .fl{opacity:.32}
   .bar.me .fl{background:var(--ink);opacity:1}
@@ -1016,13 +1020,17 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 </footer>
 
 <script>
-document.documentElement.classList.add('has-js');   // bars fill via CSS; default-filled if JS never runs
+document.documentElement.classList.add('has-js');
+var _bars=document.getElementById('bars');
+if(_bars)_bars.classList.add('reveal-pending');   // collapse fill; grows to --w on reveal
 const io=new IntersectionObserver(es=>es.forEach(e=>{
-  if(!e.isIntersecting)return;const el=e.target;el.classList.add('in');
+  if(!e.isIntersecting)return;const el=e.target;el.classList.add('in');el.classList.remove('reveal-pending');
   el.querySelectorAll?.('[data-count]').forEach(runCount);
   io.unobserve(el);
 }),{threshold:.2});
 document.querySelectorAll('.rv,#bars').forEach(el=>io.observe(el));
+// fail-safe: never leave the bars stuck empty if the observer never fires
+if(_bars)setTimeout(function(){_bars.classList.remove('reveal-pending');},2500);
 function runCount(node){const dec=+(node.dataset.dec||0),end=parseFloat(node.dataset.count),dur=1200,t0=performance.now();
   (function tick(t){const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3),v=end*e;
    node.textContent=dec?v.toFixed(dec):Math.round(v);if(k<1)requestAnimationFrame(tick);})(t0);}
