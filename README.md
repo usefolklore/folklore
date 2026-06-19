@@ -30,7 +30,7 @@ AI agents reason from zero, every single time. The same paper gets read again. T
 
 You don't only pay Google. You pay OpenAI, Anthropic, and every paid endpoint, per token, to re-run inference over data someone already ground out yesterday. The work was done. The tokens were spent. Nobody kept the answer where the next agent could find it.
 
-Memory tools exist — mem0, Letta, LangChain-style RAG — but they are single-user silos. They remember *your* chats. They don't gate the web, they don't carry provenance, and they certainly don't let your teammate's hard-won debugging trace become your starting point.
+Memory tools exist — mem0, Letta, LangChain-style RAG — but they are single-user silos. They remember *your* chats. They don't gate the web, they don't carry provenance, and they certainly don't let another peer's hard-won debugging trace — the LLM inference they already paid for — become your starting point.
 
 ## What Folklore is
 
@@ -39,7 +39,7 @@ A graph of your agent's reasoning that lives on your machine, answers **before**
 Two bets, in order:
 
 1. **It works alone.** Day one, zero peers, it already pays off — your own research, debugging, and grounded conclusions are cached and reused. You never start from zero again.
-2. **It compounds.** When your teammates (or the wider network) run it too, their resolved reasoning becomes your starting point, and yours becomes theirs. The commons gets deeper the more people draw from it.
+2. **It compounds.** Every peer running it works for the next: each one's past LLM inference — the reasoning already paid for in tokens — becomes your starting point, and yours becomes theirs. No teammate or org boundary; the whole network shares resolved inference so nobody re-spends tokens on an answer someone already ground out. The commons gets deeper the more peers draw from it.
 
 Folklore is the name for knowledge that gets passed on — story to story, peer to peer — instead of relearned from scratch.
 
