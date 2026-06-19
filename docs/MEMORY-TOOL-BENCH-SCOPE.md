@@ -218,6 +218,13 @@ and/or a server folklore does not. Two honest ways to handle it:
   single-user tools are); recall decision MEASURED on real MiniLM. mem0/Letta/
   LangChain/Zep cannot share memory across users → they are the silo column.
 
+  **P3 SCALED to a real BEIR corpus** (`bench/bench-memtool-federation-scifact.py`,
+  scifact-mini: 18 real queries, recall on the genuine query↔gold-doc cosine gap from
+  qrels — deterministic, no synthetic paraphrases). silo (competitors) flat ~0.22–0.33
+  across N=1..64; folklore federated 0.333 → 0.906 @16 → **0.977 @64** (up to 4.16×
+  lift). Same shape as the toy at real scale: single-user tools gain nothing from more
+  users; folklore compounds. Confirms the federation win is not a toy artifact.
+
 ---
 
 - **Axis D — latency + cost: MEASURED.** `bench/bench-memtool-latency.py`.
