@@ -176,7 +176,10 @@ def main():
     w("Notes: **mem0** is now RUNNABLE on `python3.13` (after `pip install ollama`, "
       "`embedding_model_dims=384`, and the 2.x `search(filters=…)` API) — but its recall is "
       "NONDETERMINISTIC (LLM-mediated writes; correct-serve swung 0.0–0.72 across identical runs), "
-      "so no stable single number is published. **Letta** pip name unresolved here. **LangChain "
+      "so no stable single number is published. **Letta** resolves as `letta` 0.16.8 (py≥3.10) "
+      "but is a DB-backed agent SERVER (alembic/sqlalchemy/fastapi/psycopg2), not an in-process "
+      "lib — disproportionate to run for a recall micro-bench and structurally the same column as "
+      "mem0 (single-user, LLM-mediated, no provenance/federation), so not run. **LangChain "
       "(measured)** == the cosine proxy exactly, so the similarity-cache column is covered "
       "deterministically; mem0 sits in that same column structurally (no provenance / federation).")
     w("")
