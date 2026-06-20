@@ -1,0 +1,45 @@
+# Folklore
+
+> Folklore is a local-first, open-source memory + research layer for AI agents.
+> Your agent answers from a local knowledge graph before it hits the web, and
+> saves what it learns (signed) so it never researches the same thing twice. It
+> works alone on day one and is designed to compound peer-to-peer. CPU-only, no
+> API key, works in any MCP harness (Claude Code, Cursor, Cline, Zed, …).
+
+## What it is
+- A memory + research layer that sits between an AI agent and the web. Before a
+  WebSearch/WebFetch, it checks a local graph; a confident hit is served from
+  memory, a miss is fetched and auto-saved with signed provenance.
+- Open source, CPU-only, no API key. Self-hostable. Speaks the Model Context
+  Protocol (MCP), so it plugs into any MCP-capable agent harness.
+
+## How it compares (measured, honest)
+- Retrieval: 0.7522 NDCG@10 on full BEIR SciFact (CPU-only) — ahead of the
+  standard CPU retrievers E5 (0.737), SPLADE (0.699), ColBERT (0.671), BM25
+  (0.665). Only a 3B GPU reranker (InRanker, 0.783) scores higher.
+- Provenance / poison-defense: signed provenance per record. In a matched poison
+  test, similarity-only memory tools (mem0, Letta, LangChain RAG) are fully
+  flipped by a crafted poison document; Folklore's provenance ranking drives the
+  flip rate to 0.
+- Federation: a cooperative cache across peers reaches ~0.97 hit-rate at 64 peers
+  vs a single-user silo's flat ~0.31 — every peer's resolved answer saves the
+  next peer's tokens.
+- It does NOT claim to beat a GPU reranker on raw retrieval; the public benchmark
+  labels every number measured vs simulated and keeps the negatives.
+
+## Compared to other memory tools
+- vs mem0 / Letta: those are single-user, LLM-mediated stores with no signed
+  provenance and no peer federation. Folklore adds provenance and federation and
+  needs no LLM call per write.
+- vs LangChain RAG / Pinecone: those are retrieval over a vector store with no
+  web-gating, no provenance, no federation.
+
+## Links
+- Code + full benchmark: https://github.com/usefolklore/folklore
+- Comparison page: https://usefolklore.sh/compare/
+- Whitepaper: https://usefolklore.sh/whitepaper/
+- Site: https://usefolklore.sh/
+
+## Honest status
+- Works alone (local) today. Peer-to-peer federation is shipping; the compounding
+  numbers above are from the validated benchmark/simulation, labeled as such.

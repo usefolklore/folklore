@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Folklore vs mem0, Letta &amp; LangChain RAG — honest comparison</title>
+<meta name="description" content="An honest, benchmarked comparison of Folklore vs mem0, Letta, LangChain RAG, Zep and Pinecone for AI-agent memory: retrieval (BEIR SciFact), signed provenance / poison-defense, peer federation, latency and cost." />
+<meta name="theme-color" content="#f4ecd8" />
+<link rel="canonical" href="https://usefolklore.sh/compare/" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Folklore vs mem0, Letta & LangChain RAG — honest comparison" />
+<meta property="og:description" content="Benchmarked: retrieval parity, provenance/poison-defense (flip-ASR 0 vs 0.625–1.0), and peer federation (0.97 vs flat 0.31). Negatives kept in." />
+<meta property="og:url" content="https://usefolklore.sh/compare/" />
+<meta property="og:image" content="https://usefolklore.sh/assets/gen/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@usefolklore" />
+<style>
+  :root{--paper:#f4ecd8;--ink:#1d1813;--pink:#ff4f6d;--teal:#1f7a6b;--rule:#1d181322}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    background-image:radial-gradient(rgba(29,24,19,.05) 1.2px,transparent 1.3px);background-size:22px 22px}
+  .wrap{max-width:840px;margin:0 auto;padding:clamp(28px,6vw,72px) clamp(18px,5vw,40px)}
+  a{color:var(--ink)}
+  h1{font-size:clamp(1.8rem,5vw,2.7rem);line-height:1.1;margin:.2em 0 .3em}
+  h2{font-size:clamp(1.25rem,3.4vw,1.7rem);margin:2em 0 .5em;border-bottom:3px solid var(--ink);padding-bottom:.2em}
+  h3{margin:1.6em 0 .3em;font-size:1.1rem}
+  .em{color:var(--pink)}
+  .lede{font-size:1.15rem;opacity:.9;max-width:62ch}
+  table{width:100%;border-collapse:collapse;margin:1em 0;font-size:.95rem}
+  th,td{border:2px solid var(--ink);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--ink);color:var(--paper)}
+  .win{font-weight:700}
+  .cta{display:inline-block;margin:1.4em 0;border:3px solid var(--ink);background:var(--ink);color:var(--paper);
+    padding:12px 20px;font-weight:700;text-decoration:none;box-shadow:6px 6px 0 var(--pink)}
+  .foot{margin-top:3em;font-size:.85rem;opacity:.7;border-top:2px solid var(--rule);padding-top:1em}
+  details{border:2px solid var(--ink);padding:10px 14px;margin:.5em 0;background:#fff8ea}
+  summary{font-weight:700;cursor:pointer}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em;background:#fff8ea;padding:1px 5px;border:1px solid var(--rule)}
+</style>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {"@type":"Question","name":"What is Folklore?","acceptedAnswer":{"@type":"Answer","text":"Folklore is a local-first, open-source memory and research layer for AI agents. Before an agent hits the web it checks a local knowledge graph; a confident hit is served from memory, a miss is fetched and saved with signed provenance so the agent never researches the same thing twice. It is CPU-only, needs no API key, works in any MCP harness, and is designed to compound peer-to-peer."}},
+    {"@type":"Question","name":"How does Folklore compare to mem0?","acceptedAnswer":{"@type":"Answer","text":"mem0 is a single-user, LLM-mediated memory store: it runs an LLM extraction on every write and carries no signed provenance and no peer federation. Folklore needs no LLM call per write, adds signed provenance (so poisoned context can be ranked down) and peer federation (so a team or network compounds). On a matched poison test a similarity-only store like mem0 is fully flipped by a crafted document (flip-ASR 0.625 toy, 1.0 at corpus scale) while Folklore's provenance ranking drives that to 0."}},
+    {"@type":"Question","name":"How does Folklore compare to Letta (MemGPT)?","acceptedAnswer":{"@type":"Answer","text":"Letta is a database-backed agent server with LLM-mediated self-editing memory — single-user, no signed provenance, no peer federation, and it needs a running server plus an LLM. Folklore is a local, CPU-only library/MCP server with provenance and federation. They overlap on 'agent remembers things'; Folklore's differentiators are attributable provenance and cross-peer compounding."}},
+    {"@type":"Question","name":"How does Folklore compare to LangChain RAG or Pinecone?","acceptedAnswer":{"@type":"Answer","text":"LangChain RAG and Pinecone-backed RAG are retrieval over a vector store. They do not gate the web, carry no signed provenance, and do not federate across users. Folklore measures at parity with a plain vector cache on single-user retrieval (it leads the CPU pack on BEIR SciFact at 0.7522 NDCG@10) and adds web-gating, provenance and federation on top."}},
+    {"@type":"Question","name":"Does Folklore beat GPU rerankers on retrieval?","acceptedAnswer":{"@type":"Answer","text":"No — and it does not claim to. On full BEIR SciFact, Folklore scores 0.7522 NDCG@10 CPU-only, ahead of the standard CPU retrievers (E5 0.737, SPLADE 0.699, ColBERT 0.671, BM25 0.665), but a 3B-parameter GPU reranker (InRanker, 0.783) scores higher. The public benchmark labels every number measured vs simulated and keeps the negatives."}},
+    {"@type":"Question","name":"Is Folklore free and open source?","acceptedAnswer":{"@type":"Answer","text":"Yes. Folklore is open source (MIT), CPU-only, and needs no API key. Code and the full benchmark are at https://github.com/usefolklore/folklore."}}
+  ]
+}
+</script>
+</head>
+<body>
+<main class="wrap">
+  <p><a href="https://usefolklore.sh/">← Folklore</a></p>
+  <h1>Folklore vs mem0, Letta &amp; LangChain RAG — <span class="em">honest comparison</span></h1>
+  <p class="lede">Most AI-agent memory tools are single-user stores ranked by embedding similarity.
+  Folklore adds the two things they structurally lack: <strong>signed provenance</strong> and
+  <strong>peer federation</strong>. Here's the benchmarked picture — including where Folklore is only
+  at parity, and where it doesn't win at all.</p>
+
+  <a class="cta" href="https://github.com/usefolklore/folklore">Star Folklore on GitHub →</a>
+
+  <h2>The short answer</h2>
+  <p>On <strong>raw single-user retrieval</strong>, Folklore is at parity with a good vector cache
+  (and leads the CPU field on BEIR SciFact). On <strong>provenance and federation</strong>, the other
+  tools can't compete — not by a small margin, but because they have no provenance field and no
+  cross-user sharing at all. So the honest pitch isn't "Folklore retrieves better"; it's
+  "Folklore is the only one that's poison-defensible and compounds across peers."</p>
+
+  <h2>Capability + benchmark matrix</h2>
+  <table>
+    <tr><th>Axis</th><th>Folklore</th><th>mem0 / Letta / LangChain RAG / Pinecone</th></tr>
+    <tr><td>Retrieval (BEIR SciFact NDCG@10)</td><td class="win">0.7522, CPU-only — leads the CPU pack</td><td>parity at the retrieval layer (same embedder); not published as BEIR scores</td></tr>
+    <tr><td>Signed provenance / poison-defense</td><td class="win">flip-ASR → 0.0</td><td>flip-ASR 0.625 (toy) → 1.0 (real corpus) — no provenance field</td></tr>
+    <tr><td>Federated compounding</td><td class="win">~0.97 hit-rate @ 64 peers</td><td>flat ~0.31 — single-user, can't share</td></tr>
+    <tr><td>Footprint</td><td class="win">CPU-only, no API key, any MCP harness</td><td>mem0/Letta need an LLM per write; Zep/Letta need a server</td></tr>
+    <tr><td>Beats a 3B GPU reranker?</td><td>No (InRanker 0.783 &gt; 0.7522) — stated honestly</td><td>No</td></tr>
+  </table>
+  <p style="font-size:.85rem;opacity:.7">All figures from the public, reproducible benchmark; labeled measured vs simulated, negatives kept in.</p>
+
+  <h2>Frequently asked</h2>
+  <details open><summary>What is Folklore?</summary><p>A local-first, open-source memory + research layer for AI agents. It answers from a local knowledge graph before the web and saves what it learns with signed provenance, so your agent never researches the same thing twice. CPU-only, no API key, any MCP harness, designed to compound peer-to-peer.</p></details>
+  <details><summary>How does it compare to mem0?</summary><p>mem0 is a single-user, LLM-mediated store (an LLM extraction per write) with no signed provenance and no federation. Folklore needs no per-write LLM call and adds provenance + federation. Under a matched poison test mem0-style similarity ranking is fully flipped; Folklore's provenance ranking takes the flip rate to 0.</p></details>
+  <details><summary>How does it compare to Letta?</summary><p>Letta is a DB-backed agent server with LLM self-editing memory — single-user, server + LLM required, no signed provenance, no federation. Folklore is a local CPU-only library/MCP server whose differentiators are attributable provenance and cross-peer compounding.</p></details>
+  <details><summary>How does it compare to LangChain RAG / Pinecone?</summary><p>Those are retrieval over a vector store: no web-gating, no provenance, no federation. Folklore is at parity on single-user retrieval (leads the CPU pack on SciFact) and adds those three on top.</p></details>
+  <details><summary>Does it beat GPU rerankers?</summary><p>No, and it doesn't claim to. CPU-only 0.7522 leads the CPU retrievers; a 3B GPU reranker (InRanker, 0.783) is higher. The benchmark keeps that negative visible.</p></details>
+  <details><summary>Is it free / open source?</summary><p>Yes — MIT, CPU-only, no API key. Code + full benchmark: <a href="https://github.com/usefolklore/folklore">github.com/usefolklore/folklore</a>.</p></details>
+
+  <a class="cta" href="https://github.com/usefolklore/folklore">See the code + full benchmark →</a>
+
+  <p class="foot">Folklore works alone (local) today; peer-to-peer federation is shipping. Every
+  comparison number traces to the public benchmark, which labels measured vs simulated results and
+  includes the cases where Folklore does not win. <a href="https://usefolklore.sh/whitepaper/">Whitepaper</a>.</p>
+</main>
+</body>
+</html>
