@@ -83,7 +83,11 @@ export interface PeerConfig {
   /** Kademlia DHT. Wired but off by default per DISC-03 locked decision. */
   readonly dht: {
     readonly enabled: boolean;
-    /** Optional multiaddr list fed to @libp2p/bootstrap as DHT seed peers. */
+    /** Run the DHT in server mode (serve the routing table). Default false =
+     * client/query-only. Public seed nodes set true. */
+    readonly server: boolean;
+    /** Optional multiaddr list fed to @libp2p/bootstrap as DHT seed peers
+     * (a community list — multiple seeds, anyone can run one). */
     readonly bootstrap_peers: readonly string[];
   };
   /** Token bucket for inbound federated-search requests (per-peer). */
@@ -177,7 +181,7 @@ const DEFAULT_PEER: PeerConfig = {
   port: 0,
   listen_host: '127.0.0.1',
   mdns: true,
-  dht: { enabled: false, bootstrap_peers: ENV_BOOTSTRAP_PEERS },
+  dht: { enabled: true, server: false, bootstrap_peers: ENV_BOOTSTRAP_PEERS },
   search_rate_limit: { rate_per_sec: 10, burst: 30 },
   relays: [],
   upnp: true,
@@ -256,6 +260,10 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
           enabled: bool(
             (peerRaw.dht as Record<string, unknown> | undefined)?.enabled,
             DEFAULT_PEER.dht.enabled,
+          ),
+          server: bool(
+            (peerRaw.dht as Record<string, unknown> | undefined)?.server,
+            DEFAULT_PEER.dht.server,
           ),
           // Federation-by-default: prefer a NON-EMPTY config list; otherwise fall
           // back to the FOLKLORE_BOOTSTRAP_PEERS env list (comma-separated

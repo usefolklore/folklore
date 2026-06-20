@@ -85,8 +85,12 @@ export interface TransportConfig {
   readonly listenHost?: string;
   /** mDNS LAN discovery. Default true. Set false via PeerConfig.mdns. */
   readonly mdns?: boolean;
-  /** kad-dht wiring. Default false. Set true via PeerConfig.dht.enabled. */
+  /** kad-dht wiring. Default true. Set false via PeerConfig.dht.enabled. */
   readonly dhtEnabled?: boolean;
+  /** Run the DHT in SERVER mode (serves the routing table for others). Default
+   * false = client mode (query-only). Public seed/bootstrap nodes set this true
+   * so the self-sovereign /folklore/kad/ DHT actually has servers to route through. */
+  readonly dhtServer?: boolean;
   /**
    * WAN seed peers for @libp2p/bootstrap discovery. Unlike mDNS (LAN-only
    * multicast), these are explicit multiaddrs to peers reachable across the
@@ -223,7 +227,8 @@ export const createNode = (
     (async () => {
       const host = cfg.listenHost ?? '127.0.0.1';
       const mdnsEnabled = cfg.mdns !== false;   // default true per DISC-02
-      const dhtOn = cfg.dhtEnabled === true;    // default false per DISC-03
+      const dhtOn = cfg.dhtEnabled !== false;   // default ON (self-sovereign /folklore/kad/ DHT)
+      const dhtServer = cfg.dhtServer === true; // seeds serve the routing table; leaves query (client)
       const bootstrapList = (cfg.bootstrapPeers ?? []).filter((a) => a.length > 0);
       const bootstrapEnabled = bootstrapList.length > 0;
 
@@ -262,11 +267,12 @@ export const createNode = (
         }
       }
 
-      // Pitfall 4 (17-RESEARCH.md): DHT ideally needs identify to populate its routing table.
-      // @libp2p/identify is NOT available as a transitive dep from libp2p@3.2.0 (confirmed Phase 17
-      // Plan 01). DHT runs in clientMode:true which does not require identify — it queries the
-      // routing table passively without advertising itself, so routing-table population from
-      // identify is optional for the client-mode use case.
+      // Pitfall 4 (17-RESEARCH.md): the DHT needs identify to populate its routing table.
+      // identify() is now a direct dep and IS wired below (it's also required by
+      // circuit-relay), so the original "identify unavailable" caveat is resolved. The DHT
+      // is now ON by default on folklore's own protocol /folklore/kad/1.0.0 (NOT the public
+      // IPFS DHT). Leaf nodes run clientMode (query-only); public seed nodes set dht.server
+      // so clientMode:false and they serve the routing table for the swarm.
       //
       // Phase 18 NET-03: circuit-relay-v2 client + dcutr + UPnP composed into the
       // existing services block alongside optional DHT (Phase 17). Wire order:
@@ -275,7 +281,7 @@ export const createNode = (
       // silent no-op on loopback — Pitfall 2).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const services: Record<string, any> = {
-        ...(dhtOn ? { dht: kadDHT({ clientMode: true, protocol: '/folklore/kad/1.0.0' }) } : {}),
+        ...(dhtOn ? { dht: kadDHT({ clientMode: !dhtServer, protocol: '/folklore/kad/1.0.0' }) } : {}),
         // identify() is required by circuitRelayTransport — RelayDiscovery always
         // registers '@libp2p/identify' as a serviceDependency regardless of init opts.
         // Safe to run unconditionally: it adds the /ipfs/id/1.0.0 protocol handler
