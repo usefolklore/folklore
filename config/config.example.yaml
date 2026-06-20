@@ -38,6 +38,12 @@ peer:
     # the swarm across the internet (mDNS is LAN-only). Each entry is a full
     # multiaddr including the /p2p/<peerId> tail. Discovered peers are
     # auto-dialled and persisted to peers.json with discovery_method:'bootstrap'.
+    #
+    # Federation is DEFAULT-ON (FOLKLORE_PREFETCH_PEERS=1). When this list is
+    # empty, the loader falls back to the FOLKLORE_BOOTSTRAP_PEERS env var
+    # (comma-separated multiaddrs) — set that to the folklore network's public
+    # bootstrap node and every install joins automatically, no manual peer add.
+    # If neither is set there are simply no peers to reach (local-only in effect).
     bootstrap_peers: []
     # - /ip4/203.0.113.10/tcp/4001/p2p/12D3KooW...
   relays: []                     # circuit-relay-v2 multiaddrs for NAT traversal

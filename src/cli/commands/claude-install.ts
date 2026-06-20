@@ -78,12 +78,15 @@ const STATUSLINE_HELPER = 'ak-statusline.cjs';
 //   FOLKLORE_ENERGY_GATE   — energy-OOD admission gate (AUC 0.78)
 //   FOLKLORE_QUERY_REUSE   — federated inference-tree reuse
 //   FOLKLORE_DENY_WEBSEARCH— network-before-web: deny redundant web calls
-//   FOLKLORE_PREFETCH_PEERS— 0 = local-only prefetch (no federated fan-out)
+//   FOLKLORE_PREFETCH_PEERS— 1 = federate by default (fan out to peers); set 0
+//                            for local-only. Federation also needs a bootstrap
+//                            peer (FOLKLORE_BOOTSTRAP_PEERS or config.yaml); with
+//                            none set the fan-out simply has no peers to reach.
 const FOLKLORE_ENV: Readonly<Record<string, string>> = {
   FOLKLORE_ENERGY_GATE: '1',
   FOLKLORE_QUERY_REUSE: '1',
   FOLKLORE_DENY_WEBSEARCH: '1',
-  FOLKLORE_PREFETCH_PEERS: '0',
+  FOLKLORE_PREFETCH_PEERS: '1',
 };
 
 // Every script name that this installer owns. Used by the settings.json
