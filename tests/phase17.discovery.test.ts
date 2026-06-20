@@ -133,10 +133,10 @@ describe('Phase 17: discovery — DHT wiring (DISC-03) + Pitfall 4', () => {
     );
   });
 
-  it('D6 (DISC-03): kadDHT wired with clientMode: true (safe default)', () => {
+  it('D6 (DISC-03): kadDHT wired with clientMode gated on dhtServer (client by default, server on seeds)', () => {
     assert.ok(
-      /clientMode:\s*true/.test(src),
-      'DHT must default to clientMode:true — node queries DHT without serving routing table (DISC-03 locked)',
+      /kadDHT\(\{\s*clientMode:\s*!dhtServer/.test(src),
+      'DHT must wire clientMode: !dhtServer — leaves query (client); public seed nodes (dht.server) serve the routing table',
     );
   });
 
@@ -151,8 +151,8 @@ describe('Phase 17: discovery — DHT wiring (DISC-03) + Pitfall 4', () => {
     // requirement. DHT still uses clientMode:true — the Pitfall 4 reasoning stands for DHT;
     // identify is added solely for circuitRelayTransport.
     assert.ok(
-      /clientMode:\s*true/.test(src),
-      'clientMode:true must be present (Pitfall 4 mitigation — identify not required for DHT client mode)',
+      /identify:\s*identify\(\)/.test(src),
+      'identify() must be wired (required by circuit-relay + populates the DHT routing table)',
     );
     // The source comment must acknowledge Pitfall 4 explicitly.
     assert.ok(
@@ -283,7 +283,8 @@ describe('Phase 17: PeerConfig defaults (Plan 01 foundation)', () => {
     const cfg = cfgRes._unsafeUnwrap();
 
     assert.equal(cfg.peer.mdns, true, 'mdns default must be true (DISC-02 locked)');
-    assert.equal(cfg.peer.dht.enabled, false, 'dht default must be disabled (DISC-03 locked — opt-in only)');
+    assert.equal(cfg.peer.dht.enabled, true, 'dht default is now ENABLED (self-sovereign /folklore/kad/ DHT, default-on federation)');
+    assert.equal(cfg.peer.dht.server, false, 'dht.server default must be false — client/query mode; only public seed nodes serve the routing table');
     assert.equal(
       cfg.peer.search_rate_limit.rate_per_sec,
       10,

@@ -502,6 +502,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
             listenHost: cfgRes.value.peer.listen_host,
             mdns: cfgRes.value.peer.mdns,
             dhtEnabled: cfgRes.value.peer.dht.enabled,
+            dhtServer: cfgRes.value.peer.dht.server, // seeds serve the routing table
             bootstrapPeers: cfgRes.value.peer.dht.bootstrap_peers, // WAN seed discovery
             peersPath: join(deps.homePath, 'peers.json'), // enables peer:discovery persistence
             relays: cfgRes.value.peer.relays,

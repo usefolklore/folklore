@@ -19,7 +19,7 @@ RUN git clone --depth 1 https://github.com/usefolklore/folklore.git . \
 # Runtime data (identity, peers.json, graph) lives on a mounted volume so the
 # peerId persists. Bootstrap config: fixed port, listen on all interfaces.
 ENV FOLKLORE_HOME=/data
-RUN mkdir -p /data && printf 'peer:\n  port: 4103\n  listen_host: "0.0.0.0"\n  mdns: false\n  upnp: false\ndaemon:\n  interval_seconds: 3600\n' > /data/config.yaml
+RUN mkdir -p /data && printf 'peer:\n  port: 4103\n  listen_host: "0.0.0.0"\n  mdns: false\n  upnp: false\n  dht:\n    enabled: true\n    server: true   # this is a seed: serve the /folklore/kad/ routing table\ndaemon:\n  interval_seconds: 3600\n' > /data/config.yaml
 
 EXPOSE 4103
 # Foreground daemon (it materialises the identity on first run, then listens).

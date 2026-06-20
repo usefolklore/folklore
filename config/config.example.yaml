@@ -32,8 +32,15 @@ peer:
   port: 0                        # 0 = OS-assigned. Set a fixed port (e.g. 4001) for WAN reachability.
   listen_host: 127.0.0.1         # set 0.0.0.0 to accept remote peer connections
   mdns: true                     # LAN auto-discovery (multicast). Local network only.
+  # Discovery is self-sovereign + decentralized — no central server, no IPFS:
+  #   1. mDNS (above) finds peers on your LAN with zero infra.
+  #   2. `folklore peer add <multiaddr>` dials a peer directly (pure P2P).
+  #   3. kad-dht (below) on folklore's OWN protocol /folklore/kad/1.0.0 — NOT the
+  #      public IPFS DHT — seeded by a community bootstrap_peers LIST (multiple
+  #      seeds, anyone can run one). Seeds set dht.server: true.
   dht:
-    enabled: false               # kad-dht (client mode); off by default
+    enabled: true                # folklore's own kad-dht (client mode); on by default
+    server: false                # true ONLY on public seed nodes (serve the routing table)
     # WAN seed peers for @libp2p/bootstrap discovery — how a fresh node finds
     # the swarm across the internet (mDNS is LAN-only). Each entry is a full
     # multiaddr including the /p2p/<peerId> tail. Discovered peers are
