@@ -1,0 +1,32 @@
+# Folklore bootstrap node on Fly.io — public, always-on libp2p seed peer.
+#   fly launch --no-deploy --copy-config   # or: fly apps create folklore-bootstrap
+#   fly volumes create folklore_data --size 1 --region <region>
+#   fly deploy
+# After deploy: capture the peerId (see README), then point seed.usefolklore.sh
+# at the app and publish the multiaddr as FOLKLORE_BOOTSTRAP_PEERS.
+app = "folklore-bootstrap"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[mounts]
+  source = "folklore_data"
+  destination = "/data"
+
+# Raw TCP passthrough for the libp2p listener (no HTTP, no TLS termination).
+[[services]]
+  protocol = "tcp"
+  internal_port = 4103
+
+  [[services.ports]]
+    port = 4103
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 800
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
