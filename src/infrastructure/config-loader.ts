@@ -164,11 +164,20 @@ const DEFAULT_TUNNELS: TunnelsConfig = {
   min_cluster_size: 3,
 };
 
+// Federation-by-default: bootstrap multiaddrs from FOLKLORE_BOOTSTRAP_PEERS
+// (comma-separated). This is the DEFAULT used both when no config.yaml exists
+// (fresh install) and when config.yaml omits/empties the key — so one env var
+// joins the network with no manual `folklore peer add`. Empty → [] (local-only).
+const ENV_BOOTSTRAP_PEERS: readonly string[] = (process.env.FOLKLORE_BOOTSTRAP_PEERS ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 const DEFAULT_PEER: PeerConfig = {
   port: 0,
   listen_host: '127.0.0.1',
   mdns: true,
-  dht: { enabled: false, bootstrap_peers: [] },
+  dht: { enabled: false, bootstrap_peers: ENV_BOOTSTRAP_PEERS },
   search_rate_limit: { rate_per_sec: 10, burst: 30 },
   relays: [],
   upnp: true,
@@ -248,13 +257,21 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
             (peerRaw.dht as Record<string, unknown> | undefined)?.enabled,
             DEFAULT_PEER.dht.enabled,
           ),
-          bootstrap_peers: Array.isArray(
-            (peerRaw.dht as Record<string, unknown> | undefined)?.bootstrap_peers,
-          )
-            ? ((peerRaw.dht as Record<string, unknown>).bootstrap_peers as unknown[]).filter(
-                (x): x is string => typeof x === 'string',
-              )
-            : DEFAULT_PEER.dht.bootstrap_peers,
+          // Federation-by-default: prefer a NON-EMPTY config list; otherwise fall
+          // back to the FOLKLORE_BOOTSTRAP_PEERS env list (comma-separated
+          // multiaddrs). An empty config list must NOT shadow the env default, so
+          // a fresh install joins the network via one env var (no manual peer add).
+          // Neither set → [] (local-only in effect).
+          bootstrap_peers: ((): readonly string[] => {
+            const fromConfig = Array.isArray(
+              (peerRaw.dht as Record<string, unknown> | undefined)?.bootstrap_peers,
+            )
+              ? ((peerRaw.dht as Record<string, unknown>).bootstrap_peers as unknown[]).filter(
+                  (x): x is string => typeof x === 'string',
+                )
+              : [];
+            return fromConfig.length > 0 ? fromConfig : ENV_BOOTSTRAP_PEERS;
+          })(),
         },
         search_rate_limit: {
           rate_per_sec: num(

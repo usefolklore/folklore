@@ -41,8 +41,11 @@ Tuning knobs (env in `.claude/settings.json`):
   default in this project).
 - `FOLKLORE_DENY_THRESHOLD=0.85` — confidence floor for deny.
 - `FOLKLORE_DENY_MIN_HITS=2` — minimum graph hits before denying.
-- `FOLKLORE_PREFETCH_PEERS=0` — force local-only (skip federated
-  fan-out).
+- `FOLKLORE_PREFETCH_PEERS=1` — federate by default (fan out to
+  peers); set `0` for local-only. Needs a bootstrap peer
+  (`FOLKLORE_BOOTSTRAP_PEERS` or `config.yaml peer.dht.bootstrap_peers`)
+  to have anyone to reach. Private/session nodes never federate
+  regardless — the secret-scan + `private:true` gates always hold.
 
 ## What gets shared
 
