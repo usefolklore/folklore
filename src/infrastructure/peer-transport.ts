@@ -91,6 +91,11 @@ export interface TransportConfig {
    * false = client mode (query-only). Public seed/bootstrap nodes set this true
    * so the self-sovereign /folklore/kad/ DHT actually has servers to route through. */
   readonly dhtServer?: boolean;
+  /** Join the PUBLIC IPFS Amino DHT instead of folklore's private one (DISC-04).
+   * Default false. When true the DHT protocol becomes /ipfs/kad/1.0.0 and the
+   * public IPFS bootstrappers are added so a fresh node finds peers with zero
+   * folklore-owned infrastructure (the daemon then runs the rendezvous loop). */
+  readonly dhtPublic?: boolean;
   /**
    * WAN seed peers for @libp2p/bootstrap discovery. Unlike mDNS (LAN-only
    * multicast), these are explicit multiaddrs to peers reachable across the
@@ -219,6 +224,17 @@ export const loadOrCreateIdentity = (
  * peers appear in peer list but 0 are connected (connectionManager.minConnections
  * is not set — we do NOT rely on auto-dial).
  */
+/** Public IPFS (Amino DHT) bootstrappers — the well-known Protocol Labs seed
+ * nodes. Added to the bootstrap list ONLY when `dhtPublic` is on, so a folklore
+ * node can join the global DHT and rendezvous on it without us running any seed.
+ * dnsaddr entries are resolved by libp2p at dial time. */
+const PUBLIC_IPFS_BOOTSTRAP: readonly string[] = [
+  '/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
+  '/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa',
+  '/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
+  '/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt',
+];
+
 export const createNode = (
   identity: PeerIdentity,
   cfg: TransportConfig,
@@ -229,7 +245,13 @@ export const createNode = (
       const mdnsEnabled = cfg.mdns !== false;   // default true per DISC-02
       const dhtOn = cfg.dhtEnabled !== false;   // default ON (self-sovereign /folklore/kad/ DHT)
       const dhtServer = cfg.dhtServer === true; // seeds serve the routing table; leaves query (client)
-      const bootstrapList = (cfg.bootstrapPeers ?? []).filter((a) => a.length > 0);
+      const dhtPublic = cfg.dhtPublic === true; // join the public IPFS Amino DHT (DISC-04)
+      // Public mode appends the IPFS bootstrappers so a fresh node can join the
+      // global DHT and rendezvous on it with zero folklore-owned seed.
+      const bootstrapList = [
+        ...(cfg.bootstrapPeers ?? []).filter((a) => a.length > 0),
+        ...(dhtPublic ? PUBLIC_IPFS_BOOTSTRAP : []),
+      ];
       const bootstrapEnabled = bootstrapList.length > 0;
 
       // Build peerDiscovery array conditionally. mDNS (LAN) and bootstrap
@@ -281,7 +303,7 @@ export const createNode = (
       // silent no-op on loopback — Pitfall 2).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const services: Record<string, any> = {
-        ...(dhtOn ? { dht: kadDHT({ clientMode: !dhtServer, protocol: '/folklore/kad/1.0.0' }) } : {}),
+        ...(dhtOn ? { dht: kadDHT({ clientMode: !dhtServer, protocol: dhtPublic ? '/ipfs/kad/1.0.0' : '/folklore/kad/1.0.0' }) } : {}),
         // identify() is required by circuitRelayTransport — RelayDiscovery always
         // registers '@libp2p/identify' as a serviceDependency regardless of init opts.
         // Safe to run unconditionally: it adds the /ipfs/id/1.0.0 protocol handler

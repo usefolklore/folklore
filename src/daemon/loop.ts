@@ -35,6 +35,7 @@ import type { VectorIndex } from '../infrastructure/vector-index.js';
 import type { SourcesConfig } from '../infrastructure/sources-config.js';
 import type { Libp2p } from '@libp2p/interface';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../infrastructure/peer-transport.js';
+import { startRendezvous, type RendezvousHandle } from '../infrastructure/rendezvous.js';
 import { loadPeers } from '../infrastructure/peer-store.js';
 import { buildPatterns } from '../domain/sharing.js';
 import { enforceRetention } from '../application/session-ingest.js';
@@ -468,6 +469,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
   // (i.e. they have run `folklore peer status` or `peer add` at least once).
   // This keeps the daemon's network footprint zero for users who never use P2P.
   let liveNode: Libp2p | null = null;
+  let liveRendezvous: RendezvousHandle | null = null; // DISC-04 — public-DHT discovery loop
   let liveSync: ShareSyncRegistry | null = null;
   let liveSearch: SearchRegistry | null = null; // Phase 17
   let liveTouch: TouchRegistry | null = null; // Phase 31
@@ -503,6 +505,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
             mdns: cfgRes.value.peer.mdns,
             dhtEnabled: cfgRes.value.peer.dht.enabled,
             dhtServer: cfgRes.value.peer.dht.server, // seeds serve the routing table
+            dhtPublic: cfgRes.value.peer.dht.public, // DISC-04 — join public IPFS Amino DHT
             bootstrapPeers: cfgRes.value.peer.dht.bootstrap_peers, // WAN seed discovery
             peersPath: join(deps.homePath, 'peers.json'), // enables peer:discovery persistence
             relays: cfgRes.value.peer.relays,
@@ -529,6 +532,19 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
             } catch { /* non-fatal — log already has the addrs */ }
 
             try { deps.onFederationReady?.(liveNode); } catch { /* observer must not break startup */ }
+
+            // DISC-04: when the public IPFS DHT is opted in, run the rendezvous
+            // loop so this node discovers other folklore peers on the global DHT
+            // with zero folklore-owned seed. No-op in the private-DHT default.
+            if (cfgRes.value.peer.dht.public) {
+              liveRendezvous = startRendezvous({
+                // services typing on Libp2p is opaque; the rendezvous only needs
+                // the structural dht slice it declares.
+                node: liveNode as unknown as Parameters<typeof startRendezvous>[0]['node'],
+                log: (m) => daemonLog(deps.homePath, m),
+              });
+              daemonLog(deps.homePath, 'rendezvous: public IPFS DHT discovery started');
+            }
 
             // P2P-scale phase 3 — swarm-sim responder. Lifted out
             // of the share-sync block so it fires the moment libp2p
@@ -919,7 +935,10 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
     if (cleanedUp) return;
     cleanedUp = true;
     try { clearInterval(interval); } catch { /* benign */ }
-    // Cleanup order: oracle pubsub → search-gossip → touch → search → share → node.stop
+    if (liveRendezvous) {
+      try { liveRendezvous.stop(); } catch { /* benign */ }
+    }
+    // Cleanup order: rendezvous → oracle pubsub → search-gossip → touch → search → share → node.stop
     if (liveOracle) {
       try { liveOracle.unsubscribe(); } catch { /* benign */ }
     }
