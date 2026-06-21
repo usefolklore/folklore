@@ -86,6 +86,12 @@ export interface PeerConfig {
     /** Run the DHT in server mode (serve the routing table). Default false =
      * client/query-only. Public seed nodes set true. */
     readonly server: boolean;
+    /** Join the PUBLIC IPFS Amino DHT for zero-infra WAN discovery (DISC-04).
+     * Default false = folklore's own private /folklore/kad/ network. When true,
+     * the DHT switches to /ipfs/kad/1.0.0 + public IPFS bootstrappers and the
+     * daemon runs the rendezvous loop. Tradeoff: discovery metadata becomes
+     * public (data stays signed/private) — opt-in, never the default. */
+    readonly public: boolean;
     /** Optional multiaddr list fed to @libp2p/bootstrap as DHT seed peers
      * (a community list — multiple seeds, anyone can run one). */
     readonly bootstrap_peers: readonly string[];
@@ -181,7 +187,7 @@ const DEFAULT_PEER: PeerConfig = {
   port: 0,
   listen_host: '127.0.0.1',
   mdns: true,
-  dht: { enabled: true, server: false, bootstrap_peers: ENV_BOOTSTRAP_PEERS },
+  dht: { enabled: true, server: false, public: false, bootstrap_peers: ENV_BOOTSTRAP_PEERS },
   search_rate_limit: { rate_per_sec: 10, burst: 30 },
   relays: [],
   upnp: true,
@@ -264,6 +270,10 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
           server: bool(
             (peerRaw.dht as Record<string, unknown> | undefined)?.server,
             DEFAULT_PEER.dht.server,
+          ),
+          public: bool(
+            (peerRaw.dht as Record<string, unknown> | undefined)?.public,
+            DEFAULT_PEER.dht.public,
           ),
           // Federation-by-default: prefer a NON-EMPTY config list; otherwise fall
           // back to the FOLKLORE_BOOTSTRAP_PEERS env list (comma-separated
