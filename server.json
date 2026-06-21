@@ -1,0 +1,27 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.usefolklore/folklore",
+  "description": "Local-first memory + research layer for AI agents: answers from a local knowledge graph before the web and saves results with signed provenance, so an agent never researches the same thing twice. CPU-only, no API key, opt-in P2P federation.",
+  "title": "Folklore",
+  "websiteUrl": "https://usefolklore.sh",
+  "repository": {
+    "url": "https://github.com/usefolklore/folklore",
+    "source": "github"
+  },
+  "version": "5.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@usefolklore/folklore",
+      "version": "5.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        { "type": "positional", "value": "mcp" },
+        { "type": "positional", "value": "start" }
+      ]
+    }
+  ]
+}
