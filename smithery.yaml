@@ -1,0 +1,11 @@
+# Smithery config — registers Folklore as a local stdio MCP server.
+# Folklore is CPU-only and needs no API key, so the config schema is empty.
+# https://smithery.ai
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties: {}
+    additionalProperties: false
+  commandFunction: |-
+    (config) => ({ command: "npx", args: ["-y", "@usefolklore/folklore", "mcp", "start"] })
