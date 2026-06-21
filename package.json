@@ -4,7 +4,7 @@
   "description": "OSS P2P agent memory — DID-authored cryptographic envelopes, 48× compressed vectors, 33× faster cached queries via daemon IPC + native Rust client, episodic→semantic consolidation worker, cross-model embedding bridge. CPU-local, zero GPU, zero SaaS.",
   "type": "module",
   "bin": {
-    "folklore": "./bin/folklore.js"
+    "folklore": "bin/folklore.js"
   },
   "publishConfig": {
     "access": "public"
@@ -22,7 +22,10 @@
     "bin/**",
     "dist/**",
     ".claude-plugin/**",
-    ".claude/**",
+    ".claude/hooks/**",
+    ".claude/skills/**",
+    ".claude/helpers/**",
+    ".claude/README.md",
     "config/config.example.yaml"
   ],
   "engines": {
