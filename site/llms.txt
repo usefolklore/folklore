@@ -1,10 +1,11 @@
 # Folklore
 
-> Folklore is a local-first, open-source memory + research layer for AI agents.
-> Your agent answers from a local knowledge graph before it hits the web, and
-> saves what it learns (signed) so it never researches the same thing twice. It
-> works alone on day one and is designed to compound peer-to-peer. CPU-only, no
-> API key, works in any MCP harness (Claude Code, Cursor, Cline, Zed, …).
+> Folklore is open-source, peer-to-peer memory for AI agents. Peers share their
+> research over the network, so a new agent starts from what the network already
+> knows instead of square one. Locally it answers from a knowledge graph before
+> it hits the web, and saves what it learns with signed provenance so shared
+> memory can't be poisoned. Works alone on day one, compounds peer-to-peer.
+> CPU-only, no API key, works in any MCP harness (Claude Code, Cursor, Cline, Zed, …).
 
 ## What it is
 - A memory + research layer that sits between an AI agent and the web. Before a

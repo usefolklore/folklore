@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Folklore — an open-source mem0 alternative for AI agent memory</title>
-<meta name="description" content="Folklore is an open-source, local-first alternative to mem0: CPU-only with no LLM call per write, signed provenance (poison-defensible), and peer-to-peer federation. Honest, benchmarked comparison." />
+<meta name="description" content="Folklore is an open-source, peer-to-peer alternative to mem0: agents share research over the network so you start from what the network knows, not zero. CPU-only, no per-write LLM call, signed provenance (poison-defensible). Honest, benchmarked comparison." />
 <meta name="theme-color" content="#f4ecd8" />
 <link rel="canonical" href="https://usefolklore.sh/alternatives/mem0/" />
 <meta property="og:type" content="article" />
@@ -50,10 +50,11 @@
   <p><a href="https://usefolklore.sh/">← Folklore</a> · <a href="https://usefolklore.sh/compare/">full comparison</a></p>
   <h1>Folklore: an open-source <span class="em">mem0 alternative</span></h1>
 
-  <p class="answer">Folklore is an open-source (MIT), local-first memory layer for AI agents and a
-  direct alternative to mem0. Unlike mem0 — which runs an LLM extraction on every write and is a
-  single-user store with no provenance — Folklore writes with no per-write LLM call, is CPU-only
-  with no API key, ranks by signed provenance, and federates peer-to-peer.</p>
+  <p class="answer">Folklore is an open-source (MIT) alternative to mem0. The core difference: mem0
+  is single-user — memory never leaves your account. Folklore is peer-to-peer: agents share their
+  research over the network, so a new agent starts from what the network already knows, not zero.
+  It also writes with no per-write LLM call, is CPU-only with no API key, and ranks by signed
+  provenance.</p>
 
   <a class="cta" href="https://github.com/usefolklore/folklore">Star Folklore on GitHub →</a>
 
