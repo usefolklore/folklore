@@ -139,9 +139,8 @@ github-bearing data from the discovery identity.
 - **M-3** No aggregate-size/node-count budget on share-sync CRDT apply; `.ydoc`
   persisted every frame → amplified disk-I/O DoS. **Fix:** per-peer byte/node
   budget + debounce the ydoc persist.
-- **EXEC-1** `exec(\`open "${path}"\`)` shell interpolation at `src/cli/commands/viz.ts:135`
-  and `src/infrastructure/x-client.ts:70`. Inputs mostly self-controlled, but use
-  `execFile(cmd, [path])` — no shell.
+- **EXEC-1 — FIXED** (commit on `security/audit-and-fixes`). `viz.ts` +
+  `x-client.ts` now use `execFile` (no shell); path/url is an argv element.
 - **F6** PostToolUse auto-save files web bodies as `--type source` (public, not
   private); confirm `save.ts` runs `redactNode`; redact `source_uri` query strings.
 
@@ -151,6 +150,34 @@ github-bearing data from the discovery identity.
   and `10.evil.com` hostnames / DNS-rebinding. Use CIDR + resolve-then-check.
 - **L-2** Rendezvous dials every provider per round with no cap — Sybil dial
   amplifier. Cap + shuffle.
+
+## Turnkey fix recipe — C-1 (de-risked)
+
+The naive "just call `validateRemoteNode` before upsert" BREAKS provenance:
+`validateRemoteNode` allow-lists `ALLOWED_KEYS` and strips everything else —
+including `private`, `github_user`, `_folklore_source_peer`, `_folklore_signed_by`,
+which `buildImportedNode` sets. Those are **receiver-derived** (peer = the libp2p
+remotePeer; signedBy = verified signature; private = local policy), not
+attacker-controlled, so the correct fix validates the attacker fields then
+re-stamps the receiver provenance onto the validated node:
+
+```ts
+const built = buildImportedNode(peer, s.payload, s.signedBy);
+const v = validateRemoteNode(built);           // SSRF/scheme/host + shape gate
+if (v.isErr()) { logInbound(logPath, peer, built.id, 'validate_drop'); return; }
+const safe = {
+  ...v.value,                                  // sanitised attacker fields
+  private: false,
+  _folklore_source_peer: peer,                 // re-stamp receiver-derived provenance
+  ...(built._folklore_signed_by ? { _folklore_signed_by: built._folklore_signed_by } : {}),
+  ...(built.github_user ? { github_user: built.github_user } : {}),
+} as GraphNode;
+const r = upsertNode(graph, safe);
+```
+Apply at **both** share-sync upsert sites (snapshot-apply ~299 + handler) and at
+`federated-ask.ts` `cacheFetched` (validate `node`, re-stamp `_folklore_source_peer`).
+Gate with the existing `tests/phase26.e2e-share-sync.test.ts` + add a test that an
+inbound node with `source_uri: http://169.254.169.254/...` is dropped.
 
 ## Solid (no action)
 Prototype-pollution revivers present (`remote-node-validator`, `touch-protocol`);
