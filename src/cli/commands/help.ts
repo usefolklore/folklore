@@ -26,6 +26,8 @@ ask + save (daily loop):
   ask "<query>"           semantic search + context output (--peers = federated)
   save --label X --text Y file a typed node (--type synthesis|concept|decision, --private)
   recall <name>           entity-first lookup across the graph (+ connected peers)
+  remember --transcript P distill a session transcript into one embedded memory node
+  resume [--workspace W]   print the latest "where you left off" digest for this repo
   hot                     today's working set — recently touched nodes
   this [me|everyone]      index the current folder; 'everyone' shares it on P2P
   entity add|list|remove  manage the canonical entity registry
