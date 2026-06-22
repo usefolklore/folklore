@@ -92,6 +92,11 @@ export interface AuditResult {
  */
 const BUILT_IN_PATTERNS: ReadonlyArray<{ readonly name: string; readonly re: RegExp }> =
   Object.freeze([
+    // Anthropic + OpenAI project keys carry hyphens after the `sk-`
+    // prefix, so the broad `openai-key` rule below (which stops at the
+    // first non-alphanumeric) misses them — match them explicitly first.
+    { name: 'anthropic-key',     re: /sk-ant-[A-Za-z0-9_-]{20,}/g },
+    { name: 'openai-project-key', re: /sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}/g },
     { name: 'openai-key',        re: /sk-[a-zA-Z0-9]{20,}/g },
     { name: 'github-token',      re: /ghp_[a-zA-Z0-9]{36}/g },
     { name: 'github-oauth',      re: /gho_[a-zA-Z0-9]{36}/g },

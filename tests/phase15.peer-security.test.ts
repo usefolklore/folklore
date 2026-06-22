@@ -51,7 +51,7 @@ const TEST_STRIPE = 'sk_live_' + 'abcdefghijklmnopqrstuvwx';
 
 // ─────────────────────── SEC-01: all 14 secret patterns detected ──────────
 
-describe('SEC-01: secrets scanner detects all 22 built-in patterns', () => {
+describe('SEC-01: secrets scanner detects all 24 built-in patterns', () => {
   const secretSamples: Array<{
     patternName: string;
     field: 'label' | 'source_uri';
@@ -61,6 +61,16 @@ describe('SEC-01: secrets scanner detects all 22 built-in patterns', () => {
       patternName: 'openai-key',
       field: 'label',
       value: 'key is sk-abcdefghij1234567890xx',
+    },
+    {
+      patternName: 'anthropic-key',
+      field: 'label',
+      value: 'key is sk-ant-api03-abcdefghij1234567890XYZ',
+    },
+    {
+      patternName: 'openai-project-key',
+      field: 'label',
+      value: 'key is sk-proj-abcdefghij1234567890XYZ',
     },
     {
       patternName: 'github-token',
@@ -175,14 +185,14 @@ describe('SEC-01: secrets scanner detects all 22 built-in patterns', () => {
     });
   }
 
-  test('buildPatterns returns exactly 22 built-in patterns', () => {
-    assert.equal(patterns.length, 22);
+  test('buildPatterns returns exactly 24 built-in patterns', () => {
+    assert.equal(patterns.length, 24);
   });
 
   test('buildPatterns merges custom patterns with built-ins', () => {
     const custom = buildPatterns([{ name: 'custom', pattern: 'CUSTOM_\\d+' }]);
-    assert.equal(custom.length, 23);
-    assert.equal(custom[22].name, 'custom');
+    assert.equal(custom.length, 25);
+    assert.equal(custom[24].name, 'custom');
   });
 
   // Bearer-token false-positive guard: legitimate research prose about
