@@ -284,11 +284,20 @@ export const rustSubprocessEmbedder = (opts: RustSubprocessOptions): Embedder =>
       ),
     );
 
+  // H3 — bound the bytes written to the subprocess. The model only consumes
+  // ~512 tokens (~2-4 KB); clamping each text far above that is lossless for
+  // retrieval but prevents a multi-hundred-MB input (from an MCP call or an
+  // ingested untrusted doc) from ballooning the shared embed_server's RSS into
+  // an OOM. Caps total batch size too.
+  const MAX_EMBED_CHARS = Number(process.env.FOLKLORE_EMBED_MAX_CHARS ?? 16384);
+  const clamp = (t: string): string =>
+    typeof t === 'string' && t.length > MAX_EMBED_CHARS ? t.slice(0, MAX_EMBED_CHARS) : t;
+
   const embed = (text: string): ResultAsync<Vector, EmbeddingError> =>
     sendRequest({
       op: 'embed',
       model: opts.model,
-      texts: [text],
+      texts: [clamp(text)],
       is_query: opts.isQuery ?? false,
     }).andThen((resp) => {
       const vecs = resp.vectors;
@@ -306,7 +315,7 @@ export const rustSubprocessEmbedder = (opts: RustSubprocessOptions): Embedder =>
     sendRequest({
       op: 'embed',
       model: opts.model,
-      texts,
+      texts: texts.map(clamp),
       is_query: opts.isQuery ?? false,
     }).andThen((resp) => {
       const vecs = resp.vectors;
