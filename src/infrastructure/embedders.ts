@@ -157,8 +157,8 @@ export const xenovaEmbedder = (opts: XenovaOptions = {}): Embedder => {
  * works equivalently.
  */
 export interface RustSubprocessOptions {
-  /** Short model name: 'nomic' | 'bge-base' | 'minilm'. */
-  readonly model: 'nomic' | 'bge-base' | 'minilm';
+  /** Short model name: 'nomic' | 'bge-base' | 'bge-large' | 'minilm'. */
+  readonly model: 'nomic' | 'bge-base' | 'bge-large' | 'minilm';
   /** Output dimension — must match the model. */
   readonly dim: number;
   /**

@@ -1,5 +1,36 @@
 # Real public memory benchmarks — measured, honest
 
+## ⭐ Headline: the gap to agentmemory's 95.2% was the metric, not the model
+
+agentmemory's 95.2% R@5 on LongMemEval-S uses the **same embedder we do** —
+`all-MiniLM-L6-v2`, 384-dim, hybrid BM25+vector, no reranker, no LLM judge — and
+scores `recall_any@K` (does ANY gold session appear in top-K). Our adapter
+defaulted to the stricter **fraction-recall** (`|gold ∩ top-k| / |gold|`), which
+penalises every question that has multiple gold sessions — and **65% of
+LongMemEval-S questions do** (250 have 2 gold, 41 have 3, up to 6).
+
+Same model, same method, fair metric (`recall_any@5`, `FOLKLORE_BENCH_RECALL_ANY=1`),
+**full 500 questions**:
+
+| system (LongMemEval-S, recall_any) | R@5 | R@10 | MRR |
+|---|---|---|---|
+| **folklore** (MiniLM-384 + BM25 + enrich) | **0.9740** | 0.9880 | 0.900 |
+| agentmemory (MiniLM-384 + BM25) | 0.9520 | 0.9860 | 0.882 |
+
+Folklore wins all three — **+2.2 R@5**, +0.2 R@10, +1.8 MRR — on the *identical*
+embedder. Per-category R@5: multi-session **1.000** (was 0.907 under fraction —
+the multi-gold penalty hit hardest here), knowledge-update 1.000,
+single-session-assistant 1.000, single-session-user 0.957, temporal 0.947,
+preference 0.900.
+
+The 2+ points we appeared to be "missing" were never a retrieval deficit — we
+graded ourselves on a stricter ruler (fraction-recall) while the published
+number uses recall_any. Under the same metric, on the same model, folklore's
+base is stronger. Stable, not a subset artifact: 100-Q 0.9700 → full-500 0.9740.
+
+---
+
+
 Folklore's retrieval stack run against the **actual** public datasets (not the
 synthetic fixtures), judge-free, on real MiniLM-384 embeddings. These supersede
 the synthetic `longmemeval-synth` / `locomo-synth` numbers in

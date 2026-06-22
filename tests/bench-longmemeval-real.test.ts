@@ -51,7 +51,7 @@ import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
 import { xenovaEmbedder, batchingEmbedder, rustSubprocessEmbedder } from '../src/infrastructure/embedders.js';
 import { indexNode, searchGlobal } from '../src/application/use-cases.js';
-import { recallAtK, reciprocalRank, ndcgAtK } from '../src/domain/eval-metrics.js';
+import { recallAtK, recallAnyAtK, reciprocalRank, ndcgAtK } from '../src/domain/eval-metrics.js';
 import { rerankMatches } from '../src/domain/cross-rerank.js';
 import { crossEncoderFromEnv } from '../src/infrastructure/cross-encoder.js';
 import { rerankMatchesListwise } from '../src/domain/llm-listwise-rerank.js';
@@ -66,7 +66,11 @@ const _ROOM = 'sessions' as Room;
 // FOLKLORE_EMBEDDER_MODEL=bge-base|nomic uses the Rust sidecar at 768-dim.
 const BACKEND = process.env.FOLKLORE_EMBEDDER_BACKEND ?? 'xenova';
 const EMB_MODEL = process.env.FOLKLORE_EMBEDDER_MODEL ?? 'minilm';
-const DIM = BACKEND === 'rust' && (EMB_MODEL === 'bge-base' || EMB_MODEL === 'nomic') ? 768 : 384;
+const DIM =
+  BACKEND !== 'rust' ? 384
+  : EMB_MODEL === 'bge-large' ? 1024
+  : EMB_MODEL === 'bge-base' || EMB_MODEL === 'nomic' ? 768
+  : 384;
 const K = 5;
 
 interface LmeTurn {
@@ -137,7 +141,7 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
   // One embedder reused across questions — the model loads once.
   const embedder = batchingEmbedder(
     BACKEND === 'rust'
-      ? rustSubprocessEmbedder({ model: EMB_MODEL as 'minilm' | 'nomic' | 'bge-base', dim: DIM })
+      ? rustSubprocessEmbedder({ model: EMB_MODEL as 'minilm' | 'nomic' | 'bge-base' | 'bge-large', dim: DIM })
       : xenovaEmbedder({ model: 'Xenova/all-MiniLM-L6-v2', dim: DIM, maxLength: 512, pooling: 'mean', quantized: false }),
     { maxBatch: 32 },
   );
@@ -279,7 +283,11 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
       const retrieved = retrievedFull.slice(0, K);
       const relevant = new Set(q.answer_session_ids);
 
-      const r5 = recallAtK(retrieved, relevant, K);
+      // FOLKLORE_BENCH_RECALL_ANY=1 scores recall_any@k (any gold in top-k) —
+      // the apples-to-apples metric published reports (agentmemory et al.) use.
+      // Default stays the stricter fraction-recall (recallAtK).
+      const recallFn = process.env.FOLKLORE_BENCH_RECALL_ANY === '1' ? recallAnyAtK : recallAtK;
+      const r5 = recallFn(retrieved, relevant, K);
       const rr = reciprocalRank(retrieved, relevant);
       sumR5 += r5;
       sumMrr += rr;
@@ -288,7 +296,7 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
       // T1 diagnostic — recall at the full ladder from one retrieval call.
       const rkPerQ: Record<number, number> = {};
       for (const k of RECALL_KS) {
-        const rk = recallAtK(retrievedFull, relevant, k);
+        const rk = recallFn(retrievedFull, relevant, k);
         sumRK[k] += rk;
         rkPerQ[k] = rk;
         // Phase 23.15 — order-sensitive NDCG@k on the same retrieval.

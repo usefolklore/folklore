@@ -38,6 +38,15 @@ impl EncoderSpec {
                 doc_prefix: "",
                 query_prefix: "",
             }),
+            "bge-large" | "BAAI/bge-large-en-v1.5" => Ok(Self {
+                model: EmbeddingModel::BGELargeENV15,
+                dim: 1024,
+                name: "BAAI/bge-large-en-v1.5",
+                doc_prefix: "",
+                // BGE retrieval query instruction — recommended for asymmetric
+                // query→passage search; lifts recall over the bare query.
+                query_prefix: "Represent this sentence for searching relevant passages: ",
+            }),
             "minilm" | "sentence-transformers/all-MiniLM-L6-v2" => Ok(Self {
                 model: EmbeddingModel::AllMiniLML6V2,
                 dim: 384,
@@ -46,7 +55,7 @@ impl EncoderSpec {
                 query_prefix: "",
             }),
             other => Err(anyhow!(
-                "unknown encoder '{other}': supported nomic, bge-base, minilm"
+                "unknown encoder '{other}': supported nomic, bge-base, bge-large, minilm"
             )),
         }
     }

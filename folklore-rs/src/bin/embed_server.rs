@@ -290,7 +290,7 @@ fn main() -> Result<()> {
         "folklore-bench embed_server v{} — stdio JSON-RPC",
         env!("CARGO_PKG_VERSION")
     );
-    eprintln!("supported models: nomic, bge-base, minilm");
+    eprintln!("supported models: nomic, bge-base, bge-large, minilm");
 
     let stdin = std::io::stdin();
     let mut stdout = std::io::stdout().lock();
