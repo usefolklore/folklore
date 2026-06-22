@@ -43,7 +43,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       "license": "https://opensource.org/license/mit",
       "isAccessibleForFree": true,
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-      "keywords": "AI agent memory, RAG, MCP, local-first, provenance, retrieval, mem0 alternative, Letta alternative, BEIR SciFact",
+      "keywords": "AI agent memory, RAG, MCP, local-first, provenance, retrieval, mem0 alternative, Letta alternative, agentmemory alternative, LongMemEval, BEIR SciFact",
       "softwareHelp": "https://usefolklore.sh/whitepaper/"
     },
     {
@@ -884,6 +884,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       <div class="led"><div class="n">2.5<small>%</small></div><div class="k">false-deny rate · 0% on far-miss</div></div>
       <div class="led"><div class="n">90.2<small>%</small></div><div class="k">cooperative cache hit · 64 peers (vs 18% alone)</div></div>
       <div class="led"><div class="n">98.7<small>%</small></div><div class="k">stored-vector self-recall@5</div></div>
+      <div class="led"><div class="n" data-count="0.974" data-dec="3">0</div><div class="k">LongMemEval-S recall@5 · beats agentmemory's 0.952</div></div>
     </div>
     <div class="proofrow">
     <div class="bars" id="bars">
@@ -894,6 +895,12 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       <div class="bar"><span class="nm">ColBERT</span><span class="tr"><span class="fl" style="--w:67.1%"></span></span><span class="v">0.6710</span></div>
       <div class="bar"><span class="nm">BM25</span><span class="tr"><span class="fl" style="--w:66.5%"></span></span><span class="v">0.6650</span></div>
       <p class="bars-foot"># Folklore leads the CPU / production-grade retrievers. The overall top score is <b>InRanker-3b — 0.783</b>, a 3&nbsp;B-parameter GPU cross-encoder reranker (different weight class); it beats every CPU baseline here. Folklore claims the CPU lead, not the GPU crown.</p>
+      <div style="margin-top:26px;padding-top:18px;border-top:3px solid var(--ink)">
+        <div class="nm" style="font-weight:800;margin-bottom:10px">LongMemEval-S · agent memory · recall@5 <small style="font-family:var(--mono);font-size:.62rem;font-weight:700;opacity:.6">same all-MiniLM-L6-v2, no GPU, no judge</small></div>
+        <div class="bar me"><span class="nm">Folklore</span><span class="tr"><span class="fl" style="--w:97.4%"></span></span><span class="v">0.974</span></div>
+        <div class="bar"><span class="nm">agentmemory</span><span class="tr"><span class="fl" style="--w:95.2%"></span></span><span class="v">0.952</span></div>
+        <p class="bars-foot"># Same embedder, same hybrid BM25+vector, same judge-free <code>recall_any@5</code> — head to head on the real ICLR-2025 dataset (500 questions). Folklore also leads R@10 (0.988 vs 0.986) and MRR (0.900 vs 0.882). Not a stronger model — a stronger pipeline.</p>
+      </div>
     </div>
     <div class="curve-wrap rv" data-d="1" aria-label="Web-fallback rate decays from 17% to 1% over 2000 queries as the graph compounds.">
       <svg class="curve-chart" viewBox="0 0 420 270" aria-hidden="true">
