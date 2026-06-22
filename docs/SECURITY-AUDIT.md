@@ -219,7 +219,58 @@ tagged enum (no deserialization gadget); spawn is shell-free array form.
 
 ---
 
-_All three passes complete. Highest priority: F1 (revoke token) → C-1 (validate +
-sign the body) → DEP-1 (protobufjs). The P2P trust guarantees the code documents
-are real but unenforced on the share-sync + fetch-consumer paths — that's the
-through-line across all three audits._
+## Fourth pass — auto-update RCE chain (appended)
+
+### UPD-1 — CRITICAL: release signature doesn't cover the installed bytes ✓
+`src/application/update-installer.ts:117` runs `npm install -g folklore@${version}`
+using **only** the manifest's `version`. The signed `tarball_url` + `tarball_sha256`
+are never consumed by the installer — they appear only as `console.log` hints in
+`update.ts:120-121` (✓ grep-confirmed: zero real consumers outside `release.ts`).
+So after the manifest signature provably verifies, the bytes that actually
+install come from **npm registry resolution**, which is exactly what signing was
+meant to remove from the trust path. Anyone who can serve a package for that
+version to the host's npm (registry compromise, dependency-confusion, a
+misconfigured/MITM'd registry) gets arbitrary code execution (npm lifecycle
+scripts run as the daemon user) — with a valid project signature in the logs. On
+the `auto_install_force` path it's unattended; on the manual `folklore update`
+path the signature still gives false assurance.
+**Fix:** download `tarball_url`, verify the bytes against `tarball_sha256`
+constant-time, and `npm install -g <verified.tgz>` (the exact artifact) — pass
+the full verified manifest into the installer, not a bare version string.
+
+### UPD-2 — HIGH: pinned DID / manifest URL silently overwritten, no https enforcement
+The trusted `project_did` + manifest URL can be replaced (config/state) with no
+https requirement → an attacker who flips the pin points updates at their own
+signer + URL. **Fix:** treat the pin as immutable (compiled-in) or require an
+explicit, authenticated re-pin; enforce https on the manifest URL.
+
+### UPD-3 — MEDIUM: one signed force_upgrade → fleet install behind a single local boolean
+`auto_install_force` (daemon `loop.ts:216`) gates unattended install — good that
+it exists and is opt-in, but a single signed `force_upgrade` manifest then
+installs across every consenting node at once (no staged rollout, no per-node
+confirm). Combined with UPD-1 that's fleet-wide RCE. **Fix:** stage/canary force
+rollouts; keep `auto_install_force` default-off and loudly documented.
+
+### UPD-4 — MEDIUM/LOW: no `released_at` freshness (same-version replay/freeze) + `0.0.0` fail-open
+No freshness check lets a signed manifest be replayed to freeze/redirect a node;
+a `0.0.0` parse fail-open biases toward the auto-install path. **Fix:** enforce
+strictly-increasing version + a signed `released_at` window; fail closed on parse.
+
+### Cleared by this pass
+`update-peer-reputation.ts` is **not** in the install path (it scores answer
+quality) — peers cannot trigger an install; the only network input is the
+manifest, which must verify under the pinned DID. The verify→install TOCTOU is
+correctly closed for the *version decision* (re-checked before install) — but
+UPD-1 defeats it because the installed bytes never came from the manifest anyway.
+
+---
+
+_All four passes complete (P2P · hooks/redaction · MCP/rust/deny-gate ·
+auto-update), plus web/site (clean — `memes.json` render is XSS-safe by
+construction) and a dependency sweep. Highest priority: **F1** (revoke token) →
+**UPD-1** (install the signed artifact, not an npm version) → **C-1** (validate +
+sign the body) → **DEP-1** (protobufjs). The through-line across every pass: the
+cryptographic guarantees the code documents are real but **not enforced at the
+point that matters** — inbound node validation (C-1), the signed field set
+(body), and the installed bytes (UPD-1). The primitives are good; the wiring
+leaves gaps._
