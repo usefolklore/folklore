@@ -49,7 +49,7 @@ import { test } from 'node:test';
 
 import { fileGraphRepository } from '../src/infrastructure/graph-repository.js';
 import { openSqliteVectorIndex } from '../src/infrastructure/vector-index.js';
-import { xenovaEmbedder, batchingEmbedder } from '../src/infrastructure/embedders.js';
+import { xenovaEmbedder, batchingEmbedder, rustSubprocessEmbedder } from '../src/infrastructure/embedders.js';
 import { indexNode, searchGlobal } from '../src/application/use-cases.js';
 import { recallAtK, reciprocalRank, ndcgAtK } from '../src/domain/eval-metrics.js';
 import { rerankMatches } from '../src/domain/cross-rerank.js';
@@ -62,7 +62,11 @@ import type { Room } from '../src/domain/graph.js';
 import type { Match } from '../src/domain/vectors.js';
 
 const _ROOM = 'sessions' as Room;
-const DIM = 384;
+// Backend select: default Xenova MiniLM-384; FOLKLORE_EMBEDDER_BACKEND=rust +
+// FOLKLORE_EMBEDDER_MODEL=bge-base|nomic uses the Rust sidecar at 768-dim.
+const BACKEND = process.env.FOLKLORE_EMBEDDER_BACKEND ?? 'xenova';
+const EMB_MODEL = process.env.FOLKLORE_EMBEDDER_MODEL ?? 'minilm';
+const DIM = BACKEND === 'rust' && (EMB_MODEL === 'bge-base' || EMB_MODEL === 'nomic') ? 768 : 384;
 const K = 5;
 
 interface LmeTurn {
@@ -132,7 +136,9 @@ test('bench: real LongMemEval-S oracle Recall@5', { timeout: 24 * 60 * 60 * 1000
 
   // One embedder reused across questions — the model loads once.
   const embedder = batchingEmbedder(
-    xenovaEmbedder({ model: 'Xenova/all-MiniLM-L6-v2', dim: DIM, maxLength: 512, pooling: 'mean', quantized: false }),
+    BACKEND === 'rust'
+      ? rustSubprocessEmbedder({ model: EMB_MODEL as 'minilm' | 'nomic' | 'bge-base', dim: DIM })
+      : xenovaEmbedder({ model: 'Xenova/all-MiniLM-L6-v2', dim: DIM, maxLength: 512, pooling: 'mean', quantized: false }),
     { maxBatch: 32 },
   );
 
