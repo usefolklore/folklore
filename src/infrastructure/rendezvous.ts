@@ -20,9 +20,43 @@ import type { Libp2p, PeerId, PeerInfo } from '@libp2p/interface';
  * the discovery network (v5 matches the federation wire-protocol version). */
 const RENDEZVOUS_NAMESPACE = 'folklore/federation/v5';
 
-/** Default refresh cadence. Provider records on the Amino DHT expire on the order
- * of a day; 5 min keeps discovery responsive for fresh nodes without spamming. */
+/** Default refresh cadence ONCE peers are connected. Provider records on the
+ * Amino DHT expire on the order of a day; 5 min keeps discovery responsive for
+ * fresh nodes without spamming. */
 export const RENDEZVOUS_INTERVAL_MS = 5 * 60_000;
+
+/** Search cadence while the node has ZERO peers. A fresh node must not wait the
+ * full steady interval to make first contact — it retries fast, then backs off
+ * exponentially up to a cap so an offline node doesn't spin the DHT. */
+export const RENDEZVOUS_SEARCH_INTERVAL_MS = 15_000;
+export const RENDEZVOUS_SEARCH_BACKOFF_MAX_MS = 2 * 60_000;
+
+export interface RendezvousCadence {
+  /** Refresh interval once at least one peer is connected. */
+  readonly steadyMs: number;
+  /** Base retry interval while peerless (search mode). */
+  readonly searchMs: number;
+  /** Cap on the exponentially-backed-off search retry. */
+  readonly backoffMaxMs: number;
+}
+
+/**
+ * Next delay before the following rendezvous round. Pure + total so the
+ * search-until-found schedule is unit-tested without timers:
+ *   - peers connected      → steady refresh (relax)
+ *   - peerless, round N     → searchMs · 2^N, capped at backoffMaxMs
+ * `emptyRounds` is the count of consecutive peerless rounds so far (0 on the
+ * first peerless round → searchMs exactly).
+ */
+export const nextRendezvousDelay = (
+  peerCount: number,
+  emptyRounds: number,
+  cadence: RendezvousCadence,
+): number => {
+  if (peerCount > 0) return cadence.steadyMs;
+  const factor = 2 ** Math.max(0, emptyRounds);
+  return Math.min(cadence.searchMs * factor, cadence.backoffMaxMs);
+};
 
 /** The single CID every folklore node provides + queries on the public DHT.
  * Pure and stable: same namespace → same CID on every node, forever, so two
@@ -49,8 +83,12 @@ export type RendezvousNode = Pick<Libp2p, 'dial' | 'peerId' | 'getPeers'> & {
 export interface RendezvousDeps {
   readonly node: RendezvousNode;
   readonly log: (msg: string) => void;
-  /** Override the refresh cadence (tests use a short interval). */
+  /** Steady refresh cadence once peers are connected (tests use a short value). */
   readonly intervalMs?: number;
+  /** Fast retry cadence while the node is peerless (search mode). */
+  readonly searchIntervalMs?: number;
+  /** Cap on the backed-off search retry. */
+  readonly searchBackoffMaxMs?: number;
 }
 
 export interface RendezvousHandle {
@@ -103,9 +141,14 @@ export const rendezvousTick = async (deps: RendezvousDeps, cid: CID): Promise<nu
  * timer from pinning the daemon's event loop. Returns a stop handle wired into
  * the daemon cleanup. */
 export const startRendezvous = (deps: RendezvousDeps): RendezvousHandle => {
-  const intervalMs = deps.intervalMs ?? RENDEZVOUS_INTERVAL_MS;
+  const cadence: RendezvousCadence = {
+    steadyMs: deps.intervalMs ?? RENDEZVOUS_INTERVAL_MS,
+    searchMs: deps.searchIntervalMs ?? RENDEZVOUS_SEARCH_INTERVAL_MS,
+    backoffMaxMs: deps.searchBackoffMaxMs ?? RENDEZVOUS_SEARCH_BACKOFF_MAX_MS,
+  };
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let emptyRounds = 0;
   const cidPromise = folkloreRendezvousCid();
 
   const loop = async (): Promise<void> => {
@@ -116,7 +159,17 @@ export const startRendezvous = (deps: RendezvousDeps): RendezvousHandle => {
       deps.log(`rendezvous: tick error (${(e as Error).message})`);
     }
     if (stopped) return;
-    timer = setTimeout(() => { void loop(); }, intervalMs);
+
+    // Adaptive schedule: keep searching FAST until first contact, then relax
+    // to the steady refresh. `getPeers()` reflects live connections after the
+    // tick's dials, so the cadence reacts to whether we actually found anyone.
+    const peerCount = deps.node.getPeers().length;
+    emptyRounds = peerCount > 0 ? 0 : emptyRounds + 1;
+    const delay = nextRendezvousDelay(peerCount, emptyRounds - 1, cadence);
+    if (peerCount === 0) {
+      deps.log(`rendezvous: no peers yet — searching again in ${Math.round(delay / 1000)}s (attempt ${emptyRounds})`);
+    }
+    timer = setTimeout(() => { void loop(); }, delay);
     timer.unref?.();
   };
 

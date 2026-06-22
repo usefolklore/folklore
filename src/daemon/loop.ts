@@ -533,17 +533,27 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
 
             try { deps.onFederationReady?.(liveNode); } catch { /* observer must not break startup */ }
 
-            // DISC-04: when the public IPFS DHT is opted in, run the rendezvous
-            // loop so this node discovers other folklore peers on the global DHT
-            // with zero folklore-owned seed. No-op in the private-DHT default.
-            if (cfgRes.value.peer.dht.public) {
+            // Continuous peer discovery via the rendezvous CID. Runs on the
+            // public IPFS Amino DHT when opted in (DISC-04, zero-infra), OR on
+            // the self-sovereign /folklore/kad/ DHT once it has a seed to route
+            // through (bootstrap_peers set). The loop searches FAST while
+            // peerless and relaxes to a steady refresh after first contact —
+            // a fresh node keeps looking until it finds someone. No-op only
+            // when the DHT is fully off or private with no seed (nothing to
+            // route through).
+            const dht = cfgRes.value.peer.dht;
+            const discoveryOn = dht.public || (dht.enabled && dht.bootstrap_peers.length > 0);
+            if (discoveryOn) {
               liveRendezvous = startRendezvous({
                 // services typing on Libp2p is opaque; the rendezvous only needs
                 // the structural dht slice it declares.
                 node: liveNode as unknown as Parameters<typeof startRendezvous>[0]['node'],
                 log: (m) => daemonLog(deps.homePath, m),
               });
-              daemonLog(deps.homePath, 'rendezvous: public IPFS DHT discovery started');
+              daemonLog(
+                deps.homePath,
+                `rendezvous: continuous peer discovery started (${dht.public ? 'public IPFS DHT' : 'self-sovereign DHT + bootstrap'})`,
+              );
             }
 
             // P2P-scale phase 3 — swarm-sim responder. Lifted out

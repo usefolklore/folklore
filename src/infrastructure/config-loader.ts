@@ -80,17 +80,22 @@ export interface PeerConfig {
   readonly listen_host: string;
   /** mDNS LAN auto-discovery. Default true (enabled) per DISC-02 locked decision. */
   readonly mdns: boolean;
-  /** Kademlia DHT. Wired but off by default per DISC-03 locked decision. */
+  /** Kademlia DHT. Enabled by default; runs on the public IPFS Amino DHT so
+   * peer discovery works with zero folklore-owned infrastructure (supersedes
+   * the DISC-03/04 opt-in posture — see `public` below). */
   readonly dht: {
     readonly enabled: boolean;
     /** Run the DHT in server mode (serve the routing table). Default false =
      * client/query-only. Public seed nodes set true. */
     readonly server: boolean;
     /** Join the PUBLIC IPFS Amino DHT for zero-infra WAN discovery (DISC-04).
-     * Default false = folklore's own private /folklore/kad/ network. When true,
-     * the DHT switches to /ipfs/kad/1.0.0 + public IPFS bootstrappers and the
-     * daemon runs the rendezvous loop. Tradeoff: discovery metadata becomes
-     * public (data stays signed/private) — opt-in, never the default. */
+     * Default TRUE: the DHT runs on /ipfs/kad/1.0.0 + public IPFS bootstrappers
+     * and the daemon runs the continuous rendezvous loop, so a fresh node finds
+     * other folklore peers with no folklore-owned seed. Tradeoff: discovery
+     * metadata (peerId + addrs announced on the rendezvous CID) becomes public;
+     * NODE DATA stays signed + private-gated regardless. Set false to fall back
+     * to folklore's own /folklore/kad/ network (needs a bootstrap_peers seed to
+     * reach anyone). */
     readonly public: boolean;
     /** Optional multiaddr list fed to @libp2p/bootstrap as DHT seed peers
      * (a community list — multiple seeds, anyone can run one). */
@@ -187,7 +192,7 @@ const DEFAULT_PEER: PeerConfig = {
   port: 0,
   listen_host: '127.0.0.1',
   mdns: true,
-  dht: { enabled: true, server: false, public: false, bootstrap_peers: ENV_BOOTSTRAP_PEERS },
+  dht: { enabled: true, server: false, public: true, bootstrap_peers: ENV_BOOTSTRAP_PEERS },
   search_rate_limit: { rate_per_sec: 10, burst: 30 },
   relays: [],
   upnp: true,
