@@ -7,12 +7,13 @@ verified against source where marked ✓.
 
 ## Fix order (by exploitability × impact)
 
-1. **F1** revoke the committed Hetzner token (do first — it's live)
-2. **C-1** wire `validateRemoteNode` into the two inbound paths that skip it (SSRF + poisoning)
-3. **DEP-1** bump/patch `protobufjs` (critical RCE, peer-reachable)
-4. **C-2 + H-1** bind signed envelopes to the peer + enforce the `signed_at` window
-5. **F3** broaden secret-redaction patterns (DB URLs, AWS secret, Azure, env-pass)
-6. **H-2** reconsider public-DHT default-on; **F2** stop building JSON in shell; **F5** pin the hook engine path
+1. **F1** revoke the committed Hetzner token (do first — it's live) — _OPEN (user: leave for now)_
+2. **C-1** wire `validateRemoteNode` into the two inbound paths — **✅ FIXED** (share-sync flush + federated-ask cacheFetched; validate + re-stamp provenance; e2e 22/22)
+3. **UPD-1** install the signed artifact, not an npm version — **✅ FIXED** (download + sha256-verify + install the .tgz; +3 tests)
+4. **DEP-1** bump/patch `protobufjs` (critical RCE, peer-reachable) — OPEN (dep bump, risk to libp2p)
+5. **C-2 + H-1** bind signed envelopes to the peer + enforce the `signed_at` window — OPEN
+6. **F3** broaden secret-redaction patterns — OPEN; **H-2** reconsider public-DHT default-on — OPEN; **F2** shell-JSON hook — OPEN; **F5** pin hook engine path — OPEN
+7. **EXEC-1 / H3 / M5** — **✅ FIXED** (execFile; embed-input clamp; LIKE escape)
 
 ---
 
