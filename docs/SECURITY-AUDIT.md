@@ -10,7 +10,7 @@ verified against source where marked ✓.
 1. **F1** revoke the committed Hetzner token (do first — it's live) — _OPEN (user: leave for now)_
 2. **C-1** wire `validateRemoteNode` into the two inbound paths — **✅ FIXED** (share-sync flush + federated-ask cacheFetched; validate + re-stamp provenance; e2e 22/22)
 3. **UPD-1** install the signed artifact, not an npm version — **✅ FIXED** (download + sha256-verify + install the .tgz; +3 tests)
-4. **DEP-1** bump/patch `protobufjs` (critical RCE, peer-reachable) — OPEN (dep bump, risk to libp2p)
+4. **DEP-1** `protobufjs` critical — OPEN, **manual only**. `npm audit fix` (non-breaking) corrupts node_modules (broke the build → reverted via `git checkout package-lock.json` + `npm ci`). The protobufjs fix requires `@xenova/transformers` **major** bump (the default embedder), so it needs embedder revalidation — not an autonomous change. Non-breaking fixes would clear 8 of 13 (→ 5 left) but aren't worth a flaky lockfile without a full suite pass.
 5. **C-2 + H-1** bind signed envelopes to the peer + enforce the `signed_at` window — OPEN
 6. **F3** broaden secret-redaction patterns — OPEN; **H-2** reconsider public-DHT default-on — OPEN; **F2** shell-JSON hook — OPEN; **F5** pin hook engine path — OPEN
 7. **EXEC-1 / H3 / M5** — **✅ FIXED** (execFile; embed-input clamp; LIKE escape)
