@@ -20,8 +20,28 @@
 import { ResultAsync, errAsync } from 'neverthrow';
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { writeFile, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { UpdateError, type AppError } from '../domain/errors.js';
+
+/** Fetch the release tarball bytes. Injectable for tests (no network). */
+export type DownloadFn = (url: string) => Promise<Buffer>;
+
+const defaultDownload: DownloadFn = async (url) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`download ${url} → HTTP ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+};
+
+/** Constant-time hex-digest comparison (length check first, then timingSafeEqual). */
+const digestsMatch = (a: string, b: string): boolean => {
+  if (!/^[0-9a-f]{64}$/i.test(a) || !/^[0-9a-f]{64}$/i.test(b)) return false;
+  const ab = Buffer.from(a, 'hex');
+  const bb = Buffer.from(b, 'hex');
+  return ab.length === bb.length && timingSafeEqual(ab, bb);
+};
 
 /**
  * The running CLI's own version, read from the bundled package.json (single
@@ -100,6 +120,18 @@ export const installUpgrade = (
     readonly run?: RunCommand;
     readonly modulePath?: string;
     readonly packageName?: string;
+    /**
+     * UPD-1 — the SIGNED release artifact. When `tarballSha256` is present
+     * (real releases always set it; it is covered by the manifest signature),
+     * the installer downloads `tarballUrl`, verifies the bytes against the
+     * signed hash, and installs THAT exact artifact — instead of resolving
+     * `pkg@version` from the npm registry (which the signature does not cover).
+     * Only when the manifest carries no hash (legacy) does it fall back to the
+     * version install.
+     */
+    readonly tarballUrl?: string;
+    readonly tarballSha256?: string;
+    readonly download?: DownloadFn;
   } = {},
 ): ResultAsync<InstallOutcome, AppError> => {
   const run = opts.run ?? defaultRun;
@@ -114,15 +146,54 @@ export const installUpgrade = (
     );
   }
 
-  const args = ['install', '-g', `${pkg}@${version}`];
-  const command = `npm ${args.join(' ')}`;
-  return ResultAsync.fromSafePromise(run('npm', args)).andThen(({ code, stderr }) =>
-    code === 0
-      ? ResultAsync.fromSafePromise(
-          Promise.resolve({ method, command, installed_version: version }),
-        )
-      : errAsync<InstallOutcome, AppError>(
-          UpdateError.installFailed(command, code, stderr.trim() || 'npm exited non-zero'),
-        ),
-  );
+  const npmInstall = (target: string): ResultAsync<InstallOutcome, AppError> => {
+    const args = ['install', '-g', target];
+    const command = `npm ${args.join(' ')}`;
+    return ResultAsync.fromSafePromise(run('npm', args)).andThen(({ code, stderr }) =>
+      code === 0
+        ? ResultAsync.fromSafePromise(
+            Promise.resolve({ method, command, installed_version: version }),
+          )
+        : errAsync<InstallOutcome, AppError>(
+            UpdateError.installFailed(command, code, stderr.trim() || 'npm exited non-zero'),
+          ),
+    );
+  };
+
+  // UPD-1: signed-artifact path. The manifest signature covers tarball_sha256,
+  // so verifying the downloaded bytes against it is what makes the install
+  // trustworthy — `npm install -g pkg@version` would re-resolve from the
+  // registry, outside the signed trust path.
+  if (opts.tarballSha256) {
+    const url = opts.tarballUrl ?? '';
+    if (!/^https:\/\//i.test(url)) {
+      return errAsync(UpdateError.installFailed('download', 1, `refusing non-https tarball_url: ${url || '<missing>'}`));
+    }
+    const download = opts.download ?? defaultDownload;
+    return ResultAsync.fromPromise(
+      (async (): Promise<InstallOutcome> => {
+        const bytes = await download(url);
+        const got = createHash('sha256').update(bytes).digest('hex');
+        if (!digestsMatch(got, opts.tarballSha256 as string)) {
+          throw new Error(`tarball sha256 mismatch — refusing to install (expected ${opts.tarballSha256}, got ${got})`);
+        }
+        const dir = await mkdtemp(join(tmpdir(), 'folklore-upd-'));
+        const file = join(dir, `${pkg}-${version}.tgz`);
+        await writeFile(file, bytes);
+        try {
+          const outcome = await npmInstall(file).match(
+            (o) => o,
+            (e) => { throw new Error(typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : 'install failed'); },
+          );
+          return outcome;
+        } finally {
+          await rm(dir, { recursive: true, force: true }).catch(() => {});
+        }
+      })(),
+      (e): AppError => UpdateError.installFailed('npm install -g <verified-tarball>', 1, (e as Error).message),
+    );
+  }
+
+  // Legacy fallback: manifest carried no hash — install by version.
+  return npmInstall(`${pkg}@${version}`);
 };
