@@ -152,6 +152,38 @@ github-bearing data from the discovery identity.
 - **L-2** Rendezvous dials every provider per round with no cap — Sybil dial
   amplifier. Cap + shuffle.
 
+## Remaining items — why some can't be hot-patched (need V6 / design)
+
+User authorized "all" (2026-06-23). Several remaining items are NOT safe to
+autopatch because the naive fix breaks federation compatibility or gives false
+assurance — they need a versioned protocol bump or a harness-level decision:
+
+- **C-2 (envelope↔peer binding)** — broadcast is one signed envelope → many
+  recipients; the signer can't know each verifier's peerId at signing time, so
+  "put remotePeer in the signature" doesn't fit. Real fix = a **V6** wire
+  protocol with a per-delivery challenge/nonce + fail-closed DID↔peerId pinning.
+  H-1 (signed_at future bound) is the part that lands cleanly today — ✅ done.
+- **Sign-the-body** — extending `canonicalBytes` to cover `summary` changes the
+  signed message, so every existing signed node fails verification across peers.
+  Needs **V6** with a versioned attestation accepting both during migration.
+- **M1 (require signed federated nodes)** — forcing `sigValid===true` breaks the
+  soft-policy default (most peers don't sign); belongs with **M2** (flip default
+  to strict) as a coordinated policy change. C-1 now validates ALL inbound nodes
+  (SSRF/shape) regardless of signature, so the unsigned-node risk is materially
+  reduced already.
+- **F5 / M4 (hook + rust binary path)** — any env the hook reads can be planted
+  by a project-scoped `.claude/settings.json`, so a hook-level "pin" is false
+  assurance. Real fix is harness env-scoping (out of folklore's control) or
+  shipping a global binary + dropping the repo-relative `dist` fallback (breaks
+  dev-from-source). Decision, not patch.
+- **DEP-1** — needs `@xenova/transformers` MAJOR bump + embedder revalidation. Manual.
+- **H-2** — user explicitly enabled public-DHT; mitigate via **L-2** (cap+shuffle
+  dialed providers), not by reverting the chosen default.
+
+Cleanly landed: **C-1, UPD-1, H-1, F2, L-1, M3, H3, M5, EXEC-1** (9). The above
+are the honest residual — flagged for a deliberate V6 design rather than a
+compatibility-breaking hot patch.
+
 ## Turnkey fix recipe — C-1 (de-risked)
 
 The naive "just call `validateRemoteNode` before upsert" BREAKS provenance:
