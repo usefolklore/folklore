@@ -31,6 +31,7 @@ import { ShareError as SE, formatError } from '../domain/errors.js';
 import { buildPatterns, scanNode, type ShareableNode } from '../domain/sharing.js';
 import type { GraphNode, Graph } from '../domain/graph.js';
 import { upsertNode } from '../domain/graph.js';
+import { validateRemoteNode } from '../domain/remote-node-validator.js';
 import { loadYDoc, saveYDoc } from './ydoc-store.js';
 import type { GraphRepository } from './graph-repository.js';
 import { createRateLimiter, type RateLimiter } from './search-sync.js';
@@ -251,6 +252,26 @@ const buildImportedNode = (peer: string, v: ShareableNode, signedBy?: string): G
   ...(signedBy ? { _folklore_signed_by: signedBy } : {}),
 } as GraphNode);
 
+/**
+ * C-1 trust boundary for inbound peer nodes. Runs the SSRF / scheme / host /
+ * shape / size gate (`validateRemoteNode`) over the attacker-controlled fields,
+ * then re-stamps the receiver-derived provenance the validator's allow-list
+ * strips — `_folklore_source_peer`/`_folklore_signed_by`/`github_user`/`private`
+ * are local or signature-verified, never attacker-chosen. Returns null when the
+ * node fails validation (e.g. `source_uri: http://169.254.169.254/...`).
+ */
+const safeImportedNode = (peer: string, v: ShareableNode, signedBy?: string): GraphNode | null => {
+  const validated = validateRemoteNode(buildImportedNode(peer, v, signedBy));
+  if (validated.isErr()) return null;
+  return {
+    ...validated.value,
+    private: false,
+    _folklore_source_peer: peer,
+    ...(signedBy ? { _folklore_signed_by: signedBy } : {}),
+    ...(v.github_user ? { github_user: v.github_user } : {}),
+  } as GraphNode;
+};
+
 const logInbound = (logPath: string, peer: string, nodeId: string, reason: string): void => {
   void appendShareLog(logPath, {
     timestamp: new Date().toISOString(),
@@ -296,7 +317,9 @@ const attachInboundObserver = (
     map.forEach((value) => {
       const s = screenInbound(value, policyMode, identityResolver, expectedGithubUser);
       if (!s) return;
-      const r = upsertNode(graph, buildImportedNode(peer, s.payload, s.signedBy));
+      const safe = safeImportedNode(peer, s.payload, s.signedBy);
+      if (!safe) { logInbound(logPath, peer, s.payload.id, 'validate_drop'); return; }
+      const r = upsertNode(graph, safe);
       if (r.isOk()) graph = r.value;
     });
     const saved = await graphRepo.save(graph);
