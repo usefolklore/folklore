@@ -118,6 +118,11 @@ const BUILT_IN_PATTERNS: ReadonlyArray<{ readonly name: string; readonly re: Reg
     { name: 'basic-auth-url',    re: /https?:\/\/[^\s:@/]+:[^\s:@/]+@[^\s]+/g },
     // Vendor-agnostic: a secret-named key assigned a credential-shaped value.
     { name: 'secret-assignment', re: /(?:client_secret|secret_key|access_token|refresh_token|private_token|auth_token|session_token|app_secret)\s*[=:]\s*["']?[A-Za-z0-9._\-+/]{12,}/gi },
+    // F3 — high-confidence formats that bypassed the set above. Precise
+    // (anchored to a vendor keyword / scheme), so legit prose isn't mangled.
+    { name: 'aws-secret-key',    re: /aws_secret_access_key\s*[=:]\s*["']?[A-Za-z0-9/+]{40}/gi },
+    { name: 'db-conn-string',    re: /(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqps?):\/\/[^\s:/@]+:[^\s:/@]+@/gi },
+    { name: 'azure-storage-key', re: /AccountKey=[A-Za-z0-9+/=]{40,}/g },
   ]);
 
 /**
