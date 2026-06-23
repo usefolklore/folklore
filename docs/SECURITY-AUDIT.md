@@ -7,7 +7,7 @@ verified against source where marked ✓.
 
 ## Fix order (by exploitability × impact)
 
-1. **F1** revoke the committed Hetzner token (do first — it's live) — _OPEN (user: leave for now)_
+1. **F1** Hetzner token — ✅ REVOKED by user (2026-06-23). Still remove the literal from settings.local.json + source from a secret manager.
 2. **C-1** wire `validateRemoteNode` into the two inbound paths — **✅ FIXED** (share-sync flush + federated-ask cacheFetched; validate + re-stamp provenance; e2e 22/22)
 3. **UPD-1** install the signed artifact, not an npm version — **✅ FIXED** (download + sha256-verify + install the .tgz; +3 tests)
 4. **DEP-1** `protobufjs` critical — OPEN, **manual only**. `npm audit fix` (non-breaking) corrupts node_modules (broke the build → reverted via `git checkout package-lock.json` + `npm ci`). The protobufjs fix requires `@xenova/transformers` **major** bump (the default embedder), so it needs embedder revalidation — not an autonomous change. Non-breaking fixes would clear 8 of 13 (→ 5 left) but aren't worth a flaky lockfile without a full suite pass.
