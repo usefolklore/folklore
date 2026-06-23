@@ -31,6 +31,10 @@ export const RENDEZVOUS_INTERVAL_MS = 5 * 60_000;
 export const RENDEZVOUS_SEARCH_INTERVAL_MS = 15_000;
 export const RENDEZVOUS_SEARCH_BACKOFF_MAX_MS = 2 * 60_000;
 
+/** L-2 — max fresh peers dialed per rendezvous round. Bounds the Sybil
+ * dial-amplifier on the fixed, publicly-computable rendezvous CID. */
+export const MAX_DIALS_PER_ROUND = Number(process.env.FOLKLORE_RENDEZVOUS_MAX_DIALS ?? 8);
+
 export interface RendezvousCadence {
   /** Refresh interval once at least one peer is connected. */
   readonly steadyMs: number;
@@ -116,8 +120,13 @@ export const rendezvousTick = async (deps: RendezvousDeps, cid: CID): Promise<nu
   const connected = new Set(deps.node.getPeers().map((p) => p.toString()));
   let dialed = 0;
   try {
-    for await (const evt of dht.findProviders(cid)) {
+    // L-2 — cap dials per round. The CID is a fixed constant any party can
+    // compute, so an attacker can flood the provider set with Sybil peerIds;
+    // dialing every returned provider is an unbounded outbound-dial amplifier
+    // each tick. Stop after MAX_DIALS_PER_ROUND fresh dials.
+    outer: for await (const evt of dht.findProviders(cid)) {
       for (const provider of evt.providers ?? []) {
+        if (dialed >= MAX_DIALS_PER_ROUND) break outer;
         const id = provider.id.toString();
         if (provider.id.equals(self) || connected.has(id)) continue;
         connected.add(id);
