@@ -503,14 +503,31 @@ const runStreamSession = async (
     detachInbound: inbound.detach, cancelDebounce: inbound.cancel, detachOutbound,
   });
 
+  // M3 — debounce the .ydoc snapshot persist. Writing the full snapshot after
+  // EVERY applied frame let a peer streaming many small CRDT updates amplify
+  // into N full-file writes (disk-I/O DoS). Coalesce to ~1 write per debounce
+  // window; a final flush on stream close guarantees no applied frame is lost.
+  let ydocDirty = false;
+  let ydocTimer: NodeJS.Timeout | null = null;
+  const persistYDocDebounced = (): void => {
+    ydocDirty = true;
+    if (ydocTimer) return;
+    ydocTimer = setTimeout(() => {
+      ydocTimer = null;
+      if (ydocDirty) { ydocDirty = false; void saveYDoc(registry.ydocPath, doc); }
+    }, GRAPH_FLUSH_DEBOUNCE_MS);
+    ydocTimer.unref?.();
+  };
+
   try {
     await sendSyncStep1(fs, doc);
     for await (const flat of iter) {
       await handleInboundFrame(flat, doc, fs);
-      // Persist .ydoc snapshot after every applied frame (V1 encoding only).
-      void saveYDoc(registry.ydocPath, doc);
+      persistYDocDebounced();
     }
   } finally {
+    if (ydocTimer) clearTimeout(ydocTimer);
+    if (ydocDirty) void saveYDoc(registry.ydocPath, doc); // final flush
     inbound.detach();
     inbound.cancel();
     detachOutbound();
