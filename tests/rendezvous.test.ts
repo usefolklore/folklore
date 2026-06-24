@@ -9,6 +9,11 @@ import { CID } from 'multiformats/cid';
 import {
   folkloreRendezvousCid,
   rendezvousTick,
+  nextRendezvousDelay,
+  RENDEZVOUS_INTERVAL_MS,
+  RENDEZVOUS_SEARCH_INTERVAL_MS,
+  RENDEZVOUS_SEARCH_BACKOFF_MAX_MS,
+  type RendezvousCadence,
   type RendezvousNode,
 } from '../src/infrastructure/rendezvous.ts';
 import { loadConfig } from '../src/infrastructure/config-loader.ts';
@@ -29,11 +34,12 @@ test('folkloreRendezvousCid is deterministic and matches the golden value', asyn
   assert.equal(a.multihash.code, 0x12, 'multihash must be sha256 (0x12)');
 });
 
-test('dht.public defaults to false (opt-in only)', async () => {
+test('dht.public defaults to true (zero-infra discovery on by default)', async () => {
   const cfg = await loadConfig('/nonexistent/config.yaml');
   assert.equal(cfg.isOk(), true);
   if (cfg.isOk()) {
-    assert.equal(cfg.value.peer.dht.public, false, 'public DHT must be opt-in, never default');
+    assert.equal(cfg.value.peer.dht.public, true, 'public IPFS DHT discovery is on by default — peers found with no folklore-owned seed');
+    assert.equal(cfg.value.peer.dht.enabled, true, 'DHT enabled by default');
   }
 });
 
@@ -71,6 +77,29 @@ test('rendezvousTick provides, then dials only new non-self peers', async () => 
   assert.equal(provided, true, 'must announce itself via provide()');
   assert.deepEqual(dialed, ['peer-new'], 'dials only the fresh peer (skips self + already-connected)');
   assert.equal(count, 1);
+});
+
+test('nextRendezvousDelay: searches fast while peerless, relaxes once connected', () => {
+  const cadence: RendezvousCadence = {
+    steadyMs: RENDEZVOUS_INTERVAL_MS,
+    searchMs: RENDEZVOUS_SEARCH_INTERVAL_MS,
+    backoffMaxMs: RENDEZVOUS_SEARCH_BACKOFF_MAX_MS,
+  };
+  // first peerless round → base search interval (fast, not the 5-min steady)
+  assert.equal(nextRendezvousDelay(0, 0, cadence), RENDEZVOUS_SEARCH_INTERVAL_MS);
+  // exponential backoff on subsequent peerless rounds
+  assert.equal(nextRendezvousDelay(0, 1, cadence), RENDEZVOUS_SEARCH_INTERVAL_MS * 2);
+  assert.equal(nextRendezvousDelay(0, 2, cadence), RENDEZVOUS_SEARCH_INTERVAL_MS * 4);
+  // backoff is capped — never spins the DHT faster than the cap allows
+  assert.equal(nextRendezvousDelay(0, 999, cadence), RENDEZVOUS_SEARCH_BACKOFF_MAX_MS);
+  // any connected peer → relax to the steady refresh, backoff irrelevant
+  assert.equal(nextRendezvousDelay(1, 5, cadence), RENDEZVOUS_INTERVAL_MS);
+  assert.equal(nextRendezvousDelay(3, 0, cadence), RENDEZVOUS_INTERVAL_MS);
+});
+
+test('nextRendezvousDelay: search interval is much shorter than steady (fresh node finds peers fast)', () => {
+  assert.ok(RENDEZVOUS_SEARCH_INTERVAL_MS < RENDEZVOUS_INTERVAL_MS, 'search faster than steady');
+  assert.ok(RENDEZVOUS_SEARCH_BACKOFF_MAX_MS <= RENDEZVOUS_INTERVAL_MS, 'backoff cap ≤ steady refresh');
 });
 
 test('rendezvousTick is a no-op without a dht service', async () => {
