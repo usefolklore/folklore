@@ -681,7 +681,10 @@ export const buildMcpServer = (runtime: Runtime): McpServer => {
         const res = await repo.searchNodes({
           codebase_id: codebase_id as undefined | (string & { __brand: 'CodebaseId' }),
           kind: kind as CodeNodeKind | undefined,
-          name_pattern: name_pattern ? `%${name_pattern}%` : undefined,
+          // M5 — escape LIKE metacharacters in the user pattern so `%`/`_`
+          // match literally; the outer %…% stays the wildcard. Paired with
+          // ESCAPE '\' in code-graph searchNodes.
+          name_pattern: name_pattern ? `%${name_pattern.replace(/[\\%_]/g, (c) => `\\${c}`)}%` : undefined,
           limit,
         });
         if (res.isErr()) return errText(res.error);

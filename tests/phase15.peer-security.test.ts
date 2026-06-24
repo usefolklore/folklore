@@ -51,7 +51,7 @@ const TEST_STRIPE = 'sk_live_' + 'abcdefghijklmnopqrstuvwx';
 
 // ─────────────────────── SEC-01: all 14 secret patterns detected ──────────
 
-describe('SEC-01: secrets scanner detects all 22 built-in patterns', () => {
+describe('SEC-01: secrets scanner detects all 25 built-in patterns', () => {
   const secretSamples: Array<{
     patternName: string;
     field: 'label' | 'source_uri';
@@ -159,6 +159,21 @@ describe('SEC-01: secrets scanner detects all 22 built-in patterns', () => {
       field: 'label',
       value: 'client_secret=abcdef1234567890ABCDEF',
     },
+    {
+      patternName: 'aws-secret-key',
+      field: 'label',
+      value: 'aws_secret_access_key=' + 'wJalrXUtnFEMI'.padEnd(40, 'x'),
+    },
+    {
+      patternName: 'db-conn-string',
+      field: 'source_uri',
+      value: 'postgres://dbuser:S3cr3tPass@db.internal:5432/app',
+    },
+    {
+      patternName: 'azure-storage-key',
+      field: 'label',
+      value: 'AccountKey=' + 'a'.repeat(44) + '==',
+    },
   ];
 
   for (const { patternName, field, value } of secretSamples) {
@@ -175,14 +190,14 @@ describe('SEC-01: secrets scanner detects all 22 built-in patterns', () => {
     });
   }
 
-  test('buildPatterns returns exactly 22 built-in patterns', () => {
-    assert.equal(patterns.length, 22);
+  test('buildPatterns returns exactly 25 built-in patterns', () => {
+    assert.equal(patterns.length, 25);
   });
 
   test('buildPatterns merges custom patterns with built-ins', () => {
     const custom = buildPatterns([{ name: 'custom', pattern: 'CUSTOM_\\d+' }]);
-    assert.equal(custom.length, 23);
-    assert.equal(custom[22].name, 'custom');
+    assert.equal(custom.length, 26);
+    assert.equal(custom[25].name, 'custom');
   });
 
   // Bearer-token false-positive guard: legitimate research prose about

@@ -19,6 +19,7 @@ import type { Libp2p } from '@libp2p/interface';
 import type { Graph, GraphEdge, GraphNode } from '../domain/graph.js';
 import { getNode } from '../domain/graph.js';
 import { verifyNode } from '../domain/match-attestation.js';
+import { validateRemoteNode } from '../domain/remote-node-validator.js';
 import { openFetchStream, MAX_FETCH_IDS, type FetchedNode } from '../infrastructure/fetch-sync.js';
 import { publicKeyFromPeerId } from '../infrastructure/peer-transport.js';
 import type { Vector } from '../domain/vectors.js';
@@ -233,17 +234,20 @@ const cacheFetched = async (
   peer: string,
   n: FetchedNode,
 ): Promise<boolean> => {
-  const node = {
+  // C-1 trust boundary: validate the peer-controlled fields (SSRF / scheme /
+  // host / shape / size) before this node is cached + embedded, then re-stamp
+  // the receiver-derived provenance the validator's allow-list strips.
+  const validated = validateRemoteNode({
     id: n.node_id,
     label: n.label ?? n.node_id,
     file_type: 'document',
     source_file: `peer:${peer}`,
-    private: false,
     source_uri: n.source_uri,
     fetched_at: n.fetched_at,
     summary: n.summary,
-    _folklore_source_peer: peer,
-  } as GraphNode;
+  });
+  if (validated.isErr()) return false;
+  const node = { ...validated.value, private: false, _folklore_source_peer: peer } as GraphNode;
   const text = n.summary ? `${node.label}\n\n${n.summary}` : node.label;
   try {
     return await cacheNode(node, text);

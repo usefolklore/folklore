@@ -218,7 +218,10 @@ const runUpdateTick = (homePath: string): ResultAsync<void, AppError> =>
           return okAsync<void, AppError>(undefined);
         }
         daemonLog(homePath, `update: ⚠ FORCE installing folklore@${res.latest_version} (signed force_upgrade + auto_install_force consent)`);
-        return installUpgrade(res.latest_version)
+        return installUpgrade(res.latest_version, {
+          tarballUrl: res.manifest?.tarball_url,
+          tarballSha256: res.manifest?.tarball_sha256,
+        })
           .map((outcome) => {
             daemonLog(homePath, `update: ✓ force-installed folklore@${outcome.installed_version} via ${outcome.command} — restart daemon to run new version`);
           })

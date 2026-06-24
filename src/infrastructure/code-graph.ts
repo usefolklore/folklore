@@ -307,7 +307,8 @@ const build = (db: Database.Database): CodeGraphRepository => {
       params.push(opts.kind);
     }
     if (opts.name_pattern) {
-      where.push('name LIKE ?');
+      // M5 — caller escapes user `%`/`_` with backslash; honor it via ESCAPE.
+      where.push("name LIKE ? ESCAPE '\\'");
       params.push(opts.name_pattern);
     }
     const whereSql = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';

@@ -85,6 +85,41 @@ const BLOCKED_HOST_PREFIXES = [
 ];
 
 /**
+ * L-1 — SSRF host gate. Covers the prefix list above PLUS the ranges
+ * `startsWith` can't express: 172.16.0.0/12, 100.64.0.0/10 (CGNAT), and IPv6
+ * loopback / unique-local (fc00::/7) / link-local (fe80::/10). Pure string/
+ * numeric checks — no DNS resolution (rebinding is out of scope here).
+ */
+const isBlockedHost = (host: string): boolean => {
+  const h = host.replace(/^\[/, '').replace(/\]$/, '').toLowerCase();
+  // IPv6
+  if (h.includes(':')) {
+    if (h === '::1' || h === '::') return true;
+    if (/^f[cd]/.test(h)) return true;                 // unique-local fc00::/7
+    if (/^fe[89ab]/.test(h)) return true;              // link-local fe80::/10
+    if (/^::ffff:/.test(h)) return true;               // IPv4-mapped (may embed loopback/private)
+    if (/^::\d+\.\d+\.\d+\.\d+$/.test(h)) return true;  // IPv4-compatible
+    return false;
+  }
+  // Obfuscated IPv4 — a host that is a bare decimal/hex integer, or a dotted
+  // quad with octal (leading-zero) octets, is normalised by the OS resolver to
+  // a real IP (e.g. http://2130706433/ == 127.0.0.1). No legitimate hostname
+  // takes these forms, so block them outright before the dotted checks.
+  if (/^\d+$/.test(h)) return true;                    // decimal integer IP
+  if (/^0x[0-9a-f]+$/.test(h)) return true;            // hex integer IP
+  const octets = h.split('.');
+  if (octets.length === 4 && octets.every((o) => /^(0x[0-9a-f]+|\d+)$/.test(o))) {
+    if (octets.some((o) => /^0[0-9a-fx]/.test(o) && o !== '0')) return true; // octal/hex octet
+  }
+  if (BLOCKED_HOST_PREFIXES.some((p) => h === p || h.startsWith(p))) return true;
+  const m172 = /^172\.(\d{1,3})\./.exec(h);
+  if (m172 && Number(m172[1]) >= 16 && Number(m172[1]) <= 31) return true; // 172.16/12
+  const m100 = /^100\.(\d{1,3})\./.exec(h);
+  if (m100 && Number(m100[1]) >= 64 && Number(m100[1]) <= 127) return true; // 100.64/10 CGNAT
+  return false;
+};
+
+/**
  * Keys from the GraphNode structural type plus optional extras that
  * legitimate adapters are allowed to set. Anything not in this set is
  * stripped — that includes __proto__, constructor, prototype, toJSON,
@@ -186,7 +221,7 @@ const validateUri = (raw: string): Result<string, ValidationFailure> => {
     return err({ kind: 'UriSchemeNotAllowed', scheme: parsed.protocol });
   }
   const host = parsed.hostname.toLowerCase();
-  if (BLOCKED_HOST_PREFIXES.some((p) => host === p || host.startsWith(p))) {
+  if (isBlockedHost(host)) {
     return err({ kind: 'UriHostBlocked', host });
   }
   return ok(raw);
