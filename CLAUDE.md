@@ -8,10 +8,11 @@ folklore MCP tools you can call to consult memory before reaching for the web.
 
 For coding conventions — functional DDD (no classes in domain/app), `neverthrow`
 Results, ESM modules, a max of 3 new dependencies per phase, and no claude/anthropic
-git co-authors — see `.planning/PROJECT.md` and the "Architecture invariants" section
-of `.planning/STATE.md`. Those are the authoritative source; this file does not
-duplicate them. The shipped Claude Code hooks themselves are documented in
-`.claude/README.md`.
+git co-authors — and for the repository layout, branch model, and CI/CD pipeline,
+see `CONTRIBUTING.md`. Planning artifacts (`.planning/`) and research docs (`docs/`)
+are dev-branch-only and intentionally absent from `main`; check out a `feat/*`,
+`docs/*`, or `experiment/*` branch to find them. The shipped Claude Code hooks
+themselves are documented in `.claude/README.md`.
 
 <!-- folklore:start -->
 

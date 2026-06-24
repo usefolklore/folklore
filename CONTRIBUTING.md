@@ -47,6 +47,72 @@ gh pr create --base main --fill
 Keep slugs short and verb-noun (`feat/peer-label`, `fix/migrate-backup`,
 `refactor/use-cases-deps`).
 
+- `security/` — security audits and their fixes (e.g. `security/audit-and-fixes`)
+- `experiment/` — benchmarks and throwaway spikes; carries the `bench/`,
+  `eval/`, and `.bench-data/` working sets
+- `handoff/` — ephemeral session handoffs; safe to delete after landing
+- `backup/` — protected safety refs (e.g. `backup/main-pre-cleanup`); never
+  rebased, never deleted without a successor
+
+## Repository layout — `main` vs dev branches
+
+`main` carries **only what ships or builds the package**: `src/`, `tests/`,
+`bin/`, `config/`, `.claude-plugin/`, `.claude/{hooks,skills,helpers}`, the
+benchmark runners (`bench/`, `eval/`), and repo meta (README, LICENSE,
+`package.json`, `.github/`). Its history was rewritten on 2026-06-24 to purge
+process/marketing artifacts — `.planning/`, `docs/`, `site/`, `demo/`,
+`assets/`, and `folklore-rs/` — which shrank the clone from ~320 MB to ~3 MB.
+The pre-rewrite history is preserved at `origin/backup/main-pre-cleanup`.
+
+Those purged directories live **only on dev branches** going forward:
+
+| Directory      | Lives on                      | Why off `main`                    |
+| -------------- | ----------------------------- | --------------------------------- |
+| `.planning/`   | `feat/*`, `experiment/*`      | GSD planning state, not shipped   |
+| `docs/`        | `docs/*`                      | research notes, not shipped       |
+| `site/`        | a `site` / `docs/*` branch    | marketing site (Cloudflare Pages) |
+| `demo/`        | dev branches                  | demo scripts / recordings         |
+| `assets/`      | dev branches                  | images / media                    |
+| `folklore-rs/` | a `feat/folklore-rs` branch   | Rust client, separate build       |
+
+Rule of thumb: if `npm ci && npm run build && npm test` doesn't need it, it
+does not belong on `main`. Open a dev branch for it.
+
+> The marketing-site deploy (`deploy-site.yml`) was removed from `main` along
+> with `site/`. It now lives on the branch that owns `site/`; deploy from there.
+
+## CI/CD pipeline — order
+
+```
+ push feat/fix branch
+        │
+        ▼
+ open PR → main ───────────────► .github/workflows/ci.yml
+        │                          node {22,24}:
+        │                          npm ci → lint → build → bootstrap → test
+        │                          (this is the required "test" check)
+        ▼
+ green CI + 1 review + conversations resolved
+        │
+        ▼
+ squash-merge to main ──────────► (protected; no force-push)
+        │
+        ▼
+ git tag vX.Y.Z && git push --tags
+        │
+        ▼
+ .github/workflows/release.yml
+   ├─ publish-npm     → npm publish --provenance  (@usefolklore/folklore)
+   └─ publish-docker  → ghcr.io/usefolklore/folklore:{tag,latest}
+```
+
+Workflows on `main`:
+
+- `ci.yml` — PR + push gate. Job name `test` satisfies branch protection.
+- `release.yml` — fires on `v*` tags; npm (OIDC provenance) + GHCR docker.
+
+Site deploy is intentionally **not** on `main` — see the layout note above.
+
 ### Commit message style
 
 ```
@@ -118,7 +184,7 @@ workflow.
 Once you're comfortable with the PR-only flow, run:
 
 ```bash
-gh api -X PUT repos/SaharBarak/folklore/branches/main/protection \
+gh api -X PUT repos/usefolklore/folklore/branches/main/protection \
   --input - <<EOF
 { "enforce_admins": true,
   "required_pull_request_reviews": { "required_approving_review_count": 1 },
