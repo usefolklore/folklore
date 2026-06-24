@@ -29,6 +29,26 @@ export const recallAtK = (
 };
 
 /**
+ * recall_any@k — binary: 1 if ANY relevant item appears in top-k, else 0.
+ *
+ * This is the metric agentmemory and most LongMemEval retrieval reports
+ * use ("does any gold session appear in top-K"). It differs sharply from
+ * `recallAtK` (fraction of gold found) when a query has multiple gold
+ * items: finding 1 of 3 gold scores 1.0 here but 0.33 under recallAtK.
+ * Use this for apples-to-apples comparison against published recall@k.
+ */
+export const recallAnyAtK = (
+  retrieved: readonly string[],
+  relevant: ReadonlySet<string>,
+  k: number,
+): number => {
+  if (relevant.size === 0) return 0;
+  const top = retrieved.slice(0, k);
+  for (const id of top) if (relevant.has(id)) return 1;
+  return 0;
+};
+
+/**
  * Normalised Discounted Cumulative Gain at k under binary relevance.
  *
  *   DCG@k  = sum_{i=1..k}  rel_i / log2(i + 1)
