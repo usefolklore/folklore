@@ -7,7 +7,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { recallAtK, ndcgAtK, reciprocalRank } from '../src/domain/eval-metrics.js';
+import { recallAtK, recallAnyAtK, ndcgAtK, reciprocalRank } from '../src/domain/eval-metrics.js';
 
 const setOf = (...ids: string[]): ReadonlySet<string> => new Set(ids);
 
@@ -32,6 +32,30 @@ test('recall@k — partial retrieval', () => {
 test('recall@k — empty relevant set returns 0 (vacuous)', () => {
   const r = recallAtK(['a', 'b'], setOf(), 3);
   assert.equal(r, 0);
+});
+
+// ─────────────── recall_any@k ─────────────────
+// The apples-to-apples metric for multi-gold queries (agentmemory et al.):
+// 1 if ANY gold is in top-k, vs recallAtK's fraction-of-gold.
+
+test('recall_any@k — any gold in top-k is 1 (the multi-gold distinction)', () => {
+  // 1 of 2 gold in top-3 → recall_any 1.0 but fraction-recall 0.5
+  assert.equal(recallAnyAtK(['x', 'a', 'y'], setOf('a', 'b'), 3), 1);
+  assert.equal(recallAtK(['x', 'a', 'y'], setOf('a', 'b'), 3), 0.5);
+});
+
+test('recall_any@k — no gold in top-k is 0', () => {
+  assert.equal(recallAnyAtK(['x', 'y', 'z'], setOf('a', 'b'), 3), 0);
+});
+
+test('recall_any@k — gold below the cutoff does not count', () => {
+  // gold 'a' sits at rank 3, k=2 → not counted
+  assert.equal(recallAnyAtK(['x', 'y', 'a'], setOf('a'), 2), 0);
+  assert.equal(recallAnyAtK(['x', 'y', 'a'], setOf('a'), 3), 1);
+});
+
+test('recall_any@k — empty relevant set returns 0 (vacuous)', () => {
+  assert.equal(recallAnyAtK(['a', 'b'], setOf(), 3), 0);
 });
 
 test('recall@k — k smaller than retrieved truncates correctly', () => {
