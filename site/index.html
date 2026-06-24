@@ -1014,12 +1014,12 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
     <p class="body rv" data-d="1" style="max-width:50ch">Folk knowledge always spread as memes. They spread peer to peer — drop yours; the best ones make the store.</p>
     <div class="meme-carousel rv" id="meme-carousel" data-d="1">
       <ul class="meme-track" id="memegrid" data-static="1">
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-stonesoup.png" loading="lazy" alt="folk meme — villagers and robots sharing one cauldron"/></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-signed.png" loading="lazy" alt="folk meme — signed node welcomed, anonymous scroll turned away"/></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-zeroweb.png" loading="lazy" alt="folk meme — agent walking past the web toll booth"/></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-reread.png" loading="lazy" alt="folk meme — re-reading the same papers vs resting by the fire"/></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-amnesia.png" loading="lazy" alt="folk meme — agent amnesia"/></div></li>
-        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-coinrain.png" loading="lazy" alt="folk meme — stone soup for machines"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-stonesoup.png" alt="folk meme — villagers and robots sharing one cauldron"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-signed.png" alt="folk meme — signed node welcomed, anonymous scroll turned away"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-zeroweb.png" alt="folk meme — agent walking past the web toll booth"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-reread.png" alt="folk meme — re-reading the same papers vs resting by the fire"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-amnesia.png" alt="folk meme — agent amnesia"/></div></li>
+        <li class="meme-slide"><div class="meme-card"><img src="assets/gen/meme-coinrain.png" alt="folk meme — stone soup for machines"/></div></li>
       </ul>
       <div class="mech-dots" id="meme-dots" role="tablist" aria-label="Meme carousel"></div>
     </div>
@@ -1095,7 +1095,6 @@ onScroll();
             img.src=m.image;
             img.alt=(typeof m.alt==='string'&&m.alt)?m.alt:'folk meme';
             if(typeof m.caption==='string'&&m.caption)img.title=m.caption;
-            img.loading='lazy';
             card.appendChild(img);li.appendChild(card);frag.appendChild(li);
           });
           if(frag.childNodes.length){
