@@ -119,17 +119,19 @@ export const rendezvousTick = async (deps: RendezvousDeps, cid: CID): Promise<nu
   // Discover + dial. Skip ourselves and peers we're already connected to.
   const connected = new Set(deps.node.getPeers().map((p) => p.toString()));
   let dialed = 0;
+  // L-2 — cap dial ATTEMPTS per round, not successes. The CID is a fixed public
+  // constant, so an attacker can flood the provider set with Sybil peerIds;
+  // most dials FAIL, so capping on successes (`dialed`) left attempts unbounded
+  // (codex audit). Count every fresh dial we try and stop at the cap.
+  let attempts = 0;
   try {
-    // L-2 — cap dials per round. The CID is a fixed constant any party can
-    // compute, so an attacker can flood the provider set with Sybil peerIds;
-    // dialing every returned provider is an unbounded outbound-dial amplifier
-    // each tick. Stop after MAX_DIALS_PER_ROUND fresh dials.
     outer: for await (const evt of dht.findProviders(cid)) {
       for (const provider of evt.providers ?? []) {
-        if (dialed >= MAX_DIALS_PER_ROUND) break outer;
+        if (attempts >= MAX_DIALS_PER_ROUND) break outer;
         const id = provider.id.toString();
         if (provider.id.equals(self) || connected.has(id)) continue;
         connected.add(id);
+        attempts += 1;
         try {
           await deps.node.dial(provider.id);
           dialed += 1;
