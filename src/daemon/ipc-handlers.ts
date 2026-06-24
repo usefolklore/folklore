@@ -209,7 +209,7 @@ const makeAskHandler = (federation?: FederationRef): IpcHandler<Runtime> => asyn
   // path below. This is "embed once, route twice" — saves an ONNX
   // forward pass on the cache-miss code path vs the naive design.
   const l2 = getL2();
-  let queryVec: Float32Array | null = null;
+  let queryVec: Float32Array;
   {
     const embRes = await runtime.embedder.embed(parsed.query);
     if (embRes.isErr()) {
