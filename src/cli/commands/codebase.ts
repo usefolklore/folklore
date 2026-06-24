@@ -264,7 +264,9 @@ const searchSub = async (rest: readonly string[]): Promise<number> => {
     const res = await repo.searchNodes({
       codebase_id: codebaseId,
       kind,
-      name_pattern: `%${query}%`,
+      // M5 — escape LIKE metacharacters so `%`/`_` in the query match literally
+      // (searchNodes pairs this with ESCAPE '\'); mirrors the MCP server path.
+      name_pattern: `%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`,
       limit,
     });
     if (res.isErr()) {

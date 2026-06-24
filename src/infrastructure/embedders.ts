@@ -284,11 +284,13 @@ export const rustSubprocessEmbedder = (opts: RustSubprocessOptions): Embedder =>
       ),
     );
 
-  // H3 — bound the bytes written to the subprocess. The model only consumes
-  // ~512 tokens (~2-4 KB); clamping each text far above that is lossless for
-  // retrieval but prevents a multi-hundred-MB input (from an MCP call or an
-  // ingested untrusted doc) from ballooning the shared embed_server's RSS into
-  // an OOM. Caps total batch size too.
+  // H3 — bound EACH text's bytes before they reach the subprocess. The model
+  // only consumes ~512 tokens (~2-4 KB); clamping each text far above that is
+  // lossless for retrieval but stops a single multi-hundred-MB input (from an
+  // MCP call or an ingested untrusted doc) from ballooning the shared
+  // embed_server's RSS into an OOM. Per-text only — the batch element count is
+  // bounded upstream by batchingEmbedder (maxBatch), and clamping per element
+  // preserves the vectors↔texts length contract (no silent drops).
   const MAX_EMBED_CHARS = Number(process.env.FOLKLORE_EMBED_MAX_CHARS ?? 16384);
   const clamp = (t: string): string =>
     typeof t === 'string' && t.length > MAX_EMBED_CHARS ? t.slice(0, MAX_EMBED_CHARS) : t;

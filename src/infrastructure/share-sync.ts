@@ -263,12 +263,18 @@ const buildImportedNode = (peer: string, v: ShareableNode, signedBy?: string): G
 const safeImportedNode = (peer: string, v: ShareableNode, signedBy?: string): GraphNode | null => {
   const validated = validateRemoteNode(buildImportedNode(peer, v, signedBy));
   if (validated.isErr()) return null;
+  // github_user is re-stamped (the validator's allow-list strips it), but it is
+  // attacker-controlled in soft mode, so bound it: a real GitHub handle is ≤39
+  // chars and control-char-free. Reject oversized / control-laden values
+  // (log-injection + attribution-spoof surface) rather than persist them raw.
+  const gh = v.github_user;
+  const safeGithub = typeof gh === 'string' && /^[a-zA-Z0-9-]{1,39}$/.test(gh) ? gh : undefined;
   return {
     ...validated.value,
     private: false,
     _folklore_source_peer: peer,
     ...(signedBy ? { _folklore_signed_by: signedBy } : {}),
-    ...(v.github_user ? { github_user: v.github_user } : {}),
+    ...(safeGithub ? { github_user: safeGithub } : {}),
   } as GraphNode;
 };
 
@@ -527,7 +533,9 @@ const runStreamSession = async (
     }
   } finally {
     if (ydocTimer) clearTimeout(ydocTimer);
-    if (ydocDirty) void saveYDoc(registry.ydocPath, doc); // final flush
+    // M3 — AWAIT the final flush so the last applied frame is durably persisted
+    // before teardown (a bare `void` raced with process exit → frame loss).
+    if (ydocDirty) await saveYDoc(registry.ydocPath, doc);
     inbound.detach();
     inbound.cancel();
     detachOutbound();
