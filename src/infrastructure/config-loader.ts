@@ -187,7 +187,7 @@ const DEFAULT_PEER: PeerConfig = {
   port: 0,
   listen_host: '127.0.0.1',
   mdns: true,
-  dht: { enabled: true, server: false, public: false, bootstrap_peers: ENV_BOOTSTRAP_PEERS },
+  dht: { enabled: true, server: false, public: true, bootstrap_peers: ENV_BOOTSTRAP_PEERS },
   search_rate_limit: { rate_per_sec: 10, burst: 30 },
   relays: [],
   upnp: true,
