@@ -65,9 +65,11 @@ const authenticate = async (cfg: XClientConfig): Promise<StoredToken> => {
 
   // Try to open browser automatically
   try {
-    const { exec } = await import('node:child_process');
-    const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-    exec(`${cmd} "${url}"`);
+    // execFile (no shell) — url is an argv element, never interpolated into a
+    // shell string, so a crafted URL can't inject a command (EXEC-1).
+    const { execFile } = await import('node:child_process');
+    if (process.platform === 'win32') execFile('cmd', ['/c', 'start', '', url]);
+    else execFile(process.platform === 'darwin' ? 'open' : 'xdg-open', [url]);
   } catch { /* manual open */ }
 
   // Wait for OAuth callback

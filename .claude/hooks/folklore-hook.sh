@@ -14,7 +14,11 @@ if [ "${CLAUDE_HOOK_EVENT:-}" = "SessionStart" ]; then
       FINAL=$(printf '%s' "$RECENT" | grep -m1 '"final_assistant_message":' | sed 's/.*"final_assistant_message": *"\([^"]*\)".*/\1/')
       BRANCH=$(printf '%s' "$RECENT" | grep -m1 '"git_branch":' | sed 's/.*"git_branch": *"\([^"]*\)".*/\1/')
       MSG="folklore: Previous session $SID (started $STARTED, branch $BRANCH). Last assistant: ${FINAL:-<none>}. Call the recent_sessions MCP tool for the full rollup."
-      printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}\n' "$MSG"
+      # F2 — emit the JSON via node so the (attacker-influenceable) prior-session
+      # content is properly escaped. Building JSON with printf let a stray quote
+      # or backslash in final_assistant_message break the structure or inject
+      # extra fields into additionalContext. node is already on the hook PATH.
+      printf '%s' "$MSG" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:s}})+"\n"))' 2>/dev/null || true
     fi
   fi
   exit 0

@@ -33,7 +33,6 @@ import type { PeersFile } from '../src/infrastructure/peer-store.js';
 
 const SRC_PEER_TRANSPORT = 'src/infrastructure/peer-transport.ts';
 const SRC_ERRORS = 'src/domain/errors.ts';
-const CONTEXT_MD = '.planning/milestones/v2.0-phases/phase-17/17-CONTEXT.md';
 
 // ─────────────────────── DISC-02: mDNS wiring + Pitfall 1 + 2 ────────────────
 
@@ -255,18 +254,8 @@ describe('Phase 17: domain/errors — SearchError exhaustiveness (Pitfall 5)', (
   });
 });
 
-// ─────────────────────── DISC-04 deferral documentation ──────────────────────
-
-describe('Phase 17: DISC-04 deferral', () => {
-  it('D13 (DISC-04): 17-CONTEXT.md explicitly documents DISC-04 as deferred', () => {
-    const ctx = readFileSync(CONTEXT_MD, 'utf8');
-    assert.ok(
-      /DISC-04.*defer/i.test(ctx) || /defer.*DISC-04/i.test(ctx),
-      'CONTEXT.md must document DISC-04 (coordination server) as explicitly deferred — ' +
-        'shipping it without documentation violates the explicit scope decision',
-    );
-  });
-});
+// (DISC-04 deferral doc-test removed: DISC-04 now shipped + default-on;
+//  its .planning/ CONTEXT.md was purged from main.)
 
 // ─────────────────────── PeerConfig defaults (Plan 01 foundation) ─────────────
 

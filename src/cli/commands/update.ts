@@ -147,7 +147,11 @@ const install = async (): Promise<number> => {
     return 0;
   }
   console.log(`installing folklore@${res.latest_version}${res.force_upgrade ? ' (mandatory)' : ''}...`);
-  const ir = await installUpgrade(res.latest_version);
+  // UPD-1 — install the signature-covered artifact, not a bare npm version.
+  const ir = await installUpgrade(res.latest_version, {
+    tarballUrl: res.manifest?.tarball_url,
+    tarballSha256: res.manifest?.tarball_sha256,
+  });
   if (ir.isErr()) {
     console.error(`update install: ${formatError(ir.error)}`);
     // Method-unknown is not a hard failure — print the manual path.

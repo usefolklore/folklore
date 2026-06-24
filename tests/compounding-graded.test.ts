@@ -32,7 +32,7 @@ const realSkip =
     ? 'needs cached embedder + ~/.folklore/bench/scifact'
     : false;
 
-const run = (args: string[]): any => {
+const run = (args: string[]): Record<string, unknown> => {
   const r = spawnSync('node', [BENCH, '--json', ...args], {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,

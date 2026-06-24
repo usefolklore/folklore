@@ -130,9 +130,11 @@ print("OK")`,
     console.log(`Nodes: ${filteredJson.nodes.length} | Edges: ${filteredJson.links.length}`);
 
     try {
-      const { exec } = await import('node:child_process');
-      const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-      exec(`${cmd} "${outPath}"`);
+      // execFile (no shell) — outPath is an argv element, never interpolated
+      // into a shell string, so a crafted path can't inject a command (EXEC-1).
+      const { execFile } = await import('node:child_process');
+      if (process.platform === 'win32') execFile('cmd', ['/c', 'start', '', outPath]);
+      else execFile(process.platform === 'darwin' ? 'open' : 'xdg-open', [outPath]);
     } catch { /* manual open */ }
 
     return 0;

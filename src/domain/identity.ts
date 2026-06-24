@@ -492,6 +492,20 @@ export const verifyEnvelope = <T>(
     return err(IdentityError.badSignature('device signature over payload did not verify'));
   }
 
+  // H-1: enforce the signed_at plausibility window. signed_at is covered by the
+  // signature (authentic) but otherwise unbounded — a FUTURE-dated value lets a
+  // poisoned node sort as "freshest" forever and beat the freshness rule. Reject
+  // unparseable or future-skewed timestamps. No strict max-age: legitimately old
+  // shared content exists; replay is bound by peer/nonce binding (C-2), not age.
+  const signedMs = Date.parse(envelope.signed_at);
+  if (!Number.isFinite(signedMs)) {
+    return err(IdentityError.badSignature(`signed_at not a valid timestamp: ${envelope.signed_at}`));
+  }
+  const verifiedMs = Date.parse(verifiedAt);
+  if (Number.isFinite(verifiedMs) && signedMs > verifiedMs + SIGNED_AT_FUTURE_SKEW_MS) {
+    return err(IdentityError.badSignature(`signed_at is in the future (beyond ${SIGNED_AT_FUTURE_SKEW_MS / 60000}min skew)`));
+  }
+
   return ok({
     payload: envelope.payload,
     verified_user_did: envelope.signer_did,
@@ -500,6 +514,9 @@ export const verifyEnvelope = <T>(
     signed_at: envelope.signed_at,
   });
 };
+
+/** H-1 — clock-skew tolerance for the signed_at future bound (10 minutes). */
+const SIGNED_AT_FUTURE_SKEW_MS = 10 * 60_000;
 
 // ─────────────────────── canonical message builders ───────────────
 

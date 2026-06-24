@@ -272,6 +272,28 @@ describe('envelope sign/verify', () => {
     assert.deepEqual(verRes.value.payload, payload);
   });
 
+  it('H-1: rejects a future-dated signed_at (beyond clock skew)', () => {
+    const { device, deviceKey } = setup();
+    const payload = { kind: 'node', id: 'n1' };
+    // Signed 4 hours AHEAD of the verifier's clock — well beyond the 10min skew.
+    const envRes = signEnvelope(device.privateKey, deviceKey, payload, '2026-04-17T05:00:00.000Z');
+    assert.ok(envRes.isOk());
+    if (!envRes.isOk()) return;
+    const verRes = verifyEnvelope(envRes.value, '2026-04-17T01:00:00.000Z');
+    assert.ok(verRes.isErr(), 'a future-dated signed_at must not verify (else it sorts as freshest forever)');
+  });
+
+  it('H-1: accepts signed_at within the skew window', () => {
+    const { device, deviceKey } = setup();
+    const payload = { kind: 'node', id: 'n2' };
+    // Signed 5 min ahead — inside the 10min tolerance.
+    const envRes = signEnvelope(device.privateKey, deviceKey, payload, '2026-04-17T01:05:00.000Z');
+    assert.ok(envRes.isOk());
+    if (!envRes.isOk()) return;
+    const verRes = verifyEnvelope(envRes.value, '2026-04-17T01:00:00.000Z');
+    assert.ok(verRes.isOk(), 'small forward skew must still verify');
+  });
+
   it('fails when the payload is tampered', () => {
     const { device, deviceKey } = setup();
     const payload = { label: 'original' };

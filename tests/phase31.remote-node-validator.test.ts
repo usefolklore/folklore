@@ -134,6 +134,31 @@ test('phase-31: AWS IMDS host rejected', () => {
   if (r.isErr()) assert.strictEqual(r.error.kind, 'UriHostBlocked');
 });
 
+test('phase-31: obfuscated-IP SSRF encodings rejected (octo audit L-1)', () => {
+  // decimal / hex / octal IPv4 + IPv4-mapped IPv6 all resolve to loopback/private
+  // but evade naive string-prefix blocklists — must all be blocked.
+  const bypasses = [
+    'http://2130706433/',                 // decimal 127.0.0.1
+    'http://0x7f000001/',                 // hex 127.0.0.1
+    'http://0177.0.0.1/',                 // octal first octet
+    'http://[::ffff:127.0.0.1]/',         // IPv4-mapped loopback
+    'http://[::ffff:169.254.169.254]/latest/meta-data/', // mapped IMDS
+    'http://[::ffff:10.0.0.1]/',          // mapped private
+  ];
+  for (const uri of bypasses) {
+    const r = validateRemoteNode({ id: 'x', label: 'y', file_type: 'document', source_file: 'z', source_uri: uri });
+    assert.ok(r.isErr(), `must block ${uri}`);
+    if (r.isErr()) assert.strictEqual(r.error.kind, 'UriHostBlocked', uri);
+  }
+});
+
+test('phase-31: legit public hosts still pass (no over-block)', () => {
+  for (const uri of ['https://arxiv.org/abs/2402.17753', 'https://8.8.8.8/', 'http://172.32.0.1/']) {
+    const r = validateRemoteNode({ id: 'x', label: 'y', file_type: 'document', source_file: 'z', source_uri: uri, fetched_at: '2026-06-23T00:00:00Z' });
+    assert.ok(r.isOk(), `must allow ${uri}: ${r.isErr() ? JSON.stringify(r.error) : ''}`);
+  }
+});
+
 test('phase-31: localhost host rejected', () => {
   const r = validateRemoteNode({
     id: 'x', label: 'y', file_type: 'document', source_file: 'z',

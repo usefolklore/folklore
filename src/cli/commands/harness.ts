@@ -116,7 +116,7 @@ const parseJson = (path: string): Record<string, unknown> => {
     // Tolerate trailing whitespace / BOM; opencode permits .jsonc but the
     // default file is plain JSON. A comment-bearing file throws → we abort
     // that single harness rather than corrupt it.
-    return JSON.parse(readFileSync(path, 'utf8').replace(/^﻿/, '')) as Record<string, unknown>;
+    return JSON.parse(readFileSync(path, 'utf8').replace(/^\uFEFF/, '')) as Record<string, unknown>;
   } catch {
     throw new Error('existing config is not plain JSON (possibly JSONC with comments) — left untouched');
   }
