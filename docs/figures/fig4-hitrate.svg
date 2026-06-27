@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 430" font-family="Helvetica, Arial, sans-serif">
+  <rect width="720" height="430" fill="#ffffff"/>
+  <!-- axes -->
+  <line x1="80" y1="40" x2="80" y2="360" stroke="#333" stroke-width="1"/>
+  <line x1="80" y1="360" x2="680" y2="360" stroke="#333" stroke-width="1"/>
+  <!-- y ticks (hit-rate 0..1) -->
+  <g stroke="#e7e7e7" stroke-width="1">
+    <line x1="80" y1="296" x2="680" y2="296"/>
+    <line x1="80" y1="232" x2="680" y2="232"/>
+    <line x1="80" y1="168" x2="680" y2="168"/>
+    <line x1="80" y1="104" x2="680" y2="104"/>
+    <line x1="80" y1="40"  x2="680" y2="40"/>
+  </g>
+  <g fill="#444" font-size="11" text-anchor="end">
+    <text x="72" y="364">0%</text>
+    <text x="72" y="300">20%</text>
+    <text x="72" y="236">40%</text>
+    <text x="72" y="172">60%</text>
+    <text x="72" y="108">80%</text>
+    <text x="72" y="44">100%</text>
+  </g>
+  <!-- saturating Che hit-rate curve H(C) -->
+  <path d="M80,338 C 180,312 220,250 250,222.4 S 420,150 480,139.2 S 640,92 680,82"
+        fill="none" stroke="#333" stroke-width="2"/>
+  <!-- isolated operating point: C_p -> 43% -->
+  <line x1="250" y1="360" x2="250" y2="222.4" stroke="#9a9a9a" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="80"  y1="222.4" x2="250" y2="222.4" stroke="#9a9a9a" stroke-width="1" stroke-dasharray="3 3"/>
+  <circle cx="250" cy="222.4" r="4.5" fill="#555"/>
+  <text x="258" y="218" font-size="12" fill="#555">isolated (C_p): 43%</text>
+  <!-- cooperative operating point: C_eff -> 69% -->
+  <line x1="480" y1="360" x2="480" y2="139.2" stroke="#111111" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="80"  y1="139.2" x2="480" y2="139.2" stroke="#111111" stroke-width="1" stroke-dasharray="3 3"/>
+  <circle cx="480" cy="139.2" r="4.5" fill="#111111"/>
+  <text x="472" y="128" font-size="12" fill="#111111" font-weight="bold" text-anchor="end">cooperative (C_eff): 69%</text>
+  <!-- x labels -->
+  <text x="250" y="378" font-size="11" fill="#555" text-anchor="middle">C_p</text>
+  <text x="480" y="378" font-size="11" fill="#111111" text-anchor="middle">C_eff = &#947;&#931;C_p</text>
+  <text x="380" y="404" fill="#222" font-size="12" text-anchor="middle">effective cache capacity (log scale)</text>
+  <text x="26" y="200" fill="#222" font-size="12" text-anchor="middle" transform="rotate(-90 26 200)">cache hit-rate H</text>
+</svg>

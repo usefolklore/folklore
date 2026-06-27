@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 430" font-family="Helvetica, Arial, sans-serif">
+  <rect width="720" height="430" fill="#ffffff"/>
+  <!-- axes -->
+  <line x1="80" y1="40" x2="80" y2="360" stroke="#333" stroke-width="1"/>
+  <line x1="80" y1="360" x2="680" y2="360" stroke="#333" stroke-width="1"/>
+  <!-- y gridlines + ticks (0..0.8) -->
+  <g stroke="#e7e7e7" stroke-width="1">
+    <line x1="80" y1="285" x2="680" y2="285"/>
+    <line x1="80" y1="210" x2="680" y2="210"/>
+    <line x1="80" y1="135" x2="680" y2="135"/>
+    <line x1="80" y1="60"  x2="680" y2="60"/>
+  </g>
+  <g fill="#444" font-size="11" text-anchor="end">
+    <text x="72" y="364">0.0</text>
+    <text x="72" y="289">0.2</text>
+    <text x="72" y="214">0.4</text>
+    <text x="72" y="139">0.6</text>
+    <text x="72" y="64">0.8</text>
+  </g>
+  <!-- bars (scale: y = 360 - value*375) -->
+  <rect x="100" y="77.9"  width="60" height="282.1" fill="#111111"/>
+  <rect x="200" y="83.6"  width="60" height="276.4" fill="#cccccc"/>
+  <rect x="300" y="88.9"  width="60" height="271.1" fill="#cccccc"/>
+  <rect x="400" y="97.9"  width="60" height="262.1" fill="#cccccc"/>
+  <rect x="500" y="108.4" width="60" height="251.6" fill="#cccccc"/>
+  <rect x="600" y="110.6" width="60" height="249.4" fill="#cccccc"/>
+  <!-- value labels -->
+  <g font-size="12" text-anchor="middle">
+    <text x="130" y="70"   fill="#111111" font-weight="bold">0.7522</text>
+    <text x="230" y="76"   fill="#555">0.737</text>
+    <text x="330" y="81"   fill="#555">0.723</text>
+    <text x="430" y="90"   fill="#555">0.699</text>
+    <text x="530" y="100"  fill="#555">0.671</text>
+    <text x="630" y="103"  fill="#555">0.665</text>
+  </g>
+  <!-- category labels -->
+  <g font-size="11" fill="#222" text-anchor="middle">
+    <text x="130" y="378" font-weight="bold">folklore</text>
+    <text x="230" y="378">E5-base</text>
+    <text x="330" y="378">E5-large</text>
+    <text x="430" y="378">SPLADE</text>
+    <text x="530" y="378">ColBERT</text>
+    <text x="630" y="378">BM25</text>
+  </g>
+  <!-- axis label -->
+  <text x="26" y="200" fill="#222" font-size="12" text-anchor="middle" transform="rotate(-90 26 200)">NDCG@10 (BEIR SciFact)</text>
+  <!-- footnote: heavyweight reference -->
+  <text x="80" y="400" fill="#777" font-size="10">Published BEIR SciFact baselines. A 3B GPU reranker (InRanker) leads at 0.783; folklore is CPU-only, full stack.</text>
+</svg>
