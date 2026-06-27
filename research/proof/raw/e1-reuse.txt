@@ -1,0 +1,13 @@
+e1: 100 frozen claims, 5183 corpus docs, band [0.45,0.999), agent=claude-haiku-4-5-20251001
+e1: embedded 100 queries
+e1: 26 near-miss pairs found, running top 20
+  1/20 pairs     2/20 pairs     3/20 pairs     4/20 pairs     5/20 pairs     6/20 pairs     7/20 pairs     8/20 pairs     9/20 pairs     10/20 pairs     11/20 pairs     12/20 pairs     13/20 pairs     14/20 pairs     15/20 pairs     16/20 pairs     17/20 pairs     18/20 pairs     19/20 pairs     20/20 pairs   
+
+══ E1 — answer-quality-under-reuse ══
+  band [0.45,0.999), mean cos 0.498, n=20, agent=claude-haiku-4-5-20251001
+  fresh accuracy  : 0.45  (9/20)
+  reuse accuracy  : 0.5  (10/20)
+  Δcorrect (reuse−fresh): 1
+  HURT (fresh-correct → reuse-wrong): 0  (rate 0 of fresh-correct)
+  help (fresh-wrong → reuse-correct): 1;  doubt (→UNCERTAIN): 0
+  -> /Users/saharbarak/personal/folklore/eval/out-e1/summary.json

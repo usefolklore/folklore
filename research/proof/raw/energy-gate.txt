@@ -1,0 +1,18 @@
+bench-energy-gate: 36 in + 22 out, k=5 — real ask path…
+.................................... in-corpus done
+...................... out-of-corpus done
+
+══ ENERGY-GATE VALIDATION (real graph) ══
+
+−E(q) in-corpus    : p10=-0.187 med=0.083 p90=0.187
+−E(q) out-of-corpus: p10=-0.221 med=0.117 p90=0.840
+separation in      : p10=0.000 med=0.003 p90=0.113
+separation out     : p10=0.000 med=0.000 p90=0.770
+
+AUC(−E) in-vs-out   : 0.405   (satisfaction baseline was 0.52)
+true-admit  (in)    : 32%   (want high)
+false-admit (out)   : 13%   (want ~0 — the costly error)
+
+best τ (Youden)     : τ=-0.201 → true-admit 94% / false-admit 87%
+
+VERDICT: energy does NOT separate (AUC 0.40) — the sims themselves don't discriminate; fix sim_i (token-set coverage / stronger embedder) first. No fabricated win.

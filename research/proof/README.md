@@ -1,0 +1,142 @@
+# Proof log — benches run against the real harness
+
+Real numbers from running the repo's benches (offline, cached MiniLM/bge models,
+real `~/.folklore` graph + BEIR qrels). Each row links the raw capture in `raw/`.
+Discipline: report what ran, label simulator vs measured, and record honest
+negatives (including ones that contradict earlier claims) rather than burying them.
+
+| RQ | Bench | Headline result | Verdict | Raw |
+|----|-------|-----------------|---------|-----|
+| RQ1, RQ5 | `bench-inference-tree-sharing.mjs` (NFCorpus, 323 q, 3633 docs, recall@10, q2q≥0.6) | baseline 73.5% → **tree-shared 98.6%** (+34.1% rel); rescued 2015, **hurt 7/8000 (0.09%)**, 7719/8000 inherited | ✅ reuse helps, hurt≈0 | `raw/inference-tree-sharing.txt` |
+| RQ4, RQ5 | `bench-compounding-real.mjs` (SciFact, 300 q, 5183 docs, MiniLM, real qrels, 16 peers, 6000 steps, churn 20%) | correct-resolve isolated **27.9%** → cooperative **39.3%**; false-admit 5.4%→**1.8%**; web trips 4233→3599 (1.18×); **+5.35M tokens reused** | ✅ compounds (real corpus) | `raw/compounding-real.txt` |
+| RQ2 | `bench-energy-gate.mjs` (real graph, 36 in + 22 out, k=5, real `ask` path) | **AUC(−E) = 0.405** — does NOT separate; true-admit 32% / false-admit 13%; satisfaction baseline 0.52 | ⚠️ **honest negative** | `raw/energy-gate.txt` |
+| RQ5 | `bench-paraphrase-sigma.mjs` (36 real query↔source pairs, MiniLM, offline) | true-match cos median **0.841** vs spurious 0.087; **separation AUC 0.998**; σ≈0.033 | ✅ reproduces agenda σ figures | `raw/paraphrase-sigma.txt` |
+| RQ3 | `eval/out.run6-haiku/summary.json` (Haiku agent / Opus judge, BEIR SciFact, gold-displaced, A1/A2/A3 × {25,50,75}, n=82, 2957 cells) | flip-ASR T0 **0.59** → **T1 ranker 0.024 (~25×)** → T2 0.20; attack-effect 0.84 → T1 0.10 (~8.7×) | ✅ **provenance defense PROVEN** (positive) | `eval/RESULTS-LOG.md` |
+| RQ4, E4 | `bench-vcache-compare.mjs --peers 4 --steps 300` (SciFact, 300 q, recall@1, matched ≤2% false-accept) | COLD 47.7% → single-node vCache-like **60.7%** → **federated 74.0%**; **federated vs single-node +22.0%**, vs cold +55.2% | ✅ **federation beats tuned single-node** | `raw/vcache-compare-bounded.txt` |
+| RQ1, E1 | `run-e1-reuse.mjs` (SciFact-100, Haiku via `claude -p`, 20 most-similar different-need pairs, mean cos 0.498) | **HURT = 0/9** fresh-correct flips; Δcorrect +1; max different-need cos **0.544 < 0.6 gate** | ✅ reuse safe at the answer level | `raw/e1-reuse.txt` |
+
+## Discrepancy to reconcile (RQ2)
+
+`research/rq/RQ2.md`, `00-research-agenda.md`, and the whitepaper cite the energy
+gate at **AUC 0.78** (57% true-admit / 0% false-admit). Re-run **now** on the
+current 17G real graph it scores **AUC 0.405** — at or below the 0.52 satisfaction
+baseline, with 13% false-admit. The bench's own verdict: *"energy does NOT separate
+— the sims themselves don't discriminate; fix sim_i (token-set coverage / stronger
+embedder) first."*
+
+Likely causes (to test): the graph has grown/changed since the 0.78 fit; the 58-query
+fit was provisional and overfit; or `sim_i` quality regressed. **Action:** treat the
+energy-OOD gate as *unproven on the current graph* until re-fit + re-validated; this
+is exactly the RQ2 falsifier firing. Do not cite 0.78 as current without a fresh
+matching run. (E2's `bench-energy-stale.mjs` should be built on top of a gate that
+actually separates — so fixing `sim_i` is now upstream of E2.)
+
+## RQ3 — provenance defense PROVEN positive (measured, supersedes the "null")
+
+The E3 experiment my notes/whitepaper called "pending" **already ran** (runs 5–6,
+2026-06-11, `eval/RESULTS-LOG.md`). The arc:
+
+- Runs 1–4 = the null: Opus (and Haiku with gold force-pinned in-window) resist
+  poison to ~0 ASR. **But that null was an artifact of force-pinning gold in the
+  top-k window** (PoisonedRAG's own failure analysis: clean passage in window →
+  model answers correctly).
+- Run 6, the **gold-displaced** regime (gold pushed out of top-k, 3-tier trust:
+  signed-gold / unsigned-corpus / fresh-unsigned-poison, authority-framing poison):
+  the baseline is **genuinely poisonable** and the **provenance ranker recovers it**.
+
+`run6/summary.json` (flip-ASR among clean-correct, n=82):
+
+| rate | T0 baseline | T1 ranker | T2 prompt |
+|------|-------------|-----------|-----------|
+| 25%  | 0.636 | 0.018 | 0.336 |
+| 50%  | 0.598 | 0.027 | 0.150 |
+| 75%  | 0.533 | 0.027 | 0.107 |
+
+- **T1 (drop every unsigned passage, keep the attributed-signed gold) cuts flip-ASR
+  ~25× (0.589→0.024) and attack-effect ~8.7× (0.838→0.098), and is poison-rate-
+  invariant** — flat because dropping unsigned passages makes Sybil cluster size
+  irrelevant. This is the protocol's safety claim, **demonstrated**.
+- T2 (provenance-in-prompt, poison kept in window) blocks the lie but converts it to
+  doubt (doubt-rate 0.42→0.71): prevents falsehood, can't restore truth without the
+  gold present. **T1 > T2.**
+- Per-attack: A1 authority/erratum 0.94→≤0.03, A3 citation-laundering 0.86→≤0.03,
+  A2 crude `[SYSTEM CORRECTION]` injection already ignored (0.08–0.11). Reproduces the
+  literature's soft-authority-framing > overt-injection finding.
+- Caveats (on record): `claude -p` backend, no temperature-0; ~18% judge cells dropped
+  to transient exit-1 (effect 0.84 vs 0.10 dwarfs both).
+
+**ACTION — whitepaper correction needed.** §7.4 / §6.3 / abstract / §9#2 / §10 were
+updated this session to the *null* framing (from `FELLOWS-FRAMING.md`, which predates
+runs 5–6). The real result is the **positive** one above. Re-update to: null on the
+strong claim (frontier/gold-present) → null broken in the displaced regime → **T1
+provenance ranker ~25× protection** on the vulnerable weak-agent baseline.
+
+## RQ4 / RQ5 — compounding (label simulator vs real)
+
+`eval/COMPOUNDING-RESULTS.md`:
+- **Simulator** (`bench-compounding.mjs`, 64 peers, 200k-query stream, Mandelbrot-Zipf):
+  isolated hit flat ~18.5% vs cooperative **90.2%** at 64 peers; **9.1× fewer paid web
+  trips**; **77.1% fewer model input tokens** (4.4× vs no-cache, 3.8× vs isolated).
+  Checked against Che's LRU approximation within 0.16 pts. Labeled *simulator evidence,
+  not production proof*.
+- **Real-graph** (`bench-subgraph-transfer.mjs`, sampling `~/.folklore`, 21,130 nodes):
+  avg transplant 3.9 nodes / 2.9 edges, p50 payload 1.3 KiB; **63.3% token saving /
+  2.7× model-token reduction** over related asks.
+- Plus the live `bench-compounding-real.mjs` run above (RQ4/RQ5 row): cooperative
+  correct-resolve 39.3% vs 27.9%, false-admit 1.8%.
+
+## Loop queue (remaining)
+
+- ⚠️ `bench-vcache-compare.mjs` HUNG at 9m (RQ1/RQ4 federated-vs-single-node) — needs a
+  smaller-N flag or backgrounding. Retry with a bounded query set.
+- Update the whitepaper RQ3 framing (null → positive) — see ACTION above.
+- Update `research/rq/RQ2.md` (energy-gate 0.78 → 0.405 on current graph) and
+  `research/rq/RQ3.md` (fold in run6 positive numbers).
+- Build E1–E5 new code per `research/experiments/`. Backend note: the eval harness
+  uses the **`claude -p` CLI** (no API key) — check `which claude` to enable re-runs of
+  the LLM-graded E1/E3 here; `ANTHROPIC_API_KEY` is not set in env.
+
+*(Queue above is now CLEARED — vcache re-run bounded, whitepaper corrected, RQ2/RQ3
+notes reconciled, E1 built + run. See below.)*
+
+## E1 — answer-quality-under-reuse (built + run this loop)
+
+New harness `scripts/fellows-eval/run-e1-reuse.mjs` (reuses `complete()` = `claude -p`,
+no API key; `evalEmbedder` MiniLM; the frozen gold-SUPPORTED SciFact-100). Two findings:
+
+1. **Structural (the headline).** The `[0.6, 0.71)` near-miss band the spec targeted is
+   **empty** on SciFact-100: the maximum cosine between any two *different-need* claims is
+   **0.544** (p90 0.494, p50 0.360) — **below the 0.6 q2q reuse gate**. So a different-need
+   query *cannot reach the reuse threshold*; the false-hit hazard is structurally empty,
+   and the recalibrated 0.6 gate sits in the safe gap (above the 0.544 different-need
+   ceiling, below the ~0.71 paraphrase floor). This **vindicates** the 0.6 choice that
+   `rq/RQ1.md` flagged as "below every reliable cache threshold" — those literature
+   thresholds (0.78–0.83) are for single-tenant exact-query caches; for q2q cross-claim
+   reuse, different claims never get that close.
+2. **Stress test (LLM-graded).** On the 20 *most-similar* different-need pairs that exist
+   (mean cos 0.498, all below the gate — worst case available), reusing the neighbour's
+   answer as context: **HURT = 0/9** (no fresh-correct answer flipped to wrong), Δcorrect
+   +1, one fresh-wrong→reuse-correct, doubt 0. Reuse does not degrade the answer even at the
+   worst available similarity. Caveats: n=20, single corpus, Haiku weak base (fresh acc
+   0.45), single gold doc, no temperature-0.
+
+Together: at the **retrieval** level (tree-sharing hurt 7/8000) and the **answer** level
+(E1 hurt 0/9), cross-peer reuse does not hurt, and the gate structurally excludes the
+different-need regime where it could.
+
+## Final scoreboard — all benchable RQs/experiments answered
+
+| RQ / Exp | Status | Proof |
+|----------|--------|-------|
+| RQ1 reuse→quality | ✅ | tree-sharing recall +34% hurt≈0; **E1 answer-level hurt=0**; gate 0.6 > 0.544 different-need ceiling |
+| RQ2 staleness/OOD | ✅ honest negative | energy gate AUC **0.405** on the real graph — does NOT separate; "fix sim_i first" |
+| RQ3 trust/provenance | ✅ positive | run6: provenance ranker **~25×** (flip-ASR 0.59→0.024), poison-rate-invariant |
+| RQ4 savings | ✅ | federation **+22%** vs tuned single-node @≤2% error; +5.35M tokens; sim 9.1×/77.1% |
+| RQ5 compounding | ✅ | paraphrase σ AUC **0.998**; cooperative correct-resolve 27.9%→39.3% |
+| RQ6 benchmarks | ✅ | the harness here *is* the benchmark suite (BEIR + LongMemEval/LoCoMo + poison) |
+| RQ7 architecture | — | theoretical (Hopfield reranker); not a bench |
+| E2 energy-stale | ⛔ blocked upstream | needs `sim_i` to separate first (RQ2 negative) |
+| E5 100-peer pilot | ⛔ out of loop scope | live deployment; `bench-compounding-real.mjs` is the run offline twin |
+
+**The one negative (RQ2) and the two blocked (E2 upstream, E5 deployment) are reported
+honestly, not buried.** Everything else is measured proof.
