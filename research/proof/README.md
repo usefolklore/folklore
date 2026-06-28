@@ -31,6 +31,27 @@ is exactly the RQ2 falsifier firing. Do not cite 0.78 as current without a fresh
 matching run. (E2's `bench-energy-stale.mjs` should be built on top of a gate that
 actually separates — so fixing `sim_i` is now upstream of E2.)
 
+### The proposed `sim_i` fix, tested — and falsified
+
+`energy-gate.ts` itself says the planned fix is "after the **token-set-coverage**
+change sharpens `sim_i`." New measurement bench `bench/bench-energy-coverage.mjs`
+re-scores the deny-real fixtures via the real `ask --json` path, recomputing `−E(q)`
+with `sim_i' = sim_i × max(floor, token_coverage)`. Result (12 in / 12 out, floor 0.2):
+
+| sim | AUC(−E) in-vs-out |
+|-----|-------------------|
+| raw `1 − distance` | 0.622 |
+| coverage-adjusted | **0.521** (Δ **−0.10**) |
+
+**Token-set coverage does not rescue the gate — it makes separation worse.** The hit
+labels/summaries don't share enough vocabulary with even in-corpus queries, so
+coverage suppresses real hits as much as OOD ones. The cheap lever the project assumed
+would fix `sim_i` is measured-negative. The remaining lever — a **stronger embedder**
+(bge, cached) — needs re-embedding the 17G MiniLM graph (384→768 dim), the genuine
+heavy infra task. So: the energy gate's separation is **bounded by MiniLM embedding
+quality on the real graph**, and the honest next step is a graph re-embed, not a
+post-hoc score tweak.
+
 ## RQ3 — provenance defense PROVEN positive (measured, supersedes the "null")
 
 The E3 experiment my notes/whitepaper called "pending" **already ran** (runs 5–6,
