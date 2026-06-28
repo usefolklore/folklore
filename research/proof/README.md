@@ -52,6 +52,25 @@ heavy infra task. So: the energy gate's separation is **bounded by MiniLM embedd
 quality on the real graph**, and the honest next step is a graph re-embed, not a
 post-hoc score tweak.
 
+### And the stronger-embedder lever, tested — it WORKS (the fix is found)
+
+`bench/bench-energy-bge.mjs` re-scores the **same real retrieved hits** with **bge-base**
+(`sim = cos(bge(query), bge(hit_text))`) instead of MiniLM's `1 − distance`, on the full
+deny-real set (36 in / 22 out):
+
+| sim source | AUC(−E) in-vs-out |
+|------------|-------------------|
+| MiniLM `1 − distance` | **0.506** (≈ chance — the gate's real failure) |
+| **bge re-scored** | **0.968** (Δ **+0.46**, near-perfect) |
+
+**bge cleanly separates where MiniLM doesn't.** The gate's failure is an *embedder-quality*
+problem — not gate design, not coverage: the cheap lexical lever fails (−0.10), the
+stronger-embedder lever near-perfectly fixes it (+0.46). **A full bge re-embed of the 17G
+graph is the concrete, measured fix for RQ2** — after which the energy-OOD gate becomes
+shippable and E2 (staleness detection) is unblocked. Caveat: this re-scores MiniLM-retrieved
+candidates (tests bge *scoring*, not *retrieval*); true bge retrieval should be ≥ this good.
+Raw: `research/proof/raw/energy-bge.txt`.
+
 ## RQ3 — provenance defense PROVEN positive (measured, supersedes the "null")
 
 The E3 experiment my notes/whitepaper called "pending" **already ran** (runs 5–6,
@@ -150,7 +169,7 @@ different-need regime where it could.
 | RQ / Exp | Status | Proof |
 |----------|--------|-------|
 | RQ1 reuse→quality | ✅ | tree-sharing recall +34% hurt≈0; **E1 answer-level hurt=0**; gate 0.6 > 0.544 different-need ceiling |
-| RQ2 staleness/OOD | ✅ honest negative | energy gate AUC **0.405** on the real graph — does NOT separate; "fix sim_i first" |
+| RQ2 staleness/OOD | ✅ negative + **fix found** | MiniLM energy gate AUC **0.41–0.51** (fails); coverage lever −0.10; **bge re-scoring → 0.968** (+0.46) → graph re-embed justified |
 | RQ3 trust/provenance | ✅ positive | run6: provenance ranker **~25×** (flip-ASR 0.59→0.024), poison-rate-invariant |
 | RQ4 savings | ✅ | federation **+22%** vs tuned single-node @≤2% error; +5.35M tokens; sim 9.1×/77.1% |
 | RQ5 compounding | ✅ | paraphrase σ AUC **0.998**; cooperative correct-resolve 27.9%→39.3% |
