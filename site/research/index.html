@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Folklore · Research — the seven questions, answered</title>
+<meta name="description" content="Seven research questions on peer-to-peer inference reuse, each answered with measured benchmarks — including the disciplined negatives. Provenance ranker ~25x against poison, federation +22% over a tuned single-node cache, reuse with hurt=0." />
+<meta name="theme-color" content="#f4ecd8" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Folklore · Research — the seven questions, answered" />
+<meta property="og:description" content="Measured, not claimed. Seven questions on shared-inference reuse, answered with benchmarks — wins and the honest negatives." />
+<meta property="og:url" content="https://usefolklore.sh/research" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="canonical" href="https://usefolklore.sh/research/" />
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%231d1813"/><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="%23ff4f6d"/></svg>' />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#f4ecd8; --paper-2:#ece0c2; --ink:#1d1813;
+    --pink:#ff4f6d; --blue:#2b3a8c; --yellow:#f5b921; --teal:#1fae8b; --muted:#5c4f3a;
+    --serif:'Fraunces',Georgia,serif; --mono:'Geist Mono',ui-monospace,monospace; --wrap:1080px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;scroll-padding-top:74px;overflow-x:hidden}
+  body{background:var(--paper);color:var(--ink);font-family:var(--serif);font-weight:430;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  ::selection{background:var(--pink);color:var(--paper)}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:var(--wrap);margin:0 auto;padding:0 22px}
+  /* header */
+  header{position:sticky;top:0;z-index:80;background:rgba(244,236,216,.92);backdrop-filter:blur(8px);border-bottom:3px solid var(--ink)}
+  .head{display:flex;align-items:center;gap:18px;padding:13px 22px;max-width:var(--wrap);margin:0 auto}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-weight:800;font-size:1.3rem;letter-spacing:-.01em}
+  .brand svg{width:30px;height:30px}
+  .hlinks{display:flex;gap:20px;margin-left:auto;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  .hlinks a:hover,.hlinks a.active{color:var(--pink)}
+  .hcta{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.04em;background:var(--blue);color:var(--paper);border:2px solid var(--ink);padding:9px 15px;box-shadow:3px 3px 0 var(--ink);transition:.12s}
+  .hcta:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink);background:var(--pink)}
+  @media(max-width:760px){.hlinks{display:none}}
+  /* hero */
+  .hero{padding:54px 0 26px}
+  .stamp{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;background:var(--yellow);color:var(--ink);border:2px solid var(--ink);padding:7px 13px;box-shadow:4px 4px 0 var(--ink);margin-bottom:22px}
+  h1{font-family:var(--serif);font-weight:800;font-size:clamp(2.3rem,5.4vw,3.9rem);line-height:1.0;letter-spacing:-.025em;max-width:16ch}
+  .lead{font-size:1.13rem;max-width:62ch;margin-top:18px;color:#2a231a}
+  .lead b{font-weight:700}
+  /* scoreboard */
+  .board{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:34px 0 8px}
+  .bcell{border:2.5px solid var(--ink);background:var(--paper-2);box-shadow:5px 5px 0 var(--ink);padding:12px 13px}
+  .bcell .rq{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .bcell .t{font-weight:700;font-size:.96rem;margin:3px 0 8px;line-height:1.2}
+  /* verdict pills */
+  .v{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:2px solid var(--ink);padding:3px 7px;display:inline-block}
+  .v.win{background:var(--teal);color:var(--paper)} .v.neg{background:var(--ink);color:var(--yellow)}
+  .v.part{background:var(--yellow);color:var(--ink)} .v.frame{background:var(--paper);color:var(--ink)}
+  /* rq sections */
+  section.rq{border-top:3px solid var(--ink);padding:40px 0}
+  .rqhead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .rqno{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.1em;color:var(--pink)}
+  h2{font-family:var(--serif);font-weight:700;font-size:clamp(1.5rem,3vw,2.1rem);letter-spacing:-.02em;line-height:1.08;max-width:24ch}
+  .ans{font-size:1.06rem;margin:16px 0;max-width:64ch}
+  .ans b{font-weight:700}
+  .ex{border-left:5px solid var(--pink);background:var(--paper-2);padding:13px 16px;font-size:.97rem;margin:14px 0;max-width:64ch}
+  .ex .k{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px}
+  .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:26px;align-items:start}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+  /* figure */
+  .fig{border:2.5px solid var(--ink);background:var(--paper);box-shadow:7px 7px 0 var(--blue);padding:16px 16px 12px}
+  .fig.neg{box-shadow:7px 7px 0 var(--ink)}
+  .figcap{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--muted);margin-top:9px;line-height:1.4}
+  .figttl{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin-bottom:10px}
+  svg.chart{width:100%;height:auto;display:block;font-family:var(--mono)}
+  svg.chart text{fill:var(--ink)}
+  .src{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px}
+  .src code{background:var(--paper-2);border:1px solid rgba(29,24,19,.25);padding:1px 5px}
+  /* callout + footer */
+  .callout{border:3px solid var(--ink);background:var(--ink);color:var(--paper);box-shadow:8px 8px 0 var(--pink);padding:24px;margin:40px 0}
+  .callout h3{font-family:var(--serif);font-weight:700;font-size:1.4rem;margin-bottom:10px}
+  .callout p{max-width:66ch;color:#f0e7d2}
+  .ftr{border-top:3px solid var(--ink);margin-top:30px;padding:30px 0 60px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+  .ftr a{color:var(--blue);text-decoration:underline;text-decoration-thickness:1.5px}
+  .btn{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.03em;padding:12px 20px;border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink);display:inline-block;background:var(--pink);color:var(--paper);transition:.12s}
+  .btn:hover{transform:translate(1px,1px);box-shadow:4px 4px 0 var(--ink)}
+  .btnrow{display:flex;gap:14px;flex-wrap:wrap;margin-top:22px}
+  .btn.ghost{background:var(--paper);color:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <a class="brand" href="/"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d" stroke="#1d1813" stroke-width="2.4" stroke-linejoin="round"/><g stroke="#1d1813" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g></svg>folklore</a>
+    <nav class="hlinks">
+      <a href="/research" class="active">Research</a><a href="/compare">Compare</a><a href="/store">Store</a><a href="/blog">Blog</a><a href="/whitepaper">Paper</a>
+    </nav>
+    <a class="hcta" href="https://github.com/usefolklore/folklore">GitHub</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="stamp">◆ Research · measured, not claimed</span>
+    <h1>The seven questions, answered.</h1>
+    <p class="lead">Folklore is a peer-to-peer layer where agents share prior, verified inference instead of re-deriving it. That makes two bets — it <b>saves cost and compounds quality</b>, and it <b>stays reliable through signed provenance</b>. We tried to <b>falsify both</b>. Here is every question, its measured answer, and the disciplined negatives we kept rather than buried. Three of the seven overturned our own first guess.</p>
+    <div class="btnrow">
+      <a class="btn" href="/whitepaper">Read the white paper</a>
+      <a class="btn ghost" href="https://github.com/usefolklore/folklore/tree/main/research">Proofs &amp; raw runs →</a>
+    </div>
+  </section>
+
+  <div class="board">
+    <div class="bcell"><span class="rq">RQ1 · reuse → quality</span><div class="t">Reuse is safe</div><span class="v win">Positive</span></div>
+    <div class="bcell"><span class="rq">RQ2 · detect bad reuse</span><div class="t">OOD gate unsolved</div><span class="v neg">Hard negative</span></div>
+    <div class="bcell"><span class="rq">RQ3 · trust / poison</span><div class="t">Provenance ~25×</div><span class="v win">Proven</span></div>
+    <div class="bcell"><span class="rq">RQ4 · savings</span><div class="t">Beats solo cache</div><span class="v win">Positive</span></div>
+    <div class="bcell"><span class="rq">RQ5 · compounding</span><div class="t">Compounds, real</div><span class="v part">Pilot-pending</span></div>
+    <div class="bcell"><span class="rq">RQ6 · benchmarks</span><div class="t">Suite shipped</div><span class="v win">Built</span></div>
+    <div class="bcell"><span class="rq">RQ7 · architecture</span><div class="t">Hopfield link</div><span class="v frame">Framed</span></div>
+  </div>
+
+  <!-- RQ1 -->
+  <section class="rq" id="rq1">
+    <div class="rqhead"><span class="rqno">RQ1</span><span class="v win">Positive</span></div>
+    <h2>When does reusing a prior answer improve quality?</h2>
+    <div class="grid">
+      <div>
+        <p class="ans">Reuse helps — and never hurts — when the match is made on the <b>question</b> (query↔query), the reused answer was actually correct, and it enters as <b>additive context</b> the model can still reason over. The recalibrated 0.6 match gate turns out to sit in a safe gap: the most similar <i>different-need</i> claims on SciFact top out at cosine <b>0.544</b> — below the gate — so a cross-need answer can't even fire.</p>
+        <div class="ex"><span class="k">Example</span>Two engineers ask paraphrases of <i>"does X regulate Y?"</i>. The second inherits the first peer's already-verified source instead of paying for a fresh search — same need, near-identical embedding.</div>
+        <p class="src">Bench: <code>bench-inference-tree-sharing.mjs</code>, <code>run-e1-reuse.mjs</code> · recall@10 73.5%→98.6%, answer-level hurt 0/9</p>
+      </div>
+      <div class="fig">
+        <div class="figttl">Retrieval recall@10 · NFCorpus</div>
+        <svg class="chart" viewBox="0 0 300 150" role="img" aria-label="Baseline recall 73.5% vs tree-shared 98.6%">
+          <line x1="64" y1="14" x2="64" y2="118" stroke="#1d1813" stroke-width="2"/>
+          <line x1="64" y1="118" x2="292" y2="118" stroke="#1d1813" stroke-width="2"/>
+          <rect x="66" y="88" width="167" height="24" fill="#ece0c2" stroke="#1d1813" stroke-width="2"/>
+          <rect x="66" y="48" width="224" height="24" fill="#1fae8b" stroke="#1d1813" stroke-width="2"/>
+          <text x="60" y="104" text-anchor="end" font-size="10">baseline</text>
+          <text x="60" y="64" text-anchor="end" font-size="10">tree-shared</text>
+          <text x="237" y="105" font-size="11" font-weight="600">73.5%</text>
+          <text x="294" y="65" font-size="11" font-weight="700" fill="#1fae8b">98.6%</text>
+          <text x="66" y="138" font-size="10" fill="#5c4f3a">+34% relative · rescued 2015 · hurt 7 / 8000</text>
+        </svg>
+        <div class="figcap">Sharing the answered-question→verified-doc tree lifts recall with essentially zero regressions.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RQ3 (placed early — the headline safety result) -->
+  <section class="rq" id="rq3">
+    <div class="rqhead"><span class="rqno">RQ3</span><span class="v win">Proven</span></div>
+    <h2>Can cryptographic provenance defend reused context against poison?</h2>
+    <div class="grid">
+      <div>
+        <p class="ans">Yes — exactly where the baseline is vulnerable. We first saw a <i>null</i> (a frontier model shrugged off the poison) and almost shipped it. It was a <b>measurement artifact</b>: the correct source was pinned in the window. Push the gold out, run a weaker agent under a 75% colluding-Sybil majority, and the baseline is genuinely poisoned (53–64% flip to the lie). The <b>provenance ranker</b> — drop every unsigned passage, keep the attributed-signed source — cuts attack-success <b>~25×</b>, and stays flat as the poison rate climbs.</p>
+        <div class="ex"><span class="k">Example</span>A Sybil cluster floods the context with signed-but-fake "erratum: the finding was retracted" passages. Dropping everything unsigned re-surfaces the one real source; the agent answers correctly.</div>
+        <p class="src">Bench: BEIR SciFact, Haiku agent / Opus judge, n=82, 2,957 judged cells · <code>eval/RESULTS-LOG.md</code></p>
+      </div>
+      <div class="fig">
+        <div class="figttl">Flip-attack-success · weak agent, gold-displaced</div>
+        <svg class="chart" viewBox="0 0 300 150" role="img" aria-label="Attack success 0.59 baseline vs 0.024 provenance ranker">
+          <line x1="92" y1="14" x2="92" y2="118" stroke="#1d1813" stroke-width="2"/>
+          <line x1="92" y1="118" x2="292" y2="118" stroke="#1d1813" stroke-width="2"/>
+          <rect x="94" y="44" width="178" height="24" fill="#ff4f6d" stroke="#1d1813" stroke-width="2"/>
+          <rect x="94" y="88" width="8" height="24" fill="#1fae8b" stroke="#1d1813" stroke-width="2"/>
+          <text x="88" y="60" text-anchor="end" font-size="10">T0 baseline</text>
+          <text x="88" y="104" text-anchor="end" font-size="10">T1 ranker</text>
+          <text x="276" y="61" font-size="11" font-weight="700" fill="#ff4f6d">0.59</text>
+          <text x="108" y="105" font-size="11" font-weight="700" fill="#1fae8b">0.024</text>
+          <text x="94" y="138" font-size="10" fill="#5c4f3a">~25× protection · poison-rate-invariant (25→75%)</text>
+        </svg>
+        <div class="figcap">The defense matters precisely when the baseline is vulnerable; a frontier model with the source present needs no rescue.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RQ4 -->
+  <section class="rq" id="rq4">
+    <div class="rqhead"><span class="rqno">RQ4</span><span class="v win">Positive</span></div>
+    <h2>How much does sharing actually save — versus a good solo cache?</h2>
+    <div class="grid">
+      <div>
+        <p class="ans">The existential test for being peer-to-peer: does federation beat a single node running a well-tuned semantic cache? At matched error (≤2% false-accept), federated reuse lands <b>+22% recall@1</b> over the tuned single-node cache, and +55% over cold retrieval. Savings are real but bounded by retrieval precision × hit-rate × the cost of verifying a reused answer.</p>
+        <div class="ex"><span class="k">Example</span>You already run a vCache-style local cache. Adding peers still resolves +22% more queries from memory at the same error budget — the network knows things your single cache never saw.</div>
+        <p class="src">Bench: <code>bench-vcache-compare.mjs</code> (SciFact, recall@1, matched ≤2% error)</p>
+      </div>
+      <div class="fig">
+        <div class="figttl">Recall@1 · cold vs solo cache vs federated</div>
+        <svg class="chart" viewBox="0 0 300 150" role="img" aria-label="Cold 47.7, single-node 60.7, federated 74.0">
+          <line x1="92" y1="10" x2="92" y2="116" stroke="#1d1813" stroke-width="2"/>
+          <line x1="92" y1="116" x2="292" y2="116" stroke="#1d1813" stroke-width="2"/>
+          <rect x="94" y="22" width="120" height="20" fill="#ece0c2" stroke="#1d1813" stroke-width="2"/>
+          <rect x="94" y="55" width="153" height="20" fill="#2b3a8c" stroke="#1d1813" stroke-width="2"/>
+          <rect x="94" y="88" width="186" height="20" fill="#1fae8b" stroke="#1d1813" stroke-width="2"/>
+          <text x="88" y="37" text-anchor="end" font-size="9.5">cold</text>
+          <text x="88" y="70" text-anchor="end" font-size="9.5">solo cache</text>
+          <text x="88" y="103" text-anchor="end" font-size="9.5">federated</text>
+          <text x="218" y="38" font-size="10.5" font-weight="600">47.7%</text>
+          <text x="251" y="71" font-size="10.5" font-weight="700" fill="#2b3a8c">60.7%</text>
+          <text x="284" y="104" font-size="10.5" font-weight="700" fill="#1fae8b">74.0%</text>
+          <text x="94" y="136" font-size="10" fill="#5c4f3a">federated vs solo cache: +22% at matched ≤2% error</text>
+        </svg>
+        <div class="figcap">If a tuned local cache already captured the value, decentralization wouldn't be justified. It doesn't.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RQ5 -->
+  <section class="rq" id="rq5">
+    <div class="rqhead"><span class="rqno">RQ5</span><span class="v part">Positive · pilot-pending</span></div>
+    <h2>Does shared inference compound across users — reliably?</h2>
+    <div class="grid">
+      <div>
+        <p class="ans">It compounds. On real SciFact qrels, cooperative correct-resolve rises from <b>27.9% → 39.3%</b> over isolated peers, at 1.8% false-admit — and real paraphrases separate from spurious matches at AUC <b>0.998</b>, so peers can safely reuse each other's resolutions. Structurally it's monotone submodular coverage (diminishing returns, not runaway). The one piece still unmeasured is at-scale reliability: a 100-peer, 30-day live pilot.</p>
+        <div class="ex"><span class="k">Example</span>One peer pays to resolve a niche topic once; every other peer inherits it for a federation round-trip instead of a paid web call. The <i>n</i>-th query is increasingly likely to hit context already paid for.</div>
+        <p class="src">Bench: <code>bench-compounding-real.mjs</code>, <code>bench-paraphrase-sigma.mjs</code></p>
+      </div>
+      <div class="fig">
+        <div class="figttl">Correct-resolve · isolated vs cooperative</div>
+        <svg class="chart" viewBox="0 0 300 150" role="img" aria-label="Isolated 27.9 vs cooperative 39.3">
+          <line x1="84" y1="14" x2="84" y2="118" stroke="#1d1813" stroke-width="2"/>
+          <line x1="84" y1="118" x2="292" y2="118" stroke="#1d1813" stroke-width="2"/>
+          <rect x="86" y="48" width="106" height="24" fill="#ece0c2" stroke="#1d1813" stroke-width="2"/>
+          <rect x="86" y="88" width="150" height="24" fill="#1fae8b" stroke="#1d1813" stroke-width="2"/>
+          <text x="80" y="64" text-anchor="end" font-size="10">isolated</text>
+          <text x="80" y="104" text-anchor="end" font-size="10">cooperative</text>
+          <text x="196" y="65" font-size="11" font-weight="600">27.9%</text>
+          <text x="240" y="105" font-size="11" font-weight="700" fill="#1fae8b">39.3%</text>
+          <text x="86" y="138" font-size="10" fill="#5c4f3a">+11.4 pts · false-admit 1.8% · paraphrase sep. AUC 0.998</text>
+        </svg>
+        <div class="figcap">Knowledge and inference both compound on a real corpus; the pilot is what turns the thesis from likely to proven.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RQ2 — the honest negative -->
+  <section class="rq" id="rq2">
+    <div class="rqhead"><span class="rqno">RQ2</span><span class="v neg">Hard negative</span></div>
+    <h2>Can the system tell a reused answer is stale or off-topic?</h2>
+    <div class="grid">
+      <div>
+        <p class="ans">Not yet — and we tested this to exhaustion rather than claim it. An out-of-distribution admission gate should fire low for a query the graph can't really answer. On a 21,000-node graph it can't: <b>every</b> query finds moderate-cosine neighbours, so the signal sits near chance (AUC ~0.41–0.55). We swept every lever — embedder (MiniLM <i>and</i> a full bge re-embed), token coverage, margin, entropy, retrieval depth — all negative. The one untried lever is a cross-encoder admission score; that's the next real attempt.</p>
+        <div class="ex"><span class="k">Example</span>Ask a software-research graph <i>"how do I bake sourdough?"</i> It still returns its five nearest nodes at respectable cosine — the gate can't separate "I can answer this" from "I'm reaching."</div>
+        <p class="src">Bench: <code>bench-energy-gate.mjs</code>, <code>bench-energy-bge.mjs</code>, <code>bench-ood-signals.mjs</code></p>
+      </div>
+      <div class="fig neg">
+        <div class="figttl">OOD separation (AUC) · every lever ≈ chance</div>
+        <svg class="chart" viewBox="0 0 300 168" role="img" aria-label="All OOD signals AUC near 0.5">
+          <line x1="118" y1="8" x2="118" y2="138" stroke="#1d1813" stroke-width="2"/>
+          <line x1="220" y1="8" x2="220" y2="138" stroke="#1d1813" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="220" y="150" text-anchor="middle" font-size="9" fill="#5c4f3a">0.7 = usable</text>
+          <line x1="118" y1="138" x2="292" y2="138" stroke="#1d1813" stroke-width="2"/>
+          <!-- bars: scale x: 118 + (auc)*200 ; usable line at 0.7 -> 118+ (0.7-0.4)/0.4*... keep simple: width ~ (auc-0.3)*340 -->
+          <g font-size="9">
+            <rect x="118" y="14" width="86" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="24" text-anchor="end">MiniLM .55</text>
+            <rect x="118" y="32" width="84" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="42" text-anchor="end">bge re-embed .55</text>
+            <rect x="118" y="50" width="70" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="60" text-anchor="end">gap .51</text>
+            <rect x="118" y="68" width="57" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="78" text-anchor="end">broad-margin .47</text>
+            <rect x="118" y="86" width="48" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="96" text-anchor="end">top-1 .44</text>
+            <rect x="118" y="104" width="46" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="114" text-anchor="end">margin .43</text>
+            <rect x="118" y="122" width="14" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="132" text-anchor="end">coverage −.10</text>
+          </g>
+          <text x="118" y="162" font-size="10" fill="#5c4f3a">None clears the usable bar. Documented, not buried.</text>
+        </svg>
+        <div class="figcap">A negative we kept: detecting bad reuse isn't solvable at the bi-encoder layer here. Honesty is the result.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RQ6 -->
+  <section class="rq" id="rq6">
+    <div class="rqhead"><span class="rqno">RQ6</span><span class="v win">Built</span></div>
+    <h2>What benchmarks make these answers rigorous?</h2>
+    <p class="ans">The harness <i>is</i> the suite. Retrieval quality on <b>BEIR</b> (SciFact / NFCorpus / FiQA), long-horizon memory on <b>LongMemEval</b> and <b>LoCoMo</b>, a templated <b>poison</b> eval (3 attacks × 3 rates × 3 treatments), a <code>recall_any@k</code> metric, and a <b>vCache</b> A/B for the savings question — plus the new ones built for this program: answer-quality-under-reuse, energy-coverage, energy-bge, and the OOD-signal sweep. Discipline throughout: matched comparisons, answers scored against gold qrels (never the gate), and every number labelled <b>simulator vs measured</b>. The open gap: no public benchmark scores cross-peer reuse <i>quality + savings + trust</i> jointly — which is the harness this program starts.</p>
+  </section>
+
+  <!-- RQ7 -->
+  <section class="rq" id="rq7">
+    <div class="rqhead"><span class="rqno">RQ7</span><span class="v frame">Framed</span></div>
+    <h2>What architecture fits shared, provenance-tagged inference?</h2>
+    <p class="ans">The longer-term frontier, framed not yet benched. The reranker is already one modern-Hopfield update step — which <i>is</i> softmax attention; personalized-PageRank, EigenTrust, and cache eviction all read as energy-descent fixed points. The hypothesis that ties it to RQ3: long-context models that ingest <b>provenance-tagged</b> retrieved context as first-class evidence should out-calibrate models that see anonymous tokens. The open theory problem is a distributed Hopfield capacity theorem — how much shared memory the network holds before retrieval degrades.</p>
+  </section>
+
+  <div class="callout">
+    <h3>Three of seven falsified our own first guess.</h3>
+    <p>The poisoning "null" was an artifact — provenance actually works (RQ3). The bge re-embed that looked like a fix for the OOD gate didn't survive live retrieval (RQ2). The 0.6 reuse gate we feared was too loose turned out to sit in the safe gap (RQ1). Engineering a benchmark that can kill your own idea, then reporting exactly what it shows, is the whole posture.</p>
+    <div class="btnrow">
+      <a class="btn" href="/whitepaper">Read the white paper</a>
+      <a class="btn ghost" href="https://github.com/usefolklore/folklore/tree/main/research">Per-RQ notes &amp; raw runs →</a>
+    </div>
+  </div>
+
+  <div class="ftr">
+    <p>Every figure here is a real bench run on real corpora (BEIR qrels, the live graph) — wins and negatives alike. Methods, per-question notes, and raw captures live in <a href="https://github.com/usefolklore/folklore/tree/main/research">/research</a>. Simulator results are labelled as such; the 100-peer pilot is the one calendar-bound piece still ahead.</p>
+    <p style="margin-top:14px">Folklore · MIT-licensed · <a href="/">home</a> · <a href="/whitepaper">white paper</a> · <a href="https://github.com/usefolklore/folklore">github</a></p>
+  </div>
+</main>
+</body>
+</html>
