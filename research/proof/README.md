@@ -65,11 +65,37 @@ deny-real set (36 in / 22 out):
 
 **bge cleanly separates where MiniLM doesn't.** The gate's failure is an *embedder-quality*
 problem — not gate design, not coverage: the cheap lexical lever fails (−0.10), the
-stronger-embedder lever near-perfectly fixes it (+0.46). **A full bge re-embed of the 17G
-graph is the concrete, measured fix for RQ2** — after which the energy-OOD gate becomes
-shippable and E2 (staleness detection) is unblocked. Caveat: this re-scores MiniLM-retrieved
-candidates (tests bge *scoring*, not *retrieval*); true bge retrieval should be ≥ this good.
-Raw: `research/proof/raw/energy-bge.txt`.
+stronger-embedder lever near-perfectly fixes it (+0.46) — *on this scoring test*. Caveat
+(load-bearing, see below): this re-scores MiniLM-retrieved candidates, so it tests bge
+*scoring*, not bge *retrieval*. Raw: `research/proof/raw/energy-bge.txt`.
+
+### LIVE validation of the full bge re-embed — the fix does NOT transfer (disciplined negative)
+
+Re-embedded all **18,077** nodes with bge-base into `vectors-bge.db` (~64 min, 0 failed),
+fixed two code gaps that left bge half-wired (the xenova path ignored
+`FOLKLORE_EMBEDDER_MODEL`; the index opened at the default 384-dim — both fixed in
+`src/cli/runtime.ts`), and ran the **real `ask` path** over the bge index:
+
+| sim path | AUC(−E) in-vs-out |
+|----------|-------------------|
+| MiniLM (live) | ~0.41–0.51 |
+| bge re-SCORING (offline, MiniLM-retrieved candidates) | 0.968 |
+| **bge RETRIEVAL (live path, full re-embed)** | **0.548** |
+
+**The fix does not transfer.** Live bge *retrieval* surfaces its own nearest neighbours, and
+bge gives even OOD queries high-cosine hits — out-of-corpus −E median **0.840 exceeds**
+in-corpus **0.352** (separation inverted). So a stronger embedder does **not** rescue the
+energy gate on the live retrieval path. The earlier "re-embed justified" line was the
+scoring-vs-retrieval caveat firing, now measured. AUC is threshold-independent → re-fitting
+τ/β cannot recover it.
+
+**Net for RQ2:** neither lever fixes the OOD gate — cheap coverage (−0.10) nor heavy bge
+re-embed (live 0.548). The failure is deeper than embedder quality: OOD admission over a
+21k-node graph where *any* query finds moderate-cosine neighbours is the hard part. Honest
+status holds — **the energy-OOD gate does not separate on the real graph**; the
+satisfaction deny-gate (~0.52) remains the ceiling. Code dividend: the bge path is now
+functional end-to-end (a real bug fix in `runtime.ts`), even though bge is not the answer.
+Raw: `research/proof/raw/energy-gate-bge.txt`.
 
 ## RQ3 — provenance defense PROVEN positive (measured, supersedes the "null")
 
@@ -169,7 +195,7 @@ different-need regime where it could.
 | RQ / Exp | Status | Proof |
 |----------|--------|-------|
 | RQ1 reuse→quality | ✅ | tree-sharing recall +34% hurt≈0; **E1 answer-level hurt=0**; gate 0.6 > 0.544 different-need ceiling |
-| RQ2 staleness/OOD | ✅ negative + **fix found** | MiniLM energy gate AUC **0.41–0.51** (fails); coverage lever −0.10; **bge re-scoring → 0.968** (+0.46) → graph re-embed justified |
+| RQ2 staleness/OOD | ✅ honest negative (fix NOT found) | MiniLM AUC 0.41–0.51; coverage −0.10; bge re-scoring 0.968 but **live bge retrieval 0.548** — neither lever rescues the OOD gate |
 | RQ3 trust/provenance | ✅ positive | run6: provenance ranker **~25×** (flip-ASR 0.59→0.024), poison-rate-invariant |
 | RQ4 savings | ✅ | federation **+22%** vs tuned single-node @≤2% error; +5.35M tokens; sim 9.1×/77.1% |
 | RQ5 compounding | ✅ | paraphrase σ AUC **0.998**; cooperative correct-resolve 27.9%→39.3% |
