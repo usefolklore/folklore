@@ -115,6 +115,16 @@ score tweaks at the bi-encoder layer; the next real attempt is a working cross-e
 admission score (needs the model) or a fundamentally different OOD signal (e.g. retrieval
 *margin*/entropy over the full corpus, not top-k similarity). Documented, not guessed.
 
+**Update — the distribution-shape idea, tested and dead too.** `bench/bench-ood-signals.mjs`
+swept top-k shape signals on the full set at k=20: margin (best−second), broad-margin
+(best−mean), gap (best−worst), softmax-entropy, top-1, vs baseline negE. Full-set AUCs:
+negE 0.552, gap 0.505, marginBroad 0.474, top1 0.435, margin12 0.427, negEntropy 0.296 —
+**all fail.** Higher k does not help negE (0.55 at k=5 and k=20; a 12-query subset flashed
+0.78 but that was small-sample noise). So **every bi-encoder-layer signal is now
+measured-negative** — magnitude, margin, entropy, embedder, coverage, k. The OOD gate is
+bi-encoder-exhausted; a working cross-encoder admission score is the sole untried lever.
+Raw: `research/proof/raw/ood-signals-k20.txt`.
+
 ## RQ3 — provenance defense PROVEN positive (measured, supersedes the "null")
 
 The E3 experiment my notes/whitepaper called "pending" **already ran** (runs 5–6,
