@@ -83,6 +83,12 @@
   .btn:hover{transform:translate(1px,1px);box-shadow:4px 4px 0 var(--ink)}
   .btnrow{display:flex;gap:14px;flex-wrap:wrap;margin-top:22px}
   .btn.ghost{background:var(--paper);color:var(--ink)}
+  .openq{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+  @media(max-width:760px){.openq{grid-template-columns:1fr}}
+  .oq{border:2.5px solid var(--ink);background:var(--paper-2);box-shadow:5px 5px 0 var(--ink);padding:15px 16px}
+  .oq .tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--pink);display:block;margin-bottom:7px}
+  .oq b{font-weight:700;font-size:1.02rem;display:block;margin-bottom:6px;line-height:1.25}
+  .oq p{font-size:.92rem;color:#2a231a}
 </style>
 </head>
 <body>
@@ -278,6 +284,21 @@
     <div class="rqhead"><span class="rqno">RQ7</span><span class="v frame">Framed</span></div>
     <h2>What architecture fits shared, provenance-tagged inference?</h2>
     <p class="ans">The longer-term frontier, framed not yet benched. The reranker is already one modern-Hopfield update step — which <i>is</i> softmax attention; personalized-PageRank, EigenTrust, and cache eviction all read as energy-descent fixed points. The hypothesis that ties it to RQ3: long-context models that ingest <b>provenance-tagged</b> retrieved context as first-class evidence should out-calibrate models that see anonymous tokens. The open theory problem is a distributed Hopfield capacity theorem — how much shared memory the network holds before retrieval degrades.</p>
+  </section>
+
+  <!-- OPEN / CONTINUING QUESTIONS -->
+  <section class="rq" id="open">
+    <div class="rqhead"><span class="rqno">OPEN</span><span class="v frame">What's next</span></div>
+    <h2>Open questions — where the research goes next</h2>
+    <p class="ans">Every question above has a measured answer. These are the falsifiable follow-ups those answers point to — each a concrete experiment, not a wish.</p>
+    <div class="openq">
+      <div class="oq"><span class="tag">extends RQ2 · the open negative</span><b>Can a cross-encoder admission score detect bad reuse where every bi-encoder signal failed?</b><p>The one untried OOD lever — joint query–doc scoring, or a margin/entropy signal over the full corpus instead of top-k. The bi-encoder layer is exhausted; this needs the reranker model the sweep didn't have.</p></div>
+      <div class="oq"><span class="tag">extends RQ5 · the only calendar-bound piece</span><b>Does compounding stay reliable across a real, churning 100-peer population over 30 days?</b><p>The live web-fallback curve and false-admit tail the simulator can't produce. This is where the thesis stops being a thesis.</p></div>
+      <div class="oq"><span class="tag">extends RQ3 · harden the win</span><b>Does the provenance defense survive an adaptive adversary — and a true 7B consumer?</b><p>Poison optimized against the trust filter (not templated fixtures), on a real small model rather than the Haiku proxy, plus EigenTrust-style Sybil-resistant reputation layered on the signature.</p></div>
+      <div class="oq"><span class="tag">extends RQ1 · RQ4</span><b>Does the reuse win survive measured end-to-end quality and wall-clock cost at scale?</b><p>Beyond n=20 retrieval recall: real answer-grading, net tokens/latency after verification cost, and a vCache per-prompt error guarantee replacing the static 0.6 gate.</p></div>
+      <div class="oq"><span class="tag">extends RQ6 · the missing harness</span><b>Build the benchmark that scores cross-peer reuse — quality, savings, and trust — jointly.</b><p>No public benchmark measures all three at once. That gap is the harness this program starts.</p></div>
+      <div class="oq"><span class="tag">extends RQ7 · the theory frontier</span><b>A distributed Hopfield capacity theorem — and does provenance-tagged context out-calibrate anonymous tokens?</b><p>How much shared memory the network holds before retrieval degrades, and whether long-context models that read provenance as first-class evidence calibrate better than those that see anonymous tokens.</p></div>
+    </div>
   </section>
 
   <div class="callout">
