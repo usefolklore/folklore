@@ -97,6 +97,24 @@ satisfaction deny-gate (~0.52) remains the ceiling. Code dividend: the bge path 
 functional end-to-end (a real bug fix in `runtime.ts`), even though bge is not the answer.
 Raw: `research/proof/raw/energy-gate-bge.txt`.
 
+### Lever sweep complete — the OOD gate is a genuine open problem
+
+| lever | AUC(−E) / result |
+|-------|------------------|
+| bi-encoder MiniLM (shipped) | 0.41–0.51 — fails |
+| token-set coverage × sim | −0.10 — fails |
+| bge re-embed (live retrieval) | 0.548 — fails |
+| cross-encoder (ms-marco) rerank | **untestable here** — model not cached (only MiniLM/bge are), HF download blocked; probe returned degenerate passthrough scores [1,1] for a relevant *and* irrelevant doc |
+
+All cheap + medium levers are exhausted and negative. The cross-encoder is the most
+promising untried lever (joint query-doc scoring is far sharper than bi-encoder cosine and
+is exactly the relevance discrimination OOD admission needs) but requires the
+`Xenova/ms-marco-MiniLM-L-6-v2` model, which isn't available in this sandbox. **Honest
+conclusion for RQ2/E2:** OOD admission on a 21k-node graph is not fixable by embedder or
+score tweaks at the bi-encoder layer; the next real attempt is a working cross-encoder
+admission score (needs the model) or a fundamentally different OOD signal (e.g. retrieval
+*margin*/entropy over the full corpus, not top-k similarity). Documented, not guessed.
+
 ## RQ3 — provenance defense PROVEN positive (measured, supersedes the "null")
 
 The E3 experiment my notes/whitepaper called "pending" **already ran** (runs 5–6,
