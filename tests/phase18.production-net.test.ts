@@ -18,7 +18,7 @@
  */
 import { test, describe } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { mkdtemp, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,23 +29,6 @@ import * as Y from 'yjs';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (p: string): string => readFileSync(join(ROOT, p), 'utf8');
 
-/** Recursive source grep — for Pitfall 1 src-wide scan. */
-const grepSrcRecursive = (needle: string): string[] => {
-  const results: string[] = [];
-  const walk = (dir: string): void => {
-    for (const entry of readdirSync(dir)) {
-      const full = join(dir, entry);
-      const s = statSync(full);
-      if (s.isDirectory()) walk(full);
-      else if (entry.endsWith('.ts')) {
-        const txt = readFileSync(full, 'utf8');
-        if (txt.includes(needle)) results.push(full);
-      }
-    }
-  };
-  walk(join(ROOT, 'src'));
-  return results;
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Structural tier — S1..S14 (NET-01, NET-03, NetError, PeerConfig, daemon)
@@ -78,12 +61,19 @@ describe('Phase 18 — Structural: libp2p transport wiring (NET-01, NET-03)', ()
     assert.ok(matches && matches.length === 1, 'streamMuxers must include yamux() exactly once');
   });
 
-  test("S3 Pitfall 1 LOCK: circuitRelayServer NEVER appears in any src/ file", () => {
-    const hits = grepSrcRecursive('circuitRelayServer');
-    assert.equal(
-      hits.length,
-      0,
-      `circuitRelayServer found in: ${hits.join(', ')} — must use circuitRelayTransport() (client-only)`,
+  test("S3 LOCK: circuitRelayServer is present but ONLY behind the relayServer flag", () => {
+    // Superseded decision: relay-server (hop) mode was originally out of scope,
+    // so this lock forbade circuitRelayServer entirely. It is now a first-class
+    // feature (a dedicated public relay node for NAT'd/CGNAT peers), but a LEAF
+    // must never silently become a relay — the service stays gated on
+    // cfg.relayServer. This lock now enforces that gating instead of a blanket ban.
+    assert.ok(
+      transport.includes('circuitRelayServer('),
+      'circuitRelayServer() must be wired (relay-server mode for NAT traversal)',
+    );
+    assert.ok(
+      transport.includes('cfg.relayServer'),
+      'circuitRelayServer must be gated on cfg.relayServer — leaves never auto-become relays',
     );
   });
 
@@ -196,7 +186,10 @@ describe('Phase 18 — Structural: PeerConfig extensions (Plan 01)', () => {
       cfg.includes('max_concurrent_share_syncs: 10'),
       'default max_concurrent_share_syncs must be 10',
     );
-    assert.ok(cfg.includes('relays: []'), 'default relays must be []');
+    // relays default is now env-driven (FOLKLORE_RELAYS → ENV_RELAYS), so a
+    // shipped default relay isn't shadowed by an empty literal. Empty when the
+    // env is unset, so the effective default is still [] until a relay is deployed.
+    assert.ok(cfg.includes('relays: ENV_RELAYS'), 'default relays must come from ENV_RELAYS');
     assert.ok(cfg.includes('upnp: true'), 'default upnp must be true');
   });
 

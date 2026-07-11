@@ -14,6 +14,7 @@ export default tseslint.config(
       'demo/**',
       'bin/**',
       'scripts/**',
+      'functions/**', // Cloudflare Workers runtime (Response/fetch globals) — not the Node config
       'folklore-rs/**',
       '.claude/**',
       '.planning/**',

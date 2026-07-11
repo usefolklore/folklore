@@ -96,6 +96,18 @@ export interface PeerConfig {
      * (a community list — multiple seeds, anyone can run one). */
     readonly bootstrap_peers: readonly string[];
   };
+  /** HTTP tracker rendezvous (BitTorrent-tracker model) — the DEFAULT WAN
+   * discovery path. A tiny stateless endpoint that holds peer pointers only;
+   * cheaper and faster than the public DHT. Set url to '' to disable. */
+  readonly tracker: {
+    /** Base URL of the tracker (e.g. https://usefolklore.com). '' = disabled. */
+    readonly url: string;
+    /** Swarm namespace — peers only discover others in the same namespace. */
+    readonly namespace: string;
+  };
+  /** Run THIS node as a circuit-relay-v2 server (a relay for NAT'd peers).
+   * Default false — only a dedicated public relay box sets this true. */
+  readonly relay_server: boolean;
   /** Token bucket for inbound federated-search requests (per-peer). */
   readonly search_rate_limit: {
     readonly rate_per_sec: number;
@@ -183,13 +195,32 @@ const ENV_BOOTSTRAP_PEERS: readonly string[] = (process.env.FOLKLORE_BOOTSTRAP_P
   .map((s) => s.trim())
   .filter(Boolean);
 
+// Default HTTP tracker (BitTorrent-tracker rendezvous). Overridable via
+// FOLKLORE_TRACKER_URL; set to '' to run without a tracker (local/DHT-only).
+const FOLKLORE_TRACKER_URL: string = process.env.FOLKLORE_TRACKER_URL ?? 'https://usefolklore.com';
+
+// Default circuit-relay multiaddr(s) for NAT'd leaf nodes (comma-separated).
+// A node with a relay configured reserves a slot and advertises a reachable
+// /…/p2p-circuit address. Empty by default until a relay is deployed; wire it
+// once the relay node is up (FOLKLORE_RELAYS or peer.relays in config.yaml).
+const ENV_RELAYS: readonly string[] = (process.env.FOLKLORE_RELAYS ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 const DEFAULT_PEER: PeerConfig = {
   port: 0,
   listen_host: '127.0.0.1',
   mdns: true,
-  dht: { enabled: true, server: false, public: true, bootstrap_peers: ENV_BOOTSTRAP_PEERS },
+  // public DHT is now OFF by default — every node used to dial the public IPFS
+  // Amino bootstrappers on boot (~50s+ of WAN latency + noise). Discovery now
+  // goes through the HTTP tracker (below); the public DHT is opt-in for
+  // tracker-independent operation.
+  dht: { enabled: true, server: false, public: false, bootstrap_peers: ENV_BOOTSTRAP_PEERS },
+  tracker: { url: FOLKLORE_TRACKER_URL, namespace: 'folklore' },
+  relay_server: false,
   search_rate_limit: { rate_per_sec: 10, burst: 30 },
-  relays: [],
+  relays: ENV_RELAYS,
   upnp: true,
   bandwidth: {
     max_updates_per_sec_per_peer: 50,
@@ -291,6 +322,17 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
             return fromConfig.length > 0 ? fromConfig : ENV_BOOTSTRAP_PEERS;
           })(),
         },
+        tracker: {
+          url: str(
+            (peerRaw.tracker as Record<string, unknown> | undefined)?.url,
+            DEFAULT_PEER.tracker.url,
+          ),
+          namespace: str(
+            (peerRaw.tracker as Record<string, unknown> | undefined)?.namespace,
+            DEFAULT_PEER.tracker.namespace,
+          ),
+        },
+        relay_server: bool(peerRaw.relay_server, DEFAULT_PEER.relay_server),
         search_rate_limit: {
           rate_per_sec: num(
             (peerRaw.search_rate_limit as Record<string, unknown> | undefined)?.rate_per_sec,
@@ -301,9 +343,15 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
             DEFAULT_PEER.search_rate_limit.burst,
           ),
         },
-        relays: Array.isArray(peerRaw.relays)
-          ? (peerRaw.relays as unknown[]).filter((x): x is string => typeof x === 'string')
-          : DEFAULT_PEER.relays,
+        // Non-empty config list wins; an empty/absent one falls back to the
+        // FOLKLORE_RELAYS env default (so a shipped default relay isn't shadowed
+        // by an empty config array — mirrors bootstrap_peers).
+        relays: ((): readonly string[] => {
+          const fromConfig = Array.isArray(peerRaw.relays)
+            ? (peerRaw.relays as unknown[]).filter((x): x is string => typeof x === 'string')
+            : [];
+          return fromConfig.length > 0 ? fromConfig : DEFAULT_PEER.relays;
+        })(),
         upnp: bool(peerRaw.upnp, DEFAULT_PEER.upnp),
         bandwidth: {
           max_updates_per_sec_per_peer: num(
