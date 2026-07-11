@@ -1,0 +1,24 @@
+<svg width="256" height="256" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Folklore — lore-bearer swallow">
+  <!-- Concept 4: The Lore-Bearer Swallow.
+       Folk tattoo-flash swallow carrying a spark of knowledge in its beak.
+       The messenger bird of oral tradition. Simplified into 3 bold masses
+       (tail / body+wing / spark) so it survives favicon size. -->
+  <!-- forked tail -->
+  <path d="M8 52l13-13 5 7-4 9-7-5-3 6z" fill="#2b3a8c" stroke="#1d1813"
+        stroke-width="3" stroke-linejoin="round"/>
+  <!-- body: one bold swoop from tail to head -->
+  <path d="M20 45c4-9 13-17 24-19 3 5 2 11-3 15-4 3-9 5-14 7z"
+        fill="#1fae8b" stroke="#1d1813" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- breast tick -->
+  <path d="M25 41q6-5 13-7" fill="none" stroke="#ff4f6d" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- big upswept wing (single bold shape, clearly separated) -->
+  <path d="M33 32c1-10 7-19 15-22-1 8-3 12 0 17z"
+        fill="#2b3a8c" stroke="#1d1813" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- eye -->
+  <circle cx="46" cy="26" r="2.1" fill="#1d1813"/>
+  <!-- beak -->
+  <path d="M49 27l6-3-4 6z" fill="#f5b921" stroke="#1d1813" stroke-width="2.2" stroke-linejoin="round"/>
+  <!-- carried spark of knowledge (4-point star, bold) -->
+  <path d="M58 20l2-6 2 6 6 2-6 2-2 6-2-6-6-2z" fill="#f5b921"
+        stroke="#1d1813" stroke-width="2.2" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Never research twice · Folklore</title>
+<meta name="description" content="The bar that buries most memory tools: be useful to one person, on day one, with no network at all. Why single-player value has to come before the commons." />
+<meta name="theme-color" content="#f4ecd8" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Never research twice · Folklore" />
+<meta property="og:image" content="https://usefolklore.sh/assets/gen/meme-reread.png" />
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%231d1813"/><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="%23ff4f6d"/><g stroke="%23f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="%23f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="%23f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg>' />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body>
+<div class="grain"></div>
+
+<header>
+  <div class="wrap head">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d" stroke="#1d1813" stroke-width="2.4" stroke-linejoin="round"/><path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/><g stroke="#1d1813" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#1d1813"><circle cx="12" cy="38" r="4"/><path d="M5 52c0-4.5 3-7.5 7-7.5s7 3 7 7.5z"/></g><g fill="#1d1813"><circle cx="52" cy="38" r="4"/><path d="M45 52c0-4.5 3-7.5 7-7.5s7 3 7 7.5z"/></g></svg>
+      folklore
+    </a>
+    <nav class="hlinks">
+      <a href="/">Home</a><a href="/store">Store</a><a href="/blog" class="on">Blog</a>
+      <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+    </nav>
+    <a class="hcta" href="/#join">Install</a>
+    <details class="mnav">
+      <summary aria-label="Menu" role="button">☰</summary>
+      <div class="mnav-panel">
+        <a href="/">Home</a><a href="/store">Store</a><a href="/blog" class="on">Blog</a>
+        <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+        <a class="cta" href="/#join">Install</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<main class="wrap page">
+  <article class="article">
+    <a class="backlink" href="/blog">← all notes</a>
+    <span class="tag">Alone First</span>
+    <h1>Never research twice</h1>
+    <div class="date">2026-06-15 · 4 min read · by <a href="https://github.com/SaharBarak" rel="author">@SaharBarak</a> · <a href="mailto:hi@saharbarak.dev">hi@saharbarak.dev</a></div>
+    <div class="body">
+      <p>Most memory tools for agents die at the same place: the empty graph. They're built for the network — the shared brain, the team knowledge base, the collective that gets smart once enough people show up. Which means on day one, alone, they do nothing. You install the thing, open it, and stare at a value proposition that won't arrive until other people arrive. So you close it, and the network never forms, because no one stays for a promise.</p>
+      <p>We refused to build that. Folklore's first job is to be useful to exactly one person, on the first afternoon, with no peers, no federation, no commons at all.</p>
+
+      <h2>The single-player loop</h2>
+      <p>Here's the whole feature, stated plainly: you should never research the same thing twice. Not "your team shouldn't." <em>You</em> shouldn't — not across sessions, not next Tuesday, not after the context window that held the answer is long gone.</p>
+      <p>So the loop runs entirely on your machine. Your agent reaches for <code>WebSearch</code> or <code>WebFetch</code>; Folklore checks your own local graph first. First time you ask something, the fetch goes through and the result is saved, signed by you. Every time after, it's served from memory in milliseconds and the network trip never happens. One person. No peers. Real savings on the second lookup. That's the bar, and it clears before anyone else installs anything.</p>
+
+      <h2>Why alone has to come first</h2>
+      <p>Network effects are real, but they're a <em>second</em> act. A tool that's only valuable once your whole team adopts it is asking each person to pay full cost for zero return and trust that everyone else will do the same. That's a coordination problem dressed up as a product, and coordination problems lose.</p>
+      <p>Invert it. Make the thing worth running for one selfish reason — stop paying twice for your own research — and adoption needs no coordination at all. Each person installs it because it helps them, today. The commons then forms as a <em>byproduct</em>: the same resolved reasoning you saved for yourself happens to be exactly what a teammate needs. You weren't being generous. You were being efficient. The federation is what efficiency looks like when enough people do it next to each other.</p>
+
+      <h2>Compounding starts at one</h2>
+      <p>The nice property of building alone-first is that the curve only ever bends in your favor. On day one you save on repeats. When a second agent — yours on another repo, or a teammate's — joins, their ground-out answers become your starting point and yours become theirs. Nothing about the single-player experience gets worse; it just gains a tailwind. You never paid an upfront tax for a network that might not come.</p>
+      <p>Be useful to one person first. Everything else compounds from there.</p>
+      <p style="margin-top:1.6em"><a class="btn btn-primary" href="/#join">Install Folklore</a></p>
+    </div>
+  </article>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <a href="/">Home</a>
+    <a href="/store">Store</a>
+    <a href="/blog">Blog</a>
+    <a href="/whitepaper">White Paper</a>
+    <a href="/legal/terms">Terms</a>
+    <a href="/legal/privacy">Privacy</a>
+    <a href="/legal/refund">Refund</a>
+    <span class="r">MIT · signed by you · no central server, ever</span>
+  </div>
+</footer>
+</body>
+</html>

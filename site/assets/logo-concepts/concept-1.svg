@@ -1,0 +1,19 @@
+<svg width="256" height="256" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Folklore — gathered hearth">
+  <!-- Concept 1: The Gathered Hearth.
+       A hearth flame rising from a ring of peer-nodes: lore told around the fire,
+       shared across the commons. Pink flame, ink ring, yellow ember core. -->
+  <!-- ring of gathered peers around the fire -->
+  <circle cx="32" cy="49" r="3.4" fill="#1d1813"/>
+  <circle cx="16" cy="45" r="3.4" fill="#1d1813"/>
+  <circle cx="48" cy="45" r="3.4" fill="#1d1813"/>
+  <circle cx="9"  cy="36" r="3.4" fill="#1d1813"/>
+  <circle cx="55" cy="36" r="3.4" fill="#1d1813"/>
+  <!-- arc connecting them (the commons / the gathering) -->
+  <path d="M9 36q23 18 46 0" fill="none" stroke="#1d1813" stroke-width="3" stroke-linecap="round"/>
+  <!-- the flame: oral tradition, told at the hearth -->
+  <path d="M32 6c5 9-6 12-6 19a6 6 0 0 0 12 0c0-3-2-5-2-5 5 3 8 8 8 14a12 12 0 1 1-24 0c0-11 9-13 12-23z"
+        fill="#ff4f6d" stroke="#1d1813" stroke-width="3" stroke-linejoin="round"/>
+  <!-- ember core -->
+  <path d="M32 30c2 4-3 6-3 10a3 3 0 0 0 6 0c0-3-2-3-2-5 4 6-1 9-1 9"
+        fill="#f5b921" stroke="#1d1813" stroke-width="1.6" stroke-linejoin="round"/>
+</svg>
