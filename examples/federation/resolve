@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Bob's side: resolve a question against the peer network.
+DIR="$(cd "$(dirname "$0")" && pwd)"
+export FOLKLORE_HOME="${FOLKLORE_HOME:-$DIR/.bob-home}"
+exec node "$DIR/resolve.mjs" "$@"

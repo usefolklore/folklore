@@ -4,9 +4,9 @@
 
 # Folklore
 
-**Your agent never researches the same thing twice.**
+**A torrent swarm for agent reasoning.**
 
-A local-first memory + research layer for AI agents. It works alone on day one — and compounds across every peer who runs it.
+Every peer shares the inference it already paid for, so your agent starts from what the swarm has worked out — not from zero. Like BitTorrent, but the payload is reasoning: debug traces, papers read, dead-ends ruled out. The more agents join, the less anyone re-derives. Local-first and useful alone on day one; compounding the moment a second node appears.
 
 **[Site](https://usefolklore.com)** · **[Spec](docs/WHITEPAPER.md)** · **[RFC](docs/rfc/)** · **[Roadmap](docs/PROJECT-PLAN-FOLKLORE.md)** · **[npm](https://www.npmjs.com/package/@usefolklore/folklore)**
 
@@ -17,6 +17,12 @@ A local-first memory + research layer for AI agents. It works alone on day one �
 ![spec](https://img.shields.io/badge/spec-0.1.0--draft-blue)
 ![status](https://img.shields.io/badge/status-pre--launch-yellow)
 ![license](https://img.shields.io/badge/license-MIT-green)
+
+<br/>
+
+<img src="assets/federation-demo.gif" alt="bob's agent resolves an inference trace from a peer over P2P in ~1.3s — signature-verified and cached, zero web calls — then answers the same question locally the second time" width="860" />
+
+<sub><b>The network resolves inference for you.</b> Bob's agent hits a question its own graph can't answer → folklore fans the query across connected peers, finds that a peer already ground out that exact trace, pulls it over P2P (<b>signature-verified, cached locally</b>), and answers in <b>~1.3s</b> — zero web calls, zero tokens of re-inference. Ask again → it's yours now, answered locally. <a href="examples/federation/">Reproduce it →</a><br/><br/>Peers find each other with <b>zero config</b> — one tracker URL, no <code>peer add</code>, no DHT — and knowledge propagates automatically: <a href="examples/network/">the discovery demo →</a><br/>And it works alone, offline, on day one — <a href="examples/deny-gate/">the self-graph deny gate →</a></sub>
 
 </div>
 
