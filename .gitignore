@@ -72,3 +72,8 @@ examples/network/.alice-home/
 examples/network/.bob-home/
 examples/network/.tracker.pid
 examples/network/.tracker.log
+
+# in-session demo build artifacts (the .gif is committed)
+examples/in-session/.frames/
+examples/in-session/.you-home/
+examples/in-session/.peer-*/

@@ -20,9 +20,9 @@ Every peer shares the inference it already paid for, so your agent starts from w
 
 <br/>
 
-<img src="assets/federation-demo.gif" alt="bob's agent resolves an inference trace from a peer over P2P in ~1.3s — signature-verified and cached, zero web calls — then answers the same question locally the second time" width="860" />
+<img src="assets/in-session-demo.gif" alt="Inside a Claude Code session: the agent reaches for WebSearch, folklore denies the web call and answers from two peers' signed graphs with zero re-inference, while the status bar shows the node's reputation climbing as it serves traces back to other agents" width="900" />
 
-<sub><b>The network resolves inference for you.</b> Bob's agent hits a question its own graph can't answer → folklore fans the query across connected peers, finds that a peer already ground out that exact trace, pulls it over P2P (<b>signature-verified, cached locally</b>), and answers in <b>~1.3s</b> — zero web calls, zero tokens of re-inference. Ask again → it's yours now, answered locally. <a href="examples/federation/">Reproduce it →</a><br/><br/>Peers find each other with <b>zero config</b> — one tracker URL, no <code>peer add</code>, no DHT — and knowledge propagates automatically: <a href="examples/network/">the discovery demo →</a><br/>And it works alone, offline, on day one — <a href="examples/deny-gate/">the self-graph deny gate →</a></sub>
+<sub><b>Compounding inference across a swarm — inside your Claude Code session.</b> Your agent reaches for the web; folklore finds that peers already ground the answer out and <b>denies the web call</b>, answering from their signed graphs — zero web, zero tokens of re-inference. Meanwhile your node serves <i>its</i> traces back to the swarm: the status bar climbs <code>🏅 1 → 2 → 3 rep</code>, flashing <code>⚡ answered &lt;peer&gt;</code> each time you help another agent. You pay for an inference once; the whole swarm reuses it, and answering earns you reputation. <a href="examples/in-session/">Reproduce it →</a></sub>
 
 </div>
 
