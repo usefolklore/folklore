@@ -1202,6 +1202,8 @@ function initMemeCarousel(){
         if(seen){
           var fresh=ids.filter(function(id){return seen.indexOf(id)<0;});
           if(fresh.length) elLog.textContent='peer '+short(fresh[fresh.length-1])+' joined the swarm';
+        } else if(peers.length>0){
+          elLog.textContent='live · '+peers.length+' node'+(peers.length===1?'':'s')+' online';
         }
         if(peers.length===0) elLog.textContent='swarm forming — be the first node';
         seen=ids;
