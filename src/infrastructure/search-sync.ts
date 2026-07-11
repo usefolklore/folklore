@@ -57,6 +57,7 @@ import { redactNode } from '../domain/secret-gate.js';
 import { buildPatterns } from '../domain/sharing.js';
 import { signMatch, type MatchAttestation } from '../domain/match-attestation.js';
 import { sanitiseSourceUri } from './recall-sync.js';
+import { recordServed } from './contribution.js';
 
 type PatternSet = ReturnType<typeof buildPatterns>;
 
@@ -337,6 +338,9 @@ interface SearchHandlerDeps {
   /** 32-byte Ed25519 seed (peer key) for per-match attestation.
    *  Absent = matches ship unsigned (asker scores them accordingly). */
   readonly signSeed?: Uint8Array;
+  /** Called after a served search with (peerId, matchCount). >0 means we handed
+   *  a peer usable inference — drives the contribution ledger. */
+  readonly onServed?: (peer: string, count: number) => void;
 }
 
 /**
@@ -516,6 +520,7 @@ const handleSearchRequest = async (
       timestamp: new Date().toISOString(), peer: remotePeerId,
       action: 'search_response', outcome: 'allowed', k: req.k, resultCount: matches.length,
     });
+    deps.onServed?.(remotePeerId, matches.length);
   } finally {
     fs.close();
   }
@@ -555,6 +560,7 @@ export const createSearchRegistry = (
     // construction touch-protocol uses.
     secretsPatterns: getGraph ? buildPatterns(extraSecretPatterns ?? []) : undefined,
     signSeed,
+    onServed: (peer, count) => recordServed(homePath, { peer, kind: 'search', count }),
   },
 });
 

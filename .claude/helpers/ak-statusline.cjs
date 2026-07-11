@@ -320,6 +320,21 @@ function main() {
   const peerColor = peerCount > 0 ? c.brightCyan : c.dim;
   parts.push(`🌐 ${peerColor}${peerCount}${c.reset} peer${peerCount === 1 ? '' : 's'}`);
 
+  // Contribution — inference this node has served to the swarm. Reputation
+  // climbs by 1 for every peer search/fetch answered; a fresh serve (<45s)
+  // flashes "answered <peer>" so you see your node earning its keep live.
+  const contrib = readJson(path.join(HOME, 'contribution.json'));
+  if (contrib && (contrib.reputation > 0 || (Array.isArray(contrib.peers_helped) && contrib.peers_helped.length))) {
+    const rep = contrib.reputation || 0;
+    const helped = Array.isArray(contrib.peers_helped) ? contrib.peers_helped.length : 0;
+    let seg = `🏅 ${c.brightYellow}${rep}${c.reset} rep ${c.dim}·${c.reset} served ${c.brightGreen}${helped}${c.reset} peer${helped === 1 ? '' : 's'}`;
+    const servedAgo = contrib.last_served_at ? Date.now() - Date.parse(contrib.last_served_at) : NaN;
+    if (Number.isFinite(servedAgo) && servedAgo < 45_000 && contrib.last_served_peer) {
+      seg += `  ${c.brightGreen}⚡ answered ${formatPeerForStatusline(contrib.last_served_peer)}${c.reset}`;
+    }
+    parts.push(seg);
+  }
+
   // Daemon
   const daemonIcon = daemonSt === 'on' ? `${c.brightGreen}●${c.reset}` : `${c.dim}○${c.reset}`;
   const daemonStr = `daemon${daemonIcon}`;
