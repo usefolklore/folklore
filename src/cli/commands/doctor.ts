@@ -359,6 +359,60 @@ function checkStoreDrift(): Check {
   }
 }
 
+/**
+ * MCP server registered — the twin of checkHookEngine. `folklore claude
+ * install` wires a `mcp__folklore__*` PreToolUse matcher into settings.json,
+ * but the tools only EXIST if the folklore MCP server is also registered
+ * where the harness reads it (project .mcp.json or ~/.claude.json). If it
+ * isn't, the matcher fires in the void: hooks look wired, the graph is
+ * unreachable, and nothing complains. Report LOUDLY when unregistered.
+ */
+function checkMcpRegistered(): Check {
+  const hasFolklore = (raw: string): boolean => {
+    try {
+      const j = JSON.parse(raw) as { mcpServers?: Record<string, unknown> };
+      return Boolean(j.mcpServers && 'folklore' in j.mcpServers);
+    } catch {
+      return false;
+    }
+  };
+
+  const projectMcp = join(process.cwd(), '.mcp.json');
+  const projectOk = existsSync(projectMcp) && hasFolklore(readFileSync(projectMcp, 'utf8'));
+
+  // ~/.claude.json holds both a root mcpServers and per-project blocks.
+  let userOk = false;
+  const userCfg = join(homedir(), '.claude.json');
+  if (!projectOk && existsSync(userCfg)) {
+    try {
+      const j = JSON.parse(readFileSync(userCfg, 'utf8')) as {
+        mcpServers?: Record<string, unknown>;
+        projects?: Record<string, { mcpServers?: Record<string, unknown> }>;
+      };
+      const inRoot = Boolean(j.mcpServers && 'folklore' in j.mcpServers);
+      const inProj = Boolean(
+        j.projects &&
+          Object.values(j.projects).some((p) => p?.mcpServers && 'folklore' in p.mcpServers),
+      );
+      userOk = inRoot || inProj;
+    } catch {
+      userOk = false;
+    }
+  }
+
+  const ok = projectOk || userOk;
+  const where = projectOk ? '.mcp.json' : userOk ? '~/.claude.json' : 'none';
+  return {
+    name: 'MCP server registered',
+    ok,
+    detail: ok
+      ? `folklore server present in ${where}`
+      : 'folklore NOT registered — the mcp__folklore__* hook matches a tool nothing provides; graph unreachable from Claude Code',
+    blocking: false,
+    fix: 'run `folklore claude install`, or `claude mcp add folklore -- folklore mcp start`',
+  };
+}
+
 function render(c: Check): string {
   // Non-blocking failures render [WARN] (not [skip]) — a dead memory layer
   // must not look like a quiet healthy one (dev critique).
@@ -400,6 +454,7 @@ export async function doctor(args: string[]): Promise<number> {
     checkSchemaPatch(graphImport),
     checkV5SchemaReadiness(),
     checkHookEngine(),
+    checkMcpRegistered(),
     checkStoreDrift(),
   ];
 
