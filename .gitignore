@@ -59,3 +59,16 @@ scripts/fellows-eval/
 eval/*
 # ...except committed retrieval-quality fixtures used by bench/ runners.
 !eval/fixtures/
+
+# folklore demo build artifact
+examples/deny-gate/.demo-home/
+
+# folklore federation demo homes (build artifacts; the .gif is committed)
+examples/federation/.alice-home/
+examples/federation/.bob-home/
+
+# folklore network demo build artifacts (the .gif is committed)
+examples/network/.alice-home/
+examples/network/.bob-home/
+examples/network/.tracker.pid
+examples/network/.tracker.log

@@ -34,12 +34,17 @@ test('folkloreRendezvousCid is deterministic and matches the golden value', asyn
   assert.equal(a.multihash.code, 0x12, 'multihash must be sha256 (0x12)');
 });
 
-test('dht.public defaults to true (zero-infra discovery on by default)', async () => {
+test('dht.public defaults to false (HTTP tracker is the default discovery; public DHT is opt-in)', async () => {
   const cfg = await loadConfig('/nonexistent/config.yaml');
   assert.equal(cfg.isOk(), true);
   if (cfg.isOk()) {
-    assert.equal(cfg.value.peer.dht.public, true, 'public IPFS DHT discovery is on by default — peers found with no folklore-owned seed');
-    assert.equal(cfg.value.peer.dht.enabled, true, 'DHT enabled by default');
+    // The public IPFS DHT used to be the default, but dialing the Amino
+    // bootstrappers on boot cost ~50s+ of WAN latency + noise on every node.
+    // Discovery now defaults to the HTTP tracker; the public DHT is opt-in.
+    assert.equal(cfg.value.peer.dht.public, false, 'public IPFS DHT is opt-in, not the default');
+    assert.equal(cfg.value.peer.dht.enabled, true, 'the (private) DHT service stays enabled');
+    assert.equal(cfg.value.peer.tracker.url.length > 0, true, 'a default tracker URL is set for zero-config discovery');
+    assert.equal(cfg.value.peer.tracker.namespace, 'folklore', 'default namespace');
   }
 });
 

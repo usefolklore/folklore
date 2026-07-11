@@ -20,7 +20,7 @@ import { yamux } from '@libp2p/yamux';
 import { mdns } from '@libp2p/mdns';
 import { bootstrap } from '@libp2p/bootstrap';
 import { kadDHT } from '@libp2p/kad-dht';
-import { circuitRelayTransport } from '@libp2p/circuit-relay-v2';
+import { circuitRelayTransport, circuitRelayServer } from '@libp2p/circuit-relay-v2';
 import { dcutr } from '@libp2p/dcutr';
 // Layer B of the peer-discovery stack (oracle live queries). Floodsub
 // is the simpler pubsub over libp2p — O(n²) relay traffic but fine for
@@ -37,6 +37,11 @@ import { uPnPNAT } from '@libp2p/upnp-nat';
 // The Phase 17 decision to omit identify was correct when only tcp/noise/yamux
 // were wired; it becomes mandatory the moment circuitRelayTransport is added.
 import { identify } from '@libp2p/identify';
+// @libp2p/kad-dht@16 declares '@libp2p/ping' as a required service capability —
+// createLibp2p throws its capability check ("required capability @libp2p/ping
+// but it was not provided") when the DHT is on and ping is unwired. Already
+// resolved transitively via kad-dht; promoted to a direct dep + wired below.
+import { ping } from '@libp2p/ping';
 import { multiaddr } from '@multiformats/multiaddr';
 import { ResultAsync, okAsync, errAsync } from 'neverthrow';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -118,6 +123,16 @@ export interface TransportConfig {
    * catches its own errors internally and will not throw from createLibp2p).
    */
   readonly upnp?: boolean;
+  /**
+   * Run circuit-relay-v2 in SERVER (hop) mode — BE a relay for NAT'd peers.
+   * Default false. A dedicated relay node on a public host sets this true so
+   * peers behind CGNAT / symmetric NAT (who can never accept an inbound dial)
+   * reserve a slot and advertise a reachable `/…/p2p-circuit/p2p/<id>` address.
+   * dcutr then upgrades relayed connections to direct where the NAT permits;
+   * the genuinely-stuck pairs stay relayed (folklore payloads are KB-scale, so
+   * the relay's data cost is negligible). Requires a non-loopback listenHost.
+   */
+  readonly relayServer?: boolean;
 }
 
 /**
@@ -309,6 +324,10 @@ export const createNode = (
         // Safe to run unconditionally: it adds the /ipfs/id/1.0.0 protocol handler
         // and provides peer information exchange, which benefits DHT and dcutr too.
         identify: identify(),
+        // ping() satisfies the '@libp2p/ping' capability that kad-dht@16 requires
+        // as a serviceDependency. Cheap (registers the /ipfs/ping/1.0.0 handler,
+        // no traffic until a peer pings). Must be present whenever the DHT is on.
+        ping: ping(),
         // dcutr() takes no required args — registers as a libp2p service and
         // hooks the /libp2p/dcutr protocol. Auto-upgrades relay→direct on any
         // limited connection. No effect when no relay connections exist.
@@ -325,6 +344,21 @@ export const createNode = (
         // topics are subscribed. See infrastructure/oracle-gossip.ts
         // for the oracle-specific publish/subscribe helpers.
         pubsub: floodsub(),
+        // Circuit-relay-v2 SERVER (hop) — only on a dedicated public relay node
+        // (cfg.relayServer). Grants reservations so CGNAT/symmetric-NAT peers get
+        // a reachable /p2p-circuit address. applyDefaultLimit:false keeps relayed
+        // connections durable (the default ~2min/128KB cap would sever federation
+        // for pairs that never hole-punch); folklore payloads are KB-scale, and
+        // this is our own relay, so uncapped relayed streams are an acceptable
+        // trust cost. maxReservations is generous — the whole point is to serve
+        // many NAT'd leaves from one box.
+        ...(cfg.relayServer
+          ? {
+              circuitRelay: circuitRelayServer({
+                reservations: { maxReservations: 1024, applyDefaultLimit: false },
+              }),
+            }
+          : {}),
       };
 
       // Phase 18 NET-03: conditional /p2p-circuit listen. Only add when the user

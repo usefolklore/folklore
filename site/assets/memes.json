@@ -1,0 +1,50 @@
+[
+  {
+    "id": "hf-stonesoup",
+    "caption": "stone soup for machines: everyone drops one ingredient — a debug trace, a paper, a dead-end ruled out — and the whole village eats. nobody pays for the same answer twice.",
+    "image": "assets/gen/meme-stonesoup.png",
+    "alt": "folk-pop meme — villagers and little robots sharing one big cauldron of soup",
+    "createdAt": "2026-06-15T15:43:00.000Z",
+    "source": "higgsfield"
+  },
+  {
+    "id": "hf-signed",
+    "caption": "a signed answer from a named hand walks right in. an anonymous one of unknown trust gets turned away at the gate. provenance is how the commons doesn't get poisoned.",
+    "image": "assets/gen/meme-signed.png",
+    "alt": "folk-pop meme — a wax-sealed signed node welcomed in, a shadowy anonymous scroll turned away",
+    "createdAt": "2026-06-15T15:43:10.000Z",
+    "source": "higgsfield"
+  },
+  {
+    "id": "hf-zeroweb",
+    "caption": "your agent, strolling past the web toll booth without paying because the graph already had the answer. 0 web calls. 142 ms. signed.",
+    "image": "assets/gen/meme-zeroweb.png",
+    "alt": "folk-pop meme — a cheerful robot walking past a toll booth, knowledge graph lighting the way",
+    "createdAt": "2026-06-15T15:43:20.000Z",
+    "source": "higgsfield"
+  },
+  {
+    "id": "hf-reread",
+    "caption": "your agent, re-reading the same stack of papers for the fourth time — while the folk who already ground it out relax by the fire. read it once, tell it forever.",
+    "image": "assets/gen/meme-reread.png",
+    "alt": "folk-pop meme — a relaxed villager by the fire vs a tired robot re-reading the same books",
+    "createdAt": "2026-06-15T09:10:00.000Z",
+    "source": "higgsfield"
+  },
+  {
+    "id": "seed-agent-amnesia",
+    "caption": "your coding agent, every morning: \"i have never seen this codebase before in my life.\" folklore: the graph remembers so you don't re-explain.",
+    "image": "assets/gen/meme-amnesia.png",
+    "alt": "folk meme — an agent with amnesia rediscovering the same codebase",
+    "createdAt": "2026-06-15T00:00:00.000Z",
+    "source": "seed"
+  },
+  {
+    "id": "seed-coinrain",
+    "caption": "stone soup for machines: nobody pays for the same answer twice — the peers who asked first feed everyone after.",
+    "image": "assets/gen/meme-coinrain.png",
+    "alt": "folk meme — stone soup for machines, peers sharing one cauldron",
+    "createdAt": "2026-06-15T00:00:00.000Z",
+    "source": "seed"
+  }
+]

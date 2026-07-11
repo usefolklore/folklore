@@ -1,0 +1,9 @@
+bench-paraphrase-sigma: 36 real query↔source pairs (MiniLM, offline), 0 sources missing
+
+  true-match cos (query ↔ its source node):  p10=0.540 median=0.841 p90=0.924
+  spurious  cos (query ↔ random other node):  p10=-0.024 median=0.087 p90=0.234
+  separation AUC (true-match > spurious):     0.998
+  → equivalent sim σ (from median cos):       0.033
+
+VERDICT: REAL REGIME COMPOUNDS — measured σ≈0.033 ≤ 0.15, inside the regime where the graded sim shows cooperative compounding with ~0 false-admit. Real paraphrases stay close enough to their source for peers to reuse them.
+  (separation AUC 0.998 also matters — high AUC means the gate CAN tell true from spurious even if absolute cos is modest.)

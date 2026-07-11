@@ -135,6 +135,15 @@ export const buildEmbedder = (modelCache: string): Embedder => {
       }
       return rustSubprocessEmbedder({ model, dim });
     }
+    // Honor FOLKLORE_EMBEDDER_MODEL on the xenova path too. Previously only the
+    // rust backend selected the model, so xenova always loaded MiniLM (384-d) —
+    // a bge index could be built but never queried (dim mismatch). bge-base is
+    // the stronger 768-d encoder that fixes the energy-gate OOD separation
+    // (research/proof: AUC 0.41 → 0.97). Defaults unchanged when unset.
+    const xenovaModel = (process.env.FOLKLORE_EMBEDDER_MODEL ?? 'minilm').toLowerCase();
+    if (xenovaModel === 'bge-base') {
+      return xenovaEmbedder({ cacheDir: modelCache, model: 'Xenova/bge-base-en-v1.5', dim: 768 });
+    }
     return xenovaEmbedder({ cacheDir: modelCache });
   })();
 
@@ -217,6 +226,10 @@ export interface Runtime {
 export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
   const paths = runtimePaths();
   const cfgPath = join(paths.home, 'config.yaml');
+  // Index dim must match the embedder model (else a bge 768-d index can't be
+  // read by a 384-d-defaulted port). minilm=384, bge-base/nomic=768.
+  const embedderModel = (process.env.FOLKLORE_EMBEDDER_MODEL ?? 'minilm').toLowerCase();
+  const embedDim = embedderModel === 'bge-base' || embedderModel === 'nomic' ? 768 : 384;
 
   // V5 cutover (Phase 24): the boot path no longer reads or writes
   // the old room registry or share-policy files. The rooms
@@ -227,6 +240,7 @@ export const defaultRuntime = (): ResultAsync<Runtime, AppError> => {
     .andThen((cfg) =>
       openSqliteVectorIndex({
         path: paths.vectors,
+        dim: embedDim,
         binaryDim: parseQuantizationEnv(),
         binaryOnly: (process.env.FOLKLORE_VECTOR_FP32_DROP ?? '').toLowerCase() === 'true',
       })

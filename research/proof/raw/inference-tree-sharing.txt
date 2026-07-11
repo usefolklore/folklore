@@ -1,0 +1,9 @@
+bench-inference-tree-sharing: nfcorpus — 323 eval queries, 3633 docs, recall@10, q2q≥0.6, σ=0.033
+  stream 8000 instances (Zipfian + paraphrase recurrence); pool = shared answered-question→verified-doc trees
+
+  BASELINE direct recall@10:     73.5%
+  TREE-SHARED recall@10:         98.6%
+  improvement:                  +34.1%  (relative)
+  rescued (tree hit, direct miss): 2015   hurt (tree miss, direct hit): 7   inherited used: 7719/8000
+
+VERDICT: +34.1% so far (target ≥80%). Tree-sharing rescues 2015 / hurts 7. Iterate the mechanism (q2q threshold, reranking, multi-tree fusion).

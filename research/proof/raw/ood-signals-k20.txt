@@ -1,0 +1,13 @@
+bench-ood-signals: k=20 top-k distribution-shape signals, real ask path…
+.................................... in
+...................... out
+
+══ OOD SIGNAL SWEEP (k=20, n=36 in / 21 out) ══
+  negE         AUC 0.552
+  gap          AUC 0.505
+  marginBroad  AUC 0.474
+  top1         AUC 0.435
+  margin12     AUC 0.427
+  negEntropy   AUC 0.296
+
+VERDICT: no distribution-shape signal separates (best negE 0.55) — OOD admission stays unsolved at the bi-encoder layer.

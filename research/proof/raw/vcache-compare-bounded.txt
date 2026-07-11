@@ -1,0 +1,9 @@
+bench-vcache-compare: scifact — 300 queries, 5183 docs, 4 peers, recall@1
+  operating point = max recall with false-accept ≤ 2.0% (always-paraphrase, no exact cache)
+
+  COLD (direct, no cache):         recall 47.7%
+  SINGLE-NODE cache (vCache-like):  recall 60.7%  @ thr 0.475  (false-accept 0.0%)
+  FEDERATED tree-sharing:           recall 74.0%  @ thr 0.575  (false-accept 0.0%)
+
+  FEDERATED vs SINGLE-NODE cache: +22.0%  ← honest federation advantage at matched ≤2.0% error
+  FEDERATED vs COLD direct:       +55.2%

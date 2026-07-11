@@ -36,6 +36,7 @@ import type { SourcesConfig } from '../infrastructure/sources-config.js';
 import type { Libp2p } from '@libp2p/interface';
 import { loadOrCreateIdentity, createNode, dialAndTag } from '../infrastructure/peer-transport.js';
 import { startRendezvous, type RendezvousHandle } from '../infrastructure/rendezvous.js';
+import { startTrackerRendezvous, type TrackerRendezvousHandle } from '../infrastructure/tracker-rendezvous.js';
 import { loadPeers } from '../infrastructure/peer-store.js';
 import { buildPatterns } from '../domain/sharing.js';
 import { enforceRetention } from '../application/session-ingest.js';
@@ -473,6 +474,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
   // This keeps the daemon's network footprint zero for users who never use P2P.
   let liveNode: Libp2p | null = null;
   let liveRendezvous: RendezvousHandle | null = null; // DISC-04 — public-DHT discovery loop
+  let liveTrackerRendezvous: TrackerRendezvousHandle | null = null; // HTTP-tracker discovery loop
   let liveSync: ShareSyncRegistry | null = null;
   let liveSearch: SearchRegistry | null = null; // Phase 17
   let liveTouch: TouchRegistry | null = null; // Phase 31
@@ -512,6 +514,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
             bootstrapPeers: cfgRes.value.peer.dht.bootstrap_peers, // WAN seed discovery
             peersPath: join(deps.homePath, 'peers.json'), // enables peer:discovery persistence
             relays: cfgRes.value.peer.relays,
+            relayServer: cfgRes.value.peer.relay_server, // dedicated public relay node
             upnp: cfgRes.value.peer.upnp,
           });
           if (nodeRes.isErr()) {
@@ -522,17 +525,29 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
             // Surface dialable addresses — without this, a peer on
             // another machine has no way to learn what to `peer add`.
             // Logged AND persisted so `folklore peer status` can print
-            // them while the daemon runs.
-            const listenAddrs = liveNode.getMultiaddrs().map((a) => a.toString());
-            for (const addr of listenAddrs) {
+            // them while the daemon runs. Re-persisted on every
+            // self:peer:update because a circuit-relay reservation lands
+            // ASYNC after startup (~2s) — the initial snapshot would miss
+            // the /p2p-circuit address a NAT'd node must advertise.
+            const node = liveNode;
+            const writeP2pAddrs = (): void => {
+              const addrs = node.getMultiaddrs().map((a) => a.toString());
+              try {
+                writeFileSync(
+                  join(deps.homePath, 'p2p-addrs.json'),
+                  JSON.stringify({ peer_id: idRes.value.peerId.toString(), addrs, written_at: new Date().toISOString() }, null, 2),
+                );
+              } catch { /* non-fatal — log already has the addrs */ }
+            };
+            for (const addr of node.getMultiaddrs().map((a) => a.toString())) {
               daemonLog(deps.homePath, `p2p listening: ${addr}`);
             }
-            try {
-              writeFileSync(
-                join(deps.homePath, 'p2p-addrs.json'),
-                JSON.stringify({ peer_id: idRes.value.peerId.toString(), addrs: listenAddrs, written_at: new Date().toISOString() }, null, 2),
-              );
-            } catch { /* non-fatal — log already has the addrs */ }
+            writeP2pAddrs();
+            // libp2p fires this when our own address set changes (relay
+            // reservation granted/lost, UPnP mapping, new listener).
+            node.addEventListener('self:peer:update', () => {
+              writeP2pAddrs();
+            });
 
             try { deps.onFederationReady?.(liveNode); } catch { /* observer must not break startup */ }
 
@@ -554,6 +569,24 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
               daemonLog(
                 deps.homePath,
                 `rendezvous: continuous peer discovery started (${dht.public ? 'public IPFS DHT' : 'self-sovereign DHT + bootstrap'})`,
+              );
+            }
+
+            // HTTP-tracker discovery (BitTorrent-tracker model) — the DEFAULT
+            // WAN path. Announces our dial addrs + dials discovered peers on an
+            // interval. Cheap and fast (one HTTPS round trip) vs the public DHT.
+            // No-op when peer.tracker.url is empty.
+            const tracker = cfgRes.value.peer.tracker;
+            if (tracker.url && tracker.url.length > 0) {
+              liveTrackerRendezvous = startTrackerRendezvous({
+                node: liveNode as unknown as Parameters<typeof startTrackerRendezvous>[0]['node'],
+                trackerUrl: tracker.url,
+                namespace: tracker.namespace,
+                log: (m) => daemonLog(deps.homePath, m),
+              });
+              daemonLog(
+                deps.homePath,
+                `tracker: discovery started (${tracker.url}, ns=${tracker.namespace})`,
               );
             }
 
@@ -948,6 +981,9 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
     try { clearInterval(interval); } catch { /* benign */ }
     if (liveRendezvous) {
       try { liveRendezvous.stop(); } catch { /* benign */ }
+    }
+    if (liveTrackerRendezvous) {
+      try { liveTrackerRendezvous.stop(); } catch { /* benign */ }
     }
     // Cleanup order: rendezvous → oracle pubsub → search-gossip → touch → search → share → node.stop
     if (liveOracle) {

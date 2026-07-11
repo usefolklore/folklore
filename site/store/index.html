@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Store · Folklore</title>
+<meta name="description" content="Wear the commons. Folk-pop tees, prints, sticker sheets, enamel pins, and digital collectibles from the network. Drop 01, peers first." />
+<meta name="theme-color" content="#f4ecd8" />
+<meta property="og:title" content="Folklore Store — wear the commons" />
+<meta property="og:image" content="https://usefolklore.sh/assets/gen/og.png" />
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%231d1813"/><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="%23ff4f6d"/><g stroke="%23f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="%23f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="%23f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg>' />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body>
+<div class="grain"></div>
+
+<!-- 1 · announcement bar -->
+<aside class="announce" id="announce">
+  <div class="wrap">
+    <p><b>Drop 01</b> ships at launch · peers first · join the founders' list.</p>
+    <button class="ax" id="announce-x" aria-label="Dismiss announcement">×</button>
+  </div>
+</aside>
+
+<header>
+  <div class="wrap head">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d" stroke="#1d1813" stroke-width="2.4" stroke-linejoin="round"/><path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/><g stroke="#1d1813" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#1d1813"><circle cx="12" cy="38" r="4"/><path d="M5 52c0-4.5 3-7.5 7-7.5s7 3 7 7.5z"/></g><g fill="#1d1813"><circle cx="52" cy="38" r="4"/><path d="M45 52c0-4.5 3-7.5 7-7.5s7 3 7 7.5z"/></g></svg>
+      folklore
+    </a>
+    <nav class="hlinks">
+      <a href="/">Home</a><a href="/store" class="on">Store</a><a href="/blog">Blog</a>
+      <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+    </nav>
+    <a class="hcta" href="#founders">Join the list</a>
+    <details class="mnav">
+      <summary aria-label="Menu" role="button">☰</summary>
+      <div class="mnav-panel">
+        <a href="/">Home</a><a href="/store" class="on">Store</a><a href="/blog">Blog</a>
+        <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+        <a class="cta" href="#founders">Join the list</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<main class="wrap page">
+
+  <!-- 2 · hero / featured drop -->
+  <section class="drop" aria-labelledby="drop-title">
+    <div class="drop-copy">
+      <div class="stamp">Featured drop</div>
+      <h1 id="drop-title">The <em>Commons Kit.</em></h1>
+      <p class="drop-lede">The genesis bundle — the Never-Research-Twice tee, the full folk sticker sheet, and the Hearth enamel pin. The whole village, on you. Limited first run.</p>
+      <div class="drop-price">
+        <span class="now">$48</span>
+        <span class="was">$53</span>
+        <span class="save">save $5</span>
+      </div>
+      <div class="drop-cta">
+        <a class="btn btn-primary" data-price="commons-kit" href="#" aria-disabled="true">Coming soon</a>
+        <a class="btn btn-ghost" href="#apparel">Browse the shop</a>
+      </div>
+    </div>
+    <div class="drop-art">
+      <span class="drop-badge">Drop 01 — limited run</span>
+      <img src="/assets/gen/commons.png" width="1376" height="768" alt="The Commons Kit — folk-pop risograph of the whole village gathered around the fire, threads of stars between them" />
+    </div>
+  </section>
+</main>
+
+<!-- 3 · trust strip -->
+<section class="trust">
+  <div class="wrap">
+    <span><b>◇</b> Ships worldwide</span>
+    <span><b>◇</b> Secure checkout (Paddle)</span>
+    <span><b>◇</b> Peer-first drops</span>
+    <span><b>◇</b> Printed in small runs</span>
+  </div>
+</section>
+
+<main class="wrap page" style="padding-top:0">
+
+  <!-- 4 · category tabs -->
+  <nav class="cattabs" aria-label="Shop categories">
+    <a href="#apparel">Apparel</a>
+    <a href="#prints">Prints &amp; Posters</a>
+    <a href="#stickers">Stickers &amp; Pins</a>
+    <a href="#digital">Digital &amp; Collectibles</a>
+  </nav>
+
+  <!-- 4a · APPAREL -->
+  <section class="catsec" id="apparel">
+    <div class="catsec-head"><h2>Apparel</h2><span class="count">6 styles</span></div>
+    <div class="shop">
+
+      <article class="prod">
+        <div class="shot">
+          <div class="badges"><span class="badge tr pink">featured</span></div>
+          <img src="/assets/gen/merch-tee.png" width="1024" height="1024" loading="lazy" alt="Never-Research-Twice tee — folk-pop campfire-and-gathered-folk print on charcoal cotton"/>
+        </div>
+        <div class="meta">
+          <h3>Never-Research-Twice Tee</h3>
+          <div class="desc">The hearth mark — a campfire and the folk around it — screen-printed on heavyweight charcoal cotton. Unisex, S–3XL.</div>
+          <div class="row"><span class="price">$34</span><a class="buy" data-price="tee" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/mouth-ear-tee.png" width="1024" height="1024" loading="lazy" alt="Mouth to Ear tee — folk-pop print of an elder whispering knowledge to a child on cream cotton"/>
+        </div>
+        <div class="meta">
+          <h3>"Mouth to Ear" Tee</h3>
+          <div class="desc">The founding image — knowledge passing elder to child — on soft cream cotton. Unisex, S–3XL.</div>
+          <div class="row"><span class="price">$34</span><a class="buy" data-price="mouth-ear-tee" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <div class="badges"><span class="badge tr yellow">Drop 01 · 50 made</span></div>
+          <img src="/assets/gen/hoodie.png" width="1024" height="1024" loading="lazy" alt="The Commons Hoodie — charcoal fleece with an embroidered folk hearth crest on the chest"/>
+        </div>
+        <div class="meta">
+          <h3>The Commons Hoodie</h3>
+          <div class="desc">Heavyweight fleece, embroidered hearth on the chest, the whole village printed inside the hood.</div>
+          <div class="row"><span class="price">$72</span><a class="buy" data-price="hoodie" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/nbw-longsleeve.png" width="1024" height="1024" loading="lazy" alt="Network-Before-Web long-sleeve — charcoal shirt with a folk knowledge-graph motif down the sleeve"/>
+        </div>
+        <div class="meta">
+          <h3>Network-Before-Web Long-Sleeve</h3>
+          <div class="desc">The credo down the sleeve, the graph across the back. Charcoal, ribbed cuffs. Unisex.</div>
+          <div class="row"><span class="price">$42</span><a class="buy" data-price="nbw-longsleeve" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/cap.png" width="1024" height="1024" loading="lazy" alt="Folk Constellation Cap — cream and teal six-panel dad cap with an embroidered star-thread constellation"/>
+        </div>
+        <div class="meta">
+          <h3>Folk Constellation Cap</h3>
+          <div class="desc">Six-panel dad cap, embroidered star-thread constellation, brass slider. One size.</div>
+          <div class="row"><span class="price">$28</span><a class="buy" data-price="cap" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/crewneck.png" width="1024" height="1024" loading="lazy" alt="Peer-to-Peer Crewneck — oatmeal sweatshirt with two folk nodes shaking hands across the chest"/>
+        </div>
+        <div class="meta">
+          <h3>Peer-to-Peer Crewneck</h3>
+          <div class="desc">Mid-weight crewneck sweat, two nodes shaking hands across the chest. Oatmeal. Unisex.</div>
+          <div class="row"><span class="price">$54</span><a class="buy" data-price="crewneck" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- 4b · PRINTS & POSTERS -->
+  <section class="catsec" id="prints">
+    <div class="catsec-head"><h2>Prints &amp; Posters</h2><span class="count">6 prints</span></div>
+    <div class="shop">
+
+      <article class="prod">
+        <div class="shot">
+          <div class="badges"><span class="badge tr yellow">Drop 01 · 50 made</span></div>
+          <img src="/assets/gen/commons.png" width="1376" height="768" loading="lazy" alt="The Commons — folk-pop risograph art print of the whole village around the fire"/>
+        </div>
+        <div class="meta">
+          <h3>"The Commons" Print — A2</h3>
+          <div class="desc">The whole village around the fire, threads of stars between them. Risograph-grain giclée, A2.</div>
+          <div class="row"><span class="price">$40</span><a class="buy" data-price="commons-print" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/hero.png" width="1376" height="768" loading="lazy" alt="Mouth to Ear — folk-pop art print of an elder whispering to a child"/>
+        </div>
+        <div class="meta">
+          <h3>"Mouth to Ear" Print — A2</h3>
+          <div class="desc">Knowledge passing elder to child as a thread of stars. The founding image. Giclée, A2.</div>
+          <div class="row"><span class="price">$40</span><a class="buy" data-price="mouth-ear-print" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/graph.png" width="1376" height="768" loading="lazy" alt="The Knowledge Graph — folk-pop poster of connected story-nodes"/>
+        </div>
+        <div class="meta">
+          <h3>"Knowledge Graph" Poster — A1</h3>
+          <div class="desc">Story-nodes — suns, faces, books — wired into one constellation. Matte poster, A1.</div>
+          <div class="row"><span class="price">$30</span><a class="buy" data-price="graph-poster" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <div class="badges"><span class="badge tr pink">new</span></div>
+          <img src="/assets/gen/tee.png" width="1024" height="1024" loading="lazy" alt="The Hearth — folk-pop risograph crest of a flame inside a laurel and constellation"/>
+        </div>
+        <div class="meta">
+          <h3>"The Hearth" Risograph — A3</h3>
+          <div class="desc">The flame inside a laurel, a constellation above. Two-colour riso on cotton stock. A3.</div>
+          <div class="row"><span class="price">$26</span><a class="buy" data-price="hearth-riso" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/nbw-poster.png" width="1024" height="1024" loading="lazy" alt="Network Before Web poster — folk-pop framed print of a swallow carrying star-thread from the sun to a village of nodes"/>
+        </div>
+        <div class="meta">
+          <h3>"Network Before Web" Type Poster</h3>
+          <div class="desc">The credo set in Fraunces, risograph overprint. Bold type, no image. Matte, A1.</div>
+          <div class="row"><span class="price">$28</span><a class="buy" data-price="nbw-poster" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/fishflower.png" width="1024" height="1024" loading="lazy" alt="Swallow and Fish diptych — folk-pop prints of a swallow and a fish with a flower"/>
+        </div>
+        <div class="meta">
+          <h3>Swallow &amp; Fish Diptych</h3>
+          <div class="desc">Two small folk-pop prints — the swallow that carries word, the fish that keeps it. A4 pair.</div>
+          <div class="row"><span class="price">$32</span><a class="buy" data-price="swallow-fish-diptych" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- 4c · STICKERS & PINS -->
+  <section class="catsec" id="stickers">
+    <div class="catsec-head"><h2>Stickers &amp; Pins</h2><span class="count">7 items</span></div>
+    <div class="shop">
+
+      <article class="prod">
+        <div class="shot">
+          <div class="badges"><span class="badge tr pink">featured</span></div>
+          <img src="/assets/gen/merch-stickers.png" width="1024" height="1024" loading="lazy" alt="Folk-pop die-cut sticker sheet — sun, swallow, fish, flower, the teller"/>
+        </div>
+        <div class="meta">
+          <h3>Folk Sticker Sheet</h3>
+          <div class="desc">Die-cut weatherproof vinyl — the sun, swallow, fish, flower, and the teller. Stick the lore anywhere.</div>
+          <div class="row"><span class="price">$9</span><a class="buy" data-price="stickers" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/merch-pin.png" width="1024" height="1024" loading="lazy" alt="The Hearth enamel pin — folk-pop campfire and gathered folk, gold edges"/>
+        </div>
+        <div class="meta">
+          <h3>The Hearth Enamel Pin</h3>
+          <div class="desc">Hard-enamel lapel pin, polished gold edges, 1.25in. The voice of the folk on your collar.</div>
+          <div class="row"><span class="price">$12</span><a class="buy" data-price="hearth-pin" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/coin.png" width="1024" height="1024" loading="lazy" alt="Folk medallion enamel pin — hearth and constellation in a folk border"/>
+        </div>
+        <div class="meta">
+          <h3>Medallion Pin</h3>
+          <div class="desc">The folk medallion as a die-struck soft-enamel pin. Hearth, constellation, gold rim. 1.5in.</div>
+          <div class="row"><span class="price">$14</span><a class="buy" data-price="lore-medallion-pin" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <div class="badges"><span class="badge tr yellow">Drop 01 · 100 made</span></div>
+          <img src="/assets/gen/holofoil-sticker.png" width="1024" height="1024" loading="lazy" alt="Holofoil single sticker — die-cut rainbow-foil folk campfire-and-gathered-folk"/>
+        </div>
+        <div class="meta">
+          <h3>Holofoil Single Sticker</h3>
+          <div class="desc">The hearth — campfire and folk — in rainbow holofoil, die-cut, weatherproof. 3in. One per order while they last.</div>
+          <div class="row"><span class="price">$5</span><a class="buy" data-price="holofoil-sticker" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/node-magnets.png" width="1024" height="1024" loading="lazy" alt="Node Magnet Set — six round folk story-node magnets: sun, swallow, fish, flower, book, and the teller"/>
+        </div>
+        <div class="meta">
+          <h3>Node Magnet Set</h3>
+          <div class="desc">Six fridge magnets — the story-nodes from the graph. Build your own constellation on the door.</div>
+          <div class="row"><span class="price">$16</span><a class="buy" data-price="node-magnets" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/peers-first-sticker.png" width="1024" height="1024" loading="lazy" alt="Peers First slap sticker — bold folk badge of two nodes shaking hands over a hearth"/>
+        </div>
+        <div class="meta">
+          <h3>"Peers First" Slap Sticker</h3>
+          <div class="desc">Big bold slap sticker for the laptop lid. Matte vinyl, 4in. Peers first, web second.</div>
+          <div class="row"><span class="price">$4</span><a class="buy" data-price="peers-first-sticker" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <div class="badges"><span class="badge tr yellow">first 100 perk</span></div>
+          <img src="/assets/gen/founders-pin.png" width="1024" height="1024" loading="lazy" alt="Founder's Pin — numbered first-100 hard-enamel pin of a folk hearth and constellation with a gold rim"/>
+        </div>
+        <div class="meta">
+          <h3>Founder's Pin</h3>
+          <div class="desc">Numbered first-100 enamel pin. Not for sale on its own — a perk for the founders' list. Ships at launch.</div>
+          <div class="row"><span class="price"><span class="tbd">founders only</span></span><a class="buy" data-price="founders-pin" href="#founders" aria-disabled="true">Join the list</a></div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- 4d · DIGITAL & COLLECTIBLES -->
+  <section class="catsec" id="digital">
+    <div class="catsec-head"><h2>Digital &amp; Collectibles</h2><span class="count">6 items</span></div>
+    <div class="shop">
+
+      <article class="prod">
+        <div class="shot">
+          <div class="badges"><span class="badge tr pink">free</span></div>
+          <img src="/assets/gen/wallpaper-pack.png" width="1024" height="1024" loading="lazy" alt="Folk-Pop Wallpaper Pack — desktop and phone hearth wallpapers in every folk-pop colourway"/>
+        </div>
+        <div class="meta">
+          <h3>Folk-Pop Wallpaper Pack</h3>
+          <div class="desc">Desktop + phone wallpapers in every folk-pop colourway. Free — unlocked for the founders' list.</div>
+          <div class="row"><span class="price"><span class="tbd">free</span></span><a class="buy" data-price="wallpaper-pack" href="#founders" aria-disabled="true">Join to unlock</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/texture-pack.png" width="1024" height="1024" loading="lazy" alt="Risograph Texture Pack — laptop and tablet showing the folk hearth design with halftone and overprint texture swatches"/>
+        </div>
+        <div class="meta">
+          <h3>Risograph Texture Pack</h3>
+          <div class="desc">The grain, halftones, and overprint textures behind the brand. Hi-res PNG + procreate set.</div>
+          <div class="row"><span class="price">$12</span><a class="buy" data-price="texture-pack" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <img src="/assets/gen/commons-zine.png" width="1024" height="1024" loading="lazy" alt="The Commons Zine — folk-pop booklet cover of a village telling stories to machines around a hearth"/>
+        </div>
+        <div class="meta">
+          <h3>The Commons Zine — PDF</h3>
+          <div class="desc">A folk-pop zine on the idea: oral tradition for machines, told in pictures. Print-at-home PDF.</div>
+          <div class="row"><span class="price">$7</span><a class="buy" data-price="commons-zine" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <div class="badges"><span class="badge tr yellow">Drop 01 · 50 made</span></div>
+          <img src="/assets/gen/commons.png" width="1376" height="768" loading="lazy" alt="Numbered Print Edition — the Commons risograph, hand-numbered 1 of 50"/>
+        </div>
+        <div class="meta">
+          <h3>Numbered Print Edition — 1/50</h3>
+          <div class="desc">The Commons, hand-numbered and signed, edition of 50. Once they're gone, they're gone.</div>
+          <div class="row"><span class="price">$90</span><a class="buy" data-price="numbered-edition" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <div class="badges"><span class="badge tr pink">new</span></div>
+          <img src="/assets/gen/hero.png" width="1376" height="768" loading="lazy" alt="A2 Art Print — the Mouth to Ear folk-pop risograph print"/>
+        </div>
+        <div class="meta">
+          <h3>A2 Art Print</h3>
+          <div class="desc">A physical A2 risograph print of the Mouth to Ear image. The print is the product.</div>
+          <div class="row"><span class="price">$58</span><a class="buy" data-price="phygital-print" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+      <article class="prod">
+        <div class="shot">
+          <div class="badges"><span class="badge tr pink">featured</span></div>
+          <img src="/assets/gen/commons-kit.png" width="1024" height="1024" loading="lazy" alt="Genesis Commons Kit Bundle — flat-lay of the folk-print tee, sticker sheet, and gold hearth enamel pin"/>
+        </div>
+        <div class="meta">
+          <h3>Genesis "Commons Kit" Bundle</h3>
+          <div class="desc">The featured drop — tee + full sticker sheet + Hearth pin, bundled. Save vs buying apart.</div>
+          <div class="row"><span class="price">$48</span><a class="buy" data-price="commons-kit" href="#" aria-disabled="true">Coming soon</a></div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- 6 · social proof (honest) -->
+  <section class="proof" aria-labelledby="proof-title">
+    <h2 id="proof-title">Made by the network.</h2>
+    <p class="proof-lede">No paid reviews, no fake five-stars. The only number we'll show you is the one you can verify yourself — the repo's stars.</p>
+    <a class="gh" id="gh-stars" href="https://github.com/usefolklore/folklore" target="_blank" rel="noopener">
+      <span class="star">★</span> <span>github.com/usefolklore/folklore</span> · <b id="gh-count">stars on GitHub</b>
+    </a>
+  </section>
+
+  <!-- 7 · founders' list -->
+  <section class="waitlist" id="founders" aria-labelledby="founders-title">
+    <div class="stamp">Founders' list</div>
+    <h2 id="founders-title">First dibs.</h2>
+    <p>Join the founders' list for first access to Drop 01, the free wallpaper pack, and the numbered first-100 Founder's Pin the day it goes live.</p>
+    <!-- TODO(launch): replace PLACEHOLDER with the real Formspark form id, or swap action for your handler. -->
+    <form class="wl-form" action="https://submit-form.com/PLACEHOLDER" method="POST">
+      <input type="email" name="email" required placeholder="you@example.com" aria-label="Email address" autocomplete="email" />
+      <button type="submit">Join the list</button>
+    </form>
+    <p class="wl-fine">No spam, one mail per drop. Or write us: <a href="mailto:hi@saharbarak.dev" style="color:var(--yellow);border-bottom:1px solid var(--yellow)">hi@saharbarak.dev</a></p>
+  </section>
+
+  <!-- 8 · FAQ -->
+  <section class="faq" aria-labelledby="faq-title">
+    <h2 id="faq-title">Questions.</h2>
+    <details>
+      <summary>When does it ship? Where to?</summary>
+      <div class="ans">Drop 01 ships at launch, worldwide. Everything is printed in small runs, so limited items are first-come — and the founders' list gets first dibs. Exact ship dates and carriers land on each product page when checkout opens.</div>
+    </details>
+    <details>
+      <summary>Sizing — how do the apparel pieces run?</summary>
+      <div class="ans">Tees and long-sleeves are unisex, S–3XL, true to size with a slightly relaxed body. The hoodie runs heavyweight; size down for a trim fit. A full size chart per garment goes live with checkout.</div>
+    </details>
+    <details>
+      <summary>Refunds and returns?</summary>
+      <div class="ans">Physical goods follow our standard policy — see the <a href="/legal/refund">refund policy</a>. Made-to-order and digital items have their own terms, noted at checkout.</div>
+    </details>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <a href="/">Home</a>
+    <a href="/blog">Blog</a>
+    <a href="/whitepaper">White Paper</a>
+    <a href="/legal/terms">Terms</a>
+    <a href="/legal/privacy">Privacy</a>
+    <a href="/legal/refund">Refund</a>
+    <a href="https://github.com/usefolklore/folklore">GitHub</a>
+    <span class="r">MIT · signed by you · no central server, ever</span>
+  </div>
+</footer>
+
+<!-- 10 · sticky mobile bottom CTA -->
+<div class="mbar" aria-hidden="false">
+  <div class="mb-info">
+    <div class="mb-title">Commons Kit</div>
+    <div class="mb-price">$48 · Drop 01</div>
+  </div>
+  <a class="mb-cta" href="#founders">Join the list</a>
+</div>
+
+<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+<script src="/assets/config.js"></script>
+<script src="/assets/store-checkout.js"></script>
+<script>
+/* announcement bar — dismissible (no storage; session-less close is fine) */
+(function(){
+  var a=document.getElementById("announce"),x=document.getElementById("announce-x");
+  if(x&&a)x.addEventListener("click",function(){a.setAttribute("hidden","");});
+})();
+/* live GitHub stars — honest social proof, fails gracefully */
+(function(){
+  var el=document.getElementById("gh-count");
+  if(!el)return;
+  fetch("https://api.github.com/repos/usefolklore/folklore")
+    .then(function(r){return r.ok?r.json():Promise.reject();})
+    .then(function(j){
+      var n=Number(j.stargazers_count);
+      if(isFinite(n))el.textContent=n.toLocaleString()+(n===1?" star":" stars")+" on GitHub";
+    })
+    .catch(function(){/* keep the static "stars on GitHub" label */});
+})();
+</script>
+</body>
+</html>

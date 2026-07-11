@@ -1,0 +1,35 @@
+# Folklore relay node on Fly.io — public circuit-relay-v2 server for NAT'd peers.
+#   fly apps create folklore-relay
+#   fly volumes create folklore_data --size 1 --region <region>
+#   fly deploy
+# After deploy: capture the peerId (see README), point relay.usefolklore.com at
+# the app, and publish /dns4/relay.usefolklore.com/tcp/4103/p2p/<PEER_ID> as the
+# default FOLKLORE_RELAYS. Any Docker host works too — Fly is not required.
+app = "folklore-relay"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[mounts]
+  source = "folklore_data"
+  destination = "/data"
+
+# Raw TCP passthrough for the libp2p listener (no HTTP, no TLS termination).
+[[services]]
+  protocol = "tcp"
+  internal_port = 4103
+
+  [[services.ports]]
+    port = 4103
+
+  # A relay holds MANY concurrent connections (one per NAT'd leaf + relayed
+  # pairs), so the connection ceiling is higher than a plain bootstrap seed.
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 4000
+    soft_limit = 3500
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

@@ -1,0 +1,10 @@
+bench-energy-bge: bge-base re-scoring of real hits, k=5 …
+.................................... in
+...................... out
+
+══ ENERGY: MiniLM vs bge re-scoring ══
+  n: 36 in, 22 out
+  AUC(-E) MiniLM (1-distance) : 0.506
+  AUC(-E) bge re-scored       : 0.968
+  delta                       : +0.462
+  VERDICT: bge SEPARATES -> a full bge re-embed of the graph is justified.

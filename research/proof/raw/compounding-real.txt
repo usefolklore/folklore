@@ -1,0 +1,14 @@
+(loaded 5183 cached corpus embeddings)
+bench-compounding-real: scifact — 300 eval queries, 5183 corpus docs (MiniLM, real qrels)
+  16 peers, 6000 steps, cap 300, churn 20.0%; calibrated τ=0.394 sepMin=0.160 (query↔relevant-doc TPR 91.3%/FPR 11.3%)
+
+                       isolated      cooperative
+  web-fallback start      93.0%        73.3%
+  web-fallback end        65.0%        59.7%
+  correct-resolve rate    27.9%        39.3%   (admit AND top cached doc is qrel-relevant)
+  false-admit rate         5.4%         1.8%   (admit but top doc NOT relevant)
+  web trips paid           4233         3599
+  compute saved         13.04 M     18.39 M tok
+
+VERDICT: COMPOUNDS (real corpus) — cooperative correct-resolve 39.3% vs isolated 27.9%.
+  1.18× fewer web trips, 5.35 M extra tokens reused. false-admit 1.8%. Real queries, real docs, real qrels.

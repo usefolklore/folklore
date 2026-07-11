@@ -44,6 +44,8 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync, chmodSync, unlinkSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { platform } from 'node:os';
 
 // Script filenames in .claude/hooks/ — the "legacy" one is the Phase 20
 // SessionStart hook; the others are the prefetch + auto-save + MCP-pre +
@@ -282,6 +284,23 @@ const CLAUDE_MD_MARKER_END = '<!-- folklore:end -->';
 
 // ─────────────── install ────────────────
 
+// How Claude Code should spawn the folklore MCP server. Prefer a `folklore`
+// binary on PATH (installed globally / via the package bin); fall back to
+// `npx --yes folklore mcp start` so a fresh clone still resolves. Mirrors
+// harness.ts resolveServerCmd so both installers agree on the command.
+type McpServerCmd = { readonly command: string; readonly args: readonly string[] };
+const folkloreOnPath = (): boolean => {
+  const probe =
+    platform() === 'win32'
+      ? spawnSync('where', ['folklore'], { stdio: 'ignore' })
+      : spawnSync('command', ['-v', 'folklore'], { stdio: 'ignore', shell: true });
+  return probe.status === 0;
+};
+const mcpServerCmd = (): McpServerCmd =>
+  folkloreOnPath()
+    ? { command: 'folklore', args: ['mcp', 'start'] }
+    : { command: 'npx', args: ['--yes', 'folklore', 'mcp', 'start'] };
+
 const install = (projectDir: string): number => {
   const claudeDir = join(projectDir, '.claude');
   const hooksDir = join(claudeDir, 'hooks');
@@ -384,6 +403,28 @@ const install = (projectDir: string): number => {
     `  updated ${settingsPath} (PreToolUse + MCP-pre + PostToolUse + UserPromptSubmit + SessionStart + statusLine + env wired)`,
   );
 
+  // 2b. Register the folklore MCP server in the project .mcp.json. Without
+  //     this the MCP-pre hook matcher wired above (mcp__folklore__*) matches a
+  //     tool that nothing provides — hooks fire in the void, the tools never
+  //     exist, and the graph is unreachable from Claude Code. Mirrors
+  //     `claude mcp add --scope project`; only folklore's own key is touched,
+  //     any other servers in the file are preserved.
+  const mcpJsonPath = join(projectDir, '.mcp.json');
+  let mcpCfg: { mcpServers?: Record<string, unknown> } = {};
+  if (existsSync(mcpJsonPath)) {
+    try {
+      mcpCfg = JSON.parse(readFileSync(mcpJsonPath, 'utf8'));
+    } catch {
+      console.error(`  warning: could not parse ${mcpJsonPath}, creating fresh`);
+    }
+  }
+  const servers = (mcpCfg.mcpServers ?? {}) as Record<string, unknown>;
+  const cmd = mcpServerCmd();
+  servers.folklore = { type: 'stdio', command: cmd.command, args: [...cmd.args], env: {} };
+  mcpCfg.mcpServers = servers;
+  writeFileSync(mcpJsonPath, JSON.stringify(mcpCfg, null, 2) + '\n');
+  console.log(`  updated ${mcpJsonPath} (folklore MCP server registered: ${cmd.command} ${cmd.args.join(' ')})`);
+
   // 3. Add section to CLAUDE.md
   let claudeMd = '';
   if (existsSync(claudeMdPath)) {
@@ -469,6 +510,24 @@ const uninstall = (projectDir: string): number => {
       }
     } catch {
       console.error(`  warning: could not update ${settingsPath}`);
+    }
+  }
+
+  // 2b. Drop the folklore MCP server from .mcp.json (only our key; other
+  //     servers and the file itself are left intact when non-empty).
+  const mcpJsonPath = join(projectDir, '.mcp.json');
+  if (existsSync(mcpJsonPath)) {
+    try {
+      const mcpCfg = JSON.parse(readFileSync(mcpJsonPath, 'utf8')) as {
+        mcpServers?: Record<string, unknown>;
+      };
+      if (mcpCfg.mcpServers && 'folklore' in mcpCfg.mcpServers) {
+        delete mcpCfg.mcpServers.folklore;
+        writeFileSync(mcpJsonPath, JSON.stringify(mcpCfg, null, 2) + '\n');
+        console.log(`  updated ${mcpJsonPath} (folklore MCP server removed)`);
+      }
+    } catch {
+      console.error(`  warning: could not update ${mcpJsonPath}`);
     }
   }
 
