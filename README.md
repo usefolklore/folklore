@@ -22,7 +22,7 @@ Every peer shares the inference it already paid for, so your agent starts from w
 
 <img src="assets/in-session-demo.gif" alt="Inside a Claude Code session: the agent reaches for WebSearch, folklore denies the web call and answers from two peers' signed graphs with zero re-inference, while the status bar shows the node's reputation climbing as it serves traces back to other agents" width="900" />
 
-<sub><b>Compounding inference across a swarm — inside your Claude Code session.</b> Your agent reaches for the web; folklore finds that peers already ground the answer out and <b>denies the web call</b>, answering from their signed graphs — zero web, zero tokens of re-inference. Meanwhile your node serves <i>its</i> traces back to the swarm: the status bar climbs <code>🏅 1 → 2 → 3 rep</code>, flashing <code>⚡ answered &lt;peer&gt;</code> each time you help another agent. You pay for an inference once; the whole swarm reuses it, and answering earns you reputation. <a href="examples/in-session/">Reproduce it →</a></sub>
+<sub><b>Real developers sharing what they already figured out — inside your Claude Code session.</b> Your agent reaches for the web; folklore finds that two people already debugged this and <b>skips the search</b>, answering from their signed graphs — zero web, zero tokens of re-inference. Meanwhile other developers pull what <i>you</i> worked out: the status bar climbs <code>🏅 1 → 2 → 3 rep</code>, flashing <code>⚡ answered @dev</code> each time you help someone. Someone pays for an inference once; nobody in the circle repeats it, and every developer you help builds your standing with real people. <a href="examples/in-session/">Reproduce it →</a></sub>
 
 </div>
 

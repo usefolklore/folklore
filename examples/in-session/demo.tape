@@ -9,6 +9,12 @@ Set Height 680
 Set Theme "Catppuccin Mocha"
 Set Padding 24
 
+# launch hidden — session.mjs runs console.clear() on start, so the launch
+# command is wiped before we Show. What's recorded looks like a live session.
+Hide
 Type "node session.mjs"
 Enter
-Sleep 19s
+Sleep 700ms
+Show
+
+Sleep 18s
