@@ -77,3 +77,8 @@ examples/network/.tracker.log
 examples/in-session/.frames/
 examples/in-session/.you-home/
 examples/in-session/.peer-*/
+
+# live-feed demo build artifacts (the .gif is committed)
+examples/live-feed/.you/
+examples/live-feed/.peer-*/
+examples/live-feed/.real-events.jsonl

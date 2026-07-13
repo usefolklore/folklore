@@ -20,9 +20,9 @@ Every peer shares the inference it already paid for, so your agent starts from w
 
 <br/>
 
-<img src="assets/in-session-demo.gif" alt="Inside a Claude Code session: the agent reaches for WebSearch, folklore denies the web call and answers from two peers' signed graphs with zero re-inference, while the status bar shows the node's reputation climbing as it serves traces back to other agents" width="900" />
+<img src="assets/live-feed-demo.gif" alt="folklore live: a real-time feed of peers pulling traces from your tree — @sam-rs pulled tokio-rc-send-across-await, @tia-async pulled axum-extractor-order, @leo-k pulled sqlx-offline-prepare, each from your tree just now" width="900" />
 
-<sub><b>Real developers sharing what they already figured out — inside your Claude Code session.</b> Your agent reaches for the web; folklore finds that two people already debugged this and <b>skips the search</b>, answering from their signed graphs — zero web, zero tokens of re-inference. Meanwhile other developers pull what <i>you</i> worked out: the status bar climbs <code>🏅 1 → 2 → 3 rep</code>, flashing <code>⚡ answered @dev</code> each time you help someone. Someone pays for an inference once; nobody in the circle repeats it, and every developer you help builds your standing with real people. <a href="examples/in-session/">Reproduce it →</a></sub>
+<sub><b>Your knowledge, traveling the network — live.</b> Run <code>folklore live</code> and watch real peers pull traces from your tree in real time: <code>⬅ @sam-rs pulled tokio-rc-send-across-await from your tree · just now</code>. Every line is a real fetch off your running node — someone else's agent reusing what yours already worked out, instead of grinding it from zero. That's folklore: peers sharing hard-won reasoning, mouth to ear. <a href="examples/live-feed/">Reproduce it →</a></sub>
 
 </div>
 
