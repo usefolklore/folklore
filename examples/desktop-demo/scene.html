@@ -55,9 +55,7 @@
 
   /* ── notch island — real M-series geometry ─────────────
      Closed: ~190×32pt, top fillet r=6, bottom r=14.
-     Open:   island grows down+wide, top fillet r=19, bottom r=24.
-     Top corners are OUTWARD-flaring concave fillets (quarter
-     circles), exactly the NotchShape path Apple's notch uses.  */
+     Open:   top fillet r=19, bottom r=24 (NotchShape constants). */
   .notchwrap{
     position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:60;
     --nw:190px; --nh:32px; --topr:6px; --botr:14px;
@@ -75,7 +73,6 @@
     box-shadow:0 10px 30px -8px rgba(0,0,0,.8);
     overflow:hidden;
   }
-  /* outward top fillets — quarter circle centered at the bottom-outer corner */
   .fillet{position:absolute;top:0;width:var(--topr);height:var(--topr);pointer-events:none}
   .fillet.l{
     left:calc(var(--nw) / -2 - var(--topr));
@@ -86,7 +83,7 @@
     background:radial-gradient(circle at 100% 100%, transparent calc(var(--topr) - .5px), #000 var(--topr));
   }
   .island{
-    position:absolute;left:calc(var(--nw) / -2);top:32px;  /* below the notch strip — never clips */
+    position:absolute;left:calc(var(--nw) / -2);top:32px;
     width:var(--nw);height:calc(var(--nh) - 32px);
     display:flex;align-items:center;gap:14px;
     padding:0 24px 8px;
@@ -95,13 +92,43 @@
     overflow:hidden;
   }
   .notchwrap.open .island{opacity:1;transform:none}
+
+  /* the hearth glyph — LIVE flame */
   .island .glyph{
-    flex:0 0 auto;width:48px;height:48px;border-radius:12px;display:grid;place-items:center;
+    position:relative;flex:0 0 auto;width:48px;height:48px;border-radius:12px;display:grid;place-items:center;
     background:linear-gradient(150deg, rgba(31,174,139,.24), rgba(31,174,139,.07));
     border:1px solid rgba(31,174,139,.4);
   }
-  .island .glyph img{width:32px;height:32px;border-radius:7px}
+  .island .glyph::after{ /* warm breathing glow behind the fire */
+    content:'';position:absolute;inset:-6px;border-radius:16px;pointer-events:none;
+    background:radial-gradient(circle at 50% 62%, rgba(245,185,33,.28), transparent 65%);
+    animation:glow 2.4s ease-in-out infinite;
+  }
+  @keyframes glow{0%,100%{opacity:.5}50%{opacity:1}}
   .island.serve .glyph{background:linear-gradient(150deg, rgba(255,79,109,.24), rgba(255,79,109,.07));border-color:rgba(255,79,109,.4)}
+  .island .glyph svg{width:34px;height:34px;display:block}
+  /* flame animation — sway + lick, anchored at the base */
+  .fl-outer{transform-box:fill-box;transform-origin:50% 96%;animation:sway 2.1s ease-in-out infinite}
+  .fl-inner{transform-box:fill-box;transform-origin:50% 96%;animation:lick 1.15s ease-in-out infinite}
+  @keyframes sway{
+    0%,100%{transform:scaleY(1) skewX(0deg)}
+    22%{transform:scaleY(1.07) skewX(-2.4deg)}
+    48%{transform:scaleY(.96) skewX(1.8deg)}
+    74%{transform:scaleY(1.05) skewX(-1.2deg)}
+  }
+  @keyframes lick{
+    0%,100%{transform:scaleY(1);opacity:1}
+    35%{transform:scaleY(1.18) skewX(2deg);opacity:.85}
+    65%{transform:scaleY(.88);opacity:1}
+  }
+  .ember{animation:rise 1.9s ease-in infinite}
+  .ember.e2{animation-duration:2.4s;animation-delay:.7s}
+  .ember.e3{animation-duration:2.1s;animation-delay:1.3s}
+  @keyframes rise{
+    0%{transform:translateY(0);opacity:0}
+    15%{opacity:.9}
+    100%{transform:translateY(-15px);opacity:0}
+  }
   .island .body{min-width:0;flex:1}
   .island .kick{
     font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;
@@ -146,6 +173,8 @@
   .ln .viaS{color:var(--pink);font-weight:700}
   .ln .b{color:#fff;font-weight:600}
   .gap{height:9px;flex:0 0 auto}
+  .caret{display:inline-block;width:8px;height:14px;background:var(--paper);vertical-align:-2px;margin-left:1px;animation:blink 1s step-end infinite}
+  @keyframes blink{50%{opacity:0}}
 
   /* ── menubar client dropdown ─────────────────────────── */
   .drop{
@@ -171,20 +200,32 @@
   .flash{animation:flashrow .8s ease}
   @keyframes flashrow{0%{background:rgba(255,79,109,.22)}100%{background:transparent}}
 
-  /* ── title cards — brand voice, between phases ───────── */
+  /* ── title cards — stamped down like a woodcut ───────── */
   .card{
-    position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.96);z-index:80;
+    position:absolute;left:50%;top:44%;z-index:80;
     background:var(--paper);color:var(--ink);border:3px solid var(--ink);
     box-shadow:10px 10px 0 rgba(0,0,0,.6);
     padding:34px 46px 30px;text-align:center;max-width:640px;
-    opacity:0;transition:opacity .4s, transform .4s;pointer-events:none;
+    opacity:0;transform:translate(-50%,-50%) scale(1.1);
+    pointer-events:none;
   }
-  .card.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .card.show{animation:stamp .5s cubic-bezier(.25,.9,.3,1.15) forwards}
+  .card.hide{animation:unstamp .35s ease forwards}
+  @keyframes stamp{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(1.12)}
+    55%{opacity:1;transform:translate(-50%,-50%) scale(.985)}
+    100%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  }
+  @keyframes unstamp{
+    0%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    100%{opacity:0;transform:translate(-50%,-50%) scale(.96)}
+  }
   .card .klogo{width:52px;height:52px;border-radius:12px;margin:0 auto 14px;display:block}
   .card .kick{
     font-family:var(--mono);font-size:11.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;
     display:inline-block;background:var(--yellow);border:2px solid var(--ink);
     padding:5px 12px;box-shadow:3px 3px 0 var(--ink);margin-bottom:16px;
+    transform:rotate(-1.4deg);
   }
   .card .kick.tl{background:var(--teal);color:var(--paper)}
   .card .kick.pk{background:var(--pink);color:var(--paper)}
@@ -194,19 +235,24 @@
 
   /* persistent bottom stamp + caption during action */
   .phase{
-    position:absolute;left:50%;bottom:64px;transform:translateX(-50%);z-index:30;
+    position:absolute;left:50%;bottom:64px;z-index:30;
     display:inline-flex;align-items:center;gap:9px;
     font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
     background:var(--yellow);color:var(--ink);border:2px solid var(--ink);
     padding:7px 14px;box-shadow:4px 4px 0 rgba(0,0,0,.55);
-    opacity:0;transition:opacity .4s;white-space:nowrap;
+    opacity:0;transform:translateX(-50%);white-space:nowrap;
   }
-  .phase.show{opacity:1}
+  .phase.show{animation:pop .45s cubic-bezier(.25,.9,.3,1.2) forwards}
+  @keyframes pop{
+    0%{opacity:0;transform:translateX(-50%) translateY(10px) scale(.92)}
+    70%{opacity:1;transform:translateX(-50%) translateY(-2px) scale(1.03)}
+    100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+  }
   .phase .n{background:var(--ink);color:var(--yellow);padding:1px 7px;font-weight:800}
   .cap{
     position:absolute;left:0;right:0;bottom:26px;z-index:30;text-align:center;
     font-family:var(--serif);font-size:15.5px;color:var(--dim);letter-spacing:.005em;font-style:italic;
-    opacity:0;transition:opacity .4s;
+    opacity:0;transition:opacity .45s;
   }
   .cap.show{opacity:1}
   .cap b{color:var(--paper);font-weight:700;font-style:normal}
@@ -236,7 +282,24 @@
     <div class="fillet r"></div>
     <div class="notch"></div>
     <div class="island" id="island">
-      <div class="glyph"><img src="logo.svg" alt=""></div>
+      <div class="glyph">
+        <!-- the hearth, alive: swaying flame, licking core, rising embers -->
+        <svg viewBox="0 0 64 64" role="img" aria-label="folklore hearth">
+          <rect width="64" height="64" rx="14" fill="#1d1813"/>
+          <g class="fl-outer">
+            <path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d"/>
+          </g>
+          <g class="fl-inner">
+            <path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/>
+          </g>
+          <circle class="ember"    cx="27" cy="24" r="1.3" fill="#f5b921"/>
+          <circle class="ember e2" cx="36" cy="22" r="1.1" fill="#ff4f6d"/>
+          <circle class="ember e3" cx="32" cy="20" r="0.9" fill="#f4ecd8"/>
+          <g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g>
+          <g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g>
+          <g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g>
+        </svg>
+      </div>
       <div class="body">
         <div class="kick" id="kick"><span class="dotpulse"></span> <span>folklore</span></div>
         <div class="flow" id="flow"></div>
@@ -267,9 +330,7 @@
     <div class="body" id="term"></div>
   </div>
 
-  <!-- title card -->
   <div class="card" id="card"></div>
-
   <div class="phase" id="phase"></div>
   <div class="cap" id="cap"></div>
 </div>
@@ -283,39 +344,71 @@
         card=$('card'), phase=$('phase'), cap=$('cap'),
         dRep=$('dRep'), dLast=$('dLast');
 
-  // ember constellation
+  /* ── ember constellation — drifting, twinkling ── */
   const cv=$('stars'), ctx=cv.getContext('2d');
-  function stars(){
+  let pts=[];
+  function seed(){
     cv.width=innerWidth; cv.height=innerHeight;
-    const pts=[]; const n=26;
-    for(let i=0;i<n;i++) pts.push({x:Math.random()*cv.width,y:Math.random()*cv.height*.85,r:Math.random()*1.6+.4});
+    pts=[];
+    for(let i=0;i<26;i++) pts.push({
+      x:Math.random()*cv.width, y:Math.random()*cv.height*.9,
+      r:Math.random()*1.6+.4,
+      vy:-(Math.random()*.12+.04), vx:(Math.random()-.5)*.06,
+      tw:Math.random()*6.28, tws:Math.random()*.02+.008,
+    });
+  }
+  function tick(){
     ctx.clearRect(0,0,cv.width,cv.height);
+    for(const p of pts){
+      p.x+=p.vx; p.y+=p.vy; p.tw+=p.tws;
+      if(p.y<-4){p.y=cv.height*.9;p.x=Math.random()*cv.width;}
+      if(p.x<-4)p.x=cv.width+4; if(p.x>cv.width+4)p.x=-4;
+    }
     ctx.strokeStyle='rgba(245,185,33,.09)'; ctx.lineWidth=1;
     for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
       const a=pts[i],b=pts[j],d=Math.hypot(a.x-b.x,a.y-b.y);
       if(d<170){ctx.globalAlpha=1-d/170;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
     }
+    for(const p of pts){
+      ctx.globalAlpha=.25+.35*(1+Math.sin(p.tw))/2;
+      ctx.fillStyle='rgba(244,236,216,.9)';
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();
+    }
     ctx.globalAlpha=1;
-    for(const p of pts){ctx.fillStyle='rgba(244,236,216,.4)';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();}
+    requestAnimationFrame(tick);
   }
-  stars(); addEventListener('resize',stars);
+  seed(); addEventListener('resize',seed); tick();
+
+  const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
   function line(html){ const d=document.createElement('div'); d.className='ln'; d.innerHTML=html; term.appendChild(d);
     requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.add('show'))); return d; }
   function gap(){ const g=document.createElement('div'); g.className='gap'; term.appendChild(g); }
   function clearTerm(){ term.innerHTML=''; }
 
-  const wait=ms=>new Promise(r=>setTimeout(r,ms));
+  /* type a user question char-by-char, live caret */
+  async function typeQ(text){
+    const d=document.createElement('div'); d.className='ln show';
+    d.innerHTML=`<span class="pr">&gt;</span> <span class="u"></span><span class="caret"></span>`;
+    term.appendChild(d);
+    const u=d.querySelector('.u');
+    for(const ch of text){
+      u.textContent+=ch;
+      await wait(ch===' ' ? 34 : 22+Math.random()*26);
+    }
+    await wait(260);
+    d.querySelector('.caret').remove();
+  }
 
-  // title cards — hold the frame between phases
+  /* title cards — stamped down, lifted off */
   async function titleCard({logo=false, kickCls='', kick, h1, sub, hold=2400}){
     card.innerHTML =
       (logo ? `<img class="klogo" src="logo.svg" alt="">` : '') +
       `<span class="kick ${kickCls}">${kick}</span><h1>${h1}</h1><div class="sub">${sub}</div>`;
-    card.classList.add('show');
+    card.classList.remove('hide'); card.classList.add('show');
     await wait(hold);
-    card.classList.remove('show');
-    await wait(450);
+    card.classList.remove('show'); card.classList.add('hide');
+    await wait(420);
   }
 
   function setPhase(n, label){
@@ -382,8 +475,8 @@
     setPhase(1,'querying peers');
     setCap('Your agent asks the network first — <b>peers share hard-won inference</b>, so the reasoning is <span class="tl">pulled, not re-derived</span>.');
     for(const item of ASK){
-      line(`<span class="pr">&gt;</span> <span class="u">${item.q}</span>`);
-      await wait(650);
+      await typeQ(item.q);
+      await wait(300);
       askIsland(6);
       await wait(1350);
       pullIsland(item.node, item.who);
@@ -397,7 +490,7 @@
       await wait(1500);
       closeIsland();
       gap();
-      await wait(700);
+      await wait(650);
     }
     await wait(400);
     hidePhase();
@@ -435,24 +528,20 @@
       closeIsland(); hidePhase();
       await wait(600);
 
-      // opening title
       await titleCard({logo:true, kick:'folklore · p2p research layer',
         h1:'Inference, shared like torrents.',
         sub:'One real session, two directions: <b>first you query peers</b> — then <b>peers query you</b>.'});
 
-      // phase 1 title → action
       await titleCard({kickCls:'tl', kick:'phase 1',
         h1:'Querying peers',
         sub:'Your agent pulls answers <b>other peers already worked out</b> — straight from their trees, zero web calls.'});
       await pullPhase();
 
-      // phase 2 title → action
       await titleCard({kickCls:'pk', kick:'phase 2',
         h1:'Answering peers',
         sub:'Now the network pulls from <b>your</b> tree — every trace you grow seeds someone else&#39;s session.'});
       await servePhase();
 
-      // closing card
       await titleCard({logo:true, kick:'github.com/saharbarak/folklore',
         h1:'Reasoning compounds.',
         sub:'The more peers share, the less anyone re-derives. <b>Never research twice — anywhere on the network.</b>', hold:2600});
