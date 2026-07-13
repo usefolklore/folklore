@@ -124,9 +124,10 @@ export interface FetchRegistryDeps {
   /** 32-byte Ed25519 seed for node attestation. */
   readonly signSeed?: Uint8Array;
   readonly log?: (msg: string) => void;
-  /** Called after a successful serve with (peerId, nodesServed). >0 means real
-   *  inference was handed to a peer — drives the contribution ledger. */
-  readonly onServed?: (peer: string, count: number) => void;
+  /** Called after a successful serve with (peerId, nodesServed, nodeIds). >0
+   *  means real inference was handed to a peer — drives the contribution ledger
+   *  and the live feed. */
+  readonly onServed?: (peer: string, count: number, nodeIds?: readonly string[]) => void;
 }
 
 const isValidRequest = (req: unknown): req is FetchRequest => {
@@ -233,7 +234,7 @@ export const registerFetchProtocol = (deps: FetchRegistryDeps): void => {
           edges,
         } satisfies FetchResponse);
         log(`fetch responder ← peer=${peerIdStr.slice(0, 12)} asked=${req.node_ids.length} served=${nodes.length} edges=${edges.length}`);
-        deps.onServed?.(peerIdStr, nodes.length);
+        deps.onServed?.(peerIdStr, nodes.length, nodes.map((n) => n.node_id));
       } catch (e) {
         log(`fetch responder error: ${(e as Error).message}`);
       } finally {

@@ -32,6 +32,8 @@ export interface ServedEvent {
   readonly kind: 'search' | 'fetch';
   /** Number of matches / nodes actually served. 0 = nothing served, not counted. */
   readonly count: number;
+  /** Node ids this peer pulled from your tree — surfaced in the live feed. */
+  readonly nodes?: readonly string[];
 }
 
 const CONTRIB_FILE = 'contribution.json';
@@ -78,7 +80,10 @@ export const recordServed = (home: string, ev: ServedEvent): void => {
       last_served_peer: ev.peer,
     };
     writeFileSync(join(home, CONTRIB_FILE), JSON.stringify(next));
-    const line = JSON.stringify({ ts: at, peer: ev.peer, kind: ev.kind, count: ev.count });
+    // Cap the node list so the feed line stays bounded; the live view only
+    // needs a representative id or two per request.
+    const nodes = (ev.nodes ?? []).slice(0, 3);
+    const line = JSON.stringify({ ts: at, peer: ev.peer, kind: ev.kind, count: ev.count, nodes });
     if (line.length <= FEED_MAX_LINE_BYTES) appendFileSync(join(home, FEED_FILE), line + '\n');
   } catch {
     /* observability must never break a serve */

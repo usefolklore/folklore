@@ -338,9 +338,9 @@ interface SearchHandlerDeps {
   /** 32-byte Ed25519 seed (peer key) for per-match attestation.
    *  Absent = matches ship unsigned (asker scores them accordingly). */
   readonly signSeed?: Uint8Array;
-  /** Called after a served search with (peerId, matchCount). >0 means we handed
-   *  a peer usable inference — drives the contribution ledger. */
-  readonly onServed?: (peer: string, count: number) => void;
+  /** Called after a served search with (peerId, matchCount, nodeIds). >0 means
+   *  we handed a peer usable inference — drives the contribution ledger + feed. */
+  readonly onServed?: (peer: string, count: number, nodeIds?: readonly string[]) => void;
 }
 
 /**
@@ -520,7 +520,7 @@ const handleSearchRequest = async (
       timestamp: new Date().toISOString(), peer: remotePeerId,
       action: 'search_response', outcome: 'allowed', k: req.k, resultCount: matches.length,
     });
-    deps.onServed?.(remotePeerId, matches.length);
+    deps.onServed?.(remotePeerId, matches.length, matches.map((m) => m.node_id));
   } finally {
     fs.close();
   }
@@ -560,7 +560,7 @@ export const createSearchRegistry = (
     // construction touch-protocol uses.
     secretsPatterns: getGraph ? buildPatterns(extraSecretPatterns ?? []) : undefined,
     signSeed,
-    onServed: (peer, count) => recordServed(homePath, { peer, kind: 'search', count }),
+    onServed: (peer, count, nodeIds) => recordServed(homePath, { peer, kind: 'search', count, nodes: nodeIds }),
   },
 });
 

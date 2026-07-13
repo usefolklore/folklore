@@ -62,6 +62,7 @@ import { pruneVectors } from './commands/prune-vectors.js';
 import { weights } from './commands/weights.js';
 import { remember } from './commands/remember.js';
 import { resume } from './commands/resume.js';
+import { live } from './commands/live.js';
 
 type CommandFn = (args: string[]) => Promise<number> | number;
 
@@ -96,6 +97,7 @@ const commands: Record<string, CommandFn> = {
   hot,
   lint,
   save,
+  live,
   oracle,
   codebase,
   'recent-sessions': recentSessions,
