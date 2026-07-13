@@ -28,7 +28,7 @@
       linear-gradient(160deg, var(--wall1), var(--wall2) 55%, var(--wall3));
     overflow:hidden;
   }
-  .desktop{position:relative;width:100vw;height:100vh}
+  .desktop{position:relative;width:1280px;height:800px;overflow:hidden}
   .stars{position:absolute;inset:0;pointer-events:none;opacity:.55}
 
   /* ── menubar (notched Macs: menu bar height = notch height = 32pt) ── */
@@ -337,6 +337,8 @@
 
 <script>
 (() => {
+  const z=new URLSearchParams(location.search).get('zoom');
+  if(z) document.body.style.zoom=z;
   const $ = id => document.getElementById(id);
   const notch=$('notch'), island=$('island'), kick=$('kick'),
         flow=$('flow'), meta=$('meta'), term=$('term'),
@@ -348,7 +350,7 @@
   const cv=$('stars'), ctx=cv.getContext('2d');
   let pts=[];
   function seed(){
-    cv.width=innerWidth; cv.height=innerHeight;
+    cv.width=1280; cv.height=800;
     pts=[];
     for(let i=0;i<26;i++) pts.push({
       x:Math.random()*cv.width, y:Math.random()*cv.height*.9,
