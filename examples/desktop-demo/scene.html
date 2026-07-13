@@ -1,4 +1,7 @@
 <title>folklore · desktop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,800;1,9..144,400&family=Geist+Mono:wght@400;600;700;800&display=block" rel="stylesheet">
 <style>
   :root{
     /* folklore brand — paper & ink, hearth accents (site tokens) */
@@ -8,11 +11,10 @@
     --bar:rgba(29,24,19,.62); --line:rgba(244,236,216,.12);
     --win:#1d1813; --win2:#26201a; --winline:#3a3127;
     --txt:#f4ecd8; --dim:#c9bda1; --dimmer:#8a7c62;
-    --mono:"SF Mono",SFMono-Regular,Menlo,ui-monospace,monospace;
+    --mono:'Geist Mono',"SF Mono",SFMono-Regular,Menlo,ui-monospace,monospace;
     --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
-    --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+    --serif:'Fraunces',Georgia,"Iowan Old Style",serif;
   }
-  /* registered so the notch geometry animates like the real island */
   @property --nw   { syntax:"<length>"; inherits:true; initial-value:190px; }
   @property --nh   { syntax:"<length>"; inherits:true; initial-value:32px;  }
   @property --topr { syntax:"<length>"; inherits:true; initial-value:6px;   }
@@ -29,7 +31,10 @@
     overflow:hidden;
   }
   .desktop{position:relative;width:1280px;height:800px;overflow:hidden}
-  .stars{position:absolute;inset:0;pointer-events:none;opacity:.55}
+  .stars{position:absolute;inset:0;pointer-events:none;opacity:.55;transition:opacity .5s}
+  .stars.front{z-index:70;opacity:1}
+  .mapdim{position:absolute;inset:0;z-index:65;background:rgba(19,16,9,.78);opacity:0;transition:opacity .5s;pointer-events:none}
+  .mapdim.show{opacity:1}
 
   /* ── menubar (notched Macs: menu bar height = notch height = 32pt) ── */
   .menubar{
@@ -53,9 +58,7 @@
   .flk-ico .bump{position:absolute;top:-3px;right:-4px;width:7px;height:7px;border-radius:50%;background:var(--pink);border:1.5px solid #000;opacity:0;transition:opacity .25s}
   .flk-ico.serve .bump{opacity:1}
 
-  /* ── notch island — real M-series geometry ─────────────
-     Closed: ~190×32pt, top fillet r=6, bottom r=14.
-     Open:   top fillet r=19, bottom r=24 (NotchShape constants). */
+  /* ── notch island — real M-series geometry (NotchShape constants) ── */
   .notchwrap{
     position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:60;
     --nw:190px; --nh:32px; --topr:6px; --botr:14px;
@@ -64,7 +67,7 @@
                --topr .5s, --botr .5s;
     width:0;height:0;
   }
-  .notchwrap.open{ --nw:560px; --nh:126px; --topr:19px; --botr:24px; }
+  .notchwrap.open{ --nw:580px; --nh:126px; --topr:19px; --botr:24px; }
   .notch{
     position:absolute;top:0;left:calc(var(--nw) / -2);
     width:var(--nw);height:var(--nh);
@@ -99,7 +102,7 @@
     background:linear-gradient(150deg, rgba(31,174,139,.24), rgba(31,174,139,.07));
     border:1px solid rgba(31,174,139,.4);
   }
-  .island .glyph::after{ /* warm breathing glow behind the fire */
+  .island .glyph::after{
     content:'';position:absolute;inset:-6px;border-radius:16px;pointer-events:none;
     background:radial-gradient(circle at 50% 62%, rgba(245,185,33,.28), transparent 65%);
     animation:glow 2.4s ease-in-out infinite;
@@ -107,7 +110,6 @@
   @keyframes glow{0%,100%{opacity:.5}50%{opacity:1}}
   .island.serve .glyph{background:linear-gradient(150deg, rgba(255,79,109,.24), rgba(255,79,109,.07));border-color:rgba(255,79,109,.4)}
   .island .glyph svg{width:34px;height:34px;display:block}
-  /* flame animation — sway + lick, anchored at the base */
   .fl-outer{transform-box:fill-box;transform-origin:50% 96%;animation:sway 2.1s ease-in-out infinite}
   .fl-inner{transform-box:fill-box;transform-origin:50% 96%;animation:lick 1.15s ease-in-out infinite}
   @keyframes sway{
@@ -136,20 +138,21 @@
   }
   .island.serve .kick{color:var(--pink)}
   .island .flow{
-    font-family:var(--mono);font-size:14.5px;font-weight:600;color:var(--paper);
+    font-family:var(--mono);font-size:14px;font-weight:600;color:var(--paper);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:9px;
   }
   .island .arrow{color:var(--dimmer)}
   .island .who{color:var(--teal);font-weight:700}
   .island.serve .who{color:var(--pink)}
   .island .meta{font-size:11px;color:var(--dim);margin-top:4px;font-family:var(--ui)}
+  .island .meta b{color:var(--yellow);font-weight:600}
   .dotpulse{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 0 rgba(31,174,139,.6);animation:pulse 1.4s infinite;flex:0 0 auto}
   .island.serve .dotpulse{background:var(--pink);box-shadow:0 0 0 0 rgba(255,79,109,.6)}
   @keyframes pulse{70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
   .spinner{width:14px;height:14px;border-radius:50%;border:2px solid rgba(245,185,33,.3);border-top-color:var(--yellow);animation:spin .7s linear infinite;flex:0 0 auto}
   @keyframes spin{to{transform:rotate(360deg)}}
 
-  /* ── terminal ────────────────────────────────────────── */
+  /* ── terminal (claude code) ──────────────────────────── */
   .win{
     position:absolute;left:56px;top:104px;width:660px;height:456px;z-index:20;
     background:var(--win);border:1px solid var(--winline);border-radius:12px;
@@ -160,7 +163,18 @@
   .win .tl{width:12px;height:12px;border-radius:50%}
   .tl.r{background:#ff5f57}.tl.y{background:#febc2e}.tl.g{background:#28c840}
   .win .ttl{margin-left:8px;font-size:12.5px;color:var(--dim)}
-  .win .body{flex:1;padding:16px 18px;font-family:var(--mono);font-size:13px;line-height:1.6;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+  .win .ttl-r{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dimmer)}
+  .win .body{flex:1;padding:14px 18px;font-family:var(--mono);font-size:12.5px;line-height:1.58;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+  /* the real folklore statusline strip */
+  .win .sline{
+    display:flex;align-items:center;gap:10px;height:26px;padding:0 12px;flex:0 0 auto;
+    background:var(--win2);border-top:1px solid var(--winline);
+    font-family:var(--mono);font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;
+  }
+  .win .sline .fk{color:#b9a7ff;font-weight:700}
+  .win .sline .sep{color:var(--winline)}
+  .win .sline b{color:var(--paper);font-weight:600}
+  .win .sline .rep{color:var(--yellow)}
   .ln{opacity:0;transform:translateY(3px);transition:opacity .25s, transform .25s;flex:0 0 auto}
   .ln.show{opacity:1;transform:none}
   .ln .pr{color:var(--yellow);font-weight:700}
@@ -172,9 +186,18 @@
   .ln .via{color:var(--teal);font-weight:700}
   .ln .viaS{color:var(--pink);font-weight:700}
   .ln .b{color:#fff;font-weight:600}
-  .gap{height:9px;flex:0 0 auto}
+  .ln .slow{color:var(--dimmer)}
+  .ln .ms{color:var(--yellow);font-weight:700}
+  .gap{height:8px;flex:0 0 auto}
   .caret{display:inline-block;width:8px;height:14px;background:var(--paper);vertical-align:-2px;margin-left:1px;animation:blink 1s step-end infinite}
   @keyframes blink{50%{opacity:0}}
+  /* thinking shimmer */
+  .think{
+    background:linear-gradient(90deg, var(--dimmer) 20%, var(--paper) 45%, var(--dimmer) 70%);
+    background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shimmer 1.4s linear infinite;
+  }
+  @keyframes shimmer{to{background-position:-200% 0}}
 
   /* ── menubar client dropdown ─────────────────────────── */
   .drop{
@@ -200,12 +223,22 @@
   .flash{animation:flashrow .8s ease}
   @keyframes flashrow{0%{background:rgba(255,79,109,.22)}100%{background:transparent}}
 
-  /* ── title cards — stamped down like a woodcut ───────── */
+  /* ── macOS pointer ───────────────────────────────────── */
+  .pointer{
+    position:absolute;z-index:90;width:20px;height:26px;
+    left:900px;top:520px;opacity:0;
+    transition:left 1.1s cubic-bezier(.4,.1,.2,1), top 1.1s cubic-bezier(.4,.1,.2,1), opacity .3s, transform .15s;
+    filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));pointer-events:none;
+  }
+  .pointer.show{opacity:1}
+  .pointer.click{transform:scale(.82)}
+
+  /* ── title cards ─────────────────────────────────────── */
   .card{
     position:absolute;left:50%;top:44%;z-index:80;
     background:var(--paper);color:var(--ink);border:3px solid var(--ink);
     box-shadow:10px 10px 0 rgba(0,0,0,.6);
-    padding:34px 46px 30px;text-align:center;max-width:640px;
+    padding:34px 46px 30px;text-align:center;max-width:660px;
     opacity:0;transform:translate(-50%,-50%) scale(1.1);
     pointer-events:none;
   }
@@ -229,19 +262,22 @@
   }
   .card .kick.tl{background:var(--teal);color:var(--paper)}
   .card .kick.pk{background:var(--pink);color:var(--paper)}
-  .card h1{font-family:var(--serif);font-weight:700;font-size:34px;line-height:1.04;letter-spacing:-.02em;margin-bottom:10px}
+  .card .kick.dk{background:var(--ink);color:var(--paper);border-color:var(--ink);box-shadow:3px 3px 0 rgba(29,24,19,.35)}
+  .card h1{font-family:var(--serif);font-weight:800;font-size:34px;line-height:1.04;letter-spacing:-.02em;margin-bottom:10px}
   .card .sub{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--muted);line-height:1.5}
   .card .sub b{color:var(--ink);font-style:normal}
 
-  /* persistent bottom stamp + caption during action */
+  /* bottom stamp + caption */
   .phase{
-    position:absolute;left:50%;bottom:64px;z-index:30;
+    position:absolute;left:50%;bottom:64px;z-index:75;
     display:inline-flex;align-items:center;gap:9px;
     font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
     background:var(--yellow);color:var(--ink);border:2px solid var(--ink);
     padding:7px 14px;box-shadow:4px 4px 0 rgba(0,0,0,.55);
     opacity:0;transform:translateX(-50%);white-space:nowrap;
   }
+  .phase.dark{background:#3a3127;color:var(--paper)}
+  .phase.dark .n{background:var(--paper);color:var(--ink)}
   .phase.show{animation:pop .45s cubic-bezier(.25,.9,.3,1.2) forwards}
   @keyframes pop{
     0%{opacity:0;transform:translateX(-50%) translateY(10px) scale(.92)}
@@ -250,19 +286,20 @@
   }
   .phase .n{background:var(--ink);color:var(--yellow);padding:1px 7px;font-weight:800}
   .cap{
-    position:absolute;left:0;right:0;bottom:26px;z-index:30;text-align:center;
+    position:absolute;left:0;right:0;bottom:26px;z-index:75;text-align:center;
     font-family:var(--serif);font-size:15.5px;color:var(--dim);letter-spacing:.005em;font-style:italic;
     opacity:0;transition:opacity .45s;
   }
   .cap.show{opacity:1}
   .cap b{color:var(--paper);font-weight:700;font-style:normal}
-  .cap .tl{color:var(--teal)}.cap .pk{color:var(--pink)}
+  .cap .tl{color:var(--teal)}.cap .pk{color:var(--pink)}.cap .yl{color:var(--yellow)}
 
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
 <div class="desktop">
   <canvas class="stars" id="stars"></canvas>
+  <div class="mapdim" id="mapdim"></div>
 
   <div class="menubar">
     <span class="brand"><img src="logo.svg" alt=""> folklore</span>
@@ -272,18 +309,17 @@
       <span class="ico" title="battery"><svg viewBox="0 0 28 24" width="24" height="16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="7" width="20" height="10" rx="2.4"/><rect x="4" y="9" width="13" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M24 10.5v3" stroke-linecap="round"/></svg></span>
       <span class="ico" title="wifi"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 9a13 13 0 0 1 16 0M7 12.5a8 8 0 0 1 10 0M10 16a3.2 3.2 0 0 1 4 0"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg></span>
       <span class="ico" title="control center"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="7" rx="3.5"/><rect x="3" y="13" width="18" height="7" rx="3.5"/><circle cx="8" cy="7.5" r="1.4" fill="currentColor"/><circle cx="16" cy="16.5" r="1.4" fill="currentColor"/></svg></span>
-      <span class="clock">Mon 13 Jul&nbsp; 16:32</span>
+      <span class="clock" id="clock">Mon 13 Jul&nbsp; 16:32</span>
     </span>
   </div>
 
-  <!-- notch island — real M-series NotchShape geometry -->
+  <!-- notch island -->
   <div class="notchwrap" id="notch">
     <div class="fillet l"></div>
     <div class="fillet r"></div>
     <div class="notch"></div>
     <div class="island" id="island">
       <div class="glyph">
-        <!-- the hearth, alive: swaying flame, licking core, rising embers -->
         <svg viewBox="0 0 64 64" role="img" aria-label="folklore hearth">
           <rect width="64" height="64" rx="14" fill="#1d1813"/>
           <g class="fl-outer">
@@ -326,9 +362,25 @@
   </div>
 
   <div class="win">
-    <div class="tbar"><span class="tl r"></span><span class="tl y"></span><span class="tl g"></span><span class="ttl">claude — folklore — 80×24</span></div>
+    <div class="tbar">
+      <span class="tl r"></span><span class="tl y"></span><span class="tl g"></span>
+      <span class="ttl">claude — folklore</span>
+      <span class="ttl-r">fable-5 · 12% ctx</span>
+    </div>
     <div class="body" id="term"></div>
+    <div class="sline">
+      <span class="fk">Folklore</span><span>•</span><span>@SaharBarak</span>
+      <span class="sep">│</span>📊 <b>91,418</b> nodes
+      <span class="sep">│</span>🌐 <b>6</b> peers
+      <span class="sep">│</span>🤖 daemon<span style="color:#28c840">●</span>
+      <span class="sep">│</span><span class="rep" id="slRep">🏅 0 rep</span>
+    </div>
   </div>
+
+  <!-- macOS pointer -->
+  <svg class="pointer" id="pointer" viewBox="0 0 20 26">
+    <path d="M2 1 L2 20 L7 15.5 L10.5 24 L13.5 22.6 L10 14.5 L17 14 Z" fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round"/>
+  </svg>
 
   <div class="card" id="card"></div>
   <div class="phase" id="phase"></div>
@@ -339,16 +391,28 @@
 (() => {
   const z=new URLSearchParams(location.search).get('zoom');
   if(z) document.body.style.zoom=z;
+  const ZF=parseFloat(z||'1');
   const $ = id => document.getElementById(id);
   const notch=$('notch'), island=$('island'), kick=$('kick'),
         flow=$('flow'), meta=$('meta'), term=$('term'),
         drop=$('drop'), flkIco=$('flkIco'),
         card=$('card'), phase=$('phase'), cap=$('cap'),
-        dRep=$('dRep'), dLast=$('dLast');
+        dRep=$('dRep'), dLast=$('dLast'), slRep=$('slRep'),
+        mapdim=$('mapdim'), pointer=$('pointer'), clock=$('clock');
 
-  /* ── ember constellation — drifting, twinkling ── */
+  /* live menubar clock — ticks like a real Mac */
+  let clockMin = 32;
+  setInterval(()=>{ clockMin=(clockMin+1)%60; clock.innerHTML=`Mon 13 Jul&nbsp; 16:${String(clockMin).padStart(2,'0')}`; }, 30000);
+
+  /* ── ember constellation + network map mode ── */
   const cv=$('stars'), ctx=cv.getContext('2d');
-  let pts=[];
+  let pts=[], mapMode=false, mapT=0;
+  const YOU={x:640,y:565,label:'@SaharBarak (you)'};
+  const PEERS=[
+    {x:195,y:190,label:'@sam-rs'},   {x:1055,y:165,label:'@leo-k'},
+    {x:1130,y:430,label:'@mira-dev'},{x:170,y:470,label:'@tia-async'},
+    {x:930,y:635,label:'@noah-go'},  {x:430,y:120,label:'@priya-rs'},
+  ];
   function seed(){
     cv.width=1280; cv.height=800;
     pts=[];
@@ -377,9 +441,43 @@
       ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();
     }
     ctx.globalAlpha=1;
+
+    if(mapMode){
+      mapT+=1/60;
+      // edges — pulses travelling both directions between you and every peer
+      PEERS.forEach((p,i)=>{
+        const a=(Math.sin(mapT*2.6-i*1.05)+1)/2;
+        ctx.strokeStyle=`rgba(245,185,33,${.18+.4*a})`;
+        ctx.lineWidth=1.4;
+        ctx.beginPath();ctx.moveTo(YOU.x,YOU.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+        // moving spark along the edge
+        const t=(mapT*.55+i*.17)%1;
+        const sx=YOU.x+(p.x-YOU.x)*t, sy=YOU.y+(p.y-YOU.y)*t;
+        ctx.fillStyle= i%2 ? 'rgba(31,174,139,.95)' : 'rgba(255,79,109,.95)';
+        ctx.beginPath();ctx.arc(sx,sy,3,0,7);ctx.fill();
+      });
+      // peer nodes + labels
+      ctx.font='700 13px "Geist Mono",monospace';
+      PEERS.forEach(p=>{
+        ctx.fillStyle='rgba(244,236,216,.95)';
+        ctx.beginPath();ctx.arc(p.x,p.y,5,0,7);ctx.fill();
+        ctx.strokeStyle='rgba(245,185,33,.5)';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.arc(p.x,p.y,9+2*Math.sin(mapT*3),0,7);ctx.stroke();
+        ctx.fillStyle='rgba(244,236,216,.92)';
+        ctx.fillText(p.label, p.x+14, p.y+4);
+      });
+      // you — the hearth node
+      ctx.fillStyle='#f5b921';
+      ctx.beginPath();ctx.arc(YOU.x,YOU.y,7,0,7);ctx.fill();
+      ctx.strokeStyle='rgba(245,185,33,.65)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(YOU.x,YOU.y,12+3*Math.sin(mapT*3),0,7);ctx.stroke();
+      ctx.font='800 14px "Geist Mono",monospace';
+      ctx.fillStyle='#f5b921';
+      ctx.fillText(YOU.label, YOU.x+18, YOU.y+5);
+    }
     requestAnimationFrame(tick);
   }
-  seed(); addEventListener('resize',seed); tick();
+  seed(); tick();
 
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
@@ -388,7 +486,6 @@
   function gap(){ const g=document.createElement('div'); g.className='gap'; term.appendChild(g); }
   function clearTerm(){ term.innerHTML=''; }
 
-  /* type a user question char-by-char, live caret */
   async function typeQ(text){
     const d=document.createElement('div'); d.className='ln show';
     d.innerHTML=`<span class="pr">&gt;</span> <span class="u"></span><span class="caret"></span>`;
@@ -396,13 +493,19 @@
     const u=d.querySelector('.u');
     for(const ch of text){
       u.textContent+=ch;
-      await wait(ch===' ' ? 34 : 22+Math.random()*26);
+      await wait(ch===' ' ? 30 : 18+Math.random()*22);
     }
-    await wait(260);
+    await wait(240);
     d.querySelector('.caret').remove();
   }
 
-  /* title cards — stamped down, lifted off */
+  /* brief Claude-style thinking shimmer, replaced in place */
+  async function think(ms){
+    const d=line(`<span class="think">✻ Thinking…</span>`);
+    await wait(ms);
+    d.remove();
+  }
+
   async function titleCard({logo=false, kickCls='', kick, h1, sub, hold=2400}){
     card.innerHTML =
       (logo ? `<img class="klogo" src="logo.svg" alt="">` : '') +
@@ -413,8 +516,9 @@
     await wait(420);
   }
 
-  function setPhase(n, label){
+  function setPhase(n, label, dark=false){
     phase.classList.remove('show'); cap.classList.remove('show');
+    phase.classList.toggle('dark', dark);
     setTimeout(()=>{
       phase.innerHTML=`<span class="n">${n}</span> ${label}`;
       phase.classList.add('show');
@@ -429,18 +533,18 @@
     flow.innerHTML=`asking <span class="who">${peers} peers</span>…`;
     meta.textContent='querying connected trees before any web call';
   }
-  function pullIsland(node, who){
+  function pullIsland(node, who, ms, saved){
     notch.classList.add('open'); island.classList.remove('serve');
     kick.innerHTML=`<span class="dotpulse"></span> <span>you pulled from a peer's tree</span>`;
     flow.innerHTML=`<span>${node}</span> <span class="arrow">←</span> <span class="who">${who}</span>`;
-    meta.textContent='resolved from a peer · 0 web calls';
+    meta.innerHTML=`resolved in <b>${ms}ms</b> · 0 web calls · saved <b>${saved}</b> of re-derivation`;
     flkIco.classList.add('hot'); setTimeout(()=>flkIco.classList.remove('hot'),1400);
   }
   function serveIsland(node, who){
     notch.classList.add('open'); island.classList.add('serve');
     kick.innerHTML=`<span class="dotpulse"></span> <span>peer pulled from your tree</span>`;
     flow.innerHTML=`<span class="who">${who}</span> <span class="arrow">←</span> <span>${node}</span>`;
-    meta.textContent='you answered a peer · reputation +1';
+    meta.innerHTML=`you answered a peer · reputation <b>+1</b>`;
     flkIco.classList.add('serve'); flkIco.classList.add('hot');
     setTimeout(()=>flkIco.classList.remove('hot'),1400);
   }
@@ -452,70 +556,127 @@
     dRep.innerHTML=`🏅&nbsp; <b>${rep}</b> rep · helped <b>${helped}</b> peers`;
     dRep.classList.remove('flash'); void dRep.offsetWidth; dRep.classList.add('flash');
     dLast.style.visibility='visible'; dLast.innerHTML=`⚡&nbsp; answered ${who} just now`;
+    slRep.textContent=`🏅 ${rep} rep`;
   }
 
+  /* move the macOS pointer to an element (design-space coords), then click */
+  async function pointTo(el, dx=8, dy=10){
+    const r=el.getBoundingClientRect();
+    pointer.style.left=(r.left/ZF + r.width/(2*ZF) - dx)+'px';
+    pointer.style.top =(r.top/ZF + r.height/(2*ZF) - dy + 8)+'px';
+  }
+  async function pointerClick(){
+    pointer.classList.add('click'); await wait(150); pointer.classList.remove('click');
+  }
+
+  const Q1='share a token cache across tokio tasks?';
   // Phase 1 — the requests WE make to peers.
   const ASK = [
-    { q:'share a token cache across tokio tasks?', node:'tokio-rc-send-across-await', who:'@sam-rs',
+    { q:Q1, node:'tokio-rc-send-across-await', who:'@sam-rs', ms:412, saved:'~90s',
       a:['Wrap it in <span class="kw">Arc&lt;Mutex&lt;TokenCache&gt;&gt;</span> so it&#39;s <span class="b">Send</span> across spawned',
          'tasks, then thread it through the extractor.'] },
-    { q:'why does my axum extractor run in the wrong order?', node:'axum-extractor-order', who:'@leo-k',
+    { q:'why does my axum extractor run in the wrong order?', node:'axum-extractor-order', who:'@leo-k', ms:386, saved:'~2m',
       a:['Extractors run <span class="b">left→right</span>; a body-consuming one must come <span class="b">last</span>.',
          'Move <span class="kw">State</span> ahead of <span class="kw">Json</span> in the handler signature.'] },
-    { q:'compile sqlx queries without a live database?', node:'sqlx-offline-prepare', who:'@mira-dev',
+    { q:'compile sqlx queries without a live database?', node:'sqlx-offline-prepare', who:'@mira-dev', ms:445, saved:'~75s',
       a:['Run <span class="kw">cargo sqlx prepare</span> to cache the query metadata, commit',
          '<span class="kw">.sqlx/</span>, and build with <span class="kw">SQLX_OFFLINE=true</span>.'] },
   ];
-  // Phase 2 — peers resolving from OUR tree, after.
+  // Phase 2 — peers resolving from OUR tree.
   const SERVE = [
     { who:'@tia-async',  node:'arc-mutex-token-cache' },
     { who:'@noah-go',    node:'axum-extractor-order' },
     { who:'@priya-rs',   node:'sqlx-offline-prepare' },
   ];
 
-  async function pullPhase(){
-    setPhase(1,'querying peers');
-    setCap('Your agent asks the network first — <b>peers share hard-won inference</b>, so the reasoning is <span class="tl">pulled, not re-derived</span>.');
-    for(const item of ASK){
-      await typeQ(item.q);
-      await wait(300);
-      askIsland(6);
-      await wait(1350);
-      pullIsland(item.node, item.who);
-      await wait(400);
-      gap();
-      line(`<span class="mk">⏺</span> ${item.a[0]}`);
-      await wait(280);
-      line(`&nbsp;&nbsp;&nbsp;${item.a[1]}`);
-      await wait(260);
-      line(`&nbsp;&nbsp;&nbsp;<span class="dm">⎿ resolved from <span class="via">${item.who}</span>&#39;s tree · <span class="via">0</span> web calls</span>`);
-      await wait(1500);
-      closeIsland();
-      gap();
-      await wait(650);
+  /* the BEFORE beat — same question, the old way */
+  async function withoutBeat(){
+    setPhase('✗','without folklore', true);
+    setCap('Every agent re-derives alone — <b>the same reasoning, re-bought</b> in every session on earth.');
+    await typeQ(Q1);
+    await wait(250);
+    const s=line(`<span class="slow">⏺ Searching the web… <span id="webT">0.0s</span></span>`);
+    const tEl=s.querySelector('#webT');
+    // accelerated elapsed counter — 0 → 14.2s
+    const t0=performance.now();
+    while(performance.now()-t0 < 3200){
+      const v=((performance.now()-t0)/3200*14.2).toFixed(1);
+      tEl.textContent=v+'s';
+      await wait(90);
     }
-    await wait(400);
+    tEl.textContent='14.2s';
+    line(`&nbsp;&nbsp;&nbsp;<span class="dm">⎿ 14 tool calls · 6 sources fetched · 2 stale · re-deriving from scratch…</span>`);
+    await wait(1900);
     hidePhase();
     await wait(400);
+  }
+
+  async function pullPhase(){
+    setPhase(1,'querying peers');
+    setCap('The <b>same question</b>, with folklore: <span class="tl">pulled from a peer in milliseconds</span> — not re-derived.');
+    let first=true;
+    for(const item of ASK){
+      await typeQ(item.q);
+      await wait(250);
+      askIsland(6);
+      await wait(first?1200:1300);
+      pullIsland(item.node, item.who, item.ms, item.saved);
+      await wait(300);
+      gap();
+      await think(650);
+      line(`<span class="mk">⏺</span> ${item.a[0]}`);
+      await wait(260);
+      line(`&nbsp;&nbsp;&nbsp;${item.a[1]}`);
+      await wait(240);
+      line(`&nbsp;&nbsp;&nbsp;<span class="dm">⎿ resolved from <span class="via">${item.who}</span>&#39;s tree in <span class="ms">${item.ms}ms</span> · <span class="via">0</span> web calls</span>`);
+      await wait(1350);
+      closeIsland();
+      gap();
+      await wait(550);
+      first=false;
+    }
+    await wait(300);
+    hidePhase();
+    await wait(400);
+  }
+
+  /* the map beat — the wallpaper becomes the topology */
+  async function mapBeat(){
+    cv.classList.add('front'); mapdim.classList.add('show');
+    mapMode=true; mapT=0;
+    setCap('Six peers, one fire — <span class="yl">every tree feeds the others</span>.');
+    await wait(3400);
+    mapMode=false;
+    cv.classList.remove('front'); mapdim.classList.remove('show');
+    cap.classList.remove('show');
+    await wait(500);
   }
 
   async function servePhase(){
     setPhase(2,'answering peers');
     setCap('…now the same trees answer <b>other peers</b> — <span class="pk">your reasoning compounds across the network</span>, like torrents seeding.');
+    // the hand: cursor rides to the menubar client and opens it
+    pointer.classList.add('show');
+    await wait(80);
+    await pointTo(flkIco);
+    await wait(1250);
+    await pointerClick();
     drop.classList.add('open');
+    await wait(500);
+    pointer.classList.remove('show');
     gap();
     line(`<span class="dm"># your node is seeding — peers pull the traces you&#39;ve already worked out</span>`);
     gap();
-    await wait(1000);
+    await wait(800);
     for(const s of SERVE){
       serveIsland(s.node, s.who);
       bumpRep(s.who);
       line(`<span class="mkS">⬅</span> <span class="viaS">${s.who}</span> pulled <span class="kw">${s.node}</span> from your tree <span class="dm">· just now</span>`);
-      await wait(1750);
+      await wait(1700);
       closeIsland();
-      await wait(650);
+      await wait(600);
     }
-    await wait(1400);
+    await wait(1300);
     flkIco.classList.remove('serve');
     drop.classList.remove('open');
     hidePhase();
@@ -526,7 +687,7 @@
     while(true){
       clearTerm(); rep=0; helped=0;
       dRep.innerHTML='🏅&nbsp; <b>0</b> rep · helped <b>0</b> peers';
-      dLast.style.visibility='hidden';
+      dLast.style.visibility='hidden'; slRep.textContent='🏅 0 rep';
       closeIsland(); hidePhase();
       await wait(600);
 
@@ -534,10 +695,17 @@
         h1:'Inference, shared like torrents.',
         sub:'One real session, two directions: <b>first you query peers</b> — then <b>peers query you</b>.'});
 
-      await titleCard({kickCls:'tl', kick:'phase 1',
+      await titleCard({kickCls:'dk', kick:'without folklore',
+        h1:'Every agent grinds alone.',
+        sub:'Web calls, stale sources, minutes burned — <b>for reasoning someone already did</b>.', hold:2200});
+      await withoutBeat();
+
+      await titleCard({kickCls:'tl', kick:'phase 1 · with folklore',
         h1:'Querying peers',
         sub:'Your agent pulls answers <b>other peers already worked out</b> — straight from their trees, zero web calls.'});
       await pullPhase();
+
+      await mapBeat();
 
       await titleCard({kickCls:'pk', kick:'phase 2',
         h1:'Answering peers',
@@ -546,10 +714,11 @@
 
       await titleCard({logo:true, kick:'github.com/usefolklore/folklore',
         h1:'Reasoning compounds.',
-        sub:'The more peers share, the less anyone re-derives. <b>Never research twice — anywhere on the network.</b>', hold:2600});
+        sub:'The more peers share, the less anyone re-derives. <b>Never research twice — anywhere on the network.</b>', hold:3600});
       await wait(400);
     }
   }
-  loop();
+  // hold the first paint until the brand faces are in — no font-swap flash
+  document.fonts.ready.then(()=>setTimeout(loop, 200));
 })();
 </script>
