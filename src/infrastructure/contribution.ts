@@ -15,7 +15,6 @@
  */
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { notifyPeerRequest } from './notify.js';
 
 export interface Contribution {
   /** Total requests served (searches + fetches) — the reputation score. */
@@ -86,9 +85,6 @@ export const recordServed = (home: string, ev: ServedEvent): void => {
     const nodes = (ev.nodes ?? []).slice(0, 3);
     const line = JSON.stringify({ ts: at, peer: ev.peer, kind: ev.kind, count: ev.count, nodes });
     if (line.length <= FEED_MAX_LINE_BYTES) appendFileSync(join(home, FEED_FILE), line + '\n');
-    // Pop a top-right desktop notification in real time — the network reaching
-    // you, visible while you work. Best-effort + rate-limited (see notify.ts).
-    notifyPeerRequest(home, ev.peer, nodes[0]);
   } catch {
     /* observability must never break a serve */
   }
