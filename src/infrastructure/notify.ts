@@ -49,18 +49,9 @@ const shortNode = (id?: string): string => {
  * Pop a "peer pulled from your tree" notification. Best-effort; swallows all
  * errors. Rate-limited so bursts collapse into one visible pop.
  */
-export const notifyPeerRequest = (home: string, peer: string, node?: string): void => {
+const fire = (title: string, subtitle: string, body: string): void => {
   if (process.env.FOLKLORE_NOTIFY === '0') return;
   if (platform() !== 'darwin') return; // macOS pops today; other OSes are no-ops
-  const now = Date.now();
-  if (now - lastAt < MIN_INTERVAL_MS) return;
-  lastAt = now;
-
-  const who = label(home, peer);
-  const body = `${who}  ←  ${shortNode(node)}`;
-  const title = '🌐 folklore';
-  const subtitle = 'peer pulled from your tree';
-
   try {
     if (tnPath === null) tnPath = which('terminal-notifier');
     if (tnPath) {
@@ -81,4 +72,21 @@ export const notifyPeerRequest = (home: string, peer: string, node?: string): vo
   } catch {
     /* best-effort — never breaks a serve */
   }
+};
+
+/** A peer pulled from YOUR tree (you served them). */
+export const notifyPeerRequest = (home: string, peer: string, node?: string): void => {
+  const now = Date.now();
+  if (now - lastAt < MIN_INTERVAL_MS) return;
+  lastAt = now;
+  fire('🌐 folklore', 'peer pulled from your tree', `${label(home, peer)}  ←  ${shortNode(node)}`);
+};
+
+/** YOU pulled from a peer's tree (they served you) — the receiving side. */
+let lastPullAt = 0;
+export const notifyYouPulled = (home: string, peer: string, node?: string): void => {
+  const now = Date.now();
+  if (now - lastPullAt < MIN_INTERVAL_MS) return;
+  lastPullAt = now;
+  fire('🌐 folklore', "you pulled from a peer's tree", `${shortNode(node)}  ←  ${label(home, peer)}`);
 };

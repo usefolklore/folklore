@@ -34,6 +34,7 @@ import { buildPeerPullTelemetry } from './peer-pull-telemetry.js';
 import { buildReputationPeerOrder } from './peer-order-builder.js';
 import { updatePeerReputation } from './update-peer-reputation.js';
 import { ensureIdentity } from './identity-lifecycle.js';
+import { notifyYouPulled } from '../infrastructure/notify.js';
 
 export interface FederatedAskDeps {
   readonly home: string;
@@ -213,6 +214,10 @@ const pullRemoteBodies = async (
     }
     if (deps.cacheEdges && res.value.edges && res.value.edges.length > 0) {
       edgesCached += await deps.cacheEdges(res.value.edges);
+    }
+    // Receiving side of the network: you just pulled a trace from a peer's tree.
+    if (res.value.nodes.length > 0) {
+      notifyYouPulled(deps.home, peer, res.value.nodes[0].label ?? res.value.nodes[0].node_id);
     }
   }
   return { nodes: pulled, edgesCached };
