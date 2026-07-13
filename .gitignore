@@ -82,3 +82,4 @@ examples/in-session/.peer-*/
 examples/live-feed/.you/
 examples/live-feed/.peer-*/
 examples/live-feed/.real-events.jsonl
+client/menubar-macos/build/
