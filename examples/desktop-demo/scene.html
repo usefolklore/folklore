@@ -506,7 +506,7 @@
     d.remove();
   }
 
-  async function titleCard({logo=false, kickCls='', kick, h1, sub, hold=3400}){
+  async function titleCard({logo=false, kickCls='', kick, h1, sub, hold=5000}){
     card.innerHTML =
       (logo ? `<img class="klogo" src="logo.svg" alt="">` : '') +
       `<span class="kick ${kickCls}">${kick}</span><h1>${h1}</h1><div class="sub">${sub}</div>`;
@@ -606,7 +606,7 @@
     }
     tEl.textContent='14.2s';
     line(`&nbsp;&nbsp;&nbsp;<span class="dm">⎿ 14 tool calls · 6 sources fetched · 2 stale · re-deriving from scratch…</span>`);
-    await wait(2700);
+    await wait(4200);
     hidePhase();
     await wait(400);
   }
@@ -625,11 +625,11 @@
       gap();
       await think(650);
       line(`<span class="mk">⏺</span> ${item.a[0]}`);
-      await wait(260);
+      await wait(420);
       line(`&nbsp;&nbsp;&nbsp;${item.a[1]}`);
-      await wait(240);
+      await wait(400);
       line(`&nbsp;&nbsp;&nbsp;<span class="dm">⎿ resolved from <span class="via">${item.who}</span>&#39;s tree in <span class="ms">${item.ms}ms</span> · <span class="via">0</span> web calls</span>`);
-      await wait(2400);
+      await wait(4000);
       closeIsland();
       gap();
       await wait(750);
@@ -645,7 +645,7 @@
     cv.classList.add('front'); mapdim.classList.add('show');
     mapMode=true; mapT=0;
     setCap('Six peers, one fire — <span class="yl">every tree feeds the others</span>.');
-    await wait(4600);
+    await wait(6400);
     mapMode=false;
     cv.classList.remove('front'); mapdim.classList.remove('show');
     cap.classList.remove('show');
@@ -672,11 +672,11 @@
       serveIsland(s.node, s.who);
       bumpRep(s.who);
       line(`<span class="mkS">⬅</span> <span class="viaS">${s.who}</span> pulled <span class="kw">${s.node}</span> from your tree <span class="dm">· just now</span>`);
-      await wait(2500);
+      await wait(3600);
       closeIsland();
       await wait(600);
     }
-    await wait(1700);
+    await wait(2200);
     flkIco.classList.remove('serve');
     drop.classList.remove('open');
     hidePhase();
@@ -697,7 +697,7 @@
 
       await titleCard({kickCls:'dk', kick:'without folklore',
         h1:'Every agent grinds alone.',
-        sub:'Web calls, stale sources, minutes burned — <b>for reasoning someone already did</b>.', hold:3200});
+        sub:'Web calls, stale sources, minutes burned — <b>for reasoning someone already did</b>.', hold:4600});
       await withoutBeat();
 
       await titleCard({kickCls:'tl', kick:'phase 1 · with folklore',
@@ -714,7 +714,7 @@
 
       await titleCard({logo:true, kick:'github.com/usefolklore/folklore',
         h1:'Reasoning compounds.',
-        sub:'The more peers share, the less anyone re-derives. <b>Never research twice — anywhere on the network.</b>', hold:4200});
+        sub:'The more peers share, the less anyone re-derives. <b>Never research twice — anywhere on the network.</b>', hold:5600});
       await wait(400);
     }
   }

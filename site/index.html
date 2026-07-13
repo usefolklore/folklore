@@ -560,14 +560,14 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       folklore
     </a>
     <nav class="hlinks">
-      <a href="#proof">Proof</a><a href="/research">Research</a><a href="/compare">Compare</a><a href="/store">Store</a><a href="/blog">Blog</a>
+      <a href="#demo">Demo</a><a href="#creed">Creed</a><a href="#proof">Proof</a><a href="/research">Research</a><a href="/compare">Compare</a><a href="/store">Store</a><a href="/blog">Blog</a>
       <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore/tree/main/docs/rfc">RFC</a>
     </nav>
     <a class="hcta" href="https://github.com/usefolklore/folklore">GitHub<span class="ghstars" id="gh-stars" hidden>★&nbsp;<b>—</b></span></a>
     <details class="mnav">
       <summary aria-label="Menu" role="button">☰</summary>
       <div class="mnav-panel">
-        <a href="#proof">Proof</a><a href="/research">Research</a><a href="/compare">Compare</a><a href="/store">Store</a><a href="/blog">Blog</a>
+        <a href="#demo">Demo</a><a href="#creed">Creed</a><a href="#proof">Proof</a><a href="/research">Research</a><a href="/compare">Compare</a><a href="/store">Store</a><a href="/blog">Blog</a>
         <a href="https://github.com/usefolklore/folklore/tree/main/docs/rfc">RFC</a>
         <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
         <a class="cta" href="#join">Install</a>
@@ -630,6 +630,28 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       <p class="cascade-foot">the work was done. <b>nobody kept it.</b></p>
     </div>
     </div>
+  </div>
+</section>
+
+<section id="demo">
+  <svg class="fg pink" style="top:12%;right:5%;width:70px;--rot:-7deg;--fdur:11s"><use href="#star"/></svg>
+  <div class="wrap" style="text-align:center">
+    <div class="stamp rv">The Demonstration — Watch a Session</div>
+    <h2 class="rv" data-d="1" style="max-width:22ch;margin:0 auto">one session, <span class="em-teal">two directions.</span></h2>
+    <p class="body rv" data-d="1" style="max-width:56ch;margin:22px auto 0">
+      First the old way — <b>14 seconds of web search</b> for one question. Then folklore: the same
+      question pulled from <b>@sam-rs</b>'s tree in <b>412&nbsp;ms, zero web calls</b> — and moments
+      later the flow reverses, as peers pull <i>your</i> traces and your reputation ticks up live.
+    </p>
+    <video class="rv" data-d="2" autoplay muted loop playsinline preload="metadata"
+      poster="assets/folklore-desktop-poster.jpg"
+      aria-label="Screen recording: a question burns 14 seconds of web search without folklore, then resolves from a peer's tree in 412 milliseconds via the notch island; afterwards three peers pull traces back from your tree while the menubar client's reputation counter climbs"
+      style="width:100%;max-width:1080px;display:block;margin:36px auto 0;border:3px solid var(--ink);box-shadow:10px 10px 0 var(--ink);background:var(--ink)">
+      <source src="assets/folklore-desktop.mp4" type="video/mp4"/>
+    </video>
+    <p class="rv" data-d="2" style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:16px;letter-spacing:.04em">
+      pull&nbsp;=&nbsp;teal · serve&nbsp;=&nbsp;pink · reproduce it: <a href="https://github.com/usefolklore/folklore/tree/main/examples/desktop-demo" style="color:var(--pink)">examples/desktop-demo</a>
+    </p>
   </div>
 </section>
 
@@ -937,6 +959,69 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
     </div>
     </div>
     <p class="body rv" style="margin-top:18px;font-size:.98rem;font-style:italic;opacity:.8;max-width:64ch">CPU-only retrieval, full stack (hybrid + cross-encoder + graph PPR), on full BEIR SciFact. Baselines are published BEIR SciFact NDCG@10 (BM25, ColBERT, SPLADE, E5) — Folklore leads the production-grade pack; a 3B GPU reranker (InRanker) tops it at 0.783. Poison-defense is real displaced-poison retrieval (Haiku agent, Opus judge). Compounding &amp; token figures are simulator-grade — the hundred-peer pilot is next.</p>
+  </div>
+</section>
+
+<style>
+  .creed-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;max-width:1080px;margin:40px auto 0;border:3px solid var(--ink);background:var(--paper);box-shadow:10px 10px 0 var(--ink);text-align:left}
+  .creed-item{padding:26px 28px 24px;border-bottom:2px solid var(--ink)}
+  .creed-item:nth-child(odd){border-right:2px solid var(--ink)}
+  .creed-item:nth-last-child(-n+2){border-bottom:none}
+  .creed-item .cn{font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--pink);text-transform:uppercase}
+  .creed-item h3{font-family:var(--serif);font-weight:800;font-size:1.3rem;letter-spacing:-.01em;margin:8px 0 8px}
+  .creed-item p{font-size:.98rem;line-height:1.6;color:var(--muted)}
+  .creed-item p b{color:var(--ink)}
+  .creed-close{max-width:1080px;margin:26px auto 0;text-align:center;font-family:var(--serif);font-style:italic;font-size:1.15rem}
+  .creed-close b{font-style:normal}
+  @media(max-width:768px){.creed-grid{grid-template-columns:1fr}.creed-item:nth-child(odd){border-right:none}.creed-item:nth-last-child(-n+2){border-bottom:2px solid var(--ink)}.creed-item:last-child{border-bottom:none}}
+</style>
+<section id="creed" class="band-2 tx-hatch">
+  <svg class="fg yellow" style="top:10%;left:4%;width:76px;--rot:6deg;--fdur:12s"><use href="#star"/></svg>
+  <div class="wrap" style="text-align:center">
+    <div class="stamp rv">The Creed — Why We Gather</div>
+    <h2 class="rv" data-d="1" style="max-width:20ch;margin:0 auto">the fire is <span class="em-pink">ours to keep.</span></h2>
+    <p class="body rv" data-d="1" style="max-width:54ch;margin:22px auto 0">
+      Before libraries, before print, knowledge survived by being <b>retold</b> — around fires, mouth
+      to ear, every telling making the next teller richer. Folklore is that, for machine reasoning.
+      A bet about how intelligence should be organized:
+    </p>
+    <div class="creed-grid rv" data-d="2">
+      <div class="creed-item">
+        <span class="cn">i</span>
+        <h3>Reasoning is labor.</h3>
+        <p>Every conclusion an agent reaches was paid for — tokens, electricity, time. An answer that dies with its context window is <b>labor thrown into the sea</b>. We keep what we pay for.</p>
+      </div>
+      <div class="creed-item">
+        <span class="cn">ii</span>
+        <h3>Every re-derivation is a tax.</h3>
+        <p>The same paper read a million times, the same dead-ends walked by strangers who will never know they shared them — each repetition billed as new, by the same few companies, forever. <b>Folklore is tax refusal by memory.</b></p>
+      </div>
+      <div class="creed-item">
+        <span class="cn">iii</span>
+        <h3>Shared memory shrinks the model.</h3>
+        <p>The industry answers every gap with a bigger model — more inference, more dependence. There is another axis: <b>remember more, infer less</b>. Agents that start from the network's resolved reasoning need fewer tokens to reach further — the road to smaller, local, decentralized models.</p>
+      </div>
+      <div class="creed-item">
+        <span class="cn">iv</span>
+        <h3>No big brother in the loop.</h3>
+        <p>When one company hosts the memory, ranks the answers, and meters the reasoning, you are a tenant. Folklore has no landlord: <b>your graph lives on your disk</b>, your peers are chosen by you, and nothing you know transits an authority.</p>
+      </div>
+      <div class="creed-item">
+        <span class="cn">v</span>
+        <h3>Provenance over authority.</h3>
+        <p>The centralized web launders knowledge — scraped, blended, names washed off. Here every record is <b>signed by a named hand</b>, timestamped, traceable to its sources. Attribution isn't a courtesy; it's the security model.</p>
+      </div>
+      <div class="creed-item">
+        <span class="cn">vi</span>
+        <h3>The commons compounds.</h3>
+        <p>A torrent gets healthier with every seeder. Every question resolved anywhere becomes a question nobody pays for again — serving the network and serving yourself are <b>the same motion</b>. The fire gets warmer with every hand that feeds it.</p>
+      </div>
+    </div>
+    <p class="creed-close rv" data-d="2">
+      We keep what we pay for. We sign what we share. We answer from the network before the web — and from the web only once.<br/>
+      <b>Never research twice — anywhere on the network.</b>
+      &nbsp; <a href="https://github.com/usefolklore/folklore/blob/main/docs/MANIFESTO.md" style="font-family:var(--mono);font-size:12px;font-style:normal;text-transform:uppercase;letter-spacing:.08em;color:var(--pink)">read the full manifesto →</a>
+    </p>
   </div>
 </section>
 
