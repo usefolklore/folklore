@@ -485,7 +485,7 @@
   transition:width .5s cubic-bezier(.32,.9,.28,1.05), height .5s cubic-bezier(.32,.9,.28,1.05), border-radius .5s, box-shadow .5s;
   pointer-events:none;
 }
-.isl.open{width:min(500px,92vw);height:108px;border-radius:0 0 24px 24px;
+.isl.open{width:min(380px,86vw);height:84px;border-radius:0 0 20px 20px;
   box-shadow:0 22px 44px -16px rgba(0,0,0,.55)}
 .isl::before,.isl::after{content:'';position:absolute;top:0;width:7px;height:7px}
 .isl::before{left:-7px;background:radial-gradient(circle at 0 100%, transparent 6.5px, #000 7px)}
@@ -500,22 +500,22 @@
 /* expanded zone — drops below the bar line, like the demo */
 .isl-exp{
   position:absolute;top:32px;left:0;right:0;bottom:0;
-  display:flex;align-items:center;gap:13px;padding:0 22px 10px;
+  display:flex;align-items:center;gap:10px;padding:0 16px 8px;
   opacity:0;transform:translateY(5px);
   transition:opacity .3s .13s, transform .3s .13s;
 }
 .isl.open .isl-exp{opacity:1;transform:none}
-.isl-exp .isl-fire{flex:0 0 auto;width:40px;height:40px;border-radius:12px;background:#1d1813;padding:4px;
+.isl-exp .isl-fire{flex:0 0 auto;width:32px;height:32px;border-radius:12px;background:#1d1813;padding:4px;
   border:1px solid rgba(31,174,139,.4)}
 .isl.serve .isl-exp .isl-fire{border-color:rgba(255,79,109,.4)}
 .isl.join .isl-exp .isl-fire{border-color:rgba(245,185,33,.4)}
 .isl-exp .isl-txt{min-width:0;display:flex;flex-direction:column;gap:3px}
 .isl-exp .isl-kick{
-  font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.11em;
+  font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:.11em;
   text-transform:uppercase;color:var(--teal);display:flex;align-items:center;gap:7px;
 }
 .isl-exp .isl-kick .idot{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 0 rgba(31,174,139,.55);animation:islpulse 1.4s infinite;flex:0 0 auto}
-.isl-exp .isl-flow{font-family:var(--mono);font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.isl-exp .isl-flow{font-family:var(--mono);font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
 .isl-exp .isl-flow b{color:var(--yellow);font-weight:700}
 .isl.serve .isl-kick{color:var(--pink)}
 .isl.serve .isl-kick .idot{background:var(--pink);box-shadow:0 0 0 0 rgba(255,79,109,.55)}
