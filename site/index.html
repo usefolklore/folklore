@@ -62,7 +62,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="assets/site.css"/>
 </head>
-<body>
+<body class="term-home">
 <div class="grain"></div>
 
 <!-- folk shape library -->
@@ -118,69 +118,93 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 </header>
 
 <a id="top"></a>
-<main class="shell-stage" id="top">
-<div class="shell rv in">
-  <div class="tb">
-    <span class="tl r"></span><span class="tl y"></span><span class="tl g"></span>
-    <span class="ttl">guest@folklore — ~/the-commons</span>
-    <span class="tb-r">80×24 · warm</span>
-  </div>
-  <div class="sbody">
+<div class="term" id="top">
+<canvas class="term-embers" id="termEmbers" aria-hidden="true"></canvas>
 
-<div class="blk" data-cmd="folklore">
-  <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-  <div class="out">
-    <div class="banner">
-      <svg class="sh-hearth" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0d0b08"/><g class="fl-o"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d"/></g><g class="fl-i"><path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/></g><g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg>
-      <div>
-        <h1>knowledge travels <span class="em-pk">mouth&nbsp;to&nbsp;ear.</span></h1>
+<!-- fixed terminal titlebar = the site chrome -->
+<div class="term-tb">
+  <span class="tl r"></span><span class="tl y"></span><span class="tl g"></span>
+  <a class="ttl" href="/">guest@folklore — ~/the-commons</a>
+  <nav class="ttabs">
+    <a href="/research">research</a>
+    <a href="/whitepaper">whitepaper</a>
+    <a class="gh" href="https://github.com/usefolklore/folklore">github ↗</a>
+  </nav>
+</div>
+
+<section class="scene hero-scene">
+  <div class="swrap">
+    <div class="blk" data-cmd="folklore">
+      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+      <div class="out">
+        <div class="banner">
+          <svg class="sh-hearth" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0d0b08"/><g class="fl-o"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d"/></g><g class="fl-i"><path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/></g><g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg>
+          <div>
+            <h1>knowledge travels<br><span class="em-pk">mouth to ear.</span></h1>
+          </div>
+        </div>
         <p class="tagline">peer-to-peer compounding inference — a torrent swarm where the payload is reasoning</p>
+        <p class="olede">Every peer shares the reasoning it already paid for, so your agent starts from what the swarm has worked out — not square one. The more agents join, the less anyone re-derives.</p>
+        <div class="cta-row">
+          <a class="btn sh-btn sh-btn-primary" href="#join">Install</a>
+          <a class="btn sh-btn" href="/how-it-works/">How it works</a>
+          <a class="btn sh-btn" href="/whitepaper">White paper</a>
+        </div>
+        <div class="sh-install"><span class="d">$</span>&nbsp;npm install -g @usefolklore/folklore<span class="copy" data-copy="npm install -g @usefolklore/folklore">copy</span></div>
+        <div class="scroll-cue" aria-hidden="true">▼ scroll — the session continues</div>
       </div>
     </div>
-    <p class="olede">Every peer shares the reasoning it already paid for, so your agent starts from what the swarm has worked out — not square one. The more agents join, the less anyone re-derives.</p>
-    <div class="cta-row">
-      <a class="btn sh-btn sh-btn-primary" href="#join">Install</a>
-      <a class="btn sh-btn" href="/how-it-works/">How it works</a>
-      <a class="btn sh-btn" href="/whitepaper">Read the white paper</a>
-    </div>
-    <div class="sh-install"><span class="d">$</span>&nbsp;npm install -g @usefolklore/folklore<span class="copy" data-copy="npm install -g @usefolklore/folklore">copy</span></div>
   </div>
-</div>
+</section>
 
-<div class="blk" data-cmd="folklore why">
-  <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-  <div class="out">
-    <p class="ocomment"># agents reason from zero, every single time. the same paper read again,
+<section class="scene center">
+  <div class="swrap">
+    <div class="blk" data-cmd="folklore why">
+      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+      <div class="out">
+        <p class="ocomment"># agents reason from zero, every single time. the same paper read again,
 # the same dead-ends walked again — re-billed forever, by the same few companies.</p>
-    <p class="obig">the work was done. <em>nobody kept it.</em></p>
+        <p class="obig">the work was done.<br><em>nobody kept it.</em></p>
+      </div>
+    </div>
   </div>
-</div>
+</section>
 
-<div class="blk" data-cmd="folklore demo">
-  <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-  <div class="out">
-    <video autoplay muted loop playsinline preload="metadata"
-      poster="assets/folklore-desktop-poster.jpg"
-      aria-label="Screen recording: a question resolves from a peer's tree in 412 milliseconds via the notch island; then a peer pulls a trace back from your tree while the menubar client's reputation counter climbs">
-      <source src="assets/folklore-desktop.mp4" type="video/mp4"/>
-    </video>
-    <p class="olegend">pull = <span class="t">teal</span> · serve = <span class="s">pink</span> · reproduce it: <a class="olink" href="https://github.com/usefolklore/folklore/tree/main/examples/desktop-demo">examples/desktop-demo</a></p>
+<section class="scene wide">
+  <div class="swrap">
+    <div class="blk" data-cmd="folklore demo">
+      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+      <div class="out">
+        <video autoplay muted loop playsinline preload="metadata"
+          poster="assets/folklore-desktop-poster.jpg"
+          aria-label="Screen recording: a question resolves from a peer's tree in 412 milliseconds via the notch island; then a peer pulls a trace back from your tree while the menubar client's reputation counter climbs">
+          <source src="assets/folklore-desktop.mp4" type="video/mp4"/>
+        </video>
+        <p class="olegend">pull = <span class="t">teal</span> · serve = <span class="s">pink</span> · reproduce it: <a class="olink" href="https://github.com/usefolklore/folklore/tree/main/examples/desktop-demo">examples/desktop-demo</a></p>
+      </div>
+    </div>
   </div>
-</div>
+</section>
 
-<div class="blk" data-cmd="folklore ask &quot;share a token cache across tokio tasks?&quot;">
-  <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-  <div class="out">
-    <div class="oline t">▸ asked 4 peers · first answer in 142 ms</div>
-    <div class="oline">Wrap it in <span class="kw">Arc&lt;Mutex&lt;TokenCache&gt;&gt;</span> so it's <b>Send</b> across spawned tasks, then thread it through the extractor.</div>
-    <div class="oline dm">⎿ resolved from <span class="t">@sam-rs</span>'s tree in <span class="kw">412ms</span> · <span class="t">0</span> web calls · saved ~90s of re-derivation</div>
+<section class="scene">
+  <div class="swrap">
+    <div class="blk" data-cmd="folklore ask &quot;share a token cache across tokio tasks?&quot;">
+      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+      <div class="out">
+        <div class="oline t">▸ asked 4 peers · first answer in 142 ms</div>
+        <div class="oline">Wrap it in <span class="kw">Arc&lt;Mutex&lt;TokenCache&gt;&gt;</span> so it's <b>Send</b> across spawned tasks, then thread it through the extractor.</div>
+        <div class="oline dm">⎿ resolved from <span class="t">@sam-rs</span>'s tree in <span class="kw">412ms</span> · <span class="t">0</span> web calls · saved ~90s of re-derivation</div>
+      </div>
+    </div>
   </div>
-</div>
+</section>
 
-<div class="blk" data-cmd="folklore tree --inherited">
-  <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-  <div class="out">
-    <div class="cascade" aria-hidden="true">
+<section class="scene">
+  <div class="swrap">
+    <div class="blk" data-cmd="folklore tree --inherited">
+      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+      <div class="out">
+        <div class="cascade" aria-hidden="true">
 <div class="cl" style="--i:0"><span class="ask">ask </span><span class="seed">●</span></div>
 <div class="cl" style="--i:1"><span class="e">    │</span></div>
 <div class="cl" style="--i:2"><span class="e">    ├────</span><span class="nd">●</span><span class="lbl">  a peer already inferred this</span></div>
@@ -189,65 +213,87 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 <div class="cl" style="--i:5"><span class="e">    ├────</span><span class="nd">●</span><span class="lbl">  and this, from another peer</span></div>
 <div class="cl" style="--i:6"><span class="e">    └────</span><span class="nd">●</span><span class="lbl">  and this</span></div>
 <div class="cl" style="--i:7"><span class="punch">             ↳ you start here, not at zero</span></div>
-    </div>
-    <p class="ofoot">inherit the reasoning. <b>infer deeper.</b></p>
-  </div>
-</div>
-
-<div class="blk" data-cmd="folklore live">
-  <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-  <div class="out">
-    <div class="oline s">⬅ <b>@tia-async</b> pulled arc-mutex-token-cache from your tree · just now</div>
-    <div class="oline s">⬅ <b>@noah-go</b> pulled axum-extractor-order from your tree · just now</div>
-    <div class="oline s">⬅ <b>@priya-rs</b> pulled sqlx-offline-prepare from your tree · just now</div>
-    <div class="oline dm"># your node is seeding — reputation +3 · helped 3 peers · <a class="olink" href="/how-it-works/">how it works →</a></div>
-  </div>
-</div>
-
-<div class="blk" data-cmd="cat CREED.md | head">
-  <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-  <div class="out">
-    <div class="ocreed">
-      <p><span class="n">i.</span> <b>Reasoning is labor.</b> An answer that dies with its context window is labor thrown into the sea — we keep what we pay for.</p>
-      <p><span class="n">ii.</span> <b>Every re-derivation is a tax.</b> Folklore is tax refusal by memory.</p>
-      <p><span class="n">iii.</span> <b>No big brother in the loop.</b> Your graph lives on your disk. No landlord.</p>
-    </div>
-    <a class="olink" href="/creed/">read the full creed →</a>
-  </div>
-</div>
-
-<div class="blk" data-cmd="folklore stats --benchmarked">
-  <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-  <div class="out">
-    <div class="orow"><span class="num">0.7522</span><span>BEIR SciFact NDCG@10 — CPU-only, 11&nbsp;ms median, ahead of E5 / SPLADE / ColBERT / BM25</span></div>
-    <div class="orow"><span class="num">24.8×</span><span>poison flip-ASR cut by signed provenance (58.9% → 2.4%)</span></div>
-    <div class="orow"><span class="num">90.2%</span><span>cooperative cache hit across 64 peers (18% alone)</span></div>
-    <div class="orow"><span class="num">17→1%</span><span>web fallback as the network warms — once anyone resolves it, nobody pays again</span></div>
-    <a class="olink" href="/statistics/">every claim, on disk →</a>
-  </div>
-</div>
-
-<div class="blk last" data-cmd="folklore onboard">
-  <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-  <div class="out">
-    <div class="oline t">✓ daemon wired · hooks installed · identity signed · peers discovered</div>
-    <p class="obody">One command wires the daemon, every Claude Code hook, the statusline, your signed identity — and registers the MCP server in every harness it finds:</p>
-    <p class="oharness">claude code · cursor · cline · gemini cli · windsurf · zed · continue · aider · roo — pure Node, no Python, no build step</p>
-    <div class="cta-row" id="join">
-      <a class="btn sh-btn sh-btn-primary" href="https://github.com/usefolklore/folklore">Light your fire</a>
-      <a class="btn sh-btn" href="/statistics/">See the proof</a>
+        </div>
+        <p class="ofoot">inherit the reasoning. <b>infer deeper.</b></p>
+      </div>
     </div>
   </div>
+</section>
+
+<section class="scene">
+  <div class="swrap">
+    <div class="blk" data-cmd="folklore live">
+      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+      <div class="out">
+        <div class="oline s">⬅ <b>@tia-async</b> pulled arc-mutex-token-cache from your tree · just now</div>
+        <div class="oline s">⬅ <b>@noah-go</b> pulled axum-extractor-order from your tree · just now</div>
+        <div class="oline s">⬅ <b>@priya-rs</b> pulled sqlx-offline-prepare from your tree · just now</div>
+        <div class="oline dm"># your node is seeding — reputation +3 · helped 3 peers · <a class="olink" href="/how-it-works/">how it works →</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene center paper-scene">
+  <div class="swrap">
+    <div class="blk" data-cmd="cat CREED.md">
+      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+      <div class="out">
+        <div class="paper-doc">
+          <div class="pd-stamp">CREED.md — why we gather</div>
+          <h2 class="pd-title">the fire is <span>ours to keep.</span></h2>
+          <p><b class="n">i.</b> <b>Reasoning is labor.</b> An answer that dies with its context window is labor thrown into the sea — we keep what we pay for.</p>
+          <p><b class="n">ii.</b> <b>Every re-derivation is a tax.</b> Paid to the same few companies, forever. Folklore is tax refusal by memory.</p>
+          <p><b class="n">iii.</b> <b>Shared memory shrinks the model.</b> Remember more, infer less — the road to smaller, local, decentralized models.</p>
+          <p><b class="n">iv.</b> <b>No big brother in the loop.</b> Your graph lives on your disk. No landlord.</p>
+          <a class="pd-link" href="/creed/">read the full creed →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene">
+  <div class="swrap">
+    <div class="blk" data-cmd="folklore stats --benchmarked">
+      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+      <div class="out">
+        <div class="orow"><span class="num">0.7522</span><span>BEIR SciFact NDCG@10 — CPU-only, 11&nbsp;ms median, ahead of E5 / SPLADE / ColBERT / BM25</span></div>
+        <div class="orow"><span class="num">24.8×</span><span>poison flip-ASR cut by signed provenance (58.9% → 2.4%)</span></div>
+        <div class="orow"><span class="num">90.2%</span><span>cooperative cache hit across 64 peers (18% alone)</span></div>
+        <div class="orow"><span class="num">17→1%</span><span>web fallback as the network warms — once anyone resolves it, nobody pays again</span></div>
+        <a class="olink" href="/statistics/">every claim, on disk →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene center last-scene">
+  <div class="swrap">
+    <div class="blk" data-cmd="folklore onboard">
+      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+      <div class="out">
+        <div class="oline t">✓ daemon wired · hooks installed · identity signed · peers discovered</div>
+        <p class="obody">One command wires the daemon, every Claude Code hook, the statusline, your signed identity — and registers the MCP server in every harness it finds:</p>
+        <p class="oharness">claude code · cursor · cline · gemini cli · windsurf · zed · continue · aider · roo — pure Node, no Python, no build step</p>
+        <div class="cta-row" id="join">
+          <a class="btn sh-btn sh-btn-primary" href="https://github.com/usefolklore/folklore">Light your fire</a>
+          <a class="btn sh-btn" href="/statistics/">See the proof</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- fixed statusline = the site's pulse -->
+<div class="term-sl">
+  <span class="fk">Folklore</span><span class="sep">│</span><b id="peerCount">—</b>&nbsp;peers
+  <span class="sep">│</span><span id="peerLog">connecting to the tracker…</span>
+  <span class="sep slx">│</span><span class="lc slx">L<b id="lineNo">1</b></span>
+  <span class="slr">MIT · signed by you · no central server</span>
+</div>
 </div>
 
-  </div>
-  <div class="sline">
-    <span class="fk">Folklore</span><span class="sep">│</span><b id="peerCount">—</b>&nbsp;peers
-    <span class="sep">│</span><span id="peerLog">connecting to the tracker…</span>
-    <span class="slr">MIT · signed by you · no central server</span>
-  </div>
-</div>
-</main>
 
 <div class="folkband"></div>
 <section id="store" class="band-yellow tx-dots">
@@ -556,6 +602,38 @@ function initMemeCarousel(){
     });},{threshold:.35});
     blks.forEach(function(b){io.observe(b);});
   } else blks.forEach(run);
+})();
+</script>
+<script>
+/* embers drift inside the terminal + the statusline line counter */
+(function(){
+  var cv=document.getElementById('termEmbers');
+  if(cv && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+    var ctx=cv.getContext('2d'), pts=[], W=0,H=0;
+    function seed(){W=cv.width=innerWidth;H=cv.height=innerHeight;pts=[];
+      for(var i=0;i<26;i++)pts.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.7+.5,
+        vy:-(Math.random()*.18+.06),vx:(Math.random()-.5)*.09,tw:Math.random()*6.28,tws:Math.random()*.02+.008,
+        warm:Math.random()<.45});}
+    function tick(){
+      if(!document.hidden){
+        ctx.clearRect(0,0,W,H);
+        for(var i=0;i<pts.length;i++){var p=pts[i];
+          p.x+=p.vx;p.y+=p.vy;p.tw+=p.tws;
+          if(p.y<-4){p.y=H+4;p.x=Math.random()*W;}
+          if(p.x<-4)p.x=W+4; if(p.x>W+4)p.x=-4;
+          ctx.globalAlpha=.15+.3*(1+Math.sin(p.tw))/2;
+          ctx.fillStyle=p.warm?'rgba(245,185,33,.85)':'rgba(244,236,216,.5)';
+          ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();}
+        ctx.globalAlpha=1;
+      }
+      requestAnimationFrame(tick);
+    }
+    seed();addEventListener('resize',seed);tick();
+  }
+  var ln=document.getElementById('lineNo');
+  if(ln){var tk=false;
+    addEventListener('scroll',function(){if(tk)return;tk=true;
+      requestAnimationFrame(function(){ln.textContent=1+Math.round(scrollY/24);tk=false;});},{passive:true});}
 })();
 </script>
 <script src="assets/island.js" defer></script>

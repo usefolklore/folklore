@@ -649,3 +649,105 @@ html{scroll-behavior:smooth}
 .sline b{color:var(--yellow);font-weight:800;font-variant-numeric:tabular-nums}
 .sline .slr{margin-left:auto;color:#8a7c62}
 @media(max-width:700px){.sline .slr{display:none}.banner h1{font-size:1.7rem}}
+
+
+/* ══ THE TERMINAL IS THE SITE — full-bleed session ══ */
+body.term-home{background:#171310}
+body.term-home header{display:none}            /* the titlebar is the chrome here */
+body.term-home .depth,body.term-home .grain{display:none}
+.term{
+  position:relative;background:
+    radial-gradient(90% 60% at 78% -5%, rgba(245,185,33,.07), transparent 60%),
+    radial-gradient(80% 70% at 10% 108%, rgba(255,79,109,.06), transparent 60%),
+    #171310;
+  color:#f4ecd8;font-family:var(--mono);
+}
+.term::after{ /* vignette — you're inside the glass */
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:3;
+  background:radial-gradient(120% 100% at 50% 40%, transparent 62%, rgba(0,0,0,.34));
+}
+.term-embers{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.6}
+
+/* titlebar — fixed chrome */
+.term-tb{
+  position:fixed;top:0;left:0;right:0;z-index:80;height:46px;
+  display:flex;align-items:center;gap:8px;padding:0 clamp(14px,3vw,26px);
+  background:rgba(38,32,26,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:2px solid #0d0b08;font-family:var(--mono);
+}
+.term-tb .tl{width:12px;height:12px;border-radius:50%}
+.term-tb .tl.r{background:#ff5f57}.term-tb .tl.y{background:#febc2e}.term-tb .tl.g{background:#28c840}
+.term-tb .ttl{margin-left:10px;font-size:12.5px;color:#c9bda1;font-weight:600}
+.term-tb .ttabs{margin-left:auto;display:flex;gap:4px}
+.term-tb .ttabs a{
+  font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#c9bda1;
+  padding:6px 13px;border:1px solid transparent;transition:.15s;
+}
+.term-tb .ttabs a:hover{color:var(--yellow);border-color:#3a3127;background:#1d1813}
+.term-tb .ttabs a.gh{color:var(--ink);background:var(--yellow);border:1px solid #0d0b08;font-weight:800}
+.term-tb .ttabs a.gh:hover{background:var(--pink);color:var(--paper)}
+
+/* statusline — fixed pulse */
+.term-sl{
+  position:fixed;bottom:0;left:0;right:0;z-index:80;height:36px;
+  display:flex;align-items:center;gap:10px;padding:0 clamp(14px,3vw,26px);
+  background:rgba(38,32,26,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-top:2px solid #0d0b08;
+  font-family:var(--mono);font-size:11.5px;color:#c9bda1;white-space:nowrap;overflow:hidden;
+}
+.term-sl .fk{color:#b9a7ff;font-weight:800}
+.term-sl .sep{color:#3a3127}
+.term-sl b{color:var(--yellow);font-weight:800;font-variant-numeric:tabular-nums}
+.term-sl .slr{margin-left:auto;color:#8a7c62}
+.term-sl .lc{color:#8a7c62}
+@media(max-width:760px){.term-sl .slr,.term-sl .slx{display:none}}
+
+/* scenes — each command is a staged moment */
+.scene{position:relative;z-index:2;padding:clamp(70px,12vh,150px) clamp(18px,5vw,64px);background:transparent}
+.scene .swrap{max-width:1100px;margin:0 auto}
+.scene.center .swrap{display:flex;justify-content:center}
+.scene.center .blk{text-align:left}
+.scene.wide .swrap{max-width:1180px}
+.hero-scene{min-height:100svh;display:flex;align-items:center;padding-top:120px}
+.hero-scene .swrap{width:100%}
+.last-scene{padding-bottom:clamp(120px,18vh,220px)}
+
+/* hero moment */
+.banner{display:flex;gap:clamp(18px,3vw,34px);align-items:center;flex-wrap:wrap}
+.sh-hearth{width:clamp(72px,9vw,120px);height:auto;flex:0 0 auto;border-radius:22px;
+  filter:drop-shadow(0 0 26px rgba(245,185,33,.25))}
+.banner h1{font-family:var(--serif);font-weight:800;font-size:clamp(2.4rem,6vw,5rem);line-height:.98;letter-spacing:-.025em;color:#f4ecd8;text-wrap:balance}
+.banner .em-pk{color:var(--pink)}
+.tagline{font-size:clamp(11px,1.1vw,13px);letter-spacing:.14em;color:var(--teal);text-transform:uppercase;font-weight:800;margin-top:6px}
+.scroll-cue{margin-top:34px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a7c62;animation:cuefloat 2.4s ease-in-out infinite}
+@keyframes cuefloat{0%,100%{transform:translateY(0);opacity:.6}50%{transform:translateY(6px);opacity:1}}
+
+.obig{font-size:clamp(2rem,4.6vw,3.6rem)}
+
+/* the paper document — light inside the dark, the brand inversion */
+.paper-scene .out{align-items:center}
+.paper-doc{
+  background:var(--paper);color:var(--ink);border:3px solid #0d0b08;
+  box-shadow:14px 14px 0 rgba(0,0,0,.55);
+  padding:clamp(28px,4vw,50px) clamp(26px,4.5vw,58px);
+  max-width:660px;transform:rotate(-.6deg);
+  font-family:var(--serif);
+}
+.paper-doc .pd-stamp{
+  display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:800;letter-spacing:.16em;
+  text-transform:uppercase;background:var(--yellow);border:2px solid var(--ink);
+  padding:5px 11px;box-shadow:3px 3px 0 var(--ink);margin-bottom:20px;transform:rotate(1deg);
+}
+.paper-doc .pd-title{font-weight:800;font-size:clamp(1.7rem,3vw,2.4rem);letter-spacing:-.02em;line-height:1;margin:0 0 18px;border:none;padding:0}
+.paper-doc .pd-title span{color:var(--pink)}
+.paper-doc p{font-size:1.02rem;line-height:1.6;color:var(--muted);margin:0 0 12px}
+.paper-doc p b{color:var(--ink)}
+.paper-doc .n{font-family:var(--mono);color:var(--pink);font-size:.85rem;margin-right:4px}
+.paper-doc .pd-link{font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--pink);border-bottom:2px solid var(--pink)}
+@media (prefers-reduced-motion:no-preference){
+  .paper-scene .blk.done .paper-doc{animation:paperstamp .55s cubic-bezier(.25,.9,.3,1.14) both}
+  @keyframes paperstamp{0%{opacity:0;transform:rotate(-.6deg) scale(1.08)}60%{opacity:1;transform:rotate(-.6deg) scale(.985)}100%{opacity:1;transform:rotate(-.6deg) scale(1)}}
+}
+
+/* store + footer become the epilogue outside the glass */
+body.term-home #store{border-top:3px solid #0d0b08}
