@@ -7,7 +7,7 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth;scroll-snap-type:y proximity;scroll-padding-top:70px;overflow-x:hidden;max-width:100%}
-  body{background:var(--paper);color:var(--ink);font-family:var(--serif);font-weight:430;line-height:1.6;
+  body{background:#e6d9b6;color:var(--ink);font-family:var(--serif);font-weight:430;line-height:1.6;
     -webkit-font-smoothing:antialiased;overflow-x:hidden;max-width:100%}
   ::selection{background:var(--pink);color:var(--paper)}
   a{color:inherit;text-decoration:none}
