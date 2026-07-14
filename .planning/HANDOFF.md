@@ -1,50 +1,32 @@
-# Session handoff — 2026-07-14
+# Session handoff — 2026-07-14 (part 2)
 
-**Branch**: `feat/contribution-reputation` → PR #17 (usefolklore/folklore).
-**10 commits unpushed** (`7ace416`…`1146c36`) at handoff time — push pending owner approval.
-Working tree clean; untracked (pre-existing, ignore): `.bench-data/`, `.envrc.local`, `.fastembed_cache/`, `folklore-rs/`.
+## Branch state
+- On `experiment/peer-inference-streaming` (branched off `feat/contribution-reputation`).
+- **PR #17** (`feat/contribution-reputation`) is **GREEN and mergeable** — both `test (22)` + `test (24)` pass, Cloudflare Pages preview built. Fully pushed. Merging = production deploy (site prod is on `main`). Owner's call — was requested earlier but not executed; do it when ready.
+- `experiment/peer-inference-streaming` is **NOT pushed** — carries all feat/* commits plus the research doc (`4e0d9b3`). Push + open its own PR, or cherry-pick the doc, when the inference work starts.
+- Uncommitted: `README.md` (one edit not made by this session — reworded hero to "A torrent swarm for reasoning" / "so you start…". Left as-is; confirm with owner whether it stays, given we dropped torrent/swarm framing on the site).
+- Untracked, ignore: `.bench-data/`, `.envrc.local`, `.fastembed_cache/`, `folklore-rs/`.
 
-## Shipped this session
+## Shipped since part-1 handoff (all on PR #17)
+Site went through a full redesign arc — the homepage is now a **full-bleed terminal session** ("THE TERMINAL IS THE SITE"): fixed titlebar as chrome, fixed statusline with live tracker peer count + scroll line-counter, scenes as staged `folklore <cmd>` moments that type themselves on scroll.
 
-### 1. Two-way P2P notifications (pushed before this handoff)
-- `src/infrastructure/notify.ts` — `notifyPeerRequest` (peer pulled YOUR tree) + `notifyYouPulled` (you pulled a peer's tree). Real macOS notifications via terminal-notifier/osascript, rate-limited 1200ms, `FOLKLORE_NOTIFY=0` opt-out.
-- Wired into `src/application/federated-ask.ts` (pullRemoteBodies) and `src/infrastructure/contribution.ts` (recordServed).
+Key commits (newest first): mobile github-tab stars + pocket demo · reckoning=yellow broadsheet · island slim (380×84) · dominant demo + chapter contrast bands · **the boredom directive** (two designer agents → set-pieces: THE EXCHANGE / THE INHERITANCE / THE RECKONING / LIGHT YOUR FIRE, folk watermarks in the glass, intent-tinted scenes) · **hearth mark v3** (two rounds of designer critique — 3-layer flame seated on dark logs, tellers behind logs, glow pools light; propagated to master `folklore-logo.svg` + all surfaces) · live-coded mini-demo replacing the mp4 (mp4 GitHub-only) · manifesto + creed/how-it-works/statistics subpages · menubar client (`client/menubar-macos/`) · two-way P2P notifications.
 
-### 2. Native macOS menubar client — `client/menubar-macos/` (`7ace416`)
-- Swift/AppKit, `LSUIElement`, uTorrent/Ollama-style. Glyph tracks daemon; dropdown: nodes/edges/vectors, connected peers, roster, contribution ledger (rep · helped · last serve), Start/Stop/Restart Daemon, Open Live Feed/Graph, Settings.
-- `status.cjs` probe → `~/.folklore/menubar-status.json`; graph node count memoized on `graph.json` mtime (329MB file, never re-parsed unless changed).
-- Build: `./build.sh [--install]`. Env: `FOLKLORE_BIN` (CLI path for daemon control), `FOLKLORE_HOME`, `FOLKLORE_NODE`, `FOLKLORE_STATUS_PROBE`.
-- Verified live: app ran, owned a menubar item, cache refreshed on 4s timer.
+Demo pipeline still at `examples/desktop-demo/` (scene.html + record.mjs + cuts.sh); v1/v2 recoverable at tags in git log.
 
-### 3. Desktop demo — `examples/desktop-demo/`
-- `scene.html` — self-contained designed composite (agreed with owner; not a screen grab). Brand-faithful: hearth logo animated (sway/lick/embers), paper/ink palette, Fraunces + Geist Mono (Google Fonts, `document.fonts.ready` gate), real M-series notch geometry (closed 190×32pt r6/14; open r19/24; concave top fillets), ticking menubar clock, folklore statusline strip in the terminal, `✻ Thinking…` shimmer, macOS pointer clicks the menubar client open.
-- Narrative: opening card → **without folklore** (web spinner ticks to 14.2s) → **phase 1 querying peers** (3 pulls with receipts: 412/386/445ms · 0 web calls · saved ~90s/~2m/~75s) → **network-map beat** (wallpaper becomes topology: 6 named peers → @SaharBarak) → **phase 2 answering peers** (rep ticks in dropdown + statusline) → closing card (github.com/usefolklore/folklore).
-- `record.mjs` — playwright-core + system Chrome, args: scene outDir seconds W H zoom (default 1920×1200 via body zoom 1.5 = native HD).
-- `cuts.sh` — regenerates all assets from master webm. Current timings: loop cut 0.5→93.5s; serves ≈73–85s.
-- **Pacing is deliberately slow** (owner pushed back twice): cards 5s, answers 4s, serves 3.6s, gif natural 1:1 — never speed up.
-- **v1 backup**: `scene-v1.html` in-tree; v1 assets at commit `19da727`.
-- Assets: `assets/folklore-desktop.mp4` (10M) / `.gif` (8.2M, under GitHub 10M cap) / `folklore-hero.gif` (3.0M, 9s serve moment) / `folklore-vertical.mp4` (1.3M, 9:16).
+## The research (this session's real ask)
+`docs/research/PEER-INFERENCE-STREAMING.md` — 4 parallel research agents synthesized. Bottom line:
+- Claude Code streams via `POST /v1/messages` (SSE); `ANTHROPIC_BASE_URL` is the only transport hook where the real stream lives. Prompt caching caches input only, never output.
+- You can't stream *the model's tokens* across peers on different models (KV/layer-split are model-locked). Only **derived artifacts** cross a heterogeneous network — and reuse needs no inference at hit time.
+- Legal: you own your outputs (self-replay in-spec); peer redistribution of raw provider completions is **unresolved** → share **distilled traces**, not verbatim.
+- Folklore is ~70% there but intercepts at the **tool layer**; target is a **model-layer `/v1/messages` proxy**. resolved_query nodes, federation transports, signed provenance, deny-gate, L1/L2 caches all transplant. 5 net-new pieces (proxy, message-array cache, SSE replay+capture, completion-calibrated gate, replayability classifier).
+- **Proposal — 3 lanes:** A) federate distilled reasoning traces now (extends shipped code) → B) self-cache proxy (in-spec, proves plumbing) → C) peer-completion streaming (deferred, legal-gated).
 
-### 4. Manifesto — `docs/MANIFESTO.md`
-Ten articles: reasoning is labor · re-derivation is a tax · mouth to ear · network smarter than node · shared memory shrinks the model (→ decentralized/edge models) · less inference is independence · no big brother in the loop · provenance over authority · local-first sovereignty · the commons compounds. Oath ending.
+## Next steps (in order)
+1. **Merge PR #17** (green) → production deploy.
+2. Confirm the README hero wording with owner (torrent/swarm vs network — site already dropped it).
+3. Push `experiment/peer-inference-streaming`; decide RFC vs prototype.
+4. Inference work: write Lane A as an RFC/phase, or prototype the Lane B `/v1/messages` self-cache proxy (start: `folklore claude install` sets `ANTHROPIC_BASE_URL`; reuse `query-reuse.ts` + `semantic-cache.ts`).
 
-### 5. README
-Desktop demo gif = hero (before/after numbers in caption); live-feed gif moved into "Day N: together"; new **Philosophy** section (4 condensed articles + link); Manifesto in top link row.
-
-### 6. Site — `site/index.html`
-- `#demo` "The Demonstration — Watch a Session" after `#problem`: autoplay-loop video in ink frame, `site/assets/folklore-desktop.{mp4,poster.jpg}`.
-- `#creed` "The Creed — Why We Gather" band before `#join`: "the fire is ours to keep.", 6 articles in roman-numeral brutalist grid, oath + link to full manifesto. Scoped `.creed-*` styles, mobile collapse included.
-- Both navs (desktop + mobile) gained Demo + Creed. Render-verified in headless Chrome at 1440w.
-
-## Next steps
-1. **Push 10 commits to PR #17** (owner approval pending at handoff).
-2. Deploy site so #demo/#creed go live.
-3. Optional: notarize/release the menubar client; post vertical/hero cuts.
-4. `folklore live` command still exists (README references examples/live-feed) — fine, but demo supersedes it as the hero.
-
-## Hard-won context (also in auto-memory `demo-craft-preferences`)
-- No mocks passed off as real; designed composites only when explicitly agreed + labeled reproducible.
-- Peers are PEOPLE (@handles), never "swarm"/"developers"; uTorrent framing.
-- Repo is `usefolklore/folklore`.
-- Owner's menubar auto-hides + screen may show private work — don't self-record the live desktop; use the scene pipeline.
-- `.claude/helpers/gsd-statusline.js` (global) is the statusline Claude Code actually uses, not the project's ak-statusline.cjs.
+## Standing context (also in auto-memory `demo-craft-preferences`)
+No mocks passed as real · peers are PEOPLE (@handles), not swarm/developers — site dropped the torrent framing per owner · brand = hearth logo + paper/ink/pink/yellow/teal + Fraunces + Geist Mono · pacing errs slow · repo is usefolklore/folklore · never git-commit with claude/anthropic co-authors.
