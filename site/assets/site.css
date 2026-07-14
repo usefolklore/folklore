@@ -474,3 +474,61 @@
   .creed-close{max-width:1080px;margin:26px auto 0;text-align:center;font-family:var(--serif);font-style:italic;font-size:1.15rem}
   .creed-close b{font-style:normal}
   @media(max-width:768px){.creed-grid{grid-template-columns:1fr}.creed-item:nth-child(odd){border-right:none}.creed-item:nth-last-child(-n+2){border-bottom:2px solid var(--ink)}.creed-item:last-child{border-bottom:none}}
+
+/* ── the island — the demo's dynamic island, living on the site ── */
+.isl{
+  position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:200;
+  background:#0d0b08;color:var(--paper);border-radius:999px;
+  display:flex;align-items:center;gap:11px;padding:0 20px 0 9px;
+  width:216px;height:50px;overflow:hidden;white-space:nowrap;cursor:default;
+  box-shadow:0 14px 34px -12px rgba(0,0,0,.6), inset 0 1px 0 rgba(244,236,216,.09);
+  transition:width .5s cubic-bezier(.32,.9,.28,1.06);
+  pointer-events:none;
+}
+.isl.open{width:min(500px,92vw)}
+.isl .isl-fire{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:#1d1813;padding:3px}
+.isl .isl-txt{min-width:0;display:flex;flex-direction:column;gap:2px}
+.isl .isl-kick{
+  font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--teal);display:flex;align-items:center;gap:6px;
+}
+.isl .isl-kick .idot{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 0 rgba(31,174,139,.55);animation:islpulse 1.6s infinite;flex:0 0 auto}
+.isl .isl-flow{font-family:var(--mono);font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.isl .isl-flow b{color:var(--yellow);font-weight:700}
+.isl.serve .isl-kick{color:var(--pink)}
+.isl.serve .isl-kick .idot{background:var(--pink);box-shadow:0 0 0 0 rgba(255,79,109,.55)}
+.isl.serve .isl-flow .who{color:var(--pink);font-weight:700}
+.isl.pull .isl-flow .who{color:var(--teal);font-weight:700}
+.isl.join .isl-kick{color:var(--yellow)}
+.isl.join .isl-kick .idot{background:var(--yellow);box-shadow:0 0 0 0 rgba(245,185,33,.55)}
+@keyframes islpulse{70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media(max-width:1100px){.isl{display:none}}
+
+/* ── the hearth burns — brand flame, everywhere the logo appears ── */
+@media (prefers-reduced-motion:no-preference){
+  .fl-o{transform-box:fill-box;transform-origin:50% 96%;animation:flsway 2.3s ease-in-out infinite}
+  .fl-i{transform-box:fill-box;transform-origin:50% 96%;animation:fllick 1.25s ease-in-out infinite}
+  @keyframes flsway{
+    0%,100%{transform:scaleY(1) skewX(0deg)}
+    24%{transform:scaleY(1.06) skewX(-2deg)}
+    52%{transform:scaleY(.97) skewX(1.6deg)}
+    76%{transform:scaleY(1.04) skewX(-1deg)}
+  }
+  @keyframes fllick{
+    0%,100%{transform:scaleY(1);opacity:1}
+    38%{transform:scaleY(1.16) skewX(1.8deg);opacity:.88}
+    66%{transform:scaleY(.9);opacity:1}
+  }
+}
+
+/* ── tactile micro-physics — things press like objects ── */
+.btn:active,.hcta:active,.wl-form button:active{transform:translate(3px,3px)!important;box-shadow:3px 3px 0 var(--ink)!important}
+.copy:active{transform:scale(.94)}
+@media (prefers-reduced-motion:no-preference){
+  .stamp{transition:transform .18s cubic-bezier(.34,1.4,.5,1)}
+  .stamp:hover{transform:rotate(-1.2deg) scale(1.02)}
+  #demo video{transition:transform .3s cubic-bezier(.25,.9,.3,1.1), box-shadow .3s}
+  #demo video:hover{transform:translate(-3px,-3px);box-shadow:13px 13px 0 var(--ink)}
+  .creed-item{transition:background .2s}
+  .creed-item:hover{background:#fff8ea}
+}
