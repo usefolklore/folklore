@@ -118,7 +118,8 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 </header>
 
 <a id="top"></a>
-<section class="hero">
+<section class="hero" style="position:relative">
+  <canvas class="embers" id="embers" aria-hidden="true"></canvas>
   <svg class="fg yellow" style="top:17%;left:3%;width:74px;--rot:8deg;--fdur:10s"><use href="#star"/></svg>
   <div class="wrap herogrid">
     <div class="herocol-txt">
@@ -560,6 +561,41 @@ function initMemeCarousel(){
       .catch(function(){ var n=elCount.closest('.netstat'); if(n) n.style.display='none'; });
   }
   tick(); setInterval(tick,5000);
+})();
+</script>
+<script>
+/* ember field — warm sparks drifting up behind the hero, from the demo */
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var cv=document.getElementById('embers'); if(!cv) return;
+  var ctx=cv.getContext('2d'), pts=[], W=0, H=0;
+  function seed(){
+    var hero=cv.parentElement; W=cv.width=hero.offsetWidth; H=cv.height=hero.offsetHeight;
+    pts=[];
+    for(var i=0;i<22;i++) pts.push({
+      x:Math.random()*W, y:Math.random()*H,
+      r:Math.random()*1.7+.5,
+      vy:-(Math.random()*.16+.05), vx:(Math.random()-.5)*.08,
+      tw:Math.random()*6.28, tws:Math.random()*.02+.008,
+      warm:Math.random()<.3
+    });
+  }
+  function tick(){
+    if(document.hidden){ requestAnimationFrame(tick); return; }
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<pts.length;i++){
+      var p2=pts[i];
+      p2.x+=p2.vx; p2.y+=p2.vy; p2.tw+=p2.tws;
+      if(p2.y<-4){p2.y=H+4;p2.x=Math.random()*W;}
+      if(p2.x<-4)p2.x=W+4; if(p2.x>W+4)p2.x=-4;
+      ctx.globalAlpha=.2+.35*(1+Math.sin(p2.tw))/2;
+      ctx.fillStyle=p2.warm?'rgba(245,185,33,.9)':'rgba(29,24,19,.55)';
+      ctx.beginPath();ctx.arc(p2.x,p2.y,p2.r,0,7);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    requestAnimationFrame(tick);
+  }
+  seed(); addEventListener('resize',seed); tick();
 })();
 </script>
 <script src="assets/island.js" defer></script>

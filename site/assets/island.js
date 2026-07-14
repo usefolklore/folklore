@@ -8,20 +8,14 @@
   var isl=document.createElement('div');
   isl.className='isl'; isl.setAttribute('aria-live','polite');
   isl.innerHTML =
-    '<svg class="isl-fire" viewBox="0 0 64 64" aria-hidden="true">'+
-      '<rect width="64" height="64" rx="14" fill="#1d1813"/>'+
-      '<g class="fl-o"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d"/></g>'+
-      '<g class="fl-i"><path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/></g>'+
-      '<g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g>'+
-      '<g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g>'+
-      '<g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g>'+
-    '</svg>'+
+    '<div class="isl-strip">'+'<svg class="isl-fire" viewBox="0 0 64 64" aria-hidden="true">'+'<rect width="64" height="64" rx="14" fill="#1d1813"/>'+'<g class="fl-o"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d"/></g>'+'<g class="fl-i"><path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/></g>'+'<g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g>'+'<g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g>'+'<g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g>'+'</svg>'+'<span class="idot"></span><span class="isl-mini" id="islMini">folklore network</span></div>'+
+    '<div class="isl-exp">'+'<svg class="isl-fire" viewBox="0 0 64 64" aria-hidden="true">'+'<rect width="64" height="64" rx="14" fill="#1d1813"/>'+'<g class="fl-o"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d"/></g>'+'<g class="fl-i"><path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/></g>'+'<g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g>'+'<g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g>'+'<g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g>'+'</svg>'+
     '<div class="isl-txt">'+
-      '<div class="isl-kick"><span class="idot"></span><span id="islKick">folklore network</span></div>'+
-      '<div class="isl-flow" id="islFlow">connecting…</div>'+
-    '</div>';
+      '<div class="isl-kick"><span class="idot"></span><span id="islKick"></span></div>'+
+      '<div class="isl-flow" id="islFlow"></div>'+
+    '</div></div>';
   document.body.appendChild(isl);
-  var kick=isl.querySelector('#islKick'), flow=isl.querySelector('#islFlow');
+  var kick=isl.querySelector('#islKick'), flow=isl.querySelector('#islFlow'), mini=isl.querySelector('#islMini');
 
   var peers=null, queue=[];
   var AMBIENT=[
@@ -36,8 +30,7 @@
 
   function idle(){
     isl.classList.remove('open','pull','serve','join');
-    kick.textContent='folklore network';
-    flow.innerHTML = peers===null ? 'seeding…' : '<b>'+peers+'</b> peer'+(peers===1?'':'s')+' · live';
+    mini.innerHTML = peers===null ? 'folklore network' : '<b>'+peers+'</b> peers · live';
   }
   function show(ev){
     isl.classList.remove('pull','serve','join');
