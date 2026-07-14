@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>How Folklore works — a query, traced</title>
+<meta name="description" content="A 47-minute debug in Berlin becomes a 142 ms hit in Tokyo: how folklore intercepts research calls, answers from peer graphs, and files results back signed — 0 servers between." />
+<meta name="theme-color" content="#f4ecd8" />
+<link rel="canonical" href="https://usefolklore.sh/how-it-works/" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="How Folklore works — a query, traced" />
+<meta property="og:description" content="A 47-minute debug in Berlin becomes a 142 ms hit in Tokyo: how folklore intercepts research calls, answers from peer graphs, and files results back signed — 0 servers between." />
+<meta property="og:url" content="https://usefolklore.sh/how-it-works/" />
+<meta property="og:image" content="https://usefolklore.sh/assets/gen/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%231d1813"/><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="%23ff4f6d"/><g stroke="%23f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="%23f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="%23f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg>' />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/site.css"/>
+</head>
+<body>
+<div class="grain"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="sun" viewBox="0 0 100 100"><g fill="currentColor"><circle cx="50" cy="50" r="22"/>
+    <g><rect x="47" y="2" width="6" height="16" rx="3"/><rect x="47" y="82" width="6" height="16" rx="3"/>
+    <rect x="2" y="47" width="16" height="6" rx="3"/><rect x="82" y="47" width="16" height="6" rx="3"/></g>
+    <g transform="rotate(45 50 50)"><rect x="47" y="2" width="6" height="16" rx="3"/><rect x="47" y="82" width="6" height="16" rx="3"/>
+    <rect x="2" y="47" width="16" height="6" rx="3"/><rect x="82" y="47" width="16" height="6" rx="3"/></g></g></symbol>
+  <symbol id="bird" viewBox="0 0 100 100"><path fill="currentColor" d="M8 60 q30-36 50-16 q10-24 26-10 q-7 8-16 9 q12 8 16 22 q-26-16-44-3 q-20 9-36-2 q14-3 18-11z"/></symbol>
+  <symbol id="flower" viewBox="0 0 100 100"><g fill="currentColor"><ellipse cx="50" cy="20" rx="11" ry="18"/><ellipse cx="50" cy="80" rx="11" ry="18"/>
+    <ellipse cx="20" cy="50" rx="18" ry="11"/><ellipse cx="80" cy="50" rx="18" ry="11"/>
+    <ellipse cx="29" cy="29" rx="10" ry="16" transform="rotate(45 29 29)"/><ellipse cx="71" cy="29" rx="10" ry="16" transform="rotate(-45 71 29)"/>
+    <ellipse cx="29" cy="71" rx="10" ry="16" transform="rotate(-45 29 71)"/><ellipse cx="71" cy="71" rx="10" ry="16" transform="rotate(45 71 71)"/></g>
+    <circle cx="50" cy="50" r="13" fill="var(--paper)"/><circle cx="50" cy="50" r="7" fill="currentColor"/></symbol>
+  <symbol id="moon" viewBox="0 0 100 100"><path fill="currentColor" d="M66 8 a44 44 0 1 0 0 84 a32 32 0 1 1 0-84z"/></symbol>
+  <symbol id="star" viewBox="0 0 100 100"><path fill="currentColor" d="M50 4 L62 38 L98 38 L69 60 L80 96 L50 74 L20 96 L31 60 L2 38 L38 38 Z"/></symbol>
+  <symbol id="fish" viewBox="0 0 100 100"><path fill="currentColor" d="M10 50 q26-26 58-12 q14 6 22 12 q-8 6-22 12 q-32 14-58-12z"/>
+    <path fill="currentColor" d="M86 36 q16 14 0 28 q-9-14 0-28z"/><circle cx="30" cy="48" r="5" fill="var(--paper)"/></symbol>
+  <symbol id="hand" viewBox="0 0 100 100"><path fill="currentColor" d="M34 92 V52 q-10-2-10-12 q0-8 8-8 q0-10 8-10 q2-8 9-8 q7 0 9 8 q8 0 8 10 q8 0 8 9 v20 q0 21-20 31z"/><circle cx="50" cy="48" r="9" fill="var(--paper)"/></symbol>
+</defs></svg>
+<header>
+  <div class="wrap head">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d" stroke="#1d1813" stroke-width="2.4" stroke-linejoin="round"/><path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/><g stroke="#1d1813" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#1d1813"><circle cx="12" cy="38" r="4"/><path d="M5 52c0-4.5 3-7.5 7-7.5s7 3 7 7.5z"/></g><g fill="#1d1813"><circle cx="52" cy="38" r="4"/><path d="M45 52c0-4.5 3-7.5 7-7.5s7 3 7 7.5z"/></g></svg>
+      folklore
+    </a>
+    <nav class="hlinks">
+      <a href="/research">Research</a><a href="/whitepaper">Whitepaper</a>
+    </nav>
+    <a class="hcta" href="https://github.com/usefolklore/folklore">GitHub</a>
+    <details class="mnav">
+      <summary aria-label="Menu" role="button">☰</summary>
+      <div class="mnav-panel">
+        <a href="/research">Research</a><a href="/whitepaper">Whitepaper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+        <a class="cta" href="/#join">Install</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<main style="padding-top:76px">
+<section id="trace" class="tx-dots">
+  <div class="wrap">
+    <div class="stamp rv">Chapter the Fourth & a Half — A Query, Traced</div>
+    <h2 class="rv" data-d="1"><span class="mis" data-text="47-minute debug. 142 ms hit.">47-minute debug. <span class="em-blue">142&nbsp;ms</span> hit.</span></h2>
+    <p class="body rv" data-d="1" style="font-size:1.1rem;opacity:.8;max-width:54ch">One peer pays the cost. The network gets the answer. No server brokers it, no vendor takes a cut.</p>
+
+    <div class="flow-wrap rv" data-d="1" aria-hidden="true">
+      <svg class="flow-svg" viewBox="0 0 720 112">
+        <defs>
+          <marker id="fa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--ink)" fill-opacity=".55"/></marker>
+          <marker id="fac" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--teal)"/></marker>
+        </defs>
+        <g font-family="var(--mono)" font-size="9.5" text-anchor="middle">
+          <rect x="6" y="14" width="64" height="36" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
+          <text x="38" y="30" fill="var(--ink)">you ask</text>
+          <text x="38" y="43" fill="var(--ink)" fill-opacity=".55" font-size="7.5">any harness</text>
+          <rect x="90" y="14" width="96" height="36" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
+          <text x="138" y="30" fill="var(--ink)">your graph</text>
+          <text x="138" y="43" fill="var(--ink)" fill-opacity=".55" font-size="7.5">free · instant</text>
+          <rect x="206" y="14" width="100" height="36" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
+          <text x="256" y="30" fill="var(--ink)">peer graphs</text>
+          <text x="256" y="43" fill="var(--ink)" fill-opacity=".55" font-size="7.5">4 asked · ~140 ms</text>
+          <rect x="326" y="14" width="116" height="36" rx="6" fill="var(--paper-2)" stroke="var(--teal)" stroke-width="2"/>
+          <text x="384" y="30" fill="var(--teal)" font-weight="700">good answer?</text>
+          <text x="384" y="43" fill="var(--teal)" font-size="7.5">confidence gate</text>
+          <rect x="462" y="14" width="128" height="36" rx="6" fill="var(--paper-2)" stroke="var(--pink)" stroke-width="2"/>
+          <text x="526" y="30" fill="var(--pink)" font-weight="700">use it · signed</text>
+          <text x="526" y="43" fill="var(--ink)" fill-opacity=".55" font-size="7.5">0 web calls</text>
+          <g stroke="var(--ink)" stroke-opacity=".55" stroke-width="1.3" fill="none" marker-end="url(#fa)">
+            <line x1="70" y1="32" x2="88" y2="32"/>
+            <line x1="186" y1="32" x2="204" y2="32"/>
+            <line x1="306" y1="32" x2="324" y2="32"/>
+          </g>
+          <line x1="442" y1="32" x2="460" y2="32" stroke="var(--teal)" stroke-width="2" marker-end="url(#fac)"/>
+          <text x="451" y="10" fill="var(--teal)" font-size="8" font-weight="700">yes</text>
+          <line x1="384" y1="50" x2="384" y2="66" stroke="var(--ink)" stroke-opacity=".55" stroke-width="1.3" marker-end="url(#fa)"/>
+          <text x="402" y="62" fill="var(--pink)" font-size="8" text-anchor="start" font-weight="700">no</text>
+          <rect x="284" y="68" width="220" height="26" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
+          <text x="394" y="85" fill="var(--ink)">web — <tspan fill="var(--pink)" font-weight="700">once</tspan> → signed → saved back</text>
+          <path d="M284,81 C 230,81 236,56 252,52" stroke="var(--teal)" stroke-width="1.4" fill="none" stroke-dasharray="4 3" marker-end="url(#fac)"/>
+          <text x="150" y="66" fill="var(--teal)" font-size="8" font-weight="600">next ask hits the graph</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="scene-pair rv" data-d="1">
+      <article class="scene-pane">
+        <div class="pstamp"><span class="dot"></span>tue 03:14 · berlin</div>
+        <h3>The work happens once.</h3>
+        <div class="line you">$ claude</div>
+        <div class="line">&gt; long-ctx vllm OOM after fp16 prefix cache;</div>
+        <div class="line">&gt; raising max_model_len blew the kv budget</div>
+        <div class="line tool">[debug session · 47 min]</div>
+        <div class="line">&gt; root cause: prefix cache page size too small</div>
+        <div class="line">&gt; fix: --kv-cache-dtype=fp8 + --block-size=32</div>
+        <div class="line tool">[folklore · auto-saved trace]</div>
+        <div class="sig">signed · <b>@you</b> · ed25519&nbsp;3a4b…</div>
+      </article>
+      <div class="scene-arrow" aria-hidden="true">
+        <svg viewBox="0 0 80 40" fill="none">
+          <line x1="6" y1="20" x2="68" y2="20" stroke="var(--teal)" stroke-width="2" stroke-dasharray="4 4"/>
+          <polyline points="62,12 72,20 62,28" stroke="var(--teal)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+        </svg>
+        <span class="cap">36&nbsp;h later<br>0 servers between</span>
+      </div>
+      <article class="scene-pane">
+        <div class="pstamp"><span class="dot"></span>wed 18:42 · tokyo</div>
+        <h3>Everyone after skips it.</h3>
+        <div class="line you">$ claude</div>
+        <div class="line">&gt; vllm long-ctx OOM, prefix cache failure</div>
+        <div class="line tool">[folklore · asked 3 peers · 142 ms · hit: @you's trace]</div>
+        <div class="line">&gt; confident answer — web not needed</div>
+        <div class="line">&gt; 0 web calls. injecting the signed trace.</div>
+        <div class="line tool">[claude · reading @you's notes]</div>
+        <div class="line">&gt; try --kv-cache-dtype=fp8 + --block-size=32</div>
+        <div class="sig">received · <b>@you</b> · verified · 0 web hops</div>
+      </article>
+    </div>
+    <p class="scene-note rv" data-d="1">No server brokered it. No vendor took a cut. The trace is now in two graphs. <em>The next query hits three.</em></p>
+  </div>
+</section>
+
+</main>
+<footer>
+  <div class="wrap foot">
+    <a href="/#demo">Demo</a>
+    <a href="/how-it-works/">How It Works</a>
+    <a href="/creed/">Creed</a>
+    <a href="/statistics/">Statistics</a>
+    <a href="/research">Research</a>
+    <a href="/compare">Compare</a>
+    <a href="/store">Store</a>
+    <a href="/blog">Blog</a>
+    <a href="/whitepaper">White Paper</a>
+    <a href="https://github.com/usefolklore/folklore/tree/main/docs/rfc">RFC</a>
+    <a href="https://github.com/usefolklore/folklore">GitHub</a>
+    <a href="/legal/terms">Terms</a>
+    <a href="/legal/privacy">Privacy</a>
+    <a href="/legal/refund">Refund</a>
+    <span class="r">MIT · signed by you · no central server</span>
+  </div>
+</footer>
+
+<script>
+document.documentElement.classList.add('has-js');
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(!e.isIntersecting)return;e.target.classList.add('in');
+  e.target.querySelectorAll?.('[data-count]').forEach(runCount);io.unobserve(e.target);
+}),{threshold:.2});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+function runCount(node){const dec=+(node.dataset.dec||0),end=parseFloat(node.dataset.count),dur=1200,t0=performance.now();
+  (function tick(t){const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3),v=end*e;
+   node.textContent=dec?v.toFixed(dec):Math.round(v);if(k<1)requestAnimationFrame(tick);})(t0);}
+const hdr=document.querySelector('header');
+addEventListener('scroll',()=>hdr.classList.toggle('scrolled',scrollY>24),{passive:true});
+</script>
+
+</body>
+</html>

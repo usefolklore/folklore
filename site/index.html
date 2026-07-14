@@ -60,463 +60,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
-<style>
-  :root{
-    --paper:#f4ecd8; --paper-2:#ece0c2;
-    --ink:#1d1813;
-    --pink:#ff4f6d; --blue:#2b3a8c; --yellow:#f5b921; --teal:#1fae8b;
-    --serif:'Fraunces',Georgia,serif; --mono:'Geist Mono',ui-monospace,monospace;
-    --wrap:1320px;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth;scroll-snap-type:y proximity;scroll-padding-top:70px;overflow-x:hidden;max-width:100%}
-  body{background:var(--paper);color:var(--ink);font-family:var(--serif);font-weight:430;line-height:1.6;
-    -webkit-font-smoothing:antialiased;overflow-x:hidden;max-width:100%}
-  ::selection{background:var(--pink);color:var(--paper)}
-  a{color:inherit;text-decoration:none}
-  /* cross-document page transitions (View Transitions API) */
-  @view-transition{navigation:auto}
-  ::view-transition-old(root){animation:vt-out .26s ease both}
-  ::view-transition-new(root){animation:vt-in .36s cubic-bezier(.16,1,.3,1) both}
-  @keyframes vt-out{to{opacity:0;transform:translateY(-10px)}}
-  @keyframes vt-in{from{opacity:0;transform:translateY(14px)}}
-  header{view-transition-name:site-header}
-  @media(prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none}}
-  .wrap{max-width:var(--wrap);margin:0 auto;padding:0 clamp(24px,5vw,80px);position:relative;z-index:3}
-
-  /* faint texture, kept off the reading */
-  .grain{position:fixed;inset:0;z-index:70;pointer-events:none;opacity:.08;mix-blend-mode:multiply;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-
-  /* DEPTH layer — big blurred color washes + blurred shapes, far back, parallax */
-  .depth{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-  .wash{position:absolute;border-radius:50%;filter:blur(120px);opacity:.14;will-change:transform}
-  .wash.w1{width:46vw;height:46vw;background:var(--pink);top:-14vw;right:-10vw}
-  .wash.w2{width:40vw;height:40vw;background:var(--yellow);bottom:-16vw;left:-10vw;opacity:.12}
-  .wash.w3{width:32vw;height:32vw;background:var(--teal);top:54%;left:60%;opacity:.08}
-  .farshape{position:absolute;will-change:transform;opacity:.16;filter:blur(3px)}
-  .farshape.pink{color:var(--pink)}.farshape.blue{color:var(--blue)}.farshape.teal{color:var(--teal)}.farshape.yellow{color:var(--yellow)}
-
-  /* sharp foreground shapes — only in margins, never over text columns */
-  .fg{position:absolute;z-index:1;pointer-events:none;mix-blend-mode:multiply;animation:float var(--fdur,9s) ease-in-out infinite}
-  .fg.pink{color:var(--pink)}.fg.blue{color:var(--blue)}.fg.yellow{color:var(--yellow)}.fg.teal{color:var(--teal)}
-  @keyframes float{0%,100%{transform:translateY(0) rotate(var(--rot,0deg))}50%{transform:translateY(-18px) rotate(calc(var(--rot,0deg) + 5deg))}}
-
-  /* header */
-  header{position:fixed;top:0;left:0;right:0;z-index:80;padding:16px clamp(14px,4vw,22px) 0;background:transparent;
-    border-bottom:3px solid transparent;transition:background .4s ease,border-color .4s ease,backdrop-filter .4s ease,padding-top .4s ease}
-  header.scrolled{padding:0;background:rgba(244,236,216,.92);backdrop-filter:blur(10px);border-bottom-color:var(--ink)}
-  /* start: narrow, centered, framed bar — the line is part of the hero */
-  .head{display:flex;align-items:center;gap:22px;height:60px;max-width:880px;margin:0 auto;
-    background:var(--paper);border:3px solid var(--ink);border-radius:16px;box-shadow:5px 5px 0 var(--ink);padding:0 22px;
-    transition:max-width .5s cubic-bezier(.16,1,.3,1),border-radius .4s ease,box-shadow .4s ease,background .4s ease,border-color .4s ease,padding .4s ease}
-  /* scrolled: expand to the sides into a full-width navbar */
-  header.scrolled .head{max-width:1320px;border-radius:0;border-color:transparent;box-shadow:none;background:transparent;padding:0 clamp(24px,5vw,80px)}
-  .brand{display:flex;align-items:center;gap:11px;font-family:var(--serif);font-weight:800;font-size:1.45rem;letter-spacing:-.01em}
-  .brand svg{width:32px;height:32px;flex:none}
-  .hlinks{display:flex;gap:24px;margin-left:auto;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
-  .hlinks a:hover{color:var(--pink)}
-  .hcta{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.04em;background:var(--blue);color:var(--paper);
-    border:2px solid var(--ink);padding:9px 16px;box-shadow:3px 3px 0 var(--ink);transition:.12s}
-  .hcta:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink);background:var(--pink)}
-  .ghstars{display:inline-flex;align-items:center;margin-left:8px;padding:1px 7px;border-radius:999px;background:rgba(244,236,216,.22);font-size:11px;line-height:1.6}
-  .ghstars b{font-weight:800}
-  /* mobile nav disclosure */
-  .mnav{display:none;margin-left:auto;position:relative}
-  .mnav>summary{list-style:none;cursor:pointer;font-size:20px;line-height:1;width:42px;height:42px;display:flex;align-items:center;justify-content:center;
-    border:2px solid var(--ink);background:var(--paper);box-shadow:3px 3px 0 var(--ink);user-select:none}
-  .mnav>summary::-webkit-details-marker{display:none}
-  .mnav[open]>summary{background:var(--yellow)}
-  .mnav .mnav-panel{position:absolute;right:0;top:calc(100% + 10px);min-width:208px;background:var(--paper);border:3px solid var(--ink);box-shadow:6px 6px 0 var(--ink);
-    display:flex;flex-direction:column;padding:8px;z-index:90}
-  .mnav .mnav-panel a{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:11px 12px;border-bottom:2px solid rgba(29,24,19,.12)}
-  .mnav .mnav-panel a:last-child{border-bottom:0}
-  .mnav .mnav-panel a:hover{color:var(--pink)}
-  .mnav .mnav-panel a.cta{background:var(--blue);color:var(--paper);text-align:center;margin-top:6px;border-bottom:0}
-  .mnav>summary:focus-visible,.mnav .mnav-panel a:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-  @media(max-width:820px){.hlinks{display:none}.hcta{display:none}.mnav{display:block}}
-
-  section{min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:clamp(22px,3vh,48px) 0;position:relative;overflow:hidden;scroll-snap-align:start;background:var(--paper)}
-  /* ── risograph section rhythm: contrast bands + textures ── */
-  .band-2{background:var(--paper-2)}
-  .band-teal{background:#dcebe3}
-  .band-blue{background:#dde1f0}
-  .band-yellow{background:#f7e6b4}            /* echoes the footer yellow */
-  section > .wrap{position:relative;z-index:2}
-  /* texture layer (under content, over band colour) */
-  .tx-dots::before,.tx-hatch::before,.tx-grid::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none}
-  .tx-dots::before{opacity:.55;background-image:radial-gradient(rgba(29,24,19,.11) 1.4px,transparent 1.5px);background-size:23px 23px}
-  .tx-hatch::before{opacity:.7;background-image:repeating-linear-gradient(45deg,transparent 0 13px,rgba(29,24,19,.05) 13px 14px)}
-  .tx-grid::before{opacity:.6;background-image:linear-gradient(rgba(29,24,19,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(29,24,19,.05) 1px,transparent 1px);background-size:30px 30px}
-  /* illustration plates — capped so every section fits within one viewport */
-  .plate{max-width:460px;margin:24px auto 0;border:3px solid var(--ink);line-height:0;overflow:hidden}
-  .plate img,.plate video{display:block;width:100%;max-height:32svh;object-fit:contain;background:var(--paper)}
-  /* full-bleed scene: illustration as section background, text in a readable panel */
-  .scene{position:relative;overflow:hidden}
-  .scene .bg{position:absolute;inset:0;z-index:0;overflow:hidden;
-    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 11%,#000 89%,transparent 100%);
-    mask-image:linear-gradient(to bottom,transparent 0,#000 11%,#000 89%,transparent 100%)}
-  .scene .bg img,.scene .bg video{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.12);transform-origin:center}
-  .scene .bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(244,236,216,.95),rgba(244,236,216,.80) 38%,rgba(244,236,216,.36) 70%,rgba(244,236,216,.10))}
-  .scene .panel{background:rgba(244,236,216,.9);border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink);padding:clamp(24px,3vw,38px);max-width:540px;backdrop-filter:blur(2px)}
-  .scene .panel .stamp{box-shadow:3px 3px 0 var(--ink)}
-  .scene .panel .card{margin-top:20px}
-  @media(max-width:760px){.scene .bg::after{background:rgba(244,236,216,.88)}.scene .panel{max-width:none}}
-  .stamp{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12px;font-weight:700;
-    letter-spacing:.16em;text-transform:uppercase;background:var(--yellow);color:var(--ink);
-    border:2px solid var(--ink);padding:7px 13px;box-shadow:4px 4px 0 var(--ink);margin-bottom:24px}
-
-  /* BIG type */
-  h1,h2{font-weight:700;letter-spacing:-.035em;line-height:.92;position:relative}
-  .mis{position:relative;color:var(--ink);display:inline-block}
-  .mis::before{content:attr(data-text);position:absolute;left:0;top:0;color:var(--pink);
-    transform:translate(.028em,.03em);z-index:-1;mix-blend-mode:multiply;pointer-events:none}
-  h1{font-size:clamp(2.6rem,7vw,5.4rem)}
-  h2{font-size:clamp(1.7rem,3.2vw,2.9rem);max-width:18ch}
-  .em-blue{color:var(--blue)}.em-pink{color:var(--pink)}.em-teal{color:var(--teal)}
-
-  .body{font-size:clamp(1.02rem,1.2vw,1.22rem);line-height:1.6;max-width:42ch;font-weight:470;color:var(--ink)}
-  .body+.body{margin-top:1em}
-  .lede{font-size:clamp(1.15rem,1.8vw,1.55rem);line-height:1.38;max-width:32ch;font-weight:520}
-  .lede b{color:var(--blue);font-weight:800}
-  .rule{height:4px;background:var(--ink);margin:18px 0;max-width:140px}
-
-  /* hero */
-  .hero{min-height:calc(100svh - 86px);display:flex;flex-direction:column;justify-content:flex-start;padding-top:clamp(104px,15vh,168px)}
-  .hero .est{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--blue);margin-bottom:30px}
-  .hero h1{max-width:14ch;margin-bottom:20px;font-size:clamp(2.4rem,4.6vw,4.4rem)}
-  .hero .lede{max-width:34ch}
-  .herogrid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(32px,5vw,72px);align-items:center;width:100%}
-  .herocol-art img,.herocol-art video{width:100%;display:block;border:3px solid var(--ink);box-shadow:14px 14px 0 var(--blue);aspect-ratio:16/9;object-fit:cover}
-  @media(max-width:900px){.herogrid{grid-template-columns:1fr;gap:30px}.herocol-art{max-width:460px}
-    /* mobile: top-align the hero so the eyebrow clears the fixed header bar instead of tucking under it */
-    .hero{justify-content:flex-start;padding-top:104px;min-height:100svh}
-    .hero .est{margin-bottom:18px;letter-spacing:.18em;font-size:12px;overflow-wrap:anywhere}}
-  .cta-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:26px}
-  .btn{font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:.03em;padding:17px 30px;
-    border:3px solid var(--ink);box-shadow:7px 7px 0 var(--ink);transition:.12s;cursor:pointer}
-  .btn-primary{background:var(--pink);color:var(--paper)}
-  .btn-ghost{background:var(--paper);color:var(--ink)}
-  .btn:hover{transform:translate(3px,3px);box-shadow:4px 4px 0 var(--ink)}
-  .btn:active{transform:translate(7px,7px);box-shadow:0 0 0 var(--ink)}
-  .install{margin-top:22px;font-family:var(--mono);font-size:13px;font-weight:600;border:3px solid var(--ink);
-    background:var(--paper);padding:15px 18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;max-width:480px;
-    overflow-wrap:anywhere;box-shadow:6px 6px 0 var(--blue)}
-  .install .d{color:var(--pink);font-weight:800}
-  .copy{margin-left:auto;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-    background:var(--yellow);border:2px solid var(--ink);padding:6px 10px;transition:.12s}
-  .copy:hover{background:var(--pink);color:var(--paper)}
-  .scrollcue{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:4}
-  .scrollcue svg{width:30px;height:30px;fill:none;stroke:var(--blue);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;animation:cue 1.7s ease-in-out infinite}
-  @keyframes cue{0%{transform:translateY(-5px);opacity:.25}50%{transform:translateY(5px);opacity:1}100%{transform:translateY(-5px);opacity:.25}}
-
-  /* marquee */
-  .marq{border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);background:var(--blue);color:var(--paper);overflow:hidden;max-width:100%;padding:18px 0;position:relative;z-index:3;scrollbar-width:none;-ms-overflow-style:none}
-  .marq::-webkit-scrollbar{display:none}
-  .track{display:flex;gap:44px;white-space:nowrap;width:max-content;animation:slide 28s linear infinite;font-weight:800;font-size:1.7rem;font-style:italic;text-transform:lowercase}
-  .track i{color:var(--yellow);font-style:normal}
-  .track .bi{width:.82em;height:.82em;vertical-align:-.06em;margin-right:.3em;fill:var(--paper)}
-  @keyframes slide{to{transform:translateX(-50%)}}
-
-  /* hero "keeps" caption — what the graph holds */
-  .keeps{font-family:var(--mono);font-size:12px;font-weight:600;opacity:.6;margin-top:16px;letter-spacing:.01em;line-height:1.6;max-width:52ch}
-  .keeps span{color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-right:8px}
-
-  /* hero live-network strip — real count + join feed from the tracker */
-  .netstat{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-family:var(--mono);font-size:13px;margin-top:20px;color:var(--ink)}
-  .netstat .netdot{width:9px;height:9px;border-radius:50%;background:#1eb980;flex:0 0 auto;box-shadow:0 0 0 0 rgba(30,185,128,.6);animation:netpulse 2.2s infinite}
-  @keyframes netpulse{0%{box-shadow:0 0 0 0 rgba(30,185,128,.5)}70%{box-shadow:0 0 0 9px rgba(30,185,128,0)}100%{box-shadow:0 0 0 0 rgba(30,185,128,0)}}
-  .netstat .netcount{font-weight:800;font-size:17px;color:var(--blue);font-variant-numeric:tabular-nums;min-width:1ch}
-  .netstat .netlbl{font-weight:700;letter-spacing:.02em}
-  .netstat .netsep{opacity:.35}
-  .netstat .netlog{opacity:.7;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:30ch}
-
-  /* folk divider band */
-  .folkband{height:74px;background:url(assets/gen/border.png) repeat-x center/auto 100%;
-    border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);position:relative;z-index:3;image-rendering:auto}
-
-  /* beats — text in a solid panel for readability */
-  .beat{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(40px,6vw,90px);align-items:center;margin-top:24px}
-  .beat:nth-of-type(even) .txt{order:2}
-  .beat h3{font-weight:800;font-size:clamp(1.5rem,2.6vw,2.2rem);line-height:1.05;margin-bottom:18px}
-  .card{border:3px solid var(--ink);background:var(--paper);padding:32px;font-family:var(--mono);font-size:15px;
-    font-weight:500;line-height:2;box-shadow:10px 10px 0 var(--pink)}
-  .card.b2{box-shadow:10px 10px 0 var(--teal)}
-  .card b{font-weight:700}.card .hit{color:var(--pink);font-weight:700}.card.b2 .hit{color:var(--teal)}
-  @media(max-width:880px){.beat{grid-template-columns:1fr;gap:30px}.beat:nth-of-type(even) .txt{order:0}}
-
-  /* proof */
-  .ledger{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}
-  .proofrow{display:grid;grid-template-columns:1fr minmax(0,360px);gap:clamp(20px,4vw,48px);align-items:center;margin-top:22px}
-  @media(max-width:840px){.proofrow{grid-template-columns:1fr}}
-  .led{border:3px solid var(--ink);background:var(--paper);padding:15px 16px}
-  .led:nth-child(1){box-shadow:7px 7px 0 var(--pink)}.led:nth-child(2){box-shadow:7px 7px 0 var(--blue)}
-  .led:nth-child(3){box-shadow:7px 7px 0 var(--yellow)}.led:nth-child(4){box-shadow:7px 7px 0 var(--teal)}
-  .led .n{font-family:var(--mono);font-weight:700;font-size:clamp(1.6rem,2.8vw,2.3rem)}
-  .led:nth-child(1) .n{color:var(--pink)}.led:nth-child(2) .n{color:var(--blue)}.led:nth-child(3) .n{color:var(--ink)}.led:nth-child(4) .n{color:var(--teal)}
-  .led .n small{font-size:.45em}
-  .led .k{font-style:italic;font-size:.9rem;margin-top:7px;font-weight:480}
-  @media(max-width:760px){.ledger{grid-template-columns:1fr 1fr}}
-  .bars{margin-top:0;display:flex;flex-direction:column;gap:9px;max-width:600px}
-  .bar{display:grid;grid-template-columns:120px 1fr 56px;gap:14px;align-items:center;font-size:.92rem;font-weight:500}
-  .bar .nm{font-style:italic}.bar.me .nm{font-style:normal;font-weight:800}
-  .bar .tr{height:12px;border:2px solid var(--ink);background:var(--paper)}
-  .bar .fl{height:100%;width:var(--w,0);transition:width 1.1s cubic-bezier(.16,1,.3,1);background:var(--ink)}
-  /* Reveal-grow as enhancement only: zero the fill PRE-reveal, but never leave it
-     stuck at 0 — once #bars gets .in (IntersectionObserver) it animates to --w, and
-     if JS/observer never fire the bars are filled by default. (Was: a hard
-     :not(.in) gate that left every bar empty when the reveal didn't apply.) */
-  .has-js .bars.reveal-pending .fl{width:0}
-  /* baselines sit back; Folklore is the solid-black lead bar */
-  .bar:not(.me) .fl{opacity:.32}
-  .bar.me .fl{background:var(--ink);opacity:1}
-  .bars-foot{font-family:var(--mono);font-size:.78rem;opacity:.62;margin-top:12px;max-width:560px;line-height:1.5}
-  .bars-foot b{font-weight:700;opacity:.85}
-  .bar .v{font-family:var(--mono);font-size:.9rem;text-align:right;font-weight:600}
-
-  /* inscription */
-  .insc{margin-top:30px;border:3px solid var(--ink);background:var(--ink);color:var(--paper);
-    padding:28px 26px;max-width:800px;box-shadow:10px 10px 0 var(--pink)}
-  .insc pre{font-family:var(--mono);font-size:14px;font-weight:500;line-height:2.1;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
-  .insc .c{color:#a99f8c;font-style:italic}.insc .p{color:var(--yellow)}
-
-  /* name */
-  .name{text-align:center;max-width:1000px;margin:0 auto}
-  .name h2{max-width:none;margin:0 auto}
-  .name .sig{font-family:var(--mono);font-size:14px;font-weight:600;letter-spacing:.08em;margin-top:32px;color:var(--blue)}
-
-  /* store — product-card shop */
-  .shop{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-top:22px}
-  .prod{border:3px solid var(--ink);background:var(--paper);padding:14px;display:flex;flex-direction:column;gap:10px}
-  .prod:nth-child(1){box-shadow:9px 9px 0 var(--pink)}
-  .prod:nth-child(2){box-shadow:9px 9px 0 var(--blue)}
-  .prod:nth-child(3){box-shadow:9px 9px 0 var(--teal)}
-  .prod .shot{position:relative;border:3px solid var(--ink);overflow:hidden;line-height:0;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:var(--paper-2)}
-  /* store header: title left, browse-link right */
-  .store-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-top:10px}
-  .store-head h2{margin:0}
-  .store-browse{font-family:var(--mono);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-bottom:3px solid var(--ink);white-space:nowrap;padding-bottom:5px}
-  .store-browse:hover{color:var(--blue)}
-  /* shop teaser: full-bleed grid, square uncropped product shots, sized to content */
-  #store{min-height:auto}
-  #store .prod .spec{display:none}            /* teaser: drop fulfilment line; full /store keeps it */
-  #store .prod .desc{-webkit-line-clamp:2}
-  #store .shop{grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,2vw,24px);margin-top:18px}
-  /* teaser cards: cap the shot so the whole row clears one viewport */
-  #store .prod{padding:12px;gap:7px}
-  #store .prod .shot{aspect-ratio:3/2}
-  #store .stamp{margin-bottom:14px}
-  #store .prod .shot img{object-fit:cover}
-  #store .prod .shot.tee img,#store .prod .shot.pin img{object-fit:contain}
-  #store .store-more{font-family:var(--mono);font-size:13px;font-weight:600;text-align:center;margin-top:14px;opacity:.78}
-  #store .store-more a{font-weight:700;border-bottom:2px solid var(--ink);white-space:nowrap}
-  #store .store-more a:hover{color:var(--blue)}
-  @media(max-width:760px){#store .shop{grid-template-columns:1fr 1fr}}
-  @media(max-width:480px){#store .shop{grid-template-columns:1fr}}
-  /* store teaser marquee — same mechanism as #memes: continuous left flow, clone-for-seamless-loop, pause on hover */
-  .store-carousel{overflow:hidden;width:100%;max-width:100%;scrollbar-width:none;-ms-overflow-style:none}
-  .store-carousel::-webkit-scrollbar{display:none}
-  /* mobile: carousels run edge-to-edge — break out of the wrap gutter (scrollbar-safe: no 100vw) */
-  @media(max-width:760px){.store-carousel{width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}}
-  #store .shop.flow{display:flex;width:max-content;grid-template-columns:none;gap:0;margin-top:18px;
-    animation:meme-marquee var(--sdur,34s) linear infinite}
-  .store-carousel:hover #store .shop.flow{animation-play-state:paused}
-  #store .shop.flow .prod{flex:0 0 clamp(220px,72vw,300px);margin:0 8px;box-sizing:border-box}
-  @media(prefers-reduced-motion:reduce){#store .shop.flow{width:auto;flex-wrap:wrap;animation:none}#store .shop.flow .prod{flex-basis:clamp(220px,72vw,300px)}}
-  @media(max-width:760px){#store .store-more a{white-space:normal}}
-  .prod:nth-child(1) .shot{box-shadow:6px 6px 0 var(--pink)}
-  .prod:nth-child(2) .shot{box-shadow:6px 6px 0 var(--blue)}
-  .prod:nth-child(3) .shot{box-shadow:6px 6px 0 var(--teal)}
-  .prod .shot img{width:100%;height:100%;object-fit:cover;display:block}
-  .prod .shot.pair{gap:10px;padding:14px}
-  .prod .shot.pair img{width:48%;height:auto;border:2px solid var(--ink)}
-  /* merch mockups — product shots framed from existing art via CSS (zero new files) */
-  /* tee: dark cotton field with collar/sleeve hints, art reads as a chest PRINT */
-  .prod .shot.tee{padding:0;background:
-    radial-gradient(120% 80% at 50% -18%, #2c2620 0 38%, transparent 39%),
-    linear-gradient(180deg,#241f1a 0%,#1d1813 100%)}
-  .prod .shot.tee::before{content:"";position:absolute;top:11%;left:50%;width:30%;height:14%;
-    transform:translateX(-50%);border:3px solid #0f0c09;border-top:0;border-radius:0 0 60% 60%;opacity:.55}
-  .prod .shot.tee img{width:58%;height:58%;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))}
-  /* sticker sheet: paper field, dashed die-cut backing, two rotated die-cut chips */
-  .prod .shot.sheet{display:flex;gap:14px;padding:18px;flex-wrap:wrap;
-    background:var(--paper-2);
-    background-image:repeating-linear-gradient(45deg,transparent 0 11px,rgba(29,24,19,.05) 11px 12px)}
-  .prod .shot.sheet img{width:42%;height:auto;background:var(--paper);border:2px dashed var(--ink);
-    border-radius:10px;padding:7px;box-shadow:3px 3px 0 rgba(29,24,19,.25)}
-  .prod .shot.sheet img:nth-of-type(1){transform:rotate(-5deg)}
-  .prod .shot.sheet img:nth-of-type(2){transform:rotate(6deg)}
-  /* enamel pin: round metal bezel framing the art, glossy inset highlight + post hint */
-  .prod .shot.pin{background:radial-gradient(120% 120% at 30% 22%,#f0e6c8 0,var(--paper-2) 55%,#d8c79c 100%)}
-  .prod .shot.pin img{width:74%;height:74%;object-fit:cover;border-radius:50%;border:4px solid var(--ink);
-    box-shadow:inset 0 5px 14px rgba(255,255,255,.55),inset 0 -7px 14px rgba(29,24,19,.35),5px 5px 0 rgba(29,24,19,.22)}
-  /* concrete print-spec line per card */
-  .prod .spec{font-family:var(--mono);font-size:11px;font-weight:600;line-height:1.55;letter-spacing:.02em;
-    color:var(--ink);opacity:.66;border-top:2px dotted rgba(29,24,19,.35);padding-top:10px}
-  .prod .soon{font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
-    background:var(--yellow);color:var(--ink);border:2px solid var(--ink);padding:5px 10px;align-self:flex-start}
-  .prod h4{font-weight:800;font-style:italic;font-size:1rem;line-height:1.1}
-  .prod .desc{font-size:.8rem;font-weight:460;line-height:1.4;color:var(--ink);flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-  .prod .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px}
-  .prod .price{font-family:var(--mono);font-weight:700;font-size:1.15rem;letter-spacing:-.02em}
-  .prod:nth-child(1) .price{color:var(--pink)}.prod:nth-child(2) .price{color:var(--blue)}.prod:nth-child(3) .price{color:var(--teal)}
-  .buy{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.03em;padding:11px 20px;
-    border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);background:var(--ink);color:var(--paper);cursor:not-allowed;opacity:.92}
-  .buy[aria-disabled="true"]{pointer-events:none}
-
-  footer{border-top:3px solid var(--ink);padding:56px 0 76px;background:var(--yellow);position:relative;z-index:3}
-  .foot-support{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:34px;padding-bottom:30px;border-bottom:2px solid var(--ink)}
-  .foot-support-label{font-family:var(--serif);font-weight:800;font-size:1.1rem;letter-spacing:-.01em}
-  .support-btn{display:inline-flex;align-items:center;gap:8px;border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink);border-radius:12px;padding:7px 14px;background:var(--paper);font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.02em;transition:transform .12s ease,box-shadow .12s ease}
-  .support-btn:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
-  .support-btn.patreon{background:var(--pink);color:var(--paper)}
-  .support-btn.patreon svg{width:17px;height:17px;fill:currentColor}
-  .foot{display:flex;gap:28px;flex-wrap:wrap;align-items:center;font-family:var(--mono);font-size:14px;font-weight:600}
-  .foot a{border-bottom:2px solid var(--ink);transition:.15s}.foot a:hover{color:var(--paper)}
-  .foot .r{margin-left:auto;font-weight:700}
-
-  /* narrow-phone composition guards (≤480px) — surgical, type scale untouched */
-  @media(max-width:480px){
-    /* #join inscription: long tokens (libp2p multiaddr) must wrap inside the box, never clip */
-    .insc{padding:20px 16px}
-    .insc pre{font-size:12px;line-height:1.95}
-    /* proof bars: free the track from the 120px label column so it never crushes */
-    .bar{grid-template-columns:96px 1fr 50px;gap:10px;font-size:.86rem}
-    .bar .v{font-size:.82rem}
-    /* keep any full-bleed media inside the column */
-    img,video{max-width:100%}
-  }
-
-  .rv{opacity:0;transform:translateY(30px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
-  .rv.in{opacity:1;transform:none}
-  .rv[data-d="1"]{transition-delay:.1s}.rv[data-d="2"]{transition-delay:.2s}.rv[data-d="3"]{transition-delay:.3s}
-  @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}.fg,.farshape,.track{animation:none}.scrollcue svg{animation:none}}
-
-  @keyframes cur-blink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
-
-  /* ── mechanism: the four steps as one connected pipeline, all in view ── */
-  .mech-flow{list-style:none;margin:clamp(16px,2.6vh,32px) 0 0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(14px,1.7vw,22px)}
-  .mstep{position:relative;display:flex;flex-direction:column;gap:11px;box-sizing:border-box;border:3px solid var(--ink);background:var(--paper-2);
-    padding:clamp(15px,1.6vw,20px);background-image:radial-gradient(rgba(29,24,19,.07) 1.4px,transparent 1.5px);background-size:20px 20px}
-  .mstep.s1{box-shadow:8px 8px 0 var(--pink)}.mstep.s2{box-shadow:8px 8px 0 var(--blue)}
-  .mstep.s3{box-shadow:8px 8px 0 var(--yellow)}.mstep.s4{box-shadow:8px 8px 0 var(--teal)}
-  .mstep-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .mstep-n{font-weight:900;font-style:italic;font-size:clamp(1.9rem,2.8vw,2.6rem);line-height:.8}
-  .mstep.s1 .mstep-n{color:var(--pink)}.mstep.s2 .mstep-n{color:var(--blue)}
-  .mstep.s3 .mstep-n{color:var(--yellow)}.mstep.s4 .mstep-n{color:var(--teal)}
-  .mstep-tag{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-    background:var(--paper);border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);padding:3px 7px;line-height:1.1;white-space:nowrap}
-  .mstep-diag{display:flex;align-items:center;min-height:64px}
-  .mstep-diag svg{width:clamp(56px,5vw,72px);height:auto;display:block}
-  .mstep h4{font-weight:800;font-size:clamp(1.1rem,1.5vw,1.35rem);line-height:1.06}
-  .mstep p{font-size:clamp(.86rem,1vw,.98rem);font-weight:470;line-height:1.46;color:var(--ink);margin:0}
-  /* sequence connector — arrow sitting in the gap toward the next step */
-  .mstep:not(:last-child)::after{content:"→";position:absolute;right:calc(-0.5 * clamp(14px,1.7vw,22px));top:50%;transform:translate(50%,-50%);
-    font-family:var(--mono);font-weight:700;font-size:18px;color:var(--ink);opacity:.5;z-index:2;pointer-events:none}
-  @media(max-width:900px){.mech-flow{grid-template-columns:repeat(2,1fr)}
-    /* 2×2: only the vertical hops (1→3, 2→4 sit side-by-side) read cleanly as down-arrows */
-    .mstep:not(:last-child)::after{content:"↓";right:auto;left:50%;top:auto;bottom:calc(-0.5 * clamp(14px,1.7vw,22px));transform:translate(-50%,50%)}
-    .mstep:nth-child(2)::after{content:none}}
-  @media(max-width:560px){.mech-flow{grid-template-columns:1fr}
-    .mstep:nth-child(2)::after{content:"↓"}}
-
-  /* ── meme marquee: continuous right-to-left flow of all memes; full-bleed at every width ── */
-  .meme-carousel{margin-top:clamp(28px,4vh,44px);overflow:hidden;width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);scrollbar-width:none;-ms-overflow-style:none}
-  .meme-carousel::-webkit-scrollbar{display:none}
-  .meme-track{list-style:none;display:flex;margin:0;padding:6px 0;width:max-content}
-  .meme-track.flow{animation:meme-marquee var(--mdur,40s) linear infinite}
-  .meme-carousel:hover .meme-track.flow{animation-play-state:paused}
-  @keyframes meme-marquee{to{transform:translateX(-50%)}}
-  .meme-slide{flex:0 0 clamp(230px,25vw,320px);padding:0 11px;box-sizing:border-box}
-  .meme-card{position:relative;border:3px solid var(--ink);background:var(--paper);overflow:hidden;line-height:0}
-  .meme-card img{width:100%;display:block;aspect-ratio:1/1;object-fit:cover}
-  .meme-slide:nth-child(4n+1) .meme-card{box-shadow:8px 8px 0 var(--pink)}
-  .meme-slide:nth-child(4n+2) .meme-card{box-shadow:8px 8px 0 var(--blue)}
-  .meme-slide:nth-child(4n+3) .meme-card{box-shadow:8px 8px 0 var(--teal)}
-  .meme-slide:nth-child(4n+4) .meme-card{box-shadow:8px 8px 0 var(--yellow)}
-  @media(prefers-reduced-motion:reduce){.meme-track,.meme-track.flow{width:auto;flex-wrap:wrap;animation:none}.meme-slide{flex-basis:33.333%}}
-  @media(prefers-reduced-motion:reduce) and (max-width:760px){.meme-slide{flex-basis:50%}}
-
-  /* ── query-flow pipeline (ported, re-skinned) ── */
-  .flow-wrap{width:100%;margin:8px auto 22px;max-width:760px}
-  .flow-svg{width:100%;height:auto;display:block}
-  @media(max-width:760px){.flow-wrap{display:none}}
-
-  /* ── traced scene: two terminal panes (kept dark for terminal authenticity) ── */
-  .scene-pair{display:grid;grid-template-columns:1fr auto 1fr;gap:clamp(.9rem,2vw,1.6rem);align-items:stretch}
-  @media(max-width:880px){.scene-pair{grid-template-columns:1fr}.scene-arrow{display:none}}
-  .scene-pane{background:var(--ink);border:3px solid var(--ink);border-radius:14px;box-shadow:8px 8px 0 var(--blue);padding:clamp(11px,1.6vh,16px) 16px;font-family:var(--mono);font-size:clamp(10.5px,1.45vh,12.5px);line-height:1.4;display:flex;flex-direction:column;color:rgba(244,236,216,.62)}
-  .scene-pane:last-of-type{box-shadow:8px 8px 0 var(--pink)}
-  .scene-pane .pstamp{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);margin-bottom:8px;display:flex;gap:.5rem;align-items:center}
-  .scene-pane .pstamp .dot{width:6px;height:6px;background:var(--teal);border-radius:50%;animation:blink 1.6s ease-in-out infinite}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-  .scene-pane h3{font-family:var(--serif);font-weight:600;font-size:clamp(1rem,1.7vh,1.25rem);line-height:1.18;color:var(--paper);margin:.15rem 0 .45rem;letter-spacing:-.01em}
-  .scene-pane .line{padding:.06rem 0}
-  .scene-pane .line.you{color:var(--yellow)}
-  .scene-pane .line.tool{color:var(--teal)}
-  .scene-pane .sig{margin-top:auto;padding-top:.6rem;border-top:1px dashed rgba(244,236,216,.28);font-size:11.5px;letter-spacing:.04em;color:var(--paper)}
-  .scene-pane .sig b{color:var(--teal);font-weight:600}
-  .scene-arrow{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;padding:0 .2rem}
-  .scene-arrow svg{width:56px;height:auto}
-  .scene-arrow .cap{font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--ink);opacity:.6;text-align:center;white-space:nowrap}
-  .scene-note{margin-top:22px;font-family:var(--serif);font-size:clamp(1.1rem,1.6vw,1.35rem);line-height:1.5;max-width:60ch}
-  .scene-note em{color:var(--teal);font-style:italic}
-  /* #trace: keep within 100svh on short viewports */
-  #trace h2{font-size:clamp(1.55rem,2.6vw,2.4rem)}
-  #trace > .wrap > .body{font-size:clamp(.98rem,1.4vw,1.1rem);margin-top:8px}
-  #trace .flow-wrap{margin:6px auto 14px}
-  #trace .scene-note{margin-top:14px;font-size:clamp(1rem,1.4vw,1.2rem)}
-
-  /* ── provenance: poison stat + signed record ── */
-  .prov-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:clamp(1rem,3vw,2.2rem);align-items:center;margin-top:24px}
-  @media(max-width:820px){.prov-grid{grid-template-columns:1fr;gap:1.4rem}.prov-arrow{transform:rotate(90deg)}}
-  .prov-label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
-  .prov-problem .prov-label{color:var(--pink)}
-  .prov-answer .prov-label{color:var(--teal)}
-  .prov-stat{font-family:var(--serif);font-weight:700;font-size:clamp(2.6rem,6vw,4rem);line-height:1;letter-spacing:-.02em;color:var(--pink);margin-bottom:10px}
-  .prov-body{font-size:1rem;line-height:1.55;opacity:.8;max-width:42ch}
-  .prov-body strong{font-weight:700;opacity:1}
-  .prov-cite{font-family:var(--mono);font-size:11px;opacity:.55;margin-top:8px;letter-spacing:.04em}
-  .prov-arrow svg{width:58px;height:auto}
-  .prov-record{font-family:var(--mono);font-size:12px;line-height:1.55;color:rgba(244,236,216,.7);background:var(--ink);border:3px solid var(--ink);border-radius:12px;box-shadow:8px 8px 0 var(--teal);padding:14px 16px;margin:0 0 12px;white-space:pre;overflow-x:auto}
-  .prov-record .prov-hl{color:var(--yellow);font-weight:600}
-
-  /* ── compounding cost curve (draws on reveal) ── */
-  .curve-wrap{width:100%;max-width:360px;margin:0 auto}
-  .curve-chart{width:100%;height:auto}
-  .curve-line{stroke-dasharray:460;stroke-dashoffset:460}
-  .curve-wrap.in .curve-line{animation:curve-draw 1.9s cubic-bezier(.16,1,.3,1) forwards}
-  .curve-dot,.curve-lbl{opacity:0}
-  .curve-wrap.in .curve-dot,.curve-wrap.in .curve-lbl{animation:curve-fade .5s ease forwards}
-  .curve-wrap.in .d0,.curve-wrap.in .curve-lbl:first-of-type{animation-delay:.35s}
-  .curve-wrap.in .d1{animation-delay:1.7s}
-  @keyframes curve-draw{to{stroke-dashoffset:0}}
-  @keyframes curve-fade{to{opacity:1}}
-  @media(prefers-reduced-motion:reduce){.curve-line{stroke-dashoffset:0}.curve-dot,.curve-lbl{opacity:1}.curve-wrap.in .curve-line,.curve-wrap.in .curve-dot,.curve-wrap.in .curve-lbl{animation:none}}
-
-  /* ── inference-depth cascade (ported, re-skinned): tree builds top-down on a loop ── */
-  .compound-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:clamp(1rem,3vw,2.4rem)}
-  /* #problem: viz beside the text */
-  .prob-grid{display:grid;grid-template-columns:1fr 1.12fr;gap:clamp(26px,5vw,60px);align-items:center;margin-top:clamp(14px,2.4vh,26px)}
-  .prob-grid .prob-txt .body:first-child{margin-top:0}
-  .prob-grid .compound-stage{align-items:flex-start}
-  .prob-grid .cascade-foot{text-align:left}
-  @media(max-width:860px){.prob-grid{grid-template-columns:1fr;gap:22px}.prob-grid .compound-stage{align-items:center}.prob-grid .cascade-foot{text-align:center}}
-  .cascade{font-family:var(--mono);font-size:clamp(.78rem,.92vw,1rem);line-height:1.75;width:fit-content;margin:0 auto}
-  .cascade .cl{white-space:pre;opacity:0;animation:cascade 7s ease-in-out infinite;animation-delay:calc(var(--i) * .42s)}
-  @keyframes cascade{0%{opacity:0;transform:translateX(-3px)}8%,82%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(-3px)}}
-  .cascade .ask{color:var(--ink)}
-  .cascade .seed{color:var(--teal);font-weight:600}
-  .cascade .e{color:var(--ink);opacity:.38}
-  .cascade .nd{color:var(--teal)}
-  .cascade .lbl{color:var(--ink);opacity:.72}
-  .cascade .punch{color:var(--pink);font-weight:700}
-  .cascade .cur{display:inline-block;width:1ch;background:var(--teal);color:var(--paper);animation:cur-blink 1.1s steps(2) infinite}
-  .cascade-foot{font-family:var(--mono);font-size:12px;line-height:1.5;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);opacity:.7;text-align:center;margin-top:18px}
-  .cascade-foot b{color:var(--pink);font-weight:700;opacity:1}
-  @media(prefers-reduced-motion:reduce){.cascade .cl{animation:none;opacity:1}.cascade .cur{animation:none}}
-  @media(max-width:560px){.cascade{font-size:.66rem}}
-</style>
+<link rel="stylesheet" href="assets/site.css"/>
 </head>
 <body>
 <div class="grain"></div>
@@ -560,16 +104,13 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       folklore
     </a>
     <nav class="hlinks">
-      <a href="#demo">Demo</a><a href="#creed">Creed</a><a href="#proof">Proof</a><a href="/research">Research</a><a href="/compare">Compare</a><a href="/store">Store</a><a href="/blog">Blog</a>
-      <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore/tree/main/docs/rfc">RFC</a>
+      <a href="/research">Research</a><a href="/whitepaper">Whitepaper</a>
     </nav>
     <a class="hcta" href="https://github.com/usefolklore/folklore">GitHub<span class="ghstars" id="gh-stars" hidden>★&nbsp;<b>—</b></span></a>
     <details class="mnav">
       <summary aria-label="Menu" role="button">☰</summary>
       <div class="mnav-panel">
-        <a href="#demo">Demo</a><a href="#creed">Creed</a><a href="#proof">Proof</a><a href="/research">Research</a><a href="/compare">Compare</a><a href="/store">Store</a><a href="/blog">Blog</a>
-        <a href="https://github.com/usefolklore/folklore/tree/main/docs/rfc">RFC</a>
-        <a href="/whitepaper">Paper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+        <a href="/research">Research</a><a href="/whitepaper">Whitepaper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
         <a class="cta" href="#join">Install</a>
       </div>
     </details>
@@ -586,7 +127,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       <p class="lede rv in" data-d="2"><b>Folklore</b> is that — for your agents. Every peer shares the reasoning it already paid for, so yours starts from what the swarm has worked out, not square one. <b>Like a torrent swarm — but the payload is inference.</b> The more agents join, the less anyone re-derives.</p>
       <div class="cta-row rv in" data-d="3">
         <a class="btn btn-primary" href="#join">Install</a>
-        <a class="btn btn-ghost" href="#mechanism">How it works</a>
+        <a class="btn btn-ghost" href="/how-it-works/">How it works</a>
         <a class="btn btn-ghost" href="/whitepaper">Read the white paper</a>
       </div>
       <div class="install rv in" data-d="3"><span class="d">$</span> npm install -g @usefolklore/folklore<span class="copy" data-copy="npm install -g @usefolklore/folklore">copy</span></div>
@@ -711,317 +252,50 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   </div>
 </section>
 
-<section id="mechanism">
-  <div class="wrap">
+<section id="how" class="tx-dots">
+  <div class="wrap" style="text-align:center">
     <div class="stamp rv">Chapter the Fourth — The Mechanism</div>
-    <h2 class="rv" data-d="1"><span class="mis" data-text="a graph that earns the deny.">a graph that earns the <span class="em-blue">deny.</span></span></h2>
-    <ol class="mech-flow rv" data-d="1">
-
-      <li class="mstep s1">
-        <div class="mstep-head"><span class="mstep-n">i</span><span class="mstep-tag">WebSearch</span></div>
-        <div class="mstep-diag" aria-hidden="true">
-          <svg viewBox="0 0 80 80" fill="none">
-            <!-- net catching an outbound WebSearch arrow -->
-            <path d="M10 40h40" stroke="#1d1813" stroke-width="3" stroke-linecap="round"/>
-            <path d="M44 32l8 8-8 8" stroke="#1d1813" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M56 18a18 18 0 0 1 0 44" stroke="#ff4f6d" stroke-width="3" stroke-linecap="round"/>
-            <path d="M56 26v28M50 30v20M62 30v20" stroke="#ff4f6d" stroke-width="2"/>
-            <circle cx="14" cy="40" r="4" fill="#1d1813"/>
-          </svg>
-        </div>
-        <h4>Intercept</h4>
-        <p>A hook catches every WebSearch and WebFetch before it leaves. Local tools never touched.</p>
-      </li>
-
-      <li class="mstep s2">
-        <div class="mstep-head"><span class="mstep-n">ii</span><span class="mstep-tag">your graph first</span></div>
-        <div class="mstep-diag" aria-hidden="true">
-          <svg viewBox="0 0 80 80" fill="none">
-            <!-- magnifier over a 3-node cluster -->
-            <line x1="30" y1="34" x2="46" y2="30" stroke="#2b3a8c" stroke-width="2.4"/>
-            <line x1="30" y1="34" x2="40" y2="48" stroke="#2b3a8c" stroke-width="2.4"/>
-            <line x1="46" y1="30" x2="40" y2="48" stroke="#2b3a8c" stroke-width="2.4"/>
-            <circle cx="30" cy="34" r="5" fill="#2b3a8c"/>
-            <circle cx="46" cy="30" r="5" fill="#1fae8b"/>
-            <circle cx="40" cy="48" r="5" fill="#f5b921"/>
-            <circle cx="44" cy="40" r="17" stroke="#1d1813" stroke-width="3"/>
-            <path d="M56 52l12 12" stroke="#1d1813" stroke-width="4" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <h4>Ask the graph</h4>
-        <p>Hybrid recall, cross-encoder rerank, graph PPR — your pages first, then the network's.</p>
-      </li>
-
-      <li class="mstep s3">
-        <div class="mstep-head"><span class="mstep-n">iii</span><span class="mstep-tag">≥ 0.85 · 2 hits</span></div>
-        <div class="mstep-diag" aria-hidden="true">
-          <svg viewBox="0 0 80 80" fill="none">
-            <!-- gate: served-from-memory check vs branch to web -->
-            <path d="M40 14v18" stroke="#1d1813" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="40" cy="36" r="6" fill="#f5b921" stroke="#1d1813" stroke-width="2.5"/>
-            <path d="M34 50l6 6 8-12" stroke="#1fae8b" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M46 38l16 8" stroke="#1d1813" stroke-width="2" stroke-dasharray="3 3"/>
-            <text x="64" y="52" font-family="var(--mono)" font-size="9" font-weight="700" fill="#ff4f6d">web</text>
-          </svg>
-        </div>
-        <h4>Deny, or pass</h4>
-        <p>Score 0.85 with two hits or more, served from memory. Fall short, the fetch proceeds.</p>
-      </li>
-
-      <li class="mstep s4">
-        <div class="mstep-head"><span class="mstep-n">iv</span><span class="mstep-tag">signed · filed</span></div>
-        <div class="mstep-diag" aria-hidden="true">
-          <svg viewBox="0 0 80 80" fill="none">
-            <!-- a page filed & signed: signature squiggle + check -->
-            <rect x="22" y="14" width="36" height="46" rx="3" fill="#fff" stroke="#1d1813" stroke-width="3"/>
-            <line x1="29" y1="26" x2="48" y2="26" stroke="#1d1813" stroke-width="2"/>
-            <line x1="29" y1="34" x2="44" y2="34" stroke="#1d1813" stroke-width="2"/>
-            <path d="M29 46c4-5 7 4 10-1s6 2 10-2" stroke="#1fae8b" stroke-width="2.6" stroke-linecap="round"/>
-            <circle cx="56" cy="54" r="11" fill="#1fae8b" stroke="#1d1813" stroke-width="2.5"/>
-            <path d="M51 54l3.4 3.4L62 50" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <h4>Set it down</h4>
-        <p>Whatever the web returns is filed and signed, so the next reader pays nothing.</p>
-      </li>
-
-    </ol>
-  </div>
-</section>
-
-<section id="trace" class="tx-dots">
-  <div class="wrap">
-    <div class="stamp rv">Chapter the Fourth & a Half — A Query, Traced</div>
-    <h2 class="rv" data-d="1"><span class="mis" data-text="47-minute debug. 142 ms hit.">47-minute debug. <span class="em-blue">142&nbsp;ms</span> hit.</span></h2>
-    <p class="body rv" data-d="1" style="font-size:1.1rem;opacity:.8;max-width:54ch">One peer pays the cost. The network gets the answer. No server brokers it, no vendor takes a cut.</p>
-
-    <div class="flow-wrap rv" data-d="1" aria-hidden="true">
-      <svg class="flow-svg" viewBox="0 0 720 112">
-        <defs>
-          <marker id="fa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--ink)" fill-opacity=".55"/></marker>
-          <marker id="fac" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--teal)"/></marker>
-        </defs>
-        <g font-family="var(--mono)" font-size="9.5" text-anchor="middle">
-          <rect x="6" y="14" width="64" height="36" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
-          <text x="38" y="30" fill="var(--ink)">you ask</text>
-          <text x="38" y="43" fill="var(--ink)" fill-opacity=".55" font-size="7.5">any harness</text>
-          <rect x="90" y="14" width="96" height="36" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
-          <text x="138" y="30" fill="var(--ink)">your graph</text>
-          <text x="138" y="43" fill="var(--ink)" fill-opacity=".55" font-size="7.5">free · instant</text>
-          <rect x="206" y="14" width="100" height="36" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
-          <text x="256" y="30" fill="var(--ink)">peer graphs</text>
-          <text x="256" y="43" fill="var(--ink)" fill-opacity=".55" font-size="7.5">4 asked · ~140 ms</text>
-          <rect x="326" y="14" width="116" height="36" rx="6" fill="var(--paper-2)" stroke="var(--teal)" stroke-width="2"/>
-          <text x="384" y="30" fill="var(--teal)" font-weight="700">good answer?</text>
-          <text x="384" y="43" fill="var(--teal)" font-size="7.5">confidence gate</text>
-          <rect x="462" y="14" width="128" height="36" rx="6" fill="var(--paper-2)" stroke="var(--pink)" stroke-width="2"/>
-          <text x="526" y="30" fill="var(--pink)" font-weight="700">use it · signed</text>
-          <text x="526" y="43" fill="var(--ink)" fill-opacity=".55" font-size="7.5">0 web calls</text>
-          <g stroke="var(--ink)" stroke-opacity=".55" stroke-width="1.3" fill="none" marker-end="url(#fa)">
-            <line x1="70" y1="32" x2="88" y2="32"/>
-            <line x1="186" y1="32" x2="204" y2="32"/>
-            <line x1="306" y1="32" x2="324" y2="32"/>
-          </g>
-          <line x1="442" y1="32" x2="460" y2="32" stroke="var(--teal)" stroke-width="2" marker-end="url(#fac)"/>
-          <text x="451" y="10" fill="var(--teal)" font-size="8" font-weight="700">yes</text>
-          <line x1="384" y1="50" x2="384" y2="66" stroke="var(--ink)" stroke-opacity=".55" stroke-width="1.3" marker-end="url(#fa)"/>
-          <text x="402" y="62" fill="var(--pink)" font-size="8" text-anchor="start" font-weight="700">no</text>
-          <rect x="284" y="68" width="220" height="26" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
-          <text x="394" y="85" fill="var(--ink)">web — <tspan fill="var(--pink)" font-weight="700">once</tspan> → signed → saved back</text>
-          <path d="M284,81 C 230,81 236,56 252,52" stroke="var(--teal)" stroke-width="1.4" fill="none" stroke-dasharray="4 3" marker-end="url(#fac)"/>
-          <text x="150" y="66" fill="var(--teal)" font-size="8" font-weight="600">next ask hits the graph</text>
-        </g>
-      </svg>
-    </div>
-
-    <div class="scene-pair rv" data-d="1">
-      <article class="scene-pane">
-        <div class="pstamp"><span class="dot"></span>tue 03:14 · berlin</div>
-        <h3>The work happens once.</h3>
-        <div class="line you">$ claude</div>
-        <div class="line">&gt; long-ctx vllm OOM after fp16 prefix cache;</div>
-        <div class="line">&gt; raising max_model_len blew the kv budget</div>
-        <div class="line tool">[debug session · 47 min]</div>
-        <div class="line">&gt; root cause: prefix cache page size too small</div>
-        <div class="line">&gt; fix: --kv-cache-dtype=fp8 + --block-size=32</div>
-        <div class="line tool">[folklore · auto-saved trace]</div>
-        <div class="sig">signed · <b>@you</b> · ed25519&nbsp;3a4b…</div>
-      </article>
-      <div class="scene-arrow" aria-hidden="true">
-        <svg viewBox="0 0 80 40" fill="none">
-          <line x1="6" y1="20" x2="68" y2="20" stroke="var(--teal)" stroke-width="2" stroke-dasharray="4 4"/>
-          <polyline points="62,12 72,20 62,28" stroke="var(--teal)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
-        </svg>
-        <span class="cap">36&nbsp;h later<br>0 servers between</span>
-      </div>
-      <article class="scene-pane">
-        <div class="pstamp"><span class="dot"></span>wed 18:42 · tokyo</div>
-        <h3>Everyone after skips it.</h3>
-        <div class="line you">$ claude</div>
-        <div class="line">&gt; vllm long-ctx OOM, prefix cache failure</div>
-        <div class="line tool">[folklore · asked 3 peers · 142 ms · hit: @you's trace]</div>
-        <div class="line">&gt; confident answer — web not needed</div>
-        <div class="line">&gt; 0 web calls. injecting the signed trace.</div>
-        <div class="line tool">[claude · reading @you's notes]</div>
-        <div class="line">&gt; try --kv-cache-dtype=fp8 + --block-size=32</div>
-        <div class="sig">received · <b>@you</b> · verified · 0 web hops</div>
-      </article>
-    </div>
-    <p class="scene-note rv" data-d="1">No server brokered it. No vendor took a cut. The trace is now in two graphs. <em>The next query hits three.</em></p>
-  </div>
-</section>
-
-<section id="provenance" class="band-teal tx-grid">
-  <div class="wrap">
-    <div class="stamp rv">Chapter the Fourth & three-quarters — Provenance</div>
-    <h2 class="rv" data-d="1"><span class="mis" data-text="anonymous retrieval is a poisoning surface.">anonymous retrieval is a <span class="em-pink">poisoning surface.</span></span></h2>
-    <p class="body rv" data-d="1" style="font-size:1.1rem;opacity:.8;max-width:56ch">Every other AI memory feeds your model unsigned text from nowhere. Folklore signs every record by a verified human, so a model can refuse what it can't trace.</p>
-    <div class="prov-grid rv" data-d="1">
-      <div class="prov-problem">
-        <div class="prov-label">RAG's open wound</div>
-        <p class="prov-stat">5&nbsp;→&nbsp;97%</p>
-        <p class="prov-body"><strong>5 poisoned documents</strong> can hijack a retrieval system with a <strong>97% attack success rate</strong>. The model has no way to tell trustworthy context from an injected lie.</p>
-        <p class="prov-cite">PoisonedRAG, arXiv · Zou et al.</p>
-      </div>
-      <div class="prov-arrow" aria-hidden="true">
-        <svg viewBox="0 0 60 24" fill="none">
-          <line x1="4" y1="12" x2="48" y2="12" stroke="var(--teal)" stroke-width="2" stroke-dasharray="4 4"/>
-          <polyline points="42,5 52,12 42,19" stroke="var(--teal)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
-        </svg>
-      </div>
-      <div class="prov-answer">
-        <div class="prov-label">Folklore's answer</div>
-        <pre class="prov-record" aria-hidden="true">record {
-  signed_by: <span class="prov-hl">@verified-human</span>
-  identity:  ed25519 3a4b…
-  source:    arxiv.org/abs/…
-  fetched:   2026-06-09T…
-}</pre>
-        <p class="prov-stat">59%&nbsp;→&nbsp;2%</p>
-        <p class="prov-body"><strong>Signed by a verified GitHub identity</strong>, with an auditable chain: who curated it, what they grounded on, when. Provenance ranking keeps only signed gold and drops unsigned poison — cutting flip-ASR from <strong>58.9% to 2.4%</strong> (24.8&times;) on the displaced-poison matrix. Trust becomes a property the model can read.</p>
-        <p class="prov-cite">measured · Haiku agent, Opus judge · BEIR SciFact</p>
-      </div>
+    <h2 class="rv" data-d="1" style="max-width:22ch;margin:0 auto">a graph that <span class="em-blue">earns the deny.</span></h2>
+    <p class="body rv" data-d="1" style="max-width:54ch;margin:20px auto 0">
+      Every research-shaped call is intercepted, answered from your graph — and the network's —
+      when confidence clears the bar, and filed back <b>signed</b> when it doesn't. A 47-minute
+      debug in Berlin becomes a <b>142&nbsp;ms hit</b> in Tokyo, 0 servers between.
+    </p>
+    <div class="cta-row rv" data-d="2" style="justify-content:center;margin-top:26px">
+      <a class="btn btn-primary" href="/how-it-works/">See how it works</a>
     </div>
   </div>
 </section>
+
+
 
 <section id="proof" class="band-teal tx-grid">
-  <div class="wrap">
+  <div class="wrap" style="text-align:center">
     <div class="stamp rv">Chapter the Fifth — The Reckoning</div>
-    <h2 class="rv" data-d="1"><span class="mis" data-text="each claim, on disk.">each claim, <span class="em-pink">on disk.</span></span></h2>
-    <div class="ledger rv" data-d="1">
-      <div class="led"><div class="n" data-count="1039">0</div><div class="k">tests passing</div></div>
-      <div class="led"><div class="n" data-count="0.7522" data-dec="4">0</div><div class="k">BEIR SciFact NDCG@10</div></div>
-      <div class="led"><div class="n">+43<small>%</small></div><div class="k">recall@1, peer-shared</div></div>
-      <div class="led"><div class="n">11<small>ms</small></div><div class="k">median retrieval</div></div>
-      <div class="led"><div class="n">~140<small>ms</small></div><div class="k">federation-hit P50</div></div>
-      <div class="led"><div class="n">24.8<small>×</small></div><div class="k">poison flip-ASR cut · provenance rank</div></div>
-      <div class="led"><div class="n">9.1<small>×</small></div><div class="k">fewer paid web trips · 200k queries</div></div>
-      <div class="led"><div class="n">77<small>%</small></div><div class="k">fewer model-input tokens · transfer</div></div>
-      <div class="led"><div class="n">84.1<small>%</small></div><div class="k">web correctly denied · graph holds answer</div></div>
-      <div class="led"><div class="n">2.5<small>%</small></div><div class="k">false-deny rate · 0% on far-miss</div></div>
-      <div class="led"><div class="n">90.2<small>%</small></div><div class="k">cooperative cache hit · 64 peers (vs 18% alone)</div></div>
-      <div class="led"><div class="n">98.7<small>%</small></div><div class="k">stored-vector self-recall@5</div></div>
+    <h2 class="rv" data-d="1" style="max-width:20ch;margin:0 auto">each claim, <span class="em-pink">on disk.</span></h2>
+    <p class="body rv" data-d="1" style="max-width:56ch;margin:20px auto 0">
+      Benchmarked, not asserted: <b>0.7522</b> BEIR SciFact NDCG@10 on CPU · poison flip-ASR cut
+      <b>24.8×</b> by signed provenance · cooperative cache hit <b>90.2%</b> across 64 peers ·
+      web fallback <b>17%&nbsp;→&nbsp;1%</b> as the network warms.
+    </p>
+    <div class="cta-row rv" data-d="2" style="justify-content:center;margin-top:26px">
+      <a class="btn btn-primary" href="/statistics/">See the statistics</a>
     </div>
-    <div class="proofrow">
-    <div class="bars" id="bars">
-      <div class="bar me"><span class="nm">Folklore <small style="font-family:var(--mono);font-size:.62rem;font-weight:700;opacity:.6">CPU</small></span><span class="tr"><span class="fl" style="--w:75.2%"></span></span><span class="v">0.7522</span></div>
-      <div class="bar"><span class="nm">E5-base</span><span class="tr"><span class="fl" style="--w:73.7%"></span></span><span class="v">0.7370</span></div>
-      <div class="bar"><span class="nm">E5-large</span><span class="tr"><span class="fl" style="--w:72.3%"></span></span><span class="v">0.7230</span></div>
-      <div class="bar"><span class="nm">SPLADE</span><span class="tr"><span class="fl" style="--w:69.9%"></span></span><span class="v">0.6990</span></div>
-      <div class="bar"><span class="nm">ColBERT</span><span class="tr"><span class="fl" style="--w:67.1%"></span></span><span class="v">0.6710</span></div>
-      <div class="bar"><span class="nm">BM25</span><span class="tr"><span class="fl" style="--w:66.5%"></span></span><span class="v">0.6650</span></div>
-      <p class="bars-foot"># Folklore leads the CPU / production-grade retrievers. The overall top score is <b>InRanker-3b — 0.783</b>, a 3&nbsp;B-parameter GPU cross-encoder reranker (different weight class); it beats every CPU baseline here. Folklore claims the CPU lead, not the GPU crown.</p>
-    </div>
-    <div class="curve-wrap rv" data-d="1" aria-label="Web-fallback rate decays from 17% to 1% over 2000 queries as the graph compounds.">
-      <svg class="curve-chart" viewBox="0 0 420 270" aria-hidden="true">
-        <g stroke="var(--ink)" stroke-opacity=".12" stroke-width="1">
-          <line x1="44" y1="56.7" x2="400" y2="56.7"/>
-          <line x1="44" y1="111.1" x2="400" y2="111.1"/>
-          <line x1="44" y1="165.6" x2="400" y2="165.6"/>
-          <line x1="44" y1="220" x2="400" y2="220"/>
-        </g>
-        <line x1="44" y1="24" x2="44" y2="220" stroke="var(--ink)" stroke-opacity=".4" stroke-width="1"/>
-        <line x1="44" y1="220" x2="400" y2="220" stroke="var(--ink)" stroke-opacity=".4" stroke-width="1"/>
-        <g fill="var(--ink)" fill-opacity=".6" font-family="var(--mono)" font-size="9" text-anchor="end">
-          <text x="38" y="223">0%</text><text x="38" y="169">5%</text><text x="38" y="114">10%</text><text x="38" y="60">15%</text>
-        </g>
-        <g fill="var(--ink)" fill-opacity=".6" font-family="var(--mono)" font-size="9" text-anchor="middle">
-          <text x="44" y="236">0</text><text x="222" y="236">1000</text><text x="400" y="236">2000</text>
-        </g>
-        <polyline class="curve-line" fill="none" stroke="var(--pink)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" points="44,34.9 88.5,109.3 133,151.7 177.5,176.2 222,190.3 266.5,198.3 311,202.9 355.5,205.5 400,207"/>
-        <circle class="curve-dot d0" cx="44" cy="34.9" r="3.8" fill="var(--pink)"/>
-        <circle class="curve-dot d1" cx="400" cy="207" r="3.8" fill="var(--pink)"/>
-        <text class="curve-lbl" x="54" y="32" fill="var(--pink)" font-family="var(--mono)" font-size="11" font-weight="700">17%</text>
-        <text class="curve-lbl" x="392" y="200" fill="var(--pink)" font-family="var(--mono)" font-size="11" font-weight="700" text-anchor="end">1%</text>
-        <text x="222" y="258" fill="var(--ink)" fill-opacity=".5" font-family="var(--mono)" font-size="9" text-anchor="middle"># web-fallback rate · simulated · v1</text>
-      </svg>
-    </div>
-    </div>
-    <p class="body rv" style="margin-top:18px;font-size:.98rem;font-style:italic;opacity:.8;max-width:64ch">CPU-only retrieval, full stack (hybrid + cross-encoder + graph PPR), on full BEIR SciFact. Baselines are published BEIR SciFact NDCG@10 (BM25, ColBERT, SPLADE, E5) — Folklore leads the production-grade pack; a 3B GPU reranker (InRanker) tops it at 0.783. Poison-defense is real displaced-poison retrieval (Haiku agent, Opus judge). Compounding &amp; token figures are simulator-grade — the hundred-peer pilot is next.</p>
   </div>
 </section>
 
-<style>
-  .creed-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;max-width:1080px;margin:40px auto 0;border:3px solid var(--ink);background:var(--paper);box-shadow:10px 10px 0 var(--ink);text-align:left}
-  .creed-item{padding:26px 28px 24px;border-bottom:2px solid var(--ink)}
-  .creed-item:nth-child(odd){border-right:2px solid var(--ink)}
-  .creed-item:nth-last-child(-n+2){border-bottom:none}
-  .creed-item .cn{font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--pink);text-transform:uppercase}
-  .creed-item h3{font-family:var(--serif);font-weight:800;font-size:1.3rem;letter-spacing:-.01em;margin:8px 0 8px}
-  .creed-item p{font-size:.98rem;line-height:1.6;color:var(--muted)}
-  .creed-item p b{color:var(--ink)}
-  .creed-close{max-width:1080px;margin:26px auto 0;text-align:center;font-family:var(--serif);font-style:italic;font-size:1.15rem}
-  .creed-close b{font-style:normal}
-  @media(max-width:768px){.creed-grid{grid-template-columns:1fr}.creed-item:nth-child(odd){border-right:none}.creed-item:nth-last-child(-n+2){border-bottom:2px solid var(--ink)}.creed-item:last-child{border-bottom:none}}
-</style>
 <section id="creed" class="band-2 tx-hatch">
-  <svg class="fg yellow" style="top:10%;left:4%;width:76px;--rot:6deg;--fdur:12s"><use href="#star"/></svg>
   <div class="wrap" style="text-align:center">
     <div class="stamp rv">The Creed — Why We Gather</div>
     <h2 class="rv" data-d="1" style="max-width:20ch;margin:0 auto">the fire is <span class="em-pink">ours to keep.</span></h2>
-    <p class="body rv" data-d="1" style="max-width:54ch;margin:22px auto 0">
-      Before libraries, before print, knowledge survived by being <b>retold</b> — around fires, mouth
-      to ear, every telling making the next teller richer. Folklore is that, for machine reasoning.
-      A bet about how intelligence should be organized:
+    <p class="body rv" data-d="1" style="max-width:52ch;margin:20px auto 0">
+      Reasoning is labor — and every re-derivation is a tax paid to the same few companies.
+      We keep what we pay for, sign what we share, and answer from the network before the web.
+      <b>No landlord. No big brother in the loop.</b>
     </p>
-    <div class="creed-grid rv" data-d="2">
-      <div class="creed-item">
-        <span class="cn">i</span>
-        <h3>Reasoning is labor.</h3>
-        <p>Every conclusion an agent reaches was paid for — tokens, electricity, time. An answer that dies with its context window is <b>labor thrown into the sea</b>. We keep what we pay for.</p>
-      </div>
-      <div class="creed-item">
-        <span class="cn">ii</span>
-        <h3>Every re-derivation is a tax.</h3>
-        <p>The same paper read a million times, the same dead-ends walked by strangers who will never know they shared them — each repetition billed as new, by the same few companies, forever. <b>Folklore is tax refusal by memory.</b></p>
-      </div>
-      <div class="creed-item">
-        <span class="cn">iii</span>
-        <h3>Shared memory shrinks the model.</h3>
-        <p>The industry answers every gap with a bigger model — more inference, more dependence. There is another axis: <b>remember more, infer less</b>. Agents that start from the network's resolved reasoning need fewer tokens to reach further — the road to smaller, local, decentralized models.</p>
-      </div>
-      <div class="creed-item">
-        <span class="cn">iv</span>
-        <h3>No big brother in the loop.</h3>
-        <p>When one company hosts the memory, ranks the answers, and meters the reasoning, you are a tenant. Folklore has no landlord: <b>your graph lives on your disk</b>, your peers are chosen by you, and nothing you know transits an authority.</p>
-      </div>
-      <div class="creed-item">
-        <span class="cn">v</span>
-        <h3>Provenance over authority.</h3>
-        <p>The centralized web launders knowledge — scraped, blended, names washed off. Here every record is <b>signed by a named hand</b>, timestamped, traceable to its sources. Attribution isn't a courtesy; it's the security model.</p>
-      </div>
-      <div class="creed-item">
-        <span class="cn">vi</span>
-        <h3>The commons compounds.</h3>
-        <p>A torrent gets healthier with every seeder. Every question resolved anywhere becomes a question nobody pays for again — serving the network and serving yourself are <b>the same motion</b>. The fire gets warmer with every hand that feeds it.</p>
-      </div>
+    <div class="cta-row rv" data-d="2" style="justify-content:center;margin-top:26px">
+      <a class="btn btn-primary" href="/creed/">Read the creed</a>
     </div>
-    <p class="creed-close rv" data-d="2">
-      We keep what we pay for. We sign what we share. We answer from the network before the web — and from the web only once.<br/>
-      <b>Never research twice — anywhere on the network.</b>
-      &nbsp; <a href="https://github.com/usefolklore/folklore/blob/main/docs/MANIFESTO.md" style="font-family:var(--mono);font-size:12px;font-style:normal;text-transform:uppercase;letter-spacing:.08em;color:var(--pink)">read the full manifesto →</a>
-    </p>
   </div>
 </section>
 
@@ -1138,9 +412,16 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
     </a>
   </div>
   <div class="wrap foot">
+    <a href="/#demo">Demo</a>
+    <a href="/how-it-works/">How It Works</a>
+    <a href="/creed/">Creed</a>
+    <a href="/statistics/">Statistics</a>
+    <a href="/research">Research</a>
+    <a href="/compare">Compare</a>
     <a href="/store">Store</a>
     <a href="/blog">Blog</a>
     <a href="/whitepaper">White Paper</a>
+    <a href="https://github.com/usefolklore/folklore/tree/main/docs/rfc">RFC</a>
     <a href="https://github.com/usefolklore/folklore">GitHub</a>
     <a href="/legal/terms">Terms</a>
     <a href="/legal/privacy">Privacy</a>
