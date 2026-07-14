@@ -144,7 +144,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
           </div>
         </div>
         <p class="tagline">peer-to-peer compounding inference — a torrent swarm where the payload is reasoning</p>
-        <p class="olede">Every peer shares the reasoning it already paid for, so your agent starts from what the swarm has worked out — not square one. The more agents join, the less anyone re-derives.</p>
+        <p class="olede">Every peer shares the reasoning they already paid for, so you start from what the swarm has worked out — not square one. The more people join, the less anyone re-derives.</p>
         <div class="cta-row">
           <a class="btn sh-btn sh-btn-primary" href="#join">Install</a>
           <a class="btn sh-btn" href="/how-it-works/">How it works</a>
@@ -175,11 +175,28 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
     <div class="blk" data-cmd="folklore demo">
       <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
       <div class="out">
-        <video autoplay muted loop playsinline preload="metadata"
-          poster="assets/folklore-desktop-poster.jpg"
-          aria-label="Screen recording: a question resolves from a peer's tree in 412 milliseconds via the notch island; then a peer pulls a trace back from your tree while the menubar client's reputation counter climbs">
-          <source src="assets/folklore-desktop.mp4" type="video/mp4"/>
-        </video>
+        <div class="md" id="miniDemo" aria-label="Live demo: a question resolves from a peer's tree via the notch island, then a peer pulls a trace back from your tree">
+          <div class="md-bar">
+            <span class="md-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0d0b08"/><g class="fl-o"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d"/></g><g class="fl-i"><path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/></g><g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg> folklore</span>
+            <span class="md-mi">File</span><span class="md-mi">Network</span><span class="md-mi">Peers</span>
+            <span class="md-clock">16:32</span>
+          </div>
+          <div class="md-notch" id="mdNotch">
+            <div class="md-exp">
+              <svg class="md-fire" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#1d1813"/><g class="fl-o"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d"/></g><g class="fl-i"><path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/></g><g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg>
+              <div class="md-txt">
+                <div class="md-kick" id="mdKick"><span class="md-dot"></span><span id="mdKickT">folklore</span></div>
+                <div class="md-flow" id="mdFlow"></div>
+              </div>
+            </div>
+          </div>
+          <div class="md-win">
+            <div class="md-wbar"><span class="md-l r"></span><span class="md-l y"></span><span class="md-l g"></span><span class="md-wt">claude — folklore</span></div>
+            <div class="md-wbody" id="mdTerm"></div>
+            <div class="md-wsl"><span class="md-fk">Folklore</span> · @you │ 91,418 nodes │ 6 peers │ <span id="mdRep">0 rep</span></div>
+          </div>
+        </div>
+        <p class="md-mob">the live demo plays on a bigger screen — <a href="https://github.com/usefolklore/folklore#readme">watch it on GitHub →</a></p>
         <p class="olegend">pull = <span class="t">teal</span> · serve = <span class="s">pink</span> · reproduce it: <a class="olink" href="https://github.com/usefolklore/folklore/tree/main/examples/desktop-demo">examples/desktop-demo</a></p>
       </div>
     </div>
@@ -634,6 +651,57 @@ function initMemeCarousel(){
   if(ln){var tk=false;
     addEventListener('scroll',function(){if(tk)return;tk=true;
       requestAnimationFrame(function(){ln.textContent=1+Math.round(scrollY/24);tk=false;});},{passive:true});}
+})();
+</script>
+<script>
+/* the demo, coded live: type → pull from a peer → serve a peer → loop */
+(function(){
+  var md=document.getElementById('miniDemo'); if(!md) return;
+  if(matchMedia('(max-width: 760px)').matches) return;
+  var reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var notch=document.getElementById('mdNotch'), kickT=document.getElementById('mdKickT'),
+      flow=document.getElementById('mdFlow'), term=document.getElementById('mdTerm'),
+      rep=document.getElementById('mdRep');
+  var running=false, seen=false;
+  function line(html,cls){var d=document.createElement('div');d.className='ln2 '+(cls||'');d.innerHTML=html;
+    term.appendChild(d);requestAnimationFrame(function(){requestAnimationFrame(function(){d.classList.add('on');});});return d;}
+  function wait(ms){return new Promise(function(r){setTimeout(r,ms);});}
+  function openN(mode,kick,fl){notch.classList.add('open');notch.classList.toggle('serve',mode==='serve');
+    kickT.textContent=kick;flow.innerHTML=fl;}
+  function closeN(){notch.classList.remove('open');}
+  async function typeQ(t){
+    var d=line('','q');var s2=document.createElement('span');d.appendChild(s2);
+    var c=document.createElement('span');c.className='md-caret';d.appendChild(c);
+    for(var i=0;i<=t.length;i++){s2.textContent=t.slice(0,i);await wait(reduced?0:24);}
+    await wait(220);c.remove();
+  }
+  async function loop(){
+    while(true){
+      term.innerHTML='';rep.textContent='0 rep';closeN();
+      await wait(700);
+      await typeQ('share a token cache across tokio tasks?');
+      openN('pull','asking 6 peers…','querying connected trees');
+      await wait(1300);
+      openN('pull',"you pulled from a peer's tree",'tokio-rc-send ← <span class="who">@sam-rs</span>');
+      await wait(400);
+      line('Wrap it in <span style="color:var(--yellow)">Arc&lt;Mutex&lt;TokenCache&gt;&gt;</span> so it\'s Send across tasks.','a');
+      await wait(320);
+      line('⎿ from <span class="t">@sam-rs</span>\'s tree in <span class="k">412ms</span> · 0 web calls','r');
+      await wait(2600);closeN();await wait(700);
+      openN('serve','peer pulled from your tree','<span class="who">@tia-async</span> ← arc-mutex-token-cache');
+      line('⬅ <b>@tia-async</b> pulled arc-mutex-token-cache · just now','sv');
+      rep.textContent='1 rep';
+      await wait(2600);closeN();await wait(600);
+      openN('serve','peer pulled from your tree','<span class="who">@noah-go</span> ← axum-extractor-order');
+      line('⬅ <b>@noah-go</b> pulled axum-extractor-order · just now','sv');
+      rep.textContent='2 rep';
+      await wait(2600);closeN();
+      await wait(1600);
+    }
+  }
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(e.isIntersecting&&!running){running=true;loop();}});},{threshold:.4});
+  io.observe(md);
 })();
 </script>
 <script src="assets/island.js" defer></script>
