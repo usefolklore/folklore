@@ -1000,3 +1000,23 @@ body.term-home #store{border-top:3px solid #0d0b08}
 .md-wbody{font-size:13px;line-height:1.7;padding:14px 16px}
 .md-caret{width:8px;height:14px}
 .md-wsl{height:26px;font-size:10.5px;gap:8px;padding:0 12px}
+
+
+/* ── the reckoning goes broadsheet — the footer's yellow, mid-story ── */
+.scene.ledger-scene{background:var(--yellow);border-top:3px solid #0d0b08;border-bottom:3px solid #0d0b08}
+.ledger-scene::before{display:none}
+.ledger-scene .cmd .pu{color:var(--ink)}
+.ledger-scene .cmd .pd{color:var(--muted)}
+.ledger-scene .cmd .ctext,.ledger-scene .blk[data-tone="proof"] .ctext{color:var(--ink)}
+.ledger-scene .ccaret{background:var(--ink)}
+.ledger-scene .blk::before{background:linear-gradient(180deg, rgba(29,24,19,.45), rgba(29,24,19,.05))}
+.ledger-scene .blk::after{border-color:var(--ink);background:var(--yellow)}
+.ledger-scene .blk.done::after{background:var(--ink);box-shadow:none}
+.ledger-scene .lrow{border-color:rgba(29,24,19,.3)}
+.ledger-scene .lnum.yl{color:var(--ink)}
+.ledger-scene .lnum.pk{color:var(--pink)}
+.ledger-scene .lnum.tl{color:var(--blue)}
+.ledger-scene .lnum.pp{color:var(--ink)}
+.ledger-scene .lcap,.ledger-scene .lrow span:last-child{color:var(--muted)}
+.ledger-scene .olink{color:var(--ink);border-color:rgba(29,24,19,.4)}
+.ledger-scene .olink:hover{color:var(--pink);border-color:var(--pink)}
