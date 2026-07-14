@@ -120,6 +120,12 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 <a id="top"></a>
 <div class="term" id="top">
 <canvas class="term-embers" id="termEmbers" aria-hidden="true"></canvas>
+<div class="term-shapes" aria-hidden="true">
+  <svg class="ts" data-par="0.12" style="top:12%;left:70%;width:340px;color:#f5b921"><use href="#sun"/></svg>
+  <svg class="ts" data-par="0.18" style="top:36%;left:4%;width:300px;color:#ff4f6d"><use href="#flower"/></svg>
+  <svg class="ts" data-par="0.10" style="top:58%;left:74%;width:280px;color:#1fae8b"><use href="#fish"/></svg>
+  <svg class="ts" data-par="0.15" style="top:80%;left:8%;width:320px;color:#f5b921"><use href="#bird"/></svg>
+</div>
 
 <!-- fixed terminal titlebar = the site chrome -->
 <div class="term-tb">
@@ -199,7 +205,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 
 <section class="scene center stage">
   <div class="swrap">
-    <div class="blk" data-cmd="folklore why">
+    <div class="blk" data-cmd="folklore why" data-tone="proof">
       <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
       <div class="out">
         <p class="ocomment"># agents reason from zero, every single time. the same paper read again,
@@ -216,7 +222,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 
 <section class="scene wide">
   <div class="swrap">
-    <div class="blk" data-cmd="folklore demo">
+    <div class="blk" data-cmd="folklore demo" data-tone="pull">
       <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
       <div class="out">
         <div class="md" id="miniDemo" aria-label="Live demo: a question resolves from a peer's tree via the notch island, then a peer pulls a trace back from your tree">
@@ -247,57 +253,71 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   </div>
 </section>
 
-<section class="scene">
-  <div class="swrap">
-    <div class="blk" data-cmd="folklore ask &quot;share a token cache across tokio tasks?&quot;">
-      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-      <div class="out">
-        <div class="oline t">▸ asked 4 peers · first answer in 142 ms</div>
-        <div class="oline">Wrap it in <span class="kw">Arc&lt;Mutex&lt;TokenCache&gt;&gt;</span> so it's <b>Send</b> across spawned tasks, then thread it through the extractor.</div>
-        <div class="oline dm">⎿ resolved from <span class="t">@sam-rs</span>'s tree in <span class="kw">412ms</span> · <span class="t">0</span> web calls · saved ~90s of re-derivation</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="scene">
-  <div class="swrap">
-    <div class="blk" data-cmd="folklore tree --inherited">
-      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-      <div class="out">
-        <div class="cascade" aria-hidden="true">
-<div class="cl" style="--i:0"><span class="ask">ask </span><span class="seed">●</span></div>
-<div class="cl" style="--i:1"><span class="e">    │</span></div>
-<div class="cl" style="--i:2"><span class="e">    ├────</span><span class="nd">●</span><span class="lbl">  a peer already inferred this</span></div>
-<div class="cl" style="--i:3"><span class="e">    │     └────</span><span class="nd">●</span><span class="lbl">  …and this, from that</span></div>
-<div class="cl" style="--i:4"><span class="e">    │            └────</span><span class="nd">●</span><span class="lbl">  …and this, deeper still</span></div>
-<div class="cl" style="--i:5"><span class="e">    ├────</span><span class="nd">●</span><span class="lbl">  and this, from another peer</span></div>
-<div class="cl" style="--i:6"><span class="e">    └────</span><span class="nd">●</span><span class="lbl">  and this</span></div>
-<div class="cl" style="--i:7"><span class="punch">             ↳ you start here, not at zero</span></div>
+<section class="scene s-full" data-tint="both">
+  <div class="swrap xw">
+    <div class="xgrid">
+      <div class="blk" data-cmd="folklore ask &quot;share a token cache across tokio tasks?&quot;" data-tone="pull">
+        <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+        <div class="out">
+          <div class="oline t">▸ asked 4 peers · first answer in 142 ms</div>
+          <div class="pcard">
+            <div class="pc-body">Wrap it in <b>Arc&lt;Mutex&lt;TokenCache&gt;&gt;</b> so it's <b>Send</b> across spawned tasks, then thread it through the extractor.</div>
+            <div class="pc-stamp">@sam-rs · 412ms · 0 web calls</div>
+          </div>
+          <div class="oline dm">⎿ pulled from a peer's tree — saved ~90s of re-derivation</div>
         </div>
-        <p class="ofoot">inherit the reasoning. <b>infer deeper.</b></p>
+      </div>
+      <div class="blk" data-cmd="folklore live" data-tone="serve">
+        <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+        <div class="out">
+          <div class="oline s">⬅ <b>@tia-async</b> pulled arc-mutex-token-cache · just now</div>
+          <div class="oline s">⬅ <b>@noah-go</b> pulled axum-extractor-order · just now</div>
+          <div class="oline s">⬅ <b>@priya-rs</b> pulled sqlx-offline-prepare · just now</div>
+          <div class="oline dm"># your node is seeding — reputation +3 · <a class="olink" href="/how-it-works/">how it works →</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="peerstrip rv" aria-hidden="true">
+      <svg class="ps-arcs" viewBox="0 0 1000 90" preserveAspectRatio="none">
+        <path class="arc a1" d="M100 62 Q300 6 500 62" />
+        <path class="arc a2" d="M500 62 Q700 6 900 62" />
+        <path class="arc a3" d="M100 62 Q500 -18 900 62" />
+      </svg>
+      <div class="ps-nodes">
+        <span class="ps-n"><svg><use href="#bird"/></svg><i>@sam-rs</i></span>
+        <span class="ps-n you"><svg><use href="#sun"/></svg><i>you</i></span>
+        <span class="ps-n"><svg><use href="#fish"/></svg><i>@tia-async</i></span>
+      </div>
+      <p class="ps-cap">what you pull, you owe forward — <b>the exchange is the network</b></p>
+    </div>
+  </div>
+</section>
+
+<section class="scene s-full tree-scene" data-tint="teal">
+  <div class="swrap xw">
+    <div class="blk" data-cmd="folklore tree --inherited" data-tone="proof">
+      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+      <div class="out">
+        <div class="cascade big" aria-hidden="true">
+<div class="cl" style="--i:0"><span class="ask">ask </span><span class="nsym seed"><svg><use href="#sun"/></svg></span></div>
+<div class="cl" style="--i:1"><span class="e">    │</span></div>
+<div class="cl" style="--i:2"><span class="e">    ├────</span><span class="nsym"><svg><use href="#bird"/></svg></span><span class="lbl">  a peer already inferred this</span></div>
+<div class="cl" style="--i:3"><span class="e">    │     └────</span><span class="nsym"><svg><use href="#star"/></svg></span><span class="lbl">  …and this, from that</span></div>
+<div class="cl" style="--i:4"><span class="e">    │            └────</span><span class="nsym"><svg><use href="#moon"/></svg></span><span class="lbl">  …and this, deeper still</span></div>
+<div class="cl" style="--i:5"><span class="e">    ├────</span><span class="nsym"><svg><use href="#fish"/></svg></span><span class="lbl">  and this, from another peer</span></div>
+<div class="cl" style="--i:6"><span class="e">    └────</span><span class="nsym"><svg><use href="#flower"/></svg></span><span class="lbl">  and this</span></div>
+        </div>
+        <p class="obig treepunch">you start <em>here</em> — not at zero.</p>
+        <p class="ofoot" style="text-align:center">inherit the reasoning. <b>infer deeper.</b></p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="scene">
-  <div class="swrap">
-    <div class="blk" data-cmd="folklore live">
-      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-      <div class="out">
-        <div class="oline s">⬅ <b>@tia-async</b> pulled arc-mutex-token-cache from your tree · just now</div>
-        <div class="oline s">⬅ <b>@noah-go</b> pulled axum-extractor-order from your tree · just now</div>
-        <div class="oline s">⬅ <b>@priya-rs</b> pulled sqlx-offline-prepare from your tree · just now</div>
-        <div class="oline dm"># your node is seeding — reputation +3 · helped 3 peers · <a class="olink" href="/how-it-works/">how it works →</a></div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <section class="scene center paper-scene stage">
   <div class="swrap">
-    <div class="blk" data-cmd="cat CREED.md">
+    <div class="blk" data-cmd="cat CREED.md" data-tone="proof">
       <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
       <div class="out">
         <div class="paper-doc">
@@ -314,30 +334,37 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   </div>
 </section>
 
-<section class="scene">
-  <div class="swrap">
-    <div class="blk" data-cmd="folklore stats --benchmarked">
+<section class="scene s-full ledger-scene" data-tint="warm">
+  <div class="swrap xw">
+    <div class="blk" data-cmd="folklore stats --benchmarked" data-tone="proof">
       <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
-      <div class="out">
-        <div class="orow"><span class="num">0.7522</span><span>BEIR SciFact NDCG@10 — CPU-only, 11&nbsp;ms median, ahead of E5 / SPLADE / ColBERT / BM25</span></div>
-        <div class="orow"><span class="num">24.8×</span><span>poison flip-ASR cut by signed provenance (58.9% → 2.4%)</span></div>
-        <div class="orow"><span class="num">90.2%</span><span>cooperative cache hit across 64 peers (18% alone)</span></div>
-        <div class="orow"><span class="num">17→1%</span><span>web fallback as the network warms — once anyone resolves it, nobody pays again</span></div>
-        <a class="olink" href="/statistics/">every claim, on disk →</a>
+      <div class="out ledger">
+        <div class="lrow rv"><span class="lnum yl"><b data-count="0.7522" data-dec="4">0</b></span><span class="lcap">BEIR SciFact NDCG@10 — CPU-only, 11&nbsp;ms median. ahead of E5 / SPLADE / ColBERT / BM25</span></div>
+        <div class="lrow rv"><span class="lnum pk"><b data-count="24.8" data-dec="1">0</b>×</span><span class="lcap">poison flip-ASR cut by signed provenance — 58.9% → 2.4%</span></div>
+        <div class="lrow rv"><span class="lnum tl"><b data-count="90.2" data-dec="1">0</b>%</span><span class="lcap">cooperative cache hit across 64 peers — 18% alone</span></div>
+        <div class="lrow rv"><span class="lnum pp">17<i>→</i>1%</span><span class="lcap">web fallback as the network warms — once anyone resolves it, nobody pays again</span></div>
+        <a class="olink" href="/statistics/" style="margin-top:14px">every claim, on disk →</a>
       </div>
     </div>
   </div>
 </section>
 
-<section class="scene center last-scene stage">
+<section class="scene center last-scene stage" data-tint="warm">
   <div class="swrap">
-    <div class="blk" data-cmd="folklore onboard">
+    <div class="blk last" data-cmd="folklore onboard" data-tone="serve">
       <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
       <div class="out">
-        <div class="oline t">✓ daemon wired · hooks installed · identity signed · peers discovered</div>
-        <p class="obody">One command wires the daemon, every Claude Code hook, the statusline, your signed identity — and registers the MCP server in every harness it finds:</p>
-        <p class="oharness">claude code · cursor · cline · gemini cli · windsurf · zed · continue · aider · roo — pure Node, no Python, no build step</p>
-        <div class="cta-row" id="join">
+        <p class="obig" style="text-align:center">light <em>your</em> fire.</p>
+        <div class="stampwall" aria-label="works in every harness">
+          <span class="hstamp">claude code</span><span class="hstamp y">cursor</span><span class="hstamp">cline</span>
+          <span class="hstamp">gemini cli</span><span class="hstamp p">windsurf</span><span class="hstamp">zed</span>
+          <span class="hstamp">continue</span><span class="hstamp">aider</span><span class="hstamp y">roo</span>
+        </div>
+        <div class="ticket">
+          <span class="tk-line">one command · daemon wired · hooks installed · identity signed</span>
+          <span class="tk-stamp">ONBOARDED</span>
+        </div>
+        <div class="cta-row" id="join" style="justify-content:center">
           <a class="btn sh-btn sh-btn-primary" href="https://github.com/usefolklore/folklore">Light your fire</a>
           <a class="btn sh-btn" href="/statistics/">See the proof</a>
         </div>
@@ -682,7 +709,7 @@ function initMemeCarousel(){
           p.x+=p.vx;p.y+=p.vy;p.tw+=p.tws;
           if(p.y<-4){p.y=H+4;p.x=Math.random()*W;}
           if(p.x<-4)p.x=W+4; if(p.x>W+4)p.x=-4;
-          ctx.globalAlpha=.15+.3*(1+Math.sin(p.tw))/2;
+          ctx.globalAlpha=.22+.38*(1+Math.sin(p.tw))/2;
           ctx.fillStyle=p.warm?'rgba(245,185,33,.85)':'rgba(244,236,216,.5)';
           ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();}
         ctx.globalAlpha=1;

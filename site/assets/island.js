@@ -47,6 +47,21 @@
   idle();
   setTimeout(function(){ cycle(); setInterval(cycle, 8200); }, 2500);
 
+  /* the island narrates the session — collapsed text follows the scene */
+  var NARRATE=[['last-scene','light your fire'],['ledger-scene','the reckoning'],
+               ['paper-scene','the creed'],['tree-scene','the inheritance'],
+               ['s-full','the exchange'],['hero-scene','folklore network']];
+  var sceneName='folklore network';
+  if('IntersectionObserver'in window){
+    var sio=new IntersectionObserver(function(es){es.forEach(function(e){
+      if(!e.isIntersecting)return;
+      var c=e.target.className;
+      for(var i=0;i<NARRATE.length;i++){if(c.indexOf(NARRATE[i][0])>=0){sceneName=NARRATE[i][1];break;}}
+      if(!isl.classList.contains('open')) mini.innerHTML = peers===null? sceneName : '<b>'+peers+'</b> peers · '+sceneName;
+    });},{threshold:.5});
+    document.querySelectorAll('.scene').forEach(function(sc){sio.observe(sc);});
+  }
+
   /* real swarm data — same tracker the hero uses */
   var seen=null;
   function short(id){ return id.length>12 ? id.slice(0,6)+'…'+id.slice(-4) : id; }

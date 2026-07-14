@@ -862,3 +862,116 @@ body.term-home #store{border-top:3px solid #0d0b08}
 .scene.center .out{align-items:center}
 .scene.center .ocomment{text-align:center}
 @media(max-width:760px){.punchwrap{padding:28px 10px 30px}.punchwrap .orn{width:38px;height:38px}.punchwrap .o1{left:-6px}.punchwrap .o2{right:-8px}}
+
+
+/* ══ directive: rhythm, set-pieces, relit glass ══ */
+/* layout variants */
+.scene.s-full .swrap.xw{max-width:1240px}
+/* prompt voice per intent */
+.blk[data-tone="pull"] .ctext{color:var(--teal)}
+.blk[data-tone="serve"] .ctext{color:var(--pink)}
+.blk[data-tone="proof"] .ctext{color:var(--yellow)}
+.blk[data-tone="serve"]::after{border-color:var(--pink)}
+.blk[data-tone="serve"].done::after{background:var(--pink);box-shadow:0 0 10px rgba(255,79,109,.5)}
+.blk[data-tone="proof"]::after{border-color:var(--yellow)}
+.blk[data-tone="proof"].done::after{background:var(--yellow);box-shadow:0 0 10px rgba(245,185,33,.5)}
+/* scene tints — pull teal, serve pink, proof warm */
+.scene[data-tint]::before{content:'';position:absolute;inset:0;pointer-events:none}
+.scene[data-tint="teal"]::before{background:radial-gradient(70% 60% at 30% 40%, rgba(31,174,139,.05), transparent 70%)}
+.scene[data-tint="warm"]::before{background:radial-gradient(70% 60% at 50% 45%, rgba(245,185,33,.05), transparent 70%)}
+.scene[data-tint="both"]::before{background:
+  radial-gradient(50% 60% at 18% 40%, rgba(31,174,139,.06), transparent 70%),
+  radial-gradient(50% 60% at 82% 40%, rgba(255,79,109,.06), transparent 70%)}
+/* folk shapes inside the glass */
+.term-shapes{position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.term-shapes .ts{position:absolute;opacity:.05;height:auto;aspect-ratio:1}
+
+/* THE EXCHANGE — the page's one horizontal composition */
+.xgrid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,4vw,72px)}
+@media(max-width:900px){.xgrid{grid-template-columns:1fr}}
+/* paper index card — the answer arrives as an artifact */
+.pcard{
+  background:var(--paper);color:var(--ink);border:2px solid #0d0b08;
+  box-shadow:8px 8px 0 rgba(0,0,0,.5);padding:16px 18px 13px;max-width:400px;
+  transform:rotate(-1.1deg);font-family:var(--serif);
+}
+.blk.done .pcard{animation:paperstamp .5s cubic-bezier(.25,.9,.3,1.14) both}
+.pcard .pc-body{font-size:1rem;line-height:1.5}
+.pcard .pc-body b{font-family:var(--mono);font-size:.85em;background:#ece0c2;padding:0 4px;border:1px solid rgba(29,24,19,.25)}
+.pcard .pc-stamp{
+  display:inline-block;margin-top:10px;font-family:var(--mono);font-size:9.5px;font-weight:800;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--pink);
+  border:2px solid var(--pink);border-radius:3px;padding:3px 8px;transform:rotate(-2deg);opacity:.85;
+}
+/* peer strip — folk avatars joined by arcs */
+.peerstrip{position:relative;margin-top:clamp(30px,5vh,56px);padding-top:8px}
+.ps-arcs{position:absolute;left:0;right:0;top:0;width:100%;height:90px}
+.ps-arcs .arc{fill:none;stroke-width:1.6;stroke-dasharray:6 7;opacity:.55;animation:arcflow 2.6s linear infinite}
+.ps-arcs .a1{stroke:var(--teal)}
+.ps-arcs .a2{stroke:var(--pink);animation-direction:reverse}
+.ps-arcs .a3{stroke:var(--yellow);opacity:.3;animation-duration:4s}
+@keyframes arcflow{to{stroke-dashoffset:-26}}
+.ps-nodes{display:flex;justify-content:space-between;max-width:1000px;margin:0 auto;padding:56px 6% 0}
+.ps-n{display:flex;flex-direction:column;align-items:center;gap:7px}
+.ps-n svg{width:38px;height:38px;color:#c9bda1;opacity:.9}
+.ps-n.you svg{color:var(--yellow);filter:drop-shadow(0 0 10px rgba(245,185,33,.4))}
+.ps-n i{font-family:var(--mono);font-size:11px;font-style:normal;color:#8a7c62}
+.ps-n.you i{color:var(--yellow);font-weight:700}
+.ps-cap{text-align:center;margin-top:22px;font-family:var(--serif);font-style:italic;font-size:1.05rem;color:#c9bda1}
+.ps-cap b{color:#f4ecd8;font-style:normal}
+
+/* TREE — monumental */
+.cascade.big{font-size:clamp(1.05rem,1.7vw,1.5rem);line-height:2;margin:0 auto;width:fit-content}
+.cascade.big .lbl{color:#e9dfc7}
+.nsym{display:inline-block;vertical-align:-4px}
+.nsym svg{width:21px;height:21px;color:var(--teal)}
+.nsym.seed svg{width:24px;height:24px;color:var(--yellow);filter:drop-shadow(0 0 8px rgba(245,185,33,.45))}
+.cascade.big .cl:nth-child(3) .nsym svg{color:var(--pink)}
+.cascade.big .cl:nth-child(6) .nsym svg{color:var(--yellow)}
+/* draw on reveal, not ambient loop */
+.blk .cascade .cl{opacity:0;transform:translateX(-8px)}
+.blk.done .cascade .cl{opacity:1;transform:none;transition:opacity .45s cubic-bezier(.25,.9,.3,1), transform .45s cubic-bezier(.25,.9,.3,1);transition-delay:calc(var(--i) * .18s)}
+.treepunch{text-align:center;margin-top:34px;font-size:clamp(2rem,4.4vw,3.6rem)}
+.treepunch em{color:var(--teal);font-style:italic}
+
+/* LEDGER — broadsheet numerals */
+.ledger{gap:0!important;width:100%}
+.lrow{display:grid;grid-template-columns:minmax(220px,340px) 1fr;gap:14px 40px;align-items:baseline;
+  width:100%;padding:26px 0;border-bottom:1px solid rgba(244,236,216,.12)}
+.lrow:first-child{border-top:1px solid rgba(244,236,216,.12)}
+.lnum{font-family:var(--serif);font-weight:800;font-size:clamp(3rem,7.5vw,6rem);line-height:.95;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.lnum i{font-style:normal;font-size:.55em;vertical-align:.14em;margin:0 .04em}
+.lnum.yl{color:var(--yellow)}.lnum.pk{color:var(--pink)}.lnum.tl{color:var(--teal)}.lnum.pp{color:#f4ecd8}
+.lcap{font-family:var(--mono);font-size:13.5px;color:#c9bda1;line-height:1.7;max-width:52ch}
+@media(max-width:760px){.lrow{grid-template-columns:1fr;gap:6px}.lnum{font-size:2.6rem}}
+
+/* ONBOARD — the fair arrives */
+.stampwall{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:640px;margin:26px auto 8px}
+.hstamp{
+  font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+  color:#e9dfc7;border:2px solid #5c5142;padding:8px 14px;background:rgba(38,32,26,.6);
+  transform:rotate(var(--r,-1.4deg));opacity:0;
+}
+.hstamp:nth-child(2n){--r:1.2deg}
+.hstamp:nth-child(3n){--r:-.6deg}
+.hstamp.y{border-color:var(--yellow);color:var(--yellow)}
+.hstamp.p{border-color:var(--pink);color:var(--pink)}
+.blk.done .hstamp{animation:stampin .4s cubic-bezier(.25,.9,.3,1.2) both}
+.blk.done .hstamp:nth-child(1){animation-delay:.1s}.blk.done .hstamp:nth-child(2){animation-delay:.2s}
+.blk.done .hstamp:nth-child(3){animation-delay:.3s}.blk.done .hstamp:nth-child(4){animation-delay:.4s}
+.blk.done .hstamp:nth-child(5){animation-delay:.5s}.blk.done .hstamp:nth-child(6){animation-delay:.6s}
+.blk.done .hstamp:nth-child(7){animation-delay:.7s}.blk.done .hstamp:nth-child(8){animation-delay:.8s}
+.blk.done .hstamp:nth-child(9){animation-delay:.9s}
+@keyframes stampin{0%{opacity:0;transform:rotate(var(--r,-1.4deg)) scale(1.5)}70%{opacity:1;transform:rotate(var(--r,-1.4deg)) scale(.96)}100%{opacity:1;transform:rotate(var(--r,-1.4deg)) scale(1)}}
+/* the ticket */
+.ticket{
+  display:flex;align-items:center;gap:18px;justify-content:space-between;
+  background:var(--paper);color:var(--ink);font-weight:600;border:2px dashed var(--ink);
+  padding:12px 18px;max-width:560px;margin:22px auto 6px;transform:rotate(.8deg);
+  font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+}
+.blk.done .ticket{animation:paperstamp .5s .9s cubic-bezier(.25,.9,.3,1.14) both;opacity:0}
+.tk-stamp{
+  font-weight:800;font-size:13px;letter-spacing:.16em;color:var(--teal);
+  border:2.5px solid var(--teal);border-radius:4px;padding:4px 10px;transform:rotate(-4deg);flex:0 0 auto;
+}
