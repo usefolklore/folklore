@@ -138,13 +138,53 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
       <div class="out">
         <div class="banner">
-          <svg class="sh-hearth" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0d0b08"/><g class="fl-o"><path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="#ff4f6d"/></g><g class="fl-i"><path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/></g><g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg>
+          <svg class="sh-hearth" viewBox="0 0 64 64" aria-hidden="true">
+            <defs>
+              <linearGradient id="hgCard" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#2e261d"/><stop offset=".55" stop-color="#191410"/><stop offset="1" stop-color="#0a0805"/>
+              </linearGradient>
+              <radialGradient id="hgGlow" cx=".5" cy=".64" r=".58">
+                <stop offset="0" stop-color="#f5b921" stop-opacity=".5"/>
+                <stop offset=".45" stop-color="#ff6b47" stop-opacity=".22"/>
+                <stop offset="1" stop-color="#ff4f6d" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="hgFlame" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ff4f6d"/><stop offset=".7" stop-color="#ff5f4d"/><stop offset="1" stop-color="#e8452f"/>
+              </linearGradient>
+              <linearGradient id="hgLog" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#f4ecd8"/><stop offset="1" stop-color="#cbbd9d"/>
+              </linearGradient>
+            </defs>
+            <rect width="64" height="64" rx="14" fill="url(#hgCard)"/>
+            <rect x=".8" y=".8" width="62.4" height="62.4" rx="13.4" fill="none" stroke="rgba(244,236,216,.1)" stroke-width="1.2"/>
+            <ellipse cx="32" cy="42" rx="25" ry="19" fill="url(#hgGlow)"/>
+            <ellipse cx="32" cy="55.5" rx="15" ry="2.6" fill="#000" opacity=".4"/>
+            <g class="fl-o" transform="translate(0 5)">
+              <path d="M32 12c2.5 7-5 9.5-5 15.5a5 5 0 0 0 10 0c0-2.2-1-3.5-1-3.5 3 2 5 5 5 9.2a9 9 0 1 1-18 0c0-8 6.5-10.5 9-21.2z" fill="url(#hgFlame)"/>
+            </g>
+            <g class="fl-i" transform="translate(0 5)">
+              <path d="M32 27c1.4 3.5-2.5 4.5-2.5 8a2.6 2.6 0 0 0 5 0c0-2-1.2-2.6-1.2-3.7 1.8 5.5-1.3 7-1.3 7" fill="#f5b921"/>
+              <ellipse cx="32" cy="40.5" rx="1.7" ry="2.3" fill="#ffe9b0" opacity=".95"/>
+            </g>
+            <circle cx="25.5" cy="26" r="1" fill="#f5b921" opacity=".8"/>
+            <circle cx="38.5" cy="22.5" r=".8" fill="#ff4f6d" opacity=".75"/>
+            <circle cx="34" cy="17" r=".6" fill="#f4ecd8" opacity=".6"/>
+            <g stroke="url(#hgLog)" stroke-width="3.4" stroke-linecap="round">
+              <path d="M19 54.5 L45 49.5"/><path d="M19 49.5 L45 54.5"/>
+            </g>
+            <g fill="#f4ecd8">
+              <circle cx="11.5" cy="39" r="4.6"/><path d="M3.5 54c0-5 3.5-8.2 8-8.2s8 3.2 8 8.2z"/>
+            </g>
+            <g fill="#f4ecd8">
+              <circle cx="52.5" cy="39" r="4.6"/><path d="M44.5 54c0-5 3.5-8.2 8-8.2s8 3.2 8 8.2z"/>
+            </g>
+          </svg>
           <div>
             <h1>knowledge travels<br><span class="em-pk">mouth to ear.</span></h1>
           </div>
         </div>
-        <p class="tagline">peer-to-peer compounding inference — a torrent swarm where the payload is reasoning</p>
-        <p class="olede">Every peer shares the reasoning they already paid for, so you start from what the swarm has worked out — not square one. The more people join, the less anyone re-derives.</p>
+        <p class="tagline">peer-to-peer compounding inference — a network that passes reasoning on, the way stories once traveled</p>
+        <p class="olede">Every peer shares the reasoning they already paid for, so you start from what the network already knows — not square one. Every telling makes the next teller richer.</p>
         <div class="cta-row">
           <a class="btn sh-btn sh-btn-primary" href="#join">Install</a>
           <a class="btn sh-btn" href="/how-it-works/">How it works</a>
@@ -555,9 +595,9 @@ function initMemeCarousel(){
         var ids=peers.map(function(p){return p.peerId;});
         if(seen){
           var fresh=ids.filter(function(id){return seen.indexOf(id)<0;});
-          if(fresh.length) elLog.textContent='peer '+short(fresh[fresh.length-1])+' joined the swarm';
+          if(fresh.length) elLog.textContent='peer '+short(fresh[fresh.length-1])+' joined the network';
         }
-        if(peers.length===0) elLog.textContent='swarm forming — be the first node';
+        if(peers.length===0) elLog.textContent='the fire is new — be the first node';
         seen=ids;
       })
       .catch(function(){ var n=elCount.closest('.netstat'); if(n) n.style.display='none'; });

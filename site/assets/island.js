@@ -59,7 +59,7 @@
         var ids=ps.map(function(p){return p.peerId;});
         if(seen){
           ids.filter(function(id){return seen.indexOf(id)<0;}).forEach(function(id){
-            queue.push({t:'join', k:'a hand joins the fire', f:'peer <b>'+short(id)+'</b> joined the swarm'});
+            queue.push({t:'join', k:'a hand joins the fire', f:'peer <b>'+short(id)+'</b> joined the network'});
           });
         }
         seen=ids;
