@@ -104,24 +104,35 @@
     border:2px solid var(--ink);padding:7px 13px;box-shadow:4px 4px 0 var(--ink);margin-bottom:24px}
 
   /* BIG type */
+  /* ── typescale — one modular scale, every headline reads from it ── */
+  :root{
+    --t-display: clamp(2.6rem, 6.5vw, 4.8rem);  /* hero / page h1 */
+    --t-h2:      clamp(1.8rem, 3.4vw, 2.8rem);  /* section headline */
+    --t-h3:      clamp(1.35rem, 2.2vw, 1.8rem); /* sub-head / panel head */
+    --t-h4:      clamp(1.1rem, 1.5vw, 1.3rem);  /* card head */
+    --t-lede:    clamp(1.15rem, 1.8vw, 1.5rem);
+    --t-body:    clamp(1rem, 1.2vw, 1.2rem);
+    --t-stat:    clamp(2.4rem, 5vw, 3.8rem);    /* display numbers */
+  }
   h1,h2{font-weight:700;letter-spacing:-.035em;line-height:.92;position:relative}
   .mis{position:relative;color:var(--ink);display:inline-block}
   .mis::before{content:attr(data-text);position:absolute;left:0;top:0;color:var(--pink);
     transform:translate(.028em,.03em);z-index:-1;mix-blend-mode:multiply;pointer-events:none}
-  h1{font-size:clamp(2.6rem,7vw,5.4rem)}
-  h2{font-size:clamp(1.7rem,3.2vw,2.9rem);max-width:18ch}
+  h1{font-size:var(--t-display)}
+  h2{font-size:var(--t-h2);max-width:18ch}
+  h3{font-weight:800;font-size:var(--t-h3);letter-spacing:-.02em;line-height:1.1}
   .em-blue{color:var(--blue)}.em-pink{color:var(--pink)}.em-teal{color:var(--teal)}
 
-  .body{font-size:clamp(1.02rem,1.2vw,1.22rem);line-height:1.6;max-width:42ch;font-weight:470;color:var(--ink)}
+  .body{font-size:var(--t-body);line-height:1.6;max-width:42ch;font-weight:470;color:var(--ink)}
   .body+.body{margin-top:1em}
-  .lede{font-size:clamp(1.15rem,1.8vw,1.55rem);line-height:1.38;max-width:32ch;font-weight:520}
+  .lede{font-size:var(--t-lede);line-height:1.38;max-width:32ch;font-weight:520}
   .lede b{color:var(--blue);font-weight:800}
   .rule{height:4px;background:var(--ink);margin:18px 0;max-width:140px}
 
   /* hero */
   .hero{min-height:calc(100svh - 86px);display:flex;flex-direction:column;justify-content:flex-start;padding-top:clamp(104px,15vh,168px)}
   .hero .est{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--blue);margin-bottom:30px}
-  .hero h1{max-width:14ch;margin-bottom:20px;font-size:clamp(2.4rem,4.6vw,4.4rem)}
+  .hero h1{max-width:14ch;margin-bottom:20px}
   .hero .lede{max-width:34ch}
   .herogrid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(32px,5vw,72px);align-items:center;width:100%}
   .herocol-art img,.herocol-art video{width:100%;display:block;border:3px solid var(--ink);box-shadow:14px 14px 0 var(--blue);aspect-ratio:16/9;object-fit:cover}
@@ -175,7 +186,7 @@
   /* beats — text in a solid panel for readability */
   .beat{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(40px,6vw,90px);align-items:center;margin-top:24px}
   .beat:nth-of-type(even) .txt{order:2}
-  .beat h3{font-weight:800;font-size:clamp(1.5rem,2.6vw,2.2rem);line-height:1.05;margin-bottom:18px}
+  .beat h3{font-size:var(--t-h3);line-height:1.05;margin-bottom:18px}
   .card{border:3px solid var(--ink);background:var(--paper);padding:32px;font-family:var(--mono);font-size:15px;
     font-weight:500;line-height:2;box-shadow:10px 10px 0 var(--pink)}
   .card.b2{box-shadow:10px 10px 0 var(--teal)}
@@ -345,7 +356,7 @@
     background:var(--paper);border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);padding:3px 7px;line-height:1.1;white-space:nowrap}
   .mstep-diag{display:flex;align-items:center;min-height:64px}
   .mstep-diag svg{width:clamp(56px,5vw,72px);height:auto;display:block}
-  .mstep h4{font-weight:800;font-size:clamp(1.1rem,1.5vw,1.35rem);line-height:1.06}
+  .mstep h4{font-weight:800;font-size:var(--t-h4);line-height:1.06}
   .mstep p{font-size:clamp(.86rem,1vw,.98rem);font-weight:470;line-height:1.46;color:var(--ink);margin:0}
   /* sequence connector — arrow sitting in the gap toward the next step */
   .mstep:not(:last-child)::after{content:"→";position:absolute;right:calc(-0.5 * clamp(14px,1.7vw,22px));top:50%;transform:translate(50%,-50%);
@@ -399,10 +410,7 @@
   .scene-note{margin-top:22px;font-family:var(--serif);font-size:clamp(1.1rem,1.6vw,1.35rem);line-height:1.5;max-width:60ch}
   .scene-note em{color:var(--teal);font-style:italic}
   /* #trace: keep within 100svh on short viewports */
-  #trace h2{font-size:clamp(1.55rem,2.6vw,2.4rem)}
-  #trace > .wrap > .body{font-size:clamp(.98rem,1.4vw,1.1rem);margin-top:8px}
   #trace .flow-wrap{margin:6px auto 14px}
-  #trace .scene-note{margin-top:14px;font-size:clamp(1rem,1.4vw,1.2rem)}
 
   /* ── provenance: poison stat + signed record ── */
   .prov-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:clamp(1rem,3vw,2.2rem);align-items:center;margin-top:24px}
@@ -410,7 +418,7 @@
   .prov-label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
   .prov-problem .prov-label{color:var(--pink)}
   .prov-answer .prov-label{color:var(--teal)}
-  .prov-stat{font-family:var(--serif);font-weight:700;font-size:clamp(2.6rem,6vw,4rem);line-height:1;letter-spacing:-.02em;color:var(--pink);margin-bottom:10px}
+  .prov-stat{font-family:var(--serif);font-weight:700;font-size:var(--t-stat);line-height:1;letter-spacing:-.02em;color:var(--pink);margin-bottom:10px}
   .prov-body{font-size:1rem;line-height:1.55;opacity:.8;max-width:42ch}
   .prov-body strong{font-weight:700;opacity:1}
   .prov-cite{font-family:var(--mono);font-size:11px;opacity:.55;margin-top:8px;letter-spacing:.04em}
@@ -460,7 +468,7 @@
   .creed-item:nth-child(odd){border-right:2px solid var(--ink)}
   .creed-item:nth-last-child(-n+2){border-bottom:none}
   .creed-item .cn{font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--pink);text-transform:uppercase}
-  .creed-item h3{font-family:var(--serif);font-weight:800;font-size:1.3rem;letter-spacing:-.01em;margin:8px 0 8px}
+  .creed-item h3{font-family:var(--serif);font-weight:800;font-size:var(--t-h3);letter-spacing:-.01em;margin:8px 0 8px}
   .creed-item p{font-size:.98rem;line-height:1.6;color:var(--muted)}
   .creed-item p b{color:var(--ink)}
   .creed-close{max-width:1080px;margin:26px auto 0;text-align:center;font-family:var(--serif);font-style:italic;font-size:1.15rem}
