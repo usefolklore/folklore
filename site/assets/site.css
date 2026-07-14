@@ -1047,6 +1047,6 @@ body.term-home #store{border-top:3px solid #0d0b08}
 
 @media(max-width:760px){
   .term-tb .ttabs{gap:2px}
-  .term-tb .ttabs a{padding:4px 7px;font-size:9.5px;white-space:nowrap}
-  .tbstars{display:none}
+  .term-tb .ttabs a{padding:4px 6px;font-size:9.5px;white-space:nowrap;display:inline-flex;align-items:center}
+  .tbstars{margin:0 1px;padding:1px 5px;font-size:9px}
 }
