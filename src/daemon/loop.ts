@@ -60,6 +60,7 @@ import {
   registerFetchProtocol,
   unregisterFetchProtocol,
 } from '../infrastructure/fetch-sync.js';
+import { recordServed } from '../infrastructure/contribution.js';
 import {
   registerRecallProtocol,
   unregisterRecallProtocol,
@@ -844,6 +845,7 @@ export const startLoop = async (deps: DaemonDeps): Promise<LoopHandle> => {
                 secretsPatterns: buildPatterns(cfgRes.value.security.secrets_patterns),
                 signSeed,
                 log: (m) => daemonLog(deps.homePath, m),
+                onServed: (peer, count, nodeIds) => recordServed(deps.homePath, { peer, kind: 'fetch', count, nodes: nodeIds }),
               });
               daemonLog(deps.homePath, `fetch protocol registered: /folklore/fetch/1.0.0`);
             } catch (e) {

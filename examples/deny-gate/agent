@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-# Thin launcher: pins the demo env so the filmed command is just `./agent "…"`.
-DIR="$(cd "$(dirname "$0")" && pwd)"
-export FOLKLORE_HOME="${FOLKLORE_HOME:-$DIR/.demo-home}"
-export FOLKLORE_DENY_THRESHOLD="${FOLKLORE_DENY_THRESHOLD:-0.85}"
-export FOLKLORE_DENY_MIN_HITS="${FOLKLORE_DENY_MIN_HITS:-2}"
-exec node "$DIR/agent.mjs" "$@"

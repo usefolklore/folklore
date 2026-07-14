@@ -34,6 +34,7 @@ ask + save (daily loop):
 
 federation (P2P):
   peer <sub>              add | remove | list | status | label — manage peers
+  live                    tail the served feed — watch peers pull from your tree
   share <peer-id>         share every non-private node with a peer (secrets-gated)
   unshare <peer-id>       revoke a prior share
   touch <peer-id>         one-shot pull of a peer's shared graph (redacted)

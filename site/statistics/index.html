@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Folklore statistics — each claim, on disk</title>
+<meta name="description" content="Benchmarked, not asserted: BEIR SciFact 0.7522 NDCG@10 on CPU, poison flip-ASR cut 24.8× by signed provenance, 90.2% cooperative cache hit, web fallback 17%→1%." />
+<meta name="theme-color" content="#f4ecd8" />
+<link rel="canonical" href="https://usefolklore.sh/statistics/" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Folklore statistics — each claim, on disk" />
+<meta property="og:description" content="Benchmarked, not asserted: BEIR SciFact 0.7522 NDCG@10 on CPU, poison flip-ASR cut 24.8× by signed provenance, 90.2% cooperative cache hit, web fallback 17%→1%." />
+<meta property="og:url" content="https://usefolklore.sh/statistics/" />
+<meta property="og:image" content="https://usefolklore.sh/assets/gen/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%231d1813"/><path d="M32 12.5 C34.2 18 39.6 22.6 40.9 29 C41.9 34.4 40.6 40.6 36.6 45.4 Q32 49.2 27.4 45.4 C23.4 40.6 22.1 34.4 23.1 29 C24.1 23.6 29.6 20.4 30.6 16.6 C31.1 15 31.6 13.8 32 12.5 Z" fill="%23ff4f6d"/><g stroke="%23f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="%23f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="%23f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg>' />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/site.css"/>
+</head>
+<body>
+<div class="grain"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="sun" viewBox="0 0 100 100"><g fill="currentColor"><circle cx="50" cy="50" r="22"/>
+    <g><rect x="47" y="2" width="6" height="16" rx="3"/><rect x="47" y="82" width="6" height="16" rx="3"/>
+    <rect x="2" y="47" width="16" height="6" rx="3"/><rect x="82" y="47" width="16" height="6" rx="3"/></g>
+    <g transform="rotate(45 50 50)"><rect x="47" y="2" width="6" height="16" rx="3"/><rect x="47" y="82" width="6" height="16" rx="3"/>
+    <rect x="2" y="47" width="16" height="6" rx="3"/><rect x="82" y="47" width="16" height="6" rx="3"/></g></g></symbol>
+  <symbol id="bird" viewBox="0 0 100 100"><path fill="currentColor" d="M8 60 q30-36 50-16 q10-24 26-10 q-7 8-16 9 q12 8 16 22 q-26-16-44-3 q-20 9-36-2 q14-3 18-11z"/></symbol>
+  <symbol id="flower" viewBox="0 0 100 100"><g fill="currentColor"><ellipse cx="50" cy="20" rx="11" ry="18"/><ellipse cx="50" cy="80" rx="11" ry="18"/>
+    <ellipse cx="20" cy="50" rx="18" ry="11"/><ellipse cx="80" cy="50" rx="18" ry="11"/>
+    <ellipse cx="29" cy="29" rx="10" ry="16" transform="rotate(45 29 29)"/><ellipse cx="71" cy="29" rx="10" ry="16" transform="rotate(-45 71 29)"/>
+    <ellipse cx="29" cy="71" rx="10" ry="16" transform="rotate(-45 29 71)"/><ellipse cx="71" cy="71" rx="10" ry="16" transform="rotate(45 71 71)"/></g>
+    <circle cx="50" cy="50" r="13" fill="var(--paper)"/><circle cx="50" cy="50" r="7" fill="currentColor"/></symbol>
+  <symbol id="moon" viewBox="0 0 100 100"><path fill="currentColor" d="M66 8 a44 44 0 1 0 0 84 a32 32 0 1 1 0-84z"/></symbol>
+  <symbol id="star" viewBox="0 0 100 100"><path fill="currentColor" d="M50 4 L62 38 L98 38 L69 60 L80 96 L50 74 L20 96 L31 60 L2 38 L38 38 Z"/></symbol>
+  <symbol id="fish" viewBox="0 0 100 100"><path fill="currentColor" d="M10 50 q26-26 58-12 q14 6 22 12 q-8 6-22 12 q-32 14-58-12z"/>
+    <path fill="currentColor" d="M86 36 q16 14 0 28 q-9-14 0-28z"/><circle cx="30" cy="48" r="5" fill="var(--paper)"/></symbol>
+  <symbol id="hand" viewBox="0 0 100 100"><path fill="currentColor" d="M34 92 V52 q-10-2-10-12 q0-8 8-8 q0-10 8-10 q2-8 9-8 q7 0 9 8 q8 0 8 10 q8 0 8 9 v20 q0 21-20 31z"/><circle cx="50" cy="48" r="9" fill="var(--paper)"/></symbol>
+</defs></svg>
+<header>
+  <div class="wrap head">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><g class="fl-o"><path d="M32 12.5 C34.2 18 39.6 22.6 40.9 29 C41.9 34.4 40.6 40.6 36.6 45.4 Q32 49.2 27.4 45.4 C23.4 40.6 22.1 34.4 23.1 29 C24.1 23.6 29.6 20.4 30.6 16.6 C31.1 15 31.6 13.8 32 12.5 Z" fill="#ff4f6d" stroke="#1d1813" stroke-width="2.4" stroke-linejoin="round"/></g><g class="fl-i"><path d="M32 30 C33 32.6 35.6 34.9 36.2 38 C36.7 40.6 36 43.5 34.2 45.2 Q32 46.7 29.8 45.2 C28 43.5 27.3 40.6 27.8 38 C28.3 35 30.9 32.7 31.4 31.3 C31.6 30.8 31.8 30.4 32 30 Z" fill="#f5b921"/></g><g stroke="#1d1813" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#1d1813"><circle cx="12" cy="38" r="4"/><path d="M5 52c0-4.5 3-7.5 7-7.5s7 3 7 7.5z"/></g><g fill="#1d1813"><circle cx="52" cy="38" r="4"/><path d="M45 52c0-4.5 3-7.5 7-7.5s7 3 7 7.5z"/></g></svg>
+      folklore
+    </a>
+    <nav class="hlinks">
+      <a href="/research">Research</a><a href="/whitepaper">Whitepaper</a>
+    </nav>
+    <a class="hcta" href="https://github.com/usefolklore/folklore">GitHub</a>
+    <details class="mnav">
+      <summary aria-label="Menu" role="button">☰</summary>
+      <div class="mnav-panel">
+        <a href="/research">Research</a><a href="/whitepaper">Whitepaper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+        <a class="cta" href="/#join">Install</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<main style="padding-top:76px">
+<section id="provenance" class="band-teal tx-grid">
+  <div class="wrap">
+    <div class="stamp rv">Chapter the Fourth & three-quarters — Provenance</div>
+    <h2 class="rv" data-d="1"><span class="mis" data-text="anonymous retrieval is a poisoning surface.">anonymous retrieval is a <span class="em-pink">poisoning surface.</span></span></h2>
+    <p class="body rv" data-d="1" style="font-size:1.1rem;opacity:.8;max-width:56ch">Every other AI memory feeds your model unsigned text from nowhere. Folklore signs every record by a verified human, so a model can refuse what it can't trace.</p>
+    <div class="prov-grid rv" data-d="1">
+      <div class="prov-problem">
+        <div class="prov-label">RAG's open wound</div>
+        <p class="prov-stat">5&nbsp;→&nbsp;97%</p>
+        <p class="prov-body"><strong>5 poisoned documents</strong> can hijack a retrieval system with a <strong>97% attack success rate</strong>. The model has no way to tell trustworthy context from an injected lie.</p>
+        <p class="prov-cite">PoisonedRAG, arXiv · Zou et al.</p>
+      </div>
+      <div class="prov-arrow" aria-hidden="true">
+        <svg viewBox="0 0 60 24" fill="none">
+          <line x1="4" y1="12" x2="48" y2="12" stroke="var(--teal)" stroke-width="2" stroke-dasharray="4 4"/>
+          <polyline points="42,5 52,12 42,19" stroke="var(--teal)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+      <div class="prov-answer">
+        <div class="prov-label">Folklore's answer</div>
+        <pre class="prov-record" aria-hidden="true">record {
+  signed_by: <span class="prov-hl">@verified-human</span>
+  identity:  ed25519 3a4b…
+  source:    arxiv.org/abs/…
+  fetched:   2026-06-09T…
+}</pre>
+        <p class="prov-stat">59%&nbsp;→&nbsp;2%</p>
+        <p class="prov-body"><strong>Signed by a verified GitHub identity</strong>, with an auditable chain: who curated it, what they grounded on, when. Provenance ranking keeps only signed gold and drops unsigned poison — cutting flip-ASR from <strong>58.9% to 2.4%</strong> (24.8&times;) on the displaced-poison matrix. Trust becomes a property the model can read.</p>
+        <p class="prov-cite">measured · Haiku agent, Opus judge · BEIR SciFact</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="proof" class="band-teal tx-grid">
+  <div class="wrap">
+    <div class="stamp rv">Chapter the Fifth — The Reckoning</div>
+    <h2 class="rv" data-d="1"><span class="mis" data-text="each claim, on disk.">each claim, <span class="em-pink">on disk.</span></span></h2>
+    <div class="ledger rv" data-d="1">
+      <div class="led"><div class="n" data-count="1039">0</div><div class="k">tests passing</div></div>
+      <div class="led"><div class="n" data-count="0.7522" data-dec="4">0</div><div class="k">BEIR SciFact NDCG@10</div></div>
+      <div class="led"><div class="n">+43<small>%</small></div><div class="k">recall@1, peer-shared</div></div>
+      <div class="led"><div class="n">11<small>ms</small></div><div class="k">median retrieval</div></div>
+      <div class="led"><div class="n">~140<small>ms</small></div><div class="k">federation-hit P50</div></div>
+      <div class="led"><div class="n">24.8<small>×</small></div><div class="k">poison flip-ASR cut · provenance rank</div></div>
+      <div class="led"><div class="n">9.1<small>×</small></div><div class="k">fewer paid web trips · 200k queries</div></div>
+      <div class="led"><div class="n">77<small>%</small></div><div class="k">fewer model-input tokens · transfer</div></div>
+      <div class="led"><div class="n">84.1<small>%</small></div><div class="k">web correctly denied · graph holds answer</div></div>
+      <div class="led"><div class="n">2.5<small>%</small></div><div class="k">false-deny rate · 0% on far-miss</div></div>
+      <div class="led"><div class="n">90.2<small>%</small></div><div class="k">cooperative cache hit · 64 peers (vs 18% alone)</div></div>
+      <div class="led"><div class="n">98.7<small>%</small></div><div class="k">stored-vector self-recall@5</div></div>
+    </div>
+    <div class="proofrow">
+    <div class="bars" id="bars">
+      <div class="bar me"><span class="nm">Folklore <small style="font-family:var(--mono);font-size:.62rem;font-weight:700;opacity:.6">CPU</small></span><span class="tr"><span class="fl" style="--w:75.2%"></span></span><span class="v">0.7522</span></div>
+      <div class="bar"><span class="nm">E5-base</span><span class="tr"><span class="fl" style="--w:73.7%"></span></span><span class="v">0.7370</span></div>
+      <div class="bar"><span class="nm">E5-large</span><span class="tr"><span class="fl" style="--w:72.3%"></span></span><span class="v">0.7230</span></div>
+      <div class="bar"><span class="nm">SPLADE</span><span class="tr"><span class="fl" style="--w:69.9%"></span></span><span class="v">0.6990</span></div>
+      <div class="bar"><span class="nm">ColBERT</span><span class="tr"><span class="fl" style="--w:67.1%"></span></span><span class="v">0.6710</span></div>
+      <div class="bar"><span class="nm">BM25</span><span class="tr"><span class="fl" style="--w:66.5%"></span></span><span class="v">0.6650</span></div>
+      <p class="bars-foot"># Folklore leads the CPU / production-grade retrievers. The overall top score is <b>InRanker-3b — 0.783</b>, a 3&nbsp;B-parameter GPU cross-encoder reranker (different weight class); it beats every CPU baseline here. Folklore claims the CPU lead, not the GPU crown.</p>
+    </div>
+    <div class="curve-wrap rv" data-d="1" aria-label="Web-fallback rate decays from 17% to 1% over 2000 queries as the graph compounds.">
+      <svg class="curve-chart" viewBox="0 0 420 270" aria-hidden="true">
+        <g stroke="var(--ink)" stroke-opacity=".12" stroke-width="1">
+          <line x1="44" y1="56.7" x2="400" y2="56.7"/>
+          <line x1="44" y1="111.1" x2="400" y2="111.1"/>
+          <line x1="44" y1="165.6" x2="400" y2="165.6"/>
+          <line x1="44" y1="220" x2="400" y2="220"/>
+        </g>
+        <line x1="44" y1="24" x2="44" y2="220" stroke="var(--ink)" stroke-opacity=".4" stroke-width="1"/>
+        <line x1="44" y1="220" x2="400" y2="220" stroke="var(--ink)" stroke-opacity=".4" stroke-width="1"/>
+        <g fill="var(--ink)" fill-opacity=".6" font-family="var(--mono)" font-size="9" text-anchor="end">
+          <text x="38" y="223">0%</text><text x="38" y="169">5%</text><text x="38" y="114">10%</text><text x="38" y="60">15%</text>
+        </g>
+        <g fill="var(--ink)" fill-opacity=".6" font-family="var(--mono)" font-size="9" text-anchor="middle">
+          <text x="44" y="236">0</text><text x="222" y="236">1000</text><text x="400" y="236">2000</text>
+        </g>
+        <polyline class="curve-line" fill="none" stroke="var(--pink)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" points="44,34.9 88.5,109.3 133,151.7 177.5,176.2 222,190.3 266.5,198.3 311,202.9 355.5,205.5 400,207"/>
+        <circle class="curve-dot d0" cx="44" cy="34.9" r="3.8" fill="var(--pink)"/>
+        <circle class="curve-dot d1" cx="400" cy="207" r="3.8" fill="var(--pink)"/>
+        <text class="curve-lbl" x="54" y="32" fill="var(--pink)" font-family="var(--mono)" font-size="11" font-weight="700">17%</text>
+        <text class="curve-lbl" x="392" y="200" fill="var(--pink)" font-family="var(--mono)" font-size="11" font-weight="700" text-anchor="end">1%</text>
+        <text x="222" y="258" fill="var(--ink)" fill-opacity=".5" font-family="var(--mono)" font-size="9" text-anchor="middle"># web-fallback rate · simulated · v1</text>
+      </svg>
+    </div>
+    </div>
+    <p class="body rv" style="margin-top:18px;font-size:.98rem;font-style:italic;opacity:.8;max-width:64ch">CPU-only retrieval, full stack (hybrid + cross-encoder + graph PPR), on full BEIR SciFact. Baselines are published BEIR SciFact NDCG@10 (BM25, ColBERT, SPLADE, E5) — Folklore leads the production-grade pack; a 3B GPU reranker (InRanker) tops it at 0.783. Poison-defense is real displaced-poison retrieval (Haiku agent, Opus judge). Compounding &amp; token figures are simulator-grade — the hundred-peer pilot is next.</p>
+  </div>
+</section>
+
+</main>
+<footer>
+  <div class="wrap foot">
+    <a href="/#demo">Demo</a>
+    <a href="/how-it-works/">How It Works</a>
+    <a href="/creed/">Creed</a>
+    <a href="/statistics/">Statistics</a>
+    <a href="/research">Research</a>
+    <a href="/compare">Compare</a>
+    <a href="/store">Store</a>
+    <a href="/blog">Blog</a>
+    <a href="/whitepaper">White Paper</a>
+    <a href="https://github.com/usefolklore/folklore/tree/main/docs/rfc">RFC</a>
+    <a href="https://github.com/usefolklore/folklore">GitHub</a>
+    <a href="/legal/terms">Terms</a>
+    <a href="/legal/privacy">Privacy</a>
+    <a href="/legal/refund">Refund</a>
+    <span class="r">MIT · signed by you · no central server</span>
+  </div>
+</footer>
+
+<script>
+document.documentElement.classList.add('has-js');
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(!e.isIntersecting)return;e.target.classList.add('in');
+  e.target.querySelectorAll?.('[data-count]').forEach(runCount);io.unobserve(e.target);
+}),{threshold:.2});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+function runCount(node){const dec=+(node.dataset.dec||0),end=parseFloat(node.dataset.count),dur=1200,t0=performance.now();
+  (function tick(t){const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3),v=end*e;
+   node.textContent=dec?v.toFixed(dec):Math.round(v);if(k<1)requestAnimationFrame(tick);})(t0);}
+const hdr=document.querySelector('header');
+addEventListener('scroll',()=>hdr.classList.toggle('scrolled',scrollY>24),{passive:true});
+</script>
+
+<script src="../assets/island.js" defer></script>
+</body>
+</html>

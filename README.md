@@ -8,7 +8,7 @@
 
 Every peer shares the inference it already paid for, so your agent starts from what the swarm has worked out — not from zero. Like BitTorrent, but the payload is reasoning: debug traces, papers read, dead-ends ruled out. The more agents join, the less anyone re-derives. Local-first and useful alone on day one; compounding the moment a second node appears.
 
-**[Site](https://usefolklore.com)** · **[Spec](docs/WHITEPAPER.md)** · **[RFC](docs/rfc/)** · **[Roadmap](docs/PROJECT-PLAN-FOLKLORE.md)** · **[npm](https://www.npmjs.com/package/@usefolklore/folklore)**
+**[Site](https://usefolklore.com)** · **[Manifesto](docs/MANIFESTO.md)** · **[Spec](docs/WHITEPAPER.md)** · **[RFC](docs/rfc/)** · **[Roadmap](docs/PROJECT-PLAN-FOLKLORE.md)** · **[npm](https://www.npmjs.com/package/@usefolklore/folklore)**
 
 ![tests](https://img.shields.io/badge/tests-942%20passing-brightgreen)
 ![BEIR SciFact NDCG@10](https://img.shields.io/badge/BEIR%20SciFact%20NDCG%4010-0.7522-blue)
@@ -20,9 +20,9 @@ Every peer shares the inference it already paid for, so your agent starts from w
 
 <br/>
 
-<img src="assets/federation-demo.gif" alt="bob's agent resolves an inference trace from a peer over P2P in ~1.3s — signature-verified and cached, zero web calls — then answers the same question locally the second time" width="860" />
+<img src="assets/folklore-desktop.gif" alt="One session, two directions: a question resolves from @sam-rs's tree in 412ms via the notch island, then @tia-async pulls your trace back — reputation ticking live in the menubar client" width="920" />
 
-<sub><b>The network resolves inference for you.</b> Bob's agent hits a question its own graph can't answer → folklore fans the query across connected peers, finds that a peer already ground out that exact trace, pulls it over P2P (<b>signature-verified, cached locally</b>), and answers in <b>~1.3s</b> — zero web calls, zero tokens of re-inference. Ask again → it's yours now, answered locally. <a href="examples/federation/">Reproduce it →</a><br/><br/>Peers find each other with <b>zero config</b> — one tracker URL, no <code>peer add</code>, no DHT — and knowledge propagates automatically: <a href="examples/network/">the discovery demo →</a><br/>And it works alone, offline, on day one — <a href="examples/deny-gate/">the self-graph deny gate →</a></sub>
+<sub><b>One session, two directions.</b> You ask — the answer is pulled from <code>@sam-rs</code>'s tree in <b>412ms, 0 web calls</b>. Moments later the flow reverses — <code>@tia-async</code> pulls <i>your</i> trace, reputation ticking live in the menubar client. Like torrents, but the payload is reasoning. <a href="examples/desktop-demo/">Reproduce it →</a></sub>
 
 </div>
 
@@ -71,6 +71,26 @@ Add a peer and your graphs become queryable to each other over libp2p. Now the f
 Every record carries a provenance chain: signed by its curator's cryptographic identity and verified GitHub handle, timestamped, traceable to the sources it grounded on. Not anonymous Stack-Overflow-grade trust — attributable, named, auditable knowledge.
 
 The result, measured in simulation: web fallback collapses from **17% to 1%** as the network warms.
+
+<div align="center">
+<img src="assets/live-feed-demo.gif" alt="folklore live: a real-time feed of peers pulling traces from your tree — @sam-rs pulled tokio-rc-send-across-await, @tia-async pulled axum-extractor-order, @leo-k pulled sqlx-offline-prepare, each from your tree just now" width="820" />
+
+<sub>Run <code>folklore live</code> and watch it happen: every line is a real fetch off your running node — someone else's agent reusing what yours already worked out. <a href="examples/live-feed/">Reproduce it →</a></sub>
+</div>
+
+---
+
+## Philosophy
+
+Folklore is a bet about *how intelligence should be organized*, not just a cache. The long version is the **[Manifesto](docs/MANIFESTO.md)**; the short version:
+
+**Reasoning is labor.** Every conclusion an agent reaches was paid for in tokens and electricity. An answer that dies with its context window is labor thrown into the sea — and every re-derivation of it is a tax, billed by the same few companies, for reasoning the world already owns.
+
+**Shared memory shrinks the model.** The industry's answer to every gap is a bigger model — more parameters, more inference, more dependence on the center. There is another axis: *remember more, infer less.* An agent that starts from the network's resolved reasoning needs fewer tokens to reach further. Shared memory is the road to smaller, local, decentralized models — intelligence at the edge, not rented from a landlord.
+
+**No big brother in the loop.** When one company hosts the memory, ranks the answers, and meters the reasoning, you are a tenant. Folklore has no landlord: your graph lives on your disk, your peers are chosen by you, every record is signed by a named hand instead of laundered through a platform. Local-first is sovereignty — if every peer but you vanished tonight, you'd lose nothing you made.
+
+**The commons compounds.** A torrent gets healthier with every seeder; so does this. Every question resolved anywhere becomes a question nobody pays for again. Serving the network and serving yourself are the same motion.
 
 ---
 
