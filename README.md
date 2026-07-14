@@ -20,9 +20,9 @@ Every peer shares the inference it already paid for, so your agent starts from w
 
 <br/>
 
-<img src="assets/folklore-desktop.gif" alt="One session, two directions: without folklore the same question burns 14 seconds of web search; with folklore it resolves from @sam-rs's tree in 412ms via the notch island, then @tia-async, @noah-go and @priya-rs pull your traces back — reputation ticking live in the menubar client" width="920" />
+<img src="assets/folklore-desktop.gif" alt="One session, two directions: a question resolves from @sam-rs's tree in 412ms via the notch island, then @tia-async pulls your trace back — reputation ticking live in the menubar client" width="920" />
 
-<sub><b>One session, two directions.</b> First the old way — the same question burning <b>14.2s of web search</b>. Then with folklore: pulled from <code>@sam-rs</code>'s tree in <b>412ms, 0 web calls</b>. Moments later the flow reverses — peers pull <i>your</i> traces, reputation ticking live in the menubar client. Like torrents, but the payload is reasoning. <a href="examples/desktop-demo/">Reproduce it →</a></sub>
+<sub><b>One session, two directions.</b> You ask — the answer is pulled from <code>@sam-rs</code>'s tree in <b>412ms, 0 web calls</b>. Moments later the flow reverses — <code>@tia-async</code> pulls <i>your</i> trace, reputation ticking live in the menubar client. Like torrents, but the payload is reasoning. <a href="examples/desktop-demo/">Reproduce it →</a></sub>
 
 </div>
 
