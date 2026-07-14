@@ -830,3 +830,35 @@ body.term-home #store{border-top:3px solid #0d0b08}
   .banner h1{font-size:2rem}
   .scene{padding-left:20px;padding-right:20px}
 }
+
+
+/* ── scene rhythm: stages breathe, transcript flows ── */
+.term .scene{min-height:0;padding:clamp(44px,7vh,90px) clamp(18px,5vw,64px)}
+.term .scene.stage{min-height:92svh;display:flex;align-items:center}
+.term .hero-scene{min-height:100svh}
+/* the session spine — every block hangs off the rail */
+.term .blk{position:relative;padding-left:32px}
+.term .blk::before{content:'';position:absolute;left:6px;top:30px;bottom:4px;width:2px;
+  background:linear-gradient(180deg, rgba(31,174,139,.55), rgba(31,174,139,.05))}
+.term .blk::after{content:'';position:absolute;left:0;top:7px;width:10px;height:10px;border-radius:50%;
+  background:#171310;border:2.5px solid var(--teal)}
+.term .blk.done::after{background:var(--teal);box-shadow:0 0 10px rgba(31,174,139,.5)}
+/* transcript sits larger, breathes less vertically */
+.term .oline{font-size:15px;line-height:1.75}
+.term .ocomment{font-size:14.5px}
+/* the punch — a composed centerpiece, not a floating headline */
+.punchwrap{position:relative;display:inline-block;padding:34px 56px 38px;margin-top:8px}
+.punchwrap::before{content:'';position:absolute;left:50%;top:0;transform:translateX(-50%);
+  width:64px;height:5px;background:var(--yellow);border:2px solid #0d0b08;box-shadow:3px 3px 0 rgba(0,0,0,.6)}
+.punchwrap .obig{font-size:clamp(2.2rem,5vw,4.2rem);text-align:center}
+.punchwrap .orn{position:absolute;width:56px;height:56px;pointer-events:none}
+.punchwrap .o1{top:2px;left:-16px;color:var(--yellow);transform:rotate(-14deg);opacity:.9}
+.punchwrap .o2{bottom:-6px;right:-22px;color:var(--pink);transform:rotate(10deg);opacity:.9}
+@media (prefers-reduced-motion:no-preference){
+  .punchwrap .o1{animation:ornspin 26s linear infinite}
+  @keyframes ornspin{to{transform:rotate(346deg)}}
+}
+.scene.center .swrap{justify-content:center}
+.scene.center .out{align-items:center}
+.scene.center .ocomment{text-align:center}
+@media(max-width:760px){.punchwrap{padding:28px 10px 30px}.punchwrap .orn{width:38px;height:38px}.punchwrap .o1{left:-6px}.punchwrap .o2{right:-8px}}
