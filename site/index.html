@@ -100,7 +100,66 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 <header>
   <div class="wrap head">
     <a class="brand" href="#top">
-      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><g class="fl-o">
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><g class="fl-o"><path d="M32 13C34.2 19 40 24 41 31c.8 6.6-1.2 12-5.4 14.6Q32 47.3 28.4 45.6C24.3 43 22.4 38 23.2 33s5.8-8.2 7-12.2c.6-2.4 1.3-5.2 1.8-7.8Z" fill="#ff4f6d" stroke="#1d1813" stroke-width="2.4" stroke-linejoin="round"/></g><g class="fl-i"><path d="M32 31c1 2.8 3.4 5.4 3.4 8.8 0 3.2-1.6 5-3.4 5.2-1.8-.2-3.4-2-3.4-5.2 0-3.4 2.4-6 3.4-8.8Z" fill="#f5b921"/></g><g stroke="#1d1813" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#1d1813"><circle cx="12" cy="38" r="4"/><path d="M5 52c0-4.5 3-7.5 7-7.5s7 3 7 7.5z"/></g><g fill="#1d1813"><circle cx="52" cy="38" r="4"/><path d="M45 52c0-4.5 3-7.5 7-7.5s7 3 7 7.5z"/></g></svg>
+      folklore
+    </a>
+    <nav class="hlinks">
+      <a href="/research">Research</a><a href="/whitepaper">Whitepaper</a>
+    </nav>
+    <a class="hcta" href="https://github.com/usefolklore/folklore">GitHub<span class="ghstars" id="gh-stars" hidden>★&nbsp;<b>—</b></span></a>
+    <details class="mnav">
+      <summary aria-label="Menu" role="button">☰</summary>
+      <div class="mnav-panel">
+        <a href="/research">Research</a><a href="/whitepaper">Whitepaper</a><a href="https://github.com/usefolklore/folklore">GitHub</a>
+        <a class="cta" href="#join">Install</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<a id="top"></a>
+<div class="term" id="top">
+<canvas class="term-embers" id="termEmbers" aria-hidden="true"></canvas>
+
+<!-- fixed terminal titlebar = the site chrome -->
+<div class="term-tb">
+  <span class="tl r"></span><span class="tl y"></span><span class="tl g"></span>
+  <a class="ttl" href="/">guest@folklore — ~/the-commons</a>
+  <nav class="ttabs">
+    <a href="/research">research</a>
+    <a href="/whitepaper">whitepaper</a>
+    <a class="gh" href="https://github.com/usefolklore/folklore">github ↗</a>
+  </nav>
+</div>
+
+<section class="scene hero-scene">
+  <div class="swrap">
+    <div class="blk" data-cmd="folklore">
+      <div class="cmd"><span class="pu">guest@commons</span><span class="pd">:~$</span> <span class="ctext"></span><span class="ccaret"></span></div>
+      <div class="out">
+        <div class="banner">
+          <svg class="sh-hearth" viewBox="0 0 64 64" aria-hidden="true">
+            <defs>
+              <linearGradient id="hgCard" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#2e261d"/><stop offset=".55" stop-color="#191410"/><stop offset="1" stop-color="#0a0805"/>
+              </linearGradient>
+              <radialGradient id="hgGlow" cx=".5" cy=".5" r=".5">
+                <stop offset="0" stop-color="#f5b921" stop-opacity=".35"/>
+                <stop offset=".55" stop-color="#ff6b47" stop-opacity=".14"/>
+                <stop offset=".8" stop-color="#ff4f6d" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="hgFlame" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ff4f6d"/><stop offset=".75" stop-color="#ff5a3d"/><stop offset="1" stop-color="#e8452f"/>
+              </linearGradient>
+              <linearGradient id="hgLog" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#cbbd9d"/><stop offset="1" stop-color="#8f7f5f"/>
+              </linearGradient>
+            </defs>
+            <rect width="64" height="64" rx="14" fill="url(#hgCard)"/>
+            <rect x=".8" y=".8" width="62.4" height="62.4" rx="13.4" fill="none" stroke="rgba(244,236,216,.1)" stroke-width="1.2"/>
+            <ellipse cx="32" cy="40" rx="16" ry="13" fill="url(#hgGlow)"/>
+            <ellipse cx="32" cy="54" rx="13" ry="3" fill="#f5b921" opacity=".11"/>
+            <g class="fl-o">
               <path d="M32 13C34.2 19 40 24 41 31c.8 6.6-1.2 12-5.4 14.6Q32 47.3 28.4 45.6C24.3 43 22.4 38 23.2 33s5.8-8.2 7-12.2c.6-2.4 1.3-5.2 1.8-7.8Z" fill="url(#hgFlame)"/>
               <circle cx="34.5" cy="11" r="1.2" fill="#f5b921" opacity=".85"/>
               <circle cx="31.5" cy="7.5" r=".8" fill="#ff4f6d" opacity=".7"/>
@@ -170,13 +229,13 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
       <div class="out">
         <div class="md" id="miniDemo" aria-label="Live demo: a question resolves from a peer's tree via the notch island, then a peer pulls a trace back from your tree">
           <div class="md-bar">
-            <span class="md-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0d0b08"/><g class="fl-o"><path d="M32 13C34.2 19 40 24 41 31c.8 6.6-1.2 12-5.4 14.6Q32 47.3 28.4 45.6C24.3 43 22.4 38 23.2 33s5.8-8.2 7-12.2c.6-2.4 1.3-5.2 1.8-7.8Z" fill="#ff4f6d"/><path d="M32 24c1.6 3.5 5.2 6.8 5.6 11.4.4 4.2-1.4 8-4.2 9.5Q32 45.6 30.6 44.9c-2.8-1.5-4.4-5.1-4-9.3.4-4.6 3.8-8 5.4-11.6Z" fill="#ff7a3d"/></g><g class="fl-i"><path d="M32 31c1 2.8 3.4 5.4 3.4 8.8 0 3.2-1.6 5-3.4 5.2-1.8-.2-3.4-2-3.4-5.2 0-3.4 2.4-6 3.4-8.8Z" fill="#f5b921"/><ellipse cx="32" cy="41.5" rx="2" ry="2.8" fill="#ffe9b0" opacity=".95"/></g><g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg> folklore</span>
+            <span class="md-brand"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0d0b08"/><g class="fl-o"><path d="M32 13C34.2 19 40 24 41 31c.8 6.6-1.2 12-5.4 14.6Q32 47.3 28.4 45.6C24.3 43 22.4 38 23.2 33s5.8-8.2 7-12.2c.6-2.4 1.3-5.2 1.8-7.8Z" fill="#ff4f6d"/></g><g class="fl-i"><path d="M32 31c1 2.8 3.4 5.4 3.4 8.8 0 3.2-1.6 5-3.4 5.2-1.8-.2-3.4-2-3.4-5.2 0-3.4 2.4-6 3.4-8.8Z" fill="#f5b921"/></g><g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg> folklore</span>
             <span class="md-mi">File</span><span class="md-mi">Network</span><span class="md-mi">Peers</span>
             <span class="md-clock">16:32</span>
           </div>
           <div class="md-notch" id="mdNotch">
             <div class="md-exp">
-              <svg class="md-fire" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#1d1813"/><g class="fl-o"><path d="M32 13C34.2 19 40 24 41 31c.8 6.6-1.2 12-5.4 14.6Q32 47.3 28.4 45.6C24.3 43 22.4 38 23.2 33s5.8-8.2 7-12.2c.6-2.4 1.3-5.2 1.8-7.8Z" fill="#ff4f6d"/><path d="M32 24c1.6 3.5 5.2 6.8 5.6 11.4.4 4.2-1.4 8-4.2 9.5Q32 45.6 30.6 44.9c-2.8-1.5-4.4-5.1-4-9.3.4-4.6 3.8-8 5.4-11.6Z" fill="#ff7a3d"/></g><g class="fl-i"><path d="M32 31c1 2.8 3.4 5.4 3.4 8.8 0 3.2-1.6 5-3.4 5.2-1.8-.2-3.4-2-3.4-5.2 0-3.4 2.4-6 3.4-8.8Z" fill="#f5b921"/><ellipse cx="32" cy="41.5" rx="2" ry="2.8" fill="#ffe9b0" opacity=".95"/></g><g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg>
+              <svg class="md-fire" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#1d1813"/><g class="fl-o"><path d="M32 13C34.2 19 40 24 41 31c.8 6.6-1.2 12-5.4 14.6Q32 47.3 28.4 45.6C24.3 43 22.4 38 23.2 33s5.8-8.2 7-12.2c.6-2.4 1.3-5.2 1.8-7.8Z" fill="#ff4f6d"/></g><g class="fl-i"><path d="M32 31c1 2.8 3.4 5.4 3.4 8.8 0 3.2-1.6 5-3.4 5.2-1.8-.2-3.4-2-3.4-5.2 0-3.4 2.4-6 3.4-8.8Z" fill="#f5b921"/></g><g stroke="#f4ecd8" stroke-width="3.2" stroke-linecap="round"><path d="M20 52 L44 47"/><path d="M20 47 L44 52"/></g><g fill="#f4ecd8"><circle cx="12" cy="38" r="4.5"/><path d="M4 53c0-5 3.5-8 8-8s8 3 8 8z"/></g><g fill="#f4ecd8"><circle cx="52" cy="38" r="4.5"/><path d="M44 53c0-5 3.5-8 8-8s8 3 8 8z"/></g></svg>
               <div class="md-txt">
                 <div class="md-kick" id="mdKick"><span class="md-dot"></span><span id="mdKickT">folklore</span></div>
                 <div class="md-flow" id="mdFlow"></div>
