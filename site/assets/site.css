@@ -1019,3 +1019,34 @@ body.term-home #store{border-top:3px solid #0d0b08}
 .ledger-scene .lcap,.ledger-scene .lrow span:last-child{color:var(--muted)}
 .ledger-scene .olink{color:var(--ink);border-color:rgba(29,24,19,.4)}
 .ledger-scene .olink:hover{color:var(--pink);border-color:var(--pink)}
+
+
+/* stars in the terminal github tab */
+.tbstars{display:inline-flex;align-items:center;gap:3px;margin:0 2px;padding:1px 7px;border-radius:999px;background:rgba(13,11,8,.35);font-size:10px}
+.tbstars b{font-weight:800;font-variant-numeric:tabular-nums}
+
+/* ── the demo, pocket-size: reflows on mobile instead of hiding ── */
+@media(max-width:760px){
+  .md{display:block;aspect-ratio:4/5;max-width:100%}
+  .md-mob{display:none}
+  .md-bar{height:26px;font-size:9.5px;gap:9px;padding:0 9px}
+  .md-mi{display:none}
+  .md-brand img{width:12px;height:12px}
+  .md-notch{width:96px;height:26px;border-radius:0 0 8px 8px}
+  .md-notch.open{width:min(300px,90%);height:72px;border-radius:0 0 14px 14px}
+  .md-exp{top:26px;gap:8px;padding:0 12px 5px}
+  .md-fire{width:24px;height:24px}
+  .md-kick{font-size:7.5px}
+  .md-flow{font-size:10px}
+  .md-win{left:4%;right:4%;width:auto;top:17%;bottom:5%}
+  .md-wbar{height:24px}
+  .md-wt{font-size:9px}
+  .md-wbody{font-size:11px;line-height:1.6;padding:10px 11px}
+  .md-wsl{font-size:8px;gap:5px;padding:0 8px}
+}
+
+@media(max-width:760px){
+  .term-tb .ttabs{gap:2px}
+  .term-tb .ttabs a{padding:4px 7px;font-size:9.5px;white-space:nowrap}
+  .tbstars{display:none}
+}

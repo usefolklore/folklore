@@ -134,7 +134,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
   <nav class="ttabs">
     <a href="/research">research</a>
     <a href="/whitepaper">whitepaper</a>
-    <a class="gh" href="https://github.com/usefolklore/folklore">github ↗</a>
+    <a class="gh" href="https://github.com/usefolklore/folklore">github <span class="tbstars" id="tb-stars" hidden>★ <b>—</b></span> ↗</a>
   </nav>
 </div>
 
@@ -246,7 +246,6 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
             <div class="md-wsl"><span class="md-fk">Folklore</span> · @you │ 91,418 nodes │ 6 peers │ <span id="mdRep">0 rep</span></div>
           </div>
         </div>
-        <p class="md-mob">the live demo plays on a bigger screen — <a href="https://github.com/usefolklore/folklore#readme">watch it on GitHub →</a></p>
         <p class="olegend">pull = <span class="t">teal</span> · serve = <span class="s">pink</span> · reproduce it: <a class="olink" href="https://github.com/usefolklore/folklore/tree/main/examples/desktop-demo">examples/desktop-demo</a></p>
       </div>
     </div>
@@ -593,12 +592,12 @@ function initMemeCarousel(){
   (mq.addEventListener?mq.addEventListener('change',apply):mq.addListener(apply));
 })();
 /* live GitHub stars in the nav CTA */
-(function(){var s=document.getElementById('gh-stars');if(!s)return;
+(function(){var s=document.getElementById('gh-stars'),s2=document.getElementById('tb-stars');if(!s&&!s2)return;
   fetch('https://api.github.com/repos/usefolklore/folklore',{headers:{Accept:'application/vnd.github+json'}})
    .then(function(r){return r.ok?r.json():null;})
    .then(function(d){if(!d||typeof d.stargazers_count!=='number')return;
      var n=d.stargazers_count,t=n>=1000?(n/1000).toFixed(1).replace(/\.0$/,'')+'k':String(n);
-     s.querySelector('b').textContent=t;s.hidden=false;})
+     [s,s2].forEach(function(el){if(el){el.querySelector('b').textContent=t;el.hidden=false;}});})
    .catch(function(){});})();
 
 </script>
@@ -728,7 +727,6 @@ function initMemeCarousel(){
 /* the demo, coded live: type → pull from a peer → serve a peer → loop */
 (function(){
   var md=document.getElementById('miniDemo'); if(!md) return;
-  if(matchMedia('(max-width: 760px)').matches) return;
   var reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   var notch=document.getElementById('mdNotch'), kickT=document.getElementById('mdKickT'),
       flow=document.getElementById('mdFlow'), term=document.getElementById('mdTerm'),
