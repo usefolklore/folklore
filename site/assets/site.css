@@ -704,7 +704,7 @@ body.term-home .depth,body.term-home .grain{display:none}
 
 /* scenes — each command is a staged moment */
 .scene{position:relative;z-index:2;padding:clamp(70px,12vh,150px) clamp(18px,5vw,64px);background:transparent}
-.scene .swrap{max-width:1100px;margin:0 auto}
+.scene .swrap{max-width:1100px;margin:0 auto;width:100%}
 .scene.center .swrap{display:flex;justify-content:center}
 .scene.center .blk{text-align:left}
 .scene.wide .swrap{max-width:1180px}
@@ -975,3 +975,28 @@ body.term-home #store{border-top:3px solid #0d0b08}
   font-weight:800;font-size:13px;letter-spacing:.16em;color:var(--teal);
   border:2.5px solid var(--teal);border-radius:4px;padding:4px 10px;transform:rotate(-4deg);flex:0 0 auto;
 }
+
+
+/* ── chapter contrast: scenes are different rooms ── */
+.scene.band-deep{background:#0d0b08;border-top:1px solid rgba(244,236,216,.07);border-bottom:1px solid rgba(244,236,216,.07)}
+.scene.band-lift{background:#211a13;border-top:1px solid rgba(244,236,216,.09);border-bottom:1px solid rgba(244,236,216,.09)}
+.scene.band-deep[data-tint]::before,.scene.band-lift[data-tint]::before{mix-blend-mode:screen}
+
+/* ── the demo, dominant ── */
+.demo-scene .out{align-items:center;width:100%}
+.md{max-width:1180px;border-width:3px;border-radius:16px;box-shadow:0 40px 90px -30px rgba(0,0,0,.8)}
+.md-bar{height:38px;font-size:13px;padding:0 16px;gap:18px}
+.md-brand svg{width:19px;height:19px}
+.md-notch{width:170px;height:38px;border-radius:0 0 12px 12px}
+.md-notch.open{width:min(520px,80%);height:110px;border-radius:0 0 22px 22px}
+.md-exp{top:38px;gap:12px;padding:0 20px 8px}
+.md-fire{width:40px;height:40px;border-radius:11px}
+.md-kick{font-size:10.5px;margin-bottom:3px}
+.md-flow{font-size:13.5px}
+.md-win{left:5%;top:16%;width:60%;bottom:8%;border-radius:11px}
+.md-wbar{height:30px;gap:6px;padding:0 12px}
+.md-l{width:10px;height:10px}
+.md-wt{font-size:11px}
+.md-wbody{font-size:13px;line-height:1.7;padding:14px 16px}
+.md-caret{width:8px;height:14px}
+.md-wsl{height:26px;font-size:10.5px;gap:8px;padding:0 12px}
