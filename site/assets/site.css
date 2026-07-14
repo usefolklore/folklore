@@ -472,17 +472,18 @@
   position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:90;
   background:#000;color:var(--paper);
   border-radius:0 0 16px 16px;
-  width:224px;height:56px;overflow:hidden;white-space:nowrap;
+  width:200px;height:56px;overflow:hidden;white-space:nowrap;
   transition:width .5s cubic-bezier(.32,.9,.28,1.05), height .5s cubic-bezier(.32,.9,.28,1.05), border-radius .5s, box-shadow .5s;
   pointer-events:none;
 }
-.isl.open{width:min(560px,92vw);height:150px;border-radius:0 0 28px 28px;
+.isl.open{width:min(540px,92vw);height:132px;border-radius:0 0 26px 26px;
   box-shadow:0 26px 50px -18px rgba(0,0,0,.65)}
 .isl::before,.isl::after{content:'';position:absolute;top:0;width:9px;height:9px}
 .isl::before{left:-9px;background:radial-gradient(circle at 0 100%, transparent 8.5px, #000 9px)}
 .isl::after{right:-9px;background:radial-gradient(circle at 100% 100%, transparent 8.5px, #000 9px)}
 /* strip — always visible, lives inside the bar */
-.isl-strip{height:56px;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 16px}
+.isl-strip{height:56px;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 16px;transition:opacity .22s}
+.isl.open .isl-strip{opacity:0}
 .isl-strip .isl-fire{width:26px;height:26px;border-radius:8px;background:#1d1813;padding:2px;flex:0 0 auto}
 .isl-strip .isl-mini{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.06em;color:var(--paper)}
 .isl-strip .isl-mini b{color:var(--yellow)}
@@ -490,12 +491,12 @@
 /* expanded zone — drops below the bar line, like the demo */
 .isl-exp{
   position:absolute;top:56px;left:0;right:0;bottom:0;
-  display:flex;align-items:center;gap:14px;padding:0 24px 10px;
+  display:flex;align-items:center;gap:14px;padding:0 26px 12px;
   opacity:0;transform:translateY(5px);
   transition:opacity .3s .13s, transform .3s .13s;
 }
 .isl.open .isl-exp{opacity:1;transform:none}
-.isl-exp .isl-fire{flex:0 0 auto;width:48px;height:48px;border-radius:12px;background:#1d1813;padding:4px;
+.isl-exp .isl-fire{flex:0 0 auto;width:44px;height:44px;border-radius:12px;background:#1d1813;padding:4px;
   border:1px solid rgba(31,174,139,.4)}
 .isl.serve .isl-exp .isl-fire{border-color:rgba(255,79,109,.4)}
 .isl.join .isl-exp .isl-fire{border-color:rgba(245,185,33,.4)}
