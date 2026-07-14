@@ -493,7 +493,7 @@
 /* strip — always visible, lives inside the bar */
 .isl-strip{height:32px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 12px;transition:opacity .22s}
 .isl.open .isl-strip{opacity:0}
-.isl-strip .isl-fire{width:20px;height:20px;border-radius:6px;background:#1d1813;padding:2px;flex:0 0 auto}
+.isl-strip .isl-fire{width:20px;height:20px;border-radius:6px;flex:0 0 auto}
 .isl-strip .isl-mini{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--paper)}
 .isl-strip .isl-mini b{color:var(--yellow)}
 .isl-strip .idot{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 0 rgba(31,174,139,.55);animation:islpulse 1.6s infinite;flex:0 0 auto}
@@ -505,8 +505,7 @@
   transition:opacity .3s .13s, transform .3s .13s;
 }
 .isl.open .isl-exp{opacity:1;transform:none}
-.isl-exp .isl-fire{flex:0 0 auto;width:32px;height:32px;border-radius:12px;background:#1d1813;padding:4px;
-  border:1px solid rgba(31,174,139,.4)}
+.isl-exp .isl-fire{flex:0 0 auto;width:32px;height:32px;border-radius:9px;border:1px solid rgba(31,174,139,.4)}
 .isl.serve .isl-exp .isl-fire{border-color:rgba(255,79,109,.4)}
 .isl.join .isl-exp .isl-fire{border-color:rgba(245,185,33,.4)}
 .isl-exp .isl-txt{min-width:0;display:flex;flex-direction:column;gap:3px}
@@ -783,7 +782,7 @@ body.term-home #store{border-top:3px solid #0d0b08}
 .md-exp{position:absolute;top:30px;left:0;right:0;bottom:0;display:flex;align-items:center;gap:10px;padding:0 16px 6px;
   opacity:0;transform:translateY(4px);transition:opacity .3s .12s, transform .3s .12s}
 .md-notch.open .md-exp{opacity:1;transform:none}
-.md-fire{flex:0 0 auto;width:32px;height:32px;border-radius:9px;border:1px solid rgba(31,174,139,.4);background:#1d1813;padding:2px}
+.md-fire{flex:0 0 auto;border:1px solid rgba(31,174,139,.4)}
 .md-notch.serve .md-fire{border-color:rgba(255,79,109,.4)}
 .md-txt{min-width:0}
 .md-kick{font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);display:flex;align-items:center;gap:5px;margin-bottom:2px}
@@ -988,11 +987,11 @@ body.term-home #store{border-top:3px solid #0d0b08}
 .md-bar{height:38px;font-size:13px;padding:0 16px;gap:18px}
 .md-brand svg{width:19px;height:19px}
 .md-notch{width:170px;height:38px;border-radius:0 0 12px 12px}
-.md-notch.open{width:min(520px,80%);height:110px;border-radius:0 0 22px 22px}
-.md-exp{top:38px;gap:12px;padding:0 20px 8px}
-.md-fire{width:40px;height:40px;border-radius:11px}
-.md-kick{font-size:10.5px;margin-bottom:3px}
-.md-flow{font-size:13.5px}
+.md-notch.open{width:min(340px,60%);height:84px;border-radius:0 0 18px 18px}
+.md-exp{top:38px;gap:9px;padding:0 14px 6px}
+.md-fire{width:28px;height:28px;border-radius:8px}
+.md-kick{font-size:8.5px;margin-bottom:2px}
+.md-flow{font-size:11px}
 .md-win{left:5%;top:16%;width:60%;bottom:8%;border-radius:11px}
 .md-wbar{height:30px;gap:6px;padding:0 12px}
 .md-l{width:10px;height:10px}
