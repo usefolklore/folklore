@@ -748,6 +748,54 @@ body.term-home .depth,body.term-home .grain{display:none}
 .hero-scene .swrap{width:100%}
 .last-scene{padding-bottom:clamp(120px,18vh,220px)}
 
+/* ─────────────────────────────────────────────────────────────
+   FADED SCENE ART — the folk clips return as ghosts.
+   Background only: masked so the art dissolves into the charcoal on
+   every edge — no hard cut — and never crosses the reading column.
+   Motion is a slow ken-burns drift — transform/opacity only.
+   ───────────────────────────────────────────────────────────── */
+.scene>.swrap{position:relative;z-index:1}   /* the reading stays above the art */
+.scene-art{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.scene-art .art-frame{position:absolute;overflow:hidden;line-height:0;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-size:100% 100%;mask-size:100% 100%}
+.scene-art .art-media{width:100%;height:100%;object-fit:cover;display:block;
+  opacity:0;transform:scale(1.04);
+  animation:art-fade 1.6s cubic-bezier(.16,1,.3,1) both,
+            art-drift 48s ease-in-out 1.6s infinite alternate;
+  will-change:transform,opacity}
+@keyframes art-fade{to{opacity:var(--art-op,.24)}}
+@keyframes art-drift{
+  from{transform:scale(1.04) translate3d(0,0,0)}
+  to{transform:scale(1.1) translate3d(0,1.4%,0)}}
+
+/* hero — the fire clip bled in from the right, dissolving on every edge.
+   Masks are literal (no var) so WebKit/Safari renders the fade too. */
+.art-right .art-frame{top:-12%;right:-4%;width:min(54%,760px);height:124%;
+  -webkit-mask-image:radial-gradient(115% 88% at 88% 50%,#000 6%,rgba(0,0,0,.6) 40%,transparent 74%);
+  mask-image:radial-gradient(115% 88% at 88% 50%,#000 6%,rgba(0,0,0,.6) 40%,transparent 74%)}
+
+/* the commons gathering behind "light your fire" — fills the scene and
+   dissolves into charcoal at BOTH the top and the bottom (a soft band),
+   so there is no hard edge anywhere. */
+.art-bottom .art-frame{inset:0;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.28) 18%,#000 44%,rgba(0,0,0,.45) 70%,transparent 93%);
+  mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.28) 18%,#000 44%,rgba(0,0,0,.45) 70%,transparent 93%)}
+.art-bottom .art-media{object-position:50% 66%}
+
+/* a soft charcoal scrim so text keeps contrast over the art */
+.scene-art::after{content:'';position:absolute;inset:0}
+.scene-art.scrim-r::after{background:linear-gradient(270deg,rgba(23,19,16,.66),rgba(23,19,16,.24) 48%,transparent 74%)}
+
+@media(prefers-reduced-motion:reduce){
+  .scene-art .art-media{animation:art-fade 1.6s ease both}
+}
+@media(max-width:760px){
+  .scene-art .art-media{animation:art-fade-m 1.6s ease both}
+  @keyframes art-fade-m{to{opacity:calc(var(--art-op,.24) * .62)}}
+  .art-right .art-frame{width:min(68%,520px)}
+}
+
 /* hero moment */
 .banner{display:flex;gap:clamp(18px,3vw,34px);align-items:center;flex-wrap:wrap}
 .sh-hearth{width:clamp(72px,9vw,120px);height:auto;flex:0 0 auto;border-radius:22px;
