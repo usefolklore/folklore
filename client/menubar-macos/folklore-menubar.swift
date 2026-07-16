@@ -13,6 +13,7 @@
 // Build: ./build.sh  → folklore.app (see README).
 
 import AppKit
+import Darwin
 import Foundation
 
 // MARK: - Paths
@@ -113,12 +114,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var timer: Timer?
     private var snap = Snapshot()
+    private var island: ActivityIslandController?
+    private var previewSignal: DispatchSourceSignal?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
+        if ProcessInfo.processInfo.environment["FOLKLORE_ISLAND"] != "0" {
+            island = ActivityIslandController()
+            signal(SIGUSR1, SIG_IGN)
+            let source = DispatchSource.makeSignalSource(signal: SIGUSR1, queue: .main)
+            source.setEventHandler { [weak self] in self?.island?.preview() }
+            source.resume()
+            previewSignal = source
+        }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(screenParametersChanged),
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: nil
+        )
         rebuild()
         refreshProbe()
         // Refresh every 4s while the app lives — cheap (mtime-memoised graph read).
@@ -129,11 +146,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func applyIcon() {
         guard let button = statusItem.button else { return }
         let up = snap.daemon == "on"
-        let name = up ? "point.3.connected.trianglepath.dotted" : "network.slash"
-        let cfg = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
-        let img = NSImage(systemSymbolName: name, accessibilityDescription: "folklore")?
-            .withSymbolConfiguration(cfg)
-        img?.isTemplate = true
+        let fallback = NSImage(systemSymbolName: up ? "flame.fill" : "flame", accessibilityDescription: "folklore")?
+            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 15, weight: .regular))
+        fallback?.isTemplate = true
+        let img = folkloreMenuImage() ?? fallback
         button.image = img
         button.appearsDisabled = !up
     }
@@ -141,6 +157,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // Rebuilt from the latest snapshot on every open + timer tick.
     func rebuild() {
         snap = loadSnapshot()
+        island?.update(snap)
         applyIcon()
         guard let menu = statusItem.menu else { return }
         menu.removeAllItems()
@@ -173,6 +190,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Windows into the node.
         menu.addItem(action("Open Live Feed", #selector(openLiveFeed)))
         menu.addItem(action("Open Graph", #selector(openGraph)))
+        if island != nil {
+            menu.addItem(action("Preview Activity Island", #selector(previewIsland)))
+        }
 
         menu.addItem(.separator())
 
@@ -190,6 +210,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) { rebuild() }
+
+    @objc private func screenParametersChanged() {
+        island?.screenParametersChanged()
+    }
 
     // MARK: item builders
 
@@ -238,6 +262,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             NSWorkspace.shared.open(URL(fileURLWithPath: p))
         }
     }
+
+    @objc private func previewIsland() { island?.preview() }
 
     @objc private func openSettings() {
         let p = (folkloreHome as NSString).appendingPathComponent("config.yaml")

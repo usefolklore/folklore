@@ -42,10 +42,74 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # ghcr rejects uppercase repository names. `github.repository` carries the
+      # owner's casing verbatim, which is what broke every release to date:
+      #   invalid tag "ghcr.io/SaharBarak/akashik:v5.0.0" — must be lowercase
+      - name: Lowercase image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
       - uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-            ghcr.io/${{ github.repository }}:latest
+            ${{ env.IMAGE }}:${{ github.ref_name }}
+            ${{ env.IMAGE }}:latest
+
+  # The menubar app users actually download. Universal so it runs on Intel too.
+  release-macos:
+    runs-on: macos-14
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Build folklore.app (universal)
+        run: ./client/menubar-macos/build.sh --universal
+
+      - name: Verify the bundle is universal and launchable
+        run: |
+          set -euo pipefail
+          APP=client/menubar-macos/build/folklore.app
+          BIN="$APP/Contents/MacOS/folklore"
+          test -d "$APP" || { echo "::error::no app bundle produced"; exit 1; }
+          archs=$(lipo -archs "$BIN")
+          echo "architectures: $archs"
+          for want in arm64 x86_64; do
+            case "$archs" in *"$want"*) ;; *) echo "::error::missing $want"; exit 1 ;; esac
+          done
+          codesign --verify --deep --strict --verbose=2 "$BIN"
+
+      - name: Zip the bundle
+        run: |
+          cd client/menubar-macos/build
+          # ditto (not `zip`) so bundle metadata and symlinks survive the round trip.
+          ditto -c -k --keepParent folklore.app folklore-macos.zip
+          shasum -a 256 folklore-macos.zip | tee folklore-macos.zip.sha256
+
+      - name: Attach to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            client/menubar-macos/build/folklore-macos.zip
+            client/menubar-macos/build/folklore-macos.zip.sha256
+          # The app is unsigned: no Apple Developer ID on this project yet, so it
+          # cannot be notarized. `brew install --cask` clears the quarantine flag;
+          # a raw download needs the System Settings → Privacy & Security prompt.
+          body: |
+            ## folklore ${{ github.ref_name }}
+
+            **macOS menubar app** — download `folklore-macos.zip`, unzip, drag to Applications.
+
+            The app is a companion to the CLI, so install that first:
+
+            ```
+            npm install -g @usefolklore/folklore
+            ```
+
+            This build is **not notarized** (no Apple Developer ID yet). On first
+            open macOS will block it — allow it under
+            System Settings → Privacy & Security → *Open Anyway*.
+          fail_on_unmatched_files: true

@@ -625,6 +625,43 @@ html{scroll-behavior:smooth}
 .sh-install .d{color:var(--pink);font-weight:700}
 .sh-install .copy{margin-left:auto;cursor:pointer;background:var(--yellow);color:var(--ink);border:2px solid #0d0b08;
   font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px}
+/* ── download — the last block of the session ──
+   Lives inside .term, so it speaks mono and ink like the rest of the shell.
+   Two routes, never three: the command that works, and the ways around it. */
+.dl{display:flex;flex-direction:column;gap:13px;width:min(680px,100%)}
+/* The command, the version and the copy button don't fit one line on a 375px
+   phone. Let the row wrap, but keep the prompt glued to the command it belongs
+   to — wrapping them apart strands a lone `$` on its own line. */
+.dl .sh-install{width:100%;flex-wrap:wrap;row-gap:9px}
+.dl .dl-line{flex:1 1 auto;min-width:0}
+.dl-ver{margin-left:10px;padding:2px 7px;border:1px solid #3a3127;background:#0d0b08;
+  color:var(--teal);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+/* The download itself — the one thing this section exists to do, so it gets the
+   yellow and the weight. Everything under it is a footnote to this button. */
+.dl-get{display:flex;align-items:center;gap:15px;padding:16px 20px;width:100%;
+  border:3px solid var(--ink);background:var(--yellow);color:var(--ink);
+  box-shadow:6px 6px 0 rgba(0,0,0,.85);transition:transform .12s,box-shadow .12s,background .12s}
+.dl-get:hover{transform:translate(-1px,-1px);box-shadow:8px 8px 0 rgba(0,0,0,.85);background:#ffc93f}
+.dl-get:active{transform:translate(3px,3px);box-shadow:2px 2px 0 rgba(0,0,0,.85)}
+.dl-get-mark{width:30px;height:30px;flex:none}
+.dl-get-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dl-get-txt b{font-family:var(--mono);font-size:16px;font-weight:800;letter-spacing:.02em}
+.dl-get-txt i{font-family:var(--mono);font-size:10.5px;font-weight:600;font-style:normal;
+  letter-spacing:.05em;color:rgba(29,24,19,.68)}
+.dl-get-arrow{margin-left:auto;flex:none;font-family:var(--mono);font-size:20px;font-weight:800;
+  transition:transform .16s cubic-bezier(.16,1,.3,1)}
+.dl-get:hover .dl-get-arrow{transform:translateY(3px)}
+@media(prefers-reduced-motion:reduce){.dl-get,.dl-get-arrow{transition:none}}
+
+/* The CLI the app talks to. Secondary to the button, but not optional — an app
+   without the node behind it does nothing, so it can't be hidden away. */
+.dl-need{display:flex;flex-direction:column;gap:8px}
+.dl-need-t{font-family:var(--mono);font-size:11px;line-height:1.5;color:#8a7c62}
+.dl-fine{font-family:var(--mono);font-size:10.5px;line-height:1.6;color:#5c5142}
+.dl-fine b{color:#8a7c62;font-weight:700}
+.dl-fine a{color:var(--yellow);font-weight:700}
+.dl-fine a:hover{color:var(--pink)}
+
 .blk video{width:100%;max-width:880px;display:block;border:2px solid #3a3127;border-radius:10px;background:#0d0b08}
 .shell .cascade{margin:0;font-size:clamp(.8rem,.95vw,1rem)}
 .shell .cascade .e{color:#5c5142}
