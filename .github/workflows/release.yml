@@ -21,11 +21,21 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
 
+      # Trusted publishing (OIDC) needs npm >= 11.5.1; node 22 still bundles
+      # npm 10, and without this the CLI silently falls back to looking for a
+      # token and fails with ENEEDAUTH — which is what has happened on every
+      # release so far.
+      - run: npm install -g npm@latest
+
       - run: npm ci
       - run: npm run build
-      - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # No NPM_TOKEN. The package authenticates by OIDC against the trusted
+      # publisher configured on npmjs.com (repo + this workflow filename), using
+      # the `id-token: write` permission above. Short-lived and unextractable,
+      # where a long-lived token can leak — and npm is deprecating token 2FA
+      # bypass anyway. `--provenance` is implied by trusted publishing.
+      - run: npm publish --access public
 
   publish-docker:
     runs-on: ubuntu-latest
