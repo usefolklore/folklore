@@ -7,7 +7,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# Full install, not --omit=dev: `npm run build` below needs tsc, a devDependency.
+# Omitting dev deps here is what broke the image with `tsc: not found`.
+RUN npm ci
 
 COPY . .
 RUN npm run build
