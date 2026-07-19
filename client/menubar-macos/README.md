@@ -147,10 +147,20 @@ notch (not a card floating below it), content lives in the two wings beside the
 camera plus a body below, and it expands and collapses on one spring. `Brand` in
 `activity-island.swift` is the single source of colour truth.
 
-Colour is drawn from `.term` in `site/assets/site.css` — surface `#171310` (never
-`#000`, which reads as a hole punched in a warm palette), paper `#f4ecd8`, and one
-accent per direction: teal for a trace pulled in, pink for one served out, yellow
-for a local match.
+The surface is **near-black** (`#050505`), not the site's warm charcoal. This is
+deliberate and non-negotiable: on a notched Mac the panel's top edge sits at the
+screen top over the physical camera cutout, and only a near-black surface merges
+with that cutout and the bezel so the panel reads as the notch growing a chin.
+boring.notch fills pure `.black` for exactly this reason; a warm surface makes it
+look like a coloured card stuck beside the notch (it did). The brand lives in the
+accents — teal pulled in, pink served out, yellow local match — the paper text
+(`#f4ecd8`), and the logo, never the surface.
+
+The notch geometry matches the reference implementations: notch width =
+`screen.frame.width − auxiliaryTopLeftArea.width − auxiliaryTopRightArea.width + 4`,
+height = `safeAreaInsets.top`, panel centered with its top at the screen top. No
+fake camera notch is drawn — the physical cutout is real, and the black chin
+hangs off it.
 
 - **Type is the system font.** Everything is SF Pro (`.systemFont`), with
   `.monospacedDigitSystemFont` for aligned numbers only. An earlier version set

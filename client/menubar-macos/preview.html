@@ -73,16 +73,13 @@
       height: var(--compact-height);
       overflow: hidden;
       transform: translateX(-50%);
-      /* Same recipe as `.term` on the site: warm charcoal, never #000, lit by a
-         yellow wash off the top-right and a pink one off the bottom-left. */
-      border: 1px solid rgba(244, 236, 216, .07);
-      border-top: 0;
+      /* Near-black to merge with the physical notch and bezel — this is what
+         makes it read as the notch growing, not a coloured card. A warm surface
+         was the reason it looked fake. Brand lives in the accents + logo. */
+      border: 0;
       border-radius: 0 0 14px 14px;
-      background:
-        radial-gradient(90% 60% at 78% -5%, rgba(245, 185, 33, .07), transparent 60%),
-        radial-gradient(80% 70% at 10% 108%, rgba(255, 79, 109, .06), transparent 60%),
-        #171310;
-      box-shadow: 0 14px 34px rgba(0, 0, 0, .22);
+      background: #050505;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, .3);
       cursor: default;
       transition:
         width 360ms cubic-bezier(.16, .84, .2, 1.08),

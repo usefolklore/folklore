@@ -142,9 +142,15 @@ private enum Brand {
     static let yellow = NSColor(hex: 0xf5b921)
     static let teal = NSColor(hex: 0x1fae8b)
 
-    /// The `.term` surface — warm charcoal, never #000. Pure black next to a
-    /// paper-toned brand reads as a hole in the screen.
-    static let surface = NSColor(hex: 0x171310)
+    /// Near-black, to merge with the physical notch and the bezel — this is what
+    /// makes the panel read as the notch growing a chin rather than a coloured
+    /// card stuck beside it. boring.notch fills pure `.black` for exactly this;
+    /// the brand lives in the accents and the logo, not the surface. A warm
+    /// charcoal here (the old #171310) was the single reason it looked fake.
+    static let surface = NSColor(hex: 0x050505)
+    /// A hair warmer, for the expanded body only — far enough below the notch
+    /// line that it can carry a whisper of brand without breaking the merge.
+    static let surfaceBody = NSColor(hex: 0x0e0b09)
     /// `.term-tb .ttl` — muted paper for secondary text.
     static let paperMuted = NSColor(hex: 0xc9bda1)
     /// `.cmd .pd` — the dimmest legible step.
@@ -401,10 +407,6 @@ private func islandPath(in rect: NSRect, expansion t: CGFloat, hasNotch: Bool) -
 /// CPU does nothing per frame.
 final class IslandBackdrop: CALayer {
     private let shape = CAShapeLayer()
-    private let washes = CALayer()
-    private let washMask = CAShapeLayer()
-    private let washYellow = CAGradientLayer()
-    private let washPink = CAGradientLayer()
 
     var compactRect: NSRect = .zero
     var expandedRect: NSRect = .zero
@@ -413,24 +415,16 @@ final class IslandBackdrop: CALayer {
 
     override init() {
         super.init()
+        // Near-black, no washes. A coloured wash would tint the surface and break
+        // the merge with the physical notch — the whole point is that this reads
+        // as an extension of the notch, not a card. On a notched screen the top
+        // edge sits at y=0 and the physical camera cutout provides the "notch";
+        // this black chin hangs off it. No border on the notched shape (a hairline
+        // would draw a visible seam where the chin meets the bezel); non-notch
+        // gets a faint edge so the free-floating pill reads against the wallpaper.
         shape.fillColor = Brand.surface.cgColor
         shape.lineWidth = 1
         addSublayer(shape)
-
-        for wash in [washYellow, washPink] {
-            wash.type = .radial
-            wash.startPoint = CGPoint(x: 0.5, y: 0.5)
-            wash.endPoint = CGPoint(x: 1, y: 1)
-            washes.addSublayer(wash)
-        }
-        washYellow.colors = [Brand.yellow.withAlphaComponent(0.07).cgColor,
-                             Brand.yellow.withAlphaComponent(0).cgColor]
-        washPink.colors = [Brand.pink.withAlphaComponent(0.06).cgColor,
-                           Brand.pink.withAlphaComponent(0).cgColor]
-        // Same recipe as `.term` in site.css — a yellow wash off the top-right and
-        // a pink one off the bottom-left, clipped to the island.
-        washes.mask = washMask
-        addSublayer(washes)
     }
 
     override init(layer: Any) { super.init(layer: layer) }
@@ -446,40 +440,22 @@ final class IslandBackdrop: CALayer {
         )
     }
 
-    private func washFrame(_ unit: CGPoint, _ radius: CGFloat, in rect: NSRect) -> CGRect {
-        let cx = rect.minX + rect.width * unit.x
-        let cy = rect.minY + rect.height * unit.y
-        return CGRect(x: cx - radius, y: cy - radius, width: radius * 2, height: radius * 2)
-    }
-
-    /// Point the whole backdrop at `t`. With `spring`, every animatable value gets
-    /// the *same* spring, so the shape, its clip and both washes travel together.
+    /// Point the backdrop at `t`. With `spring`, the shape path springs; without,
+    /// it snaps (used on configure / reduce-motion).
     func apply(expansion t: CGFloat, spring: CASpringAnimation?) {
         expansion = t
         let rect = islandRect(at: t)
         let path = islandPath(in: rect, expansion: t, hasNotch: hasNotch).toCGPath
-        shape.strokeColor = Brand.hairline(hasNotch ? 0.07 : 0.11).cgColor
-
-        let yellowFrame = washFrame(CGPoint(x: 0.78, y: -0.05), rect.width * 0.9, in: rect)
-        let pinkFrame = washFrame(CGPoint(x: 0.10, y: 1.08), rect.width * 0.8, in: rect)
+        shape.strokeColor = hasNotch ? NSColor.clear.cgColor : Brand.hairline(0.10).cgColor
 
         guard let spring else {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             shape.path = path
-            washMask.path = path
-            washYellow.frame = yellowFrame
-            washPink.frame = pinkFrame
             CATransaction.commit()
             return
         }
-
         animate(shape, "path", to: path, spring)
-        animate(washMask, "path", to: path, spring)
-        for (wash, frame) in [(washYellow, yellowFrame), (washPink, pinkFrame)] {
-            animate(wash, "bounds", to: CGRect(origin: .zero, size: frame.size), spring)
-            animate(wash, "position", to: CGPoint(x: frame.midX, y: frame.midY), spring)
-        }
     }
 
     private func animate(_ layer: CALayer, _ keyPath: String, to value: Any, _ spring: CASpringAnimation) {
