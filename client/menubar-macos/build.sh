@@ -54,6 +54,7 @@ cp ../../site/assets/folklore-logo.svg "$RES/folklore-logo.svg"
 cp ../../site/assets/folklore-navbar.svg "$RES/folklore-navbar.svg"
 cp ../../site/assets/folklore-favicon.svg "$RES/folklore-favicon.svg"
 cp ../../site/assets/folklore-spark.svg "$RES/folklore-spark.svg"
+cp ../../site/assets/folklore-mark.svg "$RES/folklore-mark.svg"
 
 echo "→ writing Info.plist…"
 cat > "$APP/Contents/Info.plist" <<'PLIST'

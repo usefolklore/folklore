@@ -25,6 +25,12 @@ private func folkloreSparkImage() -> NSImage? {
     bundledImage(named: "folklore-spark.svg")
 }
 
+/// The full mark — flame plus the two tellers around it — recoloured for a dark
+/// surface. Legible from ~20pt up; the expanded card gives it a 40pt tile.
+private func folkloreMarkImage() -> NSImage? {
+    bundledImage(named: "folklore-mark.svg") ?? folkloreSparkImage()
+}
+
 // MARK: - Activity feed
 
 struct ActivityEvent: Decodable {
@@ -147,60 +153,18 @@ private enum Brand {
     static func hairline(_ alpha: CGFloat) -> NSColor { paper.withAlphaComponent(alpha) }
 }
 
-/// Fraunces and Geist Mono live on the site's CDN, not on the machine. Prefer
-/// them when a user happens to have them installed, then fall back to New York
-/// — macOS's own editorial serif, and the closest thing to Fraunces that ships
-/// with the OS. Bundling ~1MB of TTFs for a menubar app isn't worth the weight.
-private enum BrandFont {
-    static func display(_ size: CGFloat) -> NSFont {
-        if let fraunces = NSFont(name: "Fraunces 9pt SemiBold", size: size)
-            ?? NSFont(name: "Fraunces-SemiBold", size: size)
-            ?? NSFont(name: "Fraunces", size: size) {
-            return fraunces
-        }
-        let base = NSFont.systemFont(ofSize: size, weight: .semibold)
-        guard let serif = base.fontDescriptor.withDesign(.serif) else { return base }
-        return NSFont(descriptor: serif, size: size) ?? base
-    }
-
-    static func mono(_ size: CGFloat, weight: NSFont.Weight) -> NSFont {
-        NSFont(name: "Geist Mono", size: size)
-            ?? NSFont.monospacedSystemFont(ofSize: size, weight: weight)
-    }
-}
-
 private func makeLabel(font: NSFont, color: NSColor, alignment: NSTextAlignment = .left) -> NSTextField {
     let label = NSTextField(labelWithString: "")
     label.font = font
     label.textColor = color
     label.alignment = alignment
     label.maximumNumberOfLines = 1
-    label.lineBreakMode = .byTruncatingMiddle
+    label.lineBreakMode = .byTruncatingTail
     label.isSelectable = false
     label.isEditable = false
     label.drawsBackground = false
     label.wantsLayer = true
     return label
-}
-
-/// The site sets `letter-spacing:.06em` on every uppercase mono label. Without
-/// it the caps clot together and stop reading as the same typographic system.
-private func setTracked(_ label: NSTextField, _ text: String, tracking: CGFloat = 0.06) {
-    let font = label.font ?? NSFont.monospacedSystemFont(ofSize: 10, weight: .semibold)
-    label.attributedStringValue = NSAttributedString(
-        string: text,
-        attributes: [
-            .font: font,
-            .foregroundColor: label.textColor ?? Brand.paper,
-            .kern: font.pointSize * tracking,
-            .paragraphStyle: {
-                let style = NSMutableParagraphStyle()
-                style.alignment = label.alignment
-                style.lineBreakMode = .byTruncatingMiddle
-                return style
-            }(),
-        ]
-    )
 }
 
 private func peerLabel(_ peer: String) -> String {
@@ -214,7 +178,17 @@ private func peerLabel(_ peer: String) -> String {
         return "@\(github)"
     }
     if peer.count <= 14 { return peer }
-    return "peer:\(peer.prefix(6))...\(peer.suffix(4))"
+    // No published identity. A truncated hash ("peer:12D3Ko...0000") is the
+    // ugliest thing on the card, so give an unlabeled peer a short, stable,
+    // pronounceable-ish tag derived from its id instead — deterministic, so the
+    // same peer always reads the same.
+    var hash: UInt64 = 1469598103934665603              // FNV-1a
+    for byte in peer.utf8 { hash = (hash ^ UInt64(byte)) &* 1099511628211 }
+    let alphabet = Array("abcdefghijklmnopqrstuvwxyz0123456789")
+    var tag = ""
+    var value = hash
+    for _ in 0..<4 { tag.append(alphabet[Int(value % 36)]); value /= 36 }
+    return "peer-\(tag)"
 }
 
 private func readableNode(_ id: String?) -> String {
@@ -314,19 +288,32 @@ private enum IslandEventStyle {
         }
     }
 
-    var compactVerb: String {
+    /// Sentence case, not shouting caps — the wing label reads like a macOS
+    /// Live Activity status, not a terminal log line.
+    var wingVerb: String {
         switch self {
-        case .pull: return "PULL"
-        case .serve: return "SHARE"
-        case .search: return "MATCH"
+        case .pull: return "Received"
+        case .serve: return "Shared"
+        case .search: return "Matched"
         }
     }
 
-    var eyebrow: String {
+    /// Plain-English context for the peer line — the raw hash never appears.
+    func context(count: Int, tokens: Int) -> String {
+        let nodes = "\(count) node\(count == 1 ? "" : "s")"
         switch self {
-        case .pull: return "TRACE RECEIVED"
-        case .serve: return "TRACE SHARED"
-        case .search: return "LOCAL MATCH"
+        case .pull: return "sent you \(nodes)"
+        case .serve: return "pulled from your graph"
+        case .search: return "matched \(nodes) locally"
+        }
+    }
+
+    /// The trailing wing metric — the one hero number per event.
+    func wingMetric(count: Int, tokens: Int) -> String {
+        switch self {
+        case .pull: return tokens > 0 ? "+\(tokens) tok" : "+\(count) node\(count == 1 ? "" : "s")"
+        case .serve: return "rep +1"
+        case .search: return "\(count) hit\(count == 1 ? "" : "s")"
         }
     }
 }
@@ -511,41 +498,35 @@ final class IslandBackdrop: CALayer {
 final class IslandContentView: NSView {
     var onPress: (() -> Void)?
 
-    private let brandIcon = NSImageView()
+    // System sans (SF Pro) for all text, monospaced only for aligned digits.
+    // Monospace-on-prose was what read as amateur; this matches macOS Live
+    // Activities. SF Pro is the native system font, so nothing to bundle.
+    private let brandIcon = NSImageView()          // wing flame — compact identity
     private let compactVerb = makeLabel(
-        font: BrandFont.mono(9, weight: .bold),
+        font: .systemFont(ofSize: 11, weight: .semibold),
         color: Brand.paper
     )
     private let compactMetric = makeLabel(
-        font: BrandFont.mono(10, weight: .semibold),
+        font: .monospacedDigitSystemFont(ofSize: 11.5, weight: .semibold),
         color: Brand.paperMuted,
         alignment: .right
     )
-    private let statusDot = NSView()
-    private let eyebrow = makeLabel(
-        font: BrandFont.mono(9, weight: .bold),
-        color: Brand.teal
-    )
-    /// The one serif on the surface. folklore is an editorial brand — the site
-    /// headline is Fraunces — so the node title carries that voice and every
-    /// label around it stays mono.
+    private let statusDot = NSView()               // live pulse dot
+    /// The folklore logo, app-icon style — the recognizable mark at the front of
+    /// the expanded card. `logoMark` is the image; `logoTile` is its container.
+    private let logoTile = NSView()
+    private let logoMark = NSImageView()
+    /// The node title — the headline. System semibold, not a serif; at this size
+    /// on this surface a clean sans reads as native, a serif reads as dated.
     private let title = makeLabel(
-        font: BrandFont.display(16),
+        font: .systemFont(ofSize: 15.5, weight: .semibold),
         color: Brand.paper
     )
-    private let route = makeLabel(
-        font: BrandFont.mono(10, weight: .medium),
+    /// One line: "@peer-lab · sent you 2 nodes" — the peer, humanized, no hash.
+    private let peerLine = makeLabel(
+        font: .systemFont(ofSize: 12.5, weight: .regular),
         color: Brand.paperDim
     )
-    private let detail = makeLabel(
-        font: BrandFont.mono(10, weight: .semibold),
-        color: Brand.paperMuted,
-        alignment: .right
-    )
-    private let routeTrack = NSView()
-    private let routeSignal = NSView()
-    private let sourceDot = NSView()
-    private let destinationDot = NSView()
 
     private var expandedViews: [NSView] = []
     private var expanded = false
@@ -581,20 +562,19 @@ final class IslandContentView: NSView {
         brandIcon.imageScaling = .scaleProportionallyUpOrDown
         brandIcon.setAccessibilityLabel("Folklore")
 
-        for dot in [statusDot, sourceDot, destinationDot] {
-            dot.wantsLayer = true
-        }
-        statusDot.layer?.cornerRadius = 2.5
-        sourceDot.layer?.cornerRadius = 2
-        destinationDot.layer?.cornerRadius = 2
+        statusDot.wantsLayer = true
+        statusDot.layer?.cornerRadius = 3
 
-        routeTrack.wantsLayer = true
-        routeSignal.wantsLayer = true
-        routeTrack.layer?.cornerRadius = 1
-        routeSignal.layer?.cornerRadius = 1
-        routeTrack.layer?.backgroundColor = Brand.hairline(0.14).cgColor
+        // The logo tile: a rounded, accent-tinted container holding the full mark.
+        logoTile.wantsLayer = true
+        logoTile.layer?.cornerRadius = 12
+        logoTile.layer?.borderWidth = 1
+        logoMark.image = folkloreMarkImage()
+        logoMark.imageScaling = .scaleProportionallyUpOrDown
+        logoMark.setAccessibilityLabel("Folklore")
+        logoTile.addSubview(logoMark)
 
-        expandedViews = [eyebrow, title, route, detail, routeTrack, routeSignal, sourceDot, destinationDot]
+        expandedViews = [logoTile, title, peerLine]
         for view in [brandIcon, compactVerb, compactMetric, statusDot] + expandedViews {
             addSubview(view)
         }
@@ -677,10 +657,10 @@ final class IslandContentView: NSView {
             in: compactHeight
         )
         statusDot.frame = NSRect(
-            x: island.maxX - rightInset - 5,
-            y: floor((compactHeight - 5) / 2),
-            width: 5,
-            height: 5
+            x: island.maxX - rightInset - 6,
+            y: floor((compactHeight - 6) / 2),
+            width: 6,
+            height: 6
         )
         compactMetric.frame = centred(
             compactMetric,
@@ -689,23 +669,56 @@ final class IslandContentView: NSView {
             in: compactHeight
         )
 
-        let bodyTop = compactHeight + 11
-        eyebrow.frame = NSRect(x: island.minX + 18, y: bodyTop, width: island.width - 36, height: 13)
-        title.frame = NSRect(x: island.minX + 18, y: bodyTop + 16, width: island.width - 36, height: 23)
-        route.frame = NSRect(x: island.minX + 18, y: bodyTop + 45, width: island.width * 0.54, height: 15)
-        detail.frame = NSRect(x: island.minX + island.width * 0.56, y: bodyTop + 45,
-                              width: island.width * 0.44 - 18, height: 15)
+        // Body below the notch: logo tile on the left, title + peer line stacked
+        // to its right — the macOS-notification "app icon + text" shape.
+        let bodyTop = compactHeight
+        let bodyHeight = island.maxY - bodyTop
+        let tileSize: CGFloat = 40
+        logoTile.frame = NSRect(
+            x: island.minX + 18,
+            y: bodyTop + floor((bodyHeight - tileSize) / 2),
+            width: tileSize, height: tileSize
+        )
+        let markSize: CGFloat = 28
+        logoMark.frame = NSRect(
+            x: (tileSize - markSize) / 2, y: (tileSize - markSize) / 2,
+            width: markSize, height: markSize
+        )
 
-        let lineY = island.maxY - 9
-        routeTrack.frame = NSRect(x: island.minX + 20, y: lineY, width: island.width - 40, height: 2)
-        routeSignal.frame = routeTrack.frame
-        // Pivot on the source end so the signal draws toward the destination.
-        setAnchorPoint(CGPoint(x: 0, y: 0.5), for: routeSignal)
-        sourceDot.frame = NSRect(x: island.minX + 18, y: lineY - 1, width: 4, height: 4)
-        destinationDot.frame = NSRect(x: island.maxX - 22, y: lineY - 1, width: 4, height: 4)
+        let textX = logoTile.frame.maxX + 13
+        let textWidth = island.maxX - 18 - textX
+        let titleH = ceil(title.intrinsicContentSize.height)
+        let peerH = ceil(peerLine.intrinsicContentSize.height)
+        let stackH = titleH + 3 + peerH
+        let stackTop = bodyTop + floor((bodyHeight - stackH) / 2)
+        title.frame = NSRect(x: textX, y: stackTop, width: textWidth, height: titleH)
+        peerLine.frame = NSRect(x: textX, y: stackTop + titleH + 3, width: textWidth, height: peerH)
     }
 
     /// Background is the backdrop layer's job now — this view only hosts labels.
+
+    /// Paints the live dot and (when present) starts its breathing pulse.
+    private func setLiveDot(_ color: NSColor, pulsing: Bool) {
+        statusDot.layer?.backgroundColor = color.cgColor
+        statusDot.layer?.removeAnimation(forKey: "folklore.live-pulse")
+        guard pulsing, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+        let pulse = CABasicAnimation(keyPath: "transform.scale")
+        pulse.fromValue = 1.0
+        pulse.toValue = 1.5
+        pulse.duration = 0.95
+        pulse.autoreverses = true
+        pulse.repeatCount = .infinity
+        pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        statusDot.layer?.add(pulse, forKey: "folklore.live-pulse")
+    }
+
+    /// Tints the logo tile to the event accent — a wash of the accent over the
+    /// dark surface, with a matching hairline border.
+    private func tintLogoTile(_ accent: NSColor) {
+        let bg = Brand.surface.blended(withFraction: 0.12, of: accent) ?? Brand.surface
+        logoTile.layer?.backgroundColor = bg.cgColor
+        logoTile.layer?.borderColor = accent.withAlphaComponent(0.28).cgColor
+    }
 
     func showIdle(_ snapshot: Snapshot) {
         brandIcon.image = folkloreSparkImage()
@@ -713,20 +726,20 @@ final class IslandContentView: NSView {
 
         if snapshot.daemon == "on" {
             compactVerb.textColor = Brand.paper
-            setTracked(compactVerb, "ONLINE")
-            setTracked(compactMetric, "\(snapshot.peers_connected) PEER\(snapshot.peers_connected == 1 ? "" : "S")")
-            statusDot.layer?.backgroundColor = Brand.teal.cgColor
+            compactVerb.stringValue = "Online"
+            compactMetric.stringValue = "\(snapshot.peers_connected) peer\(snapshot.peers_connected == 1 ? "" : "s")"
+            setLiveDot(Brand.teal, pulsing: true)
         } else if snapshot.daemon == "stale" {
             compactVerb.textColor = Brand.yellow
-            setTracked(compactVerb, "STALE")
-            setTracked(compactMetric, "\(snapshot.peers_connected) PEERS")
-            statusDot.layer?.backgroundColor = Brand.yellow.cgColor
+            compactVerb.stringValue = "Stale"
+            compactMetric.stringValue = "\(snapshot.peers_connected) peers"
+            setLiveDot(Brand.yellow, pulsing: false)
         } else {
             // Offline still reads as folklore — a banked fire, not a dead pixel.
             compactVerb.textColor = Brand.paperDim
-            setTracked(compactVerb, "OFFLINE")
-            setTracked(compactMetric, "0 PEERS")
-            statusDot.layer?.backgroundColor = Brand.paperDim.withAlphaComponent(0.55).cgColor
+            compactVerb.stringValue = "Offline"
+            compactMetric.stringValue = "0 peers"
+            setLiveDot(Brand.paperDim.withAlphaComponent(0.55), pulsing: false)
         }
         setExpanded(false, animated: true)
     }
@@ -747,37 +760,38 @@ final class IslandContentView: NSView {
         let accent = eventStyle.accent
         let who = peerLabel(event.peer)
         let node = readableNode(event.nodes?.first)
-        let tokenCount = event.payload_tokens_estimate ?? 0
-        let plural = event.count == 1 ? "NODE" : "NODES"
+        let tokens = event.payload_tokens_estimate ?? 0
 
         currentAccent = accent
         brandIcon.alphaValue = 1
-        compactVerb.textColor = accent
-        setTracked(compactVerb, eventStyle.compactVerb)
-        eyebrow.textColor = accent
-        setTracked(eyebrow, "\(eventStyle.eyebrow)  ·  \(who.uppercased())")
-        title.stringValue = node
-        routeSignal.layer?.backgroundColor = accent.cgColor
-        sourceDot.layer?.backgroundColor = accent.cgColor
-        destinationDot.layer?.backgroundColor = accent.cgColor
-        statusDot.layer?.backgroundColor = accent.cgColor
 
-        switch eventStyle {
-        case .pull:
-            setTracked(compactMetric, tokenCount > 0 ? "+\(tokenCount) TOK" : "+\(event.count) \(plural)")
-            setTracked(route, "\(who)  →  YOUR GRAPH")
-            setTracked(detail, tokenCount > 0
-                ? "\(event.count) \(plural)  ·  \(tokenCount) TOK"
-                : "\(event.count) \(plural)")
-        case .serve:
-            setTracked(compactMetric, "\(event.count) \(plural)")
-            setTracked(route, "YOUR GRAPH  →  \(who)")
-            setTracked(detail, "REP +1")
-        case .search:
-            setTracked(compactMetric, "\(event.count) HITS")
-            setTracked(route, "YOUR GRAPH  →  \(who)")
-            setTracked(detail, "NO MODEL CALL")
-        }
+        // Wing: sentence-case status + one hero metric + a live dot.
+        compactVerb.textColor = accent
+        compactVerb.stringValue = eventStyle.wingVerb
+        compactMetric.stringValue = eventStyle.wingMetric(count: event.count, tokens: tokens)
+        setLiveDot(accent, pulsing: true)
+
+        // Body: the logo, the node title, and one humanized peer line.
+        tintLogoTile(accent)
+        title.stringValue = node
+        peerLine.attributedStringValue = peerLineText(
+            who: who,
+            context: eventStyle.context(count: event.count, tokens: tokens)
+        )
+    }
+
+    /// "@peer-lab · sent you 2 nodes" — handle in paper, the rest dim.
+    private func peerLineText(who: String, context: String) -> NSAttributedString {
+        let font = NSFont.systemFont(ofSize: 12.5, weight: .regular)
+        let line = NSMutableAttributedString(
+            string: who,
+            attributes: [.font: NSFont.systemFont(ofSize: 12.5, weight: .semibold), .foregroundColor: Brand.paper]
+        )
+        line.append(NSAttributedString(
+            string: "  ·  \(context)",
+            attributes: [.font: font, .foregroundColor: Brand.paperDim]
+        ))
+        return line
     }
 
     /// Springs used for the morph. Opening keeps a little bounce; closing is
@@ -840,44 +854,6 @@ final class IslandContentView: NSView {
             self.expandedViews.forEach { $0.isHidden = true }
         }
 
-        if shouldExpand { drawRouteSignal() }
-    }
-
-    /// Draws the trace along the route, source end to destination end. Both
-    /// route captions read source-first ("@peer → YOUR GRAPH" on a pull, the
-    /// reverse on a serve), so a left-to-right draw always travels the way the
-    /// words do. Matches `route-complete` in preview.html.
-    private func drawRouteSignal() {
-        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else {
-            routeSignal.layer?.transform = CATransform3DIdentity
-            return
-        }
-        let draw = CABasicAnimation(keyPath: "transform.scale.x")
-        draw.fromValue = 0
-        draw.toValue = 1
-        draw.duration = 0.52
-        draw.beginTime = CACurrentMediaTime() + 0.09
-        draw.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.8, 0.2, 1)
-        draw.fillMode = .backwards
-        routeSignal.layer?.transform = CATransform3DIdentity
-        routeSignal.layer?.add(draw, forKey: "folklore.route-draw")
-    }
-
-    /// Re-anchors a layer without moving it on screen, so a transform can pivot
-    /// somewhere other than the centre. The canonical Core Animation recipe.
-    private func setAnchorPoint(_ point: CGPoint, for view: NSView) {
-        guard let layer = view.layer else { return }
-        let size = layer.bounds.size
-        guard size.width > 0, size.height > 0 else { return }
-        let new = CGPoint(x: size.width * point.x, y: size.height * point.y)
-            .applying(layer.affineTransform())
-        let old = CGPoint(x: size.width * layer.anchorPoint.x, y: size.height * layer.anchorPoint.y)
-            .applying(layer.affineTransform())
-        layer.position = CGPoint(
-            x: layer.position.x + (new.x - old.x),
-            y: layer.position.y + (new.y - old.y)
-        )
-        layer.anchorPoint = point
     }
 
     /// The site's flame never holds still (`flsway` in site.css). A frozen flame
@@ -1063,7 +1039,7 @@ final class ActivityIslandController {
             v: 1,
             ts: ISO8601DateFormatter().string(from: Date()),
             direction: "pull",
-            peer: "12D3KooWPreviewPeer000000000000000000000",
+            peer: "12D3KooWH7xq4vPn8yQ2mR6bF3kLcZ9wT1aJ5eD",
             kind: "fetch",
             count: 2,
             nodes: ["resolved-query://peer-traces-compound-knowledge"],

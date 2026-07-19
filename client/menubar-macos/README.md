@@ -136,29 +136,36 @@ Everything comes from files the daemon already maintains — no new protocol:
 - `linked-accounts.json` — GitHub identity for the header
 
 The app bundles `folklore-logo.svg`, `folklore-navbar.svg`,
-`folklore-favicon.svg`, and `folklore-spark.svg` directly from `site/assets/` at
-build time so its marks stay aligned with the newest website version.
+`folklore-favicon.svg`, `folklore-spark.svg`, and `folklore-mark.svg` directly
+from `site/assets/` at build time so its marks stay aligned with the newest
+website version.
 
 ## Island design contract
 
-The island is the dark, terminal side of the brand, so it is drawn from the same
-tokens as `.term` in `site/assets/site.css` — surface `#171310` (never `#000`,
-which reads as a hole punched in a warm palette), paper `#f4ecd8`, and the pink /
-yellow / teal accents. Accent per direction: teal for a trace pulled in, pink for
-one served out, yellow for a local match. `Brand` and `BrandFont` in
-`activity-island.swift` are the single source of truth; keep them in step with
-the stylesheet.
+The island follows the shape of a macOS Live Activity: it grows out of the camera
+notch (not a card floating below it), content lives in the two wings beside the
+camera plus a body below, and it expands and collapses on one spring. `Brand` in
+`activity-island.swift` is the single source of colour truth.
 
-Two deliberate departures from the web:
+Colour is drawn from `.term` in `site/assets/site.css` — surface `#171310` (never
+`#000`, which reads as a hole punched in a warm palette), paper `#f4ecd8`, and one
+accent per direction: teal for a trace pulled in, pink for one served out, yellow
+for a local match.
 
-- **Type.** The site loads Fraunces and Geist Mono from a CDN; neither is on a
-  stock Mac. `BrandFont` prefers them when installed and otherwise falls back to
-  New York (macOS's own editorial serif) and SF Mono, rather than shipping ~1MB
-  of TTFs in a menubar app. `preview.html` pulls the real fonts, so it shows the
-  intended render while the app shows the fallback — the only place the two
-  drift.
-- **The mark.** `folklore-spark.svg` (flame only) rather than the full hearth.
-  The icon never exceeds 18pt — it stays in the compact row even when the island
-  expands — and the hearth's two tellers turn to mush well before that. The
-  favicon is unusable here for a different reason: it paints a `#1d1813` card
-  that disappears into the island surface.
+- **Type is the system font.** Everything is SF Pro (`.systemFont`), with
+  `.monospacedDigitSystemFont` for aligned numbers only. An earlier version set
+  the whole island in Geist Mono / Fraunces; monospace-on-prose read as amateur,
+  and neither font ships on a stock Mac. SF Pro is native, so `preview.html` and
+  the app render identically — no divergence to caveat.
+- **The marks.** The wing shows `folklore-spark.svg` (flame only) — it never
+  exceeds 18pt, where the full mark's figures would be mush, and it keeps the
+  site's `flsway` flicker. The expanded body leads with `folklore-mark.svg` (the
+  full campfire-and-tellers logo, recoloured for a dark surface) in a 40pt
+  app-icon tile, where the figures read. The favicon is unusable in either spot:
+  it paints a `#1d1813` card that disappears into the island surface.
+- **The peer is humanized.** A published GitHub identity shows as `@handle`;
+  everyone else gets a short deterministic tag (`peer-bxn6`), never a raw
+  truncated hash. The context is plain English ("sent you 2 nodes").
+
+The layout, morph physics (one spring, response ≈ 0.38s, critically damped on
+close), and hover hysteresis are documented inline in `activity-island.swift`.

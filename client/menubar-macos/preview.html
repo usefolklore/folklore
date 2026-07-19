@@ -5,19 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Folklore Activity Island</title>
   <link rel="icon" href="../../site/assets/folklore-favicon.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..900&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
   <style>
-    /* Design reference for the AppKit island. Palette and type mirror
-       site/assets/site.css so the two can be compared side by side.
-       One honest divergence: this page pulls Fraunces + Geist Mono from the
-       site's CDN, while the app falls back to New York + SF Mono unless the
-       user happens to have them installed — see BrandFont in
-       activity-island.swift. Shapes, colour and motion are otherwise 1:1. */
+    /* Design reference for the AppKit island — a true 1:1 mirror. Both this page
+       and the app now use the macOS system font (SF Pro) with monospaced digits
+       for numbers, so there is no font divergence to caveat: what renders here
+       is what renders in activity-island.swift. */
     :root {
       color-scheme: dark;
-      font-family: 'Fraunces', ui-serif, 'New York', Georgia, serif;
+      font-family: -apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
       background: #14100d;
       color: #f4ecd8;
       --sensor-width: 176px;
@@ -158,41 +153,44 @@
       .brand-icon { animation: none; }
     }
 
+    /* System sans (SF Pro) for text; monospaced digits only where numbers
+       align. Monospace-on-prose was what read as amateur — this matches the
+       native app (see BrandFont removal in activity-island.swift). */
     .compact-verb,
     .compact-metric,
-    .eyebrow,
-    .route,
-    .detail {
-      /* The site tracks every uppercase mono label at .06em. Without it the
-         caps clot and stop reading as the same typographic system. */
-      letter-spacing: .06em;
-      font-family: 'Geist Mono', ui-monospace, "SFMono-Regular", Menlo, monospace;
+    .headline,
+    .who,
+    .when {
+      font-family: -apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
       white-space: nowrap;
     }
 
     .compact-verb {
       overflow: hidden;
       color: #f4ecd8;
-      font-size: 9px;
-      font-weight: 750;
+      font-size: 11px;
+      font-weight: 600;
       text-overflow: clip;
     }
 
     .compact-metric {
       overflow: hidden;
-      color: #c9bda1;
-      font-size: 10px;
-      font-weight: 650;
+      color: #b8ad97;
+      font-size: 11.5px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
       text-overflow: clip;
     }
 
     .status-dot {
       flex: 0 0 auto;
-      width: 5px;
-      height: 5px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       background: var(--accent);
     }
+    /* Breathing pulse — the "live" tell. */
+    .island.event .status-dot { animation: live-pulse 1.9s ease-out infinite; }
 
     .island.event .compact-verb { color: var(--accent); }
     .island.pulse .compact-leading,
@@ -200,7 +198,10 @@
 
     .expanded-body {
       position: absolute;
-      inset: calc(var(--compact-height) + 11px) 18px 0;
+      inset: var(--compact-height) 18px 0;
+      display: flex;
+      align-items: center;
+      gap: 13px;
       opacity: 0;
       transform: translateY(-5px) scale(.985);
       transform-origin: 50% 0;
@@ -211,100 +212,42 @@
 
     .expanded .expanded-body { opacity: 1; transform: translateY(0) scale(1); }
 
-    .eyebrow {
-      height: 13px;
-      overflow: hidden;
-      color: var(--accent);
-      font-size: 9px;
-      font-weight: 750;
-      line-height: 13px;
-      text-overflow: ellipsis;
+    /* The folklore logo, app-icon style — the recognizable mark at the front. */
+    .logo-tile {
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: color-mix(in srgb, var(--accent) 12%, #100d0a);
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+      box-shadow: inset 0 1px 0 rgba(244, 236, 216, .06);
     }
+    .logo-tile img { width: 28px; height: 28px; }
 
-    .title {
-      height: 23px;
-      margin-top: 3px;
+    .text-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+    .headline {
       overflow: hidden;
       color: #f4ecd8;
-      /* The one serif on the surface. folklore is an editorial brand — the site
-         headline is Fraunces — so the node title carries that voice while every
-         label around it stays mono. */
-      font-family: 'Fraunces', ui-serif, 'New York', Georgia, serif;
-      font-variation-settings: 'opsz' 144;
-      font-size: 16px;
-      font-weight: 650;
-      letter-spacing: -.01em;
-      line-height: 23px;
-      white-space: nowrap;
+      font-size: 15.5px;
+      font-weight: 600;
+      letter-spacing: -.014em;
+      line-height: 1.2;
       text-overflow: ellipsis;
     }
 
-    .route-row {
-      height: 15px;
-      margin-top: 6px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 16px;
-      align-items: center;
-    }
-
-    .route,
-    .detail {
+    .peer-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .who { flex: 0 0 auto; color: #f4ecd8; font-size: 12.5px; font-weight: 600; letter-spacing: -.005em; }
+    .when {
       overflow: hidden;
-      color: #8a7c62;
-      font-size: 10px;
-      font-weight: 550;
-      line-height: 15px;
+      color: #7c7062;
+      font-size: 12.5px;
+      font-weight: 400;
+      font-variant-numeric: tabular-nums;
       text-overflow: ellipsis;
     }
-
-    .detail { color: #c9bda1; font-weight: 650; text-align: right; }
-
-    .signal {
-      position: absolute;
-      right: 2px;
-      bottom: 7px;
-      left: 2px;
-      height: 4px;
-    }
-
-    .signal::before,
-    .signal::after {
-      content: "";
-      position: absolute;
-      z-index: 2;
-      top: 0;
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: var(--accent);
-    }
-
-    .signal::before { left: -2px; }
-    .signal::after { right: -2px; }
-
-    .signal-line {
-      position: absolute;
-      top: 1px;
-      right: 0;
-      left: 0;
-      height: 2px;
-      border-radius: 1px;
-      background: rgba(244, 236, 216, .14);
-      overflow: hidden;
-    }
-
-    .signal-line::after {
-      content: "";
-      display: block;
-      width: 100%;
-      height: 100%;
-      background: var(--accent);
-      transform: scaleX(0);
-      transform-origin: 0 50%;
-    }
-
-    .expanded .signal-line::after { animation: route-complete 520ms cubic-bezier(.2, .8, .2, 1) 90ms forwards; }
 
     .controls {
       position: fixed;
@@ -343,9 +286,10 @@
       100% { transform: scale(1); opacity: 1; }
     }
 
-    @keyframes route-complete {
-      from { transform: scaleX(0); }
-      to { transform: scaleX(1); }
+    @keyframes live-pulse {
+      0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+      70% { box-shadow: 0 0 0 5px transparent; }
+      100% { box-shadow: 0 0 0 0 transparent; }
     }
 
     @media (max-width: 560px) {
@@ -361,9 +305,10 @@
 
     @media (prefers-reduced-motion: reduce) {
       .island, .expanded-body { transition: none; }
+      .brand-icon,
+      .island.event .status-dot,
       .island.pulse .compact-leading,
-      .island.pulse .compact-trailing,
-      .expanded .signal-line::after { animation: none; transform: none; }
+      .island.pulse .compact-trailing { animation: none; transform: none; }
     }
   </style>
 </head>
@@ -382,23 +327,21 @@
     <div class="compact-bar">
       <div class="compact-leading">
         <img class="brand-icon" src="../../site/assets/folklore-spark.svg" alt="">
-        <span class="compact-verb" id="compactVerb">ONLINE</span>
+        <span class="compact-verb" id="compactVerb">Online</span>
       </div>
       <div aria-hidden="true"></div>
       <div class="compact-trailing">
-        <span class="compact-metric" id="compactMetric">3 PEERS</span>
+        <span class="compact-metric" id="compactMetric">3 peers</span>
         <span class="status-dot"></span>
       </div>
     </div>
 
     <div class="expanded-body">
-      <div class="eyebrow" id="eyebrow"></div>
-      <div class="title" id="title"></div>
-      <div class="route-row">
-        <div class="route" id="route"></div>
-        <div class="detail" id="detail"></div>
+      <div class="logo-tile"><img src="../../site/assets/folklore-mark.svg" alt="folklore"></div>
+      <div class="text-col">
+        <div class="headline" id="title"></div>
+        <div class="peer-line"><span class="who" id="who"></span><span class="when" id="when"></span></div>
       </div>
-      <div class="signal" aria-hidden="true"><div class="signal-line"></div></div>
     </div>
   </section>
   <div class="sensor" aria-hidden="true"></div>
@@ -413,38 +356,36 @@
     const island = document.querySelector('#island');
     const compactVerb = document.querySelector('#compactVerb');
     const compactMetric = document.querySelector('#compactMetric');
-    const eyebrow = document.querySelector('#eyebrow');
     const title = document.querySelector('#title');
-    const route = document.querySelector('#route');
-    const detail = document.querySelector('#detail');
+    const who = document.querySelector('#who');
+    const when = document.querySelector('#when');
     const clock = document.querySelector('#clock');
 
+    // Mirrors IslandEventStyle in activity-island.swift: sentence-case wing verb,
+    // one hero metric, a humanized peer line (handle + plain-English context).
     const states = {
       pull: {
-        verb: 'PULL',
-        metric: '+638 TOK',
-        eyebrow: 'TRACE RECEIVED  ·  @PEER-LAB',
+        verb: 'Received',
+        metric: '+638 tok',
         title: 'Peer traces compound knowledge',
-        route: '@peer-lab  →  YOUR GRAPH',
-        detail: '2 NODES  ·  638 TOK',
+        who: 'peer-bxn6',
+        context: '·  sent you 2 nodes',
         accent: '#1fae8b'
       },
       serve: {
-        verb: 'SHARE',
-        metric: '2 NODES',
-        eyebrow: 'TRACE SHARED  ·  @PEER-LAB',
+        verb: 'Shared',
+        metric: 'rep +1',
         title: 'Cross-encoder admission result',
-        route: 'YOUR GRAPH  →  @peer-lab',
-        detail: 'REP +1',
+        who: 'peer-bxn6',
+        context: '·  pulled from your graph',
         accent: '#ff4f6d'
       },
       search: {
-        verb: 'MATCH',
-        metric: '5 HITS',
-        eyebrow: 'LOCAL MATCH  ·  @PEER-LAB',
+        verb: 'Matched',
+        metric: '5 hits',
         title: 'Streamed inference trace',
-        route: 'YOUR GRAPH  →  @peer-lab',
-        detail: 'NO MODEL CALL',
+        who: 'peer-bxn6',
+        context: '·  matched 5 locally',
         accent: '#f5b921'
       }
     };
@@ -469,10 +410,9 @@
       document.documentElement.style.setProperty('--accent', state.accent);
       compactVerb.textContent = state.verb;
       compactMetric.textContent = state.metric;
-      eyebrow.textContent = state.eyebrow;
       title.textContent = state.title;
-      route.textContent = state.route;
-      detail.textContent = state.detail;
+      who.textContent = state.who;
+      when.textContent = state.context;
     }
 
     function pulse() {
@@ -502,8 +442,8 @@
       closeTimer = setTimeout(() => {
         if (isHovering || island.classList.contains('expanded')) return;
         island.classList.remove('event', 'pulse');
-        compactVerb.textContent = 'ONLINE';
-        compactMetric.textContent = '3 PEERS';
+        compactVerb.textContent = 'Online';
+        compactMetric.textContent = '3 peers';
         island.style.setProperty('--accent', '#1fae8b');
         document.documentElement.style.setProperty('--accent', '#1fae8b');
       }, 430);
