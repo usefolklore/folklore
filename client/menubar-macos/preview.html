@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Folklore Activity Island</title>
+  <link rel="icon" href="../../site/assets/folklore-favicon.svg">
+  <style>
+    /* Design reference for the AppKit island — a true 1:1 mirror. Both this page
+       and the app now use the macOS system font (SF Pro) with monospaced digits
+       for numbers, so there is no font divergence to caveat: what renders here
+       is what renders in activity-island.swift. */
+    :root {
+      color-scheme: dark;
+      font-family: -apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+      background: #14100d;
+      color: #f4ecd8;
+      --sensor-width: 176px;
+      --compact-width: 340px;
+      --compact-height: 36px;
+      --expanded-width: 404px;
+      --expanded-height: 124px;
+      --accent: #1fae8b;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body { background: #14100d; }
+
+    .wallpaper {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: .46;
+      filter: saturate(.58) contrast(1.06) brightness(.72);
+    }
+
+    .shade { position: fixed; inset: 0; background: rgba(12, 17, 15, .32); }
+
+    .menubar {
+      position: fixed;
+      inset: 0 0 auto;
+      height: var(--compact-height);
+      background: rgba(20, 25, 23, .7);
+      border-bottom: 1px solid rgba(244, 236, 216, .07);
+      backdrop-filter: blur(22px) saturate(.8);
+    }
+
+    .menubar-brand,
+    .menubar-time {
+      position: absolute;
+      top: 0;
+      height: var(--compact-height);
+      display: flex;
+      align-items: center;
+      color: rgba(244, 236, 216, .86);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .menubar-brand { left: 17px; gap: 7px; }
+    .menubar-brand img { width: 18px; height: 18px; }
+    .menubar-time { right: 18px; font-variant-numeric: tabular-nums; }
+
+    .island {
+      position: fixed;
+      z-index: 5;
+      top: 0;
+      left: 50%;
+      width: var(--compact-width);
+      height: var(--compact-height);
+      overflow: hidden;
+      transform: translateX(-50%);
+      /* Near-black to merge with the physical notch and bezel — this is what
+         makes it read as the notch growing, not a coloured card. A warm surface
+         was the reason it looked fake. Brand lives in the accents + logo. */
+      border: 0;
+      border-radius: 0 0 14px 14px;
+      background: #050505;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, .3);
+      cursor: default;
+      transition:
+        width 360ms cubic-bezier(.16, .84, .2, 1.08),
+        height 360ms cubic-bezier(.16, .84, .2, 1.06),
+        border-radius 360ms cubic-bezier(.16, .84, .2, 1.06);
+      will-change: width, height;
+    }
+
+    .island.expanded {
+      width: var(--expanded-width);
+      height: var(--expanded-height);
+      border-radius: 0 0 22px 22px;
+    }
+
+    .sensor {
+      position: fixed;
+      z-index: 7;
+      top: 0;
+      left: 50%;
+      width: var(--sensor-width);
+      height: var(--compact-height);
+      transform: translateX(-50%);
+      border-radius: 0 0 12px 12px;
+      background: #000;
+      pointer-events: none;
+    }
+
+    .compact-bar {
+      position: absolute;
+      inset: 0 0 auto;
+      height: var(--compact-height);
+      display: grid;
+      grid-template-columns: 1fr var(--sensor-width) 1fr;
+      align-items: center;
+    }
+
+    .compact-leading,
+    .compact-trailing {
+      min-width: 0;
+      height: var(--compact-height);
+      display: flex;
+      align-items: center;
+    }
+
+    .compact-leading { gap: 6px; padding-left: 10px; }
+    .compact-trailing { justify-content: flex-end; gap: 7px; padding-right: 10px; }
+
+    .brand-icon {
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      /* No radius: the spark is a transparent flame, not the favicon's ink
+         card — that card is what made the mark read as a dark box on a dark
+         island. Sway matches `flsway` in site.css; the flame is alive on the
+         site, so it stays alive here. */
+      transform-origin: 50% 74%;
+      animation: flsway 2.3s ease-in-out infinite;
+    }
+
+    @keyframes flsway {
+      0%, 100% { transform: scaleY(1) skewX(0deg); }
+      24% { transform: scaleY(1.06) skewX(-2deg); }
+      52% { transform: scaleY(.97) skewX(1.6deg); }
+      76% { transform: scaleY(1.04) skewX(-1deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .brand-icon { animation: none; }
+    }
+
+    /* System sans (SF Pro) for text; monospaced digits only where numbers
+       align. Monospace-on-prose was what read as amateur — this matches the
+       native app (see BrandFont removal in activity-island.swift). */
+    .compact-verb,
+    .compact-metric,
+    .headline,
+    .who,
+    .when {
+      font-family: -apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+      white-space: nowrap;
+    }
+
+    .compact-verb {
+      overflow: hidden;
+      color: #f4ecd8;
+      font-size: 11px;
+      font-weight: 600;
+      text-overflow: clip;
+    }
+
+    .compact-metric {
+      overflow: hidden;
+      color: #b8ad97;
+      font-size: 11.5px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      text-overflow: clip;
+    }
+
+    .status-dot {
+      flex: 0 0 auto;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    /* Breathing pulse — the "live" tell. */
+    .island.event .status-dot { animation: live-pulse 1.9s ease-out infinite; }
+
+    .island.event .compact-verb { color: var(--accent); }
+    .island.pulse .compact-leading,
+    .island.pulse .compact-trailing { animation: compact-pulse 430ms cubic-bezier(.2, .82, .2, 1); }
+
+    .expanded-body {
+      position: absolute;
+      inset: var(--compact-height) 18px 0;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      opacity: 0;
+      transform: translateY(-5px) scale(.985);
+      transform-origin: 50% 0;
+      transition:
+        opacity 170ms ease 65ms,
+        transform 300ms cubic-bezier(.18, .82, .2, 1.05) 35ms;
+    }
+
+    .expanded .expanded-body { opacity: 1; transform: translateY(0) scale(1); }
+
+    /* The folklore logo, app-icon style — the recognizable mark at the front. */
+    .logo-tile {
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: color-mix(in srgb, var(--accent) 12%, #100d0a);
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+      box-shadow: inset 0 1px 0 rgba(244, 236, 216, .06);
+    }
+    .logo-tile img { width: 28px; height: 28px; }
+
+    .text-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+    .headline {
+      overflow: hidden;
+      color: #f4ecd8;
+      font-size: 15.5px;
+      font-weight: 600;
+      letter-spacing: -.014em;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+    }
+
+    .peer-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .who { flex: 0 0 auto; color: #f4ecd8; font-size: 12.5px; font-weight: 600; letter-spacing: -.005em; }
+    .when {
+      overflow: hidden;
+      color: #7c7062;
+      font-size: 12.5px;
+      font-weight: 400;
+      font-variant-numeric: tabular-nums;
+      text-overflow: ellipsis;
+    }
+
+    .controls {
+      position: fixed;
+      z-index: 4;
+      left: 50%;
+      bottom: 28px;
+      display: flex;
+      gap: 7px;
+      transform: translateX(-50%);
+    }
+
+    button {
+      min-width: 82px;
+      height: 36px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border: 1px solid rgba(244, 236, 216, .16);
+      border-radius: 7px;
+      background: rgba(8, 9, 8, .82);
+      color: #f4ecd8;
+      font: 600 12px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+    }
+
+    button:hover { border-color: rgba(244, 236, 216, .4); background: #090a09; }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .button-icon { width: 14px; font: 700 15px/1 ui-monospace, monospace; }
+
+    @keyframes compact-pulse {
+      0% { transform: scale(.9); opacity: .45; }
+      62% { transform: scale(1.035); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes live-pulse {
+      0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+      70% { box-shadow: 0 0 0 5px transparent; }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
+
+    @media (max-width: 560px) {
+      :root {
+        --sensor-width: 128px;
+        --compact-width: 292px;
+        --expanded-width: min(374px, calc(100vw - 20px));
+      }
+      .menubar-brand span { display: none; }
+      .controls { bottom: 18px; }
+      button { min-width: 72px; padding: 0 9px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .island, .expanded-body { transition: none; }
+      .brand-icon,
+      .island.event .status-dot,
+      .island.pulse .compact-leading,
+      .island.pulse .compact-trailing { animation: none; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <video class="wallpaper" autoplay muted loop playsinline src="../../site/assets/gen/campfire.mp4"></video>
+  <div class="shade"></div>
+  <div class="menubar">
+    <div class="menubar-brand">
+      <img src="../../site/assets/folklore-navbar.svg" alt="">
+      <span>folklore</span>
+    </div>
+    <div class="menubar-time" id="clock"></div>
+  </div>
+
+  <section class="island" id="island" aria-live="polite" aria-label="Folklore peer activity">
+    <div class="compact-bar">
+      <div class="compact-leading">
+        <img class="brand-icon" src="../../site/assets/folklore-spark.svg" alt="">
+        <span class="compact-verb" id="compactVerb">Online</span>
+      </div>
+      <div aria-hidden="true"></div>
+      <div class="compact-trailing">
+        <span class="compact-metric" id="compactMetric">3 peers</span>
+        <span class="status-dot"></span>
+      </div>
+    </div>
+
+    <div class="expanded-body">
+      <div class="logo-tile"><img src="../../site/assets/folklore-mark.svg" alt="folklore"></div>
+      <div class="text-col">
+        <div class="headline" id="title"></div>
+        <div class="peer-line"><span class="who" id="who"></span><span class="when" id="when"></span></div>
+      </div>
+    </div>
+  </section>
+  <div class="sensor" aria-hidden="true"></div>
+
+  <div class="controls" aria-label="Preview an activity">
+    <button type="button" data-event="pull"><span class="button-icon">↓</span><span>Pull</span></button>
+    <button type="button" data-event="serve"><span class="button-icon">↑</span><span>Share</span></button>
+    <button type="button" data-event="search"><span class="button-icon">⌕</span><span>Match</span></button>
+  </div>
+
+  <script>
+    const island = document.querySelector('#island');
+    const compactVerb = document.querySelector('#compactVerb');
+    const compactMetric = document.querySelector('#compactMetric');
+    const title = document.querySelector('#title');
+    const who = document.querySelector('#who');
+    const when = document.querySelector('#when');
+    const clock = document.querySelector('#clock');
+
+    // Mirrors IslandEventStyle in activity-island.swift: sentence-case wing verb,
+    // one hero metric, a humanized peer line (handle + plain-English context).
+    const states = {
+      pull: {
+        verb: 'Received',
+        metric: '+638 tok',
+        title: 'Peer traces compound knowledge',
+        who: 'peer-bxn6',
+        context: '·  sent you 2 nodes',
+        accent: '#1fae8b'
+      },
+      serve: {
+        verb: 'Shared',
+        metric: 'rep +1',
+        title: 'Cross-encoder admission result',
+        who: 'peer-bxn6',
+        context: '·  pulled from your graph',
+        accent: '#ff4f6d'
+      },
+      search: {
+        verb: 'Matched',
+        metric: '5 hits',
+        title: 'Streamed inference trace',
+        who: 'peer-bxn6',
+        context: '·  matched 5 locally',
+        accent: '#f5b921'
+      }
+    };
+
+    let latestType = 'pull';
+    let closeTimer;
+    let phaseTimer;
+    let autoTimer;
+    let isHovering = false;
+    let sequence = 0;
+
+    function clearSchedule() {
+      clearTimeout(closeTimer);
+      clearTimeout(phaseTimer);
+    }
+
+    function apply(type) {
+      const state = states[type];
+      if (!state) return;
+      latestType = type;
+      island.style.setProperty('--accent', state.accent);
+      document.documentElement.style.setProperty('--accent', state.accent);
+      compactVerb.textContent = state.verb;
+      compactMetric.textContent = state.metric;
+      title.textContent = state.title;
+      who.textContent = state.who;
+      when.textContent = state.context;
+    }
+
+    function pulse() {
+      island.classList.remove('pulse');
+      void island.offsetWidth;
+      island.classList.add('pulse');
+    }
+
+    function expand(type = latestType, automatic = false) {
+      clearSchedule();
+      sequence += 1;
+      const run = sequence;
+      apply(type);
+      island.classList.add('event');
+      pulse();
+      phaseTimer = setTimeout(() => {
+        if (run !== sequence) return;
+        island.classList.add('expanded');
+        if (automatic && !isHovering) closeTimer = setTimeout(collapse, 3700);
+      }, 280);
+    }
+
+    function collapse() {
+      clearSchedule();
+      sequence += 1;
+      island.classList.remove('expanded');
+      closeTimer = setTimeout(() => {
+        if (isHovering || island.classList.contains('expanded')) return;
+        island.classList.remove('event', 'pulse');
+        compactVerb.textContent = 'Online';
+        compactMetric.textContent = '3 peers';
+        island.style.setProperty('--accent', '#1fae8b');
+        document.documentElement.style.setProperty('--accent', '#1fae8b');
+      }, 430);
+    }
+
+    function run(type) { expand(type, true); }
+
+    document.querySelectorAll('[data-event]').forEach((button) => {
+      button.addEventListener('click', () => run(button.dataset.event));
+    });
+
+    island.addEventListener('mouseenter', () => {
+      isHovering = true;
+      expand(latestType, false);
+    });
+
+    island.addEventListener('mouseleave', () => {
+      isHovering = false;
+      closeTimer = setTimeout(collapse, 360);
+    });
+
+    island.addEventListener('click', () => {
+      if (island.classList.contains('expanded')) collapse();
+      else expand(latestType, false);
+    });
+
+    function updateClock() {
+      clock.textContent = new Intl.DateTimeFormat('en', {
+        weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      }).format(new Date());
+    }
+
+    updateClock();
+    setInterval(updateClock, 30000);
+
+    const requested = new URLSearchParams(location.search).get('event');
+    if (states[requested]) latestType = requested;
+    else if (requested === 'idle') latestType = 'pull';
+    else run('pull');
+
+    const order = ['pull', 'serve', 'search'];
+    let autoIndex = Math.max(order.indexOf(latestType), 0);
+    autoTimer = setInterval(() => {
+      if (isHovering) return;
+      autoIndex = (autoIndex + 1) % order.length;
+      run(order[autoIndex]);
+    }, 6500);
+  </script>
+</body>
+</html>
