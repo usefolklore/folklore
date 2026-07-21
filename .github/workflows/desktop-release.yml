@@ -1,0 +1,152 @@
+name: Desktop Release
+
+# Builds the Folklore desktop app (Tauri) into native installers for all three
+# desktop OSes and attaches them to a GitHub release. One codebase → .dmg /
+# .msi+.exe / .AppImage+.deb.
+#
+# Trigger: push a `desktop-v*` tag (kept separate from the CLI's `v*` tags so
+# the two release cadences don't couple), or run manually.
+
+on:
+  push:
+    tags: ['desktop-v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    # 'true'/'false' string — whether macOS notarization secrets are configured.
+    # secrets.* is valid in a job-level env expression (unlike a step `if`).
+    env:
+      SIGN_MAC: ${{ secrets.APPLE_CERTIFICATE != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-14        # Apple silicon + Intel via universal target
+            target: universal-apple-darwin
+            args: '--target universal-apple-darwin'
+          - platform: ubuntu-22.04    # .AppImage + .deb
+            target: ''
+            args: ''
+          - platform: windows-latest  # .msi + NSIS .exe
+            target: ''
+            args: ''
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Linux webview deps
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf libssl-dev
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          # macOS universal needs both arches available to the toolchain.
+          targets: ${{ matrix.target == 'universal-apple-darwin' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Cache cargo
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: client/desktop/src-tauri
+
+      - name: Install frontend deps
+        run: npm install
+        working-directory: client/desktop
+
+      # Bundle a Node runtime into the app so the onboard wizard runs the folklore
+      # CLI (via npx) with zero Node installed on the user's machine. Extracted
+      # into resources/node/, which tauri.conf bundles as the app's `node`
+      # resource; lib.rs prepends its bin dir to the child PATH.
+      - name: Bundle Node runtime (macOS, universal)
+        if: matrix.platform == 'macos-14'
+        run: |
+          set -euo pipefail
+          N=22.11.0
+          DEST=client/desktop/src-tauri/resources/node
+          for arch in arm64 x64; do
+            curl -sSL "https://nodejs.org/dist/v$N/node-v$N-darwin-$arch.tar.gz" | tar xz
+          done
+          # start from the arm64 dist (npm + lib are arch-independent JS)…
+          cp -R "node-v$N-darwin-arm64/." "$DEST/"
+          # …then replace the node binary with a universal (arm64 + x86_64) one
+          lipo -create "node-v$N-darwin-arm64/bin/node" "node-v$N-darwin-x64/bin/node" -output "$DEST/bin/node"
+          "$DEST/bin/node" --version
+
+      - name: Bundle Node runtime (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          set -euo pipefail
+          N=22.11.0
+          DEST=client/desktop/src-tauri/resources/node
+          curl -sSL "https://nodejs.org/dist/v$N/node-v$N-linux-x64.tar.xz" | tar xJ
+          cp -R "node-v$N-linux-x64/." "$DEST/"
+          "$DEST/bin/node" --version
+
+      - name: Bundle Node runtime (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $N = "22.11.0"
+          $DEST = "client/desktop/src-tauri/resources/node"
+          curl.exe -sSL "https://nodejs.org/dist/v$N/node-v$N-win-x64.zip" -o node.zip
+          Expand-Archive node.zip -DestinationPath .
+          Copy-Item -Recurse -Force "node-v$N-win-x64/*" $DEST
+          & "$DEST/node.exe" --version
+
+      # macOS signing + notarization. Passing an empty APPLE_CERTIFICATE makes
+      # tauri-action attempt a codesign import with invalid data and fail, so the
+      # signing env is only attached when the certificate secret actually exists.
+      # Drop these repo secrets to turn notarization on — no code change:
+      #   APPLE_CERTIFICATE (base64 .p12), APPLE_CERTIFICATE_PASSWORD,
+      #   APPLE_SIGNING_IDENTITY, APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID
+      - name: Build + release the app (signed)
+        if: matrix.platform == 'macos-14' && env.SIGN_MAC == 'true'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          projectPath: client/desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Folklore Desktop ${{ github.ref_name }}'
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+
+      - name: Build + release the app (unsigned)
+        if: '!(matrix.platform == ''macos-14'' && env.SIGN_MAC == ''true'')'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: client/desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Folklore Desktop ${{ github.ref_name }}'
+          releaseBody: |
+            The Folklore desktop app — download, open, and click **Install everything**.
+            It wires the folklore memory server into every AI coding tool on your
+            machine (Claude Code, Cursor, Cline, Windsurf, Gemini CLI, Zed, opencode,
+            Roo) and starts the local daemon. No terminal.
+
+            - macOS: `.dmg` (universal — Apple silicon + Intel)
+            - Windows: `.msi` / setup `.exe`
+            - Linux: `.AppImage` / `.deb`
+
+            Unsigned for now — on first open, allow it in your OS security settings.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}

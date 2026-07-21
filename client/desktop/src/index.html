@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Folklore</title>
+<style>
+  :root{
+    --paper:#f4ecd8; --paper-muted:#b8ad97; --paper-dim:#7c7062;
+    --surface:#0e0b09; --ink:#1d1813;
+    --pink:#ff4f6d; --yellow:#f5b921; --teal:#1fae8b;
+    --sans:-apple-system,"SF Pro Text","SF Pro Display","Segoe UI",Roboto,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(245,185,33,.06), transparent 60%),
+      var(--surface);
+    color:var(--paper); font-family:var(--sans); -webkit-font-smoothing:antialiased;
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:34px 30px; user-select:none; overflow:hidden;
+  }
+  .mark{width:56px;height:56px;margin-bottom:16px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4))}
+  h1{font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+  h1 em{font-style:normal;color:var(--pink)}
+  .sub{margin-top:9px;font-size:13.5px;font-weight:450;color:var(--paper-muted);line-height:1.5;max-width:40ch}
+
+  .cta{margin-top:22px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:360px}
+  button{
+    font-family:var(--sans); font-size:15px; font-weight:650; letter-spacing:-.01em;
+    padding:14px 18px; border-radius:12px; border:0; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:9px; transition:.12s;
+  }
+  .primary{background:var(--yellow);color:#1d1813}
+  .primary:hover{background:#ffc93f;transform:translateY(-1px)}
+  .primary:active{transform:translateY(1px)}
+  .primary:disabled{opacity:.55;cursor:default;transform:none}
+  .ghost{background:transparent;color:var(--paper-muted);border:1px solid rgba(244,236,216,.16);font-size:13px;font-weight:550;padding:10px}
+  .ghost:hover{color:var(--paper);border-color:rgba(244,236,216,.3)}
+
+  .providers{margin-top:20px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:6px;
+    max-height:210px;overflow:auto}
+  .prow{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:9px;
+    background:rgba(244,236,216,.03);border:1px solid rgba(244,236,216,.06);font-size:13px;text-align:left}
+  .prow .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .prow .dot.on{background:var(--teal)}
+  .prow .dot.off{background:var(--paper-dim);opacity:.5}
+  .prow .name{font-weight:600;color:var(--paper)}
+  .prow .state{margin-left:auto;font-size:11px;font-weight:600;letter-spacing:.02em}
+  .prow .state.on{color:var(--teal)}
+  .prow .state.off{color:var(--paper-dim)}
+
+  .log{margin-top:16px;width:100%;max-width:400px;min-height:44px;font-size:12px;line-height:1.5;
+    color:var(--paper-dim);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
+  .log.ok{color:var(--teal)}
+  .log.err{color:var(--pink)}
+  .foot{margin-top:auto;padding-top:16px;font-size:11.5px;color:var(--paper-dim)}
+  .foot b{color:var(--paper-muted)}
+  .spin{width:15px;height:15px;border:2px solid rgba(29,24,19,.3);border-top-color:#1d1813;border-radius:50%;
+    animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+  <img class="mark" src="folklore-mark.svg" alt="Folklore" />
+  <h1>wire folklore into <em>every</em><br/>AI tool on this machine</h1>
+  <p class="sub">One setup. It creates your signed identity, starts the local daemon, and registers the folklore memory server in every AI coding tool you have installed — no terminal.</p>
+
+  <div class="cta">
+    <button class="primary" id="go"><span id="go-label">Install everything</span></button>
+    <button class="ghost" id="refresh">Re-scan AI tools</button>
+  </div>
+
+  <div class="providers" id="providers"></div>
+  <div class="log" id="log"></div>
+
+  <div class="foot">local-first · signed provenance · <b>no central server</b></div>
+
+<script type="module">
+  const invoke = window.__TAURI__.core.invoke;
+  const providersEl = document.getElementById('providers');
+  const logEl = document.getElementById('log');
+  const goBtn = document.getElementById('go');
+  const goLabel = document.getElementById('go-label');
+  const refreshBtn = document.getElementById('refresh');
+
+  // Parse `folklore harness list` output → [{name, detected}]
+  function parseHarness(text) {
+    const rows = [];
+    for (const line of text.split('\n')) {
+      const m = line.match(/^\s*([✓·])\s+(?:detected|not found)?\s*([A-Za-z][A-Za-z0-9 .]+?)\s{2,}/);
+      if (m) rows.push({ detected: m[1] === '✓', name: m[2].trim() });
+    }
+    return rows;
+  }
+
+  function renderProviders(rows) {
+    if (!rows.length) { providersEl.innerHTML = ''; return; }
+    providersEl.innerHTML = rows.map(r => `
+      <div class="prow">
+        <span class="dot ${r.detected ? 'on' : 'off'}"></span>
+        <span class="name">${r.name}</span>
+        <span class="state ${r.detected ? 'on' : 'off'}">${r.detected ? 'found' : '—'}</span>
+      </div>`).join('');
+  }
+
+  async function scan() {
+    try {
+      const out = await invoke('harness_list');
+      renderProviders(parseHarness(out));
+    } catch (e) {
+      logEl.textContent = 'Could not scan (is the folklore CLI available?): ' + e;
+      logEl.className = 'log err';
+    }
+  }
+
+  async function install() {
+    goBtn.disabled = true;
+    goLabel.innerHTML = '<span class="spin"></span> Setting up…';
+    logEl.className = 'log';
+    logEl.textContent = 'Creating identity · starting daemon · wiring providers…';
+    try {
+      await invoke('run_onboard');
+      logEl.className = 'log ok';
+      logEl.textContent = '✓ Folklore is set up. Every detected AI tool now answers from your graph.';
+      await scan();
+    } catch (e) {
+      logEl.className = 'log err';
+      logEl.textContent = 'Setup failed: ' + e;
+    } finally {
+      goBtn.disabled = false;
+      goLabel.textContent = 'Run setup again';
+    }
+  }
+
+  goBtn.addEventListener('click', install);
+  refreshBtn.addEventListener('click', scan);
+  window.addEventListener('DOMContentLoaded', scan);
+  scan();
+</script>
+</body>
+</html>

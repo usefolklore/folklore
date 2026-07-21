@@ -90,6 +90,7 @@ import {
 import { readFileSync as nodeReadFileSync, existsSync as nodeExistsSync } from 'node:fs';
 import type { Match } from '../domain/vectors.js';
 import { runConsolidateTick } from './consolidate-tick.js';
+import { runAutoForgetDaemonTick } from './auto-forget-tick.js';
 import { tickUpdateCheck, loadUpdateConfig } from '../application/update-checker.js';
 import { installUpgrade, readPackageVersion } from '../application/update-installer.js';
 import {
@@ -316,7 +317,16 @@ export const runOneTick = (deps: DaemonDeps): ResultAsync<TickResult, AppError> 
             daemonLog(deps.homePath, `consolidate-tick error: ${(e as Error).message}`);
           }
 
-          return enforceRetention({ graphs: deps.graphs }, retentionDays)
+          // Long-term-memory GC — TTL delete + frozen-band demote. In-process
+          // (no LLM, unlike consolidation), best-effort, gated by
+          // config.daemon.auto_forget.enabled (default off) and its own cadence.
+          return runAutoForgetDaemonTick(
+            { graphs: deps.graphs, vectors: deps.vectors },
+            deps.homePath,
+            cfg.daemon.auto_forget,
+            (msg) => daemonLog(deps.homePath, msg),
+          )
+            .andThen(() => enforceRetention({ graphs: deps.graphs }, retentionDays))
             .map((dropped) => {
               if (dropped > 0) {
                 daemonLog(

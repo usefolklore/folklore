@@ -27,6 +27,21 @@ export interface DaemonConfig {
   readonly round_robin_sources: boolean;
   /** Phase 4.1 — daemon-tick auto-consolidation (off by default). */
   readonly consolidate: ConsolidateConfig;
+  /** Daemon-tick long-term-memory GC — TTL delete + frozen-band demote (off by default). */
+  readonly auto_forget: AutoForgetDaemonConfig;
+}
+
+export interface AutoForgetDaemonConfig {
+  /** Whether the daemon runs the long-term-memory GC pass on its own cadence. Default false. */
+  readonly enabled: boolean;
+  /** How often to attempt a GC pass (seconds). Default 86400 (daily). */
+  readonly interval_seconds: number;
+  /** Plan-only safety valve: compute the plan and log it, but never mutate. Default false. */
+  readonly dry_run: boolean;
+  /** Retention band below which a node is demoted (kept for audit, dropped from live view). */
+  readonly demote_band: 'cold' | 'frozen';
+  /** Only demote once a node is also older than this many days. Default 30. */
+  readonly min_age_days: number;
 }
 
 export interface ConsolidateConfig {
@@ -172,12 +187,21 @@ const DEFAULT_CONSOLIDATE: ConsolidateConfig = {
   min_workspace_raw_to_trigger: 50,
 };
 
+const DEFAULT_AUTO_FORGET: AutoForgetDaemonConfig = {
+  enabled: false,
+  interval_seconds: 86400,
+  dry_run: false,
+  demote_band: 'frozen',
+  min_age_days: 30,
+};
+
 const DEFAULT_DAEMON: DaemonConfig = {
   interval_seconds: 86400,
   max_parallel_sources: 8,
   discovery_cadence: 5,
   round_robin_sources: true,
   consolidate: DEFAULT_CONSOLIDATE,
+  auto_forget: DEFAULT_AUTO_FORGET,
 };
 
 const DEFAULT_TUNNELS: TunnelsConfig = {
@@ -277,12 +301,22 @@ export const loadConfig = (path: string): ResultAsync<AppConfig, GraphError> => 
         prune: bool(consolidateRaw.prune, DEFAULT_CONSOLIDATE.prune),
         min_workspace_raw_to_trigger: num(consolidateRaw.min_workspace_raw_to_trigger, DEFAULT_CONSOLIDATE.min_workspace_raw_to_trigger),
       };
+      const autoForgetRaw = (daemonRaw.auto_forget ?? {}) as Record<string, unknown>;
+      const bandRaw = str(autoForgetRaw.demote_band, DEFAULT_AUTO_FORGET.demote_band);
+      const autoForget: AutoForgetDaemonConfig = {
+        enabled: bool(autoForgetRaw.enabled, DEFAULT_AUTO_FORGET.enabled),
+        interval_seconds: num(autoForgetRaw.interval_seconds, DEFAULT_AUTO_FORGET.interval_seconds),
+        dry_run: bool(autoForgetRaw.dry_run, DEFAULT_AUTO_FORGET.dry_run),
+        demote_band: bandRaw === 'cold' ? 'cold' : DEFAULT_AUTO_FORGET.demote_band,
+        min_age_days: num(autoForgetRaw.min_age_days, DEFAULT_AUTO_FORGET.min_age_days),
+      };
       const daemon: DaemonConfig = {
         interval_seconds: num(daemonRaw.interval_seconds, DEFAULT_DAEMON.interval_seconds),
         max_parallel_sources: num(daemonRaw.max_parallel_sources, DEFAULT_DAEMON.max_parallel_sources),
         discovery_cadence: num(daemonRaw.discovery_cadence, DEFAULT_DAEMON.discovery_cadence),
         round_robin_sources: bool(daemonRaw.round_robin_sources, DEFAULT_DAEMON.round_robin_sources),
         consolidate,
+        auto_forget: autoForget,
       };
       const tunnels: TunnelsConfig = {
         enabled: bool(tunnelsRaw.enabled, DEFAULT_TUNNELS.enabled),
