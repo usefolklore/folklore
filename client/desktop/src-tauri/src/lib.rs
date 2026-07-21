@@ -9,7 +9,7 @@ use std::process::Command;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Manager,
+    AppHandle, Manager,
 };
 
 /// Directories where a globally-installed `folklore` / `node` / `npx` might live.
@@ -75,12 +75,44 @@ fn folklore_cli() -> Result<(String, Vec<String>), String> {
     if let Some(folklore) = find_in_dirs("folklore").or_else(|| which_path("folklore")) {
         return Ok((folklore, vec![]));
     }
-    if let Some(npx) = find_in_dirs("npx").or_else(|| which_path("npx")) {
-        return Ok((npx, vec!["--yes".into(), "@usefolklore/folklore".into()]));
+    // Bare `npx` so it resolves against the child PATH we set in run_cli — that
+    // PATH includes the app's bundled Node runtime, so this works even with no
+    // system Node at all.
+    Ok(("npx".into(), vec!["--yes".into(), "@usefolklore/folklore".into()]))
+}
+
+/// The `bin` directory of the Node runtime bundled into the app, if present.
+/// Populated per-platform by the desktop CI (a clean Node dist under
+/// `resources/node`). Prepending this to the child PATH is what makes the
+/// wizard run with zero Node installed on the machine.
+fn bundled_node_bin(app: &AppHandle) -> Option<String> {
+    let res = app.path().resource_dir().ok()?;
+    // Unix Node dist: node/bin/node ; Windows dist: node/node.exe at the root.
+    let unix = res.join("node").join("bin");
+    if unix.join("node").exists() {
+        return Some(unix.to_string_lossy().to_string());
     }
-    Err("Node.js was not found on this machine. Install Node (nodejs.org) or the \
-         folklore CLI (npm i -g @usefolklore/folklore), then run setup again."
-        .into())
+    let win = res.join("node");
+    if win.join("node.exe").exists() {
+        return Some(win.to_string_lossy().to_string());
+    }
+    None
+}
+
+/// PATH for spawned CLI children: the bundled Node bin dir (if any) first, then
+/// the version-manager / global-install dirs, then the inherited PATH. This
+/// single PATH lets bare `npx`/`node` resolve to the bundle or the system.
+fn child_path(app: &AppHandle) -> String {
+    let sep = if cfg!(target_os = "windows") { ";" } else { ":" };
+    let mut parts: Vec<String> = Vec::new();
+    if let Some(b) = bundled_node_bin(app) {
+        parts.push(b);
+    }
+    parts.extend(bin_dirs());
+    if let Ok(existing) = std::env::var("PATH") {
+        parts.push(existing);
+    }
+    parts.join(sep)
 }
 
 /// `which`/`where` lookup that returns the resolved absolute path.
@@ -91,15 +123,22 @@ fn which_path(bin: &str) -> Option<String> {
     String::from_utf8_lossy(&out.stdout).lines().next().map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
 }
 
-fn run_cli(sub: &[&str]) -> Result<String, String> {
+fn run_cli(app: &AppHandle, sub: &[&str]) -> Result<String, String> {
     let (program, mut args) = folklore_cli()?;
     for s in sub {
         args.push((*s).to_string());
     }
     let out = Command::new(&program)
         .args(&args)
+        .env("PATH", child_path(app))
         .output()
-        .map_err(|e| format!("failed to launch folklore CLI ({program}): {e}"))?;
+        .map_err(|e| {
+            format!(
+                "Could not run the folklore CLI ({program}): {e}. If this build \
+                 has no bundled Node runtime, install Node (nodejs.org) or the CLI \
+                 (npm i -g @usefolklore/folklore) and try again."
+            )
+        })?;
     let stdout = String::from_utf8_lossy(&out.stdout).to_string();
     let stderr = String::from_utf8_lossy(&out.stderr).to_string();
     if out.status.success() {
@@ -113,29 +152,29 @@ fn run_cli(sub: &[&str]) -> Result<String, String> {
 /// every detected AI provider, and start the daemon. This is the "download
 /// installs everything — no command" path, driven from the GUI.
 #[tauri::command]
-fn run_onboard() -> Result<String, String> {
-    run_cli(&["onboard", "--yes", "--no-sessions"])
+fn run_onboard(app: AppHandle) -> Result<String, String> {
+    run_cli(&app, &["onboard", "--yes", "--no-sessions"])
 }
 
 /// The provider-integration table (which harnesses are detected / wired).
 #[tauri::command]
-fn harness_list() -> Result<String, String> {
-    run_cli(&["harness", "list"])
+fn harness_list(app: AppHandle) -> Result<String, String> {
+    run_cli(&app, &["harness", "list"])
 }
 
 #[tauri::command]
-fn daemon_status() -> Result<String, String> {
-    run_cli(&["daemon", "status"])
+fn daemon_status(app: AppHandle) -> Result<String, String> {
+    run_cli(&app, &["daemon", "status"])
 }
 
 #[tauri::command]
-fn daemon_start() -> Result<String, String> {
-    run_cli(&["daemon", "start"])
+fn daemon_start(app: AppHandle) -> Result<String, String> {
+    run_cli(&app, &["daemon", "start"])
 }
 
 #[tauri::command]
-fn daemon_stop() -> Result<String, String> {
-    run_cli(&["daemon", "stop"])
+fn daemon_stop(app: AppHandle) -> Result<String, String> {
+    run_cli(&app, &["daemon", "stop"])
 }
 
 fn build_tray(app: &tauri::App) -> tauri::Result<()> {
@@ -158,13 +197,13 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
                 }
             }
             "onboard" => {
-                let _ = run_onboard();
+                let _ = run_cli(app, &["onboard", "--yes", "--no-sessions"]);
             }
             "start" => {
-                let _ = daemon_start();
+                let _ = run_cli(app, &["daemon", "start"]);
             }
             "stop" => {
-                let _ = daemon_stop();
+                let _ = run_cli(app, &["daemon", "stop"]);
             }
             "quit" => app.exit(0),
             _ => {}

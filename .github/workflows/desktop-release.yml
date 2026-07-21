@@ -62,6 +62,46 @@ jobs:
         run: npm install
         working-directory: client/desktop
 
+      # Bundle a Node runtime into the app so the onboard wizard runs the folklore
+      # CLI (via npx) with zero Node installed on the user's machine. Extracted
+      # into resources/node/, which tauri.conf bundles as the app's `node`
+      # resource; lib.rs prepends its bin dir to the child PATH.
+      - name: Bundle Node runtime (macOS, universal)
+        if: matrix.platform == 'macos-14'
+        run: |
+          set -euo pipefail
+          N=22.11.0
+          DEST=client/desktop/src-tauri/resources/node
+          for arch in arm64 x64; do
+            curl -sSL "https://nodejs.org/dist/v$N/node-v$N-darwin-$arch.tar.gz" | tar xz
+          done
+          # start from the arm64 dist (npm + lib are arch-independent JS)…
+          cp -R "node-v$N-darwin-arm64/." "$DEST/"
+          # …then replace the node binary with a universal (arm64 + x86_64) one
+          lipo -create "node-v$N-darwin-arm64/bin/node" "node-v$N-darwin-x64/bin/node" -output "$DEST/bin/node"
+          "$DEST/bin/node" --version
+
+      - name: Bundle Node runtime (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          set -euo pipefail
+          N=22.11.0
+          DEST=client/desktop/src-tauri/resources/node
+          curl -sSL "https://nodejs.org/dist/v$N/node-v$N-linux-x64.tar.xz" | tar xJ
+          cp -R "node-v$N-linux-x64/." "$DEST/"
+          "$DEST/bin/node" --version
+
+      - name: Bundle Node runtime (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $N = "22.11.0"
+          $DEST = "client/desktop/src-tauri/resources/node"
+          curl.exe -sSL "https://nodejs.org/dist/v$N/node-v$N-win-x64.zip" -o node.zip
+          Expand-Archive node.zip -DestinationPath .
+          Copy-Item -Recurse -Force "node-v$N-win-x64/*" $DEST
+          & "$DEST/node.exe" --version
+
       # macOS signing + notarization. Passing an empty APPLE_CERTIFICATE makes
       # tauri-action attempt a codesign import with invalid data and fail, so the
       # signing env is only attached when the certificate secret actually exists.
