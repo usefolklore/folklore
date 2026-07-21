@@ -26,7 +26,7 @@ cask "folklore" do
   desc "Cross-platform tray app + setup wizard for a local folklore node"
   homepage "https://usefolklore.sh/"
 
-  depends_on macos: ">= :ventura"
+  depends_on macos: :ventura
 
   app "Folklore.app"
 
