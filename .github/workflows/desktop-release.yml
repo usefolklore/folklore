@@ -62,6 +62,19 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS signing + notarization. Left unset → an unsigned build (still
+          # ships, quarantined). Set these repo secrets to notarize:
+          #   APPLE_CERTIFICATE            base64 of the Developer ID .p12
+          #   APPLE_CERTIFICATE_PASSWORD   the .p12 password
+          #   APPLE_SIGNING_IDENTITY       "Developer ID Application: … (TEAMID)"
+          #   APPLE_ID / APPLE_PASSWORD    Apple ID + app-specific password
+          #   APPLE_TEAM_ID                the team id
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           projectPath: client/desktop
           tagName: ${{ github.ref_name }}

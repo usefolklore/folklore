@@ -12,51 +12,87 @@ use tauri::{
     Manager,
 };
 
-/// Resolve the `folklore` CLI. A GUI app on macOS does not inherit the shell
-/// PATH, so we probe the usual global-install locations before falling back to
-/// PATH and then `npx`. Returns (program, leading-args).
-fn folklore_cli() -> (String, Vec<String>) {
-    let mut candidates: Vec<String> = Vec::new();
+/// Directories where a globally-installed `folklore` / `node` / `npx` might live.
+/// A double-clicked GUI app inherits neither the shell PATH nor version-manager
+/// shims (nvm / fnm / volta / asdf), so we have to look ourselves. Ordered most-
+/// to least specific; version-manager dirs are expanded by globbing their
+/// `versions/node/*/bin` roots.
+fn bin_dirs() -> Vec<String> {
+    let mut dirs: Vec<String> = Vec::new();
     if let Ok(home) = std::env::var("HOME") {
-        candidates.push(format!("{home}/.npm-global/bin/folklore"));
-        candidates.push(format!("{home}/.local/bin/folklore"));
-    }
-    for p in [
-        "/opt/homebrew/bin/folklore",
-        "/usr/local/bin/folklore",
-        "/usr/bin/folklore",
-    ] {
-        candidates.push(p.to_string());
-    }
-    for c in candidates {
-        if std::path::Path::new(&c).exists() {
-            return (c, vec![]);
+        // Global npm prefixes.
+        dirs.push(format!("{home}/.npm-global/bin"));
+        dirs.push(format!("{home}/.local/bin"));
+        dirs.push(format!("{home}/.volta/bin"));
+        dirs.push(format!("{home}/.bun/bin"));
+        // nvm / fnm keep a bin dir per installed node version — glob the newest.
+        for base in [
+            format!("{home}/.nvm/versions/node"),
+            format!("{home}/.local/share/fnm/node-versions"),
+            format!("{home}/Library/Application Support/fnm/node-versions"),
+        ] {
+            if let Ok(entries) = std::fs::read_dir(&base) {
+                let mut versions: Vec<String> = entries
+                    .filter_map(|e| e.ok().map(|e| e.path().to_string_lossy().to_string()))
+                    .collect();
+                versions.sort();
+                if let Some(latest) = versions.last() {
+                    dirs.push(format!("{latest}/bin"));         // nvm layout
+                    dirs.push(format!("{latest}/installation/bin")); // fnm layout
+                }
+            }
         }
     }
-    // PATH (works when launched from a shell) then npx as a last resort so the
-    // wizard can still run on a machine that only has Node.
-    if which("folklore") {
-        return ("folklore".into(), vec![]);
+    for p in ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"] {
+        dirs.push(p.to_string());
     }
-    let npx = if cfg!(target_os = "windows") { "npx.cmd" } else { "npx" };
-    (npx.into(), vec!["--yes".into(), "@usefolklore/folklore".into()])
+    dirs
 }
 
-fn which(bin: &str) -> bool {
-    let (probe, arg) = if cfg!(target_os = "windows") {
-        ("where", bin)
+/// First `<dir>/<name>` (or `<name>.cmd` on Windows) that exists.
+fn find_in_dirs(name: &str) -> Option<String> {
+    let names: Vec<String> = if cfg!(target_os = "windows") {
+        vec![format!("{name}.cmd"), format!("{name}.exe"), name.to_string()]
     } else {
-        ("which", bin)
+        vec![name.to_string()]
     };
-    Command::new(probe)
-        .arg(arg)
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+    for dir in bin_dirs() {
+        for n in &names {
+            let cand = format!("{dir}/{n}");
+            if std::path::Path::new(&cand).exists() {
+                return Some(cand);
+            }
+        }
+    }
+    None
+}
+
+/// Resolve how to run the folklore CLI. Prefer a globally-installed `folklore`
+/// binary (fast, exact version); otherwise resolve `npx` (across the same set of
+/// locations) and run the published package. Returns (program, leading-args), or
+/// an error string if no Node tooling can be found at all.
+fn folklore_cli() -> Result<(String, Vec<String>), String> {
+    if let Some(folklore) = find_in_dirs("folklore").or_else(|| which_path("folklore")) {
+        return Ok((folklore, vec![]));
+    }
+    if let Some(npx) = find_in_dirs("npx").or_else(|| which_path("npx")) {
+        return Ok((npx, vec!["--yes".into(), "@usefolklore/folklore".into()]));
+    }
+    Err("Node.js was not found on this machine. Install Node (nodejs.org) or the \
+         folklore CLI (npm i -g @usefolklore/folklore), then run setup again."
+        .into())
+}
+
+/// `which`/`where` lookup that returns the resolved absolute path.
+fn which_path(bin: &str) -> Option<String> {
+    let (probe, arg) = if cfg!(target_os = "windows") { ("where", bin) } else { ("which", bin) };
+    let out = Command::new(probe).arg(arg).output().ok()?;
+    if !out.status.success() { return None; }
+    String::from_utf8_lossy(&out.stdout).lines().next().map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
 }
 
 fn run_cli(sub: &[&str]) -> Result<String, String> {
-    let (program, mut args) = folklore_cli();
+    let (program, mut args) = folklore_cli()?;
     for s in sub {
         args.push((*s).to_string());
     }
