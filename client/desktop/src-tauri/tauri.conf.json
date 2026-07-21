@@ -17,6 +17,20 @@
         "resizable": false,
         "center": true,
         "visible": true
+      },
+      {
+        "label": "island",
+        "url": "island.html",
+        "width": 460,
+        "height": 150,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "shadow": false,
+        "visible": false,
+        "focus": false
       }
     ],
     "security": { "csp": null }

@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use tauri::{
     menu::{Menu, MenuItem},
-    tray::TrayIconBuilder,
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Manager,
 };
 
@@ -222,19 +222,81 @@ fn daemon_stop(app: AppHandle) -> Result<String, String> {
     run_cli(&app, &["daemon", "stop"])
 }
 
+/// The folklore data home — `$FOLKLORE_HOME` or `~/.folklore`.
+fn folklore_home() -> Option<PathBuf> {
+    if let Ok(h) = std::env::var("FOLKLORE_HOME") {
+        if !h.is_empty() {
+            return Some(PathBuf::from(h));
+        }
+    }
+    std::env::var("HOME").ok().map(|h| PathBuf::from(h).join(".folklore"))
+}
+
+/// The last `n` lines of the append-only peer activity feed
+/// (`<home>/activity-feed.jsonl`), newest last — the same feed the island tails.
+/// Returns the raw JSONL lines; the island parses them. Empty when the daemon
+/// hasn't written any activity yet.
+#[tauri::command]
+fn recent_activity(n: usize) -> Vec<String> {
+    let Some(path) = folklore_home().map(|h| h.join("activity-feed.jsonl")) else {
+        return vec![];
+    };
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        return vec![];
+    };
+    let lines: Vec<String> = text.lines().filter(|l| !l.trim().is_empty()).map(|l| l.to_string()).collect();
+    let start = lines.len().saturating_sub(n);
+    lines[start..].to_vec()
+}
+
+/// Toggle the peer-activity island popover, positioning it at the top-center of
+/// the primary screen (where the notch sits on a MacBook; a floating pill on
+/// other machines).
+fn toggle_island(app: &AppHandle) {
+    let Some(win) = app.get_webview_window("island") else { return };
+    if win.is_visible().unwrap_or(false) {
+        let _ = win.hide();
+        return;
+    }
+    if let Some(mon) = win.primary_monitor().ok().flatten() {
+        let scale = mon.scale_factor();
+        let mon_w = mon.size().width as f64;
+        let win_w = win.outer_size().map(|s| s.width as f64).unwrap_or(440.0 * scale);
+        let x = (mon.position().x as f64) + (mon_w - win_w) / 2.0;
+        let _ = win.set_position(tauri::PhysicalPosition::new(x, mon.position().y as f64));
+    }
+    let _ = win.show();
+    let _ = win.set_focus();
+}
+
 fn build_tray(app: &tauri::App) -> tauri::Result<()> {
+    let activity = MenuItem::with_id(app, "activity", "Peer Activity", true, None::<&str>)?;
     let open = MenuItem::with_id(app, "open", "Open Folklore", true, None::<&str>)?;
     let onboard = MenuItem::with_id(app, "onboard", "Run Setup Wizard", true, None::<&str>)?;
     let start = MenuItem::with_id(app, "start", "Start Daemon", true, None::<&str>)?;
     let stop = MenuItem::with_id(app, "stop", "Stop Daemon", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &onboard, &start, &stop, &quit])?;
+    let menu = Menu::with_items(app, &[&activity, &open, &onboard, &start, &stop, &quit])?;
 
     TrayIconBuilder::with_id("folklore-tray")
         .icon(app.default_window_icon().unwrap().clone())
         .tooltip("Folklore")
         .menu(&menu)
+        // Left-click the tray icon → toggle the peer-activity island (the menu
+        // still opens on right-click / secondary).
+        .show_menu_on_left_click(false)
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                toggle_island(tray.app_handle());
+            }
+        })
         .on_menu_event(|app, event| match event.id.as_ref() {
+            "activity" => toggle_island(app),
             "open" => {
                 if let Some(w) = app.get_webview_window("main") {
                     let _ = w.show();
@@ -267,7 +329,8 @@ pub fn run() {
             harness_list,
             daemon_status,
             daemon_start,
-            daemon_stop
+            daemon_stop,
+            recent_activity
         ])
         .setup(|app| {
             build_tray(app)?;
