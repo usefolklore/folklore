@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Folklore · Research — the seven questions, answered</title>
-<meta name="description" content="Seven research questions on peer-to-peer inference reuse, each answered with measured benchmarks — including the disciplined negatives. Provenance ranker ~25x against poison, federation +22% over a tuned single-node cache, reuse with hurt=0." />
+<title>Folklore · Research · seven questions, measured</title>
+<meta name="description" content="Measured research on peer-to-peer inference reuse: federation savings, model-produced trace sharing, cross-encoder admission, disciplined negatives, and the labeled reruns still required." />
 <meta name="theme-color" content="#f4ecd8" />
 <meta property="og:type" content="article" />
-<meta property="og:title" content="Folklore · Research — the seven questions, answered" />
-<meta property="og:description" content="Measured, not claimed. Seven questions on shared-inference reuse, answered with benchmarks — wins and the honest negatives." />
+<meta property="og:title" content="Folklore · Research · seven questions, measured" />
+<meta property="og:description" content="Measured, not claimed. Seven questions on shared-inference reuse, answered with benchmarks: wins and the honest negatives." />
 <meta property="og:url" content="https://usefolklore.sh/research" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta property="og:image" content="https://usefolklore.sh/assets/gen/og.png" />
@@ -108,8 +108,8 @@
 <main class="wrap">
   <section class="hero">
     <span class="stamp">◆ Research · measured, not claimed</span>
-    <h1>The seven questions, answered.</h1>
-    <p class="lead">Folklore is a peer-to-peer layer where agents share prior, verified inference instead of re-deriving it. That makes two bets — it <b>saves cost and compounds quality</b>, and it <b>stays reliable through signed provenance</b>. We tried to <b>falsify both</b>. Here is every question, its measured answer, and the disciplined negatives we kept rather than buried. Three of the seven overturned our own first guess.</p>
+    <h1>Seven questions, measured.</h1>
+    <p class="lead">Folklore is a peer-to-peer layer where agents share prior, verified inference instead of re-deriving it. That makes two bets: it <b>saves cost and compounds quality</b>, and it <b>stays reliable through signed provenance</b>. We tried to <b>falsify both</b>. Here is every question, its measured answer, and the disciplined negatives we kept rather than buried. Three of the seven overturned our own first guess.</p>
     <div class="btnrow">
       <a class="btn" href="/whitepaper">Read the white paper</a>
       <a class="btn ghost" href="https://github.com/usefolklore/folklore/tree/main/research">Proofs &amp; raw runs →</a>
@@ -117,9 +117,9 @@
   </section>
 
   <div class="board">
-    <div class="bcell"><span class="rq">RQ1 · reuse → quality</span><div class="t">Reuse is safe</div><span class="v win">Positive</span></div>
-    <div class="bcell"><span class="rq">RQ2 · detect bad reuse</span><div class="t">OOD gate unsolved</div><span class="v neg">Hard negative</span></div>
-    <div class="bcell"><span class="rq">RQ3 · trust / poison</span><div class="t">Provenance ~25×</div><span class="v win">Proven</span></div>
+    <div class="bcell"><span class="rq">RQ1 · reuse → quality</span><div class="t">Retrieval positive</div><span class="v part">Answer rerun</span></div>
+    <div class="bcell"><span class="rq">RQ2 · detect bad reuse</span><div class="t">Cross-encoder .884</div><span class="v part">Split result</span></div>
+    <div class="bcell"><span class="rq">RQ3 · trust / poison</span><div class="t">Labels invalid</div><span class="v neg">Rerun</span></div>
     <div class="bcell"><span class="rq">RQ4 · savings</span><div class="t">Beats solo cache</div><span class="v win">Positive</span></div>
     <div class="bcell"><span class="rq">RQ5 · compounding</span><div class="t">Compounds, real</div><span class="v part">Pilot-pending</span></div>
     <div class="bcell"><span class="rq">RQ6 · benchmarks</span><div class="t">Suite shipped</div><span class="v win">Built</span></div>
@@ -128,13 +128,13 @@
 
   <!-- RQ1 -->
   <section class="rq" id="rq1">
-    <div class="rqhead"><span class="rqno">RQ1</span><span class="v win">Positive</span></div>
+    <div class="rqhead"><span class="rqno">RQ1</span><span class="v part">Split result</span></div>
     <h2>When does reusing a prior answer improve quality?</h2>
     <div class="grid">
       <div>
-        <p class="ans">Reuse helps — and never hurts — when the match is made on the <b>question</b> (query↔query), the reused answer was actually correct, and it enters as <b>additive context</b> the model can still reason over. The recalibrated 0.6 match gate turns out to sit in a safe gap: the most similar <i>different-need</i> claims on SciFact top out at cosine <b>0.544</b> — below the gate — so a cross-need answer can't even fire.</p>
-        <div class="ex"><span class="k">Example</span>Two engineers ask paraphrases of <i>"does X regulate Y?"</i>. The second inherits the first peer's already-verified source instead of paying for a fresh search — same need, near-identical embedding.</div>
-        <p class="src">Bench: <code>bench-inference-tree-sharing.mjs</code>, <code>run-e1-reuse.mjs</code> · recall@10 73.5%→98.6%, answer-level hurt 0/9</p>
+        <p class="ans">Retrieval improves when the match is made on the <b>question</b> (query↔query): tree sharing raises recall@10 from 73.5% to 98.6% with 7/8,000 retrieval regressions. On the frozen SciFact fixture, different-need claims top out at cosine <b>0.544</b>, below the 0.6 gate. The older answer-level "hurt 0/9" claim is withdrawn: its scorer treated all claims as SUPPORT, while the official labels are 39 SUPPORT / 21 CONTRADICT / 40 NOINFO.</p>
+        <div class="ex"><span class="k">Example</span>Two engineers ask paraphrases of <i>"does X regulate Y?"</i>. The second inherits the first peer's already-verified source instead of paying for a fresh search: same need, near-identical embedding.</div>
+        <p class="src">Bench: <code>bench-inference-tree-sharing.mjs</code>, <code>run-e1-reuse.mjs</code>, <code>audit-scifact-labels.mjs</code></p>
       </div>
       <div class="fig">
         <div class="figttl">Retrieval recall@10 · NFCorpus</div>
@@ -154,30 +154,30 @@
     </div>
   </section>
 
-  <!-- RQ3 (placed early — the headline safety result) -->
+  <!-- RQ3 -->
   <section class="rq" id="rq3">
-    <div class="rqhead"><span class="rqno">RQ3</span><span class="v win">Proven</span></div>
+    <div class="rqhead"><span class="rqno">RQ3</span><span class="v neg">Labeled rerun required</span></div>
     <h2>Can cryptographic provenance defend reused context against poison?</h2>
     <div class="grid">
       <div>
-        <p class="ans">Yes — exactly where the baseline is vulnerable. We first saw a <i>null</i> (a frontier model shrugged off the poison) and almost shipped it. It was a <b>measurement artifact</b>: the correct source was pinned in the window. Push the gold out, run a weaker agent under a 75% colluding-Sybil majority, and the baseline is genuinely poisoned (53–64% flip to the lie). The <b>provenance ranker</b> — drop every unsigned passage, keep the attributed-signed source — cuts attack-success <b>~25×</b>, and stays flat as the poison rate climbs.</p>
-        <div class="ex"><span class="k">Example</span>A Sybil cluster floods the context with signed-but-fake "erratum: the finding was retracted" passages. Dropping everything unsigned re-surfaces the one real source; the agent answers correctly.</div>
-        <p class="src">Bench: BEIR SciFact, Haiku agent / Opus judge, n=82, 2,957 judged cells · <code>eval/RESULTS-LOG.md</code></p>
+        <p class="ans">Not proven yet. The ranker produced a large, poison-rate-invariant behavioral effect by dropping unsigned passages, but the harness scored every BEIR SciFact claim as SUPPORT. Official labels show that assumption is false. The old <b>~25× correctness headline is invalid</b>; it is preserved as historical output, not safety evidence.</p>
+        <div class="ex"><span class="k">Required rerun</span>Score official SUPPORT and CONTRADICT claims against their actual verdicts, handle NOINFO through an explicit abstention policy, and then compare identical poisoned contexts with and without trusted provenance.</div>
+        <p class="src">Audit: <code>audit-scifact-labels.mjs</code> · 39 SUPPORT / 21 CONTRADICT / 40 NOINFO</p>
       </div>
       <div class="fig">
-        <div class="figttl">Flip-attack-success · weak agent, gold-displaced</div>
-        <svg class="chart" viewBox="0 0 300 150" role="img" aria-label="Attack success 0.59 baseline vs 0.024 provenance ranker">
+        <div class="figttl">Historical scorer output · invalid verdict reference</div>
+        <svg class="chart" viewBox="0 0 300 150" role="img" aria-label="Historical invalid-label output 0.59 baseline vs 0.024 ranker">
           <line x1="92" y1="14" x2="92" y2="118" stroke="#1d1813" stroke-width="2"/>
           <line x1="92" y1="118" x2="292" y2="118" stroke="#1d1813" stroke-width="2"/>
           <rect x="94" y="44" width="178" height="24" fill="#ff4f6d" stroke="#1d1813" stroke-width="2"/>
-          <rect x="94" y="88" width="8" height="24" fill="#1fae8b" stroke="#1d1813" stroke-width="2"/>
+          <rect x="94" y="88" width="8" height="24" fill="#ece0c2" stroke="#1d1813" stroke-width="2"/>
           <text x="88" y="60" text-anchor="end" font-size="10">T0 baseline</text>
           <text x="88" y="104" text-anchor="end" font-size="10">T1 ranker</text>
           <text x="276" y="61" font-size="11" font-weight="700" fill="#ff4f6d">0.59</text>
-          <text x="108" y="105" font-size="11" font-weight="700" fill="#1fae8b">0.024</text>
-          <text x="94" y="138" font-size="10" fill="#5c4f3a">~25× protection · poison-rate-invariant (25→75%)</text>
+          <text x="108" y="105" font-size="11" font-weight="700">0.024</text>
+          <text x="94" y="138" font-size="10" fill="#5c4f3a">Do not interpret as correctness · official-label rerun pending</text>
         </svg>
-        <div class="figcap">The defense matters precisely when the baseline is vulnerable; a frontier model with the source present needs no rescue.</div>
+        <div class="figcap">The filtering behavior is real; its effect on truth is not established by this mislabeled run.</div>
       </div>
     </div>
   </section>
@@ -185,11 +185,11 @@
   <!-- RQ4 -->
   <section class="rq" id="rq4">
     <div class="rqhead"><span class="rqno">RQ4</span><span class="v win">Positive</span></div>
-    <h2>How much does sharing actually save — versus a good solo cache?</h2>
+    <h2>How much does sharing actually save, versus a good solo cache?</h2>
     <div class="grid">
       <div>
         <p class="ans">The existential test for being peer-to-peer: does federation beat a single node running a well-tuned semantic cache? At matched error (≤2% false-accept), federated reuse lands <b>+22% recall@1</b> over the tuned single-node cache, and +55% over cold retrieval. Savings are real but bounded by retrieval precision × hit-rate × the cost of verifying a reused answer.</p>
-        <div class="ex"><span class="k">Example</span>You already run a vCache-style local cache. Adding peers still resolves +22% more queries from memory at the same error budget — the network knows things your single cache never saw.</div>
+        <div class="ex"><span class="k">Example</span>You already run a vCache-style local cache. Adding peers still resolves +22% more queries from memory at the same error budget: the network knows things your single cache never saw.</div>
         <p class="src">Bench: <code>bench-vcache-compare.mjs</code> (SciFact, recall@1, matched ≤2% error)</p>
       </div>
       <div class="fig">
@@ -216,10 +216,10 @@
   <!-- RQ5 -->
   <section class="rq" id="rq5">
     <div class="rqhead"><span class="rqno">RQ5</span><span class="v part">Positive · pilot-pending</span></div>
-    <h2>Does shared inference compound across users — reliably?</h2>
+    <h2>Does shared inference compound across users, reliably?</h2>
     <div class="grid">
       <div>
-        <p class="ans">It compounds. On real SciFact qrels, cooperative correct-resolve rises from <b>27.9% → 39.3%</b> over isolated peers, at 1.8% false-admit — and real paraphrases separate from spurious matches at AUC <b>0.998</b>, so peers can safely reuse each other's resolutions. Structurally it's monotone submodular coverage (diminishing returns, not runaway). The one piece still unmeasured is at-scale reliability: a 100-peer, 30-day live pilot.</p>
+        <p class="ans">It compounds. On real SciFact qrels, cooperative correct-resolve rises from <b>27.9% → 39.3%</b> over isolated peers, at 1.8% false-admit, and real paraphrases separate from spurious matches at AUC <b>0.998</b>, so peers can safely reuse each other's resolutions. Structurally it's monotone submodular coverage (diminishing returns, not runaway). The one piece still unmeasured is at-scale reliability: a 100-peer, 30-day live pilot.</p>
         <div class="ex"><span class="k">Example</span>One peer pays to resolve a niche topic once; every other peer inherits it for a federation round-trip instead of a paid web call. The <i>n</i>-th query is increasingly likely to hit context already paid for.</div>
         <p class="src">Bench: <code>bench-compounding-real.mjs</code>, <code>bench-paraphrase-sigma.mjs</code></p>
       </div>
@@ -241,36 +241,30 @@
     </div>
   </section>
 
-  <!-- RQ2 — the honest negative -->
+  <!-- RQ2 · split result -->
   <section class="rq" id="rq2">
-    <div class="rqhead"><span class="rqno">RQ2</span><span class="v neg">Hard negative</span></div>
+    <div class="rqhead"><span class="rqno">RQ2</span><span class="v part">Split result</span></div>
     <h2>Can the system tell a reused answer is stale or off-topic?</h2>
     <div class="grid">
       <div>
-        <p class="ans">Not yet — and we tested this to exhaustion rather than claim it. An out-of-distribution admission gate should fire low for a query the graph can't really answer. On a 21,000-node graph it can't: <b>every</b> query finds moderate-cosine neighbours, so the signal sits near chance (AUC ~0.41–0.55). We swept every lever — embedder (MiniLM <i>and</i> a full bge re-embed), token coverage, margin, entropy, retrieval depth — all negative. The one untried lever is a cross-encoder admission score; that's the next real attempt.</p>
-        <div class="ex"><span class="k">Example</span>Ask a software-research graph <i>"how do I bake sourdough?"</i> It still returns its five nearest nodes at respectable cosine — the gate can't separate "I can answer this" from "I'm reaching."</div>
-        <p class="src">Bench: <code>bench-energy-gate.mjs</code>, <code>bench-energy-bge.mjs</code>, <code>bench-ood-signals.mjs</code></p>
+        <p class="ans">The bi-encoder layer fails, but the final untried lever worked. MiniLM, bge, coverage, margin, entropy, and retrieval depth stay near chance (AUC 0.41–0.55). A cached ms-marco cross-encoder rescoring the <b>live MiniLM candidates</b> reaches AUC <b>0.884</b>. That separates OOD relevance; it does not yet prove whole-answer replayability or detect on-distribution stale traces.</p>
+        <div class="ex"><span class="k">Example</span>Ask a software-research graph <i>"how do I bake sourdough?"</i> It still returns its five nearest nodes at respectable cosine. The gate can't separate "I can answer this" from "I'm reaching."</div>
+        <p class="src">Bench: <code>bench-energy-crossencoder.mjs</code> · leave-one-out TPR 86.1%, FPR 9.1%</p>
       </div>
-      <div class="fig neg">
-        <div class="figttl">OOD separation (AUC) · every lever ≈ chance</div>
-        <svg class="chart" viewBox="0 0 300 168" role="img" aria-label="All OOD signals AUC near 0.5">
-          <line x1="118" y1="8" x2="118" y2="138" stroke="#1d1813" stroke-width="2"/>
-          <line x1="220" y1="8" x2="220" y2="138" stroke="#1d1813" stroke-width="1" stroke-dasharray="3 3"/>
-          <text x="220" y="150" text-anchor="middle" font-size="9" fill="#5c4f3a">0.7 = usable</text>
-          <line x1="118" y1="138" x2="292" y2="138" stroke="#1d1813" stroke-width="2"/>
-          <!-- bars: scale x: 118 + (auc)*200 ; usable line at 0.7 -> 118+ (0.7-0.4)/0.4*... keep simple: width ~ (auc-0.3)*340 -->
-          <g font-size="9">
-            <rect x="118" y="14" width="86" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="24" text-anchor="end">MiniLM .55</text>
-            <rect x="118" y="32" width="84" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="42" text-anchor="end">bge re-embed .55</text>
-            <rect x="118" y="50" width="70" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="60" text-anchor="end">gap .51</text>
-            <rect x="118" y="68" width="57" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="78" text-anchor="end">broad-margin .47</text>
-            <rect x="118" y="86" width="48" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="96" text-anchor="end">top-1 .44</text>
-            <rect x="118" y="104" width="46" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="114" text-anchor="end">margin .43</text>
-            <rect x="118" y="122" width="14" height="13" fill="#ece0c2" stroke="#1d1813" stroke-width="1.5"/><text x="114" y="132" text-anchor="end">coverage −.10</text>
-          </g>
-          <text x="118" y="162" font-size="10" fill="#5c4f3a">None clears the usable bar. Documented, not buried.</text>
+      <div class="fig">
+        <div class="figttl">OOD separation · live retrieval candidates</div>
+        <svg class="chart" viewBox="0 0 300 150" role="img" aria-label="Bi-encoder AUC 0.552 vs cross-encoder 0.884">
+          <line x1="92" y1="14" x2="92" y2="118" stroke="#1d1813" stroke-width="2"/>
+          <line x1="92" y1="118" x2="292" y2="118" stroke="#1d1813" stroke-width="2"/>
+          <rect x="94" y="44" width="110" height="24" fill="#ece0c2" stroke="#1d1813" stroke-width="2"/>
+          <rect x="94" y="88" width="177" height="24" fill="#1fae8b" stroke="#1d1813" stroke-width="2"/>
+          <text x="88" y="60" text-anchor="end" font-size="10">bi-encoder</text>
+          <text x="88" y="104" text-anchor="end" font-size="10">cross-encoder</text>
+          <text x="208" y="61" font-size="11" font-weight="600">0.552</text>
+          <text x="275" y="105" font-size="11" font-weight="700" fill="#1fae8b">0.884</text>
+          <text x="94" y="138" font-size="10" fill="#5c4f3a">relevance fixed · replayability and stale-axis still open</text>
         </svg>
-        <div class="figcap">A negative we kept: detecting bad reuse isn't solvable at the bi-encoder layer here. Honesty is the result.</div>
+        <div class="figcap">Joint query-document scoring finds the signal that every embedding-only lever missed.</div>
       </div>
     </div>
   </section>
@@ -279,34 +273,34 @@
   <section class="rq" id="rq6">
     <div class="rqhead"><span class="rqno">RQ6</span><span class="v win">Built</span></div>
     <h2>What benchmarks make these answers rigorous?</h2>
-    <p class="ans">The harness <i>is</i> the suite. Retrieval quality on <b>BEIR</b> (SciFact / NFCorpus / FiQA), long-horizon memory on <b>LongMemEval</b> and <b>LoCoMo</b>, a templated <b>poison</b> eval (3 attacks × 3 rates × 3 treatments), a <code>recall_any@k</code> metric, and a <b>vCache</b> A/B for the savings question — plus the new ones built for this program: answer-quality-under-reuse, energy-coverage, energy-bge, and the OOD-signal sweep. Discipline throughout: matched comparisons, answers scored against gold qrels (never the gate), and every number labelled <b>simulator vs measured</b>. The open gap: no public benchmark scores cross-peer reuse <i>quality + savings + trust</i> jointly — which is the harness this program starts.</p>
+    <p class="ans">The harness <i>is</i> the suite. Retrieval quality on <b>BEIR</b> (SciFact / NFCorpus / FiQA), long-horizon memory on <b>LongMemEval</b> and <b>LoCoMo</b>, a templated <b>poison</b> eval (3 attacks × 3 rates × 3 treatments), a <code>recall_any@k</code> metric, and a <b>vCache</b> A/B for the savings question, plus the new ones built for this program: answer-quality-under-reuse, energy-coverage, energy-bge, and the OOD-signal sweep. Discipline throughout: matched comparisons, answers scored against gold qrels (never the gate), and every number labelled <b>simulator vs measured</b>. The open gap: no public benchmark scores cross-peer reuse <i>quality + savings + trust</i> jointly, which is the harness this program starts.</p>
   </section>
 
   <!-- RQ7 -->
   <section class="rq" id="rq7">
     <div class="rqhead"><span class="rqno">RQ7</span><span class="v frame">Framed</span></div>
     <h2>What architecture fits shared, provenance-tagged inference?</h2>
-    <p class="ans">The longer-term frontier, framed not yet benched. The reranker is already one modern-Hopfield update step — which <i>is</i> softmax attention; personalized-PageRank, EigenTrust, and cache eviction all read as energy-descent fixed points. The hypothesis that ties it to RQ3: long-context models that ingest <b>provenance-tagged</b> retrieved context as first-class evidence should out-calibrate models that see anonymous tokens. The open theory problem is a distributed Hopfield capacity theorem — how much shared memory the network holds before retrieval degrades.</p>
+    <p class="ans">The longer-term frontier, framed not yet benched. The reranker is already one modern-Hopfield update step, which <i>is</i> softmax attention; personalized-PageRank, EigenTrust, and cache eviction all read as energy-descent fixed points. The hypothesis that ties it to RQ3: long-context models that ingest <b>provenance-tagged</b> retrieved context as first-class evidence should out-calibrate models that see anonymous tokens. The open theory problem is a distributed Hopfield capacity theorem: how much shared memory the network holds before retrieval degrades.</p>
   </section>
 
   <!-- OPEN / CONTINUING QUESTIONS -->
   <section class="rq" id="open">
     <div class="rqhead"><span class="rqno">OPEN</span><span class="v frame">What's next</span></div>
-    <h2>Open questions — where the research goes next</h2>
-    <p class="ans">Every question above has a measured answer. These are the falsifiable follow-ups those answers point to — each a concrete experiment, not a wish.</p>
+    <h2>Open questions: where the research goes next</h2>
+    <p class="ans">The current ledger separates valid results from required reruns. These are the next falsifiable steps, each a concrete experiment, not a wish.</p>
     <div class="openq">
-      <div class="oq"><span class="tag">extends RQ2 · the open negative</span><b>Can a cross-encoder admission score detect bad reuse where every bi-encoder signal failed?</b><p>The one untried OOD lever — joint query–doc scoring, or a margin/entropy signal over the full corpus instead of top-k. The bi-encoder layer is exhausted; this needs the reranker model the sweep didn't have.</p></div>
+      <div class="oq"><span class="tag">extends RQ2 · after the .884 result</span><b>Does the cross-encoder generalize to held-out data, and can it reject non-replayable answers?</b><p>Calibrate on fresh fixtures, reject tool output and query echoes, then test on-distribution stale or wrong traces rather than only OOD relevance.</p></div>
       <div class="oq"><span class="tag">extends RQ5 · the only calendar-bound piece</span><b>Does compounding stay reliable across a real, churning 100-peer population over 30 days?</b><p>The live web-fallback curve and false-admit tail the simulator can't produce. This is where the thesis stops being a thesis.</p></div>
-      <div class="oq"><span class="tag">extends RQ3 · harden the win</span><b>Does the provenance defense survive an adaptive adversary — and a true 7B consumer?</b><p>Poison optimized against the trust filter (not templated fixtures), on a real small model rather than the Haiku proxy, plus EigenTrust-style Sybil-resistant reputation layered on the signature.</p></div>
-      <div class="oq"><span class="tag">extends RQ1 · RQ4</span><b>Does the reuse win survive measured end-to-end quality and wall-clock cost at scale?</b><p>Beyond n=20 retrieval recall: real answer-grading, net tokens/latency after verification cost, and a vCache per-prompt error guarantee replacing the static 0.6 gate.</p></div>
-      <div class="oq"><span class="tag">extends RQ6 · the missing harness</span><b>Build the benchmark that scores cross-peer reuse — quality, savings, and trust — jointly.</b><p>No public benchmark measures all three at once. That gap is the harness this program starts.</p></div>
-      <div class="oq"><span class="tag">extends RQ7 · the theory frontier</span><b>A distributed Hopfield capacity theorem — and does provenance-tagged context out-calibrate anonymous tokens?</b><p>How much shared memory the network holds before retrieval degrades, and whether long-context models that read provenance as first-class evidence calibrate better than those that see anonymous tokens.</p></div>
+      <div class="oq"><span class="tag">extends RQ3 · repair the fixture</span><b>Does provenance improve correctness under official claim labels?</b><p>Rerun the poison matrix on actual SUPPORT/CONTRADICT verdicts, define NOINFO abstention, then add an adaptive adversary and true 7B consumer.</p></div>
+      <div class="oq"><span class="tag">extends RQ1 · RQ4</span><b>Does reuse preserve answer quality while saving measured compute?</b><p>Rerun answer grading with correct labels and extend the 3-topic model-trace result to mixed verdicts, net tokens, latency, and provider billing.</p></div>
+      <div class="oq"><span class="tag">extends RQ6 · the missing harness</span><b>Build the benchmark that scores cross-peer reuse (quality, savings, and trust) jointly.</b><p>No public benchmark measures all three at once. That gap is the harness this program starts.</p></div>
+      <div class="oq"><span class="tag">extends RQ7 · the theory frontier</span><b>A distributed Hopfield capacity theorem, and does provenance-tagged context out-calibrate anonymous tokens?</b><p>How much shared memory the network holds before retrieval degrades, and whether long-context models that read provenance as first-class evidence calibrate better than those that see anonymous tokens.</p></div>
     </div>
   </section>
 
   <div class="callout">
-    <h3>Three of seven falsified our own first guess.</h3>
-    <p>The poisoning "null" was an artifact — provenance actually works (RQ3). The bge re-embed that looked like a fix for the OOD gate didn't survive live retrieval (RQ2). The 0.6 reuse gate we feared was too loose turned out to sit in the safe gap (RQ1). Engineering a benchmark that can kill your own idea, then reporting exactly what it shows, is the whole posture.</p>
+    <h3>The ledger changes when the evidence changes.</h3>
+    <p>The cross-encoder rescued OOD relevance after every bi-encoder lever failed. The SciFact audit revoked the answer-safety and ~25× provenance headlines after finding invalid verdict labels. The 0.6 gate still sits above the measured different-need ceiling on the frozen fixture. Engineering a benchmark that can kill your own claim, then updating the record, is the whole posture.</p>
     <div class="btnrow">
       <a class="btn" href="/whitepaper">Read the white paper</a>
       <a class="btn ghost" href="https://github.com/usefolklore/folklore/tree/main/research">Per-RQ notes &amp; raw runs →</a>
@@ -314,7 +308,7 @@
   </div>
 
   <div class="ftr">
-    <p>Every figure here is a real bench run on real corpora (BEIR qrels, the live graph) — wins and negatives alike. Methods, per-question notes, and raw captures live in <a href="https://github.com/usefolklore/folklore/tree/main/research">/research</a>. Simulator results are labelled as such; the 100-peer pilot is the one calendar-bound piece still ahead.</p>
+    <p>Every figure here is a real bench run on real corpora or the live graph: wins, negatives, and revoked interpretations alike. BEIR qrels are treated as relevance labels, never claim verdicts. Methods, per-question notes, and raw captures live in <a href="https://github.com/usefolklore/folklore/tree/main/research">/research</a>.</p>
     <p style="margin-top:14px">Folklore · MIT-licensed · <a href="/">home</a> · <a href="/whitepaper">white paper</a> · <a href="https://github.com/usefolklore/folklore">github</a></p>
   </div>
 </main>
