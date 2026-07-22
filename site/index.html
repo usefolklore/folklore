@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Folklore · oral tradition, set down for machines</title>
+<title>Folklore · peer-to-peer memory for AI agents</title>
 <!-- GA4 + auto-instrumentation (Sahar Barak network) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-YNR9V7CGP2"></script>
 <script>
@@ -20,7 +20,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 <meta name="description" content="Folklore is peer-to-peer memory for AI agents: peers share research so your agent starts from what the network knows. Local-first, signed provenance, CPU-only." />
 <meta name="theme-color" content="#f4ecd8" />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Folklore · oral tradition, set down for machines" />
+<meta property="og:title" content="Folklore · peer-to-peer memory for AI agents" />
 <meta property="og:description" content="A local-first memory layer for AI agents. Answers before the web. Works alone, compounds with peers." />
 <meta property="og:url" content="https://usefolklore.sh/" />
 <meta property="og:image" content="https://usefolklore.sh/assets/gen/og.png" />
@@ -335,7 +335,7 @@ if(document.readyState!=='loading')ready();else document.addEventListener('DOMCo
 <div class="cl" style="--i:3"><span class="e">    │</span></div>
 <div class="cl" style="--i:4"><span class="e">    └──→ </span><span class="nsym"><svg><use href="#flower"/></svg></span><span class="lbl">  1 semantic memory · centroid + signed provenance</span></div>
 <div class="cl" style="--i:5"><span class="e">&nbsp;</span></div>
-<div class="cl" style="--i:6"><span class="e">    stale + contradicted  ──→  </span><span class="lbl">let go</span></div>
+<div class="cl" style="--i:6"><span class="e">    </span><span class="lbl">stale + contradicted</span><span class="e">  ──→  </span><span class="lbl">let go</span></div>
         </div>
         <p class="obig">even the graph <em>sleeps.</em></p>
         <p class="ofoot" style="text-align:center">episodic becomes semantic; stale facts are forgotten. a model consolidates in its own weights, alone. the commons consolidates in the open: <b>shared, signed, and yours.</b></p>
@@ -572,7 +572,7 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{
   if(!e.isIntersecting)return;const el=e.target;el.classList.add('in');el.classList.remove('reveal-pending');
   el.querySelectorAll?.('[data-count]').forEach(runCount);
   io.unobserve(el);
-}),{threshold:.2});
+}),{threshold:.05,rootMargin:"0px 0px 18% 0px"});
 document.querySelectorAll('.rv,#bars').forEach(el=>io.observe(el));
 // fail-safe: never leave the bars stuck empty if the observer never fires
 if(_bars)setTimeout(function(){_bars.classList.remove('reveal-pending');},2500);

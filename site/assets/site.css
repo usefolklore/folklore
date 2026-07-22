@@ -335,9 +335,9 @@
     img,video{max-width:100%}
   }
 
-  .rv{opacity:0;transform:translateY(30px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
+  .rv{opacity:0;transform:translateY(18px);transition:opacity .45s cubic-bezier(.16,1,.3,1),transform .45s cubic-bezier(.16,1,.3,1)}
   .rv.in{opacity:1;transform:none}
-  .rv[data-d="1"]{transition-delay:.1s}.rv[data-d="2"]{transition-delay:.2s}.rv[data-d="3"]{transition-delay:.3s}
+  .rv[data-d="1"]{transition-delay:.05s}.rv[data-d="2"]{transition-delay:.1s}.rv[data-d="3"]{transition-delay:.15s}
   @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}.fg,.farshape,.track{animation:none}.scrollcue svg{animation:none}}
 
   @keyframes cur-blink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
@@ -571,6 +571,8 @@ html{scroll-behavior:smooth}
 
 /* ══ the shell · the site as a folklore session ══ */
 .shell-stage{position:relative;padding:150px clamp(14px,4vw,40px) 96px;z-index:2}
+/* On dark terminal surfaces the global pink selection is unreadable: use yellow/ink. */
+.shell ::selection,.term ::selection,.blk ::selection{background:var(--yellow);color:var(--ink)}
 .shell{
   max-width:1060px;margin:0 auto;background:#1d1813;
   border:3px solid var(--ink);border-radius:14px;overflow:hidden;
@@ -678,8 +680,8 @@ html{scroll-behavior:smooth}
 
 .blk video{width:100%;max-width:880px;display:block;border:2px solid #3a3127;border-radius:10px;background:#0d0b08}
 .shell .cascade{margin:0;font-size:clamp(.8rem,.95vw,1rem)}
-.shell .cascade .e{color:#5c5142}
-.shell .cascade .lbl{color:#c9bda1}
+.shell .cascade .e{color:#8a7c62;opacity:1}
+.shell .cascade .lbl{color:#e9dfc7;opacity:1}
 .shell .cascade .ask{color:var(--yellow);font-weight:700}
 .shell .cascade .seed{color:var(--pink)}
 .shell .cascade .nd{color:var(--teal)}
@@ -1020,7 +1022,9 @@ body.term-home #store{border-top:3px solid #0d0b08}
 
 /* TREE · monumental */
 .cascade.big{font-size:clamp(1.05rem,1.7vw,1.5rem);line-height:2;margin:0 auto;width:fit-content}
-.cascade.big .lbl{color:#e9dfc7}
+.cascade.big .lbl{color:#e9dfc7;opacity:1}
+.cascade.big .e{color:#9d8f74;opacity:1}
+.cascade.big .ask{color:var(--yellow);opacity:1}
 .nsym{display:inline-block;vertical-align:-4px}
 .nsym svg{width:21px;height:21px;color:var(--teal)}
 .nsym.seed svg{width:24px;height:24px;color:var(--yellow);filter:drop-shadow(0 0 8px rgba(245,185,33,.45))}
