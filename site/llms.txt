@@ -35,12 +35,26 @@
 - vs LangChain RAG / Pinecone: those are retrieval over a vector store with no
   web-gating, no provenance, no federation.
 
+## Desktop app (macOS, Windows, Linux)
+- One installer per OS: signed + notarized .dmg for macOS, .exe/.msi for
+  Windows, .AppImage/.deb for Linux. The setup wizard installs the node, wires
+  every AI coding tool on the machine (Claude Code, Cursor, Cline, Windsurf,
+  Gemini CLI, Zed, opencode, Roo), and starts the daemon. No terminal needed.
+- Also: npm install -g @usefolklore/folklore, or
+  brew install --cask usefolklore/tap/folklore
+- Downloads, release history, checksums, known issues: https://usefolklore.sh/download/
+
 ## Links
 - Code + full benchmark: https://github.com/usefolklore/folklore
+- Download: https://usefolklore.sh/download/
+- Research (7 RQs, measured answers): https://usefolklore.sh/research/
 - Comparison page: https://usefolklore.sh/compare/
 - Whitepaper: https://usefolklore.sh/whitepaper/
+- How it works: https://usefolklore.sh/how-it-works/
 - Site: https://usefolklore.sh/
+- Full machine-readable overview: https://usefolklore.sh/llms-full.txt
 
 ## Honest status
-- Works alone (local) today. Peer-to-peer federation is shipping; the compounding
-  numbers above are from the validated benchmark/simulation, labeled as such.
+- Works alone (local) today; P2P federation (tracker discovery, NAT relay,
+  contribution ledger) has shipped. Compounding numbers are from the validated
+  benchmark/simulation and are labeled measured vs simulated throughout.

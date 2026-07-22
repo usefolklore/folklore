@@ -1,4 +1,4 @@
-# Folklore — open to search + answer engines (AEO)
+# Folklore: open to search + answer engines (AEO)
 User-agent: *
 Allow: /
 

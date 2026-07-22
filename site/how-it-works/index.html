@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>How Folklore works · a query, traced</title>
-<meta name="description" content="A 47-minute debug in Berlin becomes a 142 ms hit in Tokyo: how folklore intercepts research calls, answers from peer graphs, and files results back signed. 0 servers between." />
+<meta name="description" content="A 47-minute debug in Berlin becomes a 142 ms hit in Tokyo: how folklore intercepts research calls, answers from peer graphs, and files results back signed." />
 <meta name="theme-color" content="#f4ecd8" />
 <link rel="canonical" href="https://usefolklore.sh/how-it-works/" />
 <meta property="og:type" content="article" />
@@ -19,6 +19,83 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../assets/site.css"/>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What happens when my agent asks a question with Folklore installed?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The query goes to your own local graph first, which answers free and instantly. If that misses, Folklore asks connected peer graphs in roughly 140 ms, and a confidence gate decides whether the answer is good enough to use without touching the web."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What happens if neither my graph nor my peers have a good answer?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The query falls through to the web exactly once. The result is signed and saved back into the graph, so the next ask hits the graph instead of repeating the web call."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How fast is an answer that comes from a peer?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "In the traced example, a problem that cost one peer a 47 minute debug session in Berlin comes back to a peer in Tokyo as a 142 ms hit, with zero web calls and the signed trace injected directly into the agent's context."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there a central server between peers?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Peers answer each other directly: no server brokers the query and no vendor takes a cut. The traced Berlin to Tokyo exchange happens with 0 servers between."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does Folklore keep shared answers trustworthy?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Every saved trace is signed by its author with a key such as ed25519, so when a peer receives an answer it arrives verified and attributed to a named hand."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does the network repeat the same research?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. One peer pays the cost once and everyone after skips it. Each exchange copies the trace into more graphs, so the next query is even more likely to hit."
+          }
+        }
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://usefolklore.sh/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "How It Works",
+          "item": "https://usefolklore.sh/how-it-works/"
+        }
+      ]
+    }
+  ]
+}
+</script>
 </head>
 <body>
 <div class="grain"></div>
@@ -64,7 +141,7 @@
 <section id="trace" class="tx-dots">
   <div class="wrap">
     <div class="stamp rv">Chapter the Fourth & a Half · A Query, Traced</div>
-    <h2 class="rv" data-d="1"><span class="mis" data-text="47-minute debug. 142 ms hit.">47-minute debug. <span class="em-blue">142&nbsp;ms</span> hit.</span></h2>
+    <h1 class="rv" data-d="1" style="font-size:var(--t-h2);max-width:18ch"><span class="mis" data-text="47-minute debug. 142 ms hit.">47-minute debug. <span class="em-blue">142&nbsp;ms</span> hit.</span></h1>
     <p class="body rv" data-d="1" style="font-size:1.1rem;opacity:.8;max-width:54ch">One peer pays the cost. The network gets the answer. No server brokers it, no vendor takes a cut.</p>
 
     <div class="flow-wrap rv" data-d="1" aria-hidden="true">

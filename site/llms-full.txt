@@ -1,0 +1,94 @@
+# Folklore: full overview for answer engines
+
+Folklore is open-source, peer-to-peer memory for AI agents. Peers share their
+research over the network, so a new agent starts from what the network already
+knows instead of square one. Locally it answers from a knowledge graph before it
+hits the web, and saves what it learns with signed provenance so shared memory
+can't be poisoned. MIT licensed. CPU-only, no API key required.
+
+Site: https://usefolklore.sh · Code: https://github.com/usefolklore/folklore
+
+## How it works (the loop)
+
+1. An agent issues a research-shaped call (WebSearch, WebFetch, an arXiv pull).
+2. A PreToolUse hook asks the local knowledge graph first (hybrid lexical +
+   vector retrieval, cross-encoder rerank, graph PPR rerank).
+3. A confident hit (satisfaction >= 0.85, >= 2 graph hits) is served from
+   memory and the web call is denied: the agent reasons from cached knowledge.
+4. A miss lets the web call proceed; a PostToolUse hook auto-saves the result
+   into the graph with signed provenance.
+5. Non-private nodes sync peer-to-peer (Y.js CRDT), so one peer's resolved
+   answer saves every other peer the same web trip. Reputation accrues to
+   peers who serve the network (contribution ledger).
+
+## Key measured results
+
+- Retrieval: 0.7522 NDCG@10 on full BEIR SciFact, CPU-only. Ahead of standard
+  CPU retrievers: E5 0.737, SPLADE 0.699, ColBERT 0.671, BM25 0.665. A 3B GPU
+  reranker (InRanker 0.783) still scores higher; Folklore does not claim
+  otherwise.
+- Poison defense: in a matched poison test, similarity-only memory tools
+  (mem0, Letta, LangChain RAG) are fully flipped by a crafted poison document;
+  Folklore's signed-provenance ranking drives the flip rate to 0.
+- Federation: a cooperative cache across peers reaches ~0.97 hit-rate at 64
+  peers vs a single-user silo's flat ~0.31.
+- The public research page labels every number measured vs simulated and keeps
+  the negative results: https://usefolklore.sh/research/
+
+## Install
+
+Desktop app (installs everything, wires AI tools, no terminal):
+- macOS: signed + notarized universal .dmg (Ventura 13+)
+- Windows: .exe or .msi (Windows 10+, 64-bit; unsigned for now, SmartScreen
+  will warn once)
+- Linux: .AppImage or .deb
+- Downloads, release history, checksums, known issues:
+  https://usefolklore.sh/download/
+
+Command line:
+- npm install -g @usefolklore/folklore  (Node 20+)
+- brew install --cask usefolklore/tap/folklore  (macOS desktop app via Homebrew)
+
+The setup wizard registers the folklore MCP server in every AI coding tool it
+detects: Claude Code, Cursor, Cline, Windsurf, Gemini CLI, Zed, opencode, Roo.
+
+## Frequently asked
+
+Q: Does Folklore need a GPU or an API key?
+A: No. Retrieval, reranking, and embeddings all run CPU-only, locally, with no
+API key. There is no per-write LLM call.
+
+Q: How is it different from mem0 or Letta?
+A: Those are single-user memory stores. Folklore adds signed provenance (peer
+memory can't be silently poisoned) and peer-to-peer federation (peers share
+resolved research), and it gates web calls behind the graph so an agent stops
+paying for the same research twice.
+
+Q: What travels over the network?
+A: Only nodes not marked private, after a secret scan. A local-only workspace
+tag never leaves the machine. Every shared node carries a signature naming the
+hand that saved it.
+
+Q: What happens when the graph is wrong or stale?
+A: Every hit carries its age; hits older than the staleness window (default 7
+days) prefer a fresh fetch, which is then saved back. The deny threshold is
+tunable per project.
+
+Q: Is the compounding claim measured or simulated?
+A: The federation hit-rate curve is from a validated benchmark/simulation and
+is labeled as such; retrieval and poison-defense numbers are measured on
+public benchmarks. The research page separates the two honestly.
+
+## Page index
+
+- https://usefolklore.sh/ : what Folklore is, live peer swarm, install
+- https://usefolklore.sh/download/ : per-OS installers, releases, checksums, known issues
+- https://usefolklore.sh/how-it-works/ : the hook loop, step by step
+- https://usefolklore.sh/research/ : 7 research questions with measured answers
+- https://usefolklore.sh/whitepaper/ : full technical whitepaper
+- https://usefolklore.sh/compare/ : measured comparison vs mem0, Letta, RAG stacks
+- https://usefolklore.sh/alternatives/mem0/ : Folklore as a mem0 alternative
+- https://usefolklore.sh/alternatives/letta/ : Folklore as a Letta alternative
+- https://usefolklore.sh/statistics/ : the proof: benchmarks and live numbers
+- https://usefolklore.sh/blog/ : essays on shared agent memory
+- https://usefolklore.sh/creed/ : why the project exists
