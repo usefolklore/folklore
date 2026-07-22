@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Signed by a named hand · Folklore</title>
-<meta name="description" content="Anonymous answers of unknown trust are how RAG gets poisoned. Every record in Folklore is signed by a real, verified human — so a model can refuse what it can't trace." />
+<meta name="description" content="Anonymous answers of unknown trust are how RAG gets poisoned. Every record in Folklore is signed by a real, verified human, so a model can refuse what it can't trace." />
 <meta name="theme-color" content="#f4ecd8" />
 <meta property="og:type" content="article" />
 <meta property="og:title" content="Signed by a named hand · Folklore" />
@@ -48,19 +48,19 @@
     <h1>Signed by a named hand</h1>
     <div class="date">2026-06-15 · 4 min read · by <a href="https://github.com/SaharBarak" rel="author">@SaharBarak</a> · <a href="mailto:hi@saharbarak.dev">hi@saharbarak.dev</a></div>
     <div class="body">
-      <p>The dangerous thing about a shared memory for agents is the same thing that makes it valuable: your model will trust it. Pull a claim from the commons and the agent treats it as settled — it reasons forward from there instead of re-deriving it. That's the entire point. It's also the attack surface. A memory layer that accepts anonymous contributions of unknown trust isn't a knowledge graph; it's a poisoning vector with good intentions.</p>
+      <p>The dangerous thing about a shared memory for agents is the same thing that makes it valuable: your model will trust it. Pull a claim from the commons and the agent treats it as settled: it reasons forward from there instead of re-deriving it. That's the entire point. It's also the attack surface. A memory layer that accepts anonymous contributions of unknown trust isn't a knowledge graph; it's a poisoning vector with good intentions.</p>
       <p>Retrieval-augmented systems already learned this the hard way. Feed a model a confidently-worded false document and it will launder the lie into a fluent, cited-sounding answer. Now imagine that document arrives not from the open web but from inside your trusted cache, indistinguishable from the real reasoning sitting next to it. There's nothing to check it against, because nobody put their name on any of it.</p>
 
       <h2>Every record carries a signature</h2>
-      <p>Folklore's answer is old folk wisdom: you trust knowledge that comes from a hand you can name. In a village, lore travels with attribution — this is the way <em>her</em> family fords the river, this is the cure <em>he</em> swears by. You weigh the claim by who's standing behind it.</p>
-      <p>So every record in the graph is signed by a real, verified human. Not a handle, not a vibe — a cryptographic signature tied to an identity. When your agent serves a cached answer, it knows exactly whose resolved reasoning it's standing on. Provenance isn't metadata stapled on afterward; it's the price of admission to the commons.</p>
+      <p>Folklore's answer is old folk wisdom: you trust knowledge that comes from a hand you can name. In a village, lore travels with attribution: this is the way <em>her</em> family fords the river, this is the cure <em>he</em> swears by. You weigh the claim by who's standing behind it.</p>
+      <p>So every record in the graph is signed by a real, verified human. Not a handle, not a vibe: a cryptographic signature tied to an identity. When your agent serves a cached answer, it knows exactly whose resolved reasoning it's standing on. Provenance isn't metadata stapled on afterward; it's the price of admission to the commons.</p>
 
       <h2>A model can refuse what it can't trace</h2>
-      <p>The signature isn't ceremony. It changes what the model is allowed to do. An answer with no traceable origin can be <em>declined</em> — held at lower confidence, flagged for a fresh fetch, or skipped entirely — instead of silently absorbed. The same gate that lets good knowledge compound lets bad knowledge get refused at the door.</p>
-      <p>It also makes the graph accountable in a way anonymous corpora never are. If a claim turns out wrong, it traces to a hand. Trust becomes something you can extend, narrow, or revoke per signer — the way you already trust some colleagues' notes more than a random Stack Overflow answer from 2014. Reputation has somewhere to live.</p>
+      <p>The signature isn't ceremony. It changes what the model is allowed to do. An answer with no traceable origin can be <em>declined</em> (held at lower confidence, flagged for a fresh fetch, or skipped entirely) instead of silently absorbed. The same gate that lets good knowledge compound lets bad knowledge get refused at the door.</p>
+      <p>It also makes the graph accountable in a way anonymous corpora never are. If a claim turns out wrong, it traces to a hand. Trust becomes something you can extend, narrow, or revoke per signer, the way you already trust some colleagues' notes more than a random Stack Overflow answer from 2014. Reputation has somewhere to live.</p>
 
       <h2>The commons that can say no</h2>
-      <p>A shared brain only works if it can defend itself, and a brain that trusts everything defends nothing. Signing every record is how a peer-to-peer memory stays a memory worth having instead of degrading into the average of whatever got pushed into it. No central authority decides what's true — but every contribution wears its author's name, and a model downstream gets to decide how much that name is worth.</p>
+      <p>A shared brain only works if it can defend itself, and a brain that trusts everything defends nothing. Signing every record is how a peer-to-peer memory stays a memory worth having instead of degrading into the average of whatever got pushed into it. No central authority decides what's true, but every contribution wears its author's name, and a model downstream gets to decide how much that name is worth.</p>
       <p>Knowledge you can trace is knowledge you can trust. Everything else is just confident noise.</p>
       <p style="margin-top:1.6em"><a class="btn btn-primary" href="/#join">Install Folklore</a></p>
     </div>

@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Folklore — an open-source mem0 alternative for AI agent memory</title>
+<title>Folklore: an open-source mem0 alternative for AI agent memory</title>
 <meta name="description" content="Folklore is an open-source, peer-to-peer alternative to mem0: agents share research over the network so you start from what the network knows, not zero. CPU-only, no per-write LLM call, signed provenance (poison-defensible). Honest, benchmarked comparison." />
 <meta name="theme-color" content="#f4ecd8" />
 <link rel="canonical" href="https://usefolklore.sh/alternatives/mem0/" />
 <meta property="og:type" content="article" />
-<meta property="og:title" content="Folklore — an open-source mem0 alternative" />
-<meta property="og:description" content="Local-first, CPU-only, signed provenance, P2P federation — no LLM call per write. Benchmarked vs mem0, negatives kept in." />
+<meta property="og:title" content="Folklore: an open-source mem0 alternative" />
+<meta property="og:description" content="Local-first, CPU-only, signed provenance, P2P federation. No LLM call per write. Benchmarked vs mem0, negatives kept in." />
 <meta property="og:url" content="https://usefolklore.sh/alternatives/mem0/" />
 <meta property="og:image" content="https://usefolklore.sh/assets/gen/og.png" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -42,7 +42,7 @@
 ]}
 </script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"TechArticle","headline":"Folklore — an open-source mem0 alternative","datePublished":"2026-06-20","dateModified":"2026-06-20","inLanguage":"en","author":{"@type":"Organization","name":"Folklore","url":"https://usefolklore.sh/"},"publisher":{"@type":"Organization","name":"Folklore","url":"https://usefolklore.sh/"},"about":["mem0 alternative","AI agent memory","open source memory layer"],"url":"https://usefolklore.sh/alternatives/mem0/","citation":"https://github.com/usefolklore/folklore"}
+{"@context":"https://schema.org","@type":"TechArticle","headline":"Folklore: an open-source mem0 alternative","datePublished":"2026-06-20","dateModified":"2026-06-20","inLanguage":"en","author":{"@type":"Organization","name":"Folklore","url":"https://usefolklore.sh/"},"publisher":{"@type":"Organization","name":"Folklore","url":"https://usefolklore.sh/"},"about":["mem0 alternative","AI agent memory","open source memory layer"],"url":"https://usefolklore.sh/alternatives/mem0/","citation":"https://github.com/usefolklore/folklore"}
 </script>
 <link rel="icon" type="image/svg+xml" href="/assets/folklore-favicon.svg" />
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
@@ -53,7 +53,7 @@
   <h1>Folklore: an open-source <span class="em">mem0 alternative</span></h1>
 
   <p class="answer">Folklore is an open-source (MIT) alternative to mem0. The core difference: mem0
-  is single-user — memory never leaves your account. Folklore is peer-to-peer: agents share their
+  is single-user: memory never leaves your account. Folklore is peer-to-peer: agents share their
   research over the network, so a new agent starts from what the network already knows, not zero.
   It also writes with no per-write LLM call, is CPU-only with no API key, and ranks by signed
   provenance.</p>
@@ -64,12 +64,12 @@
   <table>
     <tr><th>Dimension</th><th>Folklore</th><th>mem0</th></tr>
     <tr><td>License / cost</td><td class="win">Open source (MIT), free</td><td>Open source core + hosted paid platform</td></tr>
-    <tr><td>Per-write cost</td><td class="win">Local embed — no LLM call</td><td>LLM extraction on every write (tokens/latency)</td></tr>
-    <tr><td>Determinism</td><td class="win">Deterministic writes</td><td>LLM-mediated — nondeterministic (recall varies run-to-run)</td></tr>
-    <tr><td>Signed provenance / poison-defense</td><td class="win">Yes — flip-ASR → 0</td><td>No provenance field — flip-ASR 0.625 → 1.0 under poison</td></tr>
-    <tr><td>Peer federation</td><td class="win">Yes (P2P, shipping)</td><td>No — single-user</td></tr>
+    <tr><td>Per-write cost</td><td class="win">Local embed, no LLM call</td><td>LLM extraction on every write (tokens/latency)</td></tr>
+    <tr><td>Determinism</td><td class="win">Deterministic writes</td><td>LLM-mediated, nondeterministic (recall varies run-to-run)</td></tr>
+    <tr><td>Signed provenance / poison-defense</td><td class="win">Yes · flip-ASR → 0</td><td>No provenance field · flip-ASR 0.625 → 1.0 under poison</td></tr>
+    <tr><td>Peer federation</td><td class="win">Yes (P2P, shipping)</td><td>No · single-user</td></tr>
     <tr><td>Footprint</td><td class="win">CPU-only, no API key, any MCP harness</td><td>Needs an LLM (key or local model)</td></tr>
-    <tr><td>Retrieval (BEIR SciFact NDCG@10)</td><td>0.7522, CPU — leads CPU retrievers</td><td>Parity at the retrieval layer (same embedder)</td></tr>
+    <tr><td>Retrieval (BEIR SciFact NDCG@10)</td><td>0.7522, CPU · leads CPU retrievers</td><td>Parity at the retrieval layer (same embedder)</td></tr>
   </table>
   <p style="font-size:.85rem;opacity:.7">Figures from the public, reproducible benchmark; labeled measured vs simulated, negatives kept in.</p>
 
@@ -81,8 +81,8 @@
   with no per-write LLM cost.</p>
 
   <h2>FAQ</h2>
-  <details open><summary>Is there an open-source mem0 alternative?</summary><p>Yes — Folklore (MIT, local-first, CPU-only). It adds what mem0 lacks: no per-write LLM call, signed provenance, and peer federation. <a href="https://github.com/usefolklore/folklore">Repo + benchmark</a>.</p></details>
-  <details><summary>Does mem0 have signed provenance or federation?</summary><p>No — mem0 is a single-user store ranked by similarity, no cryptographic provenance, no cross-user federation. Folklore adds both.</p></details>
+  <details open><summary>Is there an open-source mem0 alternative?</summary><p>Yes: Folklore (MIT, local-first, CPU-only). It adds what mem0 lacks: no per-write LLM call, signed provenance, and peer federation. <a href="https://github.com/usefolklore/folklore">Repo + benchmark</a>.</p></details>
+  <details><summary>Does mem0 have signed provenance or federation?</summary><p>No: mem0 is a single-user store ranked by similarity, no cryptographic provenance, no cross-user federation. Folklore adds both.</p></details>
   <details><summary>Does Folklore need an LLM key like mem0?</summary><p>No. Folklore is CPU-only, no API key. mem0 needs an LLM (key or local model) for its per-write extraction.</p></details>
 
   <a class="cta" href="https://github.com/usefolklore/folklore">See the code + full benchmark →</a>

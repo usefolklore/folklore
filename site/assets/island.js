@@ -1,4 +1,4 @@
-/* folklore island — the demo's dynamic island, live on the site.
+/* folklore island: the demo's dynamic island, live on the site.
    Real peer count + join events from the tracker; ambient pull/serve
    events cycle between real ones. Collapses to a hearth pill. */
 (function(){
@@ -48,7 +48,7 @@
   idle();
   setTimeout(function(){ cycle(); setInterval(cycle, 8200); }, 2500);
 
-  /* the island narrates the session — collapsed text follows the scene */
+  /* the island narrates the session: collapsed text follows the scene */
   var NARRATE=[['last-scene','light your fire'],['ledger-scene','the reckoning'],
                ['paper-scene','the creed'],['tree-scene','the inheritance'],
                ['s-full','the exchange'],['hero-scene','folklore network']];
@@ -63,7 +63,7 @@
     document.querySelectorAll('.scene').forEach(function(sc){sio.observe(sc);});
   }
 
-  /* real swarm data — same tracker the hero uses */
+  /* real swarm data: same tracker the hero uses */
   var seen=null;
   function short(id){ return id.length>12 ? id.slice(0,6)+'…'+id.slice(-4) : id; }
   function tick(){

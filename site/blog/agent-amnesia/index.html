@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Your agent has amnesia · Folklore</title>
-<meta name="description" content="Every session, your coding agent rediscovers the same codebase, re-reads the same paper, re-derives the same answer — and you pay for it each time." />
+<meta name="description" content="Every session, your coding agent rediscovers the same codebase, re-reads the same paper, re-derives the same answer, and you pay for it each time." />
 <meta name="theme-color" content="#f4ecd8" />
 <meta property="og:type" content="article" />
 <meta property="og:title" content="Your agent has amnesia · Folklore" />
@@ -48,20 +48,20 @@
     <h1>Your agent has amnesia</h1>
     <div class="date">2026-06-15 · 4 min read · by <a href="https://github.com/SaharBarak" rel="author">@SaharBarak</a> · <a href="mailto:hi@saharbarak.dev">hi@saharbarak.dev</a></div>
     <div class="body">
-      <p>Open a fresh session with your coding agent and watch it meet your project like a stranger. It greps the same files it grepped yesterday. It opens the same paper to answer the same question. It walks into the same dead-end, backs out, and writes the same conclusion it already wrote last Tuesday — confidently, from scratch, as if no one had ever been here before.</p>
-      <p>Tools have fixed almost everything <em>around</em> this. Agents can call functions (MCP). They can talk to each other (A2A). What they still can't do is <em>remember</em> — not across sessions, and certainly not across people. So the work gets done, the tokens get spent, and the answer evaporates the moment the context window closes.</p>
+      <p>Open a fresh session with your coding agent and watch it meet your project like a stranger. It greps the same files it grepped yesterday. It opens the same paper to answer the same question. It walks into the same dead-end, backs out, and writes the same conclusion it already wrote last Tuesday: confidently, from scratch, as if no one had ever been here before.</p>
+      <p>Tools have fixed almost everything <em>around</em> this. Agents can call functions (MCP). They can talk to each other (A2A). What they still can't do is <em>remember</em>: not across sessions, and certainly not across people. So the work gets done, the tokens get spent, and the answer evaporates the moment the context window closes.</p>
 
       <h2>The bill nobody itemizes</h2>
-      <p>You don't only pay Google for the search. You pay OpenAI, Anthropic, and every metered endpoint, per token, to re-run inference over data that was already ground out — sometimes by you, an hour ago; sometimes by a teammate who solved the exact thing last sprint. Multiply one redundant lookup by a team, by a month, and the waste stops being a rounding error.</p>
+      <p>You don't only pay Google for the search. You pay OpenAI, Anthropic, and every metered endpoint, per token, to re-run inference over data that was already ground out: sometimes by you, an hour ago; sometimes by a teammate who solved the exact thing last sprint. Multiply one redundant lookup by a team, by a month, and the waste stops being a rounding error.</p>
       <p>The galling part: the expensive step already happened. Someone read the paper. Someone debugged the flaky test. Someone grounded the claim. The reasoning existed. It just wasn't written down anywhere the next agent could find it.</p>
 
       <h2>Write it down where the next one looks</h2>
-      <p>Folk knowledge solved this a long time ago. You don't re-derive how to bake bread or ford a river — someone tells you, and you tell the next person. The lore survives by being passed on. Nobody starts from zero because nobody has to.</p>
-      <p>Folklore is that, for agents. It sits between your agent and the web as a local-first graph of resolved reasoning. Every research-shaped call — <code>WebSearch</code>, <code>WebFetch</code>, an arXiv pull — meets your own graph first. If the answer's already there, it's served from memory in milliseconds. If not, the fetch proceeds and the result is saved, signed by you, so the <em>next</em> time costs nothing.</p>
-      <p>It clears the bar that buries most memory tools: it's useful to one person, on day one, with no network at all. Then it compounds — when a teammate runs it too, their resolved reasoning becomes your starting point, and yours becomes theirs.</p>
+      <p>Folk knowledge solved this a long time ago. You don't re-derive how to bake bread or ford a river. Someone tells you, and you tell the next person. The lore survives by being passed on. Nobody starts from zero because nobody has to.</p>
+      <p>Folklore is that, for agents. It sits between your agent and the web as a local-first graph of resolved reasoning. Every research-shaped call (<code>WebSearch</code>, <code>WebFetch</code>, an arXiv pull) meets your own graph first. If the answer's already there, it's served from memory in milliseconds. If not, the fetch proceeds and the result is saved, signed by you, so the <em>next</em> time costs nothing.</p>
+      <p>It clears the bar that buries most memory tools: it's useful to one person, on day one, with no network at all. Then it compounds: when a teammate runs it too, their resolved reasoning becomes your starting point, and yours becomes theirs.</p>
 
       <h2>Does it actually retrieve?</h2>
-      <p>Memory is only worth gating the web on if recall is real. Folklore's hybrid retrieval lands at <em>72.30% NDCG@10</em> on full BEIR SciFact, CPU-only — within a couple of points of much heavier baselines, at a 137M-parameter budget. The numbers, the failures we hit, and the copy-paste reproduction commands all live on the <a href="/#proof" style="border-bottom:2px solid var(--ink)">proof section</a> and in the repo. No model grading a model.</p>
+      <p>Memory is only worth gating the web on if recall is real. Folklore's hybrid retrieval lands at <em>72.30% NDCG@10</em> on full BEIR SciFact, CPU-only, within a couple of points of much heavier baselines, at a 137M-parameter budget. The numbers, the failures we hit, and the copy-paste reproduction commands all live on the <a href="/#proof" style="border-bottom:2px solid var(--ink)">proof section</a> and in the repo. No model grading a model.</p>
       <p>Your agent is brilliant. It just has amnesia. Give it the lore.</p>
       <p style="margin-top:1.6em"><a class="btn btn-primary" href="/#join">Install Folklore</a></p>
     </div>

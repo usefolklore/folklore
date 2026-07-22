@@ -92,7 +92,7 @@ const shipped = commits.length
           &nbsp;${msg}</td></tr>`;
       })
       .join('')
-  : `<tr><td style="padding:7px 0;font-family:${SERIF};font-size:14px;font-style:italic;color:${MUTED}">no site commits this week — the graph rested</td></tr>`;
+  : `<tr><td style="padding:7px 0;font-family:${SERIF};font-size:14px;font-style:italic;color:${MUTED}">no site commits this week. The graph rested</td></tr>`;
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -125,7 +125,7 @@ const html = `
     </td></tr>
 
     <!-- shipped -->
-    <tr><td style="padding:26px 4px 8px;font-family:${MONO};font-size:11px;font-weight:bold;letter-spacing:2.5px;text-transform:uppercase;color:${INK}">Shipped on the site &mdash; 7 days</td></tr>
+    <tr><td style="padding:26px 4px 8px;font-family:${MONO};font-size:11px;font-weight:bold;letter-spacing:2.5px;text-transform:uppercase;color:${INK}">Shipped on the site &middot; 7 days</td></tr>
     <tr><td style="border-left:5px solid ${PINK};background:${PAPER2};padding:10px 18px">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${shipped}</table>
     </td></tr>
@@ -157,7 +157,7 @@ const send = await fetch('https://api.resend.com/emails', {
   body: JSON.stringify({
     from: FROM,
     to: [TO],
-    subject: `folklore — ${repo.stargazers_count}★ · ${vy.count} views · ${dlTotal} app downloads`,
+    subject: `folklore · ${repo.stargazers_count}★ · ${vy.count} views · ${dlTotal} app downloads`,
     html,
   }),
 });

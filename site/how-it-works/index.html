@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>How Folklore works — a query, traced</title>
-<meta name="description" content="A 47-minute debug in Berlin becomes a 142 ms hit in Tokyo: how folklore intercepts research calls, answers from peer graphs, and files results back signed — 0 servers between." />
+<title>How Folklore works · a query, traced</title>
+<meta name="description" content="A 47-minute debug in Berlin becomes a 142 ms hit in Tokyo: how folklore intercepts research calls, answers from peer graphs, and files results back signed. 0 servers between." />
 <meta name="theme-color" content="#f4ecd8" />
 <link rel="canonical" href="https://usefolklore.sh/how-it-works/" />
 <meta property="og:type" content="article" />
-<meta property="og:title" content="How Folklore works — a query, traced" />
-<meta property="og:description" content="A 47-minute debug in Berlin becomes a 142 ms hit in Tokyo: how folklore intercepts research calls, answers from peer graphs, and files results back signed — 0 servers between." />
+<meta property="og:title" content="How Folklore works · a query, traced" />
+<meta property="og:description" content="A 47-minute debug in Berlin becomes a 142 ms hit in Tokyo: how folklore intercepts research calls, answers from peer graphs, and files results back signed. 0 servers between." />
 <meta property="og:url" content="https://usefolklore.sh/how-it-works/" />
 <meta property="og:image" content="https://usefolklore.sh/assets/gen/og.png" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -63,7 +63,7 @@
 <main style="padding-top:76px">
 <section id="trace" class="tx-dots">
   <div class="wrap">
-    <div class="stamp rv">Chapter the Fourth & a Half — A Query, Traced</div>
+    <div class="stamp rv">Chapter the Fourth & a Half · A Query, Traced</div>
     <h2 class="rv" data-d="1"><span class="mis" data-text="47-minute debug. 142 ms hit.">47-minute debug. <span class="em-blue">142&nbsp;ms</span> hit.</span></h2>
     <p class="body rv" data-d="1" style="font-size:1.1rem;opacity:.8;max-width:54ch">One peer pays the cost. The network gets the answer. No server brokers it, no vendor takes a cut.</p>
 
@@ -99,7 +99,7 @@
           <line x1="384" y1="50" x2="384" y2="66" stroke="var(--ink)" stroke-opacity=".55" stroke-width="1.3" marker-end="url(#fa)"/>
           <text x="402" y="62" fill="var(--pink)" font-size="8" text-anchor="start" font-weight="700">no</text>
           <rect x="284" y="68" width="220" height="26" rx="6" fill="var(--paper-2)" stroke="var(--ink)"/>
-          <text x="394" y="85" fill="var(--ink)">web — <tspan fill="var(--pink)" font-weight="700">once</tspan> → signed → saved back</text>
+          <text x="394" y="85" fill="var(--ink)">web: <tspan fill="var(--pink)" font-weight="700">once</tspan> → signed → saved back</text>
           <path d="M284,81 C 230,81 236,56 252,52" stroke="var(--teal)" stroke-width="1.4" fill="none" stroke-dasharray="4 3" marker-end="url(#fac)"/>
           <text x="150" y="66" fill="var(--teal)" font-size="8" font-weight="600">next ask hits the graph</text>
         </g>
@@ -132,7 +132,7 @@
         <div class="line you">$ claude</div>
         <div class="line">&gt; vllm long-ctx OOM, prefix cache failure</div>
         <div class="line tool">[folklore · asked 3 peers · 142 ms · hit: @you's trace]</div>
-        <div class="line">&gt; confident answer — web not needed</div>
+        <div class="line">&gt; confident answer · web not needed</div>
         <div class="line">&gt; 0 web calls. injecting the signed trace.</div>
         <div class="line tool">[claude · reading @you's notes]</div>
         <div class="line">&gt; try --kv-cache-dtype=fp8 + --block-size=32</div>

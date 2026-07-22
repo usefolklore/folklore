@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Folklore — an open-source Letta (MemGPT) alternative for agent memory</title>
+<title>Folklore: an open-source Letta (MemGPT) alternative for agent memory</title>
 <meta name="description" content="Folklore is an open-source, peer-to-peer alternative to Letta (MemGPT): agents share research over the network so you start from what the network knows, not zero. No agent server or database, CPU-only, signed provenance. Honest, benchmarked comparison." />
 <meta name="theme-color" content="#f4ecd8" />
 <link rel="canonical" href="https://usefolklore.sh/alternatives/letta/" />
 <meta property="og:type" content="article" />
-<meta property="og:title" content="Folklore — an open-source Letta (MemGPT) alternative" />
-<meta property="og:description" content="No server, no DB, no LLM key — local-first CPU-only memory with signed provenance + P2P federation. Benchmarked vs Letta, negatives kept in." />
+<meta property="og:title" content="Folklore: an open-source Letta (MemGPT) alternative" />
+<meta property="og:description" content="No server, no DB, no LLM key: local-first CPU-only memory with signed provenance + P2P federation. Benchmarked vs Letta, negatives kept in." />
 <meta property="og:url" content="https://usefolklore.sh/alternatives/letta/" />
 <meta property="og:image" content="https://usefolklore.sh/assets/gen/og.png" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -35,14 +35,14 @@
 </style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
-{"@type":"Question","name":"Is there an open-source Letta (MemGPT) alternative?","acceptedAnswer":{"@type":"Answer","text":"Yes. Folklore is an open-source (MIT), local-first memory layer for AI agents and an alternative to Letta. Unlike Letta — which runs a database-backed agent server and needs an LLM — Folklore is a CPU-only local library and MCP server with no server or DB to operate, plus signed provenance and peer-to-peer federation. Code and benchmark: https://github.com/usefolklore/folklore."}},
-{"@type":"Question","name":"How is Folklore different from Letta?","acceptedAnswer":{"@type":"Answer","text":"Letta (formerly MemGPT) is a DB-backed agent server with LLM self-editing memory — single-user, requires running a server plus an LLM, and has no signed provenance and no peer federation. Folklore is a local, CPU-only memory layer (no server, no DB, no API key) whose differentiators are attributable signed provenance and cross-peer compounding."}},
+{"@type":"Question","name":"Is there an open-source Letta (MemGPT) alternative?","acceptedAnswer":{"@type":"Answer","text":"Yes. Folklore is an open-source (MIT), local-first memory layer for AI agents and an alternative to Letta. Unlike Letta, which runs a database-backed agent server and needs an LLM, Folklore is a CPU-only local library and MCP server with no server or DB to operate, plus signed provenance and peer-to-peer federation. Code and benchmark: https://github.com/usefolklore/folklore."}},
+{"@type":"Question","name":"How is Folklore different from Letta?","acceptedAnswer":{"@type":"Answer","text":"Letta (formerly MemGPT) is a DB-backed agent server with LLM self-editing memory: single-user, requires running a server plus an LLM, and has no signed provenance and no peer federation. Folklore is a local, CPU-only memory layer (no server, no DB, no API key) whose differentiators are attributable signed provenance and cross-peer compounding."}},
 {"@type":"Question","name":"Do I need to run a server for Folklore like I do for Letta?","acceptedAnswer":{"@type":"Answer","text":"No. Letta runs as an agent server backed by a database (e.g. Postgres). Folklore runs locally as a library / MCP server with no separate server or database to operate, and no LLM API key."}},
-{"@type":"Question","name":"Does Letta have signed provenance or peer federation?","acceptedAnswer":{"@type":"Answer","text":"No. Letta's memory is single-user with no cryptographic provenance and no cross-user federation. Folklore adds both — signed, attributable records and a cooperative cache that compounds across peers."}}
+{"@type":"Question","name":"Does Letta have signed provenance or peer federation?","acceptedAnswer":{"@type":"Answer","text":"No. Letta's memory is single-user with no cryptographic provenance and no cross-user federation. Folklore adds both: signed, attributable records and a cooperative cache that compounds across peers."}}
 ]}
 </script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"TechArticle","headline":"Folklore — an open-source Letta (MemGPT) alternative","datePublished":"2026-06-20","dateModified":"2026-06-20","inLanguage":"en","author":{"@type":"Organization","name":"Folklore","url":"https://usefolklore.sh/"},"publisher":{"@type":"Organization","name":"Folklore","url":"https://usefolklore.sh/"},"about":["Letta alternative","MemGPT alternative","AI agent memory","open source memory layer"],"url":"https://usefolklore.sh/alternatives/letta/","citation":"https://github.com/usefolklore/folklore"}
+{"@context":"https://schema.org","@type":"TechArticle","headline":"Folklore: an open-source Letta (MemGPT) alternative","datePublished":"2026-06-20","dateModified":"2026-06-20","inLanguage":"en","author":{"@type":"Organization","name":"Folklore","url":"https://usefolklore.sh/"},"publisher":{"@type":"Organization","name":"Folklore","url":"https://usefolklore.sh/"},"about":["Letta alternative","MemGPT alternative","AI agent memory","open source memory layer"],"url":"https://usefolklore.sh/alternatives/letta/","citation":"https://github.com/usefolklore/folklore"}
 </script>
 <link rel="icon" type="image/svg+xml" href="/assets/folklore-favicon.svg" />
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
@@ -53,7 +53,7 @@
   <h1>Folklore: an open-source <span class="em">Letta (MemGPT) alternative</span></h1>
 
   <p class="answer">Folklore is an open-source (MIT) alternative to Letta (MemGPT). The core difference:
-  Letta is a single-user, database-backed agent server. Folklore is peer-to-peer — agents share their
+  Letta is a single-user, database-backed agent server. Folklore is peer-to-peer: agents share their
   research over the network, so a new agent starts from what the network already knows, not zero. It
   runs locally with no server, no database, and no API key, and ranks by signed provenance.</p>
 
@@ -62,26 +62,26 @@
   <h2>Folklore vs Letta</h2>
   <table>
     <tr><th>Dimension</th><th>Folklore</th><th>Letta (MemGPT)</th></tr>
-    <tr><td>Architecture</td><td class="win">Local library / MCP server — nothing to host</td><td>Agent server + database (e.g. Postgres)</td></tr>
+    <tr><td>Architecture</td><td class="win">Local library / MCP server, nothing to host</td><td>Agent server + database (e.g. Postgres)</td></tr>
     <tr><td>Footprint</td><td class="win">CPU-only, no API key</td><td>Needs a running server + an LLM</td></tr>
-    <tr><td>Signed provenance / poison-defense</td><td class="win">Yes — flip-ASR → 0</td><td>No provenance field</td></tr>
-    <tr><td>Peer federation</td><td class="win">Yes (P2P, shipping)</td><td>No — single-user</td></tr>
+    <tr><td>Signed provenance / poison-defense</td><td class="win">Yes · flip-ASR → 0</td><td>No provenance field</td></tr>
+    <tr><td>Peer federation</td><td class="win">Yes (P2P, shipping)</td><td>No · single-user</td></tr>
     <tr><td>License / cost</td><td class="win">Open source (MIT), free, self-host</td><td>Open source + hosted cloud</td></tr>
-    <tr><td>Retrieval (BEIR SciFact NDCG@10)</td><td>0.7522, CPU — leads CPU retrievers</td><td>Not published as BEIR scores</td></tr>
+    <tr><td>Retrieval (BEIR SciFact NDCG@10)</td><td>0.7522, CPU · leads CPU retrievers</td><td>Not published as BEIR scores</td></tr>
   </table>
   <p style="font-size:.85rem;opacity:.7">Figures from the public, reproducible benchmark; labeled measured vs simulated, negatives kept in.</p>
 
   <h2>When Letta may fit better</h2>
-  <p>Letta is a full agent framework with self-editing memory and a managed server — if you want an
+  <p>Letta is a full agent framework with self-editing memory and a managed server. If you want an
   opinionated agent runtime with built-in memory management and are happy running a server + LLM,
   it's a strong choice. Folklore is the better fit when you want a lightweight, local, poison-
   defensible memory layer that drops into any MCP harness, runs CPU-only with no server or key, and
   compounds across peers.</p>
 
   <h2>FAQ</h2>
-  <details open><summary>Is there an open-source Letta alternative?</summary><p>Yes — Folklore (MIT, local-first, CPU-only). No server/DB/LLM-key, plus signed provenance and peer federation. <a href="https://github.com/usefolklore/folklore">Repo + benchmark</a>.</p></details>
-  <details><summary>Do I need a server like Letta?</summary><p>No — Letta runs an agent server + database; Folklore runs locally as a library / MCP server with neither.</p></details>
-  <details><summary>Does Letta have provenance or federation?</summary><p>No — Letta's memory is single-user, no signed provenance, no cross-user federation. Folklore adds both.</p></details>
+  <details open><summary>Is there an open-source Letta alternative?</summary><p>Yes: Folklore (MIT, local-first, CPU-only). No server/DB/LLM-key, plus signed provenance and peer federation. <a href="https://github.com/usefolklore/folklore">Repo + benchmark</a>.</p></details>
+  <details><summary>Do I need a server like Letta?</summary><p>No: Letta runs an agent server + database; Folklore runs locally as a library / MCP server with neither.</p></details>
+  <details><summary>Does Letta have provenance or federation?</summary><p>No: Letta's memory is single-user, no signed provenance, no cross-user federation. Folklore adds both.</p></details>
 
   <a class="cta" href="https://github.com/usefolklore/folklore">See the code + full benchmark →</a>
   <p class="foot"><strong>Last updated: 2026-06-20.</strong> Folklore works alone (local) today; P2P

@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Folklore statistics — each claim, on disk</title>
+<title>Folklore statistics · each claim, on disk</title>
 <meta name="description" content="Benchmarked, not asserted: BEIR SciFact 0.7522 NDCG@10 on CPU, poison flip-ASR cut 24.8× by signed provenance, 90.2% cooperative cache hit, web fallback 17%→1%." />
 <meta name="theme-color" content="#f4ecd8" />
 <link rel="canonical" href="https://usefolklore.sh/statistics/" />
 <meta property="og:type" content="article" />
-<meta property="og:title" content="Folklore statistics — each claim, on disk" />
+<meta property="og:title" content="Folklore statistics · each claim, on disk" />
 <meta property="og:description" content="Benchmarked, not asserted: BEIR SciFact 0.7522 NDCG@10 on CPU, poison flip-ASR cut 24.8× by signed provenance, 90.2% cooperative cache hit, web fallback 17%→1%." />
 <meta property="og:url" content="https://usefolklore.sh/statistics/" />
 <meta property="og:image" content="https://usefolklore.sh/assets/gen/og.png" />
@@ -63,7 +63,7 @@
 <main style="padding-top:76px">
 <section id="provenance" class="band-teal tx-grid">
   <div class="wrap">
-    <div class="stamp rv">Chapter the Fourth & three-quarters — Provenance</div>
+    <div class="stamp rv">Chapter the Fourth & three-quarters · Provenance</div>
     <h2 class="rv" data-d="1"><span class="mis" data-text="anonymous retrieval is a poisoning surface.">anonymous retrieval is a <span class="em-pink">poisoning surface.</span></span></h2>
     <p class="body rv" data-d="1" style="font-size:1.1rem;opacity:.8;max-width:56ch">Every other AI memory feeds your model unsigned text from nowhere. Folklore signs every record by a verified human, so a model can refuse what it can't trace.</p>
     <div class="prov-grid rv" data-d="1">
@@ -88,7 +88,7 @@
   fetched:   2026-06-09T…
 }</pre>
         <p class="prov-stat">59%&nbsp;→&nbsp;2%</p>
-        <p class="prov-body"><strong>Signed by a verified GitHub identity</strong>, with an auditable chain: who curated it, what they grounded on, when. Provenance ranking keeps only signed gold and drops unsigned poison — cutting flip-ASR from <strong>58.9% to 2.4%</strong> (24.8&times;) on the displaced-poison matrix. Trust becomes a property the model can read.</p>
+        <p class="prov-body"><strong>Signed by a verified GitHub identity</strong>, with an auditable chain: who curated it, what they grounded on, when. Provenance ranking keeps only signed gold and drops unsigned poison, cutting flip-ASR from <strong>58.9% to 2.4%</strong> (24.8&times;) on the displaced-poison matrix. Trust becomes a property the model can read.</p>
         <p class="prov-cite">measured · Haiku agent, Opus judge · BEIR SciFact</p>
       </div>
     </div>
@@ -97,7 +97,7 @@
 
 <section id="proof" class="band-teal tx-grid">
   <div class="wrap">
-    <div class="stamp rv">Chapter the Fifth — The Reckoning</div>
+    <div class="stamp rv">Chapter the Fifth · The Reckoning</div>
     <h2 class="rv" data-d="1"><span class="mis" data-text="each claim, on disk.">each claim, <span class="em-pink">on disk.</span></span></h2>
     <div class="ledger rv" data-d="1">
       <div class="led"><div class="n" data-count="1039">0</div><div class="k">tests passing</div></div>
@@ -121,7 +121,7 @@
       <div class="bar"><span class="nm">SPLADE</span><span class="tr"><span class="fl" style="--w:69.9%"></span></span><span class="v">0.6990</span></div>
       <div class="bar"><span class="nm">ColBERT</span><span class="tr"><span class="fl" style="--w:67.1%"></span></span><span class="v">0.6710</span></div>
       <div class="bar"><span class="nm">BM25</span><span class="tr"><span class="fl" style="--w:66.5%"></span></span><span class="v">0.6650</span></div>
-      <p class="bars-foot"># Folklore leads the CPU / production-grade retrievers. The overall top score is <b>InRanker-3b — 0.783</b>, a 3&nbsp;B-parameter GPU cross-encoder reranker (different weight class); it beats every CPU baseline here. Folklore claims the CPU lead, not the GPU crown.</p>
+      <p class="bars-foot"># Folklore leads the CPU / production-grade retrievers. The overall top score is <b>InRanker-3b · 0.783</b>, a 3&nbsp;B-parameter GPU cross-encoder reranker (different weight class); it beats every CPU baseline here. Folklore claims the CPU lead, not the GPU crown.</p>
     </div>
     <div class="curve-wrap rv" data-d="1" aria-label="Web-fallback rate decays from 17% to 1% over 2000 queries as the graph compounds.">
       <svg class="curve-chart" viewBox="0 0 420 270" aria-hidden="true">
@@ -148,7 +148,7 @@
       </svg>
     </div>
     </div>
-    <p class="body rv" style="margin-top:18px;font-size:.98rem;font-style:italic;opacity:.8;max-width:64ch">CPU-only retrieval, full stack (hybrid + cross-encoder + graph PPR), on full BEIR SciFact. Baselines are published BEIR SciFact NDCG@10 (BM25, ColBERT, SPLADE, E5) — Folklore leads the production-grade pack; a 3B GPU reranker (InRanker) tops it at 0.783. Poison-defense is real displaced-poison retrieval (Haiku agent, Opus judge). Compounding &amp; token figures are simulator-grade — the hundred-peer pilot is next.</p>
+    <p class="body rv" style="margin-top:18px;font-size:.98rem;font-style:italic;opacity:.8;max-width:64ch">CPU-only retrieval, full stack (hybrid + cross-encoder + graph PPR), on full BEIR SciFact. Baselines are published BEIR SciFact NDCG@10 (BM25, ColBERT, SPLADE, E5). Folklore leads the production-grade pack; a 3B GPU reranker (InRanker) tops it at 0.783. Poison-defense is real displaced-poison retrieval (Haiku agent, Opus judge). Compounding &amp; token figures are simulator-grade. The hundred-peer pilot is next.</p>
   </div>
 </section>
 
