@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-label="Folklore">
-  <!-- The canonical folklore mark — extracted verbatim from the hero section's
+  <!-- The canonical folklore mark, extracted verbatim from the hero section's
        .sh-hearth in site/index.html. Single source of truth for the favicon,
        social image, navbar, app icon and installer. Static (no flame animation). -->
   <defs>

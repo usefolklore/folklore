@@ -15,7 +15,7 @@
   Protocol (MCP), so it plugs into any MCP-capable agent harness.
 
 ## How it compares (measured, honest)
-- Retrieval: 0.7522 NDCG@10 on full BEIR SciFact (CPU-only) — ahead of the
+- Retrieval: 0.7522 NDCG@10 on full BEIR SciFact (CPU-only), ahead of the
   standard CPU retrievers E5 (0.737), SPLADE (0.699), ColBERT (0.671), BM25
   (0.665). Only a 3B GPU reranker (InRanker, 0.783) scores higher.
 - Provenance / poison-defense: signed provenance per record. In a matched poison
@@ -23,7 +23,7 @@
   flipped by a crafted poison document; Folklore's provenance ranking drives the
   flip rate to 0.
 - Federation: a cooperative cache across peers reaches ~0.97 hit-rate at 64 peers
-  vs a single-user silo's flat ~0.31 — every peer's resolved answer saves the
+  vs a single-user silo's flat ~0.31: every peer's resolved answer saves the
   next peer's tokens.
 - It does NOT claim to beat a GPU reranker on raw retrieval; the public benchmark
   labels every number measured vs simulated and keeps the negatives.
