@@ -18,8 +18,8 @@
 # Then:  brew install --cask usefolklore/tap/folklore
 #
 cask "folklore" do
-  version "0.1.0"
-  sha256 :no_check # replace with the .dmg's shasum -a 256 once desktop-v0.1.0 ships
+  version "0.1.1"
+  sha256 "cedf0bde75aaf65a0f03d0d7267575566257dad024e8d39f30922a230338440b"
 
   url "https://github.com/usefolklore/folklore/releases/download/desktop-v#{version}/Folklore_#{version}_universal.dmg"
   name "Folklore"
@@ -39,8 +39,7 @@ cask "folklore" do
 
       npm install -g @usefolklore/folklore
 
-    This build is not notarized. Homebrew has already cleared the quarantine
-    flag, so it opens without the Privacy & Security prompt.
+    This build is signed and notarized by Apple (Developer ID).
   EOS
 
   zap trash: [
