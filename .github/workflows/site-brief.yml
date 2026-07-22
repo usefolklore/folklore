@@ -1,0 +1,27 @@
+name: site-brief
+
+# Daily ops brief to hi@saharbarak.dev — stars, traffic, installer downloads,
+# what shipped on the site. Same coffee-read shape as the pleiad briefing.
+# Needs the RESEND_API_KEY repo secret; sender domain must be verified in Resend.
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # 05:00 UTC daily (~08:00 IL)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  brief:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Send brief
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: node scripts/site-brief.mjs
